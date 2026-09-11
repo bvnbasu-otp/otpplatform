@@ -1,9 +1,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 /** Default keys for local Supabase CLI (supabase start). */
-export const LOCAL_SUPABASE_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
+export let LOCAL_SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 export const LOCAL_ANON_KEY =
   process.env.SUPABASE_ANON_KEY ??
+  process.env.VITE_SUPABASE_ANON_KEY ??
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 export const LOCAL_SERVICE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ??
@@ -20,27 +21,42 @@ export const SEED = {
 
 export const DEMO_PASSWORD = 'password';
 
-export function createAnonClient(): SupabaseClient {
-  return createClient(LOCAL_SUPABASE_URL, LOCAL_ANON_KEY, {
+export function createAnonClient(customUrl?: string): SupabaseClient {
+  return createClient(customUrl ?? LOCAL_SUPABASE_URL, LOCAL_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 
-export function createServiceClient(): SupabaseClient {
-  return createClient(LOCAL_SUPABASE_URL, LOCAL_SERVICE_KEY, {
+export function createServiceClient(customUrl?: string): SupabaseClient {
+  return createClient(customUrl ?? LOCAL_SUPABASE_URL, LOCAL_SERVICE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 
 export async function isLocalSupabaseReachable(): Promise<boolean> {
-  try {
-    const res = await fetch(`${LOCAL_SUPABASE_URL}/rest/v1/`, {
-      headers: { apikey: LOCAL_ANON_KEY },
-    });
-    return res.ok || res.status === 404;
-  } catch {
-    return false;
+  const candidateUrls = [
+    process.env.SUPABASE_URL,
+    process.env.VITE_SUPABASE_URL,
+    'http://127.0.0.1:54321',
+    'http://localhost:54321',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+  ].filter(Boolean) as string[];
+
+  for (const url of candidateUrls) {
+    try {
+      const res = await fetch(`${url}/rest/v1/`, {
+        headers: { apikey: LOCAL_ANON_KEY },
+      });
+      if (res.ok || res.status === 404 || res.status === 401) {
+        LOCAL_SUPABASE_URL = url;
+        return true;
+      }
+    } catch {
+      // try next candidate endpoint
+    }
   }
+  return false;
 }
 
 export async function signInAs(
