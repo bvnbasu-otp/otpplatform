@@ -17,8 +17,8 @@ CREATE INDEX IF NOT EXISTS idx_quotes_rfq_status_score
 CREATE INDEX IF NOT EXISTS idx_rfqs_org_status_date
   ON public.rfqs(organization_id, status, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_invoices_po_status
-  ON public.invoices(purchase_order_id, status);
+CREATE INDEX IF NOT EXISTS idx_invoices_work_order_status
+  ON public.invoices(work_order_id, status);
 
 CREATE INDEX IF NOT EXISTS idx_payments_invoice_status
   ON public.payments(invoice_id, status);
