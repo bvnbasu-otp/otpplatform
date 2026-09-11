@@ -1,11 +1,16 @@
 import type { SupplierQuote } from '../types/supplier-quote';
 
-function formatInr(n: number) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(n);
+function formatInr(n: number | null | undefined) {
+  if (n == null || !Number.isFinite(n)) return '—';
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(n);
+  } catch {
+    return `₹${Math.round(n).toLocaleString('en-IN')}`;
+  }
 }
 
 export function SupplierQuotePanel({ quote }: { quote: SupplierQuote }) {

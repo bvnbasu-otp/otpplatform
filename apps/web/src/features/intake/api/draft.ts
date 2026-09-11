@@ -207,6 +207,18 @@ export async function updateDraft(
   draft: IntakeDraft,
   patch: DraftPatch,
 ): Promise<DraftResult> {
+  if (draft.requirementId.startsWith('local-')) {
+    // Attempt to sync and promote local draft to server once online
+    const createRes = await createDraft({
+      title: patch.title ?? draft.title,
+      originalText: draft.originalText,
+      parsed: { ...draft, ...patch },
+    });
+    if (createRes.ok) {
+      return createRes;
+    }
+  }
+
   const { data, error } = await supabase
     .from('requirements')
     .update({
@@ -235,8 +247,23 @@ export type PublishResult = Result<{
  * halfway and leave a published requirement with nothing to quote against.
  */
 export async function publishDraft(draft: IntakeDraft): Promise<PublishResult> {
+  let requirementId = draft.requirementId;
+
+  if (requirementId.startsWith('local-')) {
+    // If draft was previously saved locally/offline, promote to server first
+    const createRes = await createDraft({
+      title: draft.title,
+      originalText: draft.originalText,
+      parsed: draft,
+    });
+    if (!createRes.ok) {
+      return { ok: false, error: `Could not sync draft to server: ${createRes.error}` };
+    }
+    requirementId = createRes.draft.requirementId;
+  }
+
   const { data, error } = await supabase.rpc('publish_requirement', {
-    p_requirement_id: draft.requirementId,
+    p_requirement_id: requirementId,
     p_sourcing_mode: draft.sourcing.sourcingMode,
     p_min_quotes_required: draft.sourcing.minQuotesRequired,
     p_quote_deadline_days: draft.sourcing.quoteDeadlineDays,
@@ -249,7 +276,7 @@ export async function publishDraft(draft: IntakeDraft): Promise<PublishResult> {
   const result = data as { rfqId: string; publicRef: string };
   return {
     ok: true,
-    requirementId: draft.requirementId,
+    requirementId,
     rfqId: result.rfqId,
     publicRef: result.publicRef,
   };

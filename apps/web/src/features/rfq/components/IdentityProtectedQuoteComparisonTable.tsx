@@ -1,11 +1,16 @@
 import type { IdentityProtectedQuote } from '@otp/domain';
 
-function formatInr(amount: number): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(amount);
+function formatInr(amount: number | null | undefined): string {
+  if (amount == null || !Number.isFinite(amount)) return '—';
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+  }
 }
 
 function formatScore(score: number | null): string {

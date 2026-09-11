@@ -72,10 +72,18 @@ export const SUPPLIER_PO_ACTIONS: Partial<
   ISSUED: [{ label: 'Accept purchase order', next: 'ACCEPTED' }],
 };
 
-export function formatMoney(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount);
+export function formatMoney(amount: number | null | undefined, currency: string = 'INR'): string {
+  if (amount == null || !Number.isFinite(amount)) return '—';
+  try {
+    const validCurrency = (currency && typeof currency === 'string' && currency.trim())
+      ? currency.trim().toUpperCase()
+      : 'INR';
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: validCurrency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+  }
 }

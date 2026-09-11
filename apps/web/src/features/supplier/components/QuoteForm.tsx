@@ -441,11 +441,11 @@ export function QuoteForm({
         <div>
           <span className="text-xs text-muted-foreground font-semibold block">Final Quote to Buyer:</span>
           <span className="text-xl font-black text-emerald-800 dark:text-emerald-300">
-            {new Intl.NumberFormat('en-IN', {
+            {Number.isFinite(total) ? new Intl.NumberFormat('en-IN', {
               style: 'currency',
               currency: 'INR',
               maximumFractionDigits: 0,
-            }).format(total)}
+            }).format(total) : '₹0'}
           </span>
           <span className="text-[11px] text-muted-foreground block">
             Includes delivery in {form.deliveryDays} day{form.deliveryDays === 1 ? '' : 's'} · {form.warrantyMonths}m warranty
