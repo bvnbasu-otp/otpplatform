@@ -44,3 +44,5 @@ scratch/
 *.sql.enc.sha256
 *.sql.sha256
 *.docx
+
+.vercel
