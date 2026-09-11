@@ -1,10 +1,17 @@
--- Migration 00159: Fix admin_review_signup_request RPC parameters and exception resilience
--- Fixes create_system_notification argument mismatches, ensures fallback for admin actor IDs,
--- and guarantees bulletproof execution for approving / rejecting signup requests.
+-- Migration 00159: Fix create_system_notification uniqueness & bulletproof admin_review_signup_request
+-- Drops ambiguous function overloads and provides a single canonical create_system_notification signature.
 
 BEGIN;
 
--- 1. Create flexible overload for create_system_notification to support p_type or p_action_type
+-- 1. Drop all previous overloads to eliminate ambiguity
+DROP FUNCTION IF EXISTS public.create_system_notification(uuid, text, text, text, text, text, jsonb, text);
+DROP FUNCTION IF EXISTS public.create_system_notification(uuid, text, text, text, text, text, jsonb);
+DROP FUNCTION IF EXISTS public.create_system_notification(uuid, text, text, text, text, text);
+DROP FUNCTION IF EXISTS public.create_system_notification(uuid, text, text, text, text);
+DROP FUNCTION IF EXISTS public.create_system_notification(uuid, text, text, text);
+DROP FUNCTION IF EXISTS public.create_system_notification(uuid, text, text);
+
+-- 2. Create the single canonical create_system_notification (7 parameters)
 CREATE OR REPLACE FUNCTION public.create_system_notification(
   p_profile_id uuid,
   p_title text,
@@ -12,8 +19,7 @@ CREATE OR REPLACE FUNCTION public.create_system_notification(
   p_link text DEFAULT NULL,
   p_event_type text DEFAULT 'system.alert',
   p_action_type text DEFAULT 'SYSTEM_ALERT',
-  p_payload jsonb DEFAULT '{}'::jsonb,
-  p_type text DEFAULT NULL
+  p_payload jsonb DEFAULT '{}'::jsonb
 ) RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -25,7 +31,6 @@ DECLARE
   v_demo_active boolean := false;
   v_clean_title text;
   v_clean_body text;
-  v_final_action text := COALESCE(p_type, p_action_type, 'SYSTEM_ALERT');
 BEGIN
   SELECT COALESCE(demo_mode_enabled, false) INTO v_demo_active FROM public.demo_settings WHERE id = true;
 
@@ -55,8 +60,8 @@ BEGIN
     p_profile_id,
     'IN_APP'::notification_channel,
     'PENDING'::notification_status,
-    p_event_type,
-    v_final_action,
+    COALESCE(p_event_type, 'system.alert'),
+    COALESCE(p_action_type, 'SYSTEM_ALERT'),
     v_clean_title,
     v_clean_body,
     p_link,
@@ -70,9 +75,9 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.create_system_notification(uuid, text, text, text, text, text, jsonb, text) TO authenticated, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.create_system_notification(uuid, text, text, text, text, text, jsonb) TO authenticated, anon, service_role;
 
--- 2. Comprehensive, bulletproof admin_review_signup_request RPC
+-- 3. Resilient admin_review_signup_request RPC
 CREATE OR REPLACE FUNCTION public.admin_review_signup_request(
   p_request_id uuid,
   p_action text DEFAULT 'APPROVE',
@@ -102,7 +107,7 @@ DECLARE
   v_sub_amount numeric(12, 2);
   v_caller_is_admin boolean := false;
 BEGIN
-  -- 1. Check Platform Admin Privileges (Allow service_role or platform admin)
+  -- 1. Check Platform Admin Privileges
   SELECT COALESCE(
     (SELECT is_platform_admin FROM public.profiles WHERE auth_user_id = auth.uid() OR id = auth.uid() LIMIT 1),
     (SELECT email IN ('admin@otp.test', 'bvnbasu@gmail.com', 'ops@otp.test') FROM auth.users WHERE id = auth.uid() LIMIT 1),
@@ -114,7 +119,6 @@ BEGIN
     RAISE EXCEPTION 'Access denied: platform admin privileges required';
   END IF;
 
-  -- Resolve admin profile id with safe fallback
   v_admin_id := private.get_profile_id();
   IF v_admin_id IS NULL THEN
     SELECT id INTO v_admin_id FROM public.profiles WHERE is_platform_admin = true LIMIT 1;
@@ -346,7 +350,6 @@ BEGIN
       WHERE id = v_org_id;
     END IF;
 
-    -- Subscription payment log
     BEGIN
       INSERT INTO public.subscription_payment_logs (
         organization_id, profile_id, tier, billing_cycle,
@@ -438,12 +441,13 @@ BEGIN
   -- 9. In-App Notification (Protected with Exception Handler)
   BEGIN
     PERFORM public.create_system_notification(
-      p_profile_id := v_profile_id,
-      p_title := 'Registration Approved & 1-Month Prepaid Plan Active',
-      p_body := 'Welcome to OTP Platform! Your registration for "' || COALESCE(v_org_name, v_req.business_name) || '" has been approved with a 30-day prepaid subscription. You may now access your portal workspace.',
-      p_link := CASE WHEN v_req.side = 'BUYER' THEN '/dashboard' ELSE '/supplier/capabilities' END,
-      p_event_type := 'signup.approved',
-      p_action_type := 'ONBOARDING'
+      v_profile_id,
+      'Registration Approved & 1-Month Prepaid Plan Active'::text,
+      ('Welcome to OTP Platform! Your registration for "' || COALESCE(v_org_name, v_req.business_name) || '" has been approved with a 30-day prepaid subscription. You may now access your portal workspace.')::text,
+      (CASE WHEN v_req.side = 'BUYER' THEN '/dashboard' ELSE '/supplier/capabilities' END)::text,
+      'signup.approved'::text,
+      'ONBOARDING'::text,
+      '{}'::jsonb
     );
   EXCEPTION WHEN OTHERS THEN
     NULL;
@@ -480,7 +484,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.admin_review_signup_request(uuid, text, text, text) TO authenticated, service_role, anon;
 
--- 3. Also maintain compatibility alias review_signup_request
+-- 4. Compatibility alias
 CREATE OR REPLACE FUNCTION public.review_signup_request(
   p_request_id uuid,
   p_action text,
