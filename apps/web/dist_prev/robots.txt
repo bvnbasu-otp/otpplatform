@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /supplier/
+Disallow: /rfq/
+Disallow: /requirements/
+Disallow: /audit
+Disallow: /performance
+Disallow: /demo
+Disallow: /q/

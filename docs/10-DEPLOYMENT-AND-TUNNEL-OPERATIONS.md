@@ -1,0 +1,194 @@
+# 10. Deployment, Production Operations & Cloudflare Live Tunnel
+
+## 1. Production Deployment Architecture
+
+The OTP Platform is deployed on a dedicated Windows production host utilizing containerized services, an automated Cloudflare Tunnel, and an atomic blue-green deployment pipeline:
+
+- **Canonical Repository Path**: `G:\My Drive\otp`
+- **Container Engine**: Docker Desktop with Docker Compose v2
+- **Orchestration File**: [`docker-compose.prod.yml`](file:///G:/My%20Drive/otp/docker-compose.prod.yml)
+- **Public URL**: `https://strange-lenses-frequency-salvation.trycloudflare.com`
+- **Internal Web Server**: Vite 6 PWA listening on `0.0.0.0:3000` (serving `apps/web/dist`)
+- **Staging / Pre-Production Gateway**: Port `54321` (Kong) / Port `54322` (Staging Postgres)
+- **Production Database**: Port `5432` (`otp-prod-db`, Supabase Postgres 15)
+
+### 1.1 Sole Authoritative Production Codebase Policy
+- **Primary Canonical Workspace**: `G:\My Drive\otp`
+- **Exclusivity Requirement**: All platform operations, builds, container bind mounts, test batteries, and maintenance scripts run exclusively from `G:\My Drive\otp`.
+- **Prohibition of Alternate Paths / Junctions**: Creating secondary aliases, drive mappings, or directory junctions (such as `C:\otp`) is strictly prohibited to prevent path drift, conflicting workspace states, and symlink recursion.
+
+---
+
+## 2. Zero-Data-Loss & Production Data Retention Mandate
+
+> [!IMPORTANT]
+> **Permanent Retention Guarantee**: Whenever any changes, bug fixes, enhancements, security patches, new features, or daily/weekly maintenance are deployed, the **Production Database, Buyer/Supplier Orders, and User/Organization details are permanently retained**.
+
+To guarantee data preservation across all operational cycles, Migration `00125_production_preservation_and_staging_gate.sql` established three hardware-grade database locks:
+
+1. **Environment Classification & Destructive Operation Locking (`public.platform_environment_settings`)**:
+   - `otp-prod-db` is permanently tagged with `environment = 'PRODUCTION'`, `is_production = true`, and `lock_destructive_ops = true`.
+   - The database configuration enforces `app.environment = 'production'` at the PostgreSQL GUC level.
+2. **Hard Safety Lock on Destructive Purge RPC**:
+   - The stored procedure `admin_purge_all_transactional_records(p_confirmation_token text)` unconditionally halts execution on any database where `is_production = true` or `current_setting('app.environment') = 'production'`.
+   - Execution is strictly blocked with `SQLSTATE P0001 (SAFETY VIOLATION)` unless the caller provides the explicit, unambiguous token:
+     `PERMANENTLY_PURGE_PRODUCTION_DATA_I_AM_CERTAIN`.
+   - Even when executed with the override token, core profiles, organizations, and platform administrative roles are preserved.
+3. **Automated Production Integrity Assertion (`assert_production_data_integrity`)**:
+   - A dedicated verification RPC audits production health before and after deployments.
+   - Verifies supplier directory integrity (at least 15 verified domain suppliers).
+   - Verifies buyer/seller order retention and organization integrity.
+   - Asserts SuperAdmin purity: confirms that platform administrators (`bvnbasu@gmail.com`, `admin@otp.test`) hold 0 buyer/supplier organization memberships.
+
+---
+
+## 3. Staging Pre-Flight Verification Gate (`pnpm gate:verify`)
+
+> [!CAUTION]
+> **Strict Promotion Gate**: Under no circumstances is code promoted to production without passing the Staging Verification Gate. If any test case fails in developer, tester, pre-prod, staging, or demo environments, **the production website continues running on the old code flow uninterrupted**.
+
+Before any production deployment or maintenance action, the full 12-layer verification battery is executed via:
+```powershell
+Set-Location "G:\My Drive\otp"
+pnpm gate:verify
+```
+
+### Staging Gate 12-Layer Battery:
+1. **POLICY**: Canonical Procurement Vocabulary Scanner (`bid`, `bidder`, `bidding`, `blind` = 0 violations).
+2. **DOMAIN**: Business logic, GST validation, and weight calculations (`@otp/domain`).
+3. **SERVICES**: Discovery engines and external network adapters (`@otp/services`).
+4. **DATABASE**: Entity mappers and data serialization (`@otp/database`).
+5. **UNIT**: Messaging core and client-side routing invariants.
+6. **WEB**: React components, accessibility, governance, and state machine tests (`@otp/web` - 207 tests).
+7. **INTEGRATION**: Live PostgREST RLS security, role separation, and cryptographic hashing (396 tests).
+8. **DEMO_E2E**: End-to-end multi-role buyer/seller walkthrough scenarios (12 tests).
+9. **POSTGRES**: Database engine security benchmarks and RPC assertions (25 tests).
+10. **SMOKE**: Live operational checks against running microservices and auth container (10 tests).
+11. **LIVE_FLOWS**: Real-time end-to-end multi-actor procurement simulations (4 scenarios).
+12. **BUILD**: Clean production TypeScript compilation and asset packaging.
+
+**Staging Gate Certificate**:
+When all 828 tests pass (100%), the runner generates a digitally signed JSON certificate at:
+`G:\My Drive\otp\backups\staging-gate-cert.json`
+The production deployment pipeline validates this certificate timestamp before proceeding.
+
+---
+
+## 4. Gated Atomic Blue-Green Deployment Pipeline (`scripts/deploy-prod.ps1`)
+
+The production deployment pipeline (`scripts/deploy-prod.ps1`) orchestrates an atomic release cycle designed to guarantee zero downtime and immediate rollback capability:
+
+```powershell
+# Standard deployment (runs staging gate, snapshot, migrations, staged build, atomic swap, smoke test)
+.\scripts\deploy-prod.ps1
+
+# Dry-run validation (validates all stages without modifying live files or database)
+.\scripts\deploy-prod.ps1 -DryRun
+
+# Force deployment (bypasses staging gate only in documented emergencies)
+.\scripts\deploy-prod.ps1 -SkipGate
+```
+
+### Pipeline Execution Lifecycle:
+
+```mermaid
+flowchart TD
+    A[Start deploy-prod.ps1] --> B{Run Staging Gate pnpm gate:verify}
+    B -- Any Test Fails --> C[ABORT DEPLOYMENT]
+    C --> C1[Old Code Flow Retained on Live Site]
+    C --> C2[Alert Dispatched: Staging Gate Failed]
+    B -- 100% Green 828 Tests --> D[Phase 2: Mandatory DB Snapshot backup-prod-db.ps1]
+    D --> E[Phase 3: Tracked Migrations via otp_schema_migrations]
+    E --> F[Phase 4: Staged Web Build to apps/web/releases/release_timestamp]
+    F --> G[Phase 5: Atomic Release Swap dist_prev <- dist <- new_release]
+    G --> H{Phase 6: Post-Deploy Smoke Battery pnpm test:smoke}
+    H -- All Smoke Checks Pass --> I[DEPLOYMENT SUCCESS]
+    I --> I1[Dispatch Success Alert Email + WhatsApp]
+    H -- Smoke Fails --> J[AUTO-ROLLBACK TRIGGERED]
+    J --> J1[Swap dist <- dist_prev]
+    J --> J2[Live Site Restored to Old Code]
+    J --> J3[Dispatch Emergency Rollback Alert]
+```
+
+### Key Safety Guarantees:
+- **Mandatory Pre-Deployment Physical Snapshot**: PostgreSQL binary dump created in `backups/` before any SQL is executed.
+- **Tracked Incremental Migrations**: Schema migrations are tracked in `public.otp_schema_migrations`. Only unapplied migrations are executed. Destructive `DROP TABLE` or `TRUNCATE` operations are strictly rejected.
+- **Isolated Staging Directory**: The new web build compiles into a timestamped directory (`apps/web/releases/release_<timestamp>`), preventing partial or corrupted builds from touching the live site.
+- **Atomic Release Promotion**: The live `apps/web/dist` is swapped in milliseconds. The previous working build is kept as `apps/web/dist_prev`.
+- **Automated Post-Deployment Smoke & Auto-Rollback**: If post-deployment smoke tests fail, `dist` is immediately replaced with `dist_prev`, returning users to the last known working release.
+
+---
+
+## 5. Docker Compose Stack (`docker-compose.prod.yml`)
+
+The consolidated production Docker Compose stack manages 6 microservices:
+
+```yaml
+version: '3.8'
+
+services:
+  db:
+    container_name: otp-prod-db
+    image: supabase/postgres:15.1.1.130
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./supabase/volumes/db/data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  auth:
+    container_name: otp-prod-auth
+    image: supabase/gotrue:v2.158.1
+    environment:
+      GOTRUE_SMTP_HOST: smtp.gmail.com
+      GOTRUE_SMTP_PORT: 587
+      GOTRUE_SMTP_USER: bvnbasu@gmail.com
+    restart: unless-stopped
+
+  rest:
+    container_name: otp-prod-rest
+    image: postgrest/postgrest:v12.2.0
+    restart: unless-stopped
+
+  realtime:
+    container_name: otp-prod-realtime
+    image: supabase/realtime:v2.30.23
+    restart: unless-stopped
+
+  kong:
+    container_name: otp-prod-gateway
+    image: kong:2.8.1
+    ports:
+      - "0.0.0.0:8000:8000"
+    restart: unless-stopped
+
+  whatsapp:
+    container_name: otp_whatsapp_gateway
+    image: otp-waha-paired:latest
+    ports:
+      - "0.0.0.0:3008:3000"
+    restart: unless-stopped
+```
+
+---
+
+## 6. Cloudflare Tunnel Watchdog Daemon (`scripts/start-live-tunnel.ps1`)
+
+Public access is established through a zero-cost Cloudflare Named / Quick Tunnel managed by an automated background watchdog:
+- **Script**: [`scripts/start-live-tunnel.ps1`](file:///G:/My%20Drive/otp/scripts/start-live-tunnel.ps1)
+- **Binary**: `C:\Program Files (x86)\cloudflared\cloudflared.exe`
+- **Target URL**: `http://localhost:3000`
+- **Public Domain**: `https://strange-lenses-frequency-salvation.trycloudflare.com`
+- **Watchdog Auto-Recovery**: The watchdog checks tunnel responsiveness every 30 seconds. If connection drops or the process exits, it automatically kills orphan instances and re-launches the tunnel, restoring public traffic in under 5 seconds without manual intervention.
+
+---
+
+## 7. Production Environment Configuration
+
+All microservices source runtime variables from `.env`:
+- `VITE_SUPABASE_URL=http://127.0.0.1:54321` (Kong Gateway routing to microservices)
+- `VITE_SUPABASE_ANON_KEY=` (PostgREST JWT public key)
+- `SUPABASE_SERVICE_ROLE_KEY=` (Administrative backend key for elevated RPC execution)
+- `MESSAGING_PROVIDER=waha` (Routes all notices to WhatsApp)
+- `WAHA_BASE_URL=http://127.0.0.1:3008` (WAHA API)
+- `ADMIN_EMAIL=bvnbasu@gmail.com` (SuperAdmin notification recipient)

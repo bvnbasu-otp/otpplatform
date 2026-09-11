@@ -1,0 +1,1618 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
+import { sendWhatsAppNotification } from '@/features/portal/api/signup';
+import {
+  fetchUsersAndOrganizations,
+  fetchSignupRequests,
+  reviewSignupRequest,
+  bulkBlockUsers,
+  bulkUnblockUsers,
+  bulkDeleteUsers,
+  bulkBlockOrganizations,
+  bulkUnblockOrganizations,
+  bulkDeleteOrganizations,
+} from '../api/admin-ops';
+import type {
+  AdminUserItem,
+  AdminOrganizationItem,
+  AdminSignupRequest,
+  AccountBlockReason,
+  AccountLifecycleStatus,
+} from '../types/admin';
+
+const BLOCK_REASONS: AccountBlockReason[] = [
+  'Suspicious Activity',
+  'Policy Violation',
+  'Spam / Bot Behavior',
+  'Unresponsive / Failed Fulfillment',
+  'Non-Compliant KYC / Invalid GSTIN',
+  'Payment Dispute / Fraud Risk',
+  'Other',
+];
+
+export function AdminUsersActivityPanel() {
+  const [subTab, setSubTab] = useState<'USERS' | 'ORGANIZATIONS' | 'REGISTRATIONS'>('USERS');
+  const [users, setUsers] = useState<AdminUserItem[]>([]);
+  const [organizations, setOrganizations] = useState<AdminOrganizationItem[]>([]);
+  const [requests, setRequests] = useState<AdminSignupRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Filters & Search
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | AccountLifecycleStatus>('ALL');
+
+  // Multi-Selection States
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [selectedOrgIds, setSelectedOrgIds] = useState<Set<string>>(new Set());
+
+  // Action / Modal States
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isBulkExecuting, setIsBulkExecuting] = useState(false);
+  const [bannerMessage, setBannerMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Block Modal State
+  const [blockModalTarget, setBlockModalTarget] = useState<{
+    type: 'USERS' | 'ORGANIZATIONS';
+    ids: string[];
+    labels: string[];
+  } | null>(null);
+  const [selectedBlockReason, setSelectedBlockReason] = useState<AccountBlockReason>('Suspicious Activity');
+  const [customBlockReason, setCustomBlockReason] = useState('');
+
+  // Delete Modal State (Two-step confirmation)
+  const [deleteModalTarget, setDeleteModalTarget] = useState<{
+    type: 'USERS' | 'ORGANIZATIONS';
+    ids: string[];
+    labels: string[];
+  } | null>(null);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [isSoftDelete, setIsSoftDelete] = useState(true);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    const [usersOrgsRes, reqsRes] = await Promise.all([
+      fetchUsersAndOrganizations(),
+      fetchSignupRequests('ALL'),
+    ]);
+
+    if (usersOrgsRes.ok) {
+      setUsers(usersOrgsRes.users);
+      setOrganizations(usersOrgsRes.organizations);
+    }
+    if (reqsRes.ok) {
+      setRequests(reqsRes.requests);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    void loadData();
+  }, []);
+
+  // Clear selections when changing tabs
+  useEffect(() => {
+    setSelectedUserIds(new Set());
+    setSelectedOrgIds(new Set());
+  }, [subTab]);
+
+  const pendingRegistrationsCount = requests.filter((r) => r.status === 'PENDING').length;
+  const blockedUsersCount = users.filter(
+    (u) =>
+      u.status === 'BLOCKED' ||
+      (u.status as string) === 'SUSPENDED' ||
+      Boolean(u.blockedAt) ||
+      Boolean(u.blockedReason)
+  ).length;
+  const blockedOrgsCount = organizations.filter(
+    (o) =>
+      o.status === 'BLOCKED' ||
+      (o.status as string) === 'SUSPENDED' ||
+      Boolean(o.blocked_at) ||
+      Boolean(o.blocked_reason)
+  ).length;
+
+  // ----------------------------------------------------
+  // Filtering
+  // ----------------------------------------------------
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const isBlocked =
+        u.status === 'BLOCKED' ||
+        (u.status as string) === 'SUSPENDED' ||
+        Boolean(u.blockedAt) ||
+        Boolean(u.blockedReason);
+
+      if (statusFilter === 'BLOCKED' && !isBlocked) return false;
+      if (statusFilter === 'ACTIVE' && (isBlocked || u.status !== 'ACTIVE')) return false;
+      if (
+        statusFilter !== 'ALL' &&
+        statusFilter !== 'BLOCKED' &&
+        statusFilter !== 'ACTIVE' &&
+        u.status !== statusFilter
+      ) {
+        return false;
+      }
+
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        u.email.toLowerCase().includes(q) ||
+        (u.fullName && u.fullName.toLowerCase().includes(q)) ||
+        (u.organizationName && u.organizationName.toLowerCase().includes(q)) ||
+        (u.role && u.role.toLowerCase().includes(q)) ||
+        (u.phone && u.phone.includes(q)) ||
+        (u.blockedReason && u.blockedReason.toLowerCase().includes(q))
+      );
+    });
+  }, [users, statusFilter, search]);
+
+  const filteredOrganizations = useMemo(() => {
+    return organizations.filter((o) => {
+      const isBlocked =
+        o.status === 'BLOCKED' ||
+        (o.status as string) === 'SUSPENDED' ||
+        Boolean(o.blocked_at) ||
+        Boolean(o.blocked_reason);
+
+      if (statusFilter === 'BLOCKED' && !isBlocked) return false;
+      if (statusFilter === 'ACTIVE' && (isBlocked || o.status !== 'ACTIVE')) return false;
+      if (
+        statusFilter !== 'ALL' &&
+        statusFilter !== 'BLOCKED' &&
+        statusFilter !== 'ACTIVE' &&
+        o.status !== statusFilter
+      ) {
+        return false;
+      }
+
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        o.name.toLowerCase().includes(q) ||
+        (o.contact_email && o.contact_email.toLowerCase().includes(q)) ||
+        (o.gstin && o.gstin.toLowerCase().includes(q)) ||
+        (o.org_type && o.org_type.toLowerCase().includes(q)) ||
+        (o.contact_person && o.contact_person.toLowerCase().includes(q)) ||
+        (o.blocked_reason && o.blocked_reason.toLowerCase().includes(q))
+      );
+    });
+  }, [organizations, statusFilter, search]);
+
+  const filteredRequests = useMemo(() => {
+    return requests.filter((r) => {
+      if (statusFilter !== 'ALL' && r.status !== statusFilter) return false;
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        r.reference.toLowerCase().includes(q) ||
+        r.business_name.toLowerCase().includes(q) ||
+        r.contact_full_name.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q) ||
+        r.phone.includes(q)
+      );
+    });
+  }, [requests, statusFilter, search]);
+
+  // ----------------------------------------------------
+  // Selection Toggles
+  // ----------------------------------------------------
+  const isAllUsersSelected =
+    filteredUsers.length > 0 && filteredUsers.every((u) => selectedUserIds.has(u.id));
+  const isSomeUsersSelected =
+    filteredUsers.some((u) => selectedUserIds.has(u.id)) && !isAllUsersSelected;
+
+  const toggleSelectAllUsers = () => {
+    if (isAllUsersSelected) {
+      setSelectedUserIds(new Set());
+    } else {
+      const next = new Set<string>();
+      // Don't select SuperAdmin users
+      filteredUsers.forEach((u) => {
+        if (!u.isPlatformAdmin) next.add(u.id);
+      });
+      setSelectedUserIds(next);
+    }
+  };
+
+  const toggleSelectUser = (id: string, isSuperAdmin?: boolean) => {
+    if (isSuperAdmin) return;
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const isAllOrgsSelected =
+    filteredOrganizations.length > 0 &&
+    filteredOrganizations.every((o) => selectedOrgIds.has(o.id));
+  const isSomeOrgsSelected =
+    filteredOrganizations.some((o) => selectedOrgIds.has(o.id)) && !isAllOrgsSelected;
+
+  const toggleSelectAllOrgs = () => {
+    if (isAllOrgsSelected) {
+      setSelectedOrgIds(new Set());
+    } else {
+      const next = new Set<string>(filteredOrganizations.map((o) => o.id));
+      setSelectedOrgIds(next);
+    }
+  };
+
+  const toggleSelectOrg = (id: string) => {
+    setSelectedOrgIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // ----------------------------------------------------
+  // Modal Openers
+  // ----------------------------------------------------
+  const openBlockModal = (
+    type: 'USERS' | 'ORGANIZATIONS',
+    ids: string[],
+    labels: string[]
+  ) => {
+    setBlockModalTarget({ type, ids, labels });
+    setSelectedBlockReason('Suspicious Activity');
+    setCustomBlockReason('');
+  };
+
+  const openDeleteModal = (
+    type: 'USERS' | 'ORGANIZATIONS',
+    ids: string[],
+    labels: string[]
+  ) => {
+    setDeleteModalTarget({ type, ids, labels });
+    setDeleteStep(1);
+    setDeleteConfirmationText('');
+    setIsSoftDelete(true);
+  };
+
+  // ----------------------------------------------------
+  // Execution Handlers
+  // ----------------------------------------------------
+  const handleConfirmBlock = async () => {
+    if (!blockModalTarget) return;
+    const finalReason =
+      selectedBlockReason === 'Other' && customBlockReason.trim()
+        ? customBlockReason.trim()
+        : selectedBlockReason;
+
+    setIsBulkExecuting(true);
+    // Optimistic UI update: immediately mark target users/orgs as BLOCKED in local state
+    const previousUsers = [...users];
+    const previousOrgs = [...organizations];
+    const nowIso = new Date().toISOString();
+
+    if (blockModalTarget.type === 'USERS') {
+      const blockedIdSet = new Set(blockModalTarget.ids);
+      setUsers((prev) =>
+        prev.map((u) =>
+          blockedIdSet.has(u.id)
+            ? { ...u, status: 'BLOCKED', blockedAt: nowIso, blockedReason: finalReason }
+            : u
+        )
+      );
+    } else {
+      const blockedIdSet = new Set(blockModalTarget.ids);
+      setOrganizations((prev) =>
+        prev.map((o) =>
+          blockedIdSet.has(o.id)
+            ? { ...o, status: 'BLOCKED', blocked_at: nowIso, blocked_reason: finalReason }
+            : o
+        )
+      );
+    }
+
+    try {
+      if (blockModalTarget.type === 'USERS') {
+        const res = await bulkBlockUsers(blockModalTarget.ids, finalReason);
+        if (res.ok) {
+          setBannerMessage({
+            type: 'success',
+            text: `✓ ${res.message || `Blocked ${blockModalTarget.ids.length} user account(s).`}`,
+          });
+          setSelectedUserIds(new Set());
+          await loadData();
+        } else {
+          setUsers(previousUsers);
+          setBannerMessage({ type: 'error', text: `✕ ${res.error || 'Failed to block users.'}` });
+        }
+      } else {
+        // Find if supplier or buyer org
+        const isSupplier = organizations.some(
+          (o) => blockModalTarget.ids.includes(o.id) && o.entity_type === 'SUPPLIER'
+        );
+        const res = await bulkBlockOrganizations(blockModalTarget.ids, isSupplier, finalReason);
+        if (res.ok) {
+          setBannerMessage({
+            type: 'success',
+            text: `✓ ${res.message || `Blocked ${blockModalTarget.ids.length} organization(s).`}`,
+          });
+          setSelectedOrgIds(new Set());
+          await loadData();
+        } else {
+          setOrganizations(previousOrgs);
+          setBannerMessage({
+            type: 'error',
+            text: `✕ ${res.error || 'Failed to block organizations.'}`,
+          });
+        }
+      }
+    } catch (err: any) {
+      setUsers(previousUsers);
+      setOrganizations(previousOrgs);
+      setBannerMessage({ type: 'error', text: `✕ Operation error: ${err.message}` });
+    } finally {
+      setIsBulkExecuting(false);
+      setBlockModalTarget(null);
+    }
+  };
+
+  const handleConfirmUnblock = async (type: 'USERS' | 'ORGANIZATIONS', ids: string[]) => {
+    setIsBulkExecuting(true);
+    const previousUsers = [...users];
+    const previousOrgs = [...organizations];
+    const unblockedIdSet = new Set(ids);
+
+    if (type === 'USERS') {
+      setUsers((prev) =>
+        prev.map((u) =>
+          unblockedIdSet.has(u.id)
+            ? { ...u, status: 'ACTIVE', blockedAt: undefined, blockedReason: undefined }
+            : u
+        )
+      );
+    } else {
+      setOrganizations((prev) =>
+        prev.map((o) =>
+          unblockedIdSet.has(o.id)
+            ? { ...o, status: 'ACTIVE', blocked_at: null, blocked_reason: null }
+            : o
+        )
+      );
+    }
+
+    try {
+      if (type === 'USERS') {
+        const res = await bulkUnblockUsers(ids);
+        if (res.ok) {
+          setBannerMessage({
+            type: 'success',
+            text: `✓ ${res.message || `Unblocked and reactivated ${ids.length} user account(s).`}`,
+          });
+          setSelectedUserIds(new Set());
+          await loadData();
+        } else {
+          setUsers(previousUsers);
+          setBannerMessage({ type: 'error', text: `✕ ${res.error || 'Failed to unblock users.'}` });
+        }
+      } else {
+        const isSupplier = organizations.some(
+          (o) => ids.includes(o.id) && o.entity_type === 'SUPPLIER'
+        );
+        const res = await bulkUnblockOrganizations(ids, isSupplier);
+        if (res.ok) {
+          setBannerMessage({
+            type: 'success',
+            text: `✓ ${res.message || `Unblocked and reactivated ${ids.length} organization(s).`}`,
+          });
+          setSelectedOrgIds(new Set());
+          await loadData();
+        } else {
+          setOrganizations(previousOrgs);
+          setBannerMessage({
+            type: 'error',
+            text: `✕ ${res.error || 'Failed to unblock organizations.'}`,
+          });
+        }
+      }
+    } catch (err: any) {
+      setUsers(previousUsers);
+      setOrganizations(previousOrgs);
+      setBannerMessage({ type: 'error', text: `✕ Operation error: ${err.message}` });
+    } finally {
+      setIsBulkExecuting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalTarget) return;
+
+    setIsBulkExecuting(true);
+    const previousUsers = [...users];
+    const previousOrgs = [...organizations];
+    const deletedIdSet = new Set(deleteModalTarget.ids);
+
+    // Optimistic UI update: immediately remove/mark deleted in local state
+    if (deleteModalTarget.type === 'USERS') {
+      if (isSoftDelete) {
+        setUsers((prev) => prev.filter((u) => !deletedIdSet.has(u.id)));
+      } else {
+        setUsers((prev) => prev.filter((u) => !deletedIdSet.has(u.id)));
+      }
+    } else {
+      setOrganizations((prev) => prev.filter((o) => !deletedIdSet.has(o.id)));
+    }
+
+    try {
+      if (deleteModalTarget.type === 'USERS') {
+        const res = await bulkDeleteUsers(deleteModalTarget.ids, isSoftDelete);
+        if (res.ok) {
+          setBannerMessage({
+            type: 'success',
+            text: `✓ ${res.message || `Deleted ${deleteModalTarget.ids.length} user account(s).`}`,
+          });
+          setSelectedUserIds(new Set());
+          await loadData();
+        } else {
+          setUsers(previousUsers);
+          setBannerMessage({ type: 'error', text: `✕ ${res.error || 'Failed to delete users.'}` });
+        }
+      } else {
+        const isSupplier = organizations.some(
+          (o) => deleteModalTarget.ids.includes(o.id) && o.entity_type === 'SUPPLIER'
+        );
+        const res = await bulkDeleteOrganizations(
+          deleteModalTarget.ids,
+          isSupplier,
+          isSoftDelete
+        );
+        if (res.ok) {
+          setBannerMessage({
+            type: 'success',
+            text: `✓ ${res.message || `Deleted ${deleteModalTarget.ids.length} organization(s).`}`,
+          });
+          setSelectedOrgIds(new Set());
+          await loadData();
+        } else {
+          setOrganizations(previousOrgs);
+          setBannerMessage({
+            type: 'error',
+            text: `✕ ${res.error || 'Failed to delete organizations.'}`,
+          });
+        }
+      }
+    } catch (err: any) {
+      setUsers(previousUsers);
+      setOrganizations(previousOrgs);
+      setBannerMessage({ type: 'error', text: `✕ Operation error: ${err.message}` });
+    } finally {
+      setIsBulkExecuting(false);
+      setDeleteModalTarget(null);
+    }
+  };
+
+  // ----------------------------------------------------
+  // Registration Review Handler
+  // ----------------------------------------------------
+  const handleReview = async (request: AdminSignupRequest, action: 'APPROVE' | 'REJECT') => {
+    setProcessingId(request.id);
+    try {
+      const res = await reviewSignupRequest(request.id, action);
+      if (res.ok) {
+        const notifDetails: string[] = [];
+
+        if (action === 'APPROVE') {
+          try {
+            const { error: emailErr } = await supabase.auth.resetPasswordForEmail(request.email, {
+              redirectTo: `${window.location.origin}/reset-password`,
+            });
+            if (!emailErr) notifDetails.push('Activation email dispatched');
+          } catch (e) {
+            console.warn('Approval email dispatch note:', e);
+          }
+
+          if (request.phone) {
+            try {
+              const portalUrl = window.location.origin;
+              const tempPass = res.temporary_password || 'Welcome@OTP2026!';
+              const waSuccess = await sendWhatsAppNotification(
+                request.phone,
+                `[OTP Platform] Account Approved & Activated\n\n` +
+                  `Hello ${request.contact_full_name},\n` +
+                  `Your registration for *${request.business_name}* (Ref: ${request.reference}) has been approved by the platform administrator.\n\n` +
+                  `*Your Login Credentials:*\n` +
+                  `- Email: ${request.email}\n` +
+                  `- Temporary Password: ${tempPass}\n` +
+                  `- Login URL: ${portalUrl}/login\n\n` +
+                  `An activation email has also been sent to *${request.email}*. Please log in and update your password under Account Settings.`
+              );
+              if (waSuccess) notifDetails.push('WhatsApp dispatched');
+            } catch (e) {
+              console.warn('Failed to send WhatsApp activation message:', e);
+            }
+          }
+        }
+
+        const notifSummary = notifDetails.length > 0 ? ` (${notifDetails.join(' & ')})` : '';
+        setBannerMessage({
+          type: 'success',
+          text:
+            action === 'APPROVE'
+              ? `✓ Successfully approved and onboarded "${request.business_name}" (${request.reference}). Workspace provisioned for ${request.email}.${notifSummary}`
+              : `✕ Registration request "${request.business_name}" (${request.reference}) marked as rejected.`,
+        });
+        await loadData();
+      } else {
+        setBannerMessage({
+          type: 'error',
+          text: `Failed to ${action.toLowerCase()} request: ${res.error || 'Unknown error'}`,
+        });
+      }
+    } catch (err) {
+      setBannerMessage({
+        type: 'error',
+        text: `Operation failed: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const selectedCount =
+    subTab === 'USERS'
+      ? selectedUserIds.size
+      : subTab === 'ORGANIZATIONS'
+      ? selectedOrgIds.size
+      : 0;
+
+  return (
+    <div className="flex flex-col h-full min-h-0 overflow-hidden space-y-2.5">
+      {/* 1. System Notification Banner */}
+      {bannerMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`shrink-0 flex items-center justify-between rounded-lg p-2.5 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-150 ${
+            bannerMessage.type === 'success'
+              ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-950 dark:text-emerald-200'
+              : 'bg-rose-500/15 border border-rose-500/30 text-rose-950 dark:text-rose-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span>{bannerMessage.type === 'success' ? '✓' : '⚠️'}</span>
+            <span>{bannerMessage.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBannerMessage(null)}
+            className="text-muted-foreground hover:text-foreground font-bold ml-3 px-1"
+            title="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* 2. Sub-Tabs & Refresh Header */}
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setSubTab('USERS')}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition shrink-0 ${
+              subTab === 'USERS'
+                ? 'bg-primary text-primary-foreground shadow-2xs'
+                : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>👥</span> Users ({users.length})
+            {blockedUsersCount > 0 && (
+              <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
+                {blockedUsersCount} Blocked
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSubTab('ORGANIZATIONS')}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition shrink-0 ${
+              subTab === 'ORGANIZATIONS'
+                ? 'bg-primary text-primary-foreground shadow-2xs'
+                : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>🏢</span> Organizations &amp; Suppliers ({organizations.length})
+            {blockedOrgsCount > 0 && (
+              <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
+                {blockedOrgsCount} Blocked
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSubTab('REGISTRATIONS')}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition shrink-0 ${
+              subTab === 'REGISTRATIONS'
+                ? 'bg-primary text-primary-foreground shadow-2xs'
+                : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>📋</span> Approvals Queue
+            {pendingRegistrationsCount > 0 && (
+              <span className="rounded-full bg-amber-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
+                {pendingRegistrationsCount} Pending
+              </span>
+            )}
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void loadData()}
+          disabled={isLoading}
+          className="rounded-lg border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted transition flex items-center gap-1 shrink-0"
+        >
+          <span>↻</span> {isLoading ? 'Refreshing…' : 'Refresh'}
+        </button>
+      </div>
+
+      {/* 3. Search & Filter Bar */}
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-2.5">
+        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={
+              subTab === 'USERS'
+                ? 'Search user name, email, phone, role, organization...'
+                : subTab === 'ORGANIZATIONS'
+                ? 'Search business name, GSTIN, contact person, email...'
+                : 'Search applicant name, business, reference (REG-)...'
+            }
+            className="rounded-md border bg-background px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full max-w-md"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="text-xs text-muted-foreground hover:text-foreground font-semibold"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Status Filter Chips */}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase mr-1">Status:</span>
+          {(['ALL', 'ACTIVE', 'BLOCKED', 'PENDING'] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatusFilter(s)}
+              className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
+                statusFilter === s
+                  ? s === 'BLOCKED'
+                    ? 'bg-rose-600 text-white'
+                    : s === 'ACTIVE'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-primary text-primary-foreground'
+                  : 'bg-muted/60 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {s === 'ALL' ? 'All' : s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 4. DYNAMIC BATCH ACTION TOOLBAR (Appears when ≥ 1 row selected) */}
+      {selectedCount > 0 && (
+        <div
+          role="toolbar"
+          aria-label="Bulk actions toolbar"
+          className="shrink-0 flex flex-wrap items-center justify-between gap-2 rounded-lg border-2 border-primary/40 bg-primary/10 p-2 text-xs animate-in fade-in slide-in-from-top-1 duration-150"
+        >
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
+              ✓
+            </span>
+            <span className="font-extrabold text-foreground">
+              {selectedCount} {selectedCount === 1 ? 'record' : 'records'} selected
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (subTab === 'USERS') setSelectedUserIds(new Set());
+                if (subTab === 'ORGANIZATIONS') setSelectedOrgIds(new Set());
+              }}
+              className="ml-2 text-xs font-semibold text-muted-foreground hover:text-foreground underline"
+            >
+              Deselect All
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {/* Block Action Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (subTab === 'USERS') {
+                  const targetUsers = users.filter((u) => selectedUserIds.has(u.id));
+                  openBlockModal(
+                    'USERS',
+                    targetUsers.map((u) => u.id),
+                    targetUsers.map((u) => `${u.fullName || u.email} (${u.email})`)
+                  );
+                } else if (subTab === 'ORGANIZATIONS') {
+                  const targetOrgs = organizations.filter((o) => selectedOrgIds.has(o.id));
+                  openBlockModal(
+                    'ORGANIZATIONS',
+                    targetOrgs.map((o) => o.id),
+                    targetOrgs.map((o) => o.name)
+                  );
+                }
+              }}
+              disabled={isBulkExecuting}
+              className="flex items-center gap-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs disabled:opacity-50"
+            >
+              <span>🚫</span> Block Account{selectedCount > 1 ? 's' : ''}
+            </button>
+
+            {/* Unblock Action Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (subTab === 'USERS') {
+                  void handleConfirmUnblock('USERS', Array.from(selectedUserIds));
+                } else if (subTab === 'ORGANIZATIONS') {
+                  void handleConfirmUnblock('ORGANIZATIONS', Array.from(selectedOrgIds));
+                }
+              }}
+              disabled={isBulkExecuting}
+              className="flex items-center gap-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs disabled:opacity-50"
+            >
+              <span>🔓</span> Unblock / Activate
+            </button>
+
+            {/* Delete Action Button (Red Accent / Destructive Intent) */}
+            <button
+              type="button"
+              onClick={() => {
+                if (subTab === 'USERS') {
+                  const targetUsers = users.filter((u) => selectedUserIds.has(u.id));
+                  openDeleteModal(
+                    'USERS',
+                    targetUsers.map((u) => u.id),
+                    targetUsers.map((u) => `${u.fullName || u.email} (${u.email})`)
+                  );
+                } else if (subTab === 'ORGANIZATIONS') {
+                  const targetOrgs = organizations.filter((o) => selectedOrgIds.has(o.id));
+                  openDeleteModal(
+                    'ORGANIZATIONS',
+                    targetOrgs.map((o) => o.id),
+                    targetOrgs.map((o) => o.name)
+                  );
+                }
+              }}
+              disabled={isBulkExecuting}
+              className="flex items-center gap-1 rounded-md bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs disabled:opacity-50"
+            >
+              <span>🗑️</span> Delete {subTab === 'USERS' ? 'User' : 'Org'}{selectedCount > 1 ? 's' : ''}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 5. DATA TABLES CONTAINER (Zero-Scroll strictly internal body scroll) */}
+      <div className="flex-1 min-h-0 rounded-xl border bg-card shadow-2xs overflow-hidden flex flex-col">
+        {/* ====================================================
+            SUBTAB 1: USERS DATA TABLE
+        ==================================================== */}
+        {subTab === 'USERS' && (
+          <div className="flex-1 min-h-0 overflow-y-auto zero-scroll-pane">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-semibold text-muted-foreground shadow-2xs">
+                <tr>
+                  {/* Selection Checkbox Column */}
+                  <th className="p-2.5 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={isAllUsersSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isSomeUsersSelected;
+                      }}
+                      onChange={toggleSelectAllUsers}
+                      aria-label="Select all visible users"
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                    />
+                  </th>
+                  <th className="p-2.5">User &amp; Contact</th>
+                  <th className="p-2.5">Status</th>
+                  <th className="p-2.5">Side</th>
+                  <th className="p-2.5">Organization / Company</th>
+                  <th className="p-2.5">Role</th>
+                  <th className="p-2.5">GST Compliance</th>
+                  <th className="p-2.5">Registered</th>
+                  <th className="p-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y text-foreground">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={9} className="py-12 text-center text-muted-foreground">
+                      Loading user accounts and tenant credentials…
+                    </td>
+                  </tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-12 text-center text-muted-foreground font-medium">
+                      No users match the current search or status filter.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((u) => {
+                    const isSelected = selectedUserIds.has(u.id);
+                    const isBlocked =
+                      u.status === 'BLOCKED' ||
+                      (u.status as string) === 'SUSPENDED' ||
+                      Boolean(u.blockedAt) ||
+                      Boolean(u.blockedReason);
+
+                    return (
+                      <tr
+                        key={u.id}
+                        className={`transition hover:bg-muted/20 ${
+                          isSelected ? 'bg-primary/5' : isBlocked ? 'bg-rose-500/5' : ''
+                        }`}
+                      >
+                        {/* Checkbox Column */}
+                        <td className="p-2.5 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={u.isPlatformAdmin}
+                            onChange={() => toggleSelectUser(u.id, u.isPlatformAdmin)}
+                            aria-label={`Select user ${u.email}`}
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary disabled:opacity-30"
+                          />
+                        </td>
+
+                        {/* User & Contact */}
+                        <td className="p-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-foreground">{u.fullName}</span>
+                            {u.isPlatformAdmin && (
+                              <span className="rounded bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-extrabold border border-primary/30">
+                                SUPER ADMIN
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground font-mono">{u.email}</div>
+                          {u.phone && <div className="text-[10px] text-muted-foreground font-mono">{u.phone}</div>}
+                        </td>
+
+                        {/* Real-time Status Badge */}
+                        <td className="p-2.5">
+                          {isBlocked ? (
+                            <div>
+                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
+                                <span>🚫</span> Blocked
+                              </span>
+                              {u.blockedReason && (
+                                <div
+                                  className="mt-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[140px]"
+                                  title={u.blockedReason}
+                                >
+                                  Reason: {u.blockedReason}
+                                </div>
+                              )}
+                            </div>
+                          ) : u.status === 'PENDING' ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold border border-amber-300 dark:border-amber-800">
+                              <span>⏳</span> Pending
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
+                              <span>✓</span> Active
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Side */}
+                        <td className="p-2.5">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                              u.side === 'SUPPLIER'
+                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                : u.side === 'ADMIN'
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                            }`}
+                          >
+                            {u.side}
+                          </span>
+                        </td>
+
+                        {/* Organization */}
+                        <td className="p-2.5">
+                          <div className="font-semibold text-foreground truncate max-w-[160px]">
+                            {u.organizationName || 'Personal Workspace'}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">{u.orgType}</div>
+                        </td>
+
+                        {/* Role */}
+                        <td className="p-2.5">
+                          <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono font-semibold">
+                            {u.role || 'MEMBER'}
+                          </span>
+                        </td>
+
+                        {/* GST Compliance */}
+                        <td className="p-2.5">
+                          {u.gstVerified ? (
+                            <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 px-1.5 py-0.5 text-[10px] font-bold">
+                              ✓ Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-0.5 rounded bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-medium">
+                              Unregistered
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Registered */}
+                        <td className="p-2.5 text-muted-foreground text-[11px] whitespace-nowrap">
+                          {new Date(u.createdAt).toLocaleDateString('en-IN', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </td>
+
+                        {/* Row Actions */}
+                        <td className="p-2.5 text-right">
+                          {!u.isPlatformAdmin ? (
+                            <div className="flex items-center justify-end gap-1">
+                              {isBlocked ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleConfirmUnblock('USERS', [u.id])}
+                                  className="rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-0.5 text-[11px] transition shadow-2xs"
+                                  title="Unblock and reactivate account"
+                                >
+                                  Unblock
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openBlockModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
+                                  }
+                                  className="rounded border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2 py-0.5 text-[11px] transition"
+                                  title="Block account from accessing platform"
+                                >
+                                  Block
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openDeleteModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
+                                }
+                                className="rounded border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2 py-0.5 text-[11px] transition"
+                                title="Delete user account"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground font-semibold">Protected</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ====================================================
+            SUBTAB 2: ORGANIZATIONS & SUPPLIERS DATA TABLE
+        ==================================================== */}
+        {subTab === 'ORGANIZATIONS' && (
+          <div className="flex-1 min-h-0 overflow-y-auto zero-scroll-pane">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-semibold text-muted-foreground shadow-2xs">
+                <tr>
+                  <th className="p-2.5 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={isAllOrgsSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isSomeOrgsSelected;
+                      }}
+                      onChange={toggleSelectAllOrgs}
+                      aria-label="Select all visible organizations"
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                    />
+                  </th>
+                  <th className="p-2.5">Organization / Business</th>
+                  <th className="p-2.5">Type &amp; Sector</th>
+                  <th className="p-2.5">Status</th>
+                  <th className="p-2.5">Members</th>
+                  <th className="p-2.5">Active RFQs / POs</th>
+                  <th className="p-2.5">GST Registration</th>
+                  <th className="p-2.5">Contact</th>
+                  <th className="p-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y text-foreground">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={9} className="py-12 text-center text-muted-foreground">
+                      Loading organizations and supplier tenancies…
+                    </td>
+                  </tr>
+                ) : filteredOrganizations.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-12 text-center text-muted-foreground font-medium">
+                      No organizations matching search query.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredOrganizations.map((o) => {
+                    const isSelected = selectedOrgIds.has(o.id);
+                    const isBlocked =
+                      o.status === 'BLOCKED' ||
+                      (o.status as string) === 'SUSPENDED' ||
+                      Boolean(o.blocked_at) ||
+                      Boolean(o.blocked_reason);
+
+                    return (
+                      <tr
+                        key={o.id}
+                        className={`transition hover:bg-muted/20 ${
+                          isSelected ? 'bg-primary/5' : isBlocked ? 'bg-rose-500/5' : ''
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <td className="p-2.5 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectOrg(o.id)}
+                            aria-label={`Select organization ${o.name}`}
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                          />
+                        </td>
+
+                        {/* Name & Tag */}
+                        <td className="p-2.5">
+                          <div className="font-bold text-foreground">{o.name}</div>
+                          <span
+                            className={`inline-block mt-0.5 rounded px-1.5 py-0.2 text-[9px] font-extrabold ${
+                              o.entity_type === 'SUPPLIER'
+                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                            }`}
+                          >
+                            {o.entity_type === 'SUPPLIER' ? 'Verified Supplier' : 'Buyer Organization'}
+                          </span>
+                        </td>
+
+                        {/* Governance */}
+                        <td className="p-2.5">
+                          <div className="font-semibold text-foreground">{o.org_type}</div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="p-2.5">
+                          {isBlocked ? (
+                            <div>
+                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
+                                <span>🚫</span> Suspended
+                              </span>
+                              {o.blocked_reason && (
+                                <div
+                                  className="mt-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[140px]"
+                                  title={o.blocked_reason}
+                                >
+                                  {o.blocked_reason}
+                                </div>
+                              )}
+                            </div>
+                          ) : o.status === 'PENDING' ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold border border-amber-300 dark:border-amber-800">
+                              <span>⏳</span> Pending
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
+                              <span>✓</span> Active
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Members */}
+                        <td className="p-2.5">
+                          <span className="font-semibold text-foreground">{o.member_count}</span>{' '}
+                          <span className="text-[10px] text-muted-foreground">users</span>
+                        </td>
+
+                        {/* Active RFQs */}
+                        <td className="p-2.5">
+                          <span className="font-semibold text-foreground">{o.active_orders_count}</span>{' '}
+                          <span className="text-[10px] text-muted-foreground">in flight</span>
+                        </td>
+
+                        {/* GST */}
+                        <td className="p-2.5">
+                          {o.gstin ? (
+                            <div>
+                              <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">
+                                ✓ GSTIN
+                              </span>
+                              <div className="font-mono text-[10px] text-muted-foreground mt-0.5">{o.gstin}</div>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">Non-registered</span>
+                          )}
+                        </td>
+
+                        {/* Contact */}
+                        <td className="p-2.5">
+                          {o.contact_email && (
+                            <div className="font-mono text-[10px] text-muted-foreground truncate max-w-[130px]">
+                              {o.contact_email}
+                            </div>
+                          )}
+                          {o.contact_phone && (
+                            <div className="font-mono text-[10px] text-muted-foreground">{o.contact_phone}</div>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="p-2.5 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {isBlocked ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleConfirmUnblock('ORGANIZATIONS', [o.id])}
+                                className="rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-0.5 text-[11px] transition shadow-2xs"
+                                title="Unblock organization"
+                              >
+                                Unblock
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => openBlockModal('ORGANIZATIONS', [o.id], [o.name])}
+                                className="rounded border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2 py-0.5 text-[11px] transition"
+                                title="Block organization and pause RFQs"
+                              >
+                                Block
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => openDeleteModal('ORGANIZATIONS', [o.id], [o.name])}
+                              className="rounded border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2 py-0.5 text-[11px] transition"
+                              title="Delete organization"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ====================================================
+            SUBTAB 3: REGISTRATIONS APPROVAL QUEUE TABLE
+        ==================================================== */}
+        {subTab === 'REGISTRATIONS' && (
+          <div className="flex-1 min-h-0 overflow-y-auto zero-scroll-pane">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-semibold text-muted-foreground shadow-2xs">
+                <tr>
+                  <th className="p-2.5">Reference &amp; Side</th>
+                  <th className="p-2.5">Business &amp; Organization</th>
+                  <th className="p-2.5">Applicant &amp; Role</th>
+                  <th className="p-2.5">Contact Details</th>
+                  <th className="p-2.5">Status</th>
+                  <th className="p-2.5">Submitted</th>
+                  <th className="p-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y text-foreground">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                      Loading registration requests queue…
+                    </td>
+                  </tr>
+                ) : filteredRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-muted-foreground font-medium">
+                      No registration requests matching filter.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRequests.map((r) => {
+                    const isPending = r.status === 'PENDING';
+                    const isBusy = processingId === r.id;
+
+                    return (
+                      <tr key={r.id} className="hover:bg-muted/20 transition">
+                        <td className="p-2.5">
+                          <div className="font-mono font-bold text-foreground">{r.reference}</div>
+                          <span
+                            className={`inline-block mt-0.5 rounded-full px-2 py-0.2 text-[9px] font-bold ${
+                              r.side === 'SUPPLIER'
+                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                            }`}
+                          >
+                            {r.side}
+                          </span>
+                        </td>
+
+                        <td className="p-2.5">
+                          <div className="font-bold text-foreground">{r.business_name}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {r.buyer_type ||
+                              (r.category_codes?.length
+                                ? `Categories: ${r.category_codes.join(', ')}`
+                                : 'General')}
+                          </div>
+                          {r.tax_registration_id ? (
+                            <div className="mt-0.5">
+                              <span className="inline-flex items-center gap-1 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold border border-emerald-300 dark:border-emerald-800/60">
+                                ✓ GST: <span className="font-mono">{r.tax_registration_id}</span>
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="text-[9px] text-muted-foreground">GST: Unregistered</div>
+                          )}
+                        </td>
+
+                        <td className="p-2.5">
+                          <div className="font-semibold text-foreground">{r.contact_full_name}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {r.role_label || r.role_code || r.designation || 'Prime Member'}
+                          </div>
+                        </td>
+
+                        <td className="p-2.5">
+                          <div className="font-mono text-[10px] text-foreground">{r.email}</div>
+                          <div className="text-[10px] text-muted-foreground">{r.phone}</div>
+                          <div className="text-[9px] text-muted-foreground">
+                            Via: <span className="font-semibold">{r.verification_channel}</span>
+                          </div>
+                        </td>
+
+                        <td className="p-2.5">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                              r.status === 'ONBOARDED'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                : r.status === 'REJECTED'
+                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                            }`}
+                          >
+                            {r.status}
+                          </span>
+                        </td>
+
+                        <td className="p-2.5 text-muted-foreground text-[10px] whitespace-nowrap">
+                          {new Date(r.created_at).toLocaleDateString('en-IN', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </td>
+
+                        <td className="p-2.5 text-right">
+                          {isPending ? (
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => void handleReview(r, 'APPROVE')}
+                                disabled={isBusy}
+                                className="rounded bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1 shadow-2xs"
+                                title="Approve applicant, provision tenant & auth user"
+                              >
+                                <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve & Onboard'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleReview(r, 'REJECT')}
+                                disabled={isBusy}
+                                className="rounded border border-rose-300 bg-rose-50 px-2 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
+                                title="Reject registration"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground font-semibold">
+                              {r.status === 'ONBOARDED' ? '✓ Activated' : 'Closed'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ====================================================
+          MODAL 1: BLOCK ACCOUNT CONFIRMATION MODAL
+      ==================================================== */}
+      {blockModalTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="block-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+        >
+          <div className="w-full max-w-lg rounded-2xl border bg-card p-5 shadow-xl animate-in zoom-in-95 duration-150 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <span className="text-xl">🚫</span>
+                <h3 id="block-modal-title" className="text-base font-bold text-foreground">
+                  Block {blockModalTarget.type === 'USERS' ? 'User Account(s)' : 'Organization(s)'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBlockModalTarget(null)}
+                className="text-muted-foreground hover:text-foreground text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <p className="text-muted-foreground">
+                You are placing{' '}
+                <strong className="text-foreground">{blockModalTarget.ids.length}</strong>{' '}
+                {blockModalTarget.type === 'USERS' ? 'account(s)' : 'organization(s)'} on administrative hold:
+              </p>
+
+              {/* Target items list */}
+              <div className="max-h-24 overflow-y-auto rounded-lg bg-muted/40 border p-2 space-y-1 font-mono text-[11px]">
+                {blockModalTarget.labels.map((lbl, idx) => (
+                  <div key={idx} className="truncate text-foreground">
+                    • {lbl}
+                  </div>
+                ))}
+              </div>
+
+              {/* Mandatory Reason Dropdown */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-foreground">
+                  Mandatory Administrative Reason <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={selectedBlockReason}
+                  onChange={(e) => setSelectedBlockReason(e.target.value as AccountBlockReason)}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
+                >
+                  {BLOCK_REASONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Custom reason text input */}
+              {selectedBlockReason === 'Other' && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-foreground">
+                    Specify Reason Details <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={customBlockReason}
+                    onChange={(e) => setCustomBlockReason(e.target.value)}
+                    placeholder="Provide detailed justification for administrative audit..."
+                    className="w-full rounded-md border bg-background p-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              )}
+
+              {/* Operational Impact Notice */}
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-[11px] text-amber-950 dark:text-amber-200">
+                <strong>Platform Governance Impact:</strong>
+                <ul className="list-disc list-inside mt-1 space-y-0.5 text-muted-foreground dark:text-amber-200/80">
+                  <li>Immediately blocks sign-in &amp; session tokens for targeted users.</li>
+                  <li>Suspends capability to post RFQs, submit quotes, or vote on tenders.</li>
+                  <li>Preserves complete cryptographic audit chain and statutory transaction history.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t pt-3">
+              <button
+                type="button"
+                onClick={() => setBlockModalTarget(null)}
+                disabled={isBulkExecuting}
+                className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleConfirmBlock()}
+                disabled={
+                  isBulkExecuting ||
+                  (selectedBlockReason === 'Other' && !customBlockReason.trim())
+                }
+                className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {isBulkExecuting ? 'Executing Block…' : 'Confirm & Block Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          MODAL 2: TWO-STEP DESTRUCTIVE DELETE CONFIRMATION
+      ==================================================== */}
+      {deleteModalTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-rose-500/40 bg-card p-5 shadow-2xl animate-in zoom-in-95 duration-150 space-y-4">
+            <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                <span className="text-xl">⚠️</span>
+                <h3 id="delete-modal-title" className="text-base font-bold text-foreground">
+                  {deleteStep === 1 ? 'Step 1: Data Retention Warning' : 'Step 2: Final Confirmation'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteModalTarget(null)}
+                className="text-muted-foreground hover:text-foreground text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* STEP 1: Warning & Retention Explanation */}
+            {deleteStep === 1 && (
+              <div className="space-y-3 text-xs">
+                <p className="text-foreground font-semibold">
+                  You have requested deletion of{' '}
+                  <span className="text-rose-600 dark:text-rose-400 font-extrabold">
+                    {deleteModalTarget.ids.length}
+                  </span>{' '}
+                  {deleteModalTarget.type === 'USERS' ? 'user account(s)' : 'organization entity(ies)'}:
+                </p>
+
+                <div className="max-h-24 overflow-y-auto rounded-lg bg-muted/40 border p-2 space-y-1 font-mono text-[11px]">
+                  {deleteModalTarget.labels.map((lbl, idx) => (
+                    <div key={idx} className="truncate text-foreground">
+                      • {lbl}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Soft-delete vs Hard-delete options */}
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      id="soft-delete-chk"
+                      checked={isSoftDelete}
+                      onChange={(e) => setIsSoftDelete(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                    />
+                    <label htmlFor="soft-delete-chk" className="cursor-pointer">
+                      <span className="font-bold text-foreground block">
+                        Soft-Delete &amp; Retain Regulatory Audit Records (Recommended)
+                      </span>
+                      <span className="text-[11px] text-muted-foreground block mt-0.5">
+                        Deactivates credentials immediately while preserving GST/tax audit logs, purchase order history, and statutory contract archives.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-rose-500/10 border border-rose-500/30 p-2.5 text-[11px] text-rose-950 dark:text-rose-200">
+                  <strong>Warning:</strong> Deletion will revoke all user access tokens and active workspaces.
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: Explicit Confirmation Input */}
+            {deleteStep === 2 && (
+              <div className="space-y-3 text-xs">
+                <div className="rounded-lg bg-rose-500/15 border border-rose-500/40 p-3 text-rose-950 dark:text-rose-200 space-y-1">
+                  <div className="font-bold text-sm">Final Confirmation Required</div>
+                  <p className="text-xs">
+                    To execute deletion of <strong>{deleteModalTarget.ids.length}</strong> {deleteModalTarget.type.toLowerCase()}, type{' '}
+                    <span className="font-mono font-extrabold text-rose-600 dark:text-rose-400">DELETE</span> in the box below.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    value={deleteConfirmationText}
+                    onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                    placeholder="Type DELETE to confirm"
+                    className="w-full rounded-md border border-rose-400 bg-background px-3 py-2 text-xs font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    autoFocus
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between border-t border-rose-500/20 pt-3">
+              {deleteStep === 2 ? (
+                <button
+                  type="button"
+                  onClick={() => setDeleteStep(1)}
+                  disabled={isBulkExecuting}
+                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                >
+                  ← Back to Step 1
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalTarget(null)}
+                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                >
+                  Cancel
+                </button>
+              )}
+
+              {deleteStep === 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setDeleteStep(2)}
+                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-1.5 text-xs transition shadow-2xs flex items-center gap-1.5"
+                >
+                  Proceed to Step 2 →
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleConfirmDelete()}
+                  disabled={isBulkExecuting || deleteConfirmationText !== 'DELETE'}
+                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-extrabold px-4 py-1.5 text-xs transition shadow-2xs disabled:opacity-40 flex items-center gap-1.5"
+                >
+                  {isBulkExecuting ? 'Deleting…' : 'Permanently Execute Deletion'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

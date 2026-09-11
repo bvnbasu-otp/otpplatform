@@ -1,0 +1,25 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    image: otp-web:prod
+    container_name: otp-web-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - otp-prod-net
+
+networks:
+  otp-prod-net:
+    driver: bridge

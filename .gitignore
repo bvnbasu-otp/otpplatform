@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Supabase
+supabase/.branches
+supabase/.temp
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test
+coverage/
+
+# Vite
+apps/web/.vite/
+
+# Large Local Backups, DB Snapshots & WhatsApp Session Data
+backups/
+.waha-sessions-backup/
+scratch/
+*.sql
+*.sql.enc
+*.sql.enc.sha256
+*.sql.sha256
+*.docx

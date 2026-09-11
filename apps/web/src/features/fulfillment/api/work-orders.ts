@@ -1,0 +1,140 @@
+import type { WorkOrderStatus } from '@otp/domain';
+import { supabase } from '@/lib/supabase';
+import type { WorkOrderSummary } from '../types/fulfillment';
+
+interface WoRow {
+  id: string;
+  purchase_order_id: string;
+  supplier_id: string;
+  status: WorkOrderStatus;
+  title: string;
+  progress_percent: number;
+  completed_at: string | null;
+  buyer_accepted_at: string | null;
+  inspection_notes: string | null;
+  rating?: number | null;
+  review_text?: string | null;
+  purchase_orders?: { po_number: string } | null;
+}
+
+function mapWo(row: WoRow): WorkOrderSummary {
+  return {
+    id: row.id,
+    purchaseOrderId: row.purchase_order_id,
+    supplierId: row.supplier_id,
+    status: row.status,
+    title: row.title,
+    progressPercent: row.progress_percent,
+    completedAt: row.completed_at,
+    buyerAcceptedAt: row.buyer_accepted_at,
+    inspectionNotes: row.inspection_notes,
+    rating: row.rating != null ? Number(row.rating) : null,
+    reviewText: row.review_text ?? row.inspection_notes,
+    poNumber: row.purchase_orders?.po_number,
+  };
+}
+
+export async function fetchWorkOrders(): Promise<
+  { ok: true; workOrders: WorkOrderSummary[] } | { ok: false; error: string }
+> {
+  const { data, error } = await supabase
+    .from('work_orders')
+    .select(
+      'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
+    )
+    .order('created_at', { ascending: false });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, workOrders: (data as unknown as WoRow[]).map(mapWo) };
+}
+
+export async function fetchWorkOrderByPo(poId: string): Promise<
+  { ok: true; workOrder: WorkOrderSummary | null } | { ok: false; error: string }
+> {
+  const { data, error } = await supabase
+    .from('work_orders')
+    .select(
+      'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
+    )
+    .eq('purchase_order_id', poId)
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  if (!data) return { ok: true, workOrder: null };
+  return { ok: true, workOrder: mapWo(data as unknown as WoRow) };
+}
+
+export async function fetchWorkOrder(woId: string): Promise<
+  { ok: true; workOrder: WorkOrderSummary } | { ok: false; error: string }
+> {
+  const { data, error } = await supabase
+    .from('work_orders')
+    .select(
+      'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
+    )
+    .eq('id', woId)
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  if (!data) return { ok: false, error: 'Work order not found' };
+  return { ok: true, workOrder: mapWo(data as unknown as WoRow) };
+}
+
+export async function createWorkOrder(
+  poId: string,
+  supplierId: string,
+  title: string,
+): Promise<{ ok: true; workOrderId: string } | { ok: false; error: string }> {
+  const rpcRes = await supabase.rpc('initialize_work_order', { p_po_id: poId });
+  if (!rpcRes.error && rpcRes.data && typeof rpcRes.data === 'object' && 'work_order_id' in rpcRes.data) {
+    return { ok: true, workOrderId: String((rpcRes.data as { work_order_id: string }).work_order_id) };
+  }
+
+  const { data, error } = await supabase
+    .from('work_orders')
+    .insert({
+      purchase_order_id: poId,
+      supplier_id: supplierId,
+      title,
+      status: 'NOT_STARTED',
+      progress_percent: 0,
+    })
+    .select('id')
+    .single();
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, workOrderId: data.id };
+}
+
+export async function updateWorkOrderProgress(
+  woId: string,
+  progressPercent: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const status: WorkOrderStatus =
+    progressPercent >= 100 ? 'COMPLETED' : progressPercent > 0 ? 'IN_PROGRESS' : 'NOT_STARTED';
+
+  const patch: Record<string, unknown> = {
+    progress_percent: progressPercent,
+    status,
+    updated_at: new Date().toISOString(),
+  };
+  if (status === 'COMPLETED') patch.completed_at = new Date().toISOString();
+
+  const { error } = await supabase.from('work_orders').update(patch).eq('id', woId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function acceptDeliveryInspection(
+  workOrderId: string,
+  rating: number,
+  notes?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await supabase.rpc('accept_delivery_inspection', {
+    p_work_order_id: workOrderId,
+    p_notes: notes ?? null,
+    p_rating: rating,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

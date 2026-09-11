@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />    <meta name="theme-color" content="#0f172a" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="description" content="OTP Platform — Open Trade & Procurement. Local procurement network with identity-protected RFQ and neutral evaluation." />
+    <meta property="og:title" content="OTP Platform — Open Trade & Procurement" />
+    <meta property="og:description" content="Tell us what you need. Let suppliers compete. You decide." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <title>OTP Platform — Open Trade &amp; Procurement</title>
+    <script>
+      (function () {
+        try {
+          var storedTheme = localStorage.getItem('otp-theme') || 'system';
+          var storedPersona = localStorage.getItem('otp-persona') || 'buyer';
+          var storedColorTheme = localStorage.getItem('otp-color-theme');
+          var root = document.documentElement;
+
+          root.setAttribute('data-persona', storedPersona);
+          if (storedColorTheme && storedColorTheme !== 'auto') {
+            root.setAttribute('data-color-theme', storedColorTheme);
+          } else {
+            root.removeAttribute('data-color-theme');
+          }
+
+          if (
+            storedTheme === 'dark' ||
+            (storedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          ) {
+            root.classList.add('dark');
+            root.style.colorScheme = 'dark';
+          } else {
+            root.classList.remove('dark');
+            root.style.colorScheme = 'light';
+          }
+        } catch (e) {
+          /* Fallback on localStorage security restrictions */
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-DXNelAFZ.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-B3C4XOsV.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-react-Db65u5e1.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-supabase-D-tK2meN.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-OB_hEVLp.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

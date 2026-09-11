@@ -1,0 +1,146 @@
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database Engine
+  # ---------------------------------------------------------------------------
+  db:
+    image: supabase/postgres:15.1.1.78
+    container_name: otp-prod-db
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SuperSecretProdPostgresPassword2026!}
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h 127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Supabase GoTrue Authentication Server
+  # ---------------------------------------------------------------------------
+  auth:
+    image: supabase/gotrue:v2.158.1
+    container_name: otp-prod-auth
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:9999:9999"
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgresql://supabase_auth_admin:${POSTGRES_PASSWORD:-SuperSecretProdPostgresPassword2026!}@db:5432/postgres?sslmode=disable
+      GOTRUE_SITE_URL: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}
+      GOTRUE_URI_ALLOW_LIST: http://127.0.0.1:3000/*,http://localhost:3000/*,http://localhost:3000/reset-password,${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/*,${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/reset-password,https://*.trycloudflare.com/*
+      API_EXTERNAL_URL: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/auth/v1
+      GOTRUE_JWT_ISSUER: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/auth/v1
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-your-long-production-jwt-secret-min-32-chars!}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      # Production Transactional SMTP Configuration (e.g. Gmail SMTP / Resend)
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-bvnbasu@gmail.com}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-tthnhzwbkexabpda}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-bvnbasu@gmail.com}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-OTP Platform}
+      GOTRUE_MAILER_OTP_EXP: 600
+      GOTRUE_MAILER_OTP_LENGTH: 6
+      GOTRUE_MAILER_TEMPLATE_RELOADING_ENABLED: "true"
+      # Email Templates with 6-digit numeric OTP code support (served via HTTP)
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/email-templates/magic_link.html
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/email-templates/recovery.html
+      GOTRUE_MAILER_TEMPLATES_INVITE: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/email-templates/invite.html
+
+  # ---------------------------------------------------------------------------
+  # PostgREST API
+  # ---------------------------------------------------------------------------
+  rest:
+    image: postgrest/postgrest:v12.0.1
+    container_name: otp-prod-rest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD:-SuperSecretProdPostgresPassword2026!}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET:-your-long-production-jwt-secret-min-32-chars!}
+      PGRST_DB_USE_BUILTIN_RAISE: "true"
+
+  # ---------------------------------------------------------------------------
+  # Realtime Server
+  # ---------------------------------------------------------------------------
+  realtime:
+    image: public.ecr.aws/supabase/realtime:v2.129.3
+    container_name: otp-prod-realtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-SuperSecretProdPostgresPassword2026!}
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
+      DB_ENC_KEY: ${REALTIME_ENC_KEY:-supabaserealtime}
+      API_JWT_SECRET: ${JWT_SECRET:-your-long-production-jwt-secret-min-32-chars!}
+      METRICS_JWT_SECRET: ${JWT_SECRET:-your-long-production-jwt-secret-min-32-chars!}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-EAx3IQ/wRG1v47ZD4NE4/9RzBI8Jmil3x0yhcW4V2NHBP6c2iPIzwjofi2Ep4HIG}
+      APP_NAME: realtime
+      RUN_JANITOR: "true"
+      SEED_SELF_HOST: "true"
+
+  # ---------------------------------------------------------------------------
+  # API Gateway (Kong)
+  # ---------------------------------------------------------------------------
+  kong:
+    image: public.ecr.aws/supabase/kong:2.8.1
+    container_name: otp-prod-gateway
+    restart: unless-stopped
+    depends_on:
+      - auth
+      - rest
+      - realtime
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors
+    volumes:
+      - C:/Users/Dhiya/.otp-config/kong.yml:/etc/kong/kong.yml:ro
+
+  # ---------------------------------------------------------------------------
+  # WhatsApp Gateway (WAHA - Paired & Self-Contained)
+  # ---------------------------------------------------------------------------
+  whatsapp:
+    image: otp-waha-paired:latest
+    container_name: otp_whatsapp_gateway
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3008:3000"
+    environment:
+      WHATSAPP_START_SESSION: "default"
+      WHATSAPP_RESTART_ALL_SESSIONS: "true"
+
+volumes:
+  db-data:
+    driver: local
+

@@ -1,0 +1,477 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -------------------------------------------------------------------------- */
+/* BASE SYSTEM TOKENS (LIGHT DEFAULT)                                         */
+/* -------------------------------------------------------------------------- */
+:root {
+  /* Surface & Base */
+  --background: 210 20% 98%;          /* #f8fafc */
+  --foreground: 222 47% 11%;          /* #0f172a */
+  --card: 0 0% 100%;                  /* #ffffff */
+  --card-foreground: 222 47% 11%;     /* #0f172a */
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --muted: 210 40% 96.1%;             /* #f1f5f9 */
+  --muted-foreground: 215 16% 42%;    /* #64748b */
+  --border: 214 20% 88%;              /* #e2e8f0 */
+  --input: 214 20% 88%;
+  --ring: 222 84% 45%;
+  --radius: 0.5rem;
+
+  /* Default Brand Primary (Deep Navy Slate) */
+  --primary: 217 71% 22%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 152 45% 94%;
+  --accent-foreground: 152 55% 22%;
+
+  /* Navy Frame Surfaces */
+  --navy: 217 71% 15%;
+  --navy-soft: 217 55% 26%;
+  --navy-foreground: 210 40% 98%;
+  --navy-muted: 213 32% 78%;
+  --navy-faint: 213 20% 65%;
+  --navy-line: 215 30% 30%;
+
+  /* Slate Typography */
+  --slate: 215 25% 27%;
+  --slate-soft: 215 16% 47%;
+
+  /* Action Color */
+  --action: 199 89% 42%;
+  --action-hover: 199 89% 36%;
+  --action-foreground: 0 0% 100%;
+  --action-soft: 199 90% 96%;
+
+  /* Lifecycle & Status Tokens */
+  --status-draft: 215 16% 47%;
+  --status-quoting: 217 91% 60%;
+  --status-evaluating: 271 81% 56%;
+  --status-awarded: 160 84% 39%;
+  --status-po: 187 92% 38%;
+  --status-warning: 38 92% 50%;
+  --status-danger: 0 84% 60%;
+
+  /* Default Persona (Buyer fallback) */
+  --persona-brand: 238 84% 59%;       /* Indigo 600 */
+  --persona-brand-hover: 239 84% 67%; /* Indigo 500 */
+  --persona-soft: 238 100% 97%;       /* Indigo 50 */
+  --persona-border: 235 86% 93%;
+}
+
+/* -------------------------------------------------------------------------- */
+/* BASE SYSTEM TOKENS (DARK DEFAULT)                                          */
+/* -------------------------------------------------------------------------- */
+.dark {
+  --background: 224 71% 4%;           /* #020617 */
+  --foreground: 210 40% 98%;          /* #f8fafc */
+  --card: 222 47% 7%;                 /* #090e1a */
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 7%;
+  --popover-foreground: 210 40% 98%;
+  --muted: 217 33% 15%;               /* #1e293b */
+  --muted-foreground: 215 20% 65%;    /* #94a3b8 */
+  --border: 217 33% 17%;              /* #1e293b */
+  --input: 217 33% 17%;
+  --ring: 217 91% 60%;
+
+  --primary: 210 40% 98%;
+  --primary-foreground: 222 47% 11%;
+  --accent: 217 33% 15%;
+  --accent-foreground: 210 40% 98%;
+
+  /* Navy Frame Surfaces in Dark Mode */
+  --navy: 222 47% 6%;
+  --navy-soft: 217 33% 14%;
+  --navy-foreground: 210 40% 98%;
+  --navy-muted: 215 20% 65%;
+  --navy-faint: 215 16% 47%;
+  --navy-line: 217 33% 20%;
+
+  /* Slate Typography in Dark Mode */
+  --slate: 210 40% 92%;
+  --slate-soft: 215 20% 65%;
+
+  /* Action Color in Dark Mode */
+  --action: 199 89% 48%;
+  --action-hover: 199 89% 56%;
+  --action-foreground: 222 47% 11%;
+  --action-soft: 199 80% 15%;
+
+  /* Default Persona (Buyer fallback in Dark) */
+  --persona-brand: 234 89% 74%;       /* Indigo 400 */
+  --persona-brand-hover: 238 84% 67%;
+  --persona-soft: 237 54% 16%;
+  --persona-border: 237 40% 25%;
+}
+
+/* -------------------------------------------------------------------------- */
+/* PERSONA 1: BUYER PALETTE (Indigo / Governance Slate)                       */
+/* -------------------------------------------------------------------------- */
+[data-persona="buyer"] {
+  --persona-brand: 238 84% 59%;       /* Indigo 600 */
+  --persona-brand-hover: 239 84% 67%; /* Indigo 500 */
+  --persona-soft: 238 100% 97%;       /* Indigo 50 */
+  --persona-border: 235 86% 93%;
+  --primary: 238 84% 59%;
+  --primary-foreground: 0 0% 100%;
+  --action: 238 84% 59%;
+  --action-hover: 239 84% 50%;
+  --action-soft: 238 100% 97%;
+  --action-foreground: 0 0% 100%;
+  --ring: 238 84% 59%;
+}
+
+.dark[data-persona="buyer"],
+[data-persona="buyer"].dark,
+.dark [data-persona="buyer"] {
+  --persona-brand: 234 89% 74%;       /* Indigo 400 */
+  --persona-brand-hover: 238 84% 67%;
+  --persona-soft: 237 54% 16%;
+  --persona-border: 237 40% 25%;
+  --primary: 234 89% 74%;
+  --primary-foreground: 222 47% 11%;
+  --action: 234 89% 74%;
+  --action-hover: 238 84% 67%;
+  --action-soft: 237 54% 16%;
+  --action-foreground: 222 47% 11%;
+  --ring: 234 89% 74%;
+}
+
+/* -------------------------------------------------------------------------- */
+/* PERSONA 2: SUPPLIER PALETTE (Emerald / Action Teal)                        */
+/* -------------------------------------------------------------------------- */
+[data-persona="supplier"] {
+  --persona-brand: 160 84% 39%;       /* Emerald 600 */
+  --persona-brand-hover: 158 64% 52%; /* Emerald 500 */
+  --persona-soft: 152 81% 96%;        /* Emerald 50 */
+  --persona-border: 149 80% 90%;
+  --primary: 160 84% 39%;
+  --primary-foreground: 0 0% 100%;
+  --action: 160 84% 39%;
+  --action-hover: 158 64% 32%;
+  --action-soft: 152 81% 96%;
+  --action-foreground: 0 0% 100%;
+  --ring: 160 84% 39%;
+}
+
+.dark[data-persona="supplier"],
+[data-persona="supplier"].dark,
+.dark [data-persona="supplier"] {
+  --persona-brand: 156 73% 45%;       /* Emerald 400 */
+  --persona-brand-hover: 158 64% 52%;
+  --persona-soft: 164 73% 10%;
+  --persona-border: 164 45% 20%;
+  --primary: 156 73% 45%;
+  --primary-foreground: 222 47% 11%;
+  --action: 156 73% 45%;
+  --action-hover: 158 64% 52%;
+  --action-soft: 164 73% 10%;
+  --action-foreground: 222 47% 11%;
+  --ring: 156 73% 45%;
+}
+
+/* -------------------------------------------------------------------------- */
+/* PERSONA 3: SUPER ADMIN CONSOLE (Obsidian / Telemetry Amber)                */
+/* -------------------------------------------------------------------------- */
+[data-persona="admin"] {
+  --persona-brand: 38 92% 50%;        /* Amber 500 */
+  --persona-brand-hover: 35 92% 43%;  /* Amber 600 */
+  --persona-soft: 48 100% 96%;        /* Amber 50 */
+  --persona-border: 45 93% 88%;
+  --primary: 38 92% 50%;
+  --primary-foreground: 222 47% 11%;
+  --action: 38 92% 50%;
+  --action-hover: 35 92% 43%;
+  --action-soft: 48 100% 96%;
+  --action-foreground: 222 47% 11%;
+  --ring: 38 92% 50%;
+}
+
+.dark[data-persona="admin"],
+[data-persona="admin"].dark,
+.dark [data-persona="admin"] {
+  --persona-brand: 38 92% 50%;        /* High-Visibility Amber */
+  --persona-brand-hover: 45 93% 58%;
+  --persona-soft: 35 100% 10%;
+  --persona-border: 38 60% 22%;
+  --primary: 38 92% 50%;
+  --primary-foreground: 222 47% 11%;
+  --action: 38 92% 50%;
+  --action-hover: 45 93% 58%;
+  --action-soft: 35 100% 10%;
+  --action-foreground: 222 47% 11%;
+  --ring: 38 92% 50%;
+}
+
+/* -------------------------------------------------------------------------- */
+/* EXPLICIT COLOR THEME OVERRIDES ([data-color-theme])                        */
+/* -------------------------------------------------------------------------- */
+[data-color-theme="indigo"] {
+  --persona-brand: 238 84% 59%;
+  --persona-brand-hover: 239 84% 67%;
+  --persona-soft: 238 100% 97%;
+  --persona-border: 235 86% 93%;
+  --primary: 238 84% 59%;
+  --primary-foreground: 0 0% 100%;
+  --action: 238 84% 59%;
+  --action-hover: 239 84% 50%;
+  --action-soft: 238 100% 97%;
+  --action-foreground: 0 0% 100%;
+  --ring: 238 84% 59%;
+}
+.dark[data-color-theme="indigo"], [data-color-theme="indigo"].dark, .dark [data-color-theme="indigo"] {
+  --persona-brand: 234 89% 74%;
+  --persona-brand-hover: 238 84% 67%;
+  --persona-soft: 237 54% 16%;
+  --persona-border: 237 40% 25%;
+  --primary: 234 89% 74%;
+  --primary-foreground: 222 47% 11%;
+  --action: 234 89% 74%;
+  --action-hover: 238 84% 67%;
+  --action-soft: 237 54% 16%;
+  --action-foreground: 222 47% 11%;
+  --ring: 234 89% 74%;
+}
+
+[data-color-theme="emerald"] {
+  --persona-brand: 160 84% 39%;
+  --persona-brand-hover: 158 64% 52%;
+  --persona-soft: 152 81% 96%;
+  --persona-border: 149 80% 90%;
+  --primary: 160 84% 39%;
+  --primary-foreground: 0 0% 100%;
+  --action: 160 84% 39%;
+  --action-hover: 158 64% 32%;
+  --action-soft: 152 81% 96%;
+  --action-foreground: 0 0% 100%;
+  --ring: 160 84% 39%;
+}
+.dark[data-color-theme="emerald"], [data-color-theme="emerald"].dark, .dark [data-color-theme="emerald"] {
+  --persona-brand: 156 73% 45%;
+  --persona-brand-hover: 158 64% 52%;
+  --persona-soft: 164 73% 10%;
+  --persona-border: 164 45% 20%;
+  --primary: 156 73% 45%;
+  --primary-foreground: 222 47% 11%;
+  --action: 156 73% 45%;
+  --action-hover: 158 64% 52%;
+  --action-soft: 164 73% 10%;
+  --action-foreground: 222 47% 11%;
+  --ring: 156 73% 45%;
+}
+
+[data-color-theme="amber"] {
+  --persona-brand: 38 92% 50%;
+  --persona-brand-hover: 35 92% 43%;
+  --persona-soft: 48 100% 96%;
+  --persona-border: 45 93% 88%;
+  --primary: 38 92% 50%;
+  --primary-foreground: 222 47% 11%;
+  --action: 38 92% 50%;
+  --action-hover: 35 92% 43%;
+  --action-soft: 48 100% 96%;
+  --action-foreground: 222 47% 11%;
+  --ring: 38 92% 50%;
+}
+.dark[data-color-theme="amber"], [data-color-theme="amber"].dark, .dark [data-color-theme="amber"] {
+  --persona-brand: 38 92% 50%;
+  --persona-brand-hover: 45 93% 58%;
+  --persona-soft: 35 100% 10%;
+  --persona-border: 38 60% 22%;
+  --primary: 38 92% 50%;
+  --primary-foreground: 222 47% 11%;
+  --action: 38 92% 50%;
+  --action-hover: 45 93% 58%;
+  --action-soft: 35 100% 10%;
+  --action-foreground: 222 47% 11%;
+  --ring: 38 92% 50%;
+}
+
+[data-color-theme="blue"] {
+  --persona-brand: 199 89% 48%;
+  --persona-brand-hover: 199 89% 40%;
+  --persona-soft: 204 100% 97%;
+  --persona-border: 201 94% 86%;
+  --primary: 199 89% 48%;
+  --primary-foreground: 0 0% 100%;
+  --action: 199 89% 48%;
+  --action-hover: 199 89% 40%;
+  --action-soft: 204 100% 97%;
+  --action-foreground: 0 0% 100%;
+  --ring: 199 89% 48%;
+}
+.dark[data-color-theme="blue"], [data-color-theme="blue"].dark, .dark [data-color-theme="blue"] {
+  --persona-brand: 199 89% 58%;
+  --persona-brand-hover: 199 89% 68%;
+  --persona-soft: 204 80% 15%;
+  --persona-border: 201 60% 25%;
+  --primary: 199 89% 58%;
+  --primary-foreground: 222 47% 11%;
+  --action: 199 89% 58%;
+  --action-hover: 199 89% 68%;
+  --action-soft: 204 80% 15%;
+  --action-foreground: 222 47% 11%;
+  --ring: 199 89% 58%;
+}
+
+[data-color-theme="purple"] {
+  --persona-brand: 262 83% 58%;
+  --persona-brand-hover: 263 70% 50%;
+  --persona-soft: 270 100% 98%;
+  --persona-border: 267 83% 90%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+  --action: 262 83% 58%;
+  --action-hover: 263 70% 50%;
+  --action-soft: 270 100% 98%;
+  --action-foreground: 0 0% 100%;
+  --ring: 262 83% 58%;
+}
+.dark[data-color-theme="purple"], [data-color-theme="purple"].dark, .dark [data-color-theme="purple"] {
+  --persona-brand: 263 70% 68%;
+  --persona-brand-hover: 263 70% 78%;
+  --persona-soft: 270 60% 16%;
+  --persona-border: 267 40% 25%;
+  --primary: 263 70% 68%;
+  --primary-foreground: 222 47% 11%;
+  --action: 263 70% 68%;
+  --action-hover: 263 70% 78%;
+  --action-soft: 270 60% 16%;
+  --action-foreground: 222 47% 11%;
+  --ring: 263 70% 68%;
+}
+
+[data-color-theme="rose"] {
+  --persona-brand: 346 77% 50%;
+  --persona-brand-hover: 347 77% 42%;
+  --persona-soft: 351 100% 96%;
+  --persona-border: 350 89% 89%;
+  --primary: 346 77% 50%;
+  --primary-foreground: 0 0% 100%;
+  --action: 346 77% 50%;
+  --action-hover: 347 77% 42%;
+  --action-soft: 351 100% 96%;
+  --action-foreground: 0 0% 100%;
+  --ring: 346 77% 50%;
+}
+.dark[data-color-theme="rose"], [data-color-theme="rose"].dark, .dark [data-color-theme="rose"] {
+  --persona-brand: 347 77% 65%;
+  --persona-brand-hover: 347 77% 75%;
+  --persona-soft: 351 60% 15%;
+  --persona-border: 350 40% 25%;
+  --primary: 347 77% 65%;
+  --primary-foreground: 222 47% 11%;
+  --action: 347 77% 65%;
+  --action-hover: 347 77% 75%;
+  --action-soft: 351 60% 15%;
+  --action-foreground: 222 47% 11%;
+  --ring: 347 77% 65%;
+}
+
+/* -------------------------------------------------------------------------- */
+/* GLOBAL APPLICATION STYLING                                                 */
+/* -------------------------------------------------------------------------- */
+body {
+  @apply bg-background text-foreground antialiased selection:bg-persona-soft selection:text-persona-brand;
+  margin: 0;
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Portal Panel */
+.portal-panel {
+  background-color: hsl(var(--navy));
+  color: hsl(var(--navy-foreground));
+  border-top: 1px solid hsl(var(--navy-line));
+}
+
+/* Glassmorphism & Elevated Surfaces */
+.glass-card {
+  background: hsl(var(--card) / 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.8);
+}
+
+.dark .glass-card {
+  background: hsl(var(--card) / 0.7);
+  border: 1px solid hsl(var(--border) / 0.7);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+}
+
+.glass-header {
+  background: hsl(var(--card) / 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Sleek Webkit Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.45);
+}
+
+/* Zero-Scroll High-Density Utilities */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+#root {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.zero-scroll-container {
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.zero-scroll-pane {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Print Optimization for PDF Export */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt;
+  }
+
+  header, nav, .no-print, [title="Notifications"] {
+    display: none !important;
+  }
+
+  .print-report-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 15mm 12mm;
+  }
+}

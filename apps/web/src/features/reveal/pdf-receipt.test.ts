@@ -1,0 +1,42 @@
+import { describe, expect, it } from 'vitest';
+import { computeReceiptAuditHash, type ReceiptDocumentData } from '../reporting/lib/pdf-generator';
+
+describe('Cryptographic Decision Receipt & PDF Generator', () => {
+  it('computes deterministic SHA-256 audit hash seal for procurement receipts', async () => {
+    const receiptData: Omit<ReceiptDocumentData, 'auditHash'> = {
+      rfqPublicRef: 'RFQ-2026-BLR-0049',
+      rfqTitle: '3-Tower Exterior Texture Painting',
+      winnerBusinessName: 'Apex Coatings Private Limited',
+      winnerAlias: 'Supplier-102',
+      awardedAmountInr: 495600,
+      awardedAt: '2026-09-10T12:00:00Z',
+    };
+
+    const hash1 = await computeReceiptAuditHash(receiptData);
+    const hash2 = await computeReceiptAuditHash(receiptData);
+
+    expect(hash1).toBe(hash2);
+    expect(hash1.length).toBe(64); // 256-bit hex
+  });
+
+  it('detects tampering when any commercial or winner field is altered', async () => {
+    const original = {
+      rfqPublicRef: 'RFQ-2026-BLR-0049',
+      rfqTitle: '3-Tower Exterior Texture Painting',
+      winnerBusinessName: 'Apex Coatings Private Limited',
+      winnerAlias: 'Supplier-102',
+      awardedAmountInr: 495600,
+      awardedAt: '2026-09-10T12:00:00Z',
+    };
+
+    const tampered = {
+      ...original,
+      awardedAmountInr: 550000, // Altered amount
+    };
+
+    const originalHash = await computeReceiptAuditHash(original);
+    const tamperedHash = await computeReceiptAuditHash(tampered);
+
+    expect(originalHash).not.toBe(tamperedHash);
+  });
+});

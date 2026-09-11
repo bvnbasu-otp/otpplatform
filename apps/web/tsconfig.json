@@ -1,0 +1,16 @@
+{
+  "extends": "../../packages/config/typescript/react.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    // The messaging core is written for Deno, which requires explicit file
+    // extensions on relative imports. Harmless here: this project only ever
+    // typechecks, and Vite does the building.
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": ["src/*"],
+      "@otp/domain": ["../../packages/domain/src/index.ts"],
+      "@otp/messaging": ["../../supabase/functions/_shared/messaging/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

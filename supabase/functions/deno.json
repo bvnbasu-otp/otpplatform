@@ -1,0 +1,26 @@
+{
+  "//": "Deno project config for the edge functions. Discovered by `deno test` when run from this directory; kept out of the root so the Node tooling above ignores it.",
+  "compilerOptions": {
+    "lib": ["deno.window", "esnext"],
+    "strict": true
+  },
+  "lint": {
+    "include": ["_shared/", "rfq-quotes-blind/", "rfq-quotes-revealed/", "supplier-magic-link/", "messaging-inbound/", "demo-reset/"],
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "fmt": {
+    "include": ["_shared/", "rfq-quotes-blind/", "rfq-quotes-revealed/", "supplier-magic-link/", "messaging-inbound/", "demo-reset/"],
+    "options": {
+      "lineWidth": 100,
+      "singleQuote": true,
+      "semiColons": true
+    }
+  },
+  "tasks": {
+    "test": "deno test --allow-none --no-lock _shared/",
+    "lint": "deno lint _shared/",
+    "check": "deno check _shared/**/*.ts rfq-quotes-blind/index.ts rfq-quotes-revealed/index.ts supplier-magic-link/index.ts messaging-inbound/index.ts demo-reset/index.ts"
+  }
+}

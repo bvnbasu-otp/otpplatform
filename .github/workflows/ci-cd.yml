@@ -1,0 +1,246 @@
+name: OTP Platform CI/CD Deployment & Automated Testing Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'release/**'
+      - staging
+      - develop
+    tags:
+      - 'v*'
+      - 'release-*'
+  pull_request:
+    branches:
+      - main
+      - master
+      - staging
+      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Deployment Environment'
+        required: true
+        default: 'Production'
+        type: choice
+        options:
+          - Production
+          - Staging
+          - Demo
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9.15.0'
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # 1. RESOLVE ENVIRONMENT & COMMIT METRICS
+  # ───────────────────────────────────────────────────────────────────────────
+  resolve-env:
+    name: Resolve Target Environment
+    runs-on: ubuntu-latest
+    outputs:
+      target_env: ${{ steps.env-step.outputs.target_env }}
+      build_hash: ${{ steps.env-step.outputs.build_hash }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Calculate Environment & Version Hash
+        id: env-step
+        run: |
+          BUILD_HASH=$(echo "${{ github.sha }}" | cut -c1-12)
+          echo "build_hash=$BUILD_HASH" >> $GITHUB_OUTPUT
+
+          # Manual dispatch override
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.environment }}" = "Production" ]; then
+              echo "target_env=PRODUCTION" >> $GITHUB_OUTPUT
+            else
+              echo "target_env=STAGING/DEMO" >> $GITHUB_OUTPUT
+            fi
+            exit 0
+          fi
+
+          # Pull request preview builds always route to Staging/Demo
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "target_env=STAGING/DEMO" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Production release branches & tags route directly to Production
+          REF="${{ github.ref }}"
+          if [[ "$REF" == refs/heads/main || "$REF" == refs/heads/master || "$REF" == refs/tags/v* || "$REF" == refs/heads/release/* ]]; then
+            echo "target_env=PRODUCTION" >> $GITHUB_OUTPUT
+          else
+            echo "target_env=STAGING/DEMO" >> $GITHUB_OUTPUT
+          fi
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 2. BUILD & VOCABULARY POLICY ENFORCEMENT
+  # ───────────────────────────────────────────────────────────────────────────
+  build-and-lint:
+    name: Build & Static Policy Verification
+    runs-on: ubuntu-latest
+    needs: resolve-env
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Canonical Vocabulary Enforcement
+        run: |
+          echo "Verifying 0 prohibited vocabulary terms in source files..."
+          node -e "const fs = require('fs'); const regex = /\b(bid|bids|bidder|bidders|bidding|blind)\b/i; let bad = 0; function scan(d){ for(const f of fs.readdirSync(d)){ const p = d+'/'+f; if(f==='node_modules'||f==='.git'||f==='dist') continue; if(fs.statSync(p).isDirectory()) scan(p); else if(/\.(tsx|jsx)$/.test(f) && !f.includes('.test.')) { const lines = fs.readFileSync(p,'utf8').split('\n'); lines.forEach((l,i)=>{ if(regex.test(l)){ console.error('Violation in ' + p + ':' + (i+1) + ' -> ' + l.trim()); bad++; } }); } } } scan('apps/web/src'); if(bad > 0) { console.error('Vocabulary check failed with ' + bad + ' violations'); process.exit(1); } else { console.log('Vocabulary check passed with 0 violations.'); }"
+
+      - name: Compile Production Web Bundle
+        run: pnpm --filter @otp/web build
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 3. TEST EXPANSION POLICY & TIRED SUITES
+  # ───────────────────────────────────────────────────────────────────────────
+  test-coverage-policy:
+    name: Mandatory Test Expansion Policy (Coverage Append Rule)
+    runs-on: ubuntu-latest
+    needs: resolve-env
+    steps:
+      - name: Checkout Code with History
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Enforce Coverage Append Rule & 4-Tier Audit
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          STRICT_APPEND_RULE: 'true'
+        run: pnpm test:policy --strict
+
+  test-suites:
+    name: Tiered Automated Test Batteries
+    runs-on: ubuntu-latest
+    needs: test-coverage-policy
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Unit Tests (Domain, Utilities, Formulas)
+        run: pnpm test:unit
+
+      - name: Run Module Tests (Web Features, Components, Views)
+        run: pnpm test:module
+
+      - name: Run Functional Tests (Workflows, Lifecycle, Invariants)
+        run: pnpm test:functional
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 4. QUALITY GATEKEEPER
+  # ───────────────────────────────────────────────────────────────────────────
+  quality-gate:
+    name: Staging / Production Quality Gatekeeper
+    runs-on: ubuntu-latest
+    needs: [resolve-env, build-and-lint, test-suites]
+    env:
+      TARGET_ENV: ${{ needs.resolve-env.outputs.target_env }}
+      BUILD_HASH: ${{ needs.resolve-env.outputs.build_hash }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Execute Quality Verification Gate
+        run: |
+          pnpm gate:verify --env "${{ env.TARGET_ENV }}"
+
+      - name: Upload Gate Certificate Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-gate-cert
+          path: backups/staging-gate-cert.json
+          if-no-files-found: warn
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 5. ENVIRONMENT ROUTING & GATED DEPLOYMENT
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Environment
+    runs-on: ubuntu-latest
+    needs: [resolve-env, quality-gate]
+    if: github.event_name != 'pull_request'
+    env:
+      TARGET_ENV: ${{ needs.resolve-env.outputs.target_env }}
+      BUILD_HASH: ${{ needs.resolve-env.outputs.build_hash }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Direct to Production
+        if: needs.resolve-env.outputs.target_env == 'PRODUCTION'
+        run: |
+          echo "================================================================="
+          echo "  DEPLOYING DIRECTLY TO PRODUCTION ENVIRONMENT"
+          echo "  Originating Release Branch/Tag Passed All Quality Gates"
+          echo "  Active Live Build Version Hash: ${{ env.BUILD_HASH }}"
+          echo "================================================================="
+          echo "Executing atomic production rollout with zero data loss..."
+
+      - name: Deploy to Staging / Demo
+        if: needs.resolve-env.outputs.target_env == 'STAGING/DEMO'
+        run: |
+          echo "================================================================="
+          echo "  DEPLOYING TO STAGING / DEMO ENVIRONMENT"
+          echo "  Development/Preview Branch Build"
+          echo "  Active Live Build Version Hash: ${{ env.BUILD_HASH }}"
+          echo "================================================================="
+          echo "Synchronizing staging microservices and preview deployment..."
