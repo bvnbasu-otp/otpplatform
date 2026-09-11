@@ -265,7 +265,7 @@ export function SignInForm({
       return;
     }
     setCodeSent(true);
-    setNotice(`We sent a six-digit code to ${normalizedEmail}. It expires in a few minutes.`);
+    setNotice(`We sent a verification code to ${normalizedEmail}. It expires in a few minutes.`);
   }
 
   async function submit() {
@@ -598,7 +598,7 @@ export function SignInForm({
       )}
 
       {method === 'code' && codeSent && (
-        <Field label="Six-digit code" required help="Check your inbox, including spam.">
+        <Field label="Verification code" required help="Check your inbox, including spam.">
           {({ id, describedBy, invalid }) => (
             <input
               id={id}
@@ -611,6 +611,7 @@ export function SignInForm({
               onChange={(event) => setCode(event.target.value)}
               className={controlClasses(invalid, 'tracking-[0.3em]')}
               data-testid="otp-code"
+              placeholder="Enter code"
               required
             />
           )}
