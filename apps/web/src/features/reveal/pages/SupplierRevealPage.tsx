@@ -111,7 +111,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
       <ProcurementStageNavigator
         currentLinearStep={activeLinearStep}
         currentStage="AWARDED"
-        orderTitle="Contract Gate & Supplier Reveal"
+        orderTitle="Contract Gate & Winner Reveal"
         orderReference={award ? `AWARD-${award.id.slice(0, 8)}` : `RFQ-${rfqId.slice(0, 8)}`}
         rfqId={rfqId}
         poId={existingPoId}
@@ -128,12 +128,12 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
           </span>
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate">
-              {activeLinearStep === 11 ? 'Contract Gate & Statutory Verification' : 'Reveal Winning Supplier'}
+              {activeLinearStep === 11 ? 'Contract Gate & Statutory Verification' : 'Winner Contact & GST Reveal'}
             </h1>
             <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
               {activeLinearStep === 11
                 ? 'Validate terms, milestone payment structure, and sign off intent before unmasking.'
-                : 'Winning supplier identity is unmasked with legal business credentials and PO generation.'}
+                : 'Winning supplier contact & GST details are revealed; losing quotes stay confidential.'}
             </p>
           </div>
         </div>
@@ -157,7 +157,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
       )}
 
       {/* Main Content Pane */}
-      <div className="zero-scroll-pane mt-2 space-y-2">
+      <div className="zero-scroll-pane mt-2 pb-20 sm:pb-12 space-y-2">
         {!award && (
           <p className="text-xs text-muted-foreground p-3 bg-muted/20 rounded border">
             No award recorded yet.{' '}

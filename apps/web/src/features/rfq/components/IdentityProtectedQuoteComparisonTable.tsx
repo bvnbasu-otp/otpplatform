@@ -73,7 +73,7 @@ export function IdentityProtectedQuoteComparisonTable({
         className="rounded-lg border bg-card p-8 text-center text-muted-foreground"
         data-testid="identity-protected-quotes-empty"
       >
-        No quotes available for identity-protected evaluation yet.
+        No quotes available for fair anonymous comparison yet.
       </div>
     );
   }
@@ -237,7 +237,7 @@ export function IdentityProtectedQuoteComparisonTable({
                       )}
                       {quote.isGstVerified && (
                         <span
-                          title="Government-Registered Taxpayer with Active GSTIN (Identity shielded until award)"
+                          title="Government-Registered Taxpayer with Active GSTIN (Shielded during comparison)"
                           className="inline-flex items-center gap-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
                         >
                           ✓ GST Verified

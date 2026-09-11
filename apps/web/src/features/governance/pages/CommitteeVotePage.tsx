@@ -197,12 +197,12 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       <ProcurementStageNavigator
         currentLinearStep={myVote ? 8 : 7}
         currentStage="EVALUATING"
-        orderTitle="Voting Room & Cast Your Vote"
+        orderTitle="Committee Voting Room & Cast Your Vote"
         orderReference={`RFQ-${rfqId.slice(0, 8)}`}
         rfqId={rfqId}
         role="buyer"
         backToUrl={`/rfq/${rfqId}/evaluation`}
-        backToLabel="Step 6: Compare Quotes"
+        backToLabel="Step 6: Fair Comparison"
       />
 
       {/* Header & Quick Action Row */}
@@ -213,7 +213,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
           </span>
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate">
-              {myVote ? 'Cast / Recast Your Vote (Ballot Active)' : 'Voting Room & COI Clearance'}
+              {myVote ? 'Cast / Recast Your Vote (Ballot Active)' : 'Committee Voting Room & COI Clearance'}
             </h1>
             <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
               Sealed anonymous evaluation · Committee quorum tracking · Mandatory Conflict of Interest (COI) clearance
@@ -257,7 +257,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       )}
 
       {/* Main Content Pane */}
-      <div className="zero-scroll-pane mt-2 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+      <div className="zero-scroll-pane mt-2 pb-20 sm:pb-12 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
         {/* Left Column (7 cols): Sealed Quotes & Vote Ballot */}
         <div className="lg:col-span-7 space-y-2">
           {/* 1. Sealed Quotes to Evaluate */}

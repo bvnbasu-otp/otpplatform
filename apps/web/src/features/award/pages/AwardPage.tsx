@@ -206,7 +206,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
       )}
 
       {/* Main Content Multi-Column Layout */}
-      <div className="zero-scroll-pane mt-2 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+      <div className="zero-scroll-pane mt-2 pb-20 sm:pb-12 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
         {/* Left / Main Section (7 cols): Award Form or Locked Card */}
         <div className="lg:col-span-7 space-y-2">
           {award ? (
@@ -237,7 +237,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                       to={`/rfq/${rfqId}/reveal`}
                       className="rounded bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
                     >
-                      Step 11: Reveal Winning Supplier →
+                      Step 12: Winner Contact &amp; GST Reveal →
                     </Link>
                     <button
                       type="button"

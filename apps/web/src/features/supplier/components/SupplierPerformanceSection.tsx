@@ -118,7 +118,7 @@ export function SupplierPerformanceSection({
             </li>
             <li className="flex items-start gap-1.5">
               <span className="text-primary font-bold">2.</span>
-              <span><strong>Identity-Protected Evaluation Scoring:</strong> Your verified rating adds directly to your objective merit score in the Evaluation &amp; Voting Room.</span>
+              <span><strong>Fair Anonymous Comparison Scoring:</strong> Your verified rating adds directly to your objective merit score in the Evaluation &amp; Committee Voting Room.</span>
             </li>
             <li className="flex items-start gap-1.5">
               <span className="text-primary font-bold">3.</span>

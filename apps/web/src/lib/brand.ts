@@ -8,10 +8,10 @@ export const PRODUCT_TAGLINE = 'Tell us what you need. Let suppliers compete. Yo
 export const PRODUCT_CONCEPT =
   'A local procurement network and procurement operating system — one engine, any buyer, any locality, any supplier network.';
 
-export const IDENTITY_PROTECTED_RFQ_LABEL = 'Identity-Protected Evaluation';
+export const IDENTITY_PROTECTED_RFQ_LABEL = 'Fair Anonymous Comparison';
 
 export const IDENTITY_PROTECTED_RFQ_DESCRIPTION =
-  'Supplier and buyer identities stay hidden during commercial comparison. Evaluation & Voting Room decides on merit; identity is revealed only after award.';
+  'Supplier and buyer identities stay hidden during commercial comparison. Evaluation & Voting Room decides on merit; winning supplier contact & GST details are revealed only after award.';
 
 /** Legacy constant - use IDENTITY_PROTECTED_RFQ_LABEL instead */
 export const BLIND_RFQ_LABEL = IDENTITY_PROTECTED_RFQ_LABEL;

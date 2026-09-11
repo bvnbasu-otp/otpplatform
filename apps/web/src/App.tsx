@@ -48,7 +48,7 @@ function RfqIdentityProtectedComparisonRoute() {
   const pilot = getPilotByRfqId(rfqId);
   const title = pilot
     ? `${pilot.requirementTitle} — RFQ`
-    : 'RFQ — Identity-Protected Evaluation';
+    : 'RFQ — Fair Anonymous Comparison';
   return <RfqIdentityProtectedComparisonPage rfqId={rfqId} rfqTitle={title} />;
 }
 

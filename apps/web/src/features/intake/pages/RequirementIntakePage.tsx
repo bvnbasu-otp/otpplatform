@@ -336,7 +336,7 @@ export function RequirementIntakePage() {
       )}
 
       {/* Internal Scroll Content Area */}
-      <div className="zero-scroll-pane mt-2">
+      <div className="zero-scroll-pane mt-2 pb-20 sm:pb-12">
         {stepIndex === 0 && (
           <ScopeClassificationStep
             initialText={draft?.originalText ?? handoff}
