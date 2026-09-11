@@ -49,18 +49,24 @@ file_size_limit = "50MiB"
 
 [auth]
 enabled = true
-site_url = "https://incoming-reductions-incoming-stevens.trycloudflare.com"
+site_url = "https://otpplatform-theta.vercel.app"
 additional_redirect_urls = [
   "http://127.0.0.1:3000",
   "http://127.0.0.1:3000/**",
   "http://localhost:3000",
   "http://localhost:3000/**",
+  "http://localhost:5173",
+  "http://localhost:5173/**",
   "http://opentradeprocurement.ai:3000",
-  "https://incoming-reductions-incoming-stevens.trycloudflare.com",
-  "https://incoming-reductions-incoming-stevens.trycloudflare.com/**",
-  "https://incoming-reductions-incoming-stevens.trycloudflare.com/auth/callback",
-  "https://incoming-reductions-incoming-stevens.trycloudflare.com/reset-password",
-  "https://incoming-reductions-incoming-stevens.trycloudflare.com/q/**",
+  "https://otpplatform-theta.vercel.app",
+  "https://otpplatform-theta.vercel.app/**",
+  "https://otpplatform-theta.vercel.app/auth/callback",
+  "https://otpplatform-theta.vercel.app/reset-password",
+  "https://otpplatform-theta.vercel.app/q/**",
+  "https://otpplatform.vercel.app",
+  "https://otpplatform.vercel.app/**",
+  "https://*.vercel.app",
+  "https://*.vercel.app/**",
   "https://*.trycloudflare.com"
 ]
 jwt_expiry = 3600

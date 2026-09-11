@@ -15,17 +15,21 @@ const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabaseAnonKey = envKey || LOCAL_ANON_KEY;
 
 function resolveSupabaseUrl(): string {
-  // If running in a browser accessed through an external hostname or Cloudflare tunnel,
-  // route through the same-origin proxy (window.location.origin) so all requests use standard HTTPS port 443.
+  // If explicitly configured via environment variable (e.g. Vercel production build or Supabase Cloud),
+  // prioritize it so client requests target the correct Supabase backend.
+  if (envUrl) return envUrl;
+
+  // If running in a browser accessed through a self-hosted reverse-proxy monolith (not Vercel),
+  // route through the same-origin proxy (window.location.origin).
   if (
     typeof window !== 'undefined' &&
     window.location.hostname &&
     window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1'
+    window.location.hostname !== '127.0.0.1' &&
+    !window.location.hostname.endsWith('.vercel.app')
   ) {
     return window.location.origin;
   }
-  if (envUrl) return envUrl;
   return LOCAL_SUPABASE_URL;
 }
 

@@ -10,9 +10,9 @@ Write-Host "Generated DEMO_RESET_SECRET: $DEMO_RESET_SECRET" -ForegroundColor Gr
 Write-Host "Save this value - you'll need it!" -ForegroundColor Yellow
 Write-Host ""
 
-# 2. Cloudflare Tunnel URLs
-$APP_URL = "https://incoming-reductions-incoming-stevens.trycloudflare.com"
-$WEB_ORIGIN = "https://incoming-reductions-incoming-stevens.trycloudflare.com"
+# 2. Production Vercel App URLs
+$APP_URL = "https://otpplatform-theta.vercel.app"
+$WEB_ORIGIN = "https://otpplatform-theta.vercel.app"
 
 # 3. Messaging Provider Configuration
 Write-Host "Choose Messaging Provider:" -ForegroundColor Cyan
