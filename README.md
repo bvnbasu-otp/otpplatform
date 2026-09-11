@@ -182,3 +182,5 @@ redirect URLs in [supabase/config.toml](supabase/config.toml).
 ## License
 
 Proprietary — OTP Platform
+#   o t p p l a t f o r m  
+ 
