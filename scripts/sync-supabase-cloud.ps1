@@ -14,6 +14,7 @@ param (
   [Parameter(Position=0)]
   [string]$ProjectRef = "",
 
+  [string]$AnonKey = "",
   [string]$SiteUrl = "https://otpplatform-theta.vercel.app",
   [switch]$SkipDbPush
 )
@@ -86,6 +87,9 @@ Write-Host ""
 Write-Host "[4/4] Verifying connection with keep-alive heartbeat probe..." -ForegroundColor Yellow
 $cloudUrl = "https://$ProjectRef.supabase.co"
 $env:SUPABASE_URL = $cloudUrl
+if ($AnonKey) {
+  $env:SUPABASE_ANON_KEY = $AnonKey
+}
 if (Get-Command pnpm -ErrorAction SilentlyContinue) {
   & pnpm.cmd keepalive
 } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
