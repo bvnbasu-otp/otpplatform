@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-  OTP Platform — Supabase Cloud Synchronization & Migration Deployment Tool
+  OTP Platform -- Supabase Cloud Synchronization and Migration Deployment Tool
 .DESCRIPTION
   Automates linking the local codebase to your Supabase Cloud project and pushing
   all 156 database migrations, security policies, and Edge Function secrets.
 
 .EXAMPLE
-  .\scripts\sync-supabase-cloud.ps1 -ProjectRef "abcdefghijklmnopqrst"
+  .\scripts\sync-supabase-cloud.ps1 -ProjectRef "qsuvtcezffomtwzwyrso"
 #>
 
 [CmdletBinding()]
@@ -28,8 +28,9 @@ if ($PSScriptRoot) {
 
 Set-Location $WorkspaceRoot
 
-Write-Host "`n=================================================================" -ForegroundColor Cyan
-Write-Host "  OTP PLATFORM — SUPABASE CLOUD DEPLOYMENT & MIGRATION SYNC" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "=================================================================" -ForegroundColor Cyan
+Write-Host "  OTP PLATFORM -- SUPABASE CLOUD DEPLOYMENT AND MIGRATION SYNC" -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "Workspace : $WorkspaceRoot" -ForegroundColor DarkGray
 Write-Host "Site URL  : $SiteUrl" -ForegroundColor DarkGray
@@ -39,7 +40,7 @@ Write-Host ""
 $supabaseCmd = Get-Command supabase -ErrorAction SilentlyContinue
 if (-not $supabaseCmd) {
   Write-Host "[ERROR] Supabase CLI is not found in PATH." -ForegroundColor Red
-  Write-Host "        Install it using: winget install Supabase.CLI  (or npm install -g supabase)" -ForegroundColor Yellow
+  Write-Host "        Install it using: npx supabase --help (or npm install -g supabase)" -ForegroundColor Yellow
   Write-Host "        Then re-run this script." -ForegroundColor Yellow
   exit 1
 }
@@ -55,16 +56,14 @@ if (-not $ProjectRef) {
   }
 }
 
-Write-Host "`n[1/4] Linking local codebase to Supabase Cloud project: $ProjectRef..." -ForegroundColor Yellow
+Write-Host ""
+Write-Host "[1/4] Linking local codebase to Supabase Cloud project: $ProjectRef..." -ForegroundColor Yellow
 & supabase link --project-ref $ProjectRef
-
-if ($LASTEXITCODE -ne 0) {
-  Write-Host "[WARN] If prompted for DB password, ensure you entered your database password from Supabase dashboard." -ForegroundColor Yellow
-}
 
 # 3. Push Database Migrations (00001 to 00156)
 if (-not $SkipDbPush) {
-  Write-Host "`n[2/4] Pushing all 156 tracked schema migrations to Supabase Cloud..." -ForegroundColor Yellow
+  Write-Host ""
+  Write-Host "[2/4] Pushing all 156 tracked schema migrations to Supabase Cloud..." -ForegroundColor Yellow
   & supabase db push
   if ($LASTEXITCODE -eq 0) {
     Write-Host "[OK] All database migrations synchronized to Supabase Cloud successfully." -ForegroundColor Green
@@ -74,7 +73,8 @@ if (-not $SkipDbPush) {
 }
 
 # 4. Set Edge Function Secrets
-Write-Host "`n[3/4] Configuring Supabase Cloud Edge Function secrets..." -ForegroundColor Yellow
+Write-Host ""
+Write-Host "[3/4] Configuring Supabase Cloud Edge Function secrets..." -ForegroundColor Yellow
 & supabase secrets set APP_URL="$SiteUrl"
 & supabase secrets set WEB_ORIGIN="$SiteUrl"
 & supabase secrets set MESSAGING_PROVIDER="mock"
@@ -82,7 +82,8 @@ Write-Host "`n[3/4] Configuring Supabase Cloud Edge Function secrets..." -Foregr
 Write-Host "[OK] Secrets set for APP_URL and WEB_ORIGIN -> $SiteUrl" -ForegroundColor Green
 
 # 5. Run Live Keep-Alive Heartbeat Test
-Write-Host "`n[4/4] Verifying connection with keep-alive heartbeat probe..." -ForegroundColor Yellow
+Write-Host ""
+Write-Host "[4/4] Verifying connection with keep-alive heartbeat probe..." -ForegroundColor Yellow
 $cloudUrl = "https://$ProjectRef.supabase.co"
 $env:SUPABASE_URL = $cloudUrl
 if (Get-Command pnpm -ErrorAction SilentlyContinue) {
@@ -91,12 +92,13 @@ if (Get-Command pnpm -ErrorAction SilentlyContinue) {
   & npx.cmd tsx "$WorkspaceRoot\scripts\ping-supabase-keep-alive.ts"
 }
 
-Write-Host "`n=================================================================" -ForegroundColor Cyan
-Write-Host "  MIGRATION & CLOUD SYNC COMPLETE" -ForegroundColor Green
+Write-Host ""
+Write-Host "=================================================================" -ForegroundColor Cyan
+Write-Host "  MIGRATION AND CLOUD SYNC COMPLETE" -ForegroundColor Green
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "1. In your Vercel Dashboard (https://vercel.com):" -ForegroundColor White
 Write-Host "   Set VITE_SUPABASE_URL = $cloudUrl" -ForegroundColor DarkCyan
-Write-Host "   Set VITE_SUPABASE_ANON_KEY = <Your Project Anon Key>" -ForegroundColor DarkCyan
+Write-Host "   Set VITE_SUPABASE_ANON_KEY = [Your Project Anon Key]" -ForegroundColor DarkCyan
 Write-Host "   Set VITE_APP_URL = $SiteUrl" -ForegroundColor DarkCyan
 Write-Host ""
 Write-Host "2. In your Supabase Dashboard (Authentication -> URL Configuration):" -ForegroundColor White
@@ -111,5 +113,5 @@ Write-Host "     - http://localhost:3000/**" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "3. In your GitHub Repository Secrets (for 24/7 Keep-Alive):" -ForegroundColor White
 Write-Host "   Add secret: VITE_SUPABASE_URL = $cloudUrl" -ForegroundColor DarkCyan
-Write-Host "   Add secret: VITE_SUPABASE_ANON_KEY = <Your Project Anon Key>" -ForegroundColor DarkCyan
+Write-Host "   Add secret: VITE_SUPABASE_ANON_KEY = [Your Project Anon Key]" -ForegroundColor DarkCyan
 Write-Host ""
