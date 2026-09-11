@@ -265,7 +265,7 @@ export function SignInForm({
       return;
     }
     setCodeSent(true);
-    setNotice(`We sent a verification code to ${normalizedEmail}. It expires in a few minutes.`);
+    setNotice(`We sent an eight-digit code to ${normalizedEmail}. It expires in a few minutes.`);
   }
 
   async function submit() {
@@ -369,7 +369,7 @@ export function SignInForm({
           <div>
             <h3 className="text-base font-semibold text-foreground">Reset your password</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Choose your preferred channel to receive a 6-digit verification code.
+              Choose your preferred channel to receive an 8-digit verification code.
             </p>
           </div>
 
@@ -417,9 +417,9 @@ export function SignInForm({
               </p>
               <p className="text-emerald-800">
                 {resetChannel === 'WHATSAPP' ? (
-                  <>We sent a 6-digit verification code to WhatsApp on <strong>{resetPhone}</strong>. Redirecting to set new password...</>
+                  <>We sent an 8-digit verification code to WhatsApp on <strong>{resetPhone}</strong>. Redirecting to set new password...</>
                 ) : (
-                  <>Check your inbox at <strong>{email}</strong>. Click the link in the email or enter the 6-digit code on the reset page.</>
+                  <>Check your inbox at <strong>{email}</strong>. Click the link in the email or enter the 8-digit code on the reset page.</>
                 )}
               </p>
               <div className="flex items-center gap-3 pt-1">
@@ -427,7 +427,7 @@ export function SignInForm({
                   to={`/reset-password?identifier=${encodeURIComponent(resetChannel === 'WHATSAPP' ? resetPhone : email)}`}
                   className="inline-flex items-center gap-1 font-bold text-action hover:underline"
                 >
-                  Enter 6-Digit Code Now →
+                  Enter 8-Digit Code Now →
                 </Link>
                 <button
                   type="button"
@@ -515,7 +515,7 @@ export function SignInForm({
                   to="/reset-password"
                   className="text-action hover:underline"
                 >
-                  Already have a 6-digit code? →
+                  Already have an 8-digit code? →
                 </Link>
               </div>
             </form>
@@ -598,7 +598,7 @@ export function SignInForm({
       )}
 
       {method === 'code' && codeSent && (
-        <Field label="Verification code" required help="Check your inbox, including spam.">
+        <Field label="Eight-digit code" required help="Check your inbox, including spam.">
           {({ id, describedBy, invalid }) => (
             <input
               id={id}
@@ -611,7 +611,7 @@ export function SignInForm({
               onChange={(event) => setCode(event.target.value)}
               className={controlClasses(invalid, 'tracking-[0.3em]')}
               data-testid="otp-code"
-              placeholder="Enter code"
+              placeholder="Enter 8-digit code"
               required
             />
           )}

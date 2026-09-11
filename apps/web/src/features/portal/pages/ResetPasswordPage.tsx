@@ -151,7 +151,7 @@ export function ResetPasswordPage() {
       }
 
       setCodeIdentifier(res.phone || cleanInput);
-      setRequestNotice(`We sent a 6-digit verification code via WhatsApp to ${res.phone || cleanInput}.`);
+      setRequestNotice(`We sent an 8-digit verification code via WhatsApp to ${res.phone || cleanInput}.`);
       setMode('verify');
     } else {
       const normalizedEmail = cleanInput.toLowerCase();
@@ -163,7 +163,7 @@ export function ResetPasswordPage() {
       }
 
       setCodeIdentifier(normalizedEmail);
-      setRequestNotice(`Password reset email sent to ${normalizedEmail}. Click the link in the email or enter the 6-digit code below.`);
+      setRequestNotice(`Password reset email sent to ${normalizedEmail}. Click the link in the email or enter the 8-digit code below.`);
       setMode('verify');
     }
   };
@@ -203,7 +203,7 @@ export function ResetPasswordPage() {
       }
       if (!code.trim() || code.trim().length < 6) {
         setBusy(false);
-        setError('Please enter the 6-digit verification code received on WhatsApp or Email.');
+        setError('Please enter the verification code received on WhatsApp or Email.');
         return;
       }
 
@@ -211,7 +211,7 @@ export function ResetPasswordPage() {
       setBusy(false);
 
       if (!res.ok) {
-        setError(res.error || 'Verification failed. Please check your 6-digit code.');
+        setError(res.error || 'Verification failed. Please check your verification code.');
         return;
       }
     }
@@ -501,7 +501,7 @@ export function ResetPasswordPage() {
                       </Field>
 
                       <Field
-                        label="6-Digit Verification Code"
+                        label="Verification Code (8 Digits)"
                         required
                         help="From your WhatsApp message or reset email"
                       >
@@ -515,7 +515,7 @@ export function ResetPasswordPage() {
                             value={code}
                             onChange={(e) => setCode(e.target.value.trim())}
                             className={`${controlClasses(invalid)} font-mono tracking-widest text-center text-lg`}
-                            placeholder="123456"
+                            placeholder="Enter 8-digit code"
                             required
                             autoFocus={Boolean(codeIdentifier && !code)}
                           />
