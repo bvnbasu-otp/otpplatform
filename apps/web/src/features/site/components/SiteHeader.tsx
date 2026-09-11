@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth';
 import { supabase } from '@/lib/supabase';
 import { OtpLogo } from '@/components/ui/OtpLogo';
 import { ThemeToggle } from '@/features/theme';
+import { DemoPersonaSwitcher } from '@/components/demo/DemoPersonaSwitcher';
 
 interface SiteLink {
   label: string;
@@ -108,8 +109,9 @@ export function SiteHeader() {
           </nav>
         </div>
 
-        {/* Right Action Cluster (User Avatar / Profile Chip, Theme, Auth CTAs, Hamburger) */}
+        {/* Right Action Cluster (Demo Persona Switcher, User Avatar / Profile Chip, Theme, Auth CTAs, Hamburger) */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <DemoPersonaSwitcher />
           <ThemeToggle variant="menu" />
 
           {user ? (

@@ -1,6 +1,7 @@
 export { AttributeFields } from './AttributeFields';
 export type { AttributeFieldsProps } from './AttributeFields';
 export { ScopeClassificationStep } from './steps/ScopeClassificationStep';
+export { VoiceRequirementDictation } from './VoiceRequirementDictation';
 export { TechnicalSpecificationsStep } from './steps/TechnicalSpecificationsStep';
 export { LogisticsAndCommercialStep } from './steps/LogisticsAndCommercialStep';
 export { SourcingAndReviewStep } from './steps/SourcingAndReviewStep';

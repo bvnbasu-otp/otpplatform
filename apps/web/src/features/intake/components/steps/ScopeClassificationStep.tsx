@@ -7,6 +7,7 @@ import {
 } from '@otp/domain';
 import { Badge, Button, Card, Field, Input, NumberInput, Select, Textarea } from '@/components/ui';
 import type { IntakeDraft } from '../../types/intake-draft';
+import { VoiceRequirementDictation } from '../VoiceRequirementDictation';
 
 export interface ScopeClassificationStepProps {
   initialText: string;
@@ -169,6 +170,18 @@ export function ScopeClassificationStep({
           )
         }
       >
+        <div className="mb-3">
+          <VoiceRequirementDictation
+            onTranscript={(dictatedText) => {
+              setError(null);
+              setText(dictatedText);
+              if (dictatedText.trim().length >= 8) {
+                void runParser(dictatedText.trim());
+              }
+            }}
+          />
+        </div>
+
         <Field label="Requirement Description" error={error} required>
           {({ id, describedBy, invalid }) => (
             <Textarea

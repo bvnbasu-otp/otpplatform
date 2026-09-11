@@ -11,15 +11,11 @@ import {
 } from '../api/quick-quote';
 
 /**
- * Finishing a quote that started as a text message.
+ * Finishing a quote that started as a WhatsApp / SMS message.
  *
- * The person on this page is a contractor who replied to an SMS on a phone, has
- * no account, and may never have used OTP before. So it is one screen, no
- * navigation, no sign-in, and the price they already sent is filled in — they
- * should never have to type a number twice.
- *
- * It shows them exactly what the enquiry is and nothing about who is asking,
- * because that is the same protection that keeps their own quote private.
+ * Designed specifically for ultra-compact mobile viewports (sub-360px) and busy,
+ * hands-on technicians on job sites. Includes large tap targets (44px+), one-tap
+ * numeric presets for GST, delivery, and warranty, and an automatic billable calculator.
  */
 export function QuickQuotePage() {
   const { token } = useParams<{ token: string }>();
@@ -66,13 +62,17 @@ export function QuickQuotePage() {
     return () => {
       cancelled = true;
     };
-    // Redemption is single-use, so this must run exactly once per token.
   }, [token]);
 
   if (isLoading) {
     return (
       <QuickQuoteShell>
-        <p className="text-sm text-slate">Opening Your Enquiry…</p>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Opening your WhatsApp Enquiry…
+          </p>
+        </div>
       </QuickQuoteShell>
     );
   }
@@ -81,14 +81,16 @@ export function QuickQuotePage() {
     const described = describeQuickQuoteFailure(failure ?? 'UNAVAILABLE');
     return (
       <QuickQuoteShell>
-        <h1 className="text-lg font-semibold text-navy">{described.title}</h1>
-        <p className="mt-2 text-sm text-slate">{described.detail}</p>
-        <Link
-          to="/signup?side=supplier"
-          className="mt-6 inline-block text-sm font-medium text-action underline"
-        >
-          Create a supplier account instead
-        </Link>
+        <div className="rounded-xl border border-red-200 bg-red-50/70 p-4 dark:border-red-900/60 dark:bg-red-950/30">
+          <h1 className="text-base font-bold text-red-900 dark:text-red-200">{described.title}</h1>
+          <p className="mt-1.5 text-xs leading-relaxed text-red-800 dark:text-red-300">{described.detail}</p>
+          <Link
+            to="/signup?side=supplier"
+            className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90"
+          >
+            Create Supplier Account Instead
+          </Link>
+        </div>
       </QuickQuoteShell>
     );
   }
@@ -96,24 +98,25 @@ export function QuickQuotePage() {
   if (submitted) {
     return (
       <QuickQuoteShell>
-        <h1 className="text-lg font-semibold text-navy">Your quote is in</h1>
-        <p className="mt-2 text-sm text-slate">
-          {submitted.reference
-            ? `Quote submitted for ${submitted.reference}.`
-            : 'Quote submitted.'}{' '}
-          The buying committee will compare it against the other quotes without
-          seeing your name.
-        </p>
-        <p className="mt-4 text-sm text-slate">
-          To change your price before the deadline, just reply to our message with
-          the new figure.
-        </p>
-        <Link
-          to="/signup?side=supplier"
-          className="mt-6 inline-block text-sm font-medium text-action underline"
-        >
-          Create an account to track this and future enquiries
-        </Link>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-center dark:border-emerald-900/60 dark:bg-emerald-950/30">
+          <span className="text-3xl">✅</span>
+          <h1 className="mt-2 text-lg font-black text-emerald-900 dark:text-emerald-200">Quote Submitted!</h1>
+          <p className="mt-1.5 text-xs leading-relaxed text-emerald-800 dark:text-emerald-300">
+            {submitted.reference
+              ? `Your quote (${submitted.reference}) has been securely recorded.`
+              : 'Your quote has been securely recorded.'}{' '}
+            The buyer and committee will compare it anonymously on merit.
+          </p>
+          <div className="mt-3 rounded-lg border border-emerald-200 bg-card p-2.5 text-left text-xs text-muted-foreground">
+            💡 <strong>Need to update your quote?</strong> Just tap the WhatsApp link again or reply with a new price before the deadline.
+          </div>
+          <Link
+            to="/signup?side=supplier"
+            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90"
+          >
+            Create Free Account to Track Future Enquiries
+          </Link>
+        </div>
       </QuickQuoteShell>
     );
   }
@@ -159,8 +162,8 @@ function QuickQuoteForm({
     return '0';
   });
   const [transportCost, setTransportCost] = useState(String(prefilled.transportCost ?? 0));
-  const [deliveryDays, setDeliveryDays] = useState(String(prefilled.deliveryDays ?? ''));
-  const [warrantyMonths, setWarrantyMonths] = useState(String(prefilled.warrantyMonths ?? ''));
+  const [deliveryDays, setDeliveryDays] = useState(String(prefilled.deliveryDays ?? '3'));
+  const [warrantyMonths, setWarrantyMonths] = useState(String(prefilled.warrantyMonths ?? '0'));
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -170,10 +173,12 @@ function QuickQuoteForm({
     const b = num(val);
     if (b > 0) {
       setGstAmount(String(Math.round(b * (gstRate / 100))));
+    } else {
+      setGstAmount('0');
     }
   };
 
-  const handleGstRateChange = (rate: number) => {
+  const handleGstRateSelect = (rate: number) => {
     setGstRate(rate);
     const b = num(basePrice);
     if (b > 0) {
@@ -209,8 +214,6 @@ function QuickQuoteForm({
       return;
     }
 
-    // A closed enquiry or a dead session replaces the form; a bad number is
-    // fixable in place, so it stays inline.
     if (result.reason === 'INVALID_AMOUNT') {
       setError(describeQuickQuoteFailure(result.reason).detail);
     } else {
@@ -218,127 +221,244 @@ function QuickQuoteForm({
     }
   }
 
+  const GST_SLABS = [
+    { label: '18% Std', rate: 18 },
+    { label: '12% Fab', rate: 12 },
+    { label: '5% Basic', rate: 5 },
+    { label: '0% Nil', rate: 0 },
+    { label: '28% Hvy', rate: 28 },
+  ];
+
+  const DELIVERY_PRESETS = ['1', '2', '3', '5', '7', '14'];
+  const WARRANTY_PRESETS = [
+    { label: 'None', months: '0' },
+    { label: '3 Mo', months: '3' },
+    { label: '6 Mo', months: '6' },
+    { label: '1 Yr', months: '12' },
+  ];
+
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="space-y-6">
-      <header>
-        {rfq.isDemo && (
-          <span className="mb-2 inline-block rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-            Demo enquiry
+    <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
+      {/* 1. Job Summary Card - High Contrast & Compact */}
+      <header className="rounded-xl border bg-card p-3 shadow-2xs">
+        <div className="flex items-center justify-between gap-1.5 border-b pb-2">
+          <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+            Ref: {rfq.publicRef}
           </span>
-        )}
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-          Enquiry {rfq.publicRef}
-        </p>
-        <h1 className="mt-1 text-xl font-semibold text-navy">
-          {rfq.title ?? rfq.subcategory ?? rfq.category ?? 'Enquiry'}
+          <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800 dark:text-emerald-300 border border-emerald-300">
+            🛡️ {rfq.alias || 'Anonymous Supplier'}
+          </span>
+        </div>
+
+        <h1 className="mt-2 text-sm font-extrabold text-foreground leading-snug">
+          {rfq.title ?? rfq.subcategory ?? rfq.category ?? 'Procurement Enquiry'}
         </h1>
-        <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-          <Fact label="Quantity" value={quantityLabel(rfq.quantity, rfq.unit)} />
-          <Fact label="Location" value={rfq.location} />
-          <Fact label="Needed by" value={neededBy(rfq)} />
-          <Fact label="Quotes close" value={formatDate(rfq.quoteDeadline)} />
-          {/* Named only if the buyer chose to be. */}
-          <Fact label="Buyer" value={rfq.buyerDisplay} />
-          <Fact label="You are quoting as" value={rfq.alias} />
-        </dl>
+
+        <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-lg bg-muted/40 p-2 text-[11px]">
+          <div>
+            <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Quantity:</span>
+            <span className="font-bold text-foreground">{quantityLabel(rfq.quantity, rfq.unit) || 'As specified'}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Location:</span>
+            <span className="font-bold text-foreground truncate block">{rfq.location || 'Local cluster'}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Needed By:</span>
+            <span className="font-bold text-foreground">{neededBy(rfq) || 'Immediate'}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Buyer:</span>
+            <span className="font-bold text-foreground truncate block">{rfq.buyerDisplay || 'Verified Buyer'}</span>
+          </div>
+        </div>
       </header>
 
-      {quote?.snapshot.basePrice != null && !quote.submitted && (
-        <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate">
-          We filled in the ₹{Number(quote.snapshot.basePrice).toLocaleString('en-IN')} you
-          sent us. Change it here if it needs changing — nothing is submitted until you
-          press the button below.
-        </p>
-      )}
+      {/* 2. Base Price Input - Big & Finger Friendly */}
+      <div className="rounded-xl border bg-card p-3 shadow-2xs space-y-2">
+        <label className="block">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+              1. Your Base Quote Amount (₹) <span className="text-red-500">*</span>
+            </span>
+            <span className="text-[10px] text-muted-foreground">Excl. GST</span>
+          </div>
+          <div className="relative mt-1.5">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-base font-bold text-muted-foreground">
+              ₹
+            </span>
+            <input
+              type="number"
+              min={1}
+              step="any"
+              inputMode="decimal"
+              placeholder="e.g. 15000"
+              value={basePrice}
+              onChange={(e) => handleBasePriceChange(e.target.value)}
+              className="w-full rounded-xl border-2 border-primary/40 bg-background py-3 pl-8 pr-3 text-lg font-black text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[48px]"
+              required
+              autoFocus
+            />
+          </div>
+        </label>
 
-      {quote?.submitted && (
-        <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate">
-          You have already submitted a quote for this enquiry. Sending this form again
-          replaces it with a new version, and the buyer sees only the latest.
-        </p>
-      )}
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Money
-          label="Your Base Price (₹)"
-          value={basePrice}
-          onChange={handleBasePriceChange}
-          required
-          autoFocus
-        />
-
+        {/* GST Slab Selector Chips (44px min tap targets) */}
         <div>
-          <label className="block text-sm">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-navy">GST % Slab</span>
-              <span className="text-xs text-emerald-600 font-semibold">Auto-calculate</span>
+          <span className="text-[11px] font-semibold text-muted-foreground block mb-1">
+            GST % Slab (Auto-Calculates):
+          </span>
+          <div className="grid grid-cols-5 gap-1">
+            {GST_SLABS.map((slab) => {
+              const active = gstRate === slab.rate;
+              return (
+                <button
+                  key={slab.rate}
+                  type="button"
+                  onClick={() => handleGstRateSelect(slab.rate)}
+                  className={`min-h-[40px] rounded-lg text-center text-xs font-bold transition flex items-center justify-center border ${
+                    active
+                      ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
+                      : 'bg-muted/50 text-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  {slab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Delivery & Warranty One-Tap Presets */}
+      <div className="rounded-xl border bg-card p-3 shadow-2xs space-y-3">
+        {/* Delivery Days */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+              2. Delivery Turnaround <span className="text-red-500">*</span>
+            </span>
+            <span className="text-xs font-bold text-primary">{deliveryDays ? `${deliveryDays} Days` : '—'}</span>
+          </div>
+          <div className="grid grid-cols-6 gap-1">
+            {DELIVERY_PRESETS.map((days) => {
+              const active = deliveryDays === days;
+              return (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setDeliveryDays(days)}
+                  className={`min-h-[40px] rounded-lg text-xs font-bold transition flex items-center justify-center border ${
+                    active
+                      ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
+                      : 'bg-muted/50 text-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  {days}d
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Warranty Presets */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+              3. Warranty SLA
+            </span>
+            <span className="text-xs font-bold text-primary">{warrantyMonths === '0' ? 'None' : `${warrantyMonths} Months`}</span>
+          </div>
+          <div className="grid grid-cols-4 gap-1">
+            {WARRANTY_PRESETS.map((w) => {
+              const active = warrantyMonths === w.months;
+              return (
+                <button
+                  key={w.months}
+                  type="button"
+                  onClick={() => setWarrantyMonths(w.months)}
+                  className={`min-h-[40px] rounded-lg text-xs font-bold transition flex items-center justify-center border ${
+                    active
+                      ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
+                      : 'bg-muted/50 text-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  {w.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Optional Transport & Notes Accordion / Inputs */}
+        <div className="pt-2 border-t space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground block">
+                Transport / Freight (₹):
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="any"
+                inputMode="decimal"
+                value={transportCost}
+                onChange={(e) => setTransportCost(e.target.value)}
+                className="mt-1 w-full rounded-lg border bg-background px-2.5 py-1.5 text-xs font-bold text-foreground min-h-[40px]"
+                placeholder="0"
+              />
             </div>
-            <select
-              value={gstRate}
-              onChange={(e) => handleGstRateChange(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-navy"
-            >
-              <option value={18}>18% GST (Standard)</option>
-              <option value={12}>12% GST (Construction / Fabrication)</option>
-              <option value={5}>5% GST (Essentials / Concessional)</option>
-              <option value={28}>28% GST (Heavy Equipment)</option>
-              <option value={0}>0% GST (Exempt / Nil)</option>
-            </select>
-          </label>
-        </div>
-
-        <Money label={`GST Amount (₹ at ${gstRate}%)`} value={gstAmount} onChange={setGstAmount} />
-        <Money label="Transport (₹)" value={transportCost} onChange={setTransportCost} />
-        <Count
-          label="Delivery in (days)"
-          value={deliveryDays}
-          onChange={setDeliveryDays}
-          required
-        />
-        <Count label="Warranty (months)" value={warrantyMonths} onChange={setWarrantyMonths} />
-      </div>
-
-      {/* Line-item Roll-up */}
-      <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm flex flex-wrap items-center justify-between gap-2">
-        <div className="text-xs text-slate-600 space-x-3">
-          <span>Base: <strong>₹{num(basePrice).toLocaleString('en-IN')}</strong></span>
-          <span>+ GST ({gstRate}%): <strong>₹{num(gstAmount).toLocaleString('en-IN')}</strong></span>
-          {num(transportCost) > 0 && (
-            <span>+ Transport: <strong>₹{num(transportCost).toLocaleString('en-IN')}</strong></span>
-          )}
-        </div>
-        <div className="text-right">
-          <span className="text-xs text-slate-500 block">Final Billable Amount:</span>
-          <strong className="text-base text-navy font-bold">
-            ₹{total.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-          </strong>
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground block">
+                Notes / Inclusions (Optional):
+              </label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="mt-1 w-full rounded-lg border bg-background px-2.5 py-1.5 text-xs text-foreground min-h-[40px]"
+                placeholder="e.g. includes fitting"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <label className="block text-sm">
-        <span className="font-medium text-navy">Anything the buyer should know (optional)</span>
-        <textarea
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          rows={2}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-          placeholder="Ex-warehouse, includes fitting, etc."
-        />
-      </label>
+      {/* 4. Live Billable Roll-Up Summary Card */}
+      <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-3 shadow-xs">
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs font-extrabold uppercase tracking-wide text-foreground">
+            Total Final Quoted:
+          </span>
+          <span className="text-xl font-black text-primary tabular-nums">
+            ₹{total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          </span>
+        </div>
+        <div className="mt-1 flex flex-wrap items-center justify-between text-[11px] text-muted-foreground border-t border-primary/20 pt-1.5">
+          <span>Base: ₹{num(basePrice).toLocaleString('en-IN')}</span>
+          <span>+ GST ({gstRate}%): ₹{num(gstAmount).toLocaleString('en-IN')}</span>
+          {num(transportCost) > 0 && <span>+ Trnsp: ₹{num(transportCost).toLocaleString('en-IN')}</span>}
+        </div>
+      </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/50 p-2.5 text-xs font-bold text-red-700 dark:text-red-300">
+          ⚠️ {error}
+        </p>
+      )}
 
+      {/* 5. Big Submit CTA Button (Min-height 48px for thumb tap) */}
       <button
         type="submit"
         disabled={!canSubmit}
-        className="w-full rounded-md bg-action px-4 py-3 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto"
+        className="w-full min-h-[50px] rounded-xl bg-primary px-4 py-3 text-base font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-50 transition active:scale-[0.98] flex items-center justify-center gap-2"
+        data-testid="submit-quick-quote-btn"
       >
-        {isSubmitting ? 'Submitting…' : 'Submit my quote'}
+        <span>⚡</span>
+        <span>{isSubmitting ? 'Sending Sealed Quote…' : 'Submit Sealed Quote to Buyer'}</span>
       </button>
 
-      <p className="text-xs text-slate-500">
-        Your price and your name are not shown to other quoting suppliers, and the buying
-        committee compares your quote without knowing which business it came from.
+      <p className="text-[10px] text-center text-muted-foreground leading-tight px-1">
+        🔒 Identity protected. Your quote is compared strictly on price, timeline, and SLA without revealing your business name to competitors.
       </p>
     </form>
   );
@@ -346,95 +466,28 @@ function QuickQuoteForm({
 
 function QuickQuoteShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <header className="border-b border-slate-200 px-4 py-3">
-        <Link to="/" className="text-sm font-semibold text-navy hover:underline">
-          {PRODUCT_NAME}
-        </Link>
+    <div className="min-h-[100dvh] bg-background flex flex-col justify-between">
+      <header className="border-b bg-card/90 px-3 py-2.5 sticky top-0 z-10 backdrop-blur">
+        <div className="mx-auto flex max-w-lg items-center justify-between">
+          <Link to="/" className="text-sm font-black tracking-tight text-primary flex items-center gap-1">
+            <span>⚡</span>
+            <span>{PRODUCT_NAME} WhatsApp Direct</span>
+          </Link>
+          <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+            Sealed Quote
+          </span>
+        </div>
       </header>
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">{children}</main>
-      <footer className="border-t border-slate-200 px-4 py-4">
-        <p className="mx-auto max-w-2xl text-[0.65rem] leading-relaxed text-slate-500">
+
+      <main className="mx-auto w-full max-w-lg flex-1 px-2.5 py-4 sm:px-4 sm:py-6">{children}</main>
+
+      <footer className="border-t bg-muted/30 px-3 py-3">
+        <p className="mx-auto max-w-lg text-[10px] leading-relaxed text-muted-foreground text-center">
           {PLATFORM_DISCLAIMER}
         </p>
       </footer>
     </div>
   );
-}
-
-function Fact({ label, value }: { label: string; value?: string | null }) {
-  if (!value) return null;
-  return (
-    <div className="flex gap-2">
-      <dt className="text-slate-500">{label}:</dt>
-      <dd className="font-medium text-navy">{value}</dd>
-    </div>
-  );
-}
-
-function Money({
-  label,
-  value,
-  onChange,
-  required,
-  autoFocus,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  required?: boolean;
-  autoFocus?: boolean;
-}) {
-  return (
-    <label className="block text-sm">
-      <span className="font-medium text-navy">{label}</span>
-      <input
-        type="number"
-        min={0}
-        step="0.01"
-        // Opens the numeric keypad, because this is filled in on a phone.
-        inputMode="decimal"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-        required={required}
-        autoFocus={autoFocus}
-      />
-    </label>
-  );
-}
-
-function Count({
-  label,
-  value,
-  onChange,
-  required,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  required?: boolean;
-}) {
-  return (
-    <label className="block text-sm">
-      <span className="font-medium text-navy">{label}</span>
-      <input
-        type="number"
-        min={0}
-        step="1"
-        inputMode="numeric"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-        required={required}
-      />
-    </label>
-  );
-}
-
-function num(raw: string): number {
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function quantityLabel(quantity?: number, unit?: string): string | null {
@@ -458,4 +511,9 @@ function formatDate(iso?: string): string | null {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date);
+}
+
+function num(raw: string): number {
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
 }

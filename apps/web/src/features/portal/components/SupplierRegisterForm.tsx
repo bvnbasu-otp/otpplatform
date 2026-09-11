@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { validateGstin } from '@otp/domain';
+import { validateGstin, type GstTaxpayerInfo } from '@otp/domain';
 import { Button } from '@/components/ui';
 import { PortalField, useFormText, usePortalControl } from './FormDensity';
+import { GstinAutofillField } from './GstinAutofillField';
 import {
   fetchServedCities,
   fetchServiceCategories,
@@ -294,52 +295,28 @@ export function SupplierRegisterForm({
           <PortalField
             label="GSTIN / Tax Registration"
             hint="recommended"
-            help="Enter 15-digit GSTIN for instant Verified Seller status & GST Registered badge."
+            help="Enter 15-digit GSTIN to auto-populate legal name & registered address, unlocking instant Verified Seller badge."
           >
-            {({ id, describedBy, invalid }) => {
-              const gstCheck = taxId.trim().length > 0 ? validateGstin(taxId.trim()) : null;
-              return (
-                <div className="space-y-1.5">
-                  <input
-                    id={id}
-                    value={taxId}
-                    maxLength={15}
-                    onChange={(e) => {
-                      const nextVal = e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
-                      setTaxId(nextVal);
-                    }}
-                    placeholder="29ABCDE1234F1Z5"
-                    aria-describedby={describedBy}
-                    className={`${control(invalid)} font-mono uppercase tracking-wider`}
-                  />
-                  {taxId.trim().length > 0 && (
-                    <div className="text-xs">
-                      {gstCheck?.valid ? (
-                        <div className="flex flex-wrap items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-medium bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded px-2.5 py-1.5">
-                          <span className="font-bold flex items-center gap-1">
-                            <span>✓</span> GST Registered Seller:
-                          </span>
-                          <span>{gstCheck.stateName} ({gstCheck.stateCode})</span>
-                          <span>•</span>
-                          <span>{gstCheck.entityType}</span>
-                          <span className="ml-auto inline-flex items-center gap-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.2 text-[10px] font-bold text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
-                            ✓ Verified Seller Badge
-                          </span>
-                        </div>
-                      ) : taxId.trim().length === 15 ? (
-                        <div className="text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded px-2.5 py-1.5">
-                          ✕ {gstCheck?.error}
-                        </div>
-                      ) : (
-                        <div className="text-muted-foreground text-[11px]">
-                          {15 - taxId.trim().length} characters remaining (e.g. 29 for Karnataka, 33 for Tamil Nadu, 07 for Delhi)
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            }}
+            {({ id, describedBy, invalid }) => (
+              <GstinAutofillField
+                id={id}
+                value={taxId}
+                onChange={setTaxId}
+                describedBy={describedBy}
+                className={control(invalid)}
+                onAutofill={(details: GstTaxpayerInfo) => {
+                  if (details.legalName && !business.trim()) {
+                    setBusiness(details.legalName);
+                  }
+                  if (details.principalAddress?.city && !city.trim()) {
+                    setCity(details.principalAddress.city);
+                  }
+                  if (details.principalAddress?.pincode && !pincode.trim()) {
+                    setPincode(details.principalAddress.pincode);
+                  }
+                }}
+              />
+            )}
           </PortalField>
         ) : (
           <PortalField

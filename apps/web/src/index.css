@@ -442,9 +442,12 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
 }
 
-.zero-scroll-pane {
+.zero-scroll-pane,
+.zero-scroll-container > form,
+.zero-scroll-container > .overflow-y-auto {
   flex: 1 1 0%;
   min-height: 0;
   overflow-y: auto;
@@ -453,7 +456,9 @@ html, body {
 }
 
 @media (min-width: 640px) {
-  .zero-scroll-pane {
+  .zero-scroll-pane,
+  .zero-scroll-container > form,
+  .zero-scroll-container > .overflow-y-auto {
     padding-bottom: 3rem; /* pb-12 on desktop/tablet */
   }
 }
