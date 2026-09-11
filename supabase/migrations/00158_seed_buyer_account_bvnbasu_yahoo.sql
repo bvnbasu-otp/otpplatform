@@ -95,7 +95,6 @@ BEGIN
     is_platform_admin,
     is_demo,
     active_organization_id,
-    active_role_code,
     created_at,
     updated_at
   )
@@ -107,7 +106,6 @@ BEGIN
     false,
     false,
     v_org_id,
-    'PROCUREMENT_LEAD',
     now(),
     now()
   )
@@ -116,7 +114,6 @@ BEGIN
       email = 'bvnbasu@yahoo.com',
       full_name = 'Baskar Loganathan',
       active_organization_id = v_org_id,
-      active_role_code = 'PROCUREMENT_LEAD',
       updated_at = now();
 
   -- 4. Assign to Buyer Organization as OWNER
@@ -143,6 +140,11 @@ BEGIN
     'PROCUREMENT_LEAD'
   )
   ON CONFLICT (profile_id, role_code) DO NOTHING;
+
+  -- 6. Set active_role_code on profile after profile_roles entry exists
+  UPDATE public.profiles
+  SET active_role_code = 'PROCUREMENT_LEAD'
+  WHERE id = v_auth_user_id;
 
 END $$;
 
