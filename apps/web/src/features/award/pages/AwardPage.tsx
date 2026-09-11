@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { fetchPurchaseOrderByRfq } from '@/features/fulfillment/api/purchase-orders';
 import { fetchIdentityProtectedQuotesForVote } from '@/features/governance/api/rfq-governance';
 import {
+  fetchVotes,
   fetchVoteTally,
   fetchVotingSummary,
 } from '@/features/governance/api/committee-votes';
 import { WeightedTallyTable } from '@/features/governance/components/WeightedTallyTable';
 import type {
+  CommitteeVote,
   IdentityProtectedQuoteForVote,
   VoteTallyEntry,
   VotingSummary,
@@ -19,24 +21,15 @@ import { ProcurementStageNavigator } from '@/features/lifecycle';
 import type { AwardSummary } from '../api/awards';
 import type { ApprovalSummary } from '../api/approval';
 
-const AWARD_JUSTIFICATION_PRESETS = [
-  'Best overall evaluated value & optimal cost-benefit ratio',
-  'Guaranteed turnaround matching strict project delivery timelines',
-  'Total cost advantage within fair market intelligence benchmark',
-  'Highest weighted recommendation score from committee voting',
-  'Supplier meets all mandatory technical specifications & quality criteria',
-];
-
 export function AwardPage({ rfqId }: { rfqId: string }) {
   const [award, setAward] = useState<AwardSummary | null>(null);
   const [approval, setApproval] = useState<ApprovalSummary | null>(null);
   const [quotes, setQuotes] = useState<IdentityProtectedQuoteForVote[]>([]);
+  const [votes, setVotes] = useState<CommitteeVote[]>([]);
   const [tally, setTally] = useState<VoteTallyEntry[]>([]);
   const [summary, setSummary] = useState<VotingSummary | null>(null);
   const [selectedQuote, setSelectedQuote] = useState('');
-  const [selectedAwardReasons, setSelectedAwardReasons] = useState<string[]>([]);
-  const [awardRating, setAwardRating] = useState<number>(5);
-  const [justification, setJustification] = useState('');
+  const [confirmedAward, setConfirmedAward] = useState(true);
   const [existingPoId, setExistingPoId] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +39,13 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
 
   const load = useCallback(async () => {
     setIsLoading(true);
-    const [awardRes, approvalRes, quotesRes, tallyRes, summaryRes] = await Promise.all([
+    const [awardRes, approvalRes, quotesRes, tallyRes, summaryRes, votesRes] = await Promise.all([
       fetchAward(rfqId),
       fetchApproval(rfqId),
       fetchIdentityProtectedQuotesForVote(rfqId),
       fetchVoteTally(rfqId),
       fetchVotingSummary(rfqId),
+      fetchVotes(rfqId),
     ]);
 
     if (awardRes.ok) {
@@ -69,6 +63,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
         setSelectedQuote(leaderId ?? quotesRes.quotes[0]?.quoteId ?? '');
       }
     }
+    if (votesRes.ok) setVotes(votesRes.votes);
     if (tallyRes.ok) setTally(tallyRes.tally);
     if (summaryRes.ok) setSummary(summaryRes.summary);
     setIsLoading(false);
@@ -77,6 +72,19 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const winningQuote = quotes.find((q) => q.quoteId === selectedQuote) || quotes[0];
+
+  // Derive justification directly from Step 7/8 consensus & evaluation votes
+  const targetVoteComments = votes
+    .filter((v) => (selectedQuote ? v.recommendedQuoteId === selectedQuote : true) && v.comment && v.comment.trim())
+    .map((v) => v.comment!.trim());
+
+  const consensusRationale = targetVoteComments.length > 0
+    ? Array.from(new Set(targetVoteComments)).join('. ')
+    : winningQuote
+    ? `Recommended on evaluated merit score (${winningQuote.evaluationScore ?? 'Top'}), commercial value (₹${winningQuote.totalCost.toLocaleString('en-IN')}), and turnaround.`
+    : 'Evaluated and approved as winning supplier based on consensus merit and commercial terms.';
 
   async function handleRequestApproval() {
     setBusy(true);
@@ -105,10 +113,13 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
 
   async function handleLockAward() {
     if (!selectedQuote) return;
+    if (!confirmedAward) {
+      setError('Please confirm the award selection and consensus rationale before locking.');
+      return;
+    }
     setBusy(true);
     setError(null);
-    const combinedJustification = [...selectedAwardReasons, justification.trim()].filter(Boolean).join('. ');
-    const finalJustification = combinedJustification || 'Evaluated and approved as winning supplier based on best commercial and technical terms.';
+    const finalJustification = consensusRationale;
     const result = await lockAward(rfqId, selectedQuote, finalJustification);
     setBusy(false);
     if (!result.ok) {
@@ -138,7 +149,6 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
   if (isLoading) return <p className="p-8 text-muted-foreground">Loading Award Decision…</p>;
 
   const pendingReveal = award?.status === 'LOCKED' || award?.status === 'PENDING_REVEAL';
-
   const activeLinearStep = award ? 10 : 9;
 
   return (
@@ -167,7 +177,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
             </h1>
             <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
               {activeLinearStep === 9
-                ? 'Select winning quote based on consensus, record rationale, and establish runner-up protocol.'
+                ? 'Review winning quote and recorded consensus rationale before freezing decision.'
                 : 'Award decision locked with frozen vote tally. Proceed to identity reveal and PO.'}
             </p>
           </div>
@@ -190,12 +200,12 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
         onClose={() => setIsCancelModalOpen(false)}
         onCancelled={() => {
           setIsCancelModalOpen(false);
-          window.location.href = '/';
+          void load();
         }}
       />
 
       {error && (
-        <div className="rounded-md border border-red-300 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 p-2 text-xs font-semibold text-red-700 dark:text-red-300 shrink-0 mt-1">
+        <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/40 p-2 text-xs font-semibold text-red-700 dark:text-red-300 shrink-0 mt-1">
           {error}
         </div>
       )}
@@ -223,7 +233,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 </span>
               </div>
               <div className="rounded border bg-card p-2 text-xs text-foreground">
-                <span className="font-semibold text-muted-foreground">Justification: </span>
+                <span className="font-semibold text-muted-foreground">Consensus Justification: </span>
                 {award.justificationText}
               </div>
 
@@ -280,24 +290,31 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
               )}
             </section>
           ) : (
-            <section className="rounded-lg border bg-card p-3 shadow-2xs space-y-2" data-testid="award-form">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">
-                  1. Select Winning Quote &amp; Record Justification
-                </h2>
+            <section className="rounded-lg border bg-card p-3 shadow-2xs space-y-3" data-testid="award-form">
+              <div className="flex items-center justify-between border-b pb-2">
+                <div>
+                  <h2 className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">
+                    1. Review Winning Quote &amp; Recorded Consensus Rationale
+                  </h2>
+                  <p className="text-[11px] text-muted-foreground">
+                    Auto-pulled from Step 7/8 committee consensus — review and confirm to lock the award.
+                  </p>
+                </div>
               </div>
 
+              {/* Quote Selector / Cards */}
               <div className="space-y-1.5">
                 {quotes.map((q, idx) => {
                   const isSelected = selectedQuote === q.quoteId;
+                  const isLeader = summary?.leader?.quoteId === q.quoteId;
                   const isTop = idx === 0 || (quotes[0]?.evaluationScore != null && q.evaluationScore === quotes[0].evaluationScore);
                   return (
                     <label
                       key={q.quoteId}
-                      className={`flex cursor-pointer items-center justify-between rounded border p-2 transition text-xs ${
+                      className={`flex cursor-pointer items-center justify-between rounded-lg border p-2.5 transition text-xs ${
                         isSelected
-                          ? 'border-primary ring-1 ring-primary/30 bg-primary/5 font-medium'
-                          : 'hover:bg-muted/40'
+                          ? 'border-primary ring-1 ring-primary/30 bg-primary/5 font-medium shadow-2xs'
+                          : 'hover:bg-muted/40 border-border/70'
                       }`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -307,10 +324,15 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                           value={q.quoteId}
                           checked={isSelected}
                           onChange={() => setSelectedQuote(q.quoteId)}
-                          className="h-3.5 w-3.5 text-primary"
+                          className="h-4 w-4 text-primary"
                         />
                         <span className="font-bold text-foreground truncate">{q.anonymousLabel}</span>
-                        {isTop && (
+                        {isLeader && (
+                          <span className="rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">
+                            🏛️ Committee Choice
+                          </span>
+                        )}
+                        {!isLeader && isTop && (
                           <span className="rounded bg-primary/10 text-primary border border-primary/20 px-1 py-0.2 text-[9px] font-bold">
                             ⭐ Top Score
                           </span>
@@ -331,59 +353,71 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 })}
               </div>
 
-              <div className="space-y-2 pt-1 border-t text-xs">
-                <div>
-                  <span className="block text-[11px] font-semibold text-foreground mb-1">
-                    Justification Presets:
+              {/* Read-Only Display of Recorded Consensus Justification */}
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1">
+                    <span>📋</span> Recorded Consensus Justification
                   </span>
-                  <div className="grid sm:grid-cols-2 gap-1 mb-1.5">
-                    {AWARD_JUSTIFICATION_PRESETS.map((preset) => {
-                      const isChecked = selectedAwardReasons.includes(preset);
-                      return (
-                        <label
-                          key={preset}
-                          className={`flex items-start gap-1.5 rounded border p-1 text-[10px] cursor-pointer transition ${
-                            isChecked
-                              ? 'border-primary bg-primary/5 font-medium text-foreground'
-                              : 'border-muted bg-card text-muted-foreground hover:bg-muted/30'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedAwardReasons((prev) => [...prev, preset]);
-                              } else {
-                                setSelectedAwardReasons((prev) => prev.filter((r) => r !== preset));
-                              }
-                            }}
-                            className="mt-0.5 h-3 w-3 rounded text-primary"
-                          />
-                          <span className="leading-tight">{preset}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-
-                  <textarea
-                    id="award-justification"
-                    className="w-full rounded border p-1.5 text-xs focus:border-primary focus:outline-none"
-                    rows={2}
-                    placeholder="Additional audit justification notes (optional)..."
-                    value={justification}
-                    onChange={(e) => setJustification(e.target.value)}
-                  />
+                  <Link
+                    to={`/rfq/${rfqId}/committee`}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                  >
+                    <span>↺ Edit / Recast in Voting Room</span>
+                  </Link>
                 </div>
 
+                <div className="rounded-lg border bg-card p-2.5 shadow-2xs">
+                  <p className="font-medium text-foreground text-xs leading-relaxed">
+                    &ldquo;{consensusRationale}&rdquo;
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+                  <span>✓ Automatically pulled from Step 7/8 committee consensus</span>
+                  <span className="italic">No duplicate typing required</span>
+                </div>
+              </div>
+
+              {/* Reconfirmation UI Checkbox */}
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border bg-card p-3 text-xs transition hover:bg-muted/30 shadow-2xs">
+                <input
+                  type="checkbox"
+                  checked={confirmedAward}
+                  onChange={(e) => setConfirmedAward(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded text-primary"
+                  data-testid="confirm-award-checkbox"
+                />
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <span className="font-bold text-foreground block">
+                    Confirm award selection and recorded rationale
+                  </span>
+                  <span className="text-[11px] text-muted-foreground block leading-tight">
+                    I confirm that {winningQuote?.anonymousLabel ?? 'the selected supplier'} is recommended on consensus merit and authorize locking the award.
+                  </span>
+                </div>
+              </label>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
                 <button
                   type="button"
-                  disabled={busy || !selectedQuote}
+                  disabled={busy || !selectedQuote || !confirmedAward}
                   onClick={() => void handleLockAward()}
-                  className="rounded bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition"
+                  className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition flex items-center gap-1.5"
+                  data-testid="lock-award-button"
                 >
-                  {busy ? 'Locking…' : '🔒 Lock Award Decision →'}
+                  <span>🔒</span>
+                  <span>{busy ? 'Locking Decision…' : 'Lock Award Decision →'}</span>
                 </button>
+
+                <Link
+                  to={`/rfq/${rfqId}/committee`}
+                  className="rounded-lg border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition flex items-center gap-1"
+                >
+                  <span>↺</span>
+                  <span>Edit / Recast Justification</span>
+                </Link>
               </div>
             </section>
           )}

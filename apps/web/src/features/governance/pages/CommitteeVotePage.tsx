@@ -61,24 +61,6 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
     if (myVote && quoteId !== myVote.recommendedQuoteId) {
       setIsRevising(true);
     }
-    // Auto-select smart preset justification if none selected
-    const targetQuote = quotes.find((q) => q.quoteId === quoteId);
-    if (targetQuote && selectedReasons.length === 0) {
-      const minPrice = Math.min(...quotes.map((q) => q.totalCost));
-      const minDays = Math.min(...quotes.map((q) => q.deliveryDays || Infinity));
-      const autoPresets: string[] = [];
-
-      if (targetQuote.totalCost === minPrice) {
-        autoPresets.push('Most competitive commercial pricing with high cost efficiency');
-      }
-      if (targetQuote.deliveryDays && targetQuote.deliveryDays === minDays) {
-        autoPresets.push('Fastest turnaround & guaranteed delivery timeline');
-      }
-      if (autoPresets.length === 0) {
-        autoPresets.push('Optimal price-to-quality ratio within fair market benchmark');
-      }
-      setSelectedReasons(autoPresets);
-    }
   };
 
   const load = useCallback(async () => {
@@ -107,23 +89,11 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       if (tallyRes.ok) setTally(tallyRes.tally);
       if (summaryRes.ok) setSummary(summaryRes.summary);
       
-      const initialQuoteId = mineRes.ok && mineRes.vote?.recommendedQuoteId
-        ? mineRes.vote.recommendedQuoteId
-        : fetchedQuotes[0]?.quoteId || '';
-
-      if (mineRes.ok) {
+      if (mineRes.ok && mineRes.vote) {
         setMyVote(mineRes.vote);
-        setSelectedQuote((prev) => prev || initialQuoteId);
+        setSelectedQuote(mineRes.vote.recommendedQuoteId ?? '');
       } else {
-        setSelectedQuote((prev) => prev || initialQuoteId);
-      }
-
-      // Pre-select default justification preset if not yet selected
-      if (fetchedQuotes.length > 0) {
-        setSelectedReasons((prev) => {
-          if (prev.length > 0) return prev;
-          return ['Optimal price-to-quality ratio within fair market benchmark'];
-        });
+        setSelectedQuote((prev) => prev || (fetchedQuotes.length === 1 ? fetchedQuotes[0]?.quoteId ?? '' : ''));
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to load evaluation & voting room');
@@ -403,6 +373,9 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                       }}
                       className="w-full rounded border px-2 py-1 text-xs bg-card font-medium text-foreground focus:border-primary focus:outline-none"
                     >
+                      {!selectedQuote && (
+                        <option value="" disabled>-- Select Recommended Supplier --</option>
+                      )}
                       {quotes.map((q) => (
                         <option key={q.quoteId} value={q.quoteId}>
                           {q.anonymousLabel} — ₹{q.totalCost.toLocaleString('en-IN')} (TAT: {q.deliveryDays ? `${q.deliveryDays}d` : 'Std'}) {myVote?.recommendedQuoteId === q.quoteId ? '★ [Current Vote]' : ''}
@@ -412,9 +385,14 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-foreground mb-1">
-                      Reason / Justification <span className="text-amber-600 dark:text-amber-400 font-bold">*</span>:
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] font-semibold text-foreground">
+                        Reason / Justification <span className="text-red-600 dark:text-red-400 font-bold">*</span>:
+                      </label>
+                      <span className="text-[10px] text-muted-foreground">
+                        {selectedReasons.length > 0 ? `${selectedReasons.length} selected` : 'Selection required'}
+                      </span>
+                    </div>
                     <div className="grid sm:grid-cols-2 gap-1 mb-1.5">
                       {VOTE_REASON_PRESETS.map((preset) => {
                         const isChecked = selectedReasons.includes(preset);
