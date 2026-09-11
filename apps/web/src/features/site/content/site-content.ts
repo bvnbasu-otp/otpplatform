@@ -256,7 +256,7 @@ export const CONTRASTS = {
   ],
   otp: [
     'Eliminates favoritism and vendor lock-in',
-    'Prevents predatory pricing by keeping buyer identity protected until award',
+    'Prevents predatory pricing: buyer identity is protected',
     'Assures full GST & ITC compliance upon award',
     'One consistent scoring formula for every quote',
     'Votes carry a recorded reason and immutable audit trail',
