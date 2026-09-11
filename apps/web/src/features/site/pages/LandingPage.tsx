@@ -49,27 +49,27 @@ function ValueRibbon() {
       <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-2.5 text-xs">
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-black">1</span>
-          <span>Post Need</span>
+          <span>1. Post Requirement</span>
         </div>
         <span className="text-muted-foreground/40 hidden sm:inline">➔</span>
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-black">2</span>
-          <span>Auto-Match Suppliers</span>
+          <span>2. Get Sealed Quotes</span>
         </div>
         <span className="text-muted-foreground/40 hidden sm:inline">➔</span>
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-black">3</span>
-          <span>Compare Masked Quotes</span>
+          <span>3. Compare Anonymously</span>
         </div>
         <span className="text-muted-foreground/40 hidden sm:inline">➔</span>
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-black">4</span>
-          <span>Vote on Merit</span>
+          <span>4. Committee Vote</span>
         </div>
         <span className="text-muted-foreground/40 hidden sm:inline">➔</span>
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-black">5</span>
-          <span>Reveal &amp; Award PO</span>
+          <span>5. Reveal &amp; Issue PO</span>
         </div>
       </div>
     </section>
@@ -191,38 +191,127 @@ function HowItWorks() {
     <section id="how-it-works" className="scroll-mt-20 border-y bg-muted/40 py-14">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h2 className="text-2xl font-semibold">How {PRODUCT_NAME} works</h2>
+          <h2 className="text-2xl font-semibold">How {PRODUCT_NAME} Works in 5 Simple Steps</h2>
           <p className="text-sm text-muted-foreground">
-            One requirement, from a sentence to a settled invoice.
+            From natural-language requirement to settled invoice and PO.
           </p>
         </div>
 
-        <ol className="mt-7 grid gap-4 md:grid-cols-3" data-testid="lifecycle">
-          {LIFECYCLE_GROUPS.map((group, index) => (
-            <li key={group.name} className="rounded-lg border bg-card p-5">
-              <div className="flex items-baseline gap-2">
-                <span className="text-xs font-semibold text-action">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <h3 className="text-base font-medium">{group.name}</h3>
+        {/* 5-Step Visual Flow Cards */}
+        <ol className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">1</span>
+                <span className="text-[10px] font-bold text-muted-foreground">STEP 1</span>
               </div>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                {group.body}
+              <h3 className="mt-2 text-sm font-bold text-foreground">Post Requirement</h3>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                Describe what you need in plain words. Fast-track parser extracts specs, city, and budget.
               </p>
+            </div>
+            <div className="mt-3 border-t pt-2 text-[10px] text-action font-semibold">
+              Instant Intake →
+            </div>
+          </li>
 
-              <ul className="mt-4 space-y-1.5 border-t pt-3 text-sm">
-                {group.stages.map((stage) => (
-                  <li key={stage} className="flex gap-2">
-                    <span aria-hidden="true" className="text-navy-faint">
-                      →
-                    </span>
-                    <span>{stage}</span>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
+          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">2</span>
+                <span className="text-[10px] font-bold text-muted-foreground">STEP 2</span>
+              </div>
+              <h3 className="mt-2 text-sm font-bold text-foreground">Get Sealed Quotes</h3>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                Verified regional suppliers submit sealed quotes with turnaround and warranty terms.
+              </p>
+            </div>
+            <div className="mt-3 border-t pt-2 text-[10px] text-action font-semibold">
+              Multi-Channel Quoting →
+            </div>
+          </li>
+
+          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">3</span>
+                <span className="text-[10px] font-bold text-muted-foreground">STEP 3</span>
+              </div>
+              <h3 className="mt-2 text-sm font-bold text-foreground">Compare Anonymously</h3>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                Side-by-side comparison on merit: cost, delivery TAT, and warranty SLAs under anonymous aliases.
+              </p>
+            </div>
+            <div className="mt-3 border-t pt-2 text-[10px] text-action font-semibold">
+              Zero Bias Matrix →
+            </div>
+          </li>
+
+          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">4</span>
+                <span className="text-[10px] font-bold text-muted-foreground">STEP 4</span>
+              </div>
+              <h3 className="mt-2 text-sm font-bold text-foreground">Committee Vote</h3>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                Democratic quorum voting with weighted ballots, COI declarations, and recorded justifications.
+              </p>
+            </div>
+            <div className="mt-3 border-t pt-2 text-[10px] text-action font-semibold">
+              Quorum Governance →
+            </div>
+          </li>
+
+          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-black">5</span>
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">STEP 5</span>
+              </div>
+              <h3 className="mt-2 text-sm font-bold text-foreground">Reveal &amp; Issue PO</h3>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                Winning identity unmasked mutually; Purchase Order issued with GST ITC compliance.
+              </p>
+            </div>
+            <div className="mt-3 border-t pt-2 text-[10px] text-emerald-600 font-semibold">
+              Direct PO Issuance ✓
+            </div>
+          </li>
         </ol>
+
+        {/* 3 Major Lifecycle Groups */}
+        <div className="mt-8">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Complete End-to-End Governance Lifecycle
+          </p>
+          <ol className="mt-3 grid gap-4 md:grid-cols-3" data-testid="lifecycle">
+            {LIFECYCLE_GROUPS.map((group, index) => (
+              <li key={group.name} className="rounded-lg border bg-card p-5">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-semibold text-action">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <h3 className="text-base font-medium">{group.name}</h3>
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {group.body}
+                </p>
+
+                <ul className="mt-4 space-y-1.5 border-t pt-3 text-sm">
+                  {group.stages.map((stage) => (
+                    <li key={stage} className="flex gap-2">
+                      <span aria-hidden="true" className="text-navy-faint">
+                        →
+                      </span>
+                      <span>{stage}</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        </div>
 
         <div className="mt-4 rounded-lg border border-dashed bg-card/60 p-5">
           <p className="text-sm font-medium">Four of Those Stages Run to a Clock</p>
@@ -346,16 +435,21 @@ function SupplierReach() {
 function WhyOtp() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-14">
-      <h2 className="text-2xl font-semibold">Why {PRODUCT_NAME}</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <h2 className="text-2xl font-semibold">Why Identity Protection Matters</h2>
+        <p className="text-sm text-muted-foreground">
+          Sourcing on merit instead of relationships.
+        </p>
+      </div>
 
       <div className="mt-7 grid gap-4 md:grid-cols-2">
         <ContrastColumn
-          title="Sourcing without a system"
+          title="Conventional Sourcing Challenges"
           items={CONTRASTS.conventional}
           marker="—"
         />
         <ContrastColumn
-          title={`Sourcing on ${PRODUCT_NAME}`}
+          title={`Institutional Sourcing on ${PRODUCT_NAME}`}
           items={CONTRASTS.otp}
           marker="✓"
           accent

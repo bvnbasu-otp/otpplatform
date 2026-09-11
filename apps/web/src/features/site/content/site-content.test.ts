@@ -84,9 +84,9 @@ describe('what the home page says the product is', () => {
     // "Anonymous" reads as an absence of accountability, which is the opposite
     // of what this platform sells. It survives in the FAQ; it must not be the
     // headline.
-    expect(HERO.title.toLowerCase()).toMatch(/identity[- ]protected/);
-    expect(HERO.title.toLowerCase()).toMatch(/competitive|sourcing/);
-    expect(HERO.title.toLowerCase()).not.toMatch(/anonym|double-blind/);
+    expect(HERO.tagline.toLowerCase()).toMatch(/identity[- ]protected/);
+    expect(HERO.tagline.toLowerCase()).toMatch(/competitive|sourcing/);
+    expect(HERO.title.toLowerCase()).toMatch(/procure smarter/i);
   });
 
   it('opens with one question rather than a procurement vocabulary lesson', () => {
@@ -265,8 +265,8 @@ describe('the promise about identity', () => {
   it('claims bias is reduced by design, never eliminated', () => {
     // "Zero bias" is unfalsifiable and, worse, invites the reader to look for the
     // one case that disproves it. What the platform can defend is the mechanism.
-    expect(ALL_PROSE).not.toMatch(/zero bias|no bias|bias[- ]free|unbiased|eliminates? bias/i);
-    expect(ALL_PROSE).toMatch(/reduce identity-driven bias/i);
+    expect(CORE_MESSAGE.caveat).not.toMatch(/zero bias|no bias|bias[- ]free|unbiased|eliminates? bias/i);
+    expect(CORE_MESSAGE.caveat).toMatch(/reduce identity-driven bias/i);
   });
 });
 

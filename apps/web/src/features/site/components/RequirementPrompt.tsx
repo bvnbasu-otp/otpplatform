@@ -53,7 +53,7 @@ export function RequirementPrompt() {
           type="submit"
           className="shrink-0 rounded-lg bg-action px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-action-foreground hover:bg-action-hover transition shadow-2xs flex items-center justify-center gap-1.5"
         >
-          <span>Create requirement</span>
+          <span>Start Free</span>
           <span>→</span>
         </button>
       </div>

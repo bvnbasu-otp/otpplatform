@@ -26,14 +26,14 @@ import { PRODUCT_NAME } from '@/lib/brand';
  */
 export const HERO = {
   eyebrow: 'OTP — Open Trade & Procurement',
-  title: 'Identity-Protected Competitive Sourcing',
-  tagline: 'Discover. Compete. Evaluate. Award.',
+  title: 'Procure Smarter. Compare Without Bias. Award with Confidence.',
+  tagline: 'The identity-protected sourcing platform for Indian MSMEs, Communities & Enterprises.',
   body:
     'A transparent procurement platform where buyers and suppliers can compete fairly '
     + 'while identities remain protected until award.',
   /** The first interaction, kept to one question. */
-  prompt: 'What do you need?',
-  promptExample: '10 HP borewell motor winding in Bhavani within 4 days',
+  prompt: 'What do you need to procure today?',
+  promptExample: 'e.g. 10 HP borewell motor winding in Coimbatore within 3 days',
 };
 
 /**
@@ -248,18 +248,18 @@ export const SUPPLIER_CHANNELS: SupplierChannel[] = [
  */
 export const CONTRASTS = {
   conventional: [
-    'Identity can sway the decision',
-    'Quotes arrive in different shapes',
-    'Negotiation history sits in inboxes',
+    'Identity can sway the decision and invite bias',
+    'Quotes arrive in different unstructured shapes',
+    'Negotiation history sits scattered across inboxes',
     'The outcome depends on who ran it',
-    'No complete record of why',
+    'No complete statutory record of why',
   ],
   otp: [
-    'Identities protected until the award is locked',
-    'One scoring formula for every quote',
-    'Every revision kept as a version',
-    'Votes carry a recorded reason',
-    'Order to payment on one record',
+    'Eliminates favoritism and vendor lock-in',
+    'Prevents predatory pricing based on buyer identity',
+    'Assures full GST & ITC compliance upon award',
+    'One consistent scoring formula for every quote',
+    'Votes carry a recorded reason and immutable audit trail',
   ],
 };
 
