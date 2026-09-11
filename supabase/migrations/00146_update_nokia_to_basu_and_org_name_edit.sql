@@ -9,9 +9,9 @@ SET name = 'Basu',
     updated_at = now()
 WHERE name ILIKE '%nokia%';
 
-UPDATE public.organization_signup_requests
-SET organization_name = 'Basu'
-WHERE organization_name ILIKE '%nokia%';
+UPDATE public.signup_requests
+SET business_name = 'Basu'
+WHERE business_name ILIKE '%nokia%';
 
 UPDATE public.suppliers
 SET business_name = 'Basu',
@@ -96,8 +96,8 @@ BEGIN
   WHERE id = v_org_id;
 
   -- Sync any pending signup requests if matched
-  UPDATE public.organization_signup_requests
-  SET organization_name = v_cleaned_name
+  UPDATE public.signup_requests
+  SET business_name = v_cleaned_name
   WHERE organization_id = v_org_id;
 
   -- Record audit event
