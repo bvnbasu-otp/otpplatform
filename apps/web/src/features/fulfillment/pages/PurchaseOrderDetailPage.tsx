@@ -230,12 +230,12 @@ export function PurchaseOrderDetailPage({
       )}
 
       {/* Main Content Pane */}
-      <div className="zero-scroll-pane mt-2 space-y-2">
-        {/* Bilateral Legal Contracting Parties & GST Tax Compliance Information */}
+      <div className="zero-scroll-pane mt-2 pb-20 sm:pb-12 space-y-2">
+        {/* Direct Commercial Contract & GST Tax Compliance Parties */}
         <div className="rounded-lg border bg-card p-3 text-xs shadow-2xs space-y-2.5">
           <div className="flex items-center justify-between border-b pb-1.5">
             <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-              Bilateral Contract &amp; GST Tax Compliance Parties
+              Direct Commercial Contract &amp; GST Compliance Parties
             </span>
             <span className="text-[10px] rounded bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 font-bold text-blue-700 dark:text-blue-300 border border-blue-200">
               Direct B2B Commercial Contract
