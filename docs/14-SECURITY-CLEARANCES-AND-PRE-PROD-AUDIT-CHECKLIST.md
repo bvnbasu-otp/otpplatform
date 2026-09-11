@@ -108,7 +108,7 @@
   - **Fail:** Acceptance of plaintext HTTP connections, weak cipher suites, or SSL Labs grade lower than **A**.
 - **Required Evidence / Artifacts:**
   1. Qualys SSL Labs report / `testssl.sh` execution log for authoritative production domain.
-  2. Reverse proxy configuration (`nginx.conf`, Cloudflare SSL/TLS edge rule, or Kong Gateway ingress config).
+  2. Reverse proxy configuration (`nginx.conf`, Vercel / Edge SSL/TLS rule, or Kong Gateway ingress config).
 
 ### Control 3.2: Encryption at Rest & Database Volume Protection
 - **Verification Description:** Verify that all persistent database volumes, automated backups, file attachments (specifications, site photos, invoices), and secrets are encrypted at rest.
@@ -159,10 +159,10 @@
       - Authentication (`/auth/v1/token`, `/auth/v1/otp`): max 5 requests/minute per IP.
       - Quotation submission (`/rest/v1/quotes`): max 30 requests/minute per authenticated user.
       - Public RFQ endpoints: max 60 requests/minute per IP.
-    - Cloudflare / AWS Shield / custom ingress proxy DDoS mitigation active.
+    - Vercel Edge / AWS Shield / custom ingress proxy DDoS mitigation active.
   - **Fail:** Absence of rate limiting on login/OTP endpoints allowing credential stuffing or brute-force password guessing; origin IP exposed directly to the public internet without reverse proxy protection.
 - **Required Evidence / Artifacts:**
-  1. Cloudflare WAF / AWS WAF security dashboard configuration export.
+  1. Edge WAF / AWS WAF security dashboard configuration export.
   2. Automated rate-limiting benchmark test proving HTTP 429 Too Many Requests response upon exceeding threshold.
 
 ### Control 4.2: Open Protocol (ONDC / Beckn) Cryptographic Signing & Network Compliance
@@ -217,7 +217,7 @@
     - Logs contain zero sensitive plaintext secrets, passwords, or full credit card / bank account numbers.
   - **Fail:** Lack of alerting on suspicious spikes in authorization failures; logging of raw passwords or JWT secrets.
 - **Required Evidence / Artifacts:**
-  1. Alert configuration rules export (e.g., Datadog, Prometheus/Alertmanager, Grafana, Cloudflare Logpush, or AWS CloudWatch Alarms).
+  1. Alert configuration rules export (e.g., Datadog, Prometheus/Alertmanager, Grafana, Vercel Log Drains, or AWS CloudWatch Alarms).
   2. Incident Notification webhook verification test (automated notification delivery to designated Security Operations Slack/WhatsApp channel).
 
 ### Control 5.3: Formal Incident Response & Rollback Procedures

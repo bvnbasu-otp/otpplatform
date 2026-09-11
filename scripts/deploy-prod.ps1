@@ -13,7 +13,7 @@
 
 [CmdletBinding()]
 param (
-  [string]$TunnelUrl = "https://incoming-reductions-incoming-stevens.trycloudflare.com",
+  [string]$SiteUrl = "https://otpplatform-theta.vercel.app",
   [switch]$DryRun
 )
 
@@ -25,7 +25,7 @@ Write-Host "=================================================================" -
 Write-Host "  OTP Platform - Production Gated Deployment Pipeline" -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "Workspace  : $WorkspaceRoot" -ForegroundColor DarkGray
-Write-Host "Live URL   : $TunnelUrl" -ForegroundColor DarkGray
+Write-Host "Live URL   : $SiteUrl" -ForegroundColor DarkGray
 $nowStr = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
 Write-Host "Timestamp  : $nowStr" -ForegroundColor DarkGray
 
@@ -194,8 +194,7 @@ if (-not $webConn) {
     }
   }
 }
-$env:TUNNEL_URL = $TunnelUrl
-$env:SITE_URL = $TunnelUrl
+$env:SITE_URL = $SiteUrl
 
 $smokeSuccess = $false
 try {
@@ -218,7 +217,7 @@ if (-not $smokeSuccess) {
   # Send rollback emergency alert
   $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
   if (Test-Path $alertScript) {
-    & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "ROLLBACK" -Details "Smoke check failed post-deployment. Reverted to previous stable release." -TunnelUrl $TunnelUrl
+    & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "ROLLBACK" -Details "Smoke check failed post-deployment. Reverted to previous stable release." -SiteUrl $SiteUrl
   }
   exit 1
 }
@@ -238,13 +237,13 @@ if ($allReleases.Count -gt 5) {
 $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
 if (Test-Path $alertScript) {
   $alertMsg = "Gated deployment complete. 828+ tests verified green in staging, production DB retained with zero data loss, live smoke 10/10 passed."
-  & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "COMPLETED" -Details $alertMsg -TunnelUrl $TunnelUrl
+  & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "COMPLETED" -Details $alertMsg -SiteUrl $SiteUrl
 }
 
 Write-Host "`n=================================================================" -ForegroundColor Cyan
 Write-Host "  [SUCCESS] PRODUCTION DEPLOYMENT COMPLETE AND 100% VERIFIED!" -ForegroundColor Green
 Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host "Public URL       : $TunnelUrl" -ForegroundColor White
+Write-Host "Public URL       : $SiteUrl" -ForegroundColor White
 Write-Host "Active Release   : release_$releaseTimestamp" -ForegroundColor White
 Write-Host "Staging Gate     : 828/828 Tests Passed (100% Green)" -ForegroundColor White
 Write-Host "Production DB    : Retained with Zero Data Loss (Orders and Orgs Intact)" -ForegroundColor White

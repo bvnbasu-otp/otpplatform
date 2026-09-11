@@ -1,13 +1,14 @@
-# 10. Deployment, Production Operations & Cloudflare Live Tunnel
+# 10. Deployment, Production Operations & Vercel Edge Hosting
 
 ## 1. Production Deployment Architecture
 
-The OTP Platform is deployed on a dedicated Windows production host utilizing containerized services, an automated Cloudflare Tunnel, and an atomic blue-green deployment pipeline:
+The OTP Platform is deployed with a decoupled architecture utilizing containerized backend services, an atomic blue-green deployment pipeline, and Vercel Global Edge CDN for the web application:
 
 - **Canonical Repository Path**: `G:\My Drive\otp`
+- **Frontend Edge CDN**: Vercel (`https://otpplatform-theta.vercel.app`)
 - **Container Engine**: Docker Desktop with Docker Compose v2
 - **Orchestration File**: [`docker-compose.prod.yml`](file:///G:/My%20Drive/otp/docker-compose.prod.yml)
-- **Public URL**: `https://strange-lenses-frequency-salvation.trycloudflare.com`
+- **Public URL**: `https://otpplatform-theta.vercel.app`
 - **Internal Web Server**: Vite 6 PWA listening on `0.0.0.0:3000` (serving `apps/web/dist`)
 - **Staging / Pre-Production Gateway**: Port `54321` (Kong) / Port `54322` (Staging Postgres)
 - **Production Database**: Port `5432` (`otp-prod-db`, Supabase Postgres 15)
@@ -172,14 +173,16 @@ services:
 
 ---
 
-## 6. Cloudflare Tunnel Watchdog Daemon (`scripts/start-live-tunnel.ps1`)
+## 6. Vercel Global Edge CDN Deployment
 
-Public access is established through a zero-cost Cloudflare Named / Quick Tunnel managed by an automated background watchdog:
-- **Script**: [`scripts/start-live-tunnel.ps1`](file:///G:/My%20Drive/otp/scripts/start-live-tunnel.ps1)
-- **Binary**: `C:\Program Files (x86)\cloudflared\cloudflared.exe`
-- **Target URL**: `http://localhost:3000`
-- **Public Domain**: `https://strange-lenses-frequency-salvation.trycloudflare.com`
-- **Watchdog Auto-Recovery**: The watchdog checks tunnel responsiveness every 30 seconds. If connection drops or the process exits, it automatically kills orphan instances and re-launches the tunnel, restoring public traffic in under 5 seconds without manual intervention.
+The frontend web application is hosted on Vercel's global edge network:
+- **Production URL**: `https://otpplatform-theta.vercel.app`
+- **GitHub Repository**: `bvnbasu-otp/otpplatform` (`main` branch)
+- **Framework Preset**: Vite / React 19
+- **Build Command**: `pnpm --filter @otp/web build`
+- **Output Directory**: `apps/web/dist`
+- **Automatic SSL/TLS**: Managed automatically by Vercel with zero-configuration global HTTPS.
+- **Continuous Deployment**: Every push to `main` triggers a live atomic build and deployment on Vercel.
 
 ---
 

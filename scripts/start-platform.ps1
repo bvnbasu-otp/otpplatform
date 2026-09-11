@@ -6,17 +6,15 @@
   1. Verifies and starts all Docker backend services (PostgreSQL, Auth, PostgREST, Kong, WAHA).
   2. Synchronizes database migrations (128 migrations with zero-data-loss protection).
   3. Launches the frontend web application on http://localhost:3000.
-  4. Starts the Cloudflare Tunnel watchdog for public HTTPS access.
-  5. Performs health checks and outputs active operational endpoints.
+  4. Performs health checks and outputs active operational endpoints.
 #>
 
 [CmdletBinding()]
 param (
   [switch]$Dev,
-  [switch]$NoTunnel,
   [switch]$NoBrowser,
   [int]$Port = 3000,
-  [string]$TunnelUrl = 'https://incoming-reductions-incoming-stevens.trycloudflare.com'
+  [string]$SiteUrl = 'https://otpplatform-theta.vercel.app'
 )
 
 $ErrorActionPreference = 'Continue'
@@ -35,13 +33,13 @@ Write-Host '     OTP PLATFORM — MASTER STANDALONE LAUNCHER                   '
 Write-Host '=================================================================' -ForegroundColor Cyan
 Write-Host " Workspace : $WorkspaceRoot" -ForegroundColor DarkGray
 Write-Host " Local Web : http://localhost:$Port" -ForegroundColor DarkGray
-Write-Host " Live URL  : $TunnelUrl" -ForegroundColor DarkGray
+Write-Host " Live URL  : $SiteUrl" -ForegroundColor DarkGray
 Write-Host ''
 
 # -----------------------------------------------------------------------------
 # 1. Start Docker Backend Containers
 # -----------------------------------------------------------------------------
-Write-Host '[1/4] Checking and starting backend Docker containers...' -ForegroundColor Yellow
+Write-Host '[1/3] Checking and starting backend Docker containers...' -ForegroundColor Yellow
 
 $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
 if (-not $dockerCmd) {
@@ -62,7 +60,7 @@ if ($LASTEXITCODE -eq 0) {
 # 2. Verify Database Readiness & Migrations
 # -----------------------------------------------------------------------------
 Write-Host ''
-Write-Host '[2/4] Verifying PostgreSQL database and schema migrations...' -ForegroundColor Yellow
+Write-Host '[2/3] Verifying PostgreSQL database and schema migrations...' -ForegroundColor Yellow
 
 $dbReady = $false
 for ($i = 1; $i -le 15; $i++) {
@@ -101,34 +99,10 @@ if ($dbReady) {
 }
 
 # -----------------------------------------------------------------------------
-# 3. Start Cloudflare Tunnel (Background Process)
-# -----------------------------------------------------------------------------
-if (-not $NoTunnel) {
-  Write-Host ''
-  Write-Host '[3/4] Launching Cloudflare Tunnel watchdog...' -ForegroundColor Yellow
-  $cloudflaredCmd = Get-Command cloudflared -ErrorAction SilentlyContinue
-  if (-not $cloudflaredCmd) {
-    $cfPath = 'C:\Program Files (x86)\cloudflared\cloudflared.exe'
-    if (Test-Path $cfPath) { $cloudflaredCmd = $cfPath }
-  }
-
-  if ($cloudflaredCmd) {
-    $tunnelScript = Join-Path $WorkspaceRoot 'scripts\start-live-tunnel.ps1'
-    Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -NoExit -File `"$tunnelScript`" -LocalPort $Port" -WindowStyle Minimized
-    Write-Host "[OK] Cloudflare Tunnel watchdog started in background -> $TunnelUrl" -ForegroundColor Green
-  } else {
-    Write-Host '[WARN] cloudflared.exe not found. Public tunnel skipped.' -ForegroundColor Yellow
-  }
-} else {
-  Write-Host ''
-  Write-Host '[3/4] Cloudflare Tunnel skipped (-NoTunnel flag).' -ForegroundColor DarkGray
-}
-
-# -----------------------------------------------------------------------------
-# 4. Launch Frontend Web Server
+# 3. Launch Frontend Web Server
 # -----------------------------------------------------------------------------
 Write-Host ''
-Write-Host "[4/4] Starting Web Application Server on port $Port..." -ForegroundColor Yellow
+Write-Host "[3/3] Starting Web Application Server on port $Port..." -ForegroundColor Yellow
 
 if (-not $NoBrowser) {
   Start-Process "http://localhost:$Port"
@@ -139,7 +113,7 @@ Write-Host '=================================================================' -
 Write-Host '  OTP PLATFORM IS RUNNING AND READY FOR USE                      ' -ForegroundColor Green
 Write-Host '=================================================================' -ForegroundColor Cyan
 Write-Host "  Local Web App   : http://localhost:$Port" -ForegroundColor White
-Write-Host "  Public Live URL : $TunnelUrl" -ForegroundColor White
+Write-Host "  Public Live URL : $SiteUrl" -ForegroundColor White
 Write-Host '  Kong Gateway    : http://localhost:54321' -ForegroundColor White
 Write-Host '  Auth API        : http://localhost:9999' -ForegroundColor White
 Write-Host '  PostgREST API   : http://localhost:3001' -ForegroundColor White

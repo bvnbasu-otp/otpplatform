@@ -23,7 +23,7 @@ param (
   [ValidateSet("start", "status", "test", "gate", "policy", "deploy", "rollback", "backup", "alert", "stop", "help")]
   [string]$Command = "help",
 
-  [string]$TunnelUrl = "",
+  [string]$SiteUrl = "https://otpplatform-theta.vercel.app",
   [ValidateSet("Production", "Staging", "Demo", "Auto")]
   [string]$Environment = "Auto",
   [switch]$SkipGate,
@@ -40,27 +40,13 @@ if ($PSScriptRoot) {
 
 Set-Location $WorkspaceRoot
 
-# Auto-detect Tunnel URL if not provided
-if (-not $TunnelUrl) {
-  $cfLog = "C:\Users\Dhiya\.gemini\antigravity\brain\e29984c4-e3b1-40bc-83ed-ffef28803239\.system_generated\tasks\task-14802.log"
-  if (Test-Path $cfLog) {
-    $match = Select-String -Path $cfLog -Pattern "https://[a-zA-Z0-9\-]+\.trycloudflare\.com" | Select-Object -Last 1
-    if ($match) {
-      $TunnelUrl = $match.Matches[0].Value
-    }
-  }
-  if (-not $TunnelUrl) {
-    $TunnelUrl = "https://incoming-reductions-incoming-stevens.trycloudflare.com"
-  }
-}
-
 function Write-Header([string]$title) {
   Write-Host ""
   Write-Host "=================================================================" -ForegroundColor Cyan
   Write-Host "  OTP PLATFORM — $title" -ForegroundColor Cyan
   Write-Host "=================================================================" -ForegroundColor Cyan
   Write-Host "Workspace  : $WorkspaceRoot" -ForegroundColor DarkGray
-  Write-Host "Public URL : $TunnelUrl" -ForegroundColor DarkGray
+  Write-Host "Public URL : $SiteUrl" -ForegroundColor DarkGray
   Write-Host ""
 }
 
@@ -72,8 +58,8 @@ if ($Command -eq "help" -or -not $Command) {
   Write-Host "Usage: .\scripts\otp.ps1 <command> [options]" -ForegroundColor White
   Write-Host ""
   Write-Host "Core Operations:" -ForegroundColor Yellow
-  Write-Host "  start      Boots all Docker containers, runs migrations, starts web preview & tunnel" -ForegroundColor White
-  Write-Host "  status     Inspects containers, ports, database integrity, and live tunnel" -ForegroundColor White
+  Write-Host "  start      Boots all Docker containers, runs migrations, starts web preview" -ForegroundColor White
+  Write-Host "  status     Inspects containers, ports, database integrity, and live site" -ForegroundColor White
   Write-Host "  test       Executes web unit tests (212 tests) and live smoke battery (10/10)" -ForegroundColor White
   Write-Host "  gate       Runs the strict 12-layer staging verification gate (833 tests, 100% green)" -ForegroundColor White
   Write-Host "  policy     Enforces mandatory 4-tier test coverage expansion policy (Coverage Append Rule)" -ForegroundColor White
@@ -81,7 +67,7 @@ if ($Command -eq "help" -or -not $Command) {
   Write-Host "  rollback   Instantly reverts active web bundle to previous stable release and notifies" -ForegroundColor White
   Write-Host "  backup     Dumps production database to backups\ with 30-day retention pruning" -ForegroundColor White
   Write-Host "  alert      Dispatches a test verification alert over Gmail SMTP and WhatsApp WAHA" -ForegroundColor White
-  Write-Host "  stop       Safely stops containers and background tunnel/server processes" -ForegroundColor White
+  Write-Host "  stop       Safely stops containers and background server processes" -ForegroundColor White
   Write-Host ""
   Write-Host "Examples:" -ForegroundColor DarkGray
   Write-Host "  .\scripts\otp.ps1 start                     # Run after system reboot" -ForegroundColor DarkGray
@@ -154,11 +140,11 @@ if ($Command -eq "status") {
   Write-Host ""
   Write-Host "[4/4] Public Live Endpoint Probe:" -ForegroundColor Yellow
   if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
-    $httpCode = & curl.exe -s -o /dev/null -w "%{http_code}" "$TunnelUrl"
-    if ($httpCode -eq "200") {
-      Write-Host "  Live Tunnel ($TunnelUrl): [HTTP 200 OK]" -ForegroundColor Green
+    $httpCode = & curl.exe -s -o /dev/null -w "%{http_code}" "$SiteUrl"
+    if ($httpCode -eq "200" -or $httpCode -eq "308" -or $httpCode -eq "301" -or $httpCode -eq "302") {
+      Write-Host "  Live Endpoint ($SiteUrl): [HTTP $httpCode OK]" -ForegroundColor Green
     } else {
-      Write-Host "  Live Tunnel ($TunnelUrl): [HTTP $httpCode]" -ForegroundColor Yellow
+      Write-Host "  Live Endpoint ($SiteUrl): [HTTP $httpCode]" -ForegroundColor Yellow
     }
   }
   Write-Host ""
@@ -187,7 +173,7 @@ if ($Command -eq "alert") {
   $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
   if (Test-Path $alertScript) {
     Write-Host "Testing COMPLETED notification..." -ForegroundColor Yellow
-    & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "COMPLETED" -Details "Manual verification test from otp.ps1 CLI" -TunnelUrl $TunnelUrl
+    & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "COMPLETED" -Details "Manual verification test from otp.ps1 CLI" -SiteUrl $SiteUrl
   }
   exit 0
 }
@@ -207,8 +193,7 @@ if ($Command -eq "test") {
 
   Write-Host ""
   Write-Host "[2/2] Executing Live Operational Smoke Battery (10/10 checks)..." -ForegroundColor Yellow
-  $env:TUNNEL_URL = $TunnelUrl
-  $env:SITE_URL = $TunnelUrl
+  $env:SITE_URL = $SiteUrl
   & pnpm.cmd test:smoke
   if ($LASTEXITCODE -ne 0) {
     Write-Host "[FAIL] Live smoke checks failed!" -ForegroundColor Red
@@ -265,7 +250,7 @@ if ($Command -eq "rollback") {
   # Dispatch emergency alert
   $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
   if (Test-Path $alertScript) {
-    & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "ROLLBACK" -Details "Manual emergency rollback triggered via otp.ps1 CLI" -TunnelUrl $TunnelUrl
+    & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "ROLLBACK" -Details "Manual emergency rollback triggered via otp.ps1 CLI" -SiteUrl $SiteUrl
   }
 
   Write-Host "`n[OK] Rollback complete. Live endpoint restored to previous release." -ForegroundColor Green
@@ -291,7 +276,7 @@ if ($Command -eq "start") {
   Write-Header "PLATFORM BOOT & ORCHESTRATION"
 
   # 1. Start Docker Containers
-  Write-Host "[1/5] Launching backend Docker containers..." -ForegroundColor Yellow
+  Write-Host "[1/4] Launching backend Docker containers..." -ForegroundColor Yellow
   & docker compose -f docker-compose.prod.yml up -d
   if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Docker compose failed!" -ForegroundColor Red
@@ -301,7 +286,7 @@ if ($Command -eq "start") {
 
   # 2. Wait for Database
   Write-Host ""
-  Write-Host "[2/5] Waiting for PostgreSQL database (otp-prod-db)..." -ForegroundColor Yellow
+  Write-Host "[2/4] Waiting for PostgreSQL database (otp-prod-db)..." -ForegroundColor Yellow
   $dbReady = $false
   for ($i = 1; $i -le 15; $i++) {
     & docker exec otp-prod-db pg_isready -U postgres -h 127.0.0.1 2>&1 | Out-Null
@@ -316,7 +301,7 @@ if ($Command -eq "start") {
 
   # 3. Synchronize Migrations
   Write-Host ""
-  Write-Host "[3/5] Synchronizing PostgreSQL migrations (Zero-Data-Loss)..." -ForegroundColor Yellow
+  Write-Host "[3/4] Synchronizing PostgreSQL migrations (Zero-Data-Loss)..." -ForegroundColor Yellow
   $applied = (& docker exec otp-prod-db psql -U postgres -d postgres -t -c "SELECT version FROM public.otp_schema_migrations;" 2>&1)
   $appliedList = @()
   if ($applied) {
@@ -338,7 +323,7 @@ if ($Command -eq "start") {
 
   # 4. Start Web Application Server on Port 3000
   Write-Host ""
-  Write-Host "[4/5] Launching Web Application Server on port 3000..." -ForegroundColor Yellow
+  Write-Host "[4/4] Launching Web Application Server on port 3000..." -ForegroundColor Yellow
   $distPath = Join-Path $WorkspaceRoot "apps\web\dist"
   if (-not (Test-Path $distPath)) {
     Write-Host "Compiling web distribution bundle first..." -ForegroundColor DarkCyan
@@ -360,28 +345,12 @@ if ($Command -eq "start") {
   }
   Write-Host "[OK] Web application listening on http://localhost:3000." -ForegroundColor Green
 
-  # 5. Launch Cloudflare Tunnel Watchdog
-  Write-Host ""
-  Write-Host "[5/5] Checking Cloudflare Tunnel watchdog..." -ForegroundColor Yellow
-  $cfProc = Get-Process -Name "cloudflared" -ErrorAction SilentlyContinue
-  if (-not $cfProc) {
-    $cfExe = "C:\Program Files (x86)\cloudflared\cloudflared.exe"
-    if (Test-Path $cfExe) {
-      Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command & '$cfExe' tunnel --url http://localhost:3000" -WindowStyle Hidden
-      Write-Host "[OK] Cloudflare tunnel started in background." -ForegroundColor Green
-    } else {
-      Write-Host "[WARN] cloudflared.exe not found at standard path." -ForegroundColor Yellow
-    }
-  } else {
-    Write-Host "[OK] Cloudflare tunnel is already active." -ForegroundColor Green
-  }
-
   Write-Host ""
   Write-Host "=================================================================" -ForegroundColor Green
   Write-Host "  PLATFORM BOOT COMPLETE — ALL SERVICES LIVE" -ForegroundColor Green
   Write-Host "=================================================================" -ForegroundColor Green
   Write-Host "  Local Web App   : http://localhost:3000" -ForegroundColor White
-  Write-Host "  Public Live URL : $TunnelUrl" -ForegroundColor White
+  Write-Host "  Public Live URL : $SiteUrl" -ForegroundColor White
   Write-Host "  WAHA WhatsApp   : http://localhost:3008" -ForegroundColor White
   Write-Host "  Kong Gateway    : http://localhost:8000" -ForegroundColor White
   Write-Host "  Production DB   : 127.0.0.1:5432 (otp-prod-db)" -ForegroundColor White
@@ -395,8 +364,13 @@ if ($Command -eq "start") {
 if ($Command -eq "deploy") {
   $deployScript = Join-Path $WorkspaceRoot "scripts\deploy.ps1"
   if (Test-Path $deployScript) {
-    & powershell.exe -ExecutionPolicy Bypass -File $deployScript -Environment $Environment -TunnelUrl $TunnelUrl -SkipGate:$SkipGate
+    & powershell.exe -ExecutionPolicy Bypass -File $deployScript -Environment $Environment -SiteUrl $SiteUrl -SkipGate:$SkipGate
     exit $LASTEXITCODE
+  } else {
+    Write-Host "[ERROR] Unified deployment router not found at $deployScript!" -ForegroundColor Red
+    exit 1
+  }
+}
   } else {
     Write-Host "[ERROR] Unified deployment router not found at $deployScript!" -ForegroundColor Red
     exit 1

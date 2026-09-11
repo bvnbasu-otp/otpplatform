@@ -201,7 +201,7 @@ export async function runLiveSmokeTests(): Promise<{ passed: number; failed: num
   // 8. GoTrue Token Verification Direct Link Redirection (HTTP 303 to /reset-password)
   await recordCheck('GoTrue Recovery Link Redirection Invariant', 'GET /auth/v1/verify', async () => {
     const fakeTokenHash = 'c88dacc4f02a78faa94468448b7d3565575f5204d2cb645d0a24aa7b';
-    const redirectTo = 'https://incoming-reductions-incoming-stevens.trycloudflare.com/reset-password';
+    const redirectTo = 'https://otpplatform-theta.vercel.app/reset-password';
     const verifyUrl = `${SUPABASE_URL}/auth/v1/verify?token=${fakeTokenHash}&type=recovery&redirect_to=${encodeURIComponent(redirectTo)}`;
     const res = await fetch(verifyUrl, { method: 'GET', redirect: 'manual' });
     const location = res.headers.get('location') || '';
@@ -211,7 +211,7 @@ export async function runLiveSmokeTests(): Promise<{ passed: number; failed: num
       }
       return `Redirected to ${location.slice(0, 60)}...`;
     }
-    if (location.includes('incoming-reductions-incoming-stevens.trycloudflare.com') || location.includes('trycloudflare.com')) {
+    if (location.includes('otpplatform-theta.vercel.app') || location.includes('vercel.app')) {
       return `Allow list active, redirected to: ${location.slice(0, 50)}...`;
     }
     throw new Error(`Unexpected status ${res.status} or location: ${location}`);

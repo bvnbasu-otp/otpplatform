@@ -135,7 +135,7 @@ export class MockGoTrueEngine {
     const header: JwtHeader = { alg: 'HS256', typ: 'JWT' };
     const now = Math.floor(Date.now() / 1000);
     const payload: JwtPayload = {
-      iss: 'https://incoming-reductions-incoming-stevens.trycloudflare.com/auth/v1',
+      iss: 'https://otpplatform-theta.vercel.app/auth/v1',
       sub: user.authUserId,
       aud: 'authenticated',
       role: 'authenticated',

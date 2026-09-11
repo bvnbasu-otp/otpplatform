@@ -16,7 +16,7 @@ Set-Location "G:\My Drive\otp"
 
 | Command | Action | When to Use |
 |---|---|---|
-| `.\scripts\otp.ps1 start` | Boots all Docker containers (with strict `127.0.0.1` loopback bindings), runs DB migrations, launches web app on port 3000, and starts Cloudflare Tunnel. | After PC reboot or host restart. |
+| `.\scripts\otp.ps1 start` | Boots all Docker containers (with strict `127.0.0.1` loopback bindings), runs DB migrations, and launches local web preview on port 3000. | After PC reboot or host restart. |
 | `.\scripts\otp.ps1 status` | Diagnostic check: displays container states, loopback port listeners (3000, 3008, 5432, 8000, 54321), DB integrity lock, and live URL response. | Anytime to verify system health. |
 | `.\scripts\otp.ps1 test` | Runs web unit test suite (235 tests) + live un-mocked smoke test battery (11/11 checks). | Fast verification after local code edits. |
 | `.\scripts\otp.ps1 gate` | Executes the strict **12-Layer Staging Verification Gate** (852 tests, 100% green required). | Pre-flight check before production promotion. |
@@ -24,7 +24,7 @@ Set-Location "G:\My Drive\otp"
 | `.\scripts\otp.ps1 rollback` | **Instant Rollback**: Swaps active `apps/web/dist` with `apps/web/dist_prev`, restarts web server, and dispatches emergency `ROLLBACK` email & WhatsApp alerts. | If production encounters an unexpected issue. |
 | `.\scripts\otp.ps1 backup` | Dumps production database (`otp-prod-db`) to `backups/` and prunes backups older than 30 days. | Before manual DB maintenance or on-demand snapshot. |
 | `.\scripts\otp.ps1 alert` | Dispatches test email (Gmail SMTP) and WhatsApp (WAHA) alerts to verify communication channels. | To test admin notification delivery. |
-| `.\scripts\otp.ps1 stop` | Safely stops containers and background tunnel/server processes without data loss. | Clean shutdown before host maintenance. |
+| `.\scripts\otp.ps1 stop` | Safely stops containers and background server processes without data loss. | Clean shutdown before host maintenance. |
 
 ---
 
@@ -141,9 +141,8 @@ If you ever need to run an individual script directly without the `otp.ps1` wrap
 | **Fast Update** | `.\scripts\update-live.ps1` | Fast server refresh, backup, migration sync, bundle rebuild, and live smoke test. |
 | **DB Backup** | `.\scripts\backup-prod-db.ps1` | Timestamped dump of `otp-prod-db` to `backups/`. |
 | **Alerts** | `.\scripts\send-maintenance-alert.ps1 -Stage <STARTING|COMPLETED|ROLLBACK>` | Dispatches dual-channel Gmail SMTP and WAHA WhatsApp alerts. |
-| **Platform Boot** | `.\scripts\start-platform.ps1` | Standalone platform orchestrator for containers, web app, and Cloudflare tunnel. |
+| **Platform Boot** | `.\scripts\start-platform.ps1` | Standalone platform orchestrator for containers and web app. |
 | **Shutdown** | `.\scripts\stop-platform.ps1` | Graceful shutdown of Docker containers and background processes. |
-| **Tunnel Watchdog**| `.\scripts\start-live-tunnel.ps1` | Auto-restarting Cloudflare tunnel watchdog on port 3000. |
 
 ---
 
@@ -152,7 +151,7 @@ If you ever need to run an individual script directly without the `otp.ps1` wrap
 > [!NOTE]
 > **Strict Loopback Policy**: All production internal ports are strictly bound to `127.0.0.1` (loopback only) to eliminate network interface exposure.
 
-- **Public Ingress**: Automatically proxied via Cloudflare Tunnel (`https://*.trycloudflare.com`) ➔ `http://localhost:3000`
+- **Public Web App (Vercel Edge)**: `https://otpplatform-theta.vercel.app`
 - **Local Web App**: `http://localhost:3000` (Vite PWA)
 - **Kong Production Gateway**: `http://127.0.0.1:8000` (Port `8000`, strictly loopback)
 - **GoTrue Production Auth Engine**: `http://127.0.0.1:9999` (Port `9999`, strictly loopback)

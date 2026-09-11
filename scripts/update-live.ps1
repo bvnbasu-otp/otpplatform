@@ -10,7 +10,7 @@
 param (
   [switch]$SkipBuild,
   [switch]$RestartOnly,
-  [string]$TunnelUrl = "https://incoming-reductions-incoming-stevens.trycloudflare.com"
+  [string]$SiteUrl = "https://otpplatform-theta.vercel.app"
 )
 
 # Do not treat native CLI stderr streams (such as docker status lines) as terminating errors
@@ -29,12 +29,12 @@ Write-Host "=================================================================" -
 Write-Host "  OTP Platform - Fast Server Refresh and Update Pipeline" -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "Workspace: $WorkspaceRoot" -ForegroundColor DarkGray
-Write-Host "Active URL: $TunnelUrl" -ForegroundColor DarkGray
+Write-Host "Active URL: $SiteUrl" -ForegroundColor DarkGray
 
 # 0. Pre-Maintenance Automated Notification (Email + WhatsApp)
 Write-Host ""
 Write-Host "[0/4] Dispatching maintenance START alerts (Email + WhatsApp)..." -ForegroundColor Yellow
-powershell.exe -ExecutionPolicy Bypass -File "$WorkspaceRoot\scripts\send-maintenance-alert.ps1" -Stage "STARTING" -TunnelUrl $TunnelUrl
+powershell.exe -ExecutionPolicy Bypass -File "$WorkspaceRoot\scripts\send-maintenance-alert.ps1" -Stage "STARTING" -SiteUrl $SiteUrl
 
 # 0.5. Automated Pre-Maintenance Database Backup
 Write-Host ""
@@ -167,8 +167,7 @@ if (-not $webConn) {
     }
   }
 }
-$env:TUNNEL_URL = $TunnelUrl
-$env:SITE_URL = $TunnelUrl
+$env:SITE_URL = $SiteUrl
 
 # 4. Live Operational & Auth Smoke Test Battery
 Write-Host ""
@@ -196,7 +195,7 @@ if (-not $smokeSuccess) {
     Copy-Item -Path $prevDistPath -Destination $distPath -Recurse -Force
     Write-Host "[ROLLBACK] Reverted web bundle to previous working release." -ForegroundColor Yellow
   }
-  powershell.exe -ExecutionPolicy Bypass -File "$WorkspaceRoot\scripts\send-maintenance-alert.ps1" -Stage "ROLLBACK" -Details "Smoke checks failed; web bundle reverted." -TunnelUrl $TunnelUrl
+  powershell.exe -ExecutionPolicy Bypass -File "$WorkspaceRoot\scripts\send-maintenance-alert.ps1" -Stage "ROLLBACK" -Details "Smoke checks failed; web bundle reverted." -SiteUrl $SiteUrl
   exit 1
 }
 
@@ -207,8 +206,8 @@ Write-Host ""
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "  UPDATE COMPLETE - OTP PLATFORM IS LIVE AND READY" -ForegroundColor Green
 Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host "Web App Endpoint : $TunnelUrl" -ForegroundColor White
-Write-Host "Health Check     : $TunnelUrl/health.json" -ForegroundColor White
+Write-Host "Web App Endpoint : $SiteUrl" -ForegroundColor White
+Write-Host "Health Check     : $SiteUrl/health.json" -ForegroundColor White
 Write-Host 'Live Smoke Tests : 10 / 10 Checks PASSED (100% Verified)' -ForegroundColor White
 Write-Host ""
 
@@ -218,6 +217,6 @@ $details = "All production containers and 10/10 live smoke checks verified healt
 if ($appliedCount) {
   $details = "$appliedCount migrations synchronized, 10/10 live smoke checks passed"
 }
-powershell.exe -ExecutionPolicy Bypass -File "$WorkspaceRoot\scripts\send-maintenance-alert.ps1" -Stage "COMPLETED" -Details $details -TunnelUrl $TunnelUrl
+powershell.exe -ExecutionPolicy Bypass -File "$WorkspaceRoot\scripts\send-maintenance-alert.ps1" -Stage "COMPLETED" -Details $details -SiteUrl $SiteUrl
 Write-Host ""
 

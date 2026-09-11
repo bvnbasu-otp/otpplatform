@@ -9,7 +9,7 @@ This is a live test notification from your OTP Platform instance.
 
 🔐 *Your Sample Verification PIN:* *729401*
 ⏱️ *Expires in:* 10 minutes
-🌐 *Platform URL:* https://incoming-reductions-incoming-stevens.trycloudflare.com
+🌐 *Platform URL:* https://otpplatform-theta.vercel.app
 
 ✅ *WhatsApp Gateway:* Active & Connected (+91 99729 67530)
 ✅ *Status:* 100% Operational (Zero Cost / Self-Hosted)

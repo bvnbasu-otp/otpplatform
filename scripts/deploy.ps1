@@ -27,7 +27,7 @@ param (
   [ValidateSet("Production", "Staging", "Demo", "Auto")]
   [string]$Environment = "Auto",
 
-  [string]$TunnelUrl = "https://incoming-reductions-incoming-stevens.trycloudflare.com",
+  [string]$SiteUrl = "https://otpplatform-theta.vercel.app",
   [switch]$DryRun,
   [switch]$SkipGate
 )
@@ -40,7 +40,7 @@ Write-Host "`n================================================================="
 Write-Host "  OTP PLATFORM - UNIFIED CI/CD DEPLOYMENT PIPELINE" -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "Workspace  : $WorkspaceRoot" -ForegroundColor DarkGray
-Write-Host "Live URL   : $TunnelUrl" -ForegroundColor DarkGray
+Write-Host "Live URL   : $SiteUrl" -ForegroundColor DarkGray
 $nowStr = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
 Write-Host "Timestamp  : $nowStr" -ForegroundColor DarkGray
 
@@ -217,7 +217,7 @@ Write-Host "`n[STAGE 5/5] DEPLOY - Routing to target environment ($targetEnv)...
 
 if ($targetEnv -eq "PRODUCTION") {
   Write-Host "Initiating atomic Production promotion pipeline..." -ForegroundColor Yellow
-  & powershell.exe -ExecutionPolicy Bypass -File "$PSScriptRoot\deploy-prod.ps1" -TunnelUrl $TunnelUrl
+  & powershell.exe -ExecutionPolicy Bypass -File "$PSScriptRoot\deploy-prod.ps1" -SiteUrl $SiteUrl
   if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Production deployment failed. Automatic rollback preserved stability." -ForegroundColor Red
     exit $LASTEXITCODE
@@ -239,6 +239,6 @@ Write-Host "  CI/CD GATED DEPLOYMENT SUCCESSFUL!" -ForegroundColor Green
 Write-Host "=================================================================" -ForegroundColor Green
 Write-Host "  Deployed Environment : $targetEnv" -ForegroundColor White
 Write-Host "  Build Version Hash   : $buildHash" -ForegroundColor White
-Write-Host "  Public Live Endpoint : $TunnelUrl" -ForegroundColor White
+Write-Host "  Public Live Endpoint : $SiteUrl" -ForegroundColor White
 Write-Host ""
 exit 0

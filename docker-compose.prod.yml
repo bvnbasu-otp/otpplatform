@@ -37,10 +37,10 @@ services:
       GOTRUE_API_PORT: 9999
       GOTRUE_DB_DRIVER: postgres
       GOTRUE_DB_DATABASE_URL: postgresql://supabase_auth_admin:${POSTGRES_PASSWORD:-SuperSecretProdPostgresPassword2026!}@db:5432/postgres?sslmode=disable
-      GOTRUE_SITE_URL: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}
-      GOTRUE_URI_ALLOW_LIST: http://127.0.0.1:3000/*,http://localhost:3000/*,http://localhost:3000/reset-password,${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/*,${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/reset-password,https://*.trycloudflare.com/*
-      API_EXTERNAL_URL: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/auth/v1
-      GOTRUE_JWT_ISSUER: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/auth/v1
+      GOTRUE_SITE_URL: ${SITE_URL:-https://otpplatform-theta.vercel.app}
+      GOTRUE_URI_ALLOW_LIST: http://127.0.0.1:3000/*,http://localhost:3000/*,http://localhost:3000/reset-password,http://localhost:5173/*,${SITE_URL:-https://otpplatform-theta.vercel.app}/*,${SITE_URL:-https://otpplatform-theta.vercel.app}/reset-password,https://*.vercel.app/*
+      API_EXTERNAL_URL: ${SITE_URL:-https://otpplatform-theta.vercel.app}/auth/v1
+      GOTRUE_JWT_ISSUER: ${SITE_URL:-https://otpplatform-theta.vercel.app}/auth/v1
       GOTRUE_JWT_ADMIN_ROLES: service_role
       GOTRUE_JWT_AUD: authenticated
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
@@ -59,9 +59,9 @@ services:
       GOTRUE_MAILER_OTP_LENGTH: 6
       GOTRUE_MAILER_TEMPLATE_RELOADING_ENABLED: "true"
       # Email Templates with 6-digit numeric OTP code support (served via HTTP)
-      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/email-templates/magic_link.html
-      GOTRUE_MAILER_TEMPLATES_RECOVERY: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/email-templates/recovery.html
-      GOTRUE_MAILER_TEMPLATES_INVITE: ${SITE_URL:-https://incoming-reductions-incoming-stevens.trycloudflare.com}/email-templates/invite.html
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: ${SITE_URL:-https://otpplatform-theta.vercel.app}/email-templates/magic_link.html
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: ${SITE_URL:-https://otpplatform-theta.vercel.app}/email-templates/recovery.html
+      GOTRUE_MAILER_TEMPLATES_INVITE: ${SITE_URL:-https://otpplatform-theta.vercel.app}/email-templates/invite.html
 
   # ---------------------------------------------------------------------------
   # PostgREST API

@@ -17,7 +17,7 @@ Unlike commercial auction houses, public tender directories, or vendor listing s
 
 | Parameter | Production Value | Verification Status |
 | :--- | :--- | :---: |
-| **Live Public Endpoint** | `https://incoming-reductions-incoming-stevens.trycloudflare.com` | 🟢 HTTP 200 OK |
+| **Live Public Endpoint** | `https://otpplatform-theta.vercel.app` | 🟢 HTTP 200 OK |
 | **Local Application Port** | `http://localhost:3000` (Vite PWA) | 🟢 HTTP 200 OK |
 | **Canonical Workspace** | `G:\My Drive\otp` (Exclusively; secondary junctions/aliases strictly prohibited) | 🟢 Enforced |
 | **Primary Super Administrator** | **Baskar Loganathan** (`bvnbasu@gmail.com`) | 🟢 Verified OWNER |
@@ -74,8 +74,8 @@ This documentation library has been consolidated, standardized, and organized in
 - [**09. Comprehensive Feature Specifications by Module**](./09-MODULE-FEATURE-SPECIFICATIONS.md)  
   *Detailed Feature Guide across Super Admin Console (`/admin` with SQL Query Terminal, Buyer Troubleshooter, Seller Troubleshooter, Telemetry & Support Tickets), Buyer Portal (`/requirements`, `/rfq`), and Supplier Portal (`/supplier`).*
 
-- [**10. Deployment, Production Operations & Cloudflare Live Tunnel**](./10-DEPLOYMENT-AND-TUNNEL-OPERATIONS.md)  
-  *Gated Blue-Green Deployment Pipeline (`deploy-prod.ps1`), Staging Gate Enforcement, Cloudflare Tunnel Auto-Watchdog (`start-live-tunnel.ps1`), Production Zero-Downtime Old-Code Protection.*
+- [**10. Deployment, Production Operations & Vercel Edge Hosting**](./10-DEPLOYMENT-AND-TUNNEL-OPERATIONS.md)  
+  *Gated Blue-Green Deployment Pipeline (`deploy-prod.ps1`), Staging Gate Enforcement, Static Vercel Edge CDN Hosting, Production Zero-Downtime Old-Code Protection.*
 
 ### 4. Quality Assurance, Testing & Maintenance
 - [**11. Testing Architecture, Master Regression & Superadmin Test Center**](./11-TESTING-AND-REGRESSION-SUITE.md)  

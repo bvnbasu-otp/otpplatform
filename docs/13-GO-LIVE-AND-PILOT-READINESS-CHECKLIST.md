@@ -33,9 +33,9 @@ Before opening the platform to friendly trial users or general production traffi
 - [x] **Environment Separation**: Clean split between demo and production mode flags (`admin_mode_data_isolation` in migration `00128`).
 - [ ] **Rotate Default Secrets for Custom Domain**: Replace fallback secrets in `docker-compose.prod.yml` with fresh 64-character entropy strings when binding the production domain.
 
-### 2.2 Domain & Cloudflare Named Tunnel
-- [x] **Live Cloudflare Tunnel Active**: Ephemeral tunnel daemon running stably (`https://incoming-reductions-incoming-stevens.trycloudflare.com`) proxying port 3000.
-- [ ] **Production Named Tunnel Binding**: Transition from Quick Tunnel to authoritative production domain (e.g., `app.opentradeprocurement.ai`) upon DNS delegation.
+### 2.2 Domain & Vercel Edge Hosting
+- [x] **Live Vercel Edge Endpoint Active**: Production frontend deployed and accessible over HTTPS at `https://otpplatform-theta.vercel.app`.
+- [ ] **Custom Domain Binding**: Optional CNAME delegation to custom domain (e.g., `app.opentradeprocurement.ai`) in Vercel project settings.
 - [x] **Universal Navigation**: OTP Logo consistently routes to `/` with session-retaining dashboard access chips for authenticated users.
 
 ### 2.3 Row-Level Security (RLS) & Role Purity

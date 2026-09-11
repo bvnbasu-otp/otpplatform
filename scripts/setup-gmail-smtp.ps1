@@ -78,25 +78,25 @@ try {
     $_ -and $_ -notmatch '^GOTRUE_SMTP_' -and $_ -notmatch '^GOTRUE_MAILER_AUTOCONFIRM=' -and $_ -notmatch '^GOTRUE_SITE_URL=' -and $_ -notmatch '^API_EXTERNAL_URL=' -and $_ -notmatch '^GOTRUE_JWT_ISSUER=' -and $_ -notmatch '^GOTRUE_URI_ALLOW_LIST=' -and $_ -notmatch '^GOTRUE_MAILER_TEMPLATES_'
   })
 
-  $LiveTunnel = "https://incoming-reductions-incoming-stevens.trycloudflare.com"
+  $LiveSite = "https://otpplatform-theta.vercel.app"
   if (Test-Path (Join-Path $WorkspaceRoot ".env.auth")) {
     $authLines = Get-Content (Join-Path $WorkspaceRoot ".env.auth")
     foreach ($line in $authLines) {
       if ($line -match '^GOTRUE_SITE_URL=(.+)$') {
-        $LiveTunnel = $matches[1].Trim()
+        $LiveSite = $matches[1].Trim()
       }
     }
   }
 
-  $envList += "GOTRUE_SITE_URL=$LiveTunnel"
-  $envList += "GOTRUE_URI_ALLOW_LIST=http://127.0.0.1:3000/*,http://localhost:3000/*,http://localhost:3000/reset-password,$LiveTunnel/*,$LiveTunnel/reset-password,https://*.trycloudflare.com/*"
-  $envList += "API_EXTERNAL_URL=$LiveTunnel/auth/v1"
-  $envList += "GOTRUE_JWT_ISSUER=$LiveTunnel/auth/v1"
-  $TunnelHost = ([System.Uri]::new($LiveTunnel)).Host
-  $envList += "GOTRUE_MAILER_TEMPLATES_MAGIC_LINK=$LiveTunnel/email-templates/magic_link.html"
-  $envList += "GOTRUE_MAILER_TEMPLATES_RECOVERY=$LiveTunnel/email-templates/recovery.html"
-  $envList += "GOTRUE_MAILER_TEMPLATES_INVITE=$LiveTunnel/email-templates/invite.html"
-  $envList += "GOTRUE_MAILER_EXTERNAL_HOSTS=127.0.0.1,localhost,$TunnelHost"
+  $envList += "GOTRUE_SITE_URL=$LiveSite"
+  $envList += "GOTRUE_URI_ALLOW_LIST=http://127.0.0.1:3000/*,http://localhost:3000/*,http://localhost:3000/reset-password,http://localhost:5173/*,$LiveSite/*,$LiveSite/reset-password,https://*.vercel.app/*"
+  $envList += "API_EXTERNAL_URL=$LiveSite/auth/v1"
+  $envList += "GOTRUE_JWT_ISSUER=$LiveSite/auth/v1"
+  $SiteHost = ([System.Uri]::new($LiveSite)).Host
+  $envList += "GOTRUE_MAILER_TEMPLATES_MAGIC_LINK=$LiveSite/email-templates/magic_link.html"
+  $envList += "GOTRUE_MAILER_TEMPLATES_RECOVERY=$LiveSite/email-templates/recovery.html"
+  $envList += "GOTRUE_MAILER_TEMPLATES_INVITE=$LiveSite/email-templates/invite.html"
+  $envList += "GOTRUE_MAILER_EXTERNAL_HOSTS=127.0.0.1,localhost,$SiteHost"
   $envList += "GOTRUE_MAILER_URLPATHS_RECOVERY=/auth/v1/verify"
   $envList += "GOTRUE_MAILER_URLPATHS_CONFIRMATION=/auth/v1/verify"
   $envList += "GOTRUE_MAILER_URLPATHS_INVITE=/auth/v1/verify"

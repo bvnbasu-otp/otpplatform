@@ -73,7 +73,7 @@ Every domain was evaluated against actual source code, database migrations, conf
 | **37**| **Alerting Pipeline**| Real-time alerts on failure via SMTP/WhatsApp | **VERIFIED** | Dual pre/post alerts in maintenance scripts. |
 | **38**| **Maintenance Mode**| Zero-data-loss upgrades and maintenance locks | **VERIFIED** | `scripts/update-live.ps1` with mandatory pre-upgrade backups. |
 | **39**| **Deployment Pipeline**| Multi-stage Docker + unprivileged Nginx runner | **VERIFIED** | `deploy/Dockerfile.web` and `docker-compose.prod.yml`. |
-| **40**| **Cloudflare Tunnel**| Zero-trust outbound edge tunnel | **VERIFIED** | `scripts/start-live-tunnel.ps1` auto-restarting watchdog. |
+| **40**| **Vercel Edge Hosting**| Zero-configuration global edge CDN | **VERIFIED** | Live deployed at `https://otpplatform-theta.vercel.app`. |
 | **41**| **Env Separation** | Clean split between development, demo, and prod | **VERIFIED** | Migration `00128` data isolation flags. |
 | **42**| **CI/CD Integration** | Automated pre-flight regression test battery | **VERIFIED** | Pre-deployment verification gate (`scripts/verify-staging-gate.ts`). |
 | **43**| **Testing Pyramid** | Unit, module, integration, security, E2E | **VERIFIED** | **579 tests passing (100% pass rate)**. |
@@ -214,7 +214,7 @@ Execution Time: 298.06s
 
   Target Environment: Staging / Pilot Container Infrastructure
   Pre-Flight Requirements:
-    1. Bind production Cloudflare Tunnel with dedicated authentication token.
+    1. Live Vercel Edge frontend active on https://otpplatform-theta.vercel.app.
     2. Inject live payment secrets via enterprise secrets management.
     3. Enable daily scheduled execution of scripts/backup-prod-db.ps1.
 

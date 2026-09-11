@@ -13,9 +13,9 @@
                │                            │                             │
                ▼                            ▼                             ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                        EDGE ROUTING & CLOUDFLARE LIVE TUNNEL                            │
-│  Endpoint: https://incoming-reductions-incoming-stevens.trycloudflare.com              │
-│  Auto-Restart Watchdog Daemon: scripts/start-live-tunnel.ps1                            │
+│                        EDGE ROUTING & VERCEL GLOBAL CDN                                 │
+│  Endpoint: https://otpplatform-theta.vercel.app                                         │
+│  Global Edge Distribution & Automatic SSL/TLS Termination                               │
 └───────────────────────────────────────────┬─────────────────────────────────────────────┘
                                             │
                                             ▼
@@ -101,9 +101,9 @@ Unlike legacy SaaS procurement platforms requiring thousands of dollars monthly 
 3. **SMS Communication**:
    - Permanently disabled in configuration (`MESSAGING_PROVIDER=waha`).
    - Prevents unbudgeted telco balance depletion while standardizing on WhatsApp (the dominant channel for Indian vendors).
-4. **Cloudflare Live Tunnel**:
-   - Secure outbound tunnel routing traffic from port 3000 to `https://strange-lenses-frequency-salvation.trycloudflare.com`.
-   - Bypasses need for static IP, NAT port forwarding, or domain renewal fees during production pilots.
+4. **Vercel Edge Hosting**:
+   - High-availability global static CDN serving the frontend SPA at `https://otpplatform-theta.vercel.app`.
+   - Continuous deployment integration on `main` branch with instant zero-downtime rollouts.
 
 ---
 

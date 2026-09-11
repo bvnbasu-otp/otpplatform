@@ -53,8 +53,8 @@ To ensure complete administrative transparency, [`scripts/send-maintenance-alert
   ```
   🛡️ [OTP PLATFORM] Maintenance COMPLETED
   Workspace: G:\My Drive\otp
-  URL: https://strange-lenses-frequency-salvation.trycloudflare.com
-  Migrations: 138 Synced
+  URL: https://otpplatform-theta.vercel.app
+  Migrations: 156 Synced
   Containers: 6 Healthy (127.0.0.1 Hardened)
   Data Integrity: VERIFIED (Orders & Users Retained)
   Status: All Systems Operational

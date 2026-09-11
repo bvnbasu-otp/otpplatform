@@ -66,8 +66,7 @@ additional_redirect_urls = [
   "https://otpplatform.vercel.app",
   "https://otpplatform.vercel.app/**",
   "https://*.vercel.app",
-  "https://*.vercel.app/**",
-  "https://*.trycloudflare.com"
+  "https://*.vercel.app/**"
 ]
 jwt_expiry = 3600
 enable_signup = true

@@ -4,7 +4,7 @@ param (
   [string]$Stage,
 
   [string]$Details = "All services verified",
-  [string]$TunnelUrl = "https://incoming-reductions-incoming-stevens.trycloudflare.com"
+  [string]$SiteUrl = "https://otpplatform-theta.vercel.app"
 )
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -13,7 +13,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $adminEmail = "bvnbasu@gmail.com"
 $adminLid = "33251787841621@lid"
 $adminPhone = "919972967530@c.us"
-$siteUrl = $TunnelUrl
+$siteUrl = $SiteUrl
 $timestamp = Get-Date -Format "dd-MMM-yyyy hh:mm tt"
 
 # 1. Prepare Content

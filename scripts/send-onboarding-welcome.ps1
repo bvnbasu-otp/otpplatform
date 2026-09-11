@@ -18,7 +18,7 @@ param (
   [string]$Side = "BUYER",
   [string]$TemporaryPassword = "Welcome@OTP2026!",
   [string]$Phone = "",
-  [string]$PortalUrl = "https://incoming-reductions-incoming-stevens.trycloudflare.com"
+  [string]$PortalUrl = "https://otpplatform-theta.vercel.app"
 )
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

@@ -159,7 +159,7 @@ Write-Host ""
 Write-Host "✅ Configuration script complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "📖 Documentation:" -ForegroundColor Cyan
-Write-Host "   - Full setup guide: docs/CLOUDFLARE-TUNNEL-TESTING-CONFIG.md"
+Write-Host "   - Full deployment guide: docs/10-DEPLOYMENT-AND-VERCEL-OPERATIONS.md"
 Write-Host "   - Meta WhatsApp setup: docs/MESSAGING-META-WHATSAPP-SETUP.md"
 Write-Host "   - ONDC integration: docs/ONDC-INTEGRATION-NOTES.md"
 Write-Host ""
