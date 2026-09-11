@@ -23,6 +23,7 @@
     "test:live": "tsx scripts/run_live_automated_tests.ts",
     "test:watch": "vitest",
     "gate:verify": "tsx scripts/verify-staging-gate.ts",
+    "keepalive": "tsx scripts/ping-supabase-keep-alive.ts",
     "deploy": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1",
     "deploy:prod": "powershell -ExecutionPolicy Bypass -File scripts/deploy-prod.ps1",
     "typecheck": "pnpm -r typecheck",

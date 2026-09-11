@@ -1,0 +1,39 @@
+name: Supabase Cloud 24/7 Keep-Alive & Inactivity Heartbeat
+
+on:
+  schedule:
+    # Runs at 05:00 UTC every 2 days (well within the 7-day inactivity pause window)
+    - cron: '0 5 */2 * *'
+  workflow_dispatch:
+    # Allows manual trigger anytime from GitHub Actions UI
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9.15.0'
+
+jobs:
+  heartbeat:
+    name: Supabase Cloud Keep-Alive Ping
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Execute Supabase Cloud Heartbeat Ping
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}
+        run: pnpm keepalive
