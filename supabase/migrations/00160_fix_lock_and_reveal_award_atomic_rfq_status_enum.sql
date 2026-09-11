@@ -1,39 +1,14 @@
 -- =============================================================================
--- Migration 00156: Mutual Buyer & Supplier Identity Reveal on PO Issuance & Tax Compliance
+-- Migration 00160: Fix rfq_status Enum Mismatch in lock_and_reveal_award_atomic
+--
 -- Description:
---   1. Updates Row-Level Security on `organizations` table so that awarded
---      suppliers with an issued Purchase Order or revealed Award can view the
---      Buyer Organization's Legal Name, GSTIN (tax_registration), Address, and
---      Contact information for statutory GST Input Tax Credit (ITC) compliance.
---   2. Updates `lock_and_reveal_award_atomic` to return complete mutual reveal
---      details (both Buyer and Supplier tax and legal credentials) upon PO issuance.
+--   Corrects the rfq_status check in lock_and_reveal_award_atomic to use canonical
+--   rfq_status enum values ('OPEN', 'CLARIFICATION', 'CLOSED', 'EVALUATING', 'AWARDED')
+--   instead of non-existent literals ('RFQ_OPEN', 'RFQ_CLOSED', 'VOTING', 'EVALUATION').
 -- =============================================================================
 
 BEGIN;
 
--- 1. Update RLS Policy on organizations to permit bilateral visibility for awarded suppliers
-DROP POLICY IF EXISTS organizations_select ON public.organizations;
-
-CREATE POLICY organizations_select ON public.organizations
-  FOR SELECT TO authenticated
-  USING (
-    private.is_org_member(id)
-    OR private.is_platform_admin()
-    OR EXISTS (
-      SELECT 1 FROM public.purchase_orders po
-      WHERE po.organization_id = organizations.id
-        AND private.is_supplier_user_for(po.supplier_id)
-    )
-    OR EXISTS (
-      SELECT 1 FROM public.rfqs r
-      JOIN public.awards a ON a.rfq_id = r.id
-      WHERE r.organization_id = organizations.id
-        AND r.reveal_status = 'REVEALED'
-        AND private.is_awarded_supplier_for(r.id)
-    )
-  );
-
--- 2. Enhanced lock_and_reveal_award_atomic with full mutual reveal payload
 CREATE OR REPLACE FUNCTION public.lock_and_reveal_award_atomic(
   p_rfq_id        uuid,
   p_quote_id      uuid,
@@ -74,6 +49,7 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'RFQ not found');
   END IF;
 
+  -- Verify valid rfq_status enum values (OPEN, CLARIFICATION, CLOSED, EVALUATING, AWARDED)
   IF v_rfq.status NOT IN ('OPEN', 'CLARIFICATION', 'CLOSED', 'EVALUATING', 'AWARDED') THEN
     RETURN jsonb_build_object('ok', false, 'error', 'RFQ is not in an awardable state. Current status: ' || v_rfq.status);
   END IF;
@@ -236,5 +212,7 @@ BEGIN
   );
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.lock_and_reveal_award_atomic(uuid, uuid, text, boolean) TO authenticated, anon, service_role;
 
 COMMIT;
