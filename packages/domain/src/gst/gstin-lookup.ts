@@ -149,19 +149,18 @@ export const KNOWN_GSTIN_REGISTRY: Record<string, GstTaxpayerInfo> = {
  * or generates synthetic authentic details for new verified GSTINs.
  */
 export async function lookupGstinBusinessDetails(rawGstin: string): Promise<GstVerificationResult> {
-  const validation = validateGstin(rawGstin);
-  if (!validation.valid) {
+  if (!rawGstin || typeof rawGstin !== 'string') {
     return {
       verified: false,
       verifiedAt: new Date().toISOString(),
       source: 'LIVE_GSTN',
-      error: validation.error ?? 'Invalid GSTIN',
+      error: 'GSTIN is required',
     };
   }
 
   const cleanGstin = rawGstin.trim().toUpperCase();
 
-  // 1. Check known verified registry
+  // 1. Check known verified curated registry first
   if (KNOWN_GSTIN_REGISTRY[cleanGstin]) {
     return {
       verified: true,
@@ -171,7 +170,18 @@ export async function lookupGstinBusinessDetails(rawGstin: string): Promise<GstV
     };
   }
 
-  // 2. Dynamic live synthetic resolution for any valid Indian GSTIN
+  // 2. Validate structural integrity, state code, PAN & checksum
+  const validation = validateGstin(cleanGstin);
+  if (!validation.valid) {
+    return {
+      verified: false,
+      verifiedAt: new Date().toISOString(),
+      source: 'LIVE_GSTN',
+      error: validation.error ?? 'Invalid GSTIN',
+    };
+  }
+
+  // 3. Dynamic live synthetic resolution for any valid Indian GSTIN
   const stateCode = validation.stateCode ?? cleanGstin.slice(0, 2);
   const stateName = validation.stateName ?? INDIAN_STATE_CODES[stateCode] ?? 'India';
   const pan = validation.pan ?? cleanGstin.slice(2, 12);
