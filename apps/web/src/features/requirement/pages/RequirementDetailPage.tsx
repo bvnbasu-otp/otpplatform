@@ -155,7 +155,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
                     to={`/rfq/${rfqId}/evaluation`}
                     className="w-full flex items-center justify-between rounded-md border bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition"
                   >
-                    <span>Fair Anonymous Comparison</span>
+                    <span>Identity-Protected Evaluation</span>
                     <span>→</span>
                   </Link>
                 </>

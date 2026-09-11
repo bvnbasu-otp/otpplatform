@@ -109,7 +109,7 @@ export function ProcurementOsStack({ rfqId, requirementTitle, compact = false }:
       {!compact && (
         <p className="text-xs text-muted-foreground">
           <Link to={`/rfq/${rfqId}/evaluation`} className="hover:text-foreground">
-            Continue to Fair Anonymous Comparison →
+            Continue to Identity-Protected Evaluation →
           </Link>
         </p>
       )}

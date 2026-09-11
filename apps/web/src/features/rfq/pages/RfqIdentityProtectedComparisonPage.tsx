@@ -25,7 +25,7 @@ export type RfqBlindComparisonPageProps = RfqIdentityProtectedComparisonPageProp
 
 export function RfqIdentityProtectedComparisonPage({
   rfqId,
-  rfqTitle = 'RFQ — Fair Anonymous Comparison',
+  rfqTitle = 'RFQ — Identity-Protected Evaluation',
 }: RfqIdentityProtectedComparisonPageProps) {
   const navigate = useNavigate();
   const { quotes, isLoading, error, refresh } = useIdentityProtectedQuotes(rfqId);
@@ -135,7 +135,7 @@ export function RfqIdentityProtectedComparisonPage({
             Step 6 / 15
           </span>
           <div className="min-w-0">
-            <h1 className="text-sm font-bold text-foreground truncate">Fair Anonymous Comparison</h1>
+            <h1 className="text-sm font-bold text-foreground truncate">Identity-Protected Evaluation</h1>
             <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
               Side-by-side comparison matrix on price, turnaround, warranty, and specs under masked supplier aliases.
             </p>

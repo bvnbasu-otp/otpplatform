@@ -104,9 +104,9 @@ export const LINEAR_PROCUREMENT_STEPS: Record<ProcurementStepNumber, LinearStepD
   6: {
     stepNumber: 6,
     code: ProcurementStepCode.STEP_6_COMPARE_QUOTES,
-    title: 'Fair Anonymous Comparison',
-    shortLabel: '6. Fair Comparison',
-    description: 'Side-by-side evaluation matrix on cost, specs, and turnaround under masked supplier aliases.',
+    title: 'Identity-Protected Evaluation',
+    shortLabel: '6. Identity Evaluation',
+    description: 'Side-by-side identity-protected evaluation matrix on cost, specs, and turnaround under masked supplier aliases.',
     icon: '⚖️',
     badgeClass: 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950 dark:text-teal-300',
     routePath: '/rfq/:rfqId/evaluation',
