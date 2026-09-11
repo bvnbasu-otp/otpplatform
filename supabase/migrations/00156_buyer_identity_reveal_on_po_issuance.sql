@@ -140,7 +140,7 @@ BEGIN
       v_quote.supplier_id,
       COALESCE(private.get_profile_id(), v_rfq.created_by),
       p_justification,
-      CASE WHEN p_auto_reveal THEN 'REVEALED'::public.award_status ELSE 'LOCKED'::public.award_status END,
+      CASE WHEN p_auto_reveal THEN 'REVEALED'::public.award_status ELSE 'PENDING_REVEAL'::public.award_status END,
       v_now,
       CASE WHEN p_auto_reveal THEN v_now ELSE NULL END,
       jsonb_build_object(
