@@ -40,6 +40,8 @@ backups/
 .waha-sessions-backup/
 scratch/
 *.sql
+!supabase/migrations/*.sql
+!supabase/*.sql
 *.sql.enc
 *.sql.enc.sha256
 *.sql.sha256

@@ -1,0 +1,1 @@
+TRUNCATE TABLE payments, invoices, work_orders, purchase_orders, awards, committee_votes, quote_evaluations, quote_versions, quotes, rfq_invitations, rfq_clarification_messages, attachments, procurement_performance_records, rfqs, requirements, audit_events, messaging_events, messaging_rate_limits CASCADE;

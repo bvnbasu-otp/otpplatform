@@ -1,0 +1,149 @@
+-- OTP canonical enumerations (see docs/OTP-DOMAIN-MODEL.md)
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+CREATE TYPE requirement_type AS ENUM ('PRODUCT', 'SERVICE', 'PROJECT');
+
+CREATE TYPE requirement_status AS ENUM (
+  'DRAFT',
+  'SUBMITTED',
+  'RFQ_CREATED',
+  'QUOTING',
+  'EVALUATION',
+  'AWARDED',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED'
+);
+
+CREATE TYPE rfq_status AS ENUM (
+  'DRAFT',
+  'OPEN',
+  'CLOSED',
+  'EVALUATING',
+  'AWARDED',
+  'CANCELLED'
+);
+
+CREATE TYPE rfq_reveal_status AS ENUM ('BLIND', 'PROTECTED', 'REVEALED');
+
+CREATE TYPE quote_status AS ENUM (
+  'DRAFT',
+  'SUBMITTED',
+  'REVISED',
+  'FINAL',
+  'SELECTED',
+  'NOT_SELECTED',
+  'WITHDRAWN'
+);
+
+CREATE TYPE invite_status AS ENUM ('INVITED', 'VIEWED', 'DECLINED', 'QUOTED');
+
+CREATE TYPE award_status AS ENUM ('PENDING_REVEAL', 'REVEALED');
+
+CREATE TYPE purchase_order_status AS ENUM (
+  'DRAFT',
+  'PENDING_APPROVAL',
+  'APPROVED',
+  'ISSUED',
+  'ACCEPTED',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED'
+);
+
+CREATE TYPE work_order_status AS ENUM (
+  'NOT_STARTED',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'DISPUTED'
+);
+
+CREATE TYPE invoice_status AS ENUM (
+  'SUBMITTED',
+  'APPROVED',
+  'REJECTED',
+  'PAID'
+);
+
+CREATE TYPE payment_method AS ENUM (
+  'MANUAL',
+  'UPI',
+  'BANK_TRANSFER',
+  'OTHER'
+);
+
+CREATE TYPE payment_status AS ENUM ('RECORDED', 'VERIFIED', 'DISPUTED');
+
+CREATE TYPE payment_gateway_status AS ENUM (
+  'NOT_APPLICABLE',
+  'PENDING',
+  'PROCESSING',
+  'SUCCEEDED',
+  'FAILED',
+  'CANCELLED'
+);
+
+CREATE TYPE org_type AS ENUM (
+  'INDIVIDUAL',
+  'MSME',
+  'COMMUNITY',
+  'ENTERPRISE',
+  'INSTITUTION'
+);
+
+CREATE TYPE org_member_role AS ENUM (
+  'OWNER',
+  'MANAGER',
+  'BUYER',
+  'APPROVER',
+  'COMMITTEE_MEMBER'
+);
+
+CREATE TYPE supplier_user_role AS ENUM ('OWNER', 'MANAGER', 'OPERATOR');
+
+CREATE TYPE supplier_source AS ENUM (
+  'DIRECT',
+  'ONDC',
+  'BNI',
+  'ASSOCIATION',
+  'REFERRAL',
+  'LOCAL_REGISTRY',
+  'OTHER'
+);
+
+CREATE TYPE supplier_status AS ENUM ('PENDING', 'ACTIVE', 'SUSPENDED');
+
+CREATE TYPE evaluation_status AS ENUM ('PENDING', 'COMPUTED', 'STALE');
+
+CREATE TYPE coi_status AS ENUM (
+  'DECLARED_NONE',
+  'DECLARED_CONFLICT',
+  'WAIVED'
+);
+
+CREATE TYPE vote_choice AS ENUM ('RECOMMEND', 'ABSTAIN', 'OPPOSE');
+
+CREATE TYPE approval_policy_type AS ENUM (
+  'COMMUNITY_SIMPLE_MAJORITY',
+  'UNANIMOUS',
+  'MANAGER_ONLY'
+);
+
+CREATE TYPE approval_instance_status AS ENUM (
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'EXPIRED'
+);
+
+CREATE TYPE dispute_status AS ENUM ('NONE', 'OPEN', 'RESOLVED');
+
+CREATE TYPE notification_channel AS ENUM ('IN_APP', 'EMAIL');
+
+CREATE TYPE notification_status AS ENUM (
+  'PENDING',
+  'SENT',
+  'READ',
+  'FAILED'
+);
