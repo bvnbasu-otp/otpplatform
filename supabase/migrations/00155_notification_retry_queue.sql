@@ -11,11 +11,12 @@ ALTER TABLE public.messaging_events
   ADD COLUMN IF NOT EXISTS retry_count integer NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS max_retries integer NOT NULL DEFAULT 5,
   ADD COLUMN IF NOT EXISTS next_retry_at timestamptz,
-  ADD COLUMN IF NOT EXISTS last_error text;
+  ADD COLUMN IF NOT EXISTS last_error text,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_messaging_events_retry
-  ON public.messaging_events(status, next_retry_at)
-  WHERE status = 'FAILED' AND retry_count < max_retries;
+  ON public.messaging_events(processing_status, next_retry_at)
+  WHERE processing_status = 'FAILED' AND retry_count < max_retries;
 
 -- Stored Procedure: record_notification_failure_with_backoff
 CREATE OR REPLACE FUNCTION public.record_notification_failure_with_backoff(
@@ -32,7 +33,7 @@ DECLARE
   v_next_retry timestamptz;
   v_backoff_seconds integer;
   v_new_retry_count integer;
-  v_new_status text;
+  v_new_status messaging_processing_status;
 BEGIN
   SELECT * INTO v_event FROM public.messaging_events WHERE id = p_event_id;
   IF NOT FOUND THEN
@@ -42,10 +43,10 @@ BEGIN
   v_new_retry_count := v_event.retry_count + 1;
 
   IF v_new_retry_count >= v_event.max_retries THEN
-    v_new_status := 'PERMANENTLY_FAILED';
+    v_new_status := 'FAILED'::messaging_processing_status;
     v_next_retry := NULL;
   ELSE
-    v_new_status := 'FAILED';
+    v_new_status := 'FAILED'::messaging_processing_status;
     -- Exponential backoff: 30s * 2^(retry_count)
     v_backoff_seconds := 30 * (2 ^ (v_new_retry_count - 1));
     v_next_retry := now() + (v_backoff_seconds || ' seconds')::interval;
@@ -53,7 +54,7 @@ BEGIN
 
   UPDATE public.messaging_events
   SET 
-    status = v_new_status,
+    processing_status = v_new_status,
     retry_count = v_new_retry_count,
     next_retry_at = v_next_retry,
     last_error = p_error_msg,
@@ -63,7 +64,7 @@ BEGIN
   RETURN jsonb_build_object(
     'ok', true,
     'event_id', p_event_id,
-    'status', v_new_status,
+    'status', v_new_status::text,
     'retry_count', v_new_retry_count,
     'next_retry_at', v_next_retry
   );
