@@ -51,7 +51,6 @@ DECLARE
   v_org         organizations%ROWTYPE;
   v_award_id    uuid;
   v_now         timestamptz := now();
-  v_final       integer;
   v_tally       jsonb;
   v_po_res      jsonb;
   v_po_id       uuid;
@@ -61,7 +60,6 @@ DECLARE
   v_phone       text;
   v_email       text;
   v_alias       text;
-  v_supplier_gst text;
   v_existing_award awards%ROWTYPE;
 BEGIN
   -- Strict row-level lock on RFQ to serialize concurrent award operations
@@ -99,55 +97,45 @@ BEGIN
   IF FOUND THEN
     v_award_id := v_existing_award.id;
   ELSE
-    -- Compute final frozen vote tally snapshot
-    SELECT 
-      COALESCE(SUM(weight), 0),
-      COALESCE(
-        jsonb_agg(
-          jsonb_build_object(
-            'profile_id', profile_id,
-            'quote_id', quote_id,
-            'weight', weight,
-            'justification', justification,
-            'cast_at', cast_at
-          ) ORDER BY cast_at ASC
-        ),
-        '[]'::jsonb
-      )
-    INTO v_final, v_tally
+    -- Compute final frozen vote tally snapshot from committee_votes
+    SELECT jsonb_build_object(
+      'locked_at', v_now,
+      'votes', COALESCE(jsonb_agg(jsonb_build_object(
+        'quote_id', v.recommended_quote_id,
+        'choice', v.choice,
+        'voting_power', v.voting_power,
+        'buyer_type', v.buyer_type
+      )), '[]'::jsonb)
+    )
+    INTO v_tally
     FROM (
-      SELECT DISTINCT ON (profile_id)
-        profile_id, quote_id, weight, justification, cast_at
-      FROM public.committee_votes
-      WHERE rfq_id = p_rfq_id
-      ORDER BY profile_id, cast_at DESC
-    ) latest_votes;
+      SELECT DISTINCT ON (cv.profile_id) cv.*
+      FROM public.committee_votes cv
+      WHERE cv.rfq_id = p_rfq_id AND cv.cast_at <= v_now
+      ORDER BY cv.profile_id, cv.cast_at DESC, cv.id DESC
+    ) v;
 
     -- 1. Insert Frozen Award Record
     INSERT INTO public.awards (
       rfq_id,
       quote_id,
-      supplier_id,
       awarded_by,
       justification,
       status,
       awarded_at,
       revealed_at,
-      metadata
+      votes_locked_at,
+      vote_snapshot
     ) VALUES (
       p_rfq_id,
       p_quote_id,
-      v_quote.supplier_id,
       COALESCE(private.get_profile_id(), v_rfq.created_by),
-      p_justification,
+      jsonb_build_object('text', p_justification),
       CASE WHEN p_auto_reveal THEN 'REVEALED'::public.award_status ELSE 'PENDING_REVEAL'::public.award_status END,
       v_now,
       CASE WHEN p_auto_reveal THEN v_now ELSE NULL END,
-      jsonb_build_object(
-        'final_vote_count', v_final,
-        'vote_tally_snapshot', v_tally,
-        'frozen_at', v_now
-      )
+      v_now,
+      COALESCE(v_tally, '{}'::jsonb)
     )
     RETURNING id INTO v_award_id;
   END IF;
@@ -189,8 +177,8 @@ BEGIN
     v_po_id := (v_po_res->>'po_id')::uuid;
     v_po_number := v_po_res->>'po_number';
 
-    SELECT s.id, s.business_name, s.contact_phone, s.contact_email, s.gstin, ri.anonymous_label
-    INTO v_supplier_id, v_business, v_phone, v_email, v_supplier_gst, v_alias
+    SELECT s.id, s.business_name, s.contact_phone, s.contact_email, ri.anonymous_label
+    INTO v_supplier_id, v_business, v_phone, v_email, v_alias
     FROM quotes q
     JOIN suppliers s ON s.id = q.supplier_id
     JOIN rfq_invitations ri ON ri.id = q.invitation_id
@@ -208,7 +196,6 @@ BEGIN
       -- Supplier unmasked details
       'supplier_id', v_supplier_id,
       'business_name', v_business,
-      'supplier_gstin', v_supplier_gst,
       'contact_phone', v_phone,
       'contact_email', v_email,
       'alias_before_reveal', v_alias,
@@ -236,5 +223,7 @@ BEGIN
   );
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.lock_and_reveal_award_atomic(uuid, uuid, text, boolean) TO authenticated, anon, service_role;
 
 COMMIT;
