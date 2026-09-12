@@ -50,6 +50,21 @@ function Write-Header([string]$title) {
   Write-Host ""
 }
 
+function Invoke-Pnpm {
+  param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
+  if (Get-Command pnpm.cmd -ErrorAction SilentlyContinue) {
+    & pnpm.cmd @Arguments
+  } elseif (Get-Command pnpm -ErrorAction SilentlyContinue) {
+    & pnpm @Arguments
+  } elseif (Get-Command npx.cmd -ErrorAction SilentlyContinue) {
+    & npx.cmd pnpm @Arguments
+  } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
+    & npx pnpm @Arguments
+  } else {
+    throw "pnpm is not found in PATH. Please install pnpm (npm install -g pnpm) or ensure Node.js is in PATH."
+  }
+}
+
 # -----------------------------------------------------------------------------
 # COMMAND: HELP / USAGE
 # -----------------------------------------------------------------------------
@@ -164,7 +179,7 @@ if ($Command -eq "backup") {
   Write-Header "DATABASE BACKUP EXECUTION"
   $backupScript = Join-Path $WorkspaceRoot "scripts\backup-prod-db.ps1"
   if (Test-Path $backupScript) {
-    & powershell.exe -ExecutionPolicy Bypass -File $backupScript
+    & $backupScript
   } else {
     Write-Host "[ERROR] $backupScript not found!" -ForegroundColor Red
   }
@@ -179,7 +194,7 @@ if ($Command -eq "alert") {
   $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
   if (Test-Path $alertScript) {
     Write-Host "Testing COMPLETED notification..." -ForegroundColor Yellow
-    & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "COMPLETED" -Details "Manual verification test from otp.ps1 CLI" -SiteUrl $SiteUrl
+    & $alertScript -Stage "COMPLETED" -Details "Manual verification test from otp.ps1 CLI" -SiteUrl $SiteUrl
   }
   exit 0
 }
@@ -191,7 +206,7 @@ if ($Command -eq "test") {
   Write-Header "FAST OPERATIONAL & UNIT TEST SUITE"
 
   Write-Host "[1/2] Executing Web Unit Test Battery (346 tests)..." -ForegroundColor Yellow
-  & pnpm.cmd --filter web test
+  Invoke-Pnpm --filter web test
   if ($LASTEXITCODE -ne 0) {
     Write-Host "[FAIL] Unit tests failed!" -ForegroundColor Red
     exit 1
@@ -200,7 +215,7 @@ if ($Command -eq "test") {
   Write-Host ""
   Write-Host "[2/2] Executing Live Operational Smoke Battery (10/10 checks)..." -ForegroundColor Yellow
   $env:SITE_URL = $SiteUrl
-  & pnpm.cmd test:smoke
+  Invoke-Pnpm test:smoke
   if ($LASTEXITCODE -ne 0) {
     Write-Host "[FAIL] Live smoke checks failed!" -ForegroundColor Red
     exit 1
@@ -216,7 +231,7 @@ if ($Command -eq "test") {
 if ($Command -eq "gate") {
   Write-Header "12-LAYER STAGING VERIFICATION GATE"
   Write-Host "Executing full 12-layer master regression suite (631 tests)..." -ForegroundColor Yellow
-  & pnpm.cmd gate:verify
+  Invoke-Pnpm gate:verify
   exit $LASTEXITCODE
 }
 
@@ -226,7 +241,7 @@ if ($Command -eq "gate") {
 if ($Command -eq "policy") {
   Write-Header "TEST COVERAGE EXPANSION POLICY AUDIT"
   Write-Host "Verifying 4 test tiers (Unit, Module, Functional, Regression)..." -ForegroundColor Yellow
-  & pnpm.cmd tsx scripts/verify-test-coverage-policy.ts --strict
+  Invoke-Pnpm tsx scripts/verify-test-coverage-policy.ts --strict
   exit $LASTEXITCODE
 }
 
@@ -256,7 +271,7 @@ if ($Command -eq "rollback") {
   # Dispatch emergency alert
   $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
   if (Test-Path $alertScript) {
-    & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "ROLLBACK" -Details "Manual emergency rollback triggered via otp.ps1 CLI" -SiteUrl $SiteUrl
+    & $alertScript -Stage "ROLLBACK" -Details "Manual emergency rollback triggered via otp.ps1 CLI" -SiteUrl $SiteUrl
   }
 
   Write-Host "`n[OK] Rollback complete. Live endpoint restored to previous release." -ForegroundColor Green
@@ -270,7 +285,7 @@ if ($Command -eq "stop") {
   Write-Header "STANDALONE PLATFORM SHUTDOWN"
   $stopScript = Join-Path $WorkspaceRoot "scripts\stop-platform.ps1"
   if (Test-Path $stopScript) {
-    & powershell.exe -ExecutionPolicy Bypass -File $stopScript
+    & $stopScript
   }
   exit 0
 }
@@ -333,7 +348,7 @@ if ($Command -eq "start") {
   $distPath = Join-Path $WorkspaceRoot "apps\web\dist"
   if (-not (Test-Path $distPath)) {
     Write-Host "Compiling web distribution bundle first..." -ForegroundColor DarkCyan
-    & pnpm.cmd --filter @otp/web build
+    Invoke-Pnpm --filter @otp/web build
   }
 
   $webConn = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue
@@ -370,7 +385,11 @@ if ($Command -eq "start") {
 if ($Command -eq "deploy") {
   $deployScript = Join-Path $WorkspaceRoot "scripts\deploy.ps1"
   if (Test-Path $deployScript) {
-    & powershell.exe -ExecutionPolicy Bypass -File $deployScript -Environment $Environment -SiteUrl $SiteUrl -SkipGate:$SkipGate
+    if ($SkipGate) {
+      & $deployScript -Environment $Environment -SiteUrl $SiteUrl -SkipGate
+    } else {
+      & $deployScript -Environment $Environment -SiteUrl $SiteUrl
+    }
     exit $LASTEXITCODE
   } else {
     Write-Host "[ERROR] Unified deployment router not found at $deployScript!" -ForegroundColor Red

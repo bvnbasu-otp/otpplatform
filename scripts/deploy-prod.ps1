@@ -29,13 +29,28 @@ Write-Host "Live URL   : $SiteUrl" -ForegroundColor DarkGray
 $nowStr = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
 Write-Host "Timestamp  : $nowStr" -ForegroundColor DarkGray
 
+function Invoke-Pnpm {
+  param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
+  if (Get-Command pnpm.cmd -ErrorAction SilentlyContinue) {
+    & pnpm.cmd @Arguments
+  } elseif (Get-Command pnpm -ErrorAction SilentlyContinue) {
+    & pnpm @Arguments
+  } elseif (Get-Command npx.cmd -ErrorAction SilentlyContinue) {
+    & npx.cmd pnpm @Arguments
+  } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
+    & npx pnpm @Arguments
+  } else {
+    throw "pnpm is not found in PATH. Please install pnpm (npm install -g pnpm) or ensure Node.js is in PATH."
+  }
+}
+
 # -----------------------------------------------------------------------------
 # PHASE 1: Staging / Pre-Production Verification Gate (100% Green Required)
 # -----------------------------------------------------------------------------
-Write-Host "`n[1/6] Running Staging / Pre-Production Verification Gate [828 Tests]..." -ForegroundColor Yellow
+Write-Host "`n[1/6] Running Staging / Pre-Production Verification Gate [631 Tests]..." -ForegroundColor Yellow
 $gateSuccess = $false
 try {
-  & pnpm.cmd gate:verify --env production
+  Invoke-Pnpm gate:verify --env production
   if ($LASTEXITCODE -eq 0) {
     $gateSuccess = $true
   }
@@ -152,7 +167,7 @@ if ($existingConn) {
 }
 
 # Build into dist first
-& pnpm.cmd --filter @otp/web build
+Invoke-Pnpm --filter @otp/web build
 if ($LASTEXITCODE -ne 0) {
   Write-Host "[ERROR] Web bundle build failed! Live site remains running on old code flow." -ForegroundColor Red
   exit 1
@@ -198,7 +213,7 @@ $env:SITE_URL = $SiteUrl
 
 $smokeSuccess = $false
 try {
-  & pnpm.cmd test:smoke
+  Invoke-Pnpm test:smoke
   if ($LASTEXITCODE -eq 0) {
     $smokeSuccess = $true
   }
@@ -217,7 +232,7 @@ if (-not $smokeSuccess) {
   # Send rollback emergency alert
   $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
   if (Test-Path $alertScript) {
-    & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "ROLLBACK" -Details "Smoke check failed post-deployment. Reverted to previous stable release." -SiteUrl $SiteUrl
+    & $alertScript -Stage "ROLLBACK" -Details "Smoke check failed post-deployment. Reverted to previous stable release." -SiteUrl $SiteUrl
   }
   exit 1
 }
@@ -236,8 +251,8 @@ if ($allReleases.Count -gt 5) {
 # Dispatch Completion Alerts (Email + WhatsApp)
 $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
 if (Test-Path $alertScript) {
-  $alertMsg = "Gated deployment complete. 828+ tests verified green in staging, production DB retained with zero data loss, live smoke 10/10 passed."
-  & powershell.exe -ExecutionPolicy Bypass -File $alertScript -Stage "COMPLETED" -Details $alertMsg -SiteUrl $SiteUrl
+  $alertMsg = "Gated deployment complete. 631 tests verified green in staging, production DB retained with zero data loss, live smoke 10/10 passed."
+  & $alertScript -Stage "COMPLETED" -Details $alertMsg -SiteUrl $SiteUrl
 }
 
 Write-Host "`n=================================================================" -ForegroundColor Cyan
@@ -245,7 +260,7 @@ Write-Host "  [SUCCESS] PRODUCTION DEPLOYMENT COMPLETE AND 100% VERIFIED!" -Fore
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "Public URL       : $SiteUrl" -ForegroundColor White
 Write-Host "Active Release   : release_$releaseTimestamp" -ForegroundColor White
-Write-Host "Staging Gate     : 828/828 Tests Passed (100% Green)" -ForegroundColor White
+Write-Host "Staging Gate     : 631/631 Tests Passed (100% Green)" -ForegroundColor White
 Write-Host "Production DB    : Retained with Zero Data Loss (Orders and Orgs Intact)" -ForegroundColor White
 Write-Host "Live Smoke Tests : 10/10 Passed" -ForegroundColor White
 Write-Host ""

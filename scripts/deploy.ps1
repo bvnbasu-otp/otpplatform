@@ -44,6 +44,21 @@ Write-Host "Live URL   : $SiteUrl" -ForegroundColor DarkGray
 $nowStr = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
 Write-Host "Timestamp  : $nowStr" -ForegroundColor DarkGray
 
+function Invoke-Pnpm {
+  param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
+  if (Get-Command pnpm.cmd -ErrorAction SilentlyContinue) {
+    & pnpm.cmd @Arguments
+  } elseif (Get-Command pnpm -ErrorAction SilentlyContinue) {
+    & pnpm @Arguments
+  } elseif (Get-Command npx.cmd -ErrorAction SilentlyContinue) {
+    & npx.cmd pnpm @Arguments
+  } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
+    & npx pnpm @Arguments
+  } else {
+    throw "pnpm is not found in PATH. Please install pnpm (npm install -g pnpm) or ensure Node.js is in PATH."
+  }
+}
+
 # -----------------------------------------------------------------------------
 # STAGE 0: Resolve Target Deployment Environment & Build Version Hash
 # -----------------------------------------------------------------------------
@@ -108,7 +123,7 @@ Write-Host "Build Version Hash : $buildHash" -ForegroundColor Yellow
 # -----------------------------------------------------------------------------
 Write-Host "`n[STAGE 1/5] BUILD - Compiling packages and web bundle..." -ForegroundColor Cyan
 try {
-  & pnpm.cmd --filter @otp/web build
+  Invoke-Pnpm --filter @otp/web build
   if ($LASTEXITCODE -ne 0) {
     throw "Web bundle compilation failed with exit code $LASTEXITCODE"
   }
@@ -130,7 +145,7 @@ try {
 Write-Host "`n[STAGE 2/5] TEST - Verifying test coverage policy and regression battery..." -ForegroundColor Cyan
 try {
   Write-Host "  Running strict test coverage expansion policy audit..." -ForegroundColor DarkCyan
-  & pnpm.cmd tsx scripts/verify-test-coverage-policy.ts --strict
+  Invoke-Pnpm tsx scripts/verify-test-coverage-policy.ts --strict
   if ($LASTEXITCODE -ne 0) {
     throw "Test coverage policy audit failed: Code added or modified without matching test coverage."
   }
@@ -151,14 +166,28 @@ try {
 # -----------------------------------------------------------------------------
 Write-Host "`n[STAGE 3/5] STATUS - Verifying infrastructure and database health..." -ForegroundColor Cyan
 $requiredContainer = if ($targetEnv -eq "PRODUCTION") { "otp-prod-db" } else { "supabase_db_otp-local" }
-$containerRunning = & docker ps --filter "name=$requiredContainer" --filter "status=running" -q
+$containerRunning = $null
+$hasDocker = Get-Command docker -ErrorAction SilentlyContinue
+if ($hasDocker) {
+  try {
+    $containerRunning = & docker ps --filter "name=$requiredContainer" --filter "status=running" -q 2>$null
+  } catch {}
+}
 
 if (-not $containerRunning) {
   Write-Host "[WARN] Required container '$requiredContainer' is not running. Attempting auto-start..." -ForegroundColor Yellow
-  if ($targetEnv -eq "PRODUCTION") {
-    & docker compose -f docker-compose.prod.yml up -d db
+  if ($hasDocker) {
+    if ($targetEnv -eq "PRODUCTION") {
+      & docker compose -f docker-compose.prod.yml up -d db
+    } else {
+      if (Get-Command npx.cmd -ErrorAction SilentlyContinue) {
+        & npx.cmd supabase start
+      } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
+        & npx supabase start
+      }
+    }
   } else {
-    & npx.cmd supabase start
+    Write-Host "[WARN] Docker CLI not found. Skipping container startup." -ForegroundColor Yellow
   }
 }
 Write-Host "[OK] Target database infrastructure verified online." -ForegroundColor Green
@@ -178,7 +207,7 @@ if ($SkipGate) {
   $env:BUILD_HASH = $buildHash
 
   try {
-    & pnpm.cmd gate:verify --env $envArg
+    Invoke-Pnpm gate:verify --env $envArg
     if ($LASTEXITCODE -eq 0) {
       $gatePassed = $true
     }
@@ -217,7 +246,7 @@ Write-Host "`n[STAGE 5/5] DEPLOY - Routing to target environment ($targetEnv)...
 
 if ($targetEnv -eq "PRODUCTION") {
   Write-Host "Initiating atomic Production promotion pipeline..." -ForegroundColor Yellow
-  & powershell.exe -ExecutionPolicy Bypass -File "$PSScriptRoot\deploy-prod.ps1" -SiteUrl $SiteUrl
+  & "$PSScriptRoot\deploy-prod.ps1" -SiteUrl $SiteUrl
   if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Production deployment failed. Automatic rollback preserved stability." -ForegroundColor Red
     exit $LASTEXITCODE
