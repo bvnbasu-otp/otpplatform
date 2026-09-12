@@ -241,7 +241,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
               {quotes.map((q, idx) => {
                 const isSelected = selectedQuote === q.quoteId;
                 const isMyVotedQuote = myVote?.recommendedQuoteId === q.quoteId;
-                const isTopRecommended = idx === 0 || (quotes[0]?.evaluationScore != null && q.evaluationScore === quotes[0].evaluationScore);
+                const isTopRecommended = idx === 0 || (quotes[0]?.evaluationScore != null && q.evaluationScore === quotes[0]?.evaluationScore);
                 return (
                   <div
                     key={q.quoteId}

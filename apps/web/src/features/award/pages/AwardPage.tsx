@@ -307,7 +307,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 {quotes.map((q, idx) => {
                   const isSelected = selectedQuote === q.quoteId;
                   const isLeader = summary?.leader?.quoteId === q.quoteId;
-                  const isTop = idx === 0 || (quotes[0]?.evaluationScore != null && q.evaluationScore === quotes[0].evaluationScore);
+                  const isTop = idx === 0 || (quotes[0]?.evaluationScore != null && q.evaluationScore === quotes[0]?.evaluationScore);
                   return (
                     <label
                       key={q.quoteId}

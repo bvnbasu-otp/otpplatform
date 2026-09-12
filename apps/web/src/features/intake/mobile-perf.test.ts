@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { AttributeDef, AttributeValue } from '@otp/domain';
 
-export function groupAttributesForMobile(
-  attributes: AttributeDef[],
-): { mandatory: AttributeDef[]; optional: AttributeDef[] } {
+export function groupAttributesForMobile<T extends { isRequired: boolean }>(
+  attributes: T[],
+): { mandatory: T[]; optional: T[] } {
   const mandatory = attributes.filter((a) => a.isRequired);
   const optional = attributes.filter((a) => !a.isRequired);
   return { mandatory, optional };
 }
 
 describe('Mobile Intake Form Specifications Virtualization', () => {
-  const sampleAttrs: AttributeDef[] = [
+  const sampleAttrs: Array<Pick<AttributeDef, 'code' | 'label' | 'isRequired' | 'dataType'>> = [
     { code: 'attr_1', label: 'Thickness (mm)', isRequired: true, dataType: 'NUMBER' },
     { code: 'attr_2', label: 'Material Grade', isRequired: true, dataType: 'TEXT' },
     { code: 'attr_3', label: 'Color Code', isRequired: false, dataType: 'TEXT' },
@@ -30,6 +30,6 @@ describe('Mobile Intake Form Specifications Virtualization', () => {
 
     const missing = mandatory.filter((m) => incompleteValues[m.code] === undefined);
     expect(missing.length).toBe(1);
-    expect(missing[0].code).toBe('attr_2');
+    expect(missing[0]?.code).toBe('attr_2');
   });
 });

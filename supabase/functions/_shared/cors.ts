@@ -1,7 +1,15 @@
 // Locked to the deployed web origin in production. `WEB_ORIGIN` is the
 // canonical value; when unset (local dev) we fall back to `*` so `pnpm dev` on
 // http://localhost:3000 or http://opentradeprocurement.ai:3000 can still call the functions.
-const allowedOrigin = Deno.env.get('WEB_ORIGIN')?.trim() || '*';
+function getAllowedOrigin(): string {
+  try {
+    return (typeof Deno !== 'undefined' ? Deno.env.get('WEB_ORIGIN') : undefined)?.trim() || '*';
+  } catch {
+    return '*';
+  }
+}
+
+const allowedOrigin = getAllowedOrigin();
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': allowedOrigin,

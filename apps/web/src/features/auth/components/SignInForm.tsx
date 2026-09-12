@@ -244,7 +244,15 @@ export function SignInForm({
       return;
     }
 
-    if (personaEmail.includes('urbanspace') || personaEmail.includes('otpdemo.test') || personaEmail.includes('royalteak') || personaEmail.includes('societycomfort')) {
+    const searchParams = new URLSearchParams(location.search);
+    const redirectParam = searchParams.get('redirect');
+    const hasValidRedirect = Boolean(
+      redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+    );
+
+    if (hasValidRedirect && redirectParam) {
+      navigate(redirectParam, { replace: true });
+    } else if (personaEmail.includes('urbanspace') || personaEmail.includes('otpdemo.test') || personaEmail.includes('royalteak') || personaEmail.includes('societycomfort')) {
       navigate('/supplier/purchase-orders', { replace: true });
     } else {
       navigate('/dashboard', { replace: true });
@@ -294,7 +302,15 @@ export function SignInForm({
       return;
     }
 
-    if (
+    const searchParams = new URLSearchParams(location.search);
+    const redirectParam = searchParams.get('redirect');
+    const hasValidRedirect = Boolean(
+      redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+    );
+
+    if (hasValidRedirect && redirectParam) {
+      navigate(redirectParam, { replace: true });
+    } else if (
       isSuperAdminEmail(normalizedEmail) ||
       normalizedEmail === 'bvnbasu@gmail.com' ||
       normalizedEmail === 'admin@otp.test' ||

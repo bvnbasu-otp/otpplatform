@@ -43,7 +43,7 @@ export function RfqClarificationPage({ rfqId }: { rfqId: string }) {
     if (labelsRes.ok) {
       setLabels(labelsRes.labels);
       if (!selectedInvitation && labelsRes.labels[0]) {
-        setSelectedInvitation(labelsRes.labels[0].invitationId);
+        setSelectedInvitation(labelsRes.labels[0]!.invitationId);
       }
     }
     if (msgRes.ok) setMessages(msgRes.messages);

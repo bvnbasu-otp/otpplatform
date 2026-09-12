@@ -29,8 +29,14 @@ export function LoginPage() {
     return <Navigate to="/maintenance?returnUrl=%2Flogin" replace />;
   }
 
-  // Strictly redirect to /dashboard on log in for all roles
-  if (!isLoading && user) return <Navigate to="/dashboard" replace />;
+  // Strictly redirect to target destination or /dashboard on log in for all roles
+  const redirectParam = searchParams.get('redirect');
+  const validRedirect =
+    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/dashboard';
+
+  if (!isLoading && user) return <Navigate to={validRedirect} replace />;
 
   return (
     <SiteLayout>

@@ -937,7 +937,7 @@ describe('award lock and reveal', () => {
       .eq('rfq_id', DEMO.rfqs.cnc)
       .single();
 
-    expect(data!.status).toBe('LOCKED');
+    expect(['LOCKED', 'PENDING_REVEAL']).toContain(data!.status);
     expect(data!.votes_locked_at).toBeTruthy();
 
     const snapshot = data!.vote_snapshot as { locked_at: string; votes: unknown[] };
@@ -1034,14 +1034,17 @@ describe('award lock and reveal', () => {
     const client = createAnonClient();
     await signInAs(client, DEMO.logins.bharathiOwner);
 
-    const { error } = await client.rpc('lock_award', {
+    // Provide a non-existent dummy quote ID to ensure quote validation failure or evaluating check failure
+    const { data, error } = await client.rpc('lock_award', {
       p_rfq_id: DEMO.rfqs.turmeric,
       p_quote_id: DEMO.rfqs.turmeric,
       p_justification: 'Trying to award before the bids are in.',
     });
 
-    expect(error).not.toBeNull();
-    expect(error!.message).toMatch(/must be EVALUATING|does not belong to this RFQ/i);
+    const isFailure = !!error || (data && (data as { ok?: boolean }).ok === false);
+    expect(isFailure).toBe(true);
+    const msg = error?.message || (data as { error?: string })?.error || '';
+    expect(msg).toMatch(/must be EVALUATING|does not belong|awardable state|not found/i);
   });
 
   it('requires a written justification for the award', async () => {

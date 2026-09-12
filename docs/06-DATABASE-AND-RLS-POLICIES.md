@@ -2,12 +2,12 @@
 
 ## 1. Database Architecture & Applied Migrations
 
-The OTP database runs on **PostgreSQL 15** with **155 applied production migrations** located in `supabase/migrations/`.
+The OTP database runs on **PostgreSQL 15** with **160 applied production migrations** located in `supabase/migrations/`.
 
 ### Migration Progression Overview:
 - `00001 - 00015`: Foundation schema, user profiles, organizations, and multi-tenant member roles.
 - `00016 - 00030`: Core procurement entities (requirements, RFQs, quotes, awards, purchase orders).
-- `00031 - 00050`: Identity protection engine, cryptographic alias generation, band-rounded scoring, and mutual reveal gates.
+- `00031 - 00050`: Identity protection engine, cryptographic alias generation, band-rounded scoring, and mutual reveal gates (`00039` granting public/anon access to `role_catalog`).
 - `00051 - 00075`: Zero-cost messaging channels, WhatsApp notification dispatchers, and clarification threads.
 - `00076 - 00095`: Fulfillment tracking, delivery inspections, work orders, invoices, and payments.
 - `00096 - 00110`: Superadmin telemetry RPCs, live pre-production test runner, and network stubs.
@@ -16,14 +16,15 @@ The OTP database runs on **PostgreSQL 15** with **155 applied production migrati
 - `00121 - 00125`: Multi-user organization hierarchy & context switching (`00121`), signup active org sync (`00122`), superadmin pure role isolation (`00123`), clean production reset & transaction purge (`00124`), production data preservation & staging gate (`00125`).
 - `00126 - 00135`: Admin orders join deduplication (`00126`), member invite RPCs (`00127`), demo vs production admin mode data isolation (`00128`), safe transactional record purge (`00129`), mode-aware audit logs & notifications purge (`00130`-`00132`), admin snapshots schema fix (`00133`), audit trail mode logging (`00134`), clean ASCII notifications & RPC templates (`00135`).
 - `00136 - 00140`: Identity-protected quotes & award-to-PO flow fix (`00136`), discovery anti-leak policy fix (`00137`), contact supplier login seed & onboarding (`00138`), admin operations & 8-state troubleshooting suite (`00139`), centralized support ticket routing & notification to primary admin `bvnbasu@gmail.com` (`00140`).
-- `00141 - 00149`: Staging gate verification certificate tracking, schema cache refresh triggers, and audit event indexing.
+- `00141 - 00149`: Staging gate verification certificate tracking, schema cache refresh triggers, audit event indexing, user/organization bulk management (`00149` fixing `committee_assignments` join in `my_role_context()` and granting `anon` execution for unauthenticated session discovery).
 - `00150`: Cryptographic webhook payment settlement (`record_verified_payment` RPC) for Razorpay and Stripe with unique constraint on `gateway_event_id`.
-- `00151`: Consolidated atomic award, reveal, and purchase order transaction (`lock_and_reveal_award_atomic` RPC) with `SELECT FOR UPDATE` row-level locks.
+- `00151`: Consolidated atomic award, reveal, and purchase order transaction (`lock_and_reveal_award_atomic` RPC) with `SELECT FOR UPDATE` row-level locks and supplier outcome notification trigger.
 - `00152`: Platform SuperAdmin whitelist & PostgreSQL immutable role trigger (`private_security.admin_whitelist` table, `enforce_superadmin_immutability` trigger).
 - `00153`: Sliding-window API rate limiting engine (`check_and_increment_rate_limit` RPC, `api_rate_limits` table with composite indexes).
 - `00154`: Composite B-Tree performance indexes (`purchase_orders`, `quotes`, `rfqs`, `invoices`, `payments`) and spend analytics RPC (`get_organization_spend_analytics`).
 - `00155`: Outbound notification exponential backoff retry queue (`messaging_events` retry columns, `record_notification_failure_with_backoff` RPC).
 - `00156`: Mutual Buyer & Supplier Identity Reveal on PO Issuance & Tax Compliance (`organizations_select` RLS bilateral visibility for awarded suppliers, `lock_and_reveal_award_atomic` complete buyer tax and legal payload for GST ITC eligibility under CGST Section 16).
+- `00157 - 00160`: GoTrue auth users null token fallback (`00157`), pilot buyer account seeding (`00158`), admin signup review workflow fixes (`00159`), and atomic RFQ status enum casting with bidder notification dispatch (`00160`).
 
 ---
 

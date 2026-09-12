@@ -47,9 +47,9 @@ describe('Org Feature Module Tests', () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.members).toHaveLength(2);
-      expect(res.members[0].isSelf).toBe(true);
-      expect(res.members[0].role).toBe('ADMIN');
-      expect(res.members[1].isSelf).toBe(false);
+      expect(res.members[0]?.isSelf).toBe(true);
+      expect(res.members[0]?.role).toBe('ADMIN');
+      expect(res.members[1]?.isSelf).toBe(false);
     }
   });
 
@@ -80,8 +80,8 @@ describe('Org Feature Module Tests', () => {
     vi.mocked(switchOrgRpc).mockResolvedValue({
       ok: true,
       context: {
-        activeOrgId: 'org-2',
-        activeRole: 'ADMIN',
+        organizationId: 'org-2',
+        activeRole: null,
         organizations: [],
       } as any,
     });
@@ -89,7 +89,7 @@ describe('Org Feature Module Tests', () => {
     const res = await switchActiveOrganization('org-2');
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.context.activeOrgId).toBe('org-2');
+      expect(res.context.organizationId).toBe('org-2');
     }
   });
 });

@@ -17,7 +17,7 @@ describe('In-Memory Taxonomy Graph & LRU Cache', () => {
 
     const retrieved = cache.get('canonical_taxonomy');
     expect(retrieved).toEqual(dummySnapshot);
-    expect(retrieved?.categories[0].code).toBe('PAINT');
+    expect(retrieved?.categories[0]?.code).toBe('PAINT');
   });
 
   it('expires cached taxonomy snapshots after TTL lapses', () => {

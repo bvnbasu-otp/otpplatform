@@ -54,9 +54,9 @@ describe('Clarification Feature Module Tests', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.messages).toHaveLength(1);
-      expect(result.messages[0].anonymousLabel).toBe('Supplier A');
-      expect(result.messages[0].authorSide).toBe('SUPPLIER');
-      expect(result.messages[0].body).toBe('Can we deliver in batches?');
+      expect(result.messages[0]?.anonymousLabel).toBe('Supplier A');
+      expect(result.messages[0]?.authorSide).toBe('SUPPLIER');
+      expect(result.messages[0]?.body).toBe('Can we deliver in batches?');
     }
   });
 
@@ -83,8 +83,8 @@ describe('Clarification Feature Module Tests', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.messages).toHaveLength(1);
-      expect(result.messages[0].authorSide).toBe('BUYER');
-      expect(result.messages[0].body).toContain('batch deliveries');
+      expect(result.messages[0]?.authorSide).toBe('BUYER');
+      expect(result.messages[0]?.body).toContain('batch deliveries');
     }
   });
 

@@ -131,6 +131,9 @@ BEGIN
 
   UPDATE requirements SET status = 'AWARDED', updated_at = v_now WHERE id = v_rfq.requirement_id;
 
+  -- Notify suppliers of outcome and close out round
+  PERFORM private.notify_bidders_of_outcome(p_rfq_id);
+
   -- 4. Audit Log
   INSERT INTO audit_events (
     event_type, actor_id, organization_id, entity_type, entity_id, payload

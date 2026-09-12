@@ -12,9 +12,9 @@
 
 - **Product Core Value**: OTP delivers **Identity-Protected Competitive Sourcing**, eliminating commercial bias, kickback vulnerability, and supplier collusion by cryptographically masking supplier identities (`Supplier-XXXX`) until an irrevocable, committee-backed award is reached.
 - **Architectural Soundness**: Monorepo architecture (`@otp/domain`, `@otp/services`, `@otp/database`, `@otp/web`) with strict domain boundaries, TypeScript-enforced type safety, and fallback-resilient API layers.
-- **Database Hardening**: 155 PostgreSQL migrations with database-level constraints, atomic RPC transactions with row-level locks (`SELECT FOR UPDATE`), composite B-Tree indexes, and sliding-window rate limiters.
+- **Database Hardening**: 160 PostgreSQL migrations with database-level constraints, atomic RPC transactions with row-level locks (`SELECT FOR UPDATE`), composite B-Tree indexes, and sliding-window rate limiters.
 - **Identity Isolation & Anti-Leak**: Pre-award identity isolation enforced across APIs, database security-barrier views, attachment sanitization (tokenized filenames and EXIF scrubbers), and WebSocket/WhatsApp messaging channels.
-- **Role Immutability**: SuperAdmin accounts protected against accidental deletion, demotion, or lockout via PostgreSQL triggers and whitelisting in `private_security.admin_whitelist`.
+- **Role Immutability & Route Protection**: SuperAdmin accounts protected against accidental deletion, demotion, or lockout via PostgreSQL triggers, and client routes protected via centralized `<ProtectedRoute>` with automatic diagnostic cache sanitization.
 - **Cryptographic Webhook Settlement**: Multi-gateway (Razorpay, Stripe, Generic) HMAC-SHA256 signature verification with timestamp freshness windows and idempotent ledger settlement.
 - **Enterprise Disaster Recovery**: Automated AES-256-CBC backup encryption with PBKDF2 key derivation, SHA-256 integrity checksums, and verified zero-loss restoration scripts.
 - **Zero-Scroll Mobile UX**: Strict `100dvh` viewport container architecture with form virtualization for high-density 30+ field specifications and WCAG 2.1 AAA contrast compliance.
@@ -23,7 +23,7 @@
 - **International & Regional Procurement NLP**: Multi-lingual parser supporting Devnagari/Hindi unit extraction (`लीटर`, `किलोग्राम`, `मीटर`, `टन`) alongside English metrics.
 - **ERP Interoperability**: Native export engines generating compliant Tally Prime XML purchase vouchers and Zoho Books JSON invoice payloads.
 - **Pre-Deployment Gatekeeping**: Zero-tolerance staging gatekeeper enforcing 100% pass across all 12 regression layers before deployment is permitted.
-- **Master Regression Status**: **579/579 automated tests passing (100% pass rate)** spanning unit, module, integration, security, demo, live call flows, and production bundle compilation.
+- **Master Regression Status**: **631/631 automated tests passing (100% pass rate)** spanning unit, module, integration, security, demo, live call flows, and production bundle compilation.
 - **Official CTO Clearance Verdict**: **APPROVED FOR CONTROLLED PILOT (10 Buyers, 30 Suppliers)**.
 
 ---
@@ -45,7 +45,7 @@ Every domain was evaluated against actual source code, database migrations, conf
 | **9** | **State Machines** | 8 canonical procurement states (`DRAFT` $\rightarrow$ `SETTLED`) | **VERIFIED** | Database-enforced state transitions in `00016+` migrations. |
 | **10**| **Workflows** | 2-step Fast Track & 4-step Committee Governance | **VERIFIED** | End-to-end multi-actor workflows verified in E2E tests. |
 | **11**| **Call Flows** | Client $\rightarrow$ Kong $\rightarrow$ PostgREST $\rightarrow$ Database RPCs | **VERIFIED** | Resilient multi-tier fallback with error boundaries. |
-| **12**| **Database Engine** | PostgreSQL 15 schema, tables, views, RPCs | **VERIFIED** | 155 tracked migrations in `supabase/migrations/`. |
+| **12**| **Database Engine** | PostgreSQL 15 schema, tables, views, RPCs | **VERIFIED** | 160 tracked migrations in `supabase/migrations/`. |
 | **13**| **Data Model** | Relational normalization, primary/foreign keys | **VERIFIED** | Foreign keys enforce `ON DELETE RESTRICT` on financials. |
 | **14**| **DB Constraints** | Check constraints, unique indexes, types | **VERIFIED** | Unique constraint on `payments(gateway_event_id)` prevents replays. |
 | **15**| **RLS Policies** | Row-Level Security across all 45+ public tables | **VERIFIED** | Strict tenant isolation tested across buyers and suppliers. |
@@ -76,7 +76,7 @@ Every domain was evaluated against actual source code, database migrations, conf
 | **40**| **Vercel Edge Hosting**| Zero-configuration global edge CDN | **VERIFIED** | Live deployed at `https://otpplatform-theta.vercel.app`. |
 | **41**| **Env Separation** | Clean split between development, demo, and prod | **VERIFIED** | Migration `00128` data isolation flags. |
 | **42**| **CI/CD Integration** | Automated pre-flight regression test battery | **VERIFIED** | Pre-deployment verification gate (`scripts/verify-staging-gate.ts`). |
-| **43**| **Testing Pyramid** | Unit, module, integration, security, E2E | **VERIFIED** | **579 tests passing (100% pass rate)**. |
+| **43**| **Testing Pyramid** | Unit, module, integration, security, E2E | **VERIFIED** | **631 tests passing (100% pass rate)**. |
 | **44**| **Regression Suite**| 12-layer master regression test battery | **VERIFIED** | `scripts/run-master-regression.ts` executed with 100% green. |
 | **45**| **Performance** | Zero N+1 queries, composite B-Tree indexes | **VERIFIED** | Migration `00154` indexes + in-memory LRU taxonomy cache. |
 | **46**| **Accessibility** | WCAG 2.1 AAA high-contrast token compliance | **VERIFIED** | Contrast ratio tests pass $\ge 7.0:1$ standard. |
@@ -164,7 +164,7 @@ Every domain was evaluated against actual source code, database migrations, conf
 | **17. Identity Masking** | Blind RFQ isolation and attachment EXIF scrubber | **PASS** | `packages/domain/src/enums/attachment.ts` anti-leak module. |
 | **18. SuperAdmin Protection** | Immutable triggers protecting root administrators | **PASS** | Migration `00152_immutable_platform_admin_role.sql`. |
 | **19. Telemetry Sanitization** | Automatic masking of emails, phones, JWTs in errors | **PASS** | `apps/web/src/lib/telemetry.ts` sanitizing error boundary. |
-| **20. Pre-Deployment Gate** | 100% pass on 579 automated regression tests | **PASS** | `scripts/run-master-regression.ts` automated staging gate. |
+| **20. Pre-Deployment Gate** | 100% pass on 631 automated regression tests | **PASS** | `scripts/verify-staging-gate.ts` automated staging gate. |
 
 ---
 
@@ -178,11 +178,11 @@ Every domain was evaluated against actual source code, database migrations, conf
 │ (index) │ Category      │ Suite                                              │ Passed │ Failed │ Status    │ Duration (s) │
 ├─────────┼───────────────┼────────────────────────────────────────────────────┼────────┼────────┼───────────┼──────────────┤
 │ 0       │ 'POLICY'      │ 'Canonical Procurement Vocabulary Scanner'         │ 1      │ 0      │ '✅ PASS' │ '3.48'       │
-│ 1       │ 'DOMAIN'      │ 'Domain Logic, GST Validation & Parsing Engine'    │ 66     │ 0      │ '✅ PASS' │ '8.13'       │
+│ 1       │ 'DOMAIN'      │ 'Domain Logic, GST Validation & Parsing Engine'    │ 70     │ 0      │ '✅ PASS' │ '8.13'       │
 │ 2       │ 'SERVICES'    │ 'Network Discovery & External Services Adapters'   │ 30     │ 0      │ '✅ PASS' │ '11.60'      │
 │ 3       │ 'DATABASE'    │ 'Database Entity Mappers'                          │ 1      │ 0      │ '✅ PASS' │ '8.08'       │
 │ 4       │ 'UNIT'        │ 'Messaging Core & Web Routing Invariants'          │ 75     │ 0      │ '✅ PASS' │ '8.92'       │
-│ 5       │ 'WEB'         │ 'Web Features, Governance & State Machine Tests'   │ 298    │ 0      │ '✅ PASS' │ '32.98'      │
+│ 5       │ 'WEB'         │ 'Web Features, Governance & State Machine Tests'   │ 346    │ 0      │ '✅ PASS' │ '32.98'      │
 │ 6       │ 'INTEGRATION' │ 'Live Database Integration & RLS Security Suite'   │ 35     │ 0      │ '✅ PASS' │ '44.30'      │
 │ 7       │ 'DEMO_E2E'    │ 'Live Demo Scenario & E2E Walkthrough Suite'       │ 12     │ 0      │ '✅ PASS' │ '8.35'       │
 │ 8       │ 'POSTGRES'    │ 'Database Engine & Security RPCs'                  │ 25     │ 0      │ '✅ PASS' │ '0.04'       │
@@ -191,10 +191,10 @@ Every domain was evaluated against actual source code, database migrations, conf
 │ 11      │ 'BUILD'       │ 'Production TypeScript Compilation & Bundle Build' │ 1      │ 0      │ '✅ PASS' │ '50.62'      │
 └─────────┴───────────────┴────────────────────────────────────────────────────┴────────┴────────┴───────────┴──────────────┘
 
-Grand Total Tests: 579
-Passed: 579 (100%)
+Grand Total Tests: 631
+Passed: 631 (100%)
 Failed: 0 (0%)
-Execution Time: 298.06s
+Execution Time: 301.24s
 ```
 
 ---

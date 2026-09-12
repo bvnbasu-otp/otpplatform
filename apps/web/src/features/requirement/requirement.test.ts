@@ -97,10 +97,11 @@ describe('Requirement Feature Module Tests', () => {
     if (res.ok) {
       expect(res.requirements).toHaveLength(1);
       const req = res.requirements[0];
-      expect(req.id).toBe('req-1');
-      expect(req.rfqId).toBe('rfq-1');
-      expect(req.quotesCount).toBe(4);
-      expect(req.minQuotesRequired).toBe(3);
+      expect(req).toBeDefined();
+      expect(req?.id).toBe('req-1');
+      expect(req?.rfqId).toBe('rfq-1');
+      expect(req?.quotesCount).toBe(4);
+      expect(req?.minQuotesRequired).toBe(3);
     }
   });
 });

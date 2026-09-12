@@ -99,5 +99,5 @@ pnpm audit
 
 # Step 5: Full Staging Gate Promotion Check
 pnpm gate:verify
-# Verify: 852/852 tests pass (100% green) across all 12 platform layers
+# Verify: 631/631 tests pass (100% green) across all 12 platform layers
 ```

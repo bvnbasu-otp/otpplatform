@@ -83,3 +83,9 @@ Restoration and disaster recovery are automated via [`scripts/restore-prod-db.ps
 
 ### 4.4 Pre-Award Attachment Anti-Leak Sanitization
 - `packages/domain/src/enums/attachment.ts` enforces `sanitizeAttachmentFilename()` (`Supplier-XXXX_doc_1.pdf`) and asserts zero metadata leaks (EXIF, author, company, device model) prior to the irrevocable award stage.
+
+### 4.5 Centralized Route Guarding & Client State Sanitization
+- Implemented in `apps/web/src/features/auth/ProtectedRoute.tsx`.
+- **Session & Role Verification**: Rejects unauthenticated visits to internal workspace views and redirects with preserved destination queries (`/login?redirect=...`).
+- **Administrative Diagnostic Cache Purging**: Calls `clearSensitiveClientState` to sanitize `sessionStorage` and `localStorage` of sensitive keys prefixed with `admin_`, `diagnostic_`, `sensitive_`, and `otp_admin_` when an unauthorized navigation occurs.
+- **Strict Role-Based Access Control (RBAC)**: Enforces role isolation across public routes, regular workspace routes, and elevated paths (`/admin`, `/purchase-orders`).

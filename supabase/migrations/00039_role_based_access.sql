@@ -353,7 +353,7 @@ AS $$
     AND (p_side IS NULL OR ur.side = p_side);
 $$;
 
-GRANT EXECUTE ON FUNCTION public.role_catalog(signup_side) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.role_catalog(signup_side) TO anon, authenticated, service_role;
 
 /**
  * Everything the interface needs to decide what to show this person.

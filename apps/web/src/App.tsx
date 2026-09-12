@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
-import { AuthProvider, RequireAuth } from '@/features/auth';
+import { AuthProvider, RequireAuth, ProtectedRoute } from '@/features/auth';
 import { LegalPage, LoginPage, ResetPasswordPage, SignupPage } from '@/features/portal';
 import { AboutPage, FaqPage, LandingPage, PricingPage } from '@/features/site';
 import { RequireRole, RoleProvider } from '@/features/roles';
@@ -228,14 +228,46 @@ export function App() {
             <Route path="/supplier/rfq/:rfqId" element={<SupplierRfqRoute />} />
             <Route path="/supplier/rfqs/:rfqId" element={<SupplierRfqRoute />} />
             <Route path="/supplier/capabilities" element={<SupplierCapabilitiesPage />} />
-            <Route path="/purchase-orders" element={<PurchaseOrdersPage role="buyer" />} />
-            <Route path="/purchase-orders/:poId" element={<BuyerPoDetailRoute />} />
+            <Route
+              path="/purchase-orders"
+              element={
+                <ProtectedRoute allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}>
+                  <PurchaseOrdersPage role="buyer" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/purchase-orders/:poId"
+              element={
+                <ProtectedRoute allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}>
+                  <BuyerPoDetailRoute />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/supplier/purchase-orders"
-              element={<PurchaseOrdersPage role="supplier" />}
+              element={
+                <ProtectedRoute allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}>
+                  <PurchaseOrdersPage role="supplier" />
+                </ProtectedRoute>
+              }
             />
-            <Route path="/supplier/purchase-orders/:poId" element={<SupplierPoDetailRoute />} />
-            <Route path="/supplier/work-orders/:woId" element={<SupplierWoRoute />} />
+            <Route
+              path="/supplier/purchase-orders/:poId"
+              element={
+                <ProtectedRoute allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}>
+                  <SupplierPoDetailRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supplier/work-orders/:woId"
+              element={
+                <ProtectedRoute allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}>
+                  <SupplierWoRoute />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/audit" element={<AuditRoute />} />
             <Route path="/rfq/:rfqId/audit" element={<AuditRoute />} />
             <Route path="/performance" element={<PerformanceRoute />} />
@@ -245,12 +277,54 @@ export function App() {
             <Route path="/settings/profile" element={<Navigate to="/profile" replace />} />
             <Route path="/org/members" element={<OrgMembersPage />} />
             <Route path="/demo" element={<DemoDashboardPage />} />
-            <Route path="/admin" element={<AdminDashboardPage />} />
-            <Route path="/ops" element={<Navigate to="/admin" replace />} />
-            <Route path="/admin/buyer-orders" element={<Navigate to="/admin?tab=transactions" replace />} />
-            <Route path="/admin/seller-orders" element={<Navigate to="/admin?tab=seller-orders" replace />} />
-            <Route path="/admin/buyer-diagnostics" element={<AdminBuyerDiagnosticsPage />} />
-            <Route path="/admin/seller-diagnostics" element={<AdminSellerDiagnosticsPage />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ops"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <Navigate to="/admin" replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/buyer-orders"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <Navigate to="/admin?tab=transactions" replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/seller-orders"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <Navigate to="/admin?tab=seller-orders" replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/buyer-diagnostics"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminBuyerDiagnosticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/seller-diagnostics"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminSellerDiagnosticsPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

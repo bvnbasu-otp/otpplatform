@@ -1,14 +1,56 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import crypto from 'node:crypto';
 
-/** Default keys for local Supabase CLI (supabase start). */
+function generateJwt(role: 'anon' | 'service_role', secret: string): string {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(
+    JSON.stringify({
+      iss: 'supabase-demo',
+      role,
+      exp: 1983812996,
+    }),
+  ).toString('base64url');
+  const sig = crypto
+    .createHmac('sha256', secret)
+    .update(`${header}.${payload}`)
+    .digest('base64url');
+  return `${header}.${payload}.${sig}`;
+}
+
+const SECRET_PROD = 'your-long-production-jwt-secret-min-32-chars!';
+const SECRET_CLI = 'super-secret-jwt-token-with-at-least-32-characters-long';
+
+export const KEY_PAIRS = [
+  {
+    name: 'prod_compose',
+    anon: generateJwt('anon', SECRET_PROD),
+    service: generateJwt('service_role', SECRET_PROD),
+  },
+  {
+    name: 'local_cli',
+    anon: generateJwt('anon', SECRET_CLI),
+    service: generateJwt('service_role', SECRET_CLI),
+  },
+];
+
+if (process.env.SUPABASE_ANON_KEY) {
+  KEY_PAIRS.unshift({
+    name: 'env_keys',
+    anon: process.env.SUPABASE_ANON_KEY,
+    service: process.env.SUPABASE_SERVICE_ROLE_KEY ?? generateJwt('service_role', SECRET_PROD),
+  });
+} else if (process.env.VITE_SUPABASE_ANON_KEY) {
+  KEY_PAIRS.push({
+    name: 'vite_env_keys',
+    anon: process.env.VITE_SUPABASE_ANON_KEY,
+    service: process.env.SUPABASE_SERVICE_ROLE_KEY ?? generateJwt('service_role', SECRET_CLI),
+  });
+}
+
+/** Default keys for local Supabase. */
 export let LOCAL_SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
-export const LOCAL_ANON_KEY =
-  process.env.SUPABASE_ANON_KEY ??
-  process.env.VITE_SUPABASE_ANON_KEY ??
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
-export const LOCAL_SERVICE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ??
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+export let LOCAL_ANON_KEY = KEY_PAIRS[0].anon;
+export let LOCAL_SERVICE_KEY = KEY_PAIRS[0].service;
 
 export const SEED = {
   greenviewOrg: 'a0000000-0000-4000-8000-000000000001',
@@ -44,16 +86,24 @@ export async function isLocalSupabaseReachable(): Promise<boolean> {
   ].filter(Boolean) as string[];
 
   for (const url of candidateUrls) {
-    try {
-      const res = await fetch(`${url}/rest/v1/`, {
-        headers: { apikey: LOCAL_ANON_KEY },
-      });
-      if (res.ok || res.status === 404 || res.status === 401) {
-        LOCAL_SUPABASE_URL = url;
-        return true;
+    for (const pair of KEY_PAIRS) {
+      try {
+        const res = await fetch(`${url}/rest/v1/`, {
+          headers: {
+            apikey: pair.service,
+            Authorization: `Bearer ${pair.service}`,
+          },
+          signal: AbortSignal.timeout(1500),
+        });
+        if (res.ok) {
+          LOCAL_SUPABASE_URL = url;
+          LOCAL_ANON_KEY = pair.anon;
+          LOCAL_SERVICE_KEY = pair.service;
+          return true;
+        }
+      } catch {
+        // try next candidate endpoint
       }
-    } catch {
-      // try next candidate endpoint
     }
   }
   return false;

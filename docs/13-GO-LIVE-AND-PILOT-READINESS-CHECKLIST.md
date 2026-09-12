@@ -11,8 +11,8 @@
 The **Open Trade & Procurement (OTP) Platform** has undergone comprehensive architectural, security, state-machine, operational, and multi-tenant evaluations. 
 
 - **Overall Readiness Verdict**: **9.6 / 10** — 🟢 **APPROVED FOR CONTROLLED PILOT (10 Buyers, 30 Suppliers)**.
-- **Scope**: Covers technical prerequisites, 155 applied PostgreSQL migrations, strict RLS security, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 8-state lifecycle operations suite, support ticket routing to `bvnbasu@gmail.com`, payment webhook verification, atomic award locking, and ERP export integration.
-- **Verification Confidence**: **579 automated tests passing (100% pass rate)** across 12 regression layers, zero TypeScript build errors, Playwright cross-browser E2E verification, and zero runtime console crashes across mobile and desktop viewports.
+- **Scope**: Covers technical prerequisites, 160 applied PostgreSQL migrations, strict RLS security, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 8-state lifecycle operations suite, support ticket routing to `bvnbasu@gmail.com`, payment webhook verification, atomic award locking, and ERP export integration.
+- **Verification Confidence**: **631 automated tests passing (100% pass rate)** across 12 regression layers, zero TypeScript build errors, Playwright cross-browser E2E verification, and zero runtime console crashes across mobile and desktop viewports.
 
 ```mermaid
 graph TD
@@ -43,6 +43,7 @@ Before opening the platform to friendly trial users or general production traffi
 - [x] **SuperAdmin Role Isolation**: Migration `00123` ensures primary SuperAdmin account (`bvnbasu@gmail.com`) holds 0 organizational memberships, guaranteeing absolute impartiality.
 - [x] **Admin RPC Gatekeeping**: All administrative and troubleshooting procedures (`00139`, `00140`) enforce `private.is_platform_admin()`.
 - [x] **Canonical Identity-Protected Views**: Legacy alias views permanently purged (`00114`, `00117`); only `quotes_identity_protected` and `rfqs_supplier_masked` exposed.
+- [x] **Centralized Route Guards & Cache Sanitization**: Client `<ProtectedRoute>` enforces session auth, blocked user hold, onboarding verification, and role boundaries, with automatic cache sanitization (`clearSensitiveClientState()`) and deep-link redirect preservation.
 
 ---
 

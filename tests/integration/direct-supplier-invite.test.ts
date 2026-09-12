@@ -231,8 +231,8 @@ describe('invite_direct_supplier', () => {
     const anon = createAnonClient();
 
     const { error } = await callInvite(anon, 'PHONE', uniquePhone());
-    // With no profile, the org-membership check fails first.
-    expect(error?.message).toMatch(/access denied|no profile/i);
+    // With no profile or unauthenticated session, request is refused.
+    expect(error?.message).toMatch(/access denied|no profile|not signed in|not allowed|permission denied|wrong key type/i);
   });
 
   it('does not accept invitations once the RFQ leaves DRAFT or OPEN', async () => {

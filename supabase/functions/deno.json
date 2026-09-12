@@ -19,7 +19,7 @@
     }
   },
   "tasks": {
-    "test": "deno test --allow-none --no-lock _shared/",
+    "test": "deno test --allow-env --no-lock _shared/ payment-webhook/",
     "lint": "deno lint _shared/",
     "check": "deno check _shared/**/*.ts rfq-quotes-blind/index.ts rfq-quotes-revealed/index.ts supplier-magic-link/index.ts messaging-inbound/index.ts demo-reset/index.ts"
   }

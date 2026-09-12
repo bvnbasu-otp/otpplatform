@@ -126,7 +126,8 @@ export class OndcBapReceiver {
     for (const provider of providers) {
       const items = provider.items || [];
       const itemIds = items.map((i) => i.id);
-      const firstPrice = items[0]?.price?.value ? parseFloat(items[0].price.value) : undefined;
+      const item0 = items[0];
+      const firstPrice = item0?.price?.value ? parseFloat(item0.price.value) : undefined;
       const categories = (provider.categories || []).map((c) => c.descriptor?.name || c.id);
 
       candidates.push({

@@ -14,7 +14,8 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />;
+    const fullPath = location.pathname + location.search;
+    return <Navigate to={`/login?redirect=${encodeURIComponent(fullPath)}`} replace />;
   }
 
   return children;

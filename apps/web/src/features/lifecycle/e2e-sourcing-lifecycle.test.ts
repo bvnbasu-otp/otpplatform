@@ -63,15 +63,15 @@ describe('OTP Platform — End-to-End Multi-Actor Procurement Lifecycle Model', 
     });
 
     expect(invitedSuppliers.length).toBe(3);
-    expect(invitedSuppliers[0].alias).toBe('Supplier-100');
+    expect(invitedSuppliers[0]?.alias).toBe('Supplier-100');
   });
 
   it('Step 7–9: Sealed Quote Submission & Identity-Protected Comparison Matrix', () => {
     // 3 Suppliers submit sealed quotes
     submittedQuotes = [
-      { id: 'q-101', supplierId: invitedSuppliers[0].id, alias: invitedSuppliers[0].alias, basePrice: 450000, totalCost: 531000, status: 'FINAL' },
-      { id: 'q-102', supplierId: invitedSuppliers[1].id, alias: invitedSuppliers[1].alias, basePrice: 420000, totalCost: 495600, status: 'FINAL' }, // L1 Lowest
-      { id: 'q-103', supplierId: invitedSuppliers[2].id, alias: invitedSuppliers[2].alias, basePrice: 480000, totalCost: 566400, status: 'FINAL' },
+      { id: 'q-101', supplierId: invitedSuppliers[0]!.id, alias: invitedSuppliers[0]!.alias, basePrice: 450000, totalCost: 531000, status: 'FINAL' },
+      { id: 'q-102', supplierId: invitedSuppliers[1]!.id, alias: invitedSuppliers[1]!.alias, basePrice: 420000, totalCost: 495600, status: 'FINAL' }, // L1 Lowest
+      { id: 'q-103', supplierId: invitedSuppliers[2]!.id, alias: invitedSuppliers[2]!.alias, basePrice: 480000, totalCost: 566400, status: 'FINAL' },
     ];
 
     // Verify comparison invariant: lowest L1 price is detected
@@ -96,7 +96,7 @@ describe('OTP Platform — End-to-End Multi-Actor Procurement Lifecycle Model', 
 
     // Validate award preconditions
     const rfqState = { status: 'EVALUATING', revealStatus: 'PROTECTED', minQuotesRequired: 3 };
-    const validation = validateAwardPreconditions(rfqState, submittedQuotes, 'q-102', committeeVotes[0].justification);
+    const validation = validateAwardPreconditions(rfqState, submittedQuotes, 'q-102', committeeVotes[0]!.justification);
     expect(validation.valid).toBe(true);
   });
 
@@ -108,7 +108,7 @@ describe('OTP Platform — End-to-End Multi-Actor Procurement Lifecycle Model', 
       quoteId: 'q-102',
       status: 'REVEALED',
       awardedAt: new Date().toISOString(),
-      winnerSupplierId: invitedSuppliers[1].id,
+      winnerSupplierId: invitedSuppliers[1]!.id,
       unmaskedBusinessName: 'Metro Coating Solutions',
     };
 

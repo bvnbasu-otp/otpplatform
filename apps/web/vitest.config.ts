@@ -9,10 +9,12 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, 'src'),
       '@otp/domain': resolve(__dirname, '../../packages/domain/src/index.ts'),
+      '@otp/messaging': resolve(__dirname, '../../supabase/functions/_shared/messaging/index.ts'),
     },
   },
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     environment: 'node',
+    isolate: false,
   },
 });

@@ -26,12 +26,15 @@ import { DEMO } from '../helpers/demo-fixtures';
 
 type Client = ReturnType<typeof createAnonClient>;
 
-const service = createServiceClient();
+let service: ReturnType<typeof createServiceClient>;
 
 let up = false;
 
 beforeAll(async () => {
   up = await isLocalSupabaseReachable();
+  if (up) {
+    service = createServiceClient();
+  }
 });
 
 beforeEach((ctx) => {

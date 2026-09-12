@@ -31,12 +31,13 @@ Unlike commercial auction houses, public tender directories, or vendor listing s
 | **Staging Verification Gate** | `pnpm gate:verify` (828 Automated Checks, 100% Pass Required) | 🟢 100% Passed (828/828) |
 | **End-to-End Test Suite** | Vitest (235/235 Passed) + Live Smoke Suite (11/11 Passed) | 🟢 100% Passed |
 | **Deployment Pipeline** | Gated Atomic Blue-Green Pipeline (`deploy-prod.ps1`) with Instant Rollback | 🟢 Dry-Run Verified |
-| **Database Migrations** | 156 Tracked Migrations (`00001` to `00156`) via `otp_schema_migrations` | 🟢 Synced |
+| **Database Migrations** | 160 Tracked Migrations (`00001` to `00160`) via `otp_schema_migrations` | 🟢 Synced |
 | **Prohibited Vocabulary** | Zero tolerance for `bid`, `bidder`, `bidding`, `blind` | 🟢 0 Violations |
 | **Payment Webhooks** | Multi-Gateway Cryptographic HMAC-SHA256 (Razorpay & Stripe) | 🟢 Verified Live |
 | **Backup Encryption** | PBKDF2 (100k rounds) + AES-256-CBC with SHA-256 Checksums | 🟢 Verified Live |
 | **SuperAdmin Immutability** | PostgreSQL Trigger & Whitelist Schema (`private_security`) | 🟢 Verified Live |
-| **E2E Automation** | Playwright Cross-Browser Multi-Tenant Sourcing Battery | 🟢 Verified Live |
+| **Route Security & RBAC** | Centralized `<ProtectedRoute>` & Strict Deep-Link Preservation | 🟢 Verified Live |
+| **E2E Automation** | Playwright & Vitest Multi-Tenant Sourcing Battery (631+ Tests) | 🟢 100% Passed |
 
 ---
 
@@ -62,7 +63,7 @@ This documentation library has been consolidated, standardized, and organized in
   *Visual Token Architecture, Responsive Mobile-First PWA, Identity-Protected Comparison Room, Committee Voting Room, Decision Receipts, Support Help Modal Sheet, and Universal Home Navigation.*
 
 - [**06. Database Schema, Migrations & Row-Level Security (RLS)**](./06-DATABASE-AND-RLS-POLICIES.md)  
-  *PostgreSQL 15 Schema, 156 Applied Migrations (`00001` - `00156`), Core Entity Tables, Cryptographic RPCs, Identity-Protected Views, and Cross-Tenant RLS Policies.*
+  *PostgreSQL 15 Schema, 160 Applied Migrations (`00001` - `00160`), Core Entity Tables, Cryptographic RPCs, Identity-Protected Views, and Cross-Tenant RLS Policies.*
 
 ### 3. Security, Operations & Deployment
 - [**07. Security, Privacy & Backup/Restore Posture**](./07-SECURITY-PRIVACY-BACKUP.md)  

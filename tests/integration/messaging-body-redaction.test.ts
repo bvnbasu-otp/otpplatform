@@ -24,7 +24,7 @@ import {
 } from '../helpers/supabase-local';
 
 let up = false;
-const service = createServiceClient();
+let service: ReturnType<typeof createServiceClient>;
 
 async function redact(body: string): Promise<{ body: string; kinds: string[] }> {
   const { data, error } = await service.rpc('redact_message_body', { p_body: body });
@@ -35,6 +35,9 @@ async function redact(body: string): Promise<{ body: string; kinds: string[] }> 
 
 beforeAll(async () => {
   up = await isLocalSupabaseReachable();
+  if (up) {
+    service = createServiceClient();
+  }
 });
 
 beforeEach((ctx) => {

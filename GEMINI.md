@@ -15,9 +15,16 @@ All code, comments, user interface text, schemas, migrations, test suites, and d
   - Instead of `bidding` ➔ Use **`quoting`**, **`sourcing window`**, **`evaluation`**
 
 ## 3. Database Architecture & Migrations
-- Active migrations live in `supabase/migrations/` (117 applied migrations from `00001` to `00117`).
+- Active migrations live in `supabase/migrations/` (160 applied migrations from `00001` to `00160`).
 - Never introduce legacy views (`quotes_blind`, `rfqs_supplier_blind`, `my_quote_outcome`). Use canonical `quotes_identity_protected`, `rfqs_supplier_masked`, `my_quote_outcome`.
 
 ## 4. Verification & Testing Standards
-- All changes must maintain 100% pass rate in `pnpm test:regression` (375 tests).
-- Build check: `pnpm build` in `apps/web` must succeed with zero TypeScript or Vite errors.
+- All changes must maintain 100% pass rate across the 12-layer verification gate (`pnpm gate:verify` — 631 tests across 110 active test files).
+- Deno Edge Functions compatibility check: `pnpm test:functions` (38/38 unit tests passing across `_shared/` and `payment-webhook/`).
+- TypeScript check: `pnpm typecheck` must pass with zero errors across all workspaces (`@otp/domain`, `@otp/database`, `@otp/services`, `@otp/web`).
+- Build check: `pnpm -r build` must succeed with zero TypeScript or Vite bundle errors.
+
+## 5. Security & Route Protection Standards
+- Client routing must enforce centralized `<ProtectedRoute>` evaluating session validity, blocked status, onboarding gates, and strict RBAC (`allowedRoles`, `requireAdmin`).
+- Unauthorized route navigations must sanitize diagnostic client storage via `clearSensitiveClientState()`.
+- Deep links must be preserved through `/login?redirect=<target>` and honored after authentication.

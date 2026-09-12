@@ -82,7 +82,19 @@
   1. Automated RBAC test run (`packages/domain` and `tests/security` test suite).
   2. Schema definition for trigger `assert_active_role_held` and function `public.my_role_context()`.
 
-### Control 2.3: Cross-Tenant Row-Level Security (RLS) & Committee Voting Integrity
+### Control 2.4: Centralized Route Guarding, RBAC Verification & Client Cache Sanitization
+- **Verification Description:** Verify that client-side SPA routing enforces strict session authentication and role validation (`<ProtectedRoute>`), preserving deep links while instantly purging sensitive diagnostic caches upon unauthorized access attempts.
+- **Pass/Fail Criteria:**
+  - **Pass:**
+    - Unauthenticated requests to all internal routes (`/admin`, `/purchase-orders`, `/dashboard`, `/requirements/*`) immediately redirect to `/login?redirect=<target>`.
+    - Non-admin authenticated users attempting to load `/admin` or `/admin/*` are rejected and trigger `clearSensitiveClientState` (purging diagnostic storage keys).
+    - Purchase order routes (`/purchase-orders`, `/supplier/purchase-orders`) strictly enforce `allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}`.
+  - **Fail:** Any internal workspace route accessible without valid session tokens or unauthorized roles mounting administrative UI components.
+- **Required Evidence / Artifacts:**
+  1. Test execution transcript of `apps/web/src/features/auth/protected-route.test.ts` (9/9 tests passing).
+  2. Test execution transcript of `tests/unit/web-routes.test.ts` (27/27 tests passing).
+
+### Control 2.5: Cross-Tenant Row-Level Security (RLS) & Committee Voting Integrity
 - **Verification Description:** Verify that institutional governance controls (committee voting weights, identity-protected quotation masking, and award reveals) strictly protect vendor identity prior to formal contract award.
 - **Pass/Fail Criteria:**
   - **Pass:**

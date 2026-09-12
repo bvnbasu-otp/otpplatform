@@ -32,7 +32,7 @@ describe('Accounting & ERP Exports (Tally XML & Zoho Books JSON)', () => {
 
     expect(zoho.customer_name).toBe('Sunrise Residency Owners Association');
     expect(zoho.invoice_number).toBe('PO-2026-BLR-0049');
-    expect(zoho.line_items[0].rate).toBe(420000);
-    expect(zoho.line_items[0].name).toBe('Painting & Waterproofing');
+    expect(zoho.line_items[0]?.rate).toBe(420000);
+    expect(zoho.line_items[0]?.name).toBe('Painting & Waterproofing');
   });
 });

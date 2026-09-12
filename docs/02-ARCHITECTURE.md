@@ -47,7 +47,7 @@
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                         POSTGRESQL 15 DATABASE (Port 5432)                              │
 │  Container: otp-prod-db                                                                 │
-│  - 156 Applied Production Migrations (00001 to 00156)                                   │
+│  - 160 Applied Production Migrations (00001 to 00160)                                   │
 │  - Row Level Security (RLS) on all core tables                                          │
 │  - Security Definer Functions (private_security schema, SuperAdmin Immutability Triggers)│
 │  - Cryptographic Anonymous Masking Views (quotes_identity_protected, rfqs_supplier_masked)│
@@ -107,8 +107,26 @@ Unlike legacy SaaS procurement platforms requiring thousands of dollars monthly 
 
 ---
 
-## 4. Network Security & Perimeter Defense
+## 5. Frontend Route Security & Centralized RBAC Guard Architecture
 
-- **Port Exposure Policy**: PostgreSQL (`5432`) binds strictly to `127.0.0.1`. Internal microservices (`auth`, `rest`, `realtime`) are inaccessible from the public internet. Only Kong Gateway (`8000`), WAHA (`3008`), and Vite (`3000`) listen on host interfaces.
-- **Data Protection at Rest**: All application data resides in Docker volumes backed by NTFS daily backups located at `G:\My Drive\otp\backups\`.
-- **Cross-Tenant Isolation**: Row-Level Security (RLS) is hardcoded into PostgreSQL. Even if a compromised client sends raw PostgREST requests, the database rejects queries attempting to select rows belonging to another organization.
+The frontend routing system in `apps/web/src/App.tsx` enforces a 3-tier perimeter guard using the centralized `<ProtectedRoute>` component (`apps/web/src/features/auth/ProtectedRoute.tsx`):
+
+1. **Tier 1: Explicit Public Whitelist**
+   - Marketing & Legal: `/`, `/pricing`, `/faqs`, `/about-us`, `/legal/:topic`.
+   - Authentication & Recovery: `/login`, `/signup`, `/reset-password`.
+   - Stateless WhatsApp/SMS Quick-Quote: `/q/:token` (stateless token credential).
+   - Maintenance Fallback: `/maintenance`.
+
+2. **Tier 2: Authenticated Workspace Layout**
+   - All internal routes (`/dashboard`, `/requirements/*`, `/rfq/*`, `/notifications`, `/profile`, `/org/members`) are enclosed in `<RequireAuth><RequireRole><AppLayout /></RequireRole></RequireAuth>`.
+   - Unauthenticated visits automatically capture the full URL and query parameters and redirect to `/login?redirect=<target>`.
+   - Accounts on administrative hold (`isBlocked`) are halted before workspace mounting.
+   - Accounts with unassigned roles (`needsOnboarding`) are routed to the role onboarding screen.
+
+3. **Tier 3: Strict Role-Based Access Control (RBAC)**
+   - **SuperAdmin Console (`/admin` and all sub-routes)**: Enforces `<ProtectedRoute requireAdmin>` requiring verified platform administrator privileges. Unauthorized attempts immediately purge sensitive diagnostic caches (`clearSensitiveClientState`) and redirect to login.
+   - **Purchase Orders & Work Orders (`/purchase-orders`, `/purchase-orders/:poId`, `/supplier/purchase-orders`, `/supplier/work-orders/:woId`)**: Enforces `<ProtectedRoute allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}>`.
+
+4. **Edge Function Runtime Standard**
+   - Deno Edge Functions in `supabase/functions/` (e.g. `payment-webhook/index.ts`) utilize ESM execution guards (`if (import.meta.main)`) to ensure testing and CI importing do not inadvertently bind network listening sockets.
+   - Standardized permission tasks (`deno test --allow-env --no-lock`) in `supabase/functions/deno.json` ensuring clean test execution across Deno 1.x and 2.x runtimes.

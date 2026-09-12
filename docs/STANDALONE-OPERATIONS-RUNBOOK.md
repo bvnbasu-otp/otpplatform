@@ -18,9 +18,9 @@ Set-Location "G:\My Drive\otp"
 |---|---|---|
 | `.\scripts\otp.ps1 start` | Boots all Docker containers (with strict `127.0.0.1` loopback bindings), runs DB migrations, and launches local web preview on port 3000. | After PC reboot or host restart. |
 | `.\scripts\otp.ps1 status` | Diagnostic check: displays container states, loopback port listeners (3000, 3008, 5432, 8000, 54321), DB integrity lock, and live URL response. | Anytime to verify system health. |
-| `.\scripts\otp.ps1 test` | Runs web unit test suite (235 tests) + live un-mocked smoke test battery (11/11 checks). | Fast verification after local code edits. |
-| `.\scripts\otp.ps1 gate` | Executes the strict **12-Layer Staging Verification Gate** (852 tests, 100% green required). | Pre-flight check before production promotion. |
-| `.\scripts\otp.ps1 deploy` | **Full Production Deployment Pipeline**: Dispatches `STARTING` alert -> Gate (852 tests) -> DB Backup -> Migrations -> Bundle build -> Live Smoke (11/11) -> `COMPLETED` alert. | When deploying changes to production live. |
+| `.\scripts\otp.ps1 test` | Runs web unit test suite (346 tests) + live un-mocked smoke test battery (11/11 checks). | Fast verification after local code edits. |
+| `.\scripts\otp.ps1 gate` | Executes the strict **12-Layer Staging Verification Gate** (631 tests across 110 active test files, 100% green required). | Pre-flight check before production promotion. |
+| `.\scripts\otp.ps1 deploy` | **Full Production Deployment Pipeline**: Dispatches `STARTING` alert -> Gate (631 tests) -> DB Backup -> Migrations -> Bundle build -> Live Smoke (11/11) -> `COMPLETED` alert. | When deploying changes to production live. |
 | `.\scripts\otp.ps1 rollback` | **Instant Rollback**: Swaps active `apps/web/dist` with `apps/web/dist_prev`, restarts web server, and dispatches emergency `ROLLBACK` email & WhatsApp alerts. | If production encounters an unexpected issue. |
 | `.\scripts\otp.ps1 backup` | Dumps production database (`otp-prod-db`) to `backups/` and prunes backups older than 30 days. | Before manual DB maintenance or on-demand snapshot. |
 | `.\scripts\otp.ps1 alert` | Dispatches test email (Gmail SMTP) and WhatsApp (WAHA) alerts to verify communication channels. | To test admin notification delivery. |
@@ -44,9 +44,9 @@ Set-Location "G:\My Drive\otp"
 
 #### What `.\scripts\otp.ps1 deploy` does automatically:
 1. **Dispatches Start Alert**: Sends an automated email and WhatsApp message to Baskar (`bvnbasu@gmail.com` and `919972967530@c.us`) that maintenance/deployment has started.
-2. **Executes Staging Gate**: Runs all 852 tests across 12 layers (`pnpm gate:verify`). **If even 1 test fails, the process halts immediately and production is left untouched on the old code flow.**
+2. **Executes Staging Gate**: Runs all 631 tests across 12 layers (`pnpm gate:verify`). **If even 1 test fails, the process halts immediately and production is left untouched on the old code flow.**
 3. **Creates Zero-Loss Backup**: Dumps the production PostgreSQL database to `backups/otp_prod_backup_<timestamp>.sql`.
-4. **Applies Migrations**: Scans `supabase/migrations/*.sql` against `public.otp_schema_migrations` (migrations through `00140`) and applies only new incremental migrations.
+4. **Applies Migrations**: Scans `supabase/migrations/*.sql` against `public.otp_schema_migrations` (migrations through `00160`) and applies only new incremental migrations.
 5. **Asserts Data Integrity**: Verifies that Buyer/Supplier orders, organizations, and user accounts are 100% retained.
 6. **Compiles Web Bundle**: Builds the latest React bundle into `apps/web/dist`, keeping `apps/web/dist_prev` for instant rollback.
 7. **Verifies Live Smoke (11/11)**: Executes real, un-mocked call flows (Kong, SuperAdmin login, Buyer login, Supplier login, Supplier Contact login `contact26@otpdemo.test`, RLS data access, email recovery template, WhatsApp gateway, password reset OTP).
@@ -134,8 +134,10 @@ If you ever need to run an individual script directly without the `otp.ps1` wrap
 
 | Purpose | Script / Command | Description |
 |---|---|---|
-| **Staging Gate** | `pnpm gate:verify` | Executes 852 tests across all 12 platform layers and issues certificate. |
-| **Unit Tests** | `pnpm --filter web test` | Runs 221 web feature tests in Vitest. |
+| **Staging Gate** | `pnpm gate:verify` | Executes 631 tests across all 12 platform layers and issues certificate. |
+| **Unit Tests** | `pnpm --filter web test` | Runs 346 web feature tests in Vitest. |
+| **Edge Functions Tests** | `pnpm test:functions` | Runs 38 Deno unit tests for Edge Functions (`_shared/`, `payment-webhook/`). |
+| **Typecheck** | `pnpm typecheck` | Strict zero-error TypeScript typecheck across monorepo packages. |
 | **Live Smoke** | `pnpm test:smoke` | Runs 11 un-mocked checks against live running containers. |
 | **Full Deploy** | `.\scripts\deploy-prod.ps1` | Production deployment script with Staging Gate, backup, build, and auto-rollback. |
 | **Fast Update** | `.\scripts\update-live.ps1` | Fast server refresh, backup, migration sync, bundle rebuild, and live smoke test. |
@@ -152,6 +154,7 @@ If you ever need to run an individual script directly without the `otp.ps1` wrap
 > **Strict Loopback Policy**: All production internal ports are strictly bound to `127.0.0.1` (loopback only) to eliminate network interface exposure.
 
 - **Public Web App (Vercel Edge)**: `https://otpplatform-theta.vercel.app`
+- **Git Repository**: `https://github.com/bvnbasu-otp/otpplatform.git`
 - **Local Web App**: `http://localhost:3000` (Vite PWA)
 - **Kong Production Gateway**: `http://127.0.0.1:8000` (Port `8000`, strictly loopback)
 - **GoTrue Production Auth Engine**: `http://127.0.0.1:9999` (Port `9999`, strictly loopback)
@@ -184,11 +187,16 @@ pnpm audit
 pnpm test:smoke
 # Expected: 11/11 PASSED (Kong, SuperAdmin, Buyer, Supplier, Supplier Contact contact26, WAHA, DB OTP)
 
-# 4. Verify Monorepo Build
+# 4. Verify Monorepo Build & TypeScript Strict Typecheck
+pnpm typecheck
 pnpm -r build
 # Expected: Done across @otp/domain, @otp/database, @otp/web, @otp/services with zero errors
 
-# 5. Verify Staging Gate Certification (852 Tests across 12 Layers)
+# 5. Verify Edge Functions Test Suite
+pnpm test:functions
+# Expected: 38/38 Deno tests passed across _shared/ and payment-webhook/
+
+# 6. Verify Staging Gate Certification (631 Tests across 12 Layers)
 pnpm gate:verify
 # Expected: 100% REGRESSION PASS — Staging Gate Certificate recorded at backups/staging-gate-cert.json
 ```

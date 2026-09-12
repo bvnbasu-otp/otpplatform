@@ -7,17 +7,17 @@ describe('Interactive Onboarding Tour Steps & Content', () => {
   });
 
   it('verifies step 1 explains identity masking protection', () => {
-    expect(TOUR_STEPS[0].title).toContain('Identity-Protected');
-    expect(TOUR_STEPS[0].description).toContain('Supplier-XXXX');
+    expect(TOUR_STEPS[0]?.title).toContain('Identity-Protected');
+    expect(TOUR_STEPS[0]?.description).toContain('Supplier-XXXX');
   });
 
   it('verifies step 2 explains 1-click committee voting', () => {
-    expect(TOUR_STEPS[1].title).toContain('Voting');
-    expect(TOUR_STEPS[1].description).toContain('weighted ballots');
+    expect(TOUR_STEPS[1]?.title).toContain('Voting');
+    expect(TOUR_STEPS[1]?.description).toContain('weighted ballots');
   });
 
   it('verifies step 3 explains irrevocable award and reveal', () => {
-    expect(TOUR_STEPS[2].title).toContain('Award & Reveal');
-    expect(TOUR_STEPS[2].description).toContain('Purchase Orders');
+    expect(TOUR_STEPS[2]?.title).toContain('Award & Reveal');
+    expect(TOUR_STEPS[2]?.description).toContain('Purchase Orders');
   });
 });

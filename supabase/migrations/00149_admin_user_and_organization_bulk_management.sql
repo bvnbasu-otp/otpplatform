@@ -897,7 +897,7 @@ BEGIN
     'profileId', v_profile,
     'side', v_side,
     'isPlatformAdmin', false,
-    'needsOnboarding', (v_active IS NULL),
+    'needsOnboarding', (v_active IS NULL OR (jsonb_array_length(v_roles) = 0 AND v_side IS NOT NULL)),
     'activeRole', (
       SELECT jsonb_build_object(
         'code', code,
@@ -916,8 +916,8 @@ BEGIN
     'organizationName', v_org_name,
     'buyerType', v_org_type,
     'committeeRfqCount', (
-      SELECT count(DISTINCT rfq_id)::int
-      FROM committee_members
+      SELECT count(*)::int
+      FROM committee_assignments
       WHERE profile_id = v_profile
     ),
     'supplierId', (
@@ -938,6 +938,6 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.my_role_context() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.my_role_context() TO authenticated, anon, service_role;
 
 COMMIT;

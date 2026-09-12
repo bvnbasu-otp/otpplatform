@@ -168,7 +168,7 @@ export function VoiceRequirementDictation({
     }
   };
 
-  const currentLang = LANGUAGES.find((l) => l.code === selectedLanguage) || LANGUAGES[0];
+  const currentLang = LANGUAGES.find((l) => l.code === selectedLanguage) ?? LANGUAGES[0]!;
 
   if (compact) {
     return (
