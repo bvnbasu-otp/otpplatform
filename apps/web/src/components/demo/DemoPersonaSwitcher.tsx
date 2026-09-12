@@ -74,16 +74,25 @@ export function DemoPersonaSwitcher() {
     }
   }, [user]);
 
-  // Click outside listener to close dropdown
+  // Click outside and ESC listener to close dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
     }
   }, [isOpen]);
 
@@ -113,6 +122,9 @@ export function DemoPersonaSwitcher() {
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         disabled={isSwitching}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-label="One-tap demo persona switcher"
         className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold transition shadow-2xs hover:shadow-xs active:scale-95 ${
           activePersona
             ? activePersona.badgeClass
@@ -130,69 +142,83 @@ export function DemoPersonaSwitcher() {
 
       {/* Popover / Dropdown Menu */}
       {isOpen && (
-        <div
-          className="fixed inset-x-3 top-14 z-50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-1.5 w-auto sm:w-80 rounded-2xl border bg-card/98 p-2.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95"
-          data-testid="demo-persona-dropdown"
-        >
-          <div className="flex items-center justify-between border-b pb-2 px-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm">🎭</span>
-              <p className="text-xs font-black text-foreground">One-Tap Demo Switcher</p>
+        <>
+          {/* Backdrop for Mobile Screen Dimming */}
+          <div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs sm:hidden"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+
+          <div
+            role="dialog"
+            aria-label="One-Tap Demo Switcher"
+            className="fixed inset-x-3 top-16 z-50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-88 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xl ring-1 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-150"
+            data-testid="demo-persona-dropdown"
+          >
+            {/* Popover Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 px-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm">🎭</span>
+                <p className="text-xs font-black text-foreground">One-Tap Demo Switcher</p>
+              </div>
+              <span className="rounded bg-primary/10 px-2 py-0.5 text-[9px] font-extrabold text-primary border border-primary/20">
+                Pre-Loaded Scenarios
+              </span>
             </div>
-            <span className="rounded bg-primary/10 px-1.5 py-0.2 text-[9px] font-extrabold text-primary">
-              Pre-Loaded Scenarios
-            </span>
-          </div>
 
-          <div className="mt-2 space-y-1.5">
-            {DEMO_PERSONAS.map((p) => {
-              const isCurrent = activePersonaId === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => void handleSelectPersona(p)}
-                  className={`w-full rounded-xl border p-2.5 text-left transition flex items-start gap-2.5 ${
-                    isCurrent
-                      ? 'border-primary ring-1 ring-primary/40 bg-primary/5'
-                      : 'border-border/60 hover:border-border hover:bg-muted/40'
-                  }`}
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-base">
-                    {p.icon}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-bold text-foreground truncate">{p.title}</span>
-                      {isCurrent && (
-                        <span className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 px-1.5 py-0.2 text-[9px] font-extrabold shrink-0">
-                          Active
-                        </span>
-                      )}
+            {/* Persona Selection Buttons */}
+            <div className="mt-2.5 space-y-2">
+              {DEMO_PERSONAS.map((p) => {
+                const isCurrent = activePersonaId === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => void handleSelectPersona(p)}
+                    className={`w-full rounded-xl border p-2.5 text-left transition flex items-start gap-2.5 ${
+                      isCurrent
+                        ? 'border-primary bg-primary/10 ring-1 ring-primary/40 shadow-xs'
+                        : 'border-slate-200/80 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
+                    }`}
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-slate-700 text-base shadow-2xs border border-slate-200 dark:border-slate-600">
+                      {p.icon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs font-bold text-foreground truncate">{p.title}</span>
+                        {isCurrent && (
+                          <span className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 px-1.5 py-0.2 text-[9px] font-extrabold shrink-0">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">
+                        {p.roleDescription}
+                      </p>
+                      <p className="text-[10px] text-primary dark:text-primary-foreground/90 truncate font-semibold mt-0.5">
+                        ⚡ {p.scenario}
+                      </p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">
-                      {p.roleDescription}
-                    </p>
-                    <p className="text-[10px] text-primary/80 truncate font-semibold mt-0.5">
-                      ⚡ {p.scenario}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="mt-2 border-t pt-2 px-1 flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>Instant 1-tap sign-in with full test datasets</span>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="text-primary font-bold hover:underline"
-            >
-              Close
-            </button>
+            {/* Popover Footer */}
+            <div className="mt-2.5 -mx-3 -mb-3 rounded-b-2xl border-t border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-800/60 px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>Instant 1-tap sign-in with full test datasets</span>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="text-primary font-bold hover:underline ml-2 shrink-0"
+              >
+                Close
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

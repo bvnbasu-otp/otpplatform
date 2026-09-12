@@ -1,4 +1,4 @@
-export type PeriodType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM';
+export type PeriodType = 'ALL' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM';
 
 export type UserReportingRole = 'buyer' | 'supplier' | 'approver' | 'auditor';
 

@@ -13,10 +13,41 @@ export function PurchaseOrderList({
   isLoading?: boolean;
   error?: string | null;
 }) {
-  if (isLoading) return <p className="text-sm text-muted-foreground">Loading Purchase Orders…</p>;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border bg-card p-6 text-center space-y-3">
+        <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-xs text-muted-foreground font-medium">Loading Purchase Orders &amp; Ledger Records…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50/50 dark:bg-red-950/20 p-4 text-center">
+        <p className="text-xs text-red-600 dark:text-red-400 font-semibold">{error}</p>
+      </div>
+    );
+  }
+
   if (orders.length === 0) {
-    return null;
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-card/60 p-8 text-center space-y-2">
+        <div className="text-2xl">📋</div>
+        <p className="text-xs font-bold text-foreground">No Purchase Orders Found</p>
+        <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+          No orders match the current period or status filter. Try selecting &quot;All Time&quot; or switching filter tabs.
+        </p>
+        {role === 'buyer' && (
+          <Link
+            to="/requirements/new"
+            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+          >
+            + Create New Requirement
+          </Link>
+        )}
+      </div>
+    );
   }
 
   const base = role === 'buyer' ? '/purchase-orders' : '/supplier/purchase-orders';

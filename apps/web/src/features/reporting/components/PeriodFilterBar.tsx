@@ -39,6 +39,7 @@ export function PeriodFilterBar({
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
   const periods: { id: PeriodType; label: string; icon: string }[] = [
+    { id: 'ALL', label: 'All Time', icon: '🌐' },
     { id: 'DAILY', label: 'Daily', icon: '📅' },
     { id: 'WEEKLY', label: 'Weekly', icon: '📊' },
     { id: 'MONTHLY', label: 'Monthly', icon: '🗓️' },

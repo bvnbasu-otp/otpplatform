@@ -272,14 +272,46 @@ export async function fetchPurchaseOrders(): Promise<
     `)
     .order('created_at', { ascending: false });
 
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, orders: (data as unknown as PoRow[]).map(mapPo) };
+  if (!error && data) {
+    return { ok: true, orders: (data as unknown as PoRow[]).map(mapPo) };
+  }
+
+  // Fallback: simple flat select if nested relation join fails
+  const { data: rawData, error: rawError } = await supabase
+    .from('purchase_orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (rawError) return { ok: false, error: rawError.message };
+  if (!rawData || rawData.length === 0) return { ok: true, orders: [] };
+
+  return {
+    ok: true,
+    orders: (rawData as Array<Record<string, unknown>>).map((r) => ({
+      id: String(r.id),
+      poNumber: String(r.po_number || ''),
+      status: (r.status as PurchaseOrderStatus) || 'ISSUED',
+      totalAmount: Number(r.total_amount || 0),
+      currency: String(r.currency || 'INR'),
+      supplierId: String(r.supplier_id || ''),
+      rfqId: String(r.rfq_id || ''),
+      organizationId: r.organization_id ? String(r.organization_id) : undefined,
+      issuedAt: (r.issued_at as string) || null,
+      acknowledgedAt: (r.acknowledged_at as string) || null,
+      createdAt: String(r.created_at || new Date().toISOString()),
+      rfqTitle: 'Commercial Purchase Order',
+      progressPercent: 0,
+      isSettled: r.status === 'COMPLETED',
+    })),
+  };
 }
 
 export async function fetchPurchaseOrder(poId: string): Promise<
   { ok: true; order: PurchaseOrderSummary } | { ok: false; error: string }
 > {
-  const { data, error } = await supabase
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(poId);
+
+  let primaryQuery = supabase
     .from('purchase_orders')
     .select(`
       id,
@@ -333,13 +365,73 @@ export async function fetchPurchaseOrder(poId: string): Promise<
           )
         )
       )
-    `)
-    .eq('id', poId)
+    `);
+
+  if (isUuid) {
+    primaryQuery = primaryQuery.or(`id.eq.${poId},rfq_id.eq.${poId}`);
+  } else {
+    primaryQuery = primaryQuery.or(`id.eq.${poId},po_number.eq.${poId}`);
+  }
+
+  const { data, error } = await primaryQuery.order('created_at', { ascending: false }).limit(1).maybeSingle();
+
+  if (!error && data) {
+    return { ok: true, order: mapPo(data as unknown as PoRow) };
+  }
+
+  // Fallback: flat select with progressive enrichment
+  let fallbackQuery = supabase.from('purchase_orders').select('*');
+  if (isUuid) {
+    fallbackQuery = fallbackQuery.or(`id.eq.${poId},rfq_id.eq.${poId}`);
+  } else {
+    fallbackQuery = fallbackQuery.or(`id.eq.${poId},po_number.eq.${poId}`);
+  }
+
+  const { data: rawData, error: rawError } = await fallbackQuery
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  if (error) return { ok: false, error: error.message };
-  if (!data) return { ok: false, error: 'Purchase order not found' };
-  return { ok: true, order: mapPo(data as unknown as PoRow) };
+  if (rawError) return { ok: false, error: rawError.message };
+  if (!rawData) return { ok: false, error: 'Purchase order not found' };
+
+  let rfqTitle = 'Commercial Purchase Order';
+  if (rawData.rfq_id) {
+    const { data: rfq } = await supabase.from('rfqs').select('title').eq('id', rawData.rfq_id).maybeSingle();
+    if (rfq?.title) rfqTitle = rfq.title;
+  }
+
+  let supplierName: string | undefined;
+  let supplierGstin: string | undefined;
+  if (rawData.supplier_id) {
+    const { data: sup } = await supabase.from('suppliers').select('business_name, gstin').eq('id', rawData.supplier_id).maybeSingle();
+    if (sup) {
+      supplierName = sup.business_name;
+      supplierGstin = sup.gstin;
+    }
+  }
+
+  return {
+    ok: true,
+    order: {
+      id: rawData.id,
+      poNumber: rawData.po_number,
+      status: rawData.status,
+      totalAmount: Number(rawData.total_amount || 0),
+      currency: rawData.currency || 'INR',
+      supplierId: rawData.supplier_id,
+      rfqId: rawData.rfq_id,
+      organizationId: rawData.organization_id,
+      issuedAt: rawData.issued_at,
+      acknowledgedAt: rawData.acknowledged_at,
+      createdAt: rawData.created_at,
+      rfqTitle,
+      supplierName,
+      supplierGstin,
+      progressPercent: 0,
+      isSettled: rawData.status === 'COMPLETED',
+    },
+  };
 }
 
 export async function updatePurchaseOrderStatus(

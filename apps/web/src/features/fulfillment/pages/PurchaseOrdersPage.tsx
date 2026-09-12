@@ -24,7 +24,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
   const [activeView, setActiveView] = useState<'ORDERS' | 'REPORTS'>('REPORTS');
   const [filterTab, setFilterTab] = useState<'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED'>('ALL');
   const [activeMetric, setActiveMetric] = useState<DrillDownMetric>(null);
-  const [periodType, setPeriodType] = useState<PeriodType>('MONTHLY');
+  const [periodType, setPeriodType] = useState<PeriodType>('ALL');
   const [customStartDate, setCustomStartDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);

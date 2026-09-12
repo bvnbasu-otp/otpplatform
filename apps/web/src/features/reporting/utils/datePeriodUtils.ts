@@ -10,6 +10,14 @@ export function calculateDateRange(
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
   switch (periodType) {
+    case 'ALL': {
+      return {
+        startDate: new Date(0),
+        endDate: new Date(8640000000000000),
+        label: 'All-Time (All Orders)',
+      };
+    }
+
     case 'DAILY': {
       return {
         startDate: todayStart,
@@ -114,7 +122,9 @@ export function calculateDateRange(
 }
 
 export function isDateWithinRange(dateStr: string, range: DateRange): boolean {
-  if (!dateStr) return false;
+  if (range.startDate.getTime() === 0) return true;
+  if (!dateStr) return true;
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return true;
   return d.getTime() >= range.startDate.getTime() && d.getTime() <= range.endDate.getTime();
 }

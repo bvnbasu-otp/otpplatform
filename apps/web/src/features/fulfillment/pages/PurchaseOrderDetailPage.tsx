@@ -128,14 +128,44 @@ export function PurchaseOrderDetailPage({
     await load();
   }
 
-  if (isLoading) return <p className="p-8 text-muted-foreground">Loading Purchase Order…</p>;
+  if (isLoading) {
+    return (
+      <div className="zero-scroll-container p-4 max-w-7xl mx-auto w-full space-y-4">
+        <div className="h-10 bg-muted/60 rounded-lg animate-pulse" />
+        <div className="h-24 bg-card border rounded-lg p-4 animate-pulse space-y-2">
+          <div className="h-4 bg-muted w-1/4 rounded" />
+          <div className="h-6 bg-muted w-1/2 rounded" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="h-48 bg-card border rounded-lg animate-pulse" />
+          <div className="h-48 bg-card border rounded-lg animate-pulse" />
+          <div className="h-48 bg-card border rounded-lg animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   if (!order) {
     return (
-      <div className="p-8">
-        <p className="text-red-600">{error ?? 'Not found'}</p>
-        <Link to="/" className="mt-2 inline-block text-sm text-primary">
-          ← Back to Dashboard
-        </Link>
+      <div className="p-6 max-w-xl mx-auto my-12 text-center rounded-xl border border-border bg-card shadow-sm space-y-4">
+        <div className="text-4xl">📦</div>
+        <h2 className="text-lg font-bold text-foreground">Purchase Order Not Found</h2>
+        <p className="text-sm text-muted-foreground">{error ?? 'The requested purchase order could not be located or has not been generated yet.'}</p>
+        <div className="flex justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-md bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+          >
+            ↻ Retry Loading
+          </button>
+          <Link
+            to={role === 'buyer' ? '/purchase-orders' : '/supplier/purchase-orders'}
+            className="rounded-md border border-border bg-muted/40 px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition inline-flex items-center"
+          >
+            ← View Orders & Reports
+          </Link>
+        </div>
       </div>
     );
   }
