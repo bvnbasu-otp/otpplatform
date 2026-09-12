@@ -75,7 +75,7 @@ describe('Security & Route Guard Audit — ProtectedRoute & RBAC Enforcement', (
     }
   });
 
-  it('blocks non-admin authenticated users from accessing /admin', () => {
+  it('blocks non-admin authenticated users from accessing /admin and redirects them to /dashboard', () => {
     const input: RouteAccessEvaluationInput = {
       session: { user: { id: 'usr-buyer-1', email: 'buyer@corp.test' } },
       user: { id: 'usr-buyer-1', email: 'buyer@corp.test' },
@@ -92,7 +92,7 @@ describe('Security & Route Guard Audit — ProtectedRoute & RBAC Enforcement', (
     const verdict = evaluateRouteAccess(input);
     expect(verdict.action).toBe('REDIRECT');
     if (verdict.action === 'REDIRECT') {
-      expect(verdict.target).toBe('/login?redirect=%2Fadmin');
+      expect(verdict.target).toBe('/dashboard');
       expect(verdict.clearState).toBe(true);
     }
   });
@@ -188,6 +188,46 @@ describe('Security & Route Guard Audit — ProtectedRoute & RBAC Enforcement', (
 
     const verdict = evaluateRouteAccess(input);
     expect(verdict.action).toBe('ONBOARDING');
+  });
+
+  it('allows authenticated user with unassigned/null side into multi-role routes like /purchase-orders', () => {
+    const input: RouteAccessEvaluationInput = {
+      session: { user: { id: 'usr-pending-1', email: 'pending@corp.test' } },
+      user: { id: 'usr-pending-1', email: 'pending@corp.test' },
+      context: {
+        ...SIGNED_OUT_CONTEXT,
+        signedIn: true,
+        side: null,
+        isPlatformAdmin: false,
+      },
+      pathname: '/purchase-orders',
+      allowedRoles: ['BUYER', 'SUPPLIER', 'ADMIN'],
+    };
+
+    const verdict = evaluateRouteAccess(input);
+    expect(verdict.action).toBe('ALLOW');
+  });
+
+  it('redirects authenticated buyer attempting to access supplier-only route to /dashboard instead of /login', () => {
+    const input: RouteAccessEvaluationInput = {
+      session: { user: { id: 'usr-buyer-1', email: 'buyer@corp.test' } },
+      user: { id: 'usr-buyer-1', email: 'buyer@corp.test' },
+      context: {
+        ...SIGNED_OUT_CONTEXT,
+        signedIn: true,
+        side: 'BUYER',
+        isPlatformAdmin: false,
+      },
+      pathname: '/supplier/capabilities',
+      allowedRoles: ['SUPPLIER'],
+    };
+
+    const verdict = evaluateRouteAccess(input);
+    expect(verdict.action).toBe('REDIRECT');
+    if (verdict.action === 'REDIRECT') {
+      expect(verdict.target).toBe('/dashboard');
+      expect(verdict.clearState).toBe(true);
+    }
   });
 
   it('clearSensitiveClientState wipes all prefixed sensitive items and retains safe preferences', () => {

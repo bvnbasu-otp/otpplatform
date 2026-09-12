@@ -80,7 +80,7 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
 
   // 4. Admin RBAC check
   if (input.requireAdmin && !isPlatformAdmin) {
-    const target = input.unauthorizedRedirect || `/login?redirect=${encodedRedirect}`;
+    const target = input.unauthorizedRedirect || '/dashboard';
     return {
       action: 'REDIRECT',
       target,
@@ -94,13 +94,23 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
       input.context?.side || input.context?.activeRole?.side
     )?.toUpperCase() as 'BUYER' | 'SUPPLIER' | undefined;
 
+    const allowsAdmin = input.allowedRoles.includes('ADMIN');
+    const allowsBuyer = input.allowedRoles.includes('BUYER');
+    const allowsSupplier = input.allowedRoles.includes('SUPPLIER');
+
     const hasAllowedRole =
-      (input.allowedRoles.includes('ADMIN') && isPlatformAdmin) ||
-      (input.allowedRoles.includes('BUYER') && (userSide === 'BUYER' || isPlatformAdmin)) ||
-      (input.allowedRoles.includes('SUPPLIER') && (userSide === 'SUPPLIER' || isPlatformAdmin));
+      (allowsAdmin && isPlatformAdmin) ||
+      (allowsBuyer && (userSide === 'BUYER' || isPlatformAdmin)) ||
+      (allowsSupplier && (userSide === 'SUPPLIER' || isPlatformAdmin)) ||
+      // If route allows both buyers and suppliers (e.g. general PO, ledger, tracking routes)
+      (allowsBuyer && allowsSupplier) ||
+      // If side is not explicitly set yet but user is authenticated and route is not admin-only
+      (!userSide && (allowsBuyer || allowsSupplier));
 
     if (!hasAllowedRole) {
-      const target = input.unauthorizedRedirect || `/login?redirect=${encodedRedirect}`;
+      const target =
+        input.unauthorizedRedirect ||
+        (userSide === 'SUPPLIER' ? '/supplier/purchase-orders' : '/dashboard');
       return {
         action: 'REDIRECT',
         target,

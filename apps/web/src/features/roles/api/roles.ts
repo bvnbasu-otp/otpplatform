@@ -178,23 +178,58 @@ export async function fetchRoleContext(): Promise<
         Boolean(profile.blocked_at) ||
         Boolean(profile.blocked_reason);
 
+      let side: PortalSide = 'BUYER';
+      let supplierId: string | null = null;
+      let organizationId: string | null = null;
+      let organizationName: string | null = null;
+
+      try {
+        const { data: supp } = await supabase
+          .from('suppliers')
+          .select('id, business_name')
+          .eq('profile_id', profile.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (supp?.id) {
+          side = 'SUPPLIER';
+          supplierId = supp.id;
+        } else {
+          const { data: mem } = await supabase
+            .from('organization_memberships')
+            .select('organization_id, organizations(id, name, org_type)')
+            .eq('profile_id', profile.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (mem?.organization_id) {
+            organizationId = mem.organization_id;
+            const orgObj = mem.organizations as { id?: string; name?: string } | { id?: string; name?: string }[] | null;
+            const org = Array.isArray(orgObj) ? orgObj[0] : orgObj;
+            if (org?.name) organizationName = org.name;
+          }
+        }
+      } catch {
+        // Safe default to BUYER
+      }
+
       return {
         ok: true,
         context: {
           signedIn: true,
           profileId: profile.id,
-          side: null,
+          side,
           isPlatformAdmin: Boolean(profile.is_platform_admin),
           needsOnboarding: false,
           activeRole: null,
           roles: [],
-          organizations: [],
+          organizations: organizationId ? [{ id: organizationId, name: organizationName || 'My Organization', orgType: 'BUYER', role: 'MEMBER', isPersonal: false }] : [],
           orgRole: null,
-          organizationId: null,
-          organizationName: null,
+          organizationId,
+          organizationName,
           buyerType: null,
           committeeRfqCount: 0,
-          supplierId: null,
+          supplierId,
           fullName: profile.full_name || profile.email?.split('@')[0] || 'User',
           title: null,
           avatarUrl: null,

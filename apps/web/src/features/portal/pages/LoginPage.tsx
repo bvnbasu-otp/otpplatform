@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { SignInForm } from '@/features/auth/components/SignInForm';
@@ -20,6 +21,7 @@ export function LoginPage() {
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const { isMaintenanceMode } = useMaintenance();
+  const [shouldAutoRedirect, setShouldAutoRedirect] = useState(true);
 
   const searchParams = new URLSearchParams(location.search);
   const isAdminEmergency = searchParams.get('admin') === 'true';
@@ -32,11 +34,43 @@ export function LoginPage() {
   // Strictly redirect to target destination or /dashboard on log in for all roles
   const redirectParam = searchParams.get('redirect');
   const validRedirect =
-    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+    redirectParam &&
+    redirectParam.startsWith('/') &&
+    !redirectParam.startsWith('//') &&
+    !redirectParam.startsWith('/login')
       ? redirectParam
       : '/dashboard';
 
-  if (!isLoading && user) return <Navigate to={validRedirect} replace />;
+  // Protect against rapid redirect loops (e.g., bounced back within 2 seconds)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && user) {
+      const loopKey = `otp_redirect_loop_${encodeURIComponent(validRedirect)}`;
+      const now = Date.now();
+      const rawData = sessionStorage.getItem(loopKey);
+      let attempts: number[] = [];
+      if (rawData) {
+        try {
+          attempts = JSON.parse(rawData);
+        } catch {
+          attempts = [];
+        }
+      }
+      // Filter to attempts in last 3 seconds
+      attempts = attempts.filter((t) => now - t < 3000);
+      if (attempts.length >= 2) {
+        // Redirect loop detected! Break the loop immediately and stay on login / show switcher
+        setShouldAutoRedirect(false);
+        sessionStorage.removeItem(loopKey);
+      } else {
+        attempts.push(now);
+        sessionStorage.setItem(loopKey, JSON.stringify(attempts));
+      }
+    }
+  }, [user, validRedirect]);
+
+  if (!isLoading && user && !isAdminEmergency && shouldAutoRedirect) {
+    return <Navigate to={validRedirect} replace />;
+  }
 
   return (
     <SiteLayout>
