@@ -60,19 +60,7 @@ export function ProcurementStageNavigator({
   // Derive exact linear step (1..15)
   const activeLinearStep: ProcurementStepNumber =
     currentLinearStep ?? deriveLinearStepNumber(null, location.pathname);
-  const fallbackStep: LinearStepDescriptor = {
-    stepNumber: 13,
-    title: 'PO Execution & Tracking',
-    shortLabel: 'PO Issued',
-    icon: '📦',
-    badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-200 dark:border-indigo-800/60',
-    pathPattern: '/purchase-orders/:poId',
-    ownerRole: 'buyer',
-    actionPrompt: 'Track PO Delivery & Work Orders',
-    description: 'PO generated and issued to supplier.',
-    code: ProcurementStepCode.PO_ISSUED,
-  };
-  const activeStepDesc = LINEAR_PROCUREMENT_STEPS[activeLinearStep] || fallbackStep;
+  const activeStepDesc = LINEAR_PROCUREMENT_STEPS[activeLinearStep] || LINEAR_PROCUREMENT_STEPS[13];
   const activeLegacyDesc =
     CORE_PROCUREMENT_STATES[currentStage] ||
     CORE_PROCUREMENT_STATES['PO_ISSUED'] ||

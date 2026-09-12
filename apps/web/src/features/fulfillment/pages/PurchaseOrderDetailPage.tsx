@@ -41,20 +41,37 @@ export function PurchaseOrderDetailPage({
   const requestedStage = searchParams.get('stage')?.toUpperCase();
 
   const load = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    const poResult = await fetchPurchaseOrder(poId);
-    if (!poResult.ok) {
-      setError(poResult.error);
+    const cleanId = (poId || '').trim();
+    if (!cleanId) {
       setIsLoading(false);
+      setError('Invalid Purchase Order identifier.');
       return;
     }
-    setOrder(poResult.order);
-    const woResult = await fetchWorkOrderByPo(poId);
-    if (woResult.ok) {
-      setWorkOrder(woResult.workOrder);
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const poResult = await fetchPurchaseOrder(cleanId);
+      if (!poResult.ok) {
+        setError(poResult.error);
+        return;
+      }
+      setOrder(poResult.order);
+
+      try {
+        const woResult = await fetchWorkOrderByPo(poResult.order.id);
+        if (woResult.ok) {
+          setWorkOrder(woResult.workOrder);
+        }
+      } catch (woErr) {
+        console.warn('Non-blocking work order fetch warning:', woErr);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load purchase order';
+      setError(msg);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [poId]);
 
   useEffect(() => {
@@ -71,61 +88,82 @@ export function PurchaseOrderDetailPage({
   }, [requestedStage, workOrder]);
 
   async function handlePoAction(next: PurchaseOrderStatus) {
+    const cleanId = (poId || '').trim();
+    if (!cleanId) return;
     setBusy(true);
     setSuccess(null);
-    const result = await updatePurchaseOrderStatus(poId, next);
-    if (!result.ok) {
+    try {
+      const result = await updatePurchaseOrderStatus(cleanId, next);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      // Auto-initialize execution work order when supplier accepts PO
+      if (next === 'ACCEPTED' && !workOrder && order) {
+        await createWorkOrder(cleanId, order.supplierId, 'Work order — ' + order.poNumber);
+      }
+
+      setSuccess(
+        next === 'ACCEPTED'
+          ? '✓ Purchase Order accepted! Delivery & fulfillment progress tracking is now live.'
+          : `PO updated to ${next.replace(/_/g, ' ')}`
+      );
+      await load();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update PO status';
+      setError(msg);
+    } finally {
       setBusy(false);
-      setError(result.error);
-      return;
     }
-
-    // Auto-initialize execution work order when supplier accepts PO
-    if (next === 'ACCEPTED' && !workOrder && order) {
-      await createWorkOrder(poId, order.supplierId, 'Work order — ' + order.poNumber);
-    }
-
-    setBusy(false);
-    setSuccess(
-      next === 'ACCEPTED'
-        ? '✓ Purchase Order accepted! Delivery & fulfillment progress tracking is now live.'
-        : `PO updated to ${next.replace(/_/g, ' ')}`
-    );
-    await load();
   }
 
   async function handleCreateWorkOrder() {
     if (!order) return;
+    const cleanId = (poId || '').trim();
+    if (!cleanId) return;
     setBusy(true);
-    const result = await createWorkOrder(
-      poId,
-      order.supplierId,
-      'Work order — ' + order.poNumber,
-    );
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      const result = await createWorkOrder(
+        cleanId,
+        order.supplierId,
+        'Work order — ' + order.poNumber,
+      );
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setSuccess('Work order progress tracking initialized.');
+      await load();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to create work order';
+      setError(msg);
+    } finally {
+      setBusy(false);
     }
-    setSuccess('Work order progress tracking initialized.');
-    await load();
   }
 
   async function handleProgress(percent: number) {
     if (!workOrder) return;
     setBusy(true);
-    const result = await updateWorkOrderProgress(workOrder.id, percent);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      const result = await updateWorkOrderProgress(workOrder.id, percent);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setSuccess(
+        percent === 100
+          ? '✓ 100% Work completion reported! Buyer has been requested to inspect & acknowledge.'
+          : `Progress set to ${percent}%.`,
+      );
+      await load();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update progress';
+      setError(msg);
+    } finally {
+      setBusy(false);
     }
-    setSuccess(
-      percent === 100
-        ? '✓ 100% Work completion reported! Buyer has been requested to inspect & acknowledge.'
-        : `Progress set to ${percent}%.`,
-    );
-    await load();
   }
 
   if (isLoading) {

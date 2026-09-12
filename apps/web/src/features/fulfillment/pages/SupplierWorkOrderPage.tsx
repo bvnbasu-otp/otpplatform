@@ -10,15 +10,31 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
   const [workOrder, setWorkOrder] = useState<WorkOrderSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const result = await fetchWorkOrder(workOrderId);
-    if (result.ok) {
-      setWorkOrder(result.workOrder);
-      setError(null);
-    } else {
-      setError(result.error);
+    const cleanId = (workOrderId || '').trim();
+    if (!cleanId) {
+      setIsLoading(false);
+      setError('Invalid Work Order identifier.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await fetchWorkOrder(cleanId);
+      if (result.ok) {
+        setWorkOrder(result.workOrder);
+      } else {
+        setError(result.error);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load work order';
+      setError(msg);
+    } finally {
+      setIsLoading(false);
     }
   }, [workOrderId]);
 
@@ -27,23 +43,65 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
   }, [load]);
 
   async function setProgress(percent: number) {
+    const cleanId = (workOrderId || '').trim();
+    if (!cleanId) return;
     setBusy(true);
-    const result = await updateWorkOrderProgress(workOrderId, percent);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    setSuccess(null);
+    try {
+      const result = await updateWorkOrderProgress(cleanId, percent);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setSuccess(
+        percent === 100
+          ? '✓ 100% Work completion reported! Buyer has been notified to inspect and acknowledge.'
+          : `Progress updated to ${percent}%.`,
+      );
+      await load();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update progress';
+      setError(msg);
+    } finally {
+      setBusy(false);
     }
-    setSuccess(
-      percent === 100
-        ? '✓ 100% Work completion reported! Buyer has been notified to inspect and acknowledge.'
-        : `Progress updated to ${percent}%.`,
+  }
+
+  if (isLoading) {
+    return (
+      <div className="zero-scroll-container p-4 max-w-7xl mx-auto w-full space-y-4">
+        <div className="h-10 bg-muted/60 rounded-lg animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="h-48 bg-card border rounded-lg animate-pulse" />
+          <div className="h-48 bg-card border rounded-lg animate-pulse" />
+        </div>
+      </div>
     );
-    await load();
   }
 
   if (!workOrder) {
-    return <p className="p-8 text-muted-foreground">{error ?? 'Loading work order…'}</p>;
+    return (
+      <div className="p-6 max-w-xl mx-auto my-12 text-center rounded-xl border border-border bg-card shadow-sm space-y-4">
+        <div className="text-4xl">🛠️</div>
+        <h2 className="text-lg font-bold text-foreground">Work Order Not Found</h2>
+        <p className="text-sm text-muted-foreground">{error ?? 'The requested work order could not be located.'}</p>
+        <div className="flex justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-md bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+          >
+            ↻ Retry Loading
+          </button>
+          <Link
+            to="/supplier/purchase-orders"
+            className="rounded-md border border-border bg-muted/40 px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition inline-flex items-center"
+          >
+            ← Back to Orders
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

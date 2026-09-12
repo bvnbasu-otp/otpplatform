@@ -268,6 +268,15 @@ export function App() {
                 </ProtectedRoute>
               }
             />
+            {/* Orders & Reports, Purchase Orders, Work Orders Aliases & Deep Links */}
+            <Route path="/orders-reports" element={<Navigate to="/purchase-orders" replace />} />
+            <Route path="/orders" element={<Navigate to="/purchase-orders" replace />} />
+            <Route path="/reports" element={<Navigate to="/purchase-orders?view=reports" replace />} />
+            <Route path="/ledger" element={<Navigate to="/purchase-orders?view=orders" replace />} />
+            <Route path="/work-orders/:woId" element={<SupplierWoRoute />} />
+            <Route path="/work-orders" element={<Navigate to="/supplier/purchase-orders" replace />} />
+            <Route path="/supplier/orders" element={<Navigate to="/supplier/purchase-orders" replace />} />
+            <Route path="/supplier/reports" element={<Navigate to="/supplier/purchase-orders?view=reports" replace />} />
             <Route path="/audit" element={<AuditRoute />} />
             <Route path="/rfq/:rfqId/audit" element={<AuditRoute />} />
             <Route path="/performance" element={<PerformanceRoute />} />

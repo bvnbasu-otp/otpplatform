@@ -104,6 +104,20 @@ const DEMO_SUPPLIER_GROUPS: SupplierCategoryGroup[] = [
   },
 ];
 
+function sanitizeRedirectTarget(rawParam: string | null): string | null {
+  if (!rawParam) return null;
+  let decoded = rawParam;
+  try {
+    decoded = decodeURIComponent(rawParam);
+  } catch {
+    decoded = rawParam;
+  }
+  if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.startsWith('/login')) {
+    return decoded;
+  }
+  return null;
+}
+
 export function SignInForm({
   onRegister,
   autoFocus = false,
@@ -245,13 +259,10 @@ export function SignInForm({
     }
 
     const searchParams = new URLSearchParams(location.search);
-    const redirectParam = searchParams.get('redirect');
-    const hasValidRedirect = Boolean(
-      redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
-    );
+    const validRedirect = sanitizeRedirectTarget(searchParams.get('redirect'));
 
-    if (hasValidRedirect && redirectParam) {
-      navigate(redirectParam, { replace: true });
+    if (validRedirect) {
+      navigate(validRedirect, { replace: true });
     } else if (personaEmail.includes('urbanspace') || personaEmail.includes('otpdemo.test') || personaEmail.includes('royalteak') || personaEmail.includes('societycomfort')) {
       navigate('/supplier/purchase-orders', { replace: true });
     } else {
@@ -303,13 +314,10 @@ export function SignInForm({
     }
 
     const searchParams = new URLSearchParams(location.search);
-    const redirectParam = searchParams.get('redirect');
-    const hasValidRedirect = Boolean(
-      redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
-    );
+    const validRedirect = sanitizeRedirectTarget(searchParams.get('redirect'));
 
-    if (hasValidRedirect && redirectParam) {
-      navigate(redirectParam, { replace: true });
+    if (validRedirect) {
+      navigate(validRedirect, { replace: true });
     } else if (
       isSuperAdminEmail(normalizedEmail) ||
       normalizedEmail === 'bvnbasu@gmail.com' ||

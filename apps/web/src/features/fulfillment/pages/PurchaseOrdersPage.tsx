@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchPurchaseOrders } from '../api/purchase-orders';
 import { PurchaseOrderList } from '../components/PurchaseOrderList';
 import type { PurchaseOrderSummary } from '../types/fulfillment';
@@ -19,10 +20,24 @@ import { useAuth } from '@/features/auth';
 
 export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'supplier' }) {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [perspective, setPerspective] = useState<UserReportingRole>(initialRole);
   const [orders, setOrders] = useState<PurchaseOrderSummary[]>([]);
-  const [activeView, setActiveView] = useState<'ORDERS' | 'REPORTS'>('REPORTS');
-  const [filterTab, setFilterTab] = useState<'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED'>('ALL');
+  
+  const initialViewParam = searchParams.get('view')?.toUpperCase();
+  const initialTabParam = searchParams.get('tab')?.toUpperCase();
+
+  const [activeView, setActiveView] = useState<'ORDERS' | 'REPORTS'>(
+    initialViewParam === 'ORDERS' ? 'ORDERS' : 'REPORTS'
+  );
+  const [filterTab, setFilterTab] = useState<'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED'>(
+    initialTabParam === 'ACTIVE' ||
+    initialTabParam === 'COMPLETED' ||
+    initialTabParam === 'CANCELLED' ||
+    initialTabParam === 'DISPUTED'
+      ? (initialTabParam as 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED')
+      : 'ALL'
+  );
   const [activeMetric, setActiveMetric] = useState<DrillDownMetric>(null);
   const [periodType, setPeriodType] = useState<PeriodType>('ALL');
   const [customStartDate, setCustomStartDate] = useState<string>(() => {
@@ -43,22 +58,51 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
     setPerspective(initialRole);
   }, [initialRole]);
 
+  // Sync URL view param if updated externally
+  useEffect(() => {
+    const v = searchParams.get('view')?.toUpperCase();
+    if (v === 'ORDERS' && activeView !== 'ORDERS') setActiveView('ORDERS');
+    else if (v === 'REPORTS' && activeView !== 'REPORTS') setActiveView('REPORTS');
+  }, [searchParams, activeView]);
+
   const load = useCallback(async () => {
     setIsLoading(true);
-    const result = await fetchPurchaseOrders();
-    if (result.ok) {
-      setOrders(result.orders);
-      setError(null);
-    } else {
+    setError(null);
+    try {
+      const result = await fetchPurchaseOrders();
+      if (result.ok) {
+        setOrders(result.orders);
+      } else {
+        setOrders([]);
+        setError(result.error);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to fetch purchase orders';
       setOrders([]);
-      setError(result.error);
+      setError(msg);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const handleViewChange = (view: 'ORDERS' | 'REPORTS') => {
+    setActiveView(view);
+    const next = new URLSearchParams(searchParams);
+    next.set('view', view.toLowerCase());
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleTabChange = (tab: 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED') => {
+    setFilterTab(tab);
+    const next = new URLSearchParams(searchParams);
+    if (tab === 'ALL') next.delete('tab');
+    else next.set('tab', tab.toLowerCase());
+    setSearchParams(next, { replace: true });
+  };
 
   // Calculate Active Date Range
   const dateRange = useMemo(() => {
@@ -238,7 +282,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
           <div className="flex items-center gap-1 rounded bg-muted/40 p-0.5 text-[11px] shrink-0">
             <button
               type="button"
-              onClick={() => setActiveView('REPORTS')}
+              onClick={() => handleViewChange('REPORTS')}
               className={`flex items-center gap-1 rounded px-2 py-0.5 sm:px-2.5 font-bold transition text-[10px] sm:text-[11px] ${
                 activeView === 'REPORTS'
                   ? 'bg-primary text-primary-foreground shadow-2xs'
@@ -249,7 +293,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
             </button>
             <button
               type="button"
-              onClick={() => setActiveView('ORDERS')}
+              onClick={() => handleViewChange('ORDERS')}
               className={`flex items-center gap-1 rounded px-2 py-0.5 sm:px-2.5 font-bold transition text-[10px] sm:text-[11px] ${
                 activeView === 'ORDERS'
                   ? 'bg-primary text-primary-foreground shadow-2xs'
@@ -333,7 +377,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                     </h3>
                     <button
                       type="button"
-                      onClick={() => setActiveView('ORDERS')}
+                      onClick={() => handleViewChange('ORDERS')}
                       className="text-[11px] text-primary font-semibold hover:underline"
                     >
                       View All Orders →
@@ -357,7 +401,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
               <div className="flex flex-wrap items-center gap-1 rounded bg-muted/30 p-0.5 text-[10px] sm:text-[11px]">
                 <button
                   type="button"
-                  onClick={() => setFilterTab('ALL')}
+                  onClick={() => handleTabChange('ALL')}
                   className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
                     filterTab === 'ALL'
                       ? 'bg-primary text-primary-foreground shadow-2xs font-bold'
@@ -368,7 +412,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFilterTab('ACTIVE')}
+                  onClick={() => handleTabChange('ACTIVE')}
                   className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
                     filterTab === 'ACTIVE'
                       ? 'bg-blue-600 text-white shadow-2xs font-bold'
@@ -379,7 +423,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFilterTab('COMPLETED')}
+                  onClick={() => handleTabChange('COMPLETED')}
                   className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
                     filterTab === 'COMPLETED'
                       ? 'bg-emerald-700 text-white shadow-2xs font-bold'
@@ -390,7 +434,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFilterTab('CANCELLED')}
+                  onClick={() => handleTabChange('CANCELLED')}
                   className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
                     filterTab === 'CANCELLED'
                       ? 'bg-red-700 text-white shadow-2xs font-bold'
@@ -401,7 +445,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFilterTab('DISPUTED')}
+                  onClick={() => handleTabChange('DISPUTED')}
                   className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
                     filterTab === 'DISPUTED'
                       ? 'bg-amber-600 text-white shadow-2xs font-bold'

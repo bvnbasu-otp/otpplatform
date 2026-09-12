@@ -51,33 +51,102 @@ export async function fetchWorkOrders(): Promise<
 export async function fetchWorkOrderByPo(poId: string): Promise<
   { ok: true; workOrder: WorkOrderSummary | null } | { ok: false; error: string }
 > {
-  const { data, error } = await supabase
-    .from('work_orders')
-    .select(
-      'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
-    )
-    .eq('purchase_order_id', poId)
-    .maybeSingle();
+  const cleanId = (poId || '').trim();
+  if (!cleanId) return { ok: true, workOrder: null };
 
-  if (error) return { ok: false, error: error.message };
-  if (!data) return { ok: true, workOrder: null };
-  return { ok: true, workOrder: mapWo(data as unknown as WoRow) };
+  try {
+    const { data, error } = await supabase
+      .from('work_orders')
+      .select(
+        'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
+      )
+      .eq('purchase_order_id', cleanId)
+      .maybeSingle();
+
+    if (!error && data) {
+      return { ok: true, workOrder: mapWo(data as unknown as WoRow) };
+    }
+
+    // Fallback: simple query if relation join fails
+    const { data: rawData, error: rawError } = await supabase
+      .from('work_orders')
+      .select('*')
+      .eq('purchase_order_id', cleanId)
+      .maybeSingle();
+
+    if (rawError) return { ok: false, error: rawError.message };
+    if (!rawData) return { ok: true, workOrder: null };
+    return {
+      ok: true,
+      workOrder: {
+        id: rawData.id,
+        purchaseOrderId: rawData.purchase_order_id,
+        supplierId: rawData.supplier_id,
+        status: rawData.status,
+        title: rawData.title,
+        progressPercent: Number(rawData.progress_percent || 0),
+        completedAt: rawData.completed_at,
+        buyerAcceptedAt: rawData.buyer_accepted_at,
+        inspectionNotes: rawData.inspection_notes,
+        rating: rawData.rating != null ? Number(rawData.rating) : null,
+        reviewText: rawData.review_text ?? rawData.inspection_notes,
+      },
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to fetch work order';
+    return { ok: false, error: msg };
+  }
 }
 
 export async function fetchWorkOrder(woId: string): Promise<
   { ok: true; workOrder: WorkOrderSummary } | { ok: false; error: string }
 > {
-  const { data, error } = await supabase
-    .from('work_orders')
-    .select(
-      'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
-    )
-    .eq('id', woId)
-    .maybeSingle();
+  const cleanId = (woId || '').trim();
+  if (!cleanId) return { ok: false, error: 'Work order identifier required' };
 
-  if (error) return { ok: false, error: error.message };
-  if (!data) return { ok: false, error: 'Work order not found' };
-  return { ok: true, workOrder: mapWo(data as unknown as WoRow) };
+  try {
+    const { data, error } = await supabase
+      .from('work_orders')
+      .select(
+        'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
+      )
+      .eq('id', cleanId)
+      .maybeSingle();
+
+    if (!error && data) {
+      return { ok: true, workOrder: mapWo(data as unknown as WoRow) };
+    }
+
+    // Fallback: simple flat select
+    const { data: rawData, error: rawError } = await supabase
+      .from('work_orders')
+      .select('*')
+      .eq('id', cleanId)
+      .maybeSingle();
+
+    if (rawError) return { ok: false, error: rawError.message };
+    if (!rawData) return { ok: false, error: 'Work order not found' };
+
+    return {
+      ok: true,
+      workOrder: {
+        id: rawData.id,
+        purchaseOrderId: rawData.purchase_order_id,
+        supplierId: rawData.supplier_id,
+        status: rawData.status,
+        title: rawData.title,
+        progressPercent: Number(rawData.progress_percent || 0),
+        completedAt: rawData.completed_at,
+        buyerAcceptedAt: rawData.buyer_accepted_at,
+        inspectionNotes: rawData.inspection_notes,
+        rating: rawData.rating != null ? Number(rawData.rating) : null,
+        reviewText: rawData.review_text ?? rawData.inspection_notes,
+      },
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to fetch work order';
+    return { ok: false, error: msg };
+  }
 }
 
 export async function createWorkOrder(
