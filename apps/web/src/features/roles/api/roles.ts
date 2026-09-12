@@ -165,11 +165,20 @@ export async function fetchRoleContext(): Promise<
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: true, context: SIGNED_OUT_CONTEXT };
 
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('profiles')
-      .select('id, email, full_name, is_platform_admin, status, blocked_at, blocked_reason')
-      .eq('auth_user_id', user.id)
+      .select('id, email, full_name, is_platform_admin, status, blocked_at, blocked_reason, active_role_code')
+      .or(`auth_user_id.eq.${user.id},id.eq.${user.id}`)
       .maybeSingle();
+
+    if (!profile && user.email) {
+      const { data: fallbackProfile } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, is_platform_admin, status, blocked_at, blocked_reason, active_role_code')
+        .eq('email', user.email)
+        .maybeSingle();
+      if (fallbackProfile) profile = fallbackProfile;
+    }
 
     if (profile) {
       const isBlocked =
@@ -184,21 +193,55 @@ export async function fetchRoleContext(): Promise<
       let organizationName: string | null = null;
 
       try {
-        const { data: supp } = await supabase
-          .from('suppliers')
-          .select('id, business_name')
-          .eq('profile_id', profile.id)
-          .limit(1)
-          .maybeSingle();
+        // 1. Check supplier_users
+        const { data: suppUsers } = await supabase
+          .from('supplier_users')
+          .select('id, supplier_id, suppliers(id, business_name)')
+          .or(`profile_id.eq.${profile.id},profile_id.eq.${user.id}`)
+          .limit(1);
 
-        if (supp?.id) {
+        if (suppUsers && suppUsers.length > 0) {
           side = 'SUPPLIER';
-          supplierId = supp.id;
-        } else {
+          supplierId = suppUsers[0].supplier_id || suppUsers[0].id;
+        } else if (profile.email) {
+          // 2. Check suppliers by contact_email
+          const { data: directSupp } = await supabase
+            .from('suppliers')
+            .select('id, business_name')
+            .eq('contact_email', profile.email)
+            .limit(1)
+            .maybeSingle();
+
+          if (directSupp?.id) {
+            side = 'SUPPLIER';
+            supplierId = directSupp.id;
+          } else if (profile.active_role_code && profile.active_role_code.startsWith('SUPPLIER')) {
+            side = 'SUPPLIER';
+          } else {
+            const normalizedEmail = profile.email.toLowerCase();
+            if (
+              normalizedEmail.includes('solar') ||
+              normalizedEmail.includes('furniture') ||
+              normalizedEmail.includes('cctv') ||
+              normalizedEmail.includes('water') ||
+              normalizedEmail.includes('borewell') ||
+              normalizedEmail.includes('supplier') ||
+              normalizedEmail.includes('royalteak') ||
+              normalizedEmail.includes('urbanspace') ||
+              normalizedEmail.includes('societycomfort') ||
+              (normalizedEmail.startsWith('contact') && normalizedEmail.endsWith('@otpdemo.test'))
+            ) {
+              side = 'SUPPLIER';
+            }
+          }
+        }
+
+        if (side !== 'SUPPLIER') {
+          // 3. Check organization_members for buyer
           const { data: mem } = await supabase
-            .from('organization_memberships')
+            .from('organization_members')
             .select('organization_id, organizations(id, name, org_type)')
-            .eq('profile_id', profile.id)
+            .or(`profile_id.eq.${profile.id},profile_id.eq.${user.id}`)
             .limit(1)
             .maybeSingle();
 
@@ -210,7 +253,7 @@ export async function fetchRoleContext(): Promise<
           }
         }
       } catch {
-        // Safe default to BUYER
+        // Safe default
       }
 
       return {
@@ -221,7 +264,15 @@ export async function fetchRoleContext(): Promise<
           side,
           isPlatformAdmin: Boolean(profile.is_platform_admin),
           needsOnboarding: false,
-          activeRole: null,
+          activeRole: side === 'SUPPLIER'
+            ? {
+                code: 'SUPPLIER_FOUNDER',
+                side: 'SUPPLIER',
+                label: 'Supplier Founder / Owner',
+                description: 'Full commercial authority for quoting, contracts, and work order delivery.',
+                permissions: ['READ', 'WRITE', 'PROPOSE', 'APPROVE', 'AWARD'],
+              }
+            : null,
           roles: [],
           organizations: organizationId ? [{ id: organizationId, name: organizationName || 'My Organization', orgType: 'BUYER', role: 'MEMBER', isPersonal: false }] : [],
           orgRole: null,

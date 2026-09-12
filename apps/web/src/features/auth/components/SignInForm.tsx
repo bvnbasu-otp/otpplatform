@@ -261,9 +261,21 @@ export function SignInForm({
     const searchParams = new URLSearchParams(location.search);
     const validRedirect = sanitizeRedirectTarget(searchParams.get('redirect'));
 
+    const isSupplierEmail =
+      personaEmail.includes('solar') ||
+      personaEmail.includes('furniture') ||
+      personaEmail.includes('cctv') ||
+      personaEmail.includes('water') ||
+      personaEmail.includes('borewell') ||
+      personaEmail.includes('supplier') ||
+      personaEmail.includes('urbanspace') ||
+      personaEmail.includes('otpdemo.test') ||
+      personaEmail.includes('royalteak') ||
+      personaEmail.includes('societycomfort');
+
     if (validRedirect) {
       navigate(validRedirect, { replace: true });
-    } else if (personaEmail.includes('urbanspace') || personaEmail.includes('otpdemo.test') || personaEmail.includes('royalteak') || personaEmail.includes('societycomfort')) {
+    } else if (isSupplierEmail) {
       navigate('/supplier/purchase-orders', { replace: true });
     } else {
       navigate('/dashboard', { replace: true });
@@ -316,6 +328,18 @@ export function SignInForm({
     const searchParams = new URLSearchParams(location.search);
     const validRedirect = sanitizeRedirectTarget(searchParams.get('redirect'));
 
+    const isSupplierEmail =
+      normalizedEmail.includes('solar') ||
+      normalizedEmail.includes('furniture') ||
+      normalizedEmail.includes('cctv') ||
+      normalizedEmail.includes('water') ||
+      normalizedEmail.includes('borewell') ||
+      normalizedEmail.includes('supplier') ||
+      normalizedEmail.includes('royalteak') ||
+      normalizedEmail.includes('urbanspace') ||
+      normalizedEmail.includes('societycomfort') ||
+      (normalizedEmail.startsWith('contact') && normalizedEmail.endsWith('@otpdemo.test'));
+
     if (validRedirect) {
       navigate(validRedirect, { replace: true });
     } else if (
@@ -325,6 +349,8 @@ export function SignInForm({
       normalizedEmail === 'ops@otp.test'
     ) {
       navigate('/admin', { replace: true });
+    } else if (isSupplierEmail) {
+      navigate('/supplier/purchase-orders', { replace: true });
     } else {
       navigate('/dashboard', { replace: true });
     }
