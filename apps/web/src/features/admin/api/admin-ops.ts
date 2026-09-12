@@ -1063,13 +1063,29 @@ export async function reviewSignupRequest(
       p_notes: notes ?? null,
       p_initial_password: initialPassword,
     });
-    if (error) throw error;
+    if (error) {
+      // Fallback attempt with review_signup_request alias
+      const { data: aliasData, error: aliasError } = await supabase.rpc('review_signup_request', {
+        p_request_id: requestId,
+        p_action: action,
+        p_notes: notes ?? null,
+        p_initial_password: initialPassword,
+      });
+      if (aliasError) {
+        return {
+          ok: false,
+          status: 'FAILED',
+          error: error.message || aliasError.message || 'Failed to review signup request',
+        };
+      }
+      return aliasData as import('../types/admin').AdminReviewSignupResponse;
+    }
     return data as import('../types/admin').AdminReviewSignupResponse;
-  } catch (err) {
+  } catch (err: any) {
     return {
       ok: false,
       status: 'FAILED',
-      error: err instanceof Error ? err.message : 'Failed to review signup request',
+      error: err?.message || (typeof err === 'string' ? err : 'Failed to review signup request'),
     };
   }
 }

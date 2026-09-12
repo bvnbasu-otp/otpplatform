@@ -2,7 +2,7 @@
 
 ## 1. Database Architecture & Applied Migrations
 
-The OTP database runs on **PostgreSQL 15** with **160 applied production migrations** located in `supabase/migrations/`.
+The OTP database runs on **PostgreSQL 15** with **161 applied production migrations** located in `supabase/migrations/`.
 
 ### Migration Progression Overview:
 - `00001 - 00015`: Foundation schema, user profiles, organizations, and multi-tenant member roles.
@@ -24,7 +24,7 @@ The OTP database runs on **PostgreSQL 15** with **160 applied production migrati
 - `00154`: Composite B-Tree performance indexes (`purchase_orders`, `quotes`, `rfqs`, `invoices`, `payments`) and spend analytics RPC (`get_organization_spend_analytics`).
 - `00155`: Outbound notification exponential backoff retry queue (`messaging_events` retry columns, `record_notification_failure_with_backoff` RPC).
 - `00156`: Mutual Buyer & Supplier Identity Reveal on PO Issuance & Tax Compliance (`organizations_select` RLS bilateral visibility for awarded suppliers, `lock_and_reveal_award_atomic` complete buyer tax and legal payload for GST ITC eligibility under CGST Section 16).
-- `00157 - 00160`: GoTrue auth users null token fallback (`00157`), pilot buyer account seeding (`00158`), admin signup review workflow fixes (`00159`), and atomic RFQ status enum casting with bidder notification dispatch (`00160`).
+- `00157 - 00161`: GoTrue auth users null token fallback (`00157`), pilot buyer account seeding (`00158`), admin signup review workflow fixes (`00159`), atomic RFQ status enum casting with bidder notification dispatch (`00160`), and bulletproof signup request review with multi-tier admin check and robust fallback name/role handling (`00161`).
 
 ---
 
