@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  OTP Platform — Master Operations & Automation CLI
+  OTP Platform -- Master Operations & Automation CLI
 .DESCRIPTION
   Single authoritative master script to manage, test, gate, deploy, verify,
   backup, and operate the OTP Platform standalone without AI assistance.
@@ -9,7 +9,7 @@
   .\scripts\otp.ps1 start       # Boot platform services after PC reboot
   .\scripts\otp.ps1 status      # System health, ports, containers, DB check
   .\scripts\otp.ps1 test        # Fast unit & live smoke test battery
-  .\scripts\otp.ps1 gate        # Mandatory 12-layer staging verification gate (833 tests)
+  .\scripts\otp.ps1 gate        # Mandatory 12-layer staging verification gate (631 tests)
   .\scripts\otp.ps1 deploy      # Full gated deployment (Gate -> Backup -> Build -> Smoke -> Alert)
   .\scripts\otp.ps1 rollback    # Instant manual rollback to previous stable bundle + alert
   .\scripts\otp.ps1 backup      # On-demand production database backup
@@ -43,16 +43,16 @@ Set-Location $WorkspaceRoot
 function Write-Header([string]$title) {
   Write-Host ""
   Write-Host "=================================================================" -ForegroundColor Cyan
-  Write-Host "  OTP PLATFORM — $title" -ForegroundColor Cyan
+  Write-Host "  OTP PLATFORM -- $title" -ForegroundColor Cyan
   Write-Host "=================================================================" -ForegroundColor Cyan
   Write-Host "Workspace  : $WorkspaceRoot" -ForegroundColor DarkGray
   Write-Host "Public URL : $SiteUrl" -ForegroundColor DarkGray
   Write-Host ""
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: HELP / USAGE
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "help" -or -not $Command) {
   Write-Header "COMMAND RUNBOOK & CHEAT SHEET"
   Write-Host "Usage: .\scripts\otp.ps1 <command> [options]" -ForegroundColor White
@@ -60,8 +60,8 @@ if ($Command -eq "help" -or -not $Command) {
   Write-Host "Core Operations:" -ForegroundColor Yellow
   Write-Host "  start      Boots all Docker containers, runs migrations, starts web preview" -ForegroundColor White
   Write-Host "  status     Inspects containers, ports, database integrity, and live site" -ForegroundColor White
-  Write-Host "  test       Executes web unit tests (212 tests) and live smoke battery (10/10)" -ForegroundColor White
-  Write-Host "  gate       Runs the strict 12-layer staging verification gate (833 tests, 100% green)" -ForegroundColor White
+  Write-Host "  test       Executes web unit tests (346 tests) and live smoke battery (10/10)" -ForegroundColor White
+  Write-Host "  gate       Runs the strict 12-layer staging verification gate (631 tests, 100% green)" -ForegroundColor White
   Write-Host "  policy     Enforces mandatory 4-tier test coverage expansion policy (Coverage Append Rule)" -ForegroundColor White
   Write-Host "  deploy     Full gated production deployment with zero-data-loss and auto-rollback" -ForegroundColor White
   Write-Host "  rollback   Instantly reverts active web bundle to previous stable release and notifies" -ForegroundColor White
@@ -72,15 +72,15 @@ if ($Command -eq "help" -or -not $Command) {
   Write-Host "Examples:" -ForegroundColor DarkGray
   Write-Host "  .\scripts\otp.ps1 start                     # Run after system reboot" -ForegroundColor DarkGray
   Write-Host "  .\scripts\otp.ps1 deploy                    # Run after any code or DB changes" -ForegroundColor DarkGray
-  Write-Host "  .\scripts\otp.ps1 deploy -SkipGate          # Fast deployment skipping the 150s gate" -ForegroundColor DarkGray
+  Write-Host "  .\scripts\otp.ps1 deploy -SkipGate          # Fast deployment skipping the gate" -ForegroundColor DarkGray
   Write-Host "  .\scripts\otp.ps1 rollback                  # Emergency revert to last good build" -ForegroundColor DarkGray
   Write-Host ""
   exit 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: STATUS
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "status") {
   Write-Header "SYSTEM & HEALTH DIAGNOSTICS"
 
@@ -118,7 +118,13 @@ if ($Command -eq "status") {
   # 3. Database Integrity & Metrics
   Write-Host ""
   Write-Host "[3/4] Database Health & Record Counts:" -ForegroundColor Yellow
-  $dbRunning = & docker ps --filter "name=otp-prod-db" --filter "status=running" -q
+  $hasDocker = Get-Command docker -ErrorAction SilentlyContinue
+  $dbRunning = $null
+  if ($hasDocker) {
+    try {
+      $dbRunning = & docker ps --filter "name=otp-prod-db" --filter "status=running" -q 2>$null
+    } catch {}
+  }
   if ($dbRunning) {
     $integrity = & docker exec otp-prod-db psql -U postgres -d postgres -t -c "SELECT public.assert_production_data_integrity();" 2>&1
     Write-Host "  Integrity Lock : $integrity" -ForegroundColor Green
@@ -151,9 +157,9 @@ if ($Command -eq "status") {
   exit 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: BACKUP
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "backup") {
   Write-Header "DATABASE BACKUP EXECUTION"
   $backupScript = Join-Path $WorkspaceRoot "scripts\backup-prod-db.ps1"
@@ -165,9 +171,9 @@ if ($Command -eq "backup") {
   exit 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: ALERT
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "alert") {
   Write-Header "TESTING NOTIFICATION DISPATCH (EMAIL + WHATSAPP)"
   $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
@@ -178,13 +184,13 @@ if ($Command -eq "alert") {
   exit 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: TEST
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "test") {
   Write-Header "FAST OPERATIONAL & UNIT TEST SUITE"
 
-  Write-Host "[1/2] Executing Web Unit Test Battery (212 tests)..." -ForegroundColor Yellow
+  Write-Host "[1/2] Executing Web Unit Test Battery (346 tests)..." -ForegroundColor Yellow
   & pnpm.cmd --filter web test
   if ($LASTEXITCODE -ne 0) {
     Write-Host "[FAIL] Unit tests failed!" -ForegroundColor Red
@@ -204,19 +210,19 @@ if ($Command -eq "test") {
   exit 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: GATE
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "gate") {
   Write-Header "12-LAYER STAGING VERIFICATION GATE"
-  Write-Host "Executing full 12-layer master regression suite (833 tests)..." -ForegroundColor Yellow
+  Write-Host "Executing full 12-layer master regression suite (631 tests)..." -ForegroundColor Yellow
   & pnpm.cmd gate:verify
   exit $LASTEXITCODE
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: POLICY (Mandatory Test Coverage Expansion Policy)
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "policy") {
   Write-Header "TEST COVERAGE EXPANSION POLICY AUDIT"
   Write-Host "Verifying 4 test tiers (Unit, Module, Functional, Regression)..." -ForegroundColor Yellow
@@ -224,9 +230,9 @@ if ($Command -eq "policy") {
   exit $LASTEXITCODE
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: ROLLBACK
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "rollback") {
   Write-Header "EMERGENCY ROLLBACK TO PREVIOUS STABLE RELEASE"
   $distPath = Join-Path $WorkspaceRoot "apps\web\dist"
@@ -257,9 +263,9 @@ if ($Command -eq "rollback") {
   exit 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: STOP
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "stop") {
   Write-Header "STANDALONE PLATFORM SHUTDOWN"
   $stopScript = Join-Path $WorkspaceRoot "scripts\stop-platform.ps1"
@@ -269,9 +275,9 @@ if ($Command -eq "stop") {
   exit 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: START
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "start") {
   Write-Header "PLATFORM BOOT & ORCHESTRATION"
 
@@ -347,7 +353,7 @@ if ($Command -eq "start") {
 
   Write-Host ""
   Write-Host "=================================================================" -ForegroundColor Green
-  Write-Host "  PLATFORM BOOT COMPLETE — ALL SERVICES LIVE" -ForegroundColor Green
+  Write-Host "  PLATFORM BOOT COMPLETE -- ALL SERVICES LIVE" -ForegroundColor Green
   Write-Host "=================================================================" -ForegroundColor Green
   Write-Host "  Local Web App   : http://localhost:3000" -ForegroundColor White
   Write-Host "  Public Live URL : $SiteUrl" -ForegroundColor White
@@ -358,19 +364,14 @@ if ($Command -eq "start") {
   exit 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # COMMAND: DEPLOY (Full Gated CI/CD Pipeline & Environment Router)
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($Command -eq "deploy") {
   $deployScript = Join-Path $WorkspaceRoot "scripts\deploy.ps1"
   if (Test-Path $deployScript) {
     & powershell.exe -ExecutionPolicy Bypass -File $deployScript -Environment $Environment -SiteUrl $SiteUrl -SkipGate:$SkipGate
     exit $LASTEXITCODE
-  } else {
-    Write-Host "[ERROR] Unified deployment router not found at $deployScript!" -ForegroundColor Red
-    exit 1
-  }
-}
   } else {
     Write-Host "[ERROR] Unified deployment router not found at $deployScript!" -ForegroundColor Red
     exit 1
