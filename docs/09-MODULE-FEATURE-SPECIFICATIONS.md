@@ -63,7 +63,7 @@ A centralized customer support hub linking user-submitted feedback directly to p
 ### 1.5 System Diagnostics, Test Center & Service Actions
 - **System Health (`/admin?tab=health`)**: Real-time probes for PostgreSQL latency, table record counts, audit chain integrity, Kong gateway, and WAHA WhatsApp session.
 - **Service Actions Panel (`/admin?tab=actions`)**: One-click execution of administrative routines (Kong restart, WAHA restart, database vacuum, mode-aware transaction purge).
-- **Pre-Production Test Center (`/admin?tab=tests`)**: Complete master regression matrix (820 tests) with an interactive 25-test live database test runner.
+- **Pre-Production Test Center (`/admin?tab=tests`)**: Complete master regression matrix (631 tests across 12 layers) with an interactive 25-test live database test runner.
 
 ---
 

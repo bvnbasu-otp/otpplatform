@@ -31,4 +31,4 @@ The OTP Platform user interface is designed for **institutional authority, trans
 - **Cryptographic Decision Receipt**: Visual sealed certificate showing timestamp, voter signatures, SHA-256 hash of competing quotes, and commercial terms.
 
 ### 2.4 The Super Admin Operations Console (`/admin`)
-- **Multi-Tab Telemetry Bar**: Live Buyer Orders, Seller Orders, System Health, Support Tickets, Service Actions, Pre-Production Tests (820 tests), Buyer/Seller Debuggers, SQL Query Terminal, Database Backup/Restore, and Audit Logs.
+- **Multi-Tab Telemetry Bar**: Live Buyer Orders, Seller Orders, System Health, Support Tickets, Service Actions, Pre-Production Tests (631 tests), Buyer/Seller Debuggers, SQL Query Terminal, Database Backup/Restore, and Audit Logs.

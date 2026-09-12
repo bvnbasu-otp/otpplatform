@@ -30,109 +30,79 @@ export interface ModuleTestInventory {
 
 export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
   {
-    id: 'MOD-INTAKE',
-    name: 'Requirement Intake & Indian Standards Engine',
-    description: 'Rule-based NLP requirement parsing, BIS units, FSSAI grades, HSN/SAC codes, tender attachments, budget validation',
-    filesCount: 6,
-    testCount: 123,
+    id: 'MOD-POLICY',
+    name: 'Canonical Vocabulary & Anti-Leak Policy Compliance',
+    description: 'Zero prohibited procurement terms scanner (enforces anti-leak protection and strict prohibition of bid, bidder, bidding, blind)',
+    filesCount: 1,
+    testCount: 1,
+    category: 'SECURITY',
+    keySuites: ['policy-scanner.ts'],
+    status: 'VERIFIED',
+  },
+  {
+    id: 'MOD-DOMAIN',
+    name: 'Domain Logic, GST Validation & NLP Parsing Engine',
+    description: 'Rule-based NLP requirement parsing, multilingual Devnagari units, GSTIN checksum validator, smart scoring algorithms, taxonomy LRU cache',
+    filesCount: 11,
+    testCount: 70,
     category: 'CORE_DOMAIN',
-    keySuites: ['requirement-engine.test.ts', 'rule-based-requirement-parser.test.ts', 'extractors.test.ts', 'requirement-intake.test.ts'],
+    keySuites: ['multilingual-parser.test.ts', 'smart-scoring.test.ts', 'gstin-validator.test.ts', 'taxonomy-cache.test.ts', 'accounting-export.test.ts'],
     status: 'VERIFIED',
   },
   {
-    id: 'MOD-DISCOVERY',
-    name: 'Supplier Discovery & Network Adapters',
-    description: 'ONDC protocol adapter, BNI network adapter, direct supplier invites, capabilities lookup, PAN/GSTIN validation',
-    filesCount: 5,
-    testCount: 34,
-    category: 'INTEGRATION',
-    keySuites: ['ondc-network-adapter.test.ts', 'network-adapters.test.ts', 'gst-verification.test.ts', 'direct-supplier-invite.test.ts'],
-    status: 'VERIFIED',
-  },
-  {
-    id: 'MOD-QUOTES',
-    name: 'Quotation Intake & Identity Protection',
-    description: 'Supplier quote form, alias generation (Supplier [Code]), deadline enforcement, EXIF/PDF metadata stripping, social handle redaction',
+    id: 'MOD-SERVICES',
+    name: 'Network Discovery, ONDC & External Adapters',
+    description: 'ONDC BAP protocol adapters, notification exponential backoff retry queue, sliding-window rate limiters, transactional email dispatchers',
     filesCount: 8,
-    testCount: 78,
-    category: 'SECURITY',
-    keySuites: ['clarification-redaction.test.ts', 'messaging-body-redaction.test.ts', 'attachments.test.ts', 'identity-protected-quote-mapper.test.ts'],
-    status: 'VERIFIED',
-  },
-  {
-    id: 'MOD-GOVERNANCE',
-    name: 'Committee Governance, Quorum & Voting',
-    description: 'RWA/Enterprise committee assignment, conflict-of-interest declarations, identity-protected quote comparison, quorum enforcement, weighted tally voting',
-    filesCount: 5,
-    testCount: 71,
-    category: 'GOVERNANCE',
-    keySuites: ['governance.test.ts', 'rfq_vote_tally.test.ts', 'quote-evaluation.test.ts', 'normalize-weights.test.ts'],
-    status: 'VERIFIED',
-  },
-  {
-    id: 'MOD-AWARD',
-    name: 'Award Decision & Immutable Closeout',
-    description: 'Manager award justification gate, sentence starters, character minimums, one-way reveal, runner-up re-award, mutual reveal receipts',
-    filesCount: 6,
-    testCount: 53,
-    category: 'GOVERNANCE',
-    keySuites: ['award-closeout.test.ts', 'decision-receipt.test.ts', 'phase-engine.test.ts', 'lifecycle.test.ts'],
-    status: 'VERIFIED',
-  },
-  {
-    id: 'MOD-SETTLEMENT',
-    name: 'Fulfillment, Work Orders & Settlement',
-    description: 'Purchase order generation, delivery inspections, work orders, invoice submissions, payment receipts',
-    filesCount: 3,
-    testCount: 28,
+    testCount: 30,
     category: 'INTEGRATION',
-    keySuites: ['fulfillment.test.ts', 'invoices.test.ts', 'payments.test.ts'],
+    keySuites: ['ondc-realtime.test.ts', 'rate-limit.test.ts', 'retry-queue.test.ts', 'email-dispatcher.test.ts'],
     status: 'VERIFIED',
   },
   {
-    id: 'MOD-TELEPHONY',
-    name: 'Zero-Cost Telephony & WhatsApp Gateway',
-    description: 'Inbound/outbound WhatsApp quote notifications, HMAC crypto verification, phone E.164 normalization, STOP opt-out compliance',
-    filesCount: 9,
-    testCount: 74,
-    category: 'COMMUNICATIONS',
-    keySuites: ['messaging-core.test.ts', 'messaging-channel.test.ts', 'messaging-compliance.test.ts', 'crypto.test.ts'],
+    id: 'MOD-DATABASE',
+    name: 'Database Entity Mappers & Schema Hydration',
+    description: 'PostgreSQL entity mappers, identity-protected quote data transformer, schema hydration and type assertions',
+    filesCount: 1,
+    testCount: 1,
+    category: 'CORE_DOMAIN',
+    keySuites: ['identity-protected-quote-mapper.test.ts'],
     status: 'VERIFIED',
   },
   {
-    id: 'MOD-SECURITY',
-    name: 'Cross-Tenant Security, RBAC & Row-Level Security',
-    description: 'Row-level security on requirements/rfqs/quotes/awards/POs, cross-tenant boundary tests, role matrices (OWNER, MANAGER, BUYER, COMMITTEE, SUPPLIER)',
-    filesCount: 7,
-    testCount: 98,
-    category: 'SECURITY',
-    keySuites: ['rls-security.test.ts', 'cross-organization.test.ts', 'messaging-rls.test.ts', 'role-access.test.ts'],
+    id: 'MOD-UNIT',
+    name: 'Messaging Core & Web Routing Invariants',
+    description: 'Core messaging dispatchers, route path invariants, ONDC event subscriptions, deep-link routing preservation',
+    filesCount: 3,
+    testCount: 75,
+    category: 'CORE_DOMAIN',
+    keySuites: ['messaging-core.test.ts', 'web-routes.test.ts', 'ondc-realtime.test.ts'],
     status: 'VERIFIED',
   },
   {
     id: 'MOD-WEB-UI',
-    name: 'PWA Routing, Auth & Admin Telemetry',
-    description: 'Role-based dashboard navigation, signup requests approval, system health probes, real-time transaction telemetry, audit logs',
-    filesCount: 8,
-    testCount: 132,
+    name: 'Web Features, Governance, ProtectedRoute & State Machines',
+    description: 'Role-based PWA routing, centralized <ProtectedRoute> with diagnostic cache sanitization, committee voting, intake, quick-quote, and 8-state lifecycle',
+    filesCount: 48,
+    testCount: 346,
     category: 'WEB_UI',
-    keySuites: ['admin.test.ts', 'web-routes.test.ts', 'roles.test.ts', 'signup-portal.test.ts'],
+    keySuites: ['protected-route.test.ts', 'governance.test.ts', 'e2e-sourcing-lifecycle.test.ts', 'buyer-reveal-gst.test.ts', 'admin.test.ts'],
     status: 'VERIFIED',
   },
   {
-    id: 'MOD-CONTENT',
-    name: 'Institutional Site Copy & FAQ Governance',
-    description: 'Public portal pages, buyer/supplier onboarding, legal disclosures, zero prohibited terms compliance',
-    filesCount: 1,
-    testCount: 57,
-    category: 'WEB_UI',
-    keySuites: ['site-content.test.ts'],
+    id: 'MOD-INTEGRATION',
+    name: 'Live Database Integration & RLS Security Suite',
+    description: 'Cross-organization boundary tests, row-level security policies, direct supplier invite flows, clarification redaction, phase progression',
+    filesCount: 14,
+    testCount: 35,
+    category: 'SECURITY',
+    keySuites: ['cross-organization.test.ts', 'award-closeout.test.ts', 'rls-security.test.ts', 'messaging-body-redaction.test.ts'],
     status: 'VERIFIED',
   },
   {
-    id: 'MOD-E2E',
-    name: 'End-to-End Walkthroughs & Demo Scenarios',
-    description: '2-step Fast Track scenario, 4-step Full Governance scenario, multi-party end-to-end walkthrough',
+    id: 'MOD-DEMO-E2E',
+    name: 'Live Demo Scenario & E2E Walkthroughs',
+    description: '2-step Fast Track scenario, 4-step Full Governance scenario, multi-party institutional walkthrough',
     filesCount: 2,
     testCount: 12,
     category: 'INTEGRATION',
@@ -140,23 +110,43 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     status: 'VERIFIED',
   },
   {
-    id: 'MOD-EDGE',
-    name: 'Edge Functions & API Integrations',
-    description: 'Shared auth, CORS headers, crypto helpers, provider resolvers',
-    filesCount: 6,
-    testCount: 30,
-    category: 'CORE_DOMAIN',
-    keySuites: ['cors.test.ts', 'crypto.test.ts', 'parser.test.ts', 'providers.test.ts'],
-    status: 'VERIFIED',
-  },
-  {
     id: 'MOD-DB-RPC',
-    name: 'Live Database Operational & Security Benchmark Battery',
+    name: 'PostgreSQL Kernel Security RPC Benchmarks',
     description: 'Direct in-PostgreSQL kernel execution testing RLS policies, cryptographic salts, views, and system configuration via RPC',
     filesCount: 1,
     testCount: 25,
     category: 'SECURITY',
-    keySuites: ['admin_run_test_case (Postgres RPC)'],
+    keySuites: ['admin_run_test_case (Postgres RPC Battery)'],
+    status: 'VERIFIED',
+  },
+  {
+    id: 'MOD-SMOKE',
+    name: 'Live Operational & Auth Smoke Battery',
+    description: 'Real un-mocked operational checks against live running services: Kong, GoTrue auth, WhatsApp WAHA gateway, recovery link invariants',
+    filesCount: 1,
+    testCount: 10,
+    category: 'COMMUNICATIONS',
+    keySuites: ['test-live-smoke.ts'],
+    status: 'VERIFIED',
+  },
+  {
+    id: 'MOD-LIVE-FLOWS',
+    name: 'Multi-Actor Real-Time Simulation Flows',
+    description: 'Simulated real-time end-to-end multi-party RFQ creation, sealed quoting, committee voting, and atomic award closeouts',
+    filesCount: 1,
+    testCount: 25,
+    category: 'GOVERNANCE',
+    keySuites: ['run_live_automated_tests.ts'],
+    status: 'VERIFIED',
+  },
+  {
+    id: 'MOD-BUILD',
+    name: 'Production TypeScript & Vite Bundle Compilation',
+    description: 'Full workspace strict typecheck and zero-warning production Vite bundle compilation',
+    filesCount: 1,
+    testCount: 1,
+    category: 'WEB_UI',
+    keySuites: ['vite build'],
     status: 'VERIFIED',
   },
 ];
@@ -356,6 +346,7 @@ export function AdminTestSuiteRunner() {
   const [showOnlyCritical, setShowOnlyCritical] = useState(false);
 
   const totalPlatformTests = MASTER_MODULE_INVENTORY.reduce((acc, m) => acc + m.testCount, 0);
+  const totalPlatformFiles = MASTER_MODULE_INVENTORY.reduce((acc, m) => acc + m.filesCount, 0);
 
   const filteredTests = ALL_TEST_CASES.filter(
     (test) =>
@@ -449,11 +440,11 @@ export function AdminTestSuiteRunner() {
                 OTP Platform Test Center &amp; Pre-Production Verification
               </h2>
               <span className="rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-bold">
-                820 TESTS DOCUMENTED
+                {totalPlatformTests} TESTS DOCUMENTED
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
-              Complete multi-layer test suite covering all 12 procurement modules. Real-time PostgreSQL benchmark checks can be executed live below, or execute the master regression pipeline (<code className="bg-muted px-1 rounded font-mono">pnpm test:regression</code>).
+              Complete multi-layer test suite covering all 12 procurement modules and layers. Real-time PostgreSQL benchmark checks can be executed live below, or execute the master regression pipeline (<code className="bg-muted px-1 rounded font-mono">pnpm gate:verify</code>).
             </p>
           </div>
 
@@ -468,7 +459,7 @@ export function AdminTestSuiteRunner() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              📊 Master Platform Matrix (820 Tests)
+              📊 Master Platform Matrix ({totalPlatformTests} Tests)
             </button>
             <button
               type="button"
@@ -489,7 +480,7 @@ export function AdminTestSuiteRunner() {
           <div className="rounded-lg p-4 border border-blue-500/30 bg-blue-500/10">
             <div className="text-2xl font-black text-blue-700">{totalPlatformTests}</div>
             <div className="text-xs font-semibold text-blue-950">Total Automated Tests</div>
-            <div className="text-[10px] text-blue-800 mt-0.5">Across 12 Platform Modules</div>
+            <div className="text-[10px] text-blue-800 mt-0.5">Across 12 Platform Layers &amp; Modules</div>
           </div>
 
           <div className="rounded-lg p-4 border border-emerald-500/30 bg-emerald-500/10">
@@ -501,7 +492,7 @@ export function AdminTestSuiteRunner() {
           <div className="rounded-lg p-4 border border-purple-500/30 bg-purple-500/10">
             <div className="text-2xl font-black text-purple-700">100%</div>
             <div className="text-xs font-semibold text-purple-950">Master Regression Pass</div>
-            <div className="text-[10px] text-purple-800 mt-0.5">375 Vitest/Build Checks</div>
+            <div className="text-[10px] text-purple-800 mt-0.5">{totalPlatformTests} Automated &amp; Build Checks</div>
           </div>
 
           <div className="rounded-lg p-4 border border-emerald-500/30 bg-emerald-500/10">
@@ -512,13 +503,13 @@ export function AdminTestSuiteRunner() {
         </div>
       </div>
 
-      {/* VIEW 1: MASTER PLATFORM MATRIX (820 TESTS ACROSS 12 MODULES) */}
+      {/* VIEW 1: MASTER PLATFORM MATRIX (631 TESTS ACROSS 12 MODULES) */}
       {activeView === 'MATRIX' && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <span>📋</span> Comprehensive Module Breakdown (820 Total Tests)
+                <span>📋</span> Comprehensive Module Breakdown ({totalPlatformTests} Total Tests)
               </h3>
               <p className="text-xs text-muted-foreground">
                 All functional modules, test files, and verification flows across the entire OTP Platform architecture.
@@ -528,7 +519,7 @@ export function AdminTestSuiteRunner() {
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">CLI Regression Command:</span>
               <code className="rounded bg-muted px-2.5 py-1 text-xs font-mono font-bold text-foreground border">
-                pnpm test:regression
+                pnpm gate:verify
               </code>
             </div>
           </div>
@@ -573,8 +564,8 @@ export function AdminTestSuiteRunner() {
                 <tfoot className="bg-muted/50 font-bold border-t">
                   <tr>
                     <td colSpan={4} className="px-4 py-3 text-right">Grand Total:</td>
-                    <td className="px-4 py-3 text-center font-mono">67 files</td>
-                    <td className="px-4 py-3 text-center font-mono text-emerald-700 text-sm">820 Tests</td>
+                    <td className="px-4 py-3 text-center font-mono">{totalPlatformFiles} files</td>
+                    <td className="px-4 py-3 text-center font-mono text-emerald-700 text-sm">{totalPlatformTests} Tests</td>
                     <td className="px-4 py-3 text-center text-emerald-700">100% Passed</td>
                   </tr>
                 </tfoot>
