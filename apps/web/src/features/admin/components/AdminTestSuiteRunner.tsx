@@ -32,7 +32,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
   {
     id: 'MOD-POLICY',
     name: 'Canonical Vocabulary & Anti-Leak Policy Compliance',
-    description: 'Zero prohibited procurement terms scanner (enforces anti-leak protection and strict prohibition of bid, bidder, bidding, blind)',
+    description: 'Zero prohibited terms scanner enforcing identity protection and canonical procurement vocabulary standards',
     filesCount: 1,
     testCount: 1,
     category: 'SECURITY',
