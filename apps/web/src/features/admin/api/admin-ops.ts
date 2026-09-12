@@ -351,6 +351,7 @@ export async function fetchUserActivities(): Promise<{
         email,
         full_name,
         created_at,
+        last_seen_at,
         organization_members (
           role,
           organizations (name, org_type)
@@ -380,7 +381,8 @@ export async function fetchUserActivities(): Promise<{
           : orgMember?.organizations?.name || 'Procurement Org',
         orgType: orgMember?.organizations?.org_type || (isSupplier ? 'SUPPLIER_ENTERPRISE' : 'MSME'),
         side: isSupplier ? 'SUPPLIER' : 'BUYER',
-        lastSignInAt: p.created_at,
+        lastSignInAt: p.last_seen_at || p.created_at,
+        lastSeenAt: p.last_seen_at || p.created_at || null,
         createdAt: p.created_at,
         gstVerified: isSupplier ? Boolean(suppUser?.suppliers?.gst_verified) : true,
       };
@@ -1531,6 +1533,7 @@ export function normalizeAdminUserItem(p: any): AdminUserItem {
     blockedReason,
     createdAt: p.created_at || p.createdAt || new Date().toISOString(),
     updatedAt: p.updated_at || p.updatedAt || p.created_at || p.createdAt || new Date().toISOString(),
+    lastSeenAt: p.last_seen_at || p.lastSeenAt || p.updated_at || p.updatedAt || p.created_at || p.createdAt || null,
   };
 }
 
@@ -1567,6 +1570,7 @@ export function normalizeAdminOrgItem(o: any): AdminOrganizationItem {
     created_at: o.created_at || o.createdAt || new Date().toISOString(),
     member_count: Number(o.member_count ?? o.memberCount ?? 1),
     active_orders_count: Number(o.active_orders_count ?? o.activeOrdersCount ?? 0),
+    last_seen_at: o.last_seen_at || o.lastSeenAt || null,
   };
 }
 
@@ -1617,6 +1621,7 @@ export async function fetchUsersAndOrganizations(): Promise<AdminUsersAndOrgsRes
           is_platform_admin,
           created_at,
           updated_at,
+          last_seen_at,
           organization_members (
             organization_id,
             role,
@@ -1649,6 +1654,7 @@ export async function fetchUsersAndOrganizations(): Promise<AdminUsersAndOrgsRes
           is_platform_admin,
           created_at,
           updated_at,
+          last_seen_at,
           organization_members (
             organization_id,
             role,

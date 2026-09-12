@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { setRememberDevice, supabase } from '@/lib/supabase';
+import { usePresenceHeartbeat } from './usePresenceHeartbeat';
 
 interface AuthContextValue {
   session: Session | null;
@@ -36,6 +37,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Maintain real-time presence heartbeat for authenticated users
+  usePresenceHeartbeat(session?.user?.id);
 
   useEffect(() => {
     // If incoming URL contains password recovery hash or query, route immediately to /reset-password

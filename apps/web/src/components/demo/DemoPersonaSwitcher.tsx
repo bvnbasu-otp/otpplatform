@@ -51,6 +51,11 @@ export const DEMO_PERSONAS: PersonaOption[] = [
 ];
 
 export function DemoPersonaSwitcher() {
+  // Hidden until further notice
+  return null;
+}
+
+export function DemoPersonaSwitcherDisabled() {
   const { user, signIn } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);

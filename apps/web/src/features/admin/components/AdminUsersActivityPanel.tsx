@@ -12,6 +12,13 @@ import {
   bulkUnblockOrganizations,
   bulkDeleteOrganizations,
 } from '../api/admin-ops';
+import {
+  getUserOnlineStatus,
+  getPresenceBadgeConfig,
+  formatLastSeenRelative,
+  formatLastSeenAbsolute,
+  type UserPresenceStatus,
+} from '../utils/presence';
 import type {
   AdminUserItem,
   AdminOrganizationItem,
@@ -40,6 +47,15 @@ export function AdminUsersActivityPanel() {
   // Filters & Search
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | AccountLifecycleStatus>('ALL');
+  const [presenceFilter, setPresenceFilter] = useState<'ALL' | UserPresenceStatus>('ALL');
+  const [sideFilter, setSideFilter] = useState<'ALL' | 'BUYER' | 'SUPPLIER' | 'ADMIN'>('ALL');
+
+  // Real-time dynamic ticker (updates relative time every 30s)
+  const [now, setNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30 * 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Multi-Selection States
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -112,6 +128,18 @@ export function AdminUsersActivityPanel() {
       Boolean(o.blocked_reason)
   ).length;
 
+  const onlineUsersCount = useMemo(() => {
+    return users.filter((u) => getUserOnlineStatus(u.lastSeenAt, now) === 'ONLINE').length;
+  }, [users, now]);
+
+  const recentlyActiveUsersCount = useMemo(() => {
+    return users.filter((u) => getUserOnlineStatus(u.lastSeenAt, now) === 'RECENTLY_ACTIVE').length;
+  }, [users, now]);
+
+  const offlineUsersCount = useMemo(() => {
+    return users.filter((u) => getUserOnlineStatus(u.lastSeenAt, now) === 'OFFLINE').length;
+  }, [users, now]);
+
   // ----------------------------------------------------
   // Filtering
   // ----------------------------------------------------
@@ -134,6 +162,15 @@ export function AdminUsersActivityPanel() {
         return false;
       }
 
+      if (presenceFilter !== 'ALL') {
+        const presence = getUserOnlineStatus(u.lastSeenAt, now);
+        if (presence !== presenceFilter) return false;
+      }
+
+      if (sideFilter !== 'ALL' && u.side !== sideFilter) {
+        return false;
+      }
+
       if (!search.trim()) return true;
       const q = search.toLowerCase();
       return (
@@ -145,7 +182,7 @@ export function AdminUsersActivityPanel() {
         (u.blockedReason && u.blockedReason.toLowerCase().includes(q))
       );
     });
-  }, [users, statusFilter, search]);
+  }, [users, statusFilter, presenceFilter, sideFilter, search, now]);
 
   const filteredOrganizations = useMemo(() => {
     return organizations.filter((o) => {
@@ -166,6 +203,14 @@ export function AdminUsersActivityPanel() {
         return false;
       }
 
+      if (presenceFilter !== 'ALL') {
+        const presence = getUserOnlineStatus(o.last_seen_at, now);
+        if (presence !== presenceFilter) return false;
+      }
+
+      if (sideFilter === 'BUYER' && o.entity_type !== 'BUYER_ORG') return false;
+      if (sideFilter === 'SUPPLIER' && o.entity_type !== 'SUPPLIER') return false;
+
       if (!search.trim()) return true;
       const q = search.toLowerCase();
       return (
@@ -177,7 +222,7 @@ export function AdminUsersActivityPanel() {
         (o.blocked_reason && o.blocked_reason.toLowerCase().includes(q))
       );
     });
-  }, [organizations, statusFilter, search]);
+  }, [organizations, statusFilter, presenceFilter, sideFilter, search, now]);
 
   const filteredRequests = useMemo(() => {
     return requests.filter((r) => {
@@ -603,6 +648,12 @@ export function AdminUsersActivityPanel() {
             }`}
           >
             <span>👥</span> Users ({users.length})
+            {onlineUsersCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                {onlineUsersCount} Online
+              </span>
+            )}
             {blockedUsersCount > 0 && (
               <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
                 {blockedUsersCount} Blocked
@@ -655,9 +706,9 @@ export function AdminUsersActivityPanel() {
         </button>
       </div>
 
-      {/* 3. Search & Filter Bar */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-2.5">
-        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+      {/* 3. Search & Multi-Criteria Filter Bar */}
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2.5 rounded-lg border bg-card p-2.5 shadow-2xs">
+        <div className="flex items-center gap-2 flex-1 min-w-[220px]">
           <input
             type="text"
             value={search}
@@ -669,40 +720,74 @@ export function AdminUsersActivityPanel() {
                 ? 'Search business name, GSTIN, contact person, email...'
                 : 'Search applicant name, business, reference (REG-)...'
             }
-            className="rounded-md border bg-background px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full max-w-md"
+            className="rounded-md border bg-background px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full max-w-sm"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="text-xs text-muted-foreground hover:text-foreground font-semibold"
+              className="text-xs text-muted-foreground hover:text-foreground font-semibold shrink-0"
             >
               Clear
             </button>
           )}
         </div>
 
-        {/* Status Filter Chips */}
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase mr-1">Status:</span>
-          {(['ALL', 'ACTIVE', 'BLOCKED', 'PENDING'] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setStatusFilter(s)}
-              className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
-                statusFilter === s
-                  ? s === 'BLOCKED'
-                    ? 'bg-rose-600 text-white'
-                    : s === 'ACTIVE'
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-primary text-primary-foreground'
-                  : 'bg-muted/60 text-muted-foreground hover:text-foreground'
-              }`}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Presence Filter Dropdown / Chips */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase mr-0.5">Presence:</span>
+            <select
+              value={presenceFilter}
+              onChange={(e) => setPresenceFilter(e.target.value as any)}
+              className="rounded-md border bg-background px-2 py-1 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              aria-label="Filter by online presence status"
             >
-              {s === 'ALL' ? 'All' : s}
-            </button>
-          ))}
+              <option value="ALL">All Presence ({subTab === 'USERS' ? users.length : organizations.length})</option>
+              <option value="ONLINE">🟢 Online ({onlineUsersCount})</option>
+              <option value="RECENTLY_ACTIVE">🟡 Recently Active (30m) ({recentlyActiveUsersCount})</option>
+              <option value="OFFLINE">⚪ Offline ({offlineUsersCount})</option>
+            </select>
+          </div>
+
+          {/* Side / Role Filter Dropdown */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase mr-0.5">Side:</span>
+            <select
+              value={sideFilter}
+              onChange={(e) => setSideFilter(e.target.value as any)}
+              className="rounded-md border bg-background px-2 py-1 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              aria-label="Filter by user portal side"
+            >
+              <option value="ALL">All Roles</option>
+              <option value="BUYER">🏢 Buyers</option>
+              <option value="SUPPLIER">🏭 Suppliers</option>
+              <option value="ADMIN">🛡️ Admins</option>
+            </select>
+          </div>
+
+          {/* Account Status Filter Chips */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase mr-0.5">Status:</span>
+            {(['ALL', 'ACTIVE', 'BLOCKED', 'PENDING'] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatusFilter(s)}
+                className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
+                  statusFilter === s
+                    ? s === 'BLOCKED'
+                      ? 'bg-rose-600 text-white shadow-2xs'
+                      : s === 'ACTIVE'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'bg-primary text-primary-foreground shadow-2xs'
+                    : 'bg-muted/60 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {s === 'ALL' ? 'All' : s}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -828,7 +913,8 @@ export function AdminUsersActivityPanel() {
                     />
                   </th>
                   <th className="p-2.5">User &amp; Contact</th>
-                  <th className="p-2.5">Status</th>
+                  <th className="p-2.5">Presence</th>
+                  <th className="p-2.5">Account Status</th>
                   <th className="p-2.5">Side</th>
                   <th className="p-2.5">Organization / Company</th>
                   <th className="p-2.5">Role</th>
@@ -840,13 +926,13 @@ export function AdminUsersActivityPanel() {
               <tbody className="divide-y text-foreground">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={10} className="py-12 text-center text-muted-foreground">
                       Loading user accounts and tenant credentials…
                     </td>
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-muted-foreground font-medium">
+                    <td colSpan={10} className="py-12 text-center text-muted-foreground font-medium">
                       No users match the current search or status filter.
                     </td>
                   </tr>
@@ -858,6 +944,17 @@ export function AdminUsersActivityPanel() {
                       (u.status as string) === 'SUSPENDED' ||
                       Boolean(u.blockedAt) ||
                       Boolean(u.blockedReason);
+
+                    const presenceStatus = getUserOnlineStatus(u.lastSeenAt, now);
+                    const presenceConfig = getPresenceBadgeConfig(presenceStatus);
+                    const relativeTime = formatLastSeenRelative(u.lastSeenAt, now);
+                    const absoluteTime = formatLastSeenAbsolute(u.lastSeenAt);
+                    const initials = (u.fullName || u.email || '?')
+                      .split(' ')
+                      .map((w) => w[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase();
 
                     return (
                       <tr
@@ -880,19 +977,52 @@ export function AdminUsersActivityPanel() {
 
                         {/* User & Contact */}
                         <td className="p-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-foreground">{u.fullName}</span>
-                            {u.isPlatformAdmin && (
-                              <span className="rounded bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-extrabold border border-primary/30">
-                                SUPER ADMIN
-                              </span>
-                            )}
+                          <div className="flex items-start gap-2.5">
+                            {/* Avatar with dynamic real-time presence dot */}
+                            <div className="relative shrink-0 mt-0.5">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
+                                {initials}
+                              </div>
+                              <span
+                                title={`Presence: ${presenceConfig.label} (${relativeTime})\n${absoluteTime}`}
+                                className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${presenceConfig.dotColor}`}
+                              />
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-foreground truncate max-w-[150px]">{u.fullName}</span>
+                                {u.isPlatformAdmin && (
+                                  <span className="rounded bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-extrabold border border-primary/30">
+                                    SUPER ADMIN
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground font-mono truncate max-w-[180px]">{u.email}</div>
+                              {u.phone && <div className="text-[10px] text-muted-foreground font-mono">{u.phone}</div>}
+                            </div>
                           </div>
-                          <div className="text-[11px] text-muted-foreground font-mono">{u.email}</div>
-                          {u.phone && <div className="text-[10px] text-muted-foreground font-mono">{u.phone}</div>}
                         </td>
 
-                        {/* Real-time Status Badge */}
+                        {/* Real-time Presence Column */}
+                        <td className="p-2.5">
+                          <div
+                            className="flex flex-col gap-0.5"
+                            title={`Last seen: ${absoluteTime} (${relativeTime})`}
+                          >
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold border w-fit ${presenceConfig.badgeBg} ${presenceConfig.badgeText} ${presenceConfig.badgeBorder}`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${presenceConfig.dotColor}`} />
+                              <span>{presenceConfig.label}</span>
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-medium pl-1">
+                              {relativeTime}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Real-time Account Lifecycle Status Badge */}
                         <td className="p-2.5">
                           {isBlocked ? (
                             <div>
@@ -1042,6 +1172,7 @@ export function AdminUsersActivityPanel() {
                     />
                   </th>
                   <th className="p-2.5">Organization / Business</th>
+                  <th className="p-2.5">Presence</th>
                   <th className="p-2.5">Type &amp; Sector</th>
                   <th className="p-2.5">Status</th>
                   <th className="p-2.5">Members</th>
@@ -1054,13 +1185,13 @@ export function AdminUsersActivityPanel() {
               <tbody className="divide-y text-foreground">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={10} className="py-12 text-center text-muted-foreground">
                       Loading organizations and supplier tenancies…
                     </td>
                   </tr>
                 ) : filteredOrganizations.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-muted-foreground font-medium">
+                    <td colSpan={10} className="py-12 text-center text-muted-foreground font-medium">
                       No organizations matching search query.
                     </td>
                   </tr>
@@ -1072,6 +1203,11 @@ export function AdminUsersActivityPanel() {
                       (o.status as string) === 'SUSPENDED' ||
                       Boolean(o.blocked_at) ||
                       Boolean(o.blocked_reason);
+
+                    const orgPresence = getUserOnlineStatus(o.last_seen_at, now);
+                    const orgPresenceConfig = getPresenceBadgeConfig(orgPresence);
+                    const orgRelativeTime = formatLastSeenRelative(o.last_seen_at, now);
+                    const orgAbsoluteTime = formatLastSeenAbsolute(o.last_seen_at);
 
                     return (
                       <tr
@@ -1093,16 +1229,39 @@ export function AdminUsersActivityPanel() {
 
                         {/* Name & Tag */}
                         <td className="p-2.5">
-                          <div className="font-bold text-foreground">{o.name}</div>
-                          <span
-                            className={`inline-block mt-0.5 rounded px-1.5 py-0.2 text-[9px] font-extrabold ${
-                              o.entity_type === 'SUPPLIER'
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
-                                : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                            }`}
+                          <div className="flex items-start gap-2">
+                            <span className={`h-2.5 w-2.5 rounded-full mt-1 shrink-0 ${orgPresenceConfig.dotColor}`} title={`Presence: ${orgPresenceConfig.label}`} />
+                            <div>
+                              <div className="font-bold text-foreground">{o.name}</div>
+                              <span
+                                className={`inline-block mt-0.5 rounded px-1.5 py-0.2 text-[9px] font-extrabold ${
+                                  o.entity_type === 'SUPPLIER'
+                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                }`}
+                              >
+                                {o.entity_type === 'SUPPLIER' ? 'Verified Supplier' : 'Buyer Organization'}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Real-time Presence Column */}
+                        <td className="p-2.5">
+                          <div
+                            className="flex flex-col gap-0.5"
+                            title={`Last seen: ${orgAbsoluteTime} (${orgRelativeTime})`}
                           >
-                            {o.entity_type === 'SUPPLIER' ? 'Verified Supplier' : 'Buyer Organization'}
-                          </span>
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold border w-fit ${orgPresenceConfig.badgeBg} ${orgPresenceConfig.badgeText} ${orgPresenceConfig.badgeBorder}`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${orgPresenceConfig.dotColor}`} />
+                              <span>{orgPresenceConfig.label}</span>
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-medium pl-1">
+                              {orgRelativeTime}
+                            </span>
+                          </div>
                         </td>
 
                         {/* Governance */}
@@ -1192,9 +1351,9 @@ export function AdminUsersActivityPanel() {
                                 type="button"
                                 onClick={() => openBlockModal('ORGANIZATIONS', [o.id], [o.name])}
                                 className="rounded border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2 py-0.5 text-[11px] transition"
-                                title="Block organization and pause RFQs"
+                                title="Suspend organization"
                               >
-                                Block
+                                Suspend
                               </button>
                             )}
 

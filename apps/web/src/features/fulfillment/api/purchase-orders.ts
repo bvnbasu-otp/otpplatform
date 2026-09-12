@@ -309,7 +309,10 @@ export async function fetchPurchaseOrders(): Promise<
 export async function fetchPurchaseOrder(poId: string): Promise<
   { ok: true; order: PurchaseOrderSummary } | { ok: false; error: string }
 > {
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(poId);
+  const cleanId = (poId || '').trim();
+  if (!cleanId) return { ok: false, error: 'Purchase order identifier is required' };
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
 
   let primaryQuery = supabase
     .from('purchase_orders')
@@ -368,9 +371,9 @@ export async function fetchPurchaseOrder(poId: string): Promise<
     `);
 
   if (isUuid) {
-    primaryQuery = primaryQuery.or(`id.eq.${poId},rfq_id.eq.${poId}`);
+    primaryQuery = primaryQuery.or(`id.eq.${cleanId},rfq_id.eq.${cleanId}`);
   } else {
-    primaryQuery = primaryQuery.or(`id.eq.${poId},po_number.eq.${poId}`);
+    primaryQuery = primaryQuery.eq('po_number', cleanId);
   }
 
   const { data, error } = await primaryQuery.order('created_at', { ascending: false }).limit(1).maybeSingle();
@@ -382,9 +385,9 @@ export async function fetchPurchaseOrder(poId: string): Promise<
   // Fallback: flat select with progressive enrichment
   let fallbackQuery = supabase.from('purchase_orders').select('*');
   if (isUuid) {
-    fallbackQuery = fallbackQuery.or(`id.eq.${poId},rfq_id.eq.${poId}`);
+    fallbackQuery = fallbackQuery.or(`id.eq.${cleanId},rfq_id.eq.${cleanId}`);
   } else {
-    fallbackQuery = fallbackQuery.or(`id.eq.${poId},po_number.eq.${poId}`);
+    fallbackQuery = fallbackQuery.eq('po_number', cleanId);
   }
 
   const { data: rawData, error: rawError } = await fallbackQuery
@@ -438,6 +441,10 @@ export async function updatePurchaseOrderStatus(
   poId: string,
   status: PurchaseOrderStatus,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const cleanId = (poId || '').trim();
+  if (!cleanId) return { ok: false, error: 'Purchase order identifier is required' };
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+
   const patch: Record<string, unknown> = {
     status,
     updated_at: new Date().toISOString(),
@@ -445,7 +452,8 @@ export async function updatePurchaseOrderStatus(
   if (status === 'ISSUED') patch.issued_at = new Date().toISOString();
   if (status === 'ACCEPTED') patch.acknowledged_at = new Date().toISOString();
 
-  const { error } = await supabase.from('purchase_orders').update(patch).eq('id', poId);
+  const query = supabase.from('purchase_orders').update(patch);
+  const { error } = isUuid ? await query.eq('id', cleanId) : await query.eq('po_number', cleanId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
@@ -453,10 +461,15 @@ export async function updatePurchaseOrderStatus(
 export async function fetchPurchaseOrderByRfq(rfqId: string): Promise<
   { ok: true; poId: string | null } | { ok: false; error: string }
 > {
+  const cleanId = (rfqId || '').trim();
+  if (!cleanId) return { ok: true, poId: null };
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+  if (!isUuid) return { ok: true, poId: null };
+
   const { data, error } = await supabase
     .from('purchase_orders')
     .select('id')
-    .eq('rfq_id', rfqId)
+    .eq('rfq_id', cleanId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();

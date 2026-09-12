@@ -238,6 +238,7 @@ export interface AdminUserItem {
   blockedReason?: string | null;
   createdAt: string;
   updatedAt?: string | null;
+  lastSeenAt?: string | null;
 }
 
 export interface AdminOrganizationItem {
@@ -256,6 +257,7 @@ export interface AdminOrganizationItem {
   created_at: string;
   member_count: number;
   active_orders_count: number;
+  last_seen_at?: string | null;
 }
 
 export interface AdminUsersAndOrgsResponse {
@@ -285,6 +287,7 @@ export interface AdminUserActivity {
   status?: AccountLifecycleStatus;
   blockedReason?: string | null;
   lastSignInAt: string | null;
+  lastSeenAt?: string | null;
   createdAt: string;
   gstVerified?: boolean;
 }

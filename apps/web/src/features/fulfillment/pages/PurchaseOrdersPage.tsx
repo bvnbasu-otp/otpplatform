@@ -24,20 +24,20 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
   const [perspective, setPerspective] = useState<UserReportingRole>(initialRole);
   const [orders, setOrders] = useState<PurchaseOrderSummary[]>([]);
   
-  const initialViewParam = searchParams.get('view')?.toUpperCase();
-  const initialTabParam = searchParams.get('tab')?.toUpperCase();
+  const viewParam = searchParams.get('view')?.toUpperCase();
+  const tabParam = searchParams.get('tab')?.toUpperCase();
 
-  const [activeView, setActiveView] = useState<'ORDERS' | 'REPORTS'>(
-    initialViewParam === 'ORDERS' ? 'ORDERS' : 'REPORTS'
-  );
-  const [filterTab, setFilterTab] = useState<'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED'>(
-    initialTabParam === 'ACTIVE' ||
-    initialTabParam === 'COMPLETED' ||
-    initialTabParam === 'CANCELLED' ||
-    initialTabParam === 'DISPUTED'
-      ? (initialTabParam as 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED')
-      : 'ALL'
-  );
+  // Default to 'ORDERS' (Ledger) when navigating to /purchase-orders, unless 'REPORTS' is explicitly requested
+  const activeView: 'ORDERS' | 'REPORTS' = viewParam === 'REPORTS' ? 'REPORTS' : 'ORDERS';
+
+  const filterTab: 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED' =
+    tabParam === 'ACTIVE' ||
+    tabParam === 'COMPLETED' ||
+    tabParam === 'CANCELLED' ||
+    tabParam === 'DISPUTED'
+      ? tabParam
+      : 'ALL';
+
   const [activeMetric, setActiveMetric] = useState<DrillDownMetric>(null);
   const [periodType, setPeriodType] = useState<PeriodType>('ALL');
   const [customStartDate, setCustomStartDate] = useState<string>(() => {
@@ -57,13 +57,6 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
   useEffect(() => {
     setPerspective(initialRole);
   }, [initialRole]);
-
-  // Sync URL view param if updated externally
-  useEffect(() => {
-    const v = searchParams.get('view')?.toUpperCase();
-    if (v === 'ORDERS' && activeView !== 'ORDERS') setActiveView('ORDERS');
-    else if (v === 'REPORTS' && activeView !== 'REPORTS') setActiveView('REPORTS');
-  }, [searchParams, activeView]);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -90,18 +83,27 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
   }, [load]);
 
   const handleViewChange = (view: 'ORDERS' | 'REPORTS') => {
-    setActiveView(view);
-    const next = new URLSearchParams(searchParams);
-    next.set('view', view.toLowerCase());
-    setSearchParams(next, { replace: true });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (view === 'REPORTS') {
+        next.set('view', 'reports');
+      } else {
+        next.delete('view');
+      }
+      return next;
+    }, { replace: true });
   };
 
   const handleTabChange = (tab: 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED') => {
-    setFilterTab(tab);
-    const next = new URLSearchParams(searchParams);
-    if (tab === 'ALL') next.delete('tab');
-    else next.set('tab', tab.toLowerCase());
-    setSearchParams(next, { replace: true });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tab === 'ALL') {
+        next.delete('tab');
+      } else {
+        next.set('tab', tab.toLowerCase());
+      }
+      return next;
+    }, { replace: true });
   };
 
   // Calculate Active Date Range

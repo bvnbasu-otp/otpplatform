@@ -14,3 +14,4 @@ export { AdminQueryTerminal } from './components/AdminQueryTerminal';
 export { AdminSupportTicketsPanel } from './components/AdminSupportTicketsPanel';
 export * from './types/admin';
 export * from './api/admin-ops';
+export * from './utils/presence';

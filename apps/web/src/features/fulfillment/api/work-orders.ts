@@ -54,13 +54,27 @@ export async function fetchWorkOrderByPo(poId: string): Promise<
   const cleanId = (poId || '').trim();
   if (!cleanId) return { ok: true, workOrder: null };
 
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+  let resolvedPoId = cleanId;
+
+  if (!isUuid) {
+    const { data: poData } = await supabase
+      .from('purchase_orders')
+      .select('id')
+      .eq('po_number', cleanId)
+      .maybeSingle();
+
+    if (!poData?.id) return { ok: true, workOrder: null };
+    resolvedPoId = poData.id;
+  }
+
   try {
     const { data, error } = await supabase
       .from('work_orders')
       .select(
         'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
       )
-      .eq('purchase_order_id', cleanId)
+      .eq('purchase_order_id', resolvedPoId)
       .maybeSingle();
 
     if (!error && data) {
@@ -71,7 +85,7 @@ export async function fetchWorkOrderByPo(poId: string): Promise<
     const { data: rawData, error: rawError } = await supabase
       .from('work_orders')
       .select('*')
-      .eq('purchase_order_id', cleanId)
+      .eq('purchase_order_id', resolvedPoId)
       .maybeSingle();
 
     if (rawError) return { ok: false, error: rawError.message };
@@ -103,6 +117,9 @@ export async function fetchWorkOrder(woId: string): Promise<
 > {
   const cleanId = (woId || '').trim();
   if (!cleanId) return { ok: false, error: 'Work order identifier required' };
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+  if (!isUuid) return { ok: false, error: 'Work order not found' };
 
   try {
     const { data, error } = await supabase

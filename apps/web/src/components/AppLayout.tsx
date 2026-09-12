@@ -7,6 +7,7 @@ import { OtpLogo } from '@/components/ui/OtpLogo';
 import { useMaintenance } from '@/features/maintenance';
 import { OrgContextSwitcher } from '@/features/org';
 import { ThemeToggle } from '@/features/theme';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PRODUCT_FULL_NAME, PRODUCT_NAME } from '@/lib/brand';
 
 const PUBLIC_PRIMARY_LINKS = [
@@ -225,7 +226,9 @@ export function AppLayout() {
       )}
 
       <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       <footer className="shrink-0 border-t bg-card/80 backdrop-blur-xs py-1 text-[10px] text-muted-foreground" data-testid="app-footer">

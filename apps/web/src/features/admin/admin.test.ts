@@ -433,4 +433,30 @@ describe('Super Admin & Ops Console Data Layer', () => {
     expect(normalizedOrg.entity_type).toBe('BUYER_ORG');
     expect(normalizedOrg.blocked_reason).toBe('Payment Dispute / Fraud Risk');
   });
+
+  it('correctly maps and preserves lastSeenAt timestamp for user and organization presence tracking', () => {
+    const rawUserWithSeenAt = {
+      id: 'usr-seen-1',
+      email: 'active.buyer@test.com',
+      full_name: 'Active Buyer',
+      status: 'ACTIVE',
+      created_at: '2026-09-01T08:00:00.000Z',
+      last_seen_at: '2026-09-12T10:00:00.000Z',
+      side: 'BUYER',
+    };
+
+    const normalizedUser = normalizeAdminUserItem(rawUserWithSeenAt);
+    expect(normalizedUser.lastSeenAt).toBe('2026-09-12T10:00:00.000Z');
+
+    const rawOrgWithSeenAt = {
+      id: 'org-seen-1',
+      name: 'Active Supplier Corp',
+      entity_type: 'SUPPLIER',
+      last_seen_at: '2026-09-12T09:55:00.000Z',
+      created_at: '2026-08-01T00:00:00.000Z',
+    };
+
+    const normalizedOrg = normalizeAdminOrgItem(rawOrgWithSeenAt);
+    expect(normalizedOrg.last_seen_at).toBe('2026-09-12T09:55:00.000Z');
+  });
 });

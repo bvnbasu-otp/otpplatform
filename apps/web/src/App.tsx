@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-
 import { AuthProvider, RequireAuth, ProtectedRoute } from '@/features/auth';
 import { LegalPage, LoginPage, ResetPasswordPage, SignupPage } from '@/features/portal';
 import { AboutPage, FaqPage, LandingPage, PricingPage } from '@/features/site';
-import { RequireRole, RoleProvider } from '@/features/roles';
+import { RequireRole, RoleProvider, useRoleContext } from '@/features/roles';
 import { QuickQuotePage } from '@/features/quick-quote';
 import { RfqIdentityProtectedComparisonPage } from '@/features/rfq';
 import { SupplierRfqPage } from '@/features/supplier/pages/SupplierRfqPage';
@@ -27,6 +27,7 @@ import { DemoModeProvider } from '@/features/demo/DemoModeProvider';
 import { DemoDashboardPage } from '@/features/demo/pages/DemoDashboardPage';
 import { PilotProvider } from '@/features/pilots/PilotProvider';
 import { AppLayout } from '@/components/AppLayout';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { NotificationsPage } from '@/features/notifications';
 import { AdminDashboardPage, AdminBuyerDiagnosticsPage, AdminSellerDiagnosticsPage } from '@/features/admin';
 import { OrgMembersPage } from '@/features/org';
@@ -42,56 +43,126 @@ import {
 } from '@/features/maintenance';
 import { ThemeProvider, ThemePersonaSync } from '@/features/theme';
 
+function sanitizeRouteParam(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const decoded = decodeURIComponent(raw).trim();
+  if (
+    !decoded ||
+    decoded === ':poId' ||
+    decoded === ':woId' ||
+    decoded === ':rfqId' ||
+    decoded === ':requirementId' ||
+    decoded === 'undefined' ||
+    decoded === 'null' ||
+    decoded === '[id]'
+  ) {
+    return null;
+  }
+  return decoded;
+}
+
+function PoRouteErrorFallback({ role }: { role: 'buyer' | 'supplier' }) {
+  const listUrl = role === 'supplier' ? '/supplier/purchase-orders' : '/purchase-orders';
+  return (
+    <div className="p-6 max-w-xl mx-auto my-12 text-center rounded-xl border border-border bg-card shadow-sm space-y-4">
+      <div className="text-4xl">⚠️</div>
+      <h2 className="text-lg font-bold text-foreground">Order Route Error</h2>
+      <p className="text-sm text-muted-foreground">
+        An unexpected error occurred while loading this order. You can return to the orders ledger or refresh the view.
+      </p>
+      <div className="flex justify-center gap-3 pt-2">
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="rounded-md bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+        >
+          ↻ Reload Page
+        </button>
+        <a
+          href={listUrl}
+          className="rounded-md border border-border bg-muted/40 px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition inline-flex items-center"
+        >
+          ← Back to Orders &amp; Reports
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function RfqIdentityProtectedComparisonRoute() {
   const { rfqId } = useParams<{ rfqId: string }>();
-  if (!rfqId) return <Navigate to="/dashboard" replace />;
-  const pilot = getPilotByRfqId(rfqId);
+  const sanitized = sanitizeRouteParam(rfqId);
+  if (!sanitized) return <Navigate to="/dashboard" replace />;
+  const pilot = getPilotByRfqId(sanitized);
   const title = pilot
     ? `${pilot.requirementTitle} — RFQ`
     : 'RFQ — Identity-Protected Evaluation';
-  return <RfqIdentityProtectedComparisonPage rfqId={rfqId} rfqTitle={title} />;
+  return <RfqIdentityProtectedComparisonPage rfqId={sanitized} rfqTitle={title} />;
 }
 
 function SupplierRfqRoute() {
   const { rfqId } = useParams<{ rfqId: string }>();
-  if (!rfqId) return <Navigate to="/dashboard" replace />;
-  return <SupplierRfqPage rfqId={rfqId} />;
+  const sanitized = sanitizeRouteParam(rfqId);
+  if (!sanitized) return <Navigate to="/dashboard" replace />;
+  return <SupplierRfqPage rfqId={sanitized} />;
 }
 
 function CommitteeVoteRoute() {
   const { rfqId } = useParams<{ rfqId: string }>();
-  if (!rfqId) return <Navigate to="/dashboard" replace />;
-  return <CommitteeVotePage rfqId={rfqId} />;
+  const sanitized = sanitizeRouteParam(rfqId);
+  if (!sanitized) return <Navigate to="/dashboard" replace />;
+  return <CommitteeVotePage rfqId={sanitized} />;
 }
 
 function AwardRoute() {
   const { rfqId } = useParams<{ rfqId: string }>();
-  if (!rfqId) return <Navigate to="/dashboard" replace />;
-  return <AwardPage rfqId={rfqId} />;
+  const sanitized = sanitizeRouteParam(rfqId);
+  if (!sanitized) return <Navigate to="/dashboard" replace />;
+  return <AwardPage rfqId={sanitized} />;
 }
 
 function RevealRoute() {
   const { rfqId } = useParams<{ rfqId: string }>();
-  if (!rfqId) return <Navigate to="/dashboard" replace />;
-  return <SupplierRevealPage rfqId={rfqId} />;
+  const sanitized = sanitizeRouteParam(rfqId);
+  if (!sanitized) return <Navigate to="/dashboard" replace />;
+  return <SupplierRevealPage rfqId={sanitized} />;
 }
 
 function BuyerPoDetailRoute() {
   const { poId } = useParams<{ poId: string }>();
-  if (!poId) return <Navigate to="/purchase-orders" replace />;
-  return <PurchaseOrderDetailPage poId={poId} role="buyer" />;
+  const sanitized = sanitizeRouteParam(poId);
+  const { context } = useRoleContext();
+  const effectiveRole = context.side === 'SUPPLIER' ? 'supplier' : 'buyer';
+  if (!sanitized) return <Navigate to={effectiveRole === 'supplier' ? '/supplier/purchase-orders' : '/purchase-orders'} replace />;
+  return (
+    <ErrorBoundary fallback={<PoRouteErrorFallback role={effectiveRole} />}>
+      <PurchaseOrderDetailPage poId={sanitized} role={effectiveRole} />
+    </ErrorBoundary>
+  );
 }
 
 function SupplierPoDetailRoute() {
   const { poId } = useParams<{ poId: string }>();
-  if (!poId) return <Navigate to="/supplier/purchase-orders" replace />;
-  return <PurchaseOrderDetailPage poId={poId} role="supplier" />;
+  const sanitized = sanitizeRouteParam(poId);
+  const { context } = useRoleContext();
+  const effectiveRole = context.side === 'BUYER' ? 'buyer' : 'supplier';
+  if (!sanitized) return <Navigate to={effectiveRole === 'buyer' ? '/purchase-orders' : '/supplier/purchase-orders'} replace />;
+  return (
+    <ErrorBoundary fallback={<PoRouteErrorFallback role={effectiveRole} />}>
+      <PurchaseOrderDetailPage poId={sanitized} role={effectiveRole} />
+    </ErrorBoundary>
+  );
 }
 
 function SupplierWoRoute() {
   const { woId } = useParams<{ woId: string }>();
-  if (!woId) return <Navigate to="/supplier/purchase-orders" replace />;
-  return <SupplierWorkOrderPage workOrderId={woId} />;
+  const sanitized = sanitizeRouteParam(woId);
+  if (!sanitized) return <Navigate to="/supplier/purchase-orders" replace />;
+  return (
+    <ErrorBoundary fallback={<PoRouteErrorFallback role="supplier" />}>
+      <SupplierWorkOrderPage workOrderId={sanitized} />
+    </ErrorBoundary>
+  );
 }
 
 function ClarificationRoute() {
