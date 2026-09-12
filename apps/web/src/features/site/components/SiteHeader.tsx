@@ -52,7 +52,7 @@ export function SiteHeader() {
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : 'U';
 
   return (
-    <header className="shrink-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 max-h-[52px] h-[52px]">
+    <header className="shrink-0 z-40 border-b bg-card max-h-[52px] h-[52px]">
       <div className="mx-auto flex max-w-7xl h-full items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4">
         {/* Brand Logo & Desktop Navigation */}
         <div className="flex items-center gap-3 shrink-0">

@@ -44,7 +44,7 @@ export function AppLayout() {
   return (
     <div className="h-screen max-h-screen h-dvh max-h-dvh flex flex-col bg-background overflow-hidden">
       {/* Top Mobile & Desktop Navigation Bar (Strict Max-Height: 52px) */}
-      <header className="shrink-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 max-h-[52px] h-[52px]">
+      <header className="shrink-0 z-40 border-b bg-card max-h-[52px] h-[52px]">
         <div className="mx-auto flex max-w-7xl h-full items-center justify-between gap-x-2 sm:gap-x-3 px-3">
           {/* Brand Logo & Side Identity Tag */}
           <div className="flex items-center gap-1.5 shrink-0">

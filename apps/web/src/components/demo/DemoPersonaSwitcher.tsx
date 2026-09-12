@@ -143,9 +143,9 @@ export function DemoPersonaSwitcher() {
       {/* Popover / Dropdown Menu */}
       {isOpen && (
         <>
-          {/* Backdrop for Mobile Screen Dimming */}
+          {/* Backdrop Overlay to ensure 100% solid contrast without background bleed-through */}
           <div
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs sm:hidden"
+            className="fixed inset-0 z-40 bg-black/30 dark:bg-black/60"
             onClick={() => setIsOpen(false)}
             aria-hidden="true"
           />
@@ -153,11 +153,11 @@ export function DemoPersonaSwitcher() {
           <div
             role="dialog"
             aria-label="One-Tap Demo Switcher"
-            className="fixed inset-x-3 top-16 z-50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-88 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xl ring-1 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-150"
+            className="fixed inset-x-3 top-16 z-50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-88 max-w-[calc(100vw-1.5rem)] rounded-xl border border-border bg-card text-card-foreground p-3 shadow-2xl ring-1 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-150"
             data-testid="demo-persona-dropdown"
           >
             {/* Popover Header */}
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 px-1">
+            <div className="flex items-center justify-between border-b border-border pb-2 px-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm">🎭</span>
                 <p className="text-xs font-black text-foreground">One-Tap Demo Switcher</p>
@@ -176,13 +176,13 @@ export function DemoPersonaSwitcher() {
                     key={p.id}
                     type="button"
                     onClick={() => void handleSelectPersona(p)}
-                    className={`w-full rounded-xl border p-2.5 text-left transition flex items-start gap-2.5 ${
+                    className={`w-full rounded-lg border p-2.5 text-left transition flex items-start gap-2.5 ${
                       isCurrent
-                        ? 'border-primary bg-primary/10 ring-1 ring-primary/40 shadow-xs'
-                        : 'border-slate-200/80 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
+                        ? 'border-primary bg-primary/10 ring-1 ring-primary shadow-xs'
+                        : 'border-border bg-background hover:bg-muted text-foreground shadow-2xs'
                     }`}
                   >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-slate-700 text-base shadow-2xs border border-slate-200 dark:border-slate-600">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-base shadow-2xs border border-border">
                       {p.icon}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -207,7 +207,7 @@ export function DemoPersonaSwitcher() {
             </div>
 
             {/* Popover Footer */}
-            <div className="mt-2.5 -mx-3 -mb-3 rounded-b-2xl border-t border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-800/60 px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground">
+            <div className="mt-2.5 -mx-3 -mb-3 rounded-b-xl border-t border-border bg-muted/60 px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground">
               <span>Instant 1-tap sign-in with full test datasets</span>
               <button
                 type="button"
