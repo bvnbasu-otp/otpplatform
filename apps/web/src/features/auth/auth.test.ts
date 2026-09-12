@@ -38,27 +38,40 @@ describe('Auth Feature & Portal Role Resolution', () => {
   });
 
   it('resolves portal role as supplier when linked to supplier_users', async () => {
-    const mockFrom = vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue({ data: [{ id: 'su-1' }] }),
+    const mockFrom = vi.fn().mockImplementation((table: string) => {
+      if (table === 'supplier_users') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue({ data: [{ id: 'su-1' }] }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'su-1' } }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({ data: [] }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+          }),
         }),
-      }),
+      };
     });
-    vi.mocked(supabase.from).mockImplementation(mockFrom);
+    vi.mocked(supabase.from).mockImplementation(mockFrom as any);
 
     const role = await resolvePortalRole('prof-supp', false, 'vendor@test.com');
     expect(role).toBe('supplier');
   });
 
   it('resolves portal role as buyer when linked to organization_members', async () => {
-    let callCount = 0;
     const mockFrom = vi.fn().mockImplementation((table: string) => {
       if (table === 'supplier_users') {
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               limit: vi.fn().mockResolvedValue({ data: [] }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: null }),
             }),
           }),
         };
@@ -68,11 +81,19 @@ describe('Auth Feature & Portal Role Resolution', () => {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               limit: vi.fn().mockResolvedValue({ data: [{ id: 'om-1' }] }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'om-1' } }),
             }),
           }),
         };
       }
-      return { select: vi.fn() };
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({ data: [] }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+          }),
+        }),
+      };
     });
     vi.mocked(supabase.from).mockImplementation(mockFrom as any);
 
@@ -85,6 +106,7 @@ describe('Auth Feature & Portal Role Resolution', () => {
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           limit: vi.fn().mockResolvedValue({ data: [] }),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null }),
         }),
       }),
     }));

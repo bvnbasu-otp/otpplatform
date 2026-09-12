@@ -78,45 +78,61 @@ export async function resolvePortalRole(
 ): Promise<PortalRole> {
   if (isPlatformAdmin || isSuperAdminEmail(email)) return 'admin';
 
-  // 1. Check supplier_users by profileId
-  const { data: supplierRows } = await supabase
-    .from('supplier_users')
-    .select('id, supplier_id')
-    .eq('profile_id', profileId)
-    .limit(1);
+  try {
+    // 1. Check supplier_users by profileId
+    const { data: supplierRows } = await supabase
+      .from('supplier_users')
+      .select('id, supplier_id')
+      .eq('profile_id', profileId)
+      .limit(1);
 
-  if (supplierRows && supplierRows.length > 0) return 'supplier';
+    if (supplierRows && supplierRows.length > 0) return 'supplier';
+  } catch {
+    // Fall through to next check
+  }
 
   // 2. Check suppliers table directly by contact_email
   if (email) {
-    const { data: directSuppliers } = await supabase
-      .from('suppliers')
-      .select('id')
-      .eq('contact_email', email)
-      .limit(1);
+    try {
+      const { data: directSuppliers } = await supabase
+        .from('suppliers')
+        .select('id')
+        .eq('contact_email', email)
+        .limit(1);
 
-    if (directSuppliers && directSuppliers.length > 0) return 'supplier';
+      if (directSuppliers && directSuppliers.length > 0) return 'supplier';
+    } catch {
+      // Fall through to next check
+    }
   }
 
   // 3. Check profile role code
-  const { data: profileRow } = await supabase
-    .from('profiles')
-    .select('active_role_code')
-    .eq('id', profileId)
-    .maybeSingle();
+  try {
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('active_role_code')
+      .eq('id', profileId)
+      .maybeSingle();
 
-  if (profileRow?.active_role_code && profileRow.active_role_code.startsWith('SUPPLIER')) {
-    return 'supplier';
+    if (profileRow?.active_role_code && profileRow.active_role_code.startsWith('SUPPLIER')) {
+      return 'supplier';
+    }
+  } catch {
+    // Fall through to next check
   }
 
   // 4. Check organization members for buyer
-  const { data: orgRows } = await supabase
-    .from('organization_members')
-    .select('id')
-    .eq('profile_id', profileId)
-    .limit(1);
+  try {
+    const { data: orgRows } = await supabase
+      .from('organization_members')
+      .select('id')
+      .eq('profile_id', profileId)
+      .limit(1);
 
-  if (orgRows && orgRows.length > 0) return 'buyer';
+    if (orgRows && orgRows.length > 0) return 'buyer';
+  } catch {
+    // Fall through to next check
+  }
 
   // 5. Heuristic check on email domain / prefix for demo supplier accounts
   if (email) {
