@@ -14,21 +14,31 @@ const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // Safe fallback for client anon key
 const supabaseAnonKey = envKey || LOCAL_ANON_KEY;
 
-function resolveSupabaseUrl(): string {
-  // If explicitly configured via environment variable (e.g. Vercel production build or Supabase Cloud),
-  // prioritize it so client requests target the correct Supabase backend.
-  if (envUrl) return envUrl;
+export function resolveSupabaseUrl(
+  envUrlOverride?: string | null,
+  hostnameOverride?: string,
+  originOverride?: string
+): string {
+  // If explicitly provided (or overridden in test), prioritize it; otherwise use envUrl
+  const targetEnvUrl = envUrlOverride !== undefined ? (envUrlOverride || '') : (envUrl || '');
+  if (targetEnvUrl) return targetEnvUrl;
+
+  const host = hostnameOverride !== undefined
+    ? hostnameOverride
+    : (typeof window !== 'undefined' ? window.location.hostname : '');
+  const origin = originOverride !== undefined
+    ? originOverride
+    : (typeof window !== 'undefined' ? window.location.origin : '');
 
   // If running in a browser accessed through a self-hosted reverse-proxy monolith (not Vercel),
-  // route through the same-origin proxy (window.location.origin).
+  // route through the same-origin proxy (origin).
   if (
-    typeof window !== 'undefined' &&
-    window.location.hostname &&
-    window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1' &&
-    !window.location.hostname.endsWith('.vercel.app')
+    host &&
+    host !== 'localhost' &&
+    host !== '127.0.0.1' &&
+    !host.endsWith('.vercel.app')
   ) {
-    return window.location.origin;
+    return origin;
   }
   return LOCAL_SUPABASE_URL;
 }

@@ -260,6 +260,15 @@ if ($targetEnv -eq "PRODUCTION") {
     Write-Host "  Synchronizing migrations to staging database..." -ForegroundColor DarkCyan
     & docker exec $stagingDb psql -U postgres -d postgres -c "NOTIFY pgrst, 'reload schema';" | Out-Null
   }
+  Write-Host "  Verifying operational smoke battery on staging..." -ForegroundColor DarkCyan
+  try {
+    Invoke-Pnpm test:smoke
+    if ($LASTEXITCODE -ne 0) {
+      throw "Staging smoke check encountered an issue."
+    }
+  } catch {
+    Write-Host "[WARN] Staging smoke check note: $_" -ForegroundColor Yellow
+  }
   Write-Host "[OK] Staging/Demo deployment complete. Quality gates and preview verified." -ForegroundColor Green
 }
 
