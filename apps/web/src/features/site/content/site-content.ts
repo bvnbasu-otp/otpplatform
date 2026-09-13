@@ -26,31 +26,21 @@ import { PRODUCT_NAME } from '@/lib/brand';
  */
 export const HERO = {
   eyebrow: 'OTP — Open Trade & Procurement',
-  title: 'Procure Smarter. Compare Without Bias. Award with Confidence.',
-  tagline: 'The identity-protected sourcing platform for Indian MSMEs, Communities & Enterprises.',
+  title: 'Procure smarter: get competitive quotes without revealing identities.',
+  tagline: 'Identity-protected competitive sourcing. Tell us what you need. OTP helps you discover suppliers, compare offers and make a decision.',
   body:
-    'A transparent procurement platform where buyers and suppliers can compete fairly '
-    + 'while identities remain protected until award.',
-  /** The first interaction, kept to one question. */
+    'A transparent platform where buyers and suppliers compete on price, quality, and turnaround while identities stay protected until award.',
   prompt: 'What do you need to procure today?',
   promptExample: 'e.g. 10 HP borewell motor winding in Coimbatore within 3 days',
 };
 
-/**
- * The one idea a first-time visitor has to leave with.
- *
- * The caveat is not hedging. A sourcing platform that implies it finds the
- * cheapest price has promised the one thing weighted evaluation exists to avoid
- * promising.
- */
 export const CORE_MESSAGE = {
   headline: 'Don’t choose a supplier. Let competition help you choose.',
   definition:
-    'An identity-protected competitive sourcing and procurement orchestration platform.',
+    'An identity-protected competitive sourcing and procurement platform.',
   caveat:
     'The lowest quote isn’t necessarily the best quote. '
-    + `${PRODUCT_NAME} does not promise the cheapest price — it makes the comparison `
-    + 'consistent, and is designed to reduce identity-driven bias.',
+    + `${PRODUCT_NAME} standardizes the comparison across price, delivery speed, and warranty terms to reduce identity-driven bias by design.`,
 };
 
 export interface Audience {

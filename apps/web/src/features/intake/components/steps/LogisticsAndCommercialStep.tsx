@@ -23,6 +23,17 @@ export interface LogisticsAndCommercialStepProps {
   onSubmit: (patch: DraftPatch) => void;
 }
 
+const POPULAR_CITIES = [
+  'Bengaluru',
+  'Coimbatore',
+  'Chennai',
+  'Mumbai',
+  'Pune',
+  'Hyderabad',
+  'Delhi NCR',
+  'Ahmedabad',
+];
+
 const TIMING_OPTIONS = [
   { value: 'IMMEDIATE', label: 'Immediately', description: 'Emergency / urgent turnaround' },
   { value: 'WITHIN_DAYS', label: 'Within Days', description: 'Deliver within a target duration' },
@@ -198,14 +209,33 @@ export function LogisticsAndCommercialStep({
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Delivery Town / Service City" required>
             {({ id, describedBy, invalid }) => (
-              <Input
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                placeholder="e.g. Bengaluru, Coimbatore, Chennai"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
+              <div className="space-y-1.5">
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  placeholder="e.g. Bengaluru, Coimbatore, Chennai"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-1 items-center pt-0.5">
+                  <span className="text-[10px] text-muted-foreground font-medium">Quick:</span>
+                  {POPULAR_CITIES.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCity(c)}
+                      className={`rounded-full border px-2 py-0.5 text-[10px] transition ${
+                        city.toLowerCase() === c.toLowerCase()
+                          ? 'border-primary bg-primary/10 text-primary font-bold'
+                          : 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </Field>
 

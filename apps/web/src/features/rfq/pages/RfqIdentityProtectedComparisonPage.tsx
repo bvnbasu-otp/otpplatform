@@ -252,6 +252,7 @@ export function RfqIdentityProtectedComparisonPage({
             isLoading={isLoading}
             error={error}
             rfqStatus={rfqStatus}
+            onSelectForAward={(q) => navigate(`/rfq/${rfqId}/committee?quote=${q.quoteId}`)}
           />
         </div>
 

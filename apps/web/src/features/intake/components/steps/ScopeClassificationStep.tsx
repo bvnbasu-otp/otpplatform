@@ -29,10 +29,10 @@ export interface ScopeClassificationStepProps {
 }
 
 const EXAMPLES = [
-  'Require 12.5 HP submersible borewell motor rewinding in Bengaluru 560001, needed within 5 days with 6 months warranty.',
-  'Supply of 500 pieces EN8 CNC turned shaft 25mm diameter tolerance ±0.05mm, deliver to Coimbatore 641021 in 14 days with 12 months warranty.',
-  'Need 2000 kg of 40s combed compact cotton yarn delivered to Tiruppur 641602 within 7 days with test certificate and 3 months warranty.',
-  'Supply and installation of 8 IP CCTV cameras 4MP with 30-day NVR in Chennai 600028 needed in 10 days with 24 months warranty.',
+  { label: '⚡ Motor Rewind', text: 'Require 12.5 HP submersible borewell motor rewinding in Bengaluru 560001, needed within 5 days with 6 months warranty.' },
+  { label: '⚙️ CNC Shafts', text: 'Supply of 500 pieces EN8 CNC turned shaft 25mm diameter tolerance ±0.05mm, deliver to Coimbatore 641021 in 14 days with 12 months warranty.' },
+  { label: '🧵 Cotton Yarn', text: 'Need 2000 kg of 40s combed compact cotton yarn delivered to Tiruppur 641602 within 7 days with test certificate and 3 months warranty.' },
+  { label: '📹 CCTV System', text: 'Supply and installation of 8 IP CCTV cameras 4MP with 30-day NVR in Chennai 600028 needed in 10 days with 24 months warranty.' },
 ];
 
 export function ScopeClassificationStep({
@@ -206,18 +206,18 @@ export function ScopeClassificationStep({
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap gap-1.5 items-center">
-            <span className="text-[11px] font-medium text-muted-foreground">Quick examples:</span>
-            {EXAMPLES.map((example, i) => (
+            <span className="text-[11px] font-medium text-muted-foreground">Quick templates:</span>
+            {EXAMPLES.map((example) => (
               <button
-                key={example}
+                key={example.label}
                 type="button"
-                className="rounded border bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                className="rounded border bg-muted/30 px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted hover:border-primary/40 transition shadow-2xs"
                 onClick={() => {
-                  setText(example);
-                  void runParser(example);
+                  setText(example.text);
+                  void runParser(example.text);
                 }}
               >
-                Example {i + 1}
+                {example.label}
               </button>
             ))}
           </div>

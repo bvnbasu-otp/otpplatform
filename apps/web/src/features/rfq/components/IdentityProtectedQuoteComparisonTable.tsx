@@ -92,6 +92,7 @@ export function IdentityProtectedQuoteComparisonTable({
         {quotes.map((quote, idx) => {
           const isSelectedWinner = quote.status === 'SELECTED';
           const isLowest = quote.totalCost === lowestTotal;
+          const scoreOutOf10 = quote.evaluationScore != null ? (quote.evaluationScore / 10).toFixed(1) : null;
 
           return (
             <div
@@ -105,8 +106,18 @@ export function IdentityProtectedQuoteComparisonTable({
               }`}
               data-testid={`identity-protected-quote-card-${quote.anonymousLabel.replace(/\s+/g, '-')}`}
             >
+              {/* Top Banner: Protected Identity Status */}
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground pb-1.5 mb-1.5 border-b border-border/60">
+                <span className="flex items-center gap-1 font-semibold text-primary">
+                  <span>🔒</span> Identity Protected
+                </span>
+                <span className="text-[9px] text-muted-foreground">
+                  Unmasks after award
+                </span>
+              </div>
+
               {/* Header: Rank + Alias + GST Badge + Winner Status */}
-              <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b">
+              <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-black text-primary">
                     #{idx + 1}
@@ -129,28 +140,28 @@ export function IdentityProtectedQuoteComparisonTable({
                     🏆 Winner
                   </span>
                 ) : (
-                  <div className="text-right shrink-0">
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Score: </span>
-                    <span className="font-bold text-xs text-foreground tabular-nums bg-muted px-1.5 py-0.5 rounded">
-                      {formatScore(quote.evaluationScore)}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[10px] text-muted-foreground font-semibold">Score:</span>
+                    <span className="font-bold text-xs text-foreground tabular-nums bg-muted px-1.5 py-0.5 rounded border">
+                      {scoreOutOf10 ? `${scoreOutOf10}/10` : formatScore(quote.evaluationScore)}
                     </span>
                   </div>
                 )}
               </div>
 
               {/* Price Row: Total Cost Highlighted */}
-              <div className="flex items-baseline justify-between mb-2">
+              <div className="flex items-baseline justify-between mb-2 bg-muted/20 rounded-lg p-2 border border-border/40">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                  <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">
                     Total Quoted (incl. GST)
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-base font-extrabold text-foreground tabular-nums">
+                    <span className="text-lg font-extrabold text-foreground tabular-nums font-mono">
                       {formatInr(quote.totalCost)}
                     </span>
                     {isLowest && (
                       <span className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 px-1.5 py-0.2 text-[9px] font-bold">
-                        ⚡ Lowest (L1)
+                        ⚡ Lowest
                       </span>
                     )}
                   </div>
@@ -164,21 +175,21 @@ export function IdentityProtectedQuoteComparisonTable({
               {/* Grid: Delivery, Warranty, Rating, Reliability */}
               <div className="grid grid-cols-4 gap-1.5 rounded-lg bg-muted/40 p-2 text-center text-[10px] mb-2.5">
                 <div>
-                  <div className="text-muted-foreground font-semibold">Delivery</div>
+                  <div className="text-muted-foreground font-semibold">🚚 Delivery</div>
                   <div className="font-bold text-foreground mt-0.5">{quote.deliveryDays} Days</div>
                 </div>
                 <div>
-                  <div className="text-muted-foreground font-semibold">Warranty</div>
+                  <div className="text-muted-foreground font-semibold">🛡️ Warranty</div>
                   <div className="font-bold text-foreground mt-0.5">{quote.warrantyMonths} Mo</div>
                 </div>
                 <div>
-                  <div className="text-muted-foreground font-semibold">Rating</div>
+                  <div className="text-muted-foreground font-semibold">⭐ Rating</div>
                   <div className="font-bold text-foreground mt-0.5">
                     {formatBand(quote.supplierRatingAvg, (v) => `${v.toFixed(1)}★`)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-muted-foreground font-semibold">On-Time</div>
+                  <div className="text-muted-foreground font-semibold">🎯 On-Time</div>
                   <div className="font-bold text-foreground mt-0.5">
                     {formatBand(quote.pastPerformanceScore, (v) => `${v}%`)}
                   </div>

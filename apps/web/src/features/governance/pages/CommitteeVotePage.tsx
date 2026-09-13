@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { formatDateTimeIST } from '@/lib/date-utils';
 import { fetchCurrentProfile } from '@/features/auth/user-role';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
@@ -38,6 +38,9 @@ const VOTE_REASON_PRESETS = [
 ];
 
 export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
+  const [searchParams] = useSearchParams();
+  const urlQuoteId = searchParams.get('quote') || searchParams.get('quoteId');
+
   const [profileId, setProfileId] = useState<string | null>(null);
   const [status, setStatus] = useState<RfqGovernanceStatus | null>(null);
   const [coiList, setCoiList] = useState<CoiDeclaration[]>([]);
@@ -91,16 +94,17 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       
       if (mineRes.ok && mineRes.vote) {
         setMyVote(mineRes.vote);
-        setSelectedQuote(mineRes.vote.recommendedQuoteId ?? '');
+        setSelectedQuote(urlQuoteId || mineRes.vote.recommendedQuoteId || '');
       } else {
-        setSelectedQuote((prev) => prev || (fetchedQuotes.length === 1 ? fetchedQuotes[0]?.quoteId ?? '' : ''));
+        const initial = urlQuoteId || (fetchedQuotes.length === 1 ? fetchedQuotes[0]?.quoteId : '') || '';
+        setSelectedQuote((prev) => prev || initial);
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to load evaluation & voting room');
     } finally {
       setIsLoading(false);
     }
-  }, [rfqId]);
+  }, [rfqId, urlQuoteId]);
 
   useEffect(() => {
     void load();
@@ -110,6 +114,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
   const votingOpen = summary?.votingOpen ?? true;
   const liveVoteIds = currentVoteIds(votes);
   const hasReason = selectedReasons.length > 0 || Boolean(comment.trim());
+  const isSoloBuyer = myVote?.buyerType === 'INDIVIDUAL' || (summary?.assignedMembers != null && summary.assignedMembers <= 1);
 
   async function handleCastVote() {
     if (!selectedQuote || !profileId) return;
@@ -151,8 +156,8 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
 
     setSuccess(
       result.revised
-        ? 'Your evaluation vote has been updated. The previous vote remains in the audit log.'
-        : 'Evaluation vote successfully recorded!',
+        ? 'Your evaluation decision has been updated.'
+        : 'Evaluation decision successfully recorded!',
     );
     setComment('');
     setSelectedReasons([]);
@@ -167,7 +172,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       <ProcurementStageNavigator
         currentLinearStep={myVote ? 8 : 7}
         currentStage="EVALUATING"
-        orderTitle="Committee Voting Room & Cast Your Vote"
+        orderTitle={isSoloBuyer ? "Buyer Evaluation & Decision" : "Committee Voting Room & Cast Your Vote"}
         orderReference={`RFQ-${rfqId.slice(0, 8)}`}
         rfqId={rfqId}
         role="buyer"
@@ -183,23 +188,35 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
           </span>
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate">
-              {myVote ? 'Cast / Recast Your Vote (Ballot Active)' : 'Committee Voting Room & COI Clearance'}
+              {isSoloBuyer
+                ? (myVote ? 'Confirmed Winning Supplier (Selected)' : 'Direct Decision & Winning Supplier Selection')
+                : (myVote ? 'Cast / Recast Your Vote (Ballot Active)' : 'Committee Voting Room & COI Clearance')}
             </h1>
             <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
-              Sealed anonymous evaluation · Committee quorum tracking · Mandatory Conflict of Interest (COI) clearance
+              {isSoloBuyer
+                ? 'Single-approver governance · Select winning quote on evaluated merit and proceed to Award'
+                : 'Sealed anonymous evaluation · Committee quorum tracking · Mandatory Conflict of Interest (COI) clearance'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 border text-[11px]">
-            <span className="text-muted-foreground font-medium">Quorum:</span>
-            <span className={`font-bold ${summary?.quorumMet ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
-              {summary?.membersVoted ?? 0}/{summary?.assignedMembers ?? 0} {summary?.quorumMet ? '(Met)' : `(Need ${summary?.quorumRequired ?? 1})`}
-            </span>
-          </div>
+          {isSoloBuyer ? (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px]">
+              <span className="text-emerald-800 dark:text-emerald-300 font-bold">
+                {myVote ? '✓ Decision Recorded' : '⚡ Direct Authority'}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 border text-[11px]">
+              <span className="text-muted-foreground font-medium">Quorum:</span>
+              <span className={`font-bold ${summary?.quorumMet ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                {summary?.membersVoted ?? 0}/{summary?.assignedMembers ?? 0} {summary?.quorumMet ? '(Met)' : `(Need ${summary?.quorumRequired ?? 1})`}
+              </span>
+            </div>
+          )}
 
-          {(summary?.quorumMet || votes.length > 0) ? (
+          {(summary?.quorumMet || votes.length > 0 || myVote) ? (
             <Link
               to={`/rfq/${rfqId}/award`}
               className="inline-flex items-center gap-1 rounded bg-emerald-700 px-3 py-1 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 transition"
@@ -209,7 +226,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
             </Link>
           ) : (
             <span className="text-[10px] text-muted-foreground border rounded px-2 py-1 bg-muted/20">
-              🔒 Step 9: Awaiting Votes
+              🔒 Step 9: Awaiting Decision
             </span>
           )}
         </div>
@@ -242,6 +259,8 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                 const isSelected = selectedQuote === q.quoteId;
                 const isMyVotedQuote = myVote?.recommendedQuoteId === q.quoteId;
                 const isTopRecommended = idx === 0 || (quotes[0]?.evaluationScore != null && q.evaluationScore === quotes[0]?.evaluationScore);
+                const scoreDisplay = q.evaluationScore != null ? `${(q.evaluationScore / 10).toFixed(1)}/10` : null;
+
                 return (
                   <div
                     key={q.quoteId}
@@ -255,6 +274,17 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                         : 'bg-card hover:border-slate-400'
                     }`}
                   >
+                    <div className="flex items-center justify-between text-[9px] text-muted-foreground pb-1 mb-1 border-b">
+                      <span className="flex items-center gap-0.5 text-primary font-semibold">
+                        <span>🔒</span> Protected
+                      </span>
+                      {scoreDisplay && (
+                        <span className="font-bold text-foreground bg-muted px-1 rounded">
+                          ★ {scoreDisplay}
+                        </span>
+                      )}
+                    </div>
+
                     <div className="flex items-center justify-between gap-1">
                       <span className="font-bold text-foreground truncate text-xs">
                         {q.anonymousLabel}
@@ -270,16 +300,16 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                       ) : null}
                     </div>
 
-                    <div className="mt-1 space-y-0.5 text-[11px]">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Price:</span>
-                        <strong className="font-mono font-bold text-foreground">
+                    <div className="mt-1.5 space-y-1 text-[11px] bg-muted/20 p-1.5 rounded border border-border/40">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground text-[10px]">Price:</span>
+                        <strong className="font-mono font-bold text-foreground text-xs">
                           ₹{q.totalCost.toLocaleString('en-IN')}
                         </strong>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">TAT:</span>
-                        <span className="text-muted-foreground">{q.deliveryDays ? `${q.deliveryDays}d` : 'Std'}</span>
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="text-muted-foreground">Turnaround:</span>
+                        <span className="font-semibold text-foreground">{q.deliveryDays ? `🚚 ${q.deliveryDays} days` : 'Standard'}</span>
                       </div>
                     </div>
 
@@ -290,13 +320,13 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                           e.stopPropagation();
                           handleSelectQuote(q.quoteId);
                         }}
-                        className={`mt-1.5 w-full rounded py-0.5 text-[10px] font-bold transition ${
+                        className={`mt-1.5 w-full rounded py-1 text-[10px] font-bold transition ${
                           isSelected
                             ? 'bg-primary text-primary-foreground shadow-2xs'
                             : 'border border-primary/30 text-primary hover:bg-primary/10'
                         }`}
                       >
-                        {isSelected ? '✓ Selected' : 'Select'}
+                        {isSelected ? '✓ Selected Recommendation' : 'Select'}
                       </button>
                     )}
                   </div>
@@ -455,11 +485,23 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                       type="button"
                       disabled={busy || !selectedQuote || !coiConfirmed || !hasReason}
                       onClick={() => void handleCastVote()}
-                      className="rounded bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition"
+                      className="rounded bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition flex items-center gap-1.5"
                       data-testid="submit-vote-button"
                     >
-                      {busy ? 'Recording…' : myVote ? '✓ Confirm Revised Vote' : '🗳️ Submit Vote'}
+                      {busy
+                        ? 'Recording…'
+                        : isSoloBuyer
+                        ? (myVote ? '✓ Update Selected Supplier' : '✓ Confirm & Approve Winning Supplier →')
+                        : (myVote ? '✓ Confirm Revised Vote' : '🗳️ Submit Vote')}
                     </button>
+                    {myVote && (
+                      <Link
+                        to={`/rfq/${rfqId}/award`}
+                        className="rounded bg-emerald-700 px-3 py-2 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 transition flex items-center gap-1"
+                      >
+                        <span>Proceed to Award (Step 9) →</span>
+                      </Link>
+                    )}
                     {myVote && (
                       <button
                         type="button"

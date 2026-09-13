@@ -29,6 +29,7 @@ export function DashboardPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [requirements, setRequirements] = useState<OrganizationRequirementSummary[]>([]);
   const [selectedPhase, setSelectedPhase] = useState<MacroPhaseFilter>('ALL');
+  const [searchFilter, setSearchFilter] = useState('');
   const [selectedRequirement, setSelectedRequirement] = useState<OrganizationRequirementSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [expressQuery, setExpressQuery] = useState('');
@@ -258,7 +259,11 @@ export function DashboardPage() {
   ).length;
   const stalledCount = requirements.filter(isRequirementStalled).length;
 
-  const filteredRequirements =
+  const activeCount = requirements.filter(
+    (r) => r.effectiveStatus !== 'CANCELLED' && !r.isSettled && r.effectiveStatus !== 'COMPLETED',
+  ).length;
+
+  const baseFilteredRequirements =
     selectedPhase === 'ACTION_REQUIRED'
       ? actionRequiredList
       : selectedPhase === 'ALL'
@@ -271,62 +276,90 @@ export function DashboardPage() {
           (r) => getRequirementCoreState(r) === selectedPhase && r.effectiveStatus !== 'CANCELLED',
         );
 
-  return (
-    <div className="zero-scroll-container p-2 sm:p-3 max-w-7xl mx-auto w-full">
-      {/* 1. Header - Single Row High Density Bar */}
-      <header className="rounded-lg border bg-card px-2.5 sm:px-3 py-1.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <h1 className="text-xs font-bold text-foreground truncate">
-            {org ? org.organizationName : 'Buyer Procurement Workspace'}
-          </h1>
-          {org?.orgType && (
-            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.2 text-[10px] font-semibold text-muted-foreground border shrink-0">
-              {org.orgType}
-            </span>
-          )}
-          {subscription && (
-            <button
-              type="button"
-              onClick={() => setIsPaymentModalOpen(true)}
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.2 text-[10px] font-bold border transition shrink-0 ${
-                subscription.isExpired
-                  ? 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800 animate-pulse'
-                  : subscription.daysRemaining <= 3
-                  ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
-                  : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
-              }`}
-              title="Click to view subscription / renew"
-            >
-              <span>{subscription.isExpired ? '🔒 Expired' : `⚡ ${subscription.daysRemaining}d left`}</span>
-              <span className="hidden sm:inline underline font-semibold">Renew</span>
-            </button>
-          )}
-        </div>
+  const filteredRequirements = baseFilteredRequirements.filter((r) => {
+    if (!searchFilter.trim()) return true;
+    const q = searchFilter.toLowerCase();
+    return (
+      (r.title && r.title.toLowerCase().includes(q)) ||
+      (r.requirementType && r.requirementType.toLowerCase().includes(q)) ||
+      (r.id && r.id.toLowerCase().includes(q))
+    );
+  });
 
-        <div className="flex items-center gap-2 shrink-0">
-          {subscription?.isExpired ? (
-            <button
-              type="button"
-              onClick={() => setIsPaymentModalOpen(true)}
-              className="inline-flex items-center gap-1 rounded bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-2xs hover:bg-rose-700 transition"
-            >
-              <span>⚡</span> Renew Plan
-            </button>
-          ) : (
+  return (
+    <div className="zero-scroll-container p-2 sm:p-3 max-w-7xl mx-auto w-full space-y-2">
+      {/* 1. Cockpit Header: "What do you need to buy?" */}
+      <section className="rounded-xl border bg-card p-3 sm:p-4 shadow-2xs shrink-0 space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-sm sm:text-base md:text-lg font-extrabold text-foreground tracking-tight flex items-center gap-2">
+              <span>What do you need to buy?</span>
+              {org?.orgType && (
+                <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full border">
+                  {org.orgType}
+                </span>
+              )}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Instant sourcing with verified suppliers. Sealed quotes stay protected until you decide.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {subscription && (
+              <button
+                type="button"
+                onClick={() => setIsPaymentModalOpen(true)}
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border transition ${
+                  subscription.isExpired
+                    ? 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 animate-pulse'
+                    : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300'
+                }`}
+                title="View subscription status"
+              >
+                <span>{subscription.isExpired ? '🔒 Expired' : `⚡ ${subscription.daysRemaining}d plan`}</span>
+              </button>
+            )}
             <Link
               to="/requirements/new"
-              className="inline-flex items-center gap-1 rounded bg-primary px-2.5 sm:px-3 py-1 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
               data-testid="create-requirement-link"
             >
-              <span>+</span> New Requirement
+              <span>+</span> Create Requirement
             </Link>
-          )}
+          </div>
         </div>
-      </header>
+
+        {/* Express 1-Box Sourcing Input */}
+        <form onSubmit={(e) => void handleExpressSubmit(undefined, e)} className="flex items-center gap-2 pt-0.5">
+          <input
+            type="text"
+            value={expressQuery}
+            disabled={isSubmittingExpress}
+            onChange={(e) => setExpressQuery(e.target.value)}
+            placeholder={subscription?.isExpired ? "Prepaid subscription expired..." : "e.g. Swimming pool renovation in Bengaluru within 14 days under ₹3.5L..."}
+            className="flex-1 rounded-lg border border-primary/30 bg-background px-3 py-1.5 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-2xs"
+          />
+          <button
+            type="submit"
+            disabled={!expressQuery.trim() || isSubmittingExpress}
+            className="rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition disabled:opacity-40 shrink-0 flex items-center gap-1"
+          >
+            <span>⚡</span>
+            <span>{isSubmittingExpress ? 'Matching…' : 'Get Quotes'}</span>
+          </button>
+        </form>
+
+        {expressError && (
+          <p className="text-[11px] font-bold text-red-600 bg-red-50 dark:bg-red-950/40 p-1.5 rounded border border-red-200">
+            ⚠️ {expressError}
+          </p>
+        )}
+      </section>
 
       {/* Subscription Expiry Banner if needed */}
       {subscription?.isExpired && (
-        <div className="mt-1.5 shrink-0">
+        <div className="shrink-0">
           <SubscriptionExpiryBanner
             subscription={subscription}
             onRenewClick={() => setIsPaymentModalOpen(true)}
@@ -334,163 +367,79 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* 2. Hero Action Focus: "What do you need?" 1-Box Express Sourcing */}
-      <section className="mt-2 rounded-lg border border-primary/30 bg-gradient-to-r from-primary/5 via-card to-primary/5 p-2 shadow-2xs shrink-0">
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm">⚡</span>
-            <h2 className="text-xs font-bold text-foreground">
-              What do you need?
-            </h2>
-            <span className="text-[11px] text-muted-foreground hidden sm:inline">
-              Instant plain-English sourcing with auto-matched quotes
-            </span>
-          </div>
-          <span className="rounded bg-primary/10 text-primary font-bold text-[9px] px-1.5 py-0.2 border border-primary/20">
-            FAST-TRACK AI
-          </span>
-        </div>
-
-        <form onSubmit={(e) => void handleExpressSubmit(undefined, e)} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={expressQuery}
-            disabled={isSubmittingExpress}
-            onChange={(e) => setExpressQuery(e.target.value)}
-            placeholder={subscription?.isExpired ? "Prepaid subscription expired..." : "e.g., Need 200 ergonomic chairs in Pune delivered in 3 days under ₹2.5L..."}
-            className="flex-1 rounded border border-primary/40 bg-background px-2.5 py-1 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs"
-          />
+      {/* 2. Your Procurement Glance Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-card rounded-lg border p-2 text-xs shadow-2xs shrink-0">
+        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+          <span>📋</span>
+          <span>Your procurement:</span>
+        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
-            type="submit"
-            disabled={!expressQuery.trim() || isSubmittingExpress}
-            className="rounded bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition disabled:opacity-40 shrink-0"
+            type="button"
+            onClick={() => setSelectedPhase('ALL')}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold transition ${
+              selectedPhase === 'ALL'
+                ? 'bg-primary text-primary-foreground shadow-2xs'
+                : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
           >
-            {isSubmittingExpress ? 'Matching…' : '⚡ Get Quotes →'}
+            <span>🟢</span>
+            <span>{activeCount} Active</span>
           </button>
-        </form>
+          <button
+            type="button"
+            onClick={() => setSelectedPhase('ACTION_REQUIRED')}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold transition ${
+              selectedPhase === 'ACTION_REQUIRED'
+                ? 'bg-amber-500 text-white shadow-2xs'
+                : actionRequired > 0
+                ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border border-amber-300'
+                : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>🟡</span>
+            <span>{actionRequired} Need your decision</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedPhase('SETTLED')}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold transition ${
+              selectedPhase === 'SETTLED'
+                ? 'bg-emerald-600 text-white shadow-2xs'
+                : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            <span>⚪</span>
+            <span>{settledCount} Completed</span>
+          </button>
+        </div>
+      </div>
 
-        {expressError && (
-          <p className="mt-1 text-[11px] font-bold text-red-600 bg-red-50 dark:bg-red-950/40 p-1 rounded border border-red-200">
-            ⚠️ {expressError}
-          </p>
-        )}
-      </section>
-
-      {/* 3. Modular 2/3-Column Dashboard Grid */}
-      <div className="mt-2 flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2.5 overflow-hidden">
-        {/* Left Column (8 cols): Procurement Pipeline & Requirements Table */}
+      {/* 3. Modular 2-Column Dashboard Grid */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2.5 overflow-hidden">
+        {/* Left Column (8 cols): Job Cards List */}
         <div className="lg:col-span-8 flex flex-col min-h-0 rounded-lg border bg-card shadow-2xs overflow-hidden">
-          {/* Filter Bar Header */}
+          {/* Header */}
           <div className="p-2 border-b shrink-0 flex flex-wrap items-center justify-between gap-1.5 bg-muted/20">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Pipeline
-              </span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Active Tenders &amp; Orders
+            </span>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Search orders…"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="rounded border bg-background px-2 py-0.5 text-[11px] placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-28 sm:w-36"
+              />
               <span className="text-[10px] text-muted-foreground">
-                ({requirements.length} Active)
+                {filteredRequirements.length} / {requirements.length}
               </span>
-            </div>
-
-            {/* 8 Core Procurement State Filter Tabs */}
-            <div className="flex flex-wrap items-center gap-1 text-[10px]">
-              <button
-                type="button"
-                onClick={() => setSelectedPhase('ALL')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  selectedPhase === 'ALL'
-                    ? 'bg-card text-foreground shadow-2xs font-bold border'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                All ({requirements.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPhase('ACTION_REQUIRED')}
-                className={`flex items-center gap-1 rounded px-1.5 py-0.5 font-bold transition ${
-                  selectedPhase === 'ACTION_REQUIRED'
-                    ? 'bg-amber-500 text-white shadow-2xs'
-                    : 'text-amber-900 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200 border border-amber-200'
-                }`}
-              >
-                <span>⚡ Action</span>
-                <span className="rounded-full bg-amber-700 text-white px-1 text-[8px] font-mono">
-                  {actionRequired}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPhase('QUOTING')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  selectedPhase === 'QUOTING'
-                    ? 'bg-card text-purple-700 dark:text-purple-300 shadow-2xs font-bold border'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Quoting ({quotingCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPhase('EVALUATING')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  selectedPhase === 'EVALUATING'
-                    ? 'bg-card text-amber-700 dark:text-amber-300 shadow-2xs font-bold border'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Vote ({evaluatingCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPhase('AWARDED')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  selectedPhase === 'AWARDED'
-                    ? 'bg-card text-teal-700 dark:text-teal-300 shadow-2xs font-bold border'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Awarded ({awardedCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPhase('PO_ISSUED')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  selectedPhase === 'PO_ISSUED'
-                    ? 'bg-card text-blue-700 dark:text-blue-300 shadow-2xs font-bold border'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                PO ({poIssuedCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPhase('SETTLED')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  selectedPhase === 'SETTLED'
-                    ? 'bg-card text-emerald-700 dark:text-emerald-300 shadow-2xs font-bold border'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Settled ({settledCount})
-              </button>
-              {stalledCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedPhase('STALLED')}
-                  className={`flex items-center gap-1 rounded px-1.5 py-0.5 font-bold transition ${
-                    selectedPhase === 'STALLED'
-                      ? 'bg-red-600 text-white shadow-2xs'
-                      : 'text-red-900 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 border border-red-200'
-                  }`}
-                >
-                  <span>⚠️ Stalled ({stalledCount})</span>
-                </button>
-              )}
             </div>
           </div>
 
-          {/* Requirements Compact Table Container with Internal Scroll */}
-          <div className="flex-1 min-h-0 overflow-y-auto zero-scroll-pane divide-y divide-border/60 p-1">
+          {/* Requirement Cards Container with Internal Scroll */}
+          <div className="flex-1 min-h-0 overflow-y-auto zero-scroll-pane space-y-2 p-2">
             {isLoading ? (
               <div className="py-12 text-center text-xs text-muted-foreground">
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
@@ -533,69 +482,73 @@ export function DashboardPage() {
                 return (
                   <div
                     key={req.id}
-                    className={`flex flex-wrap items-center justify-between gap-2 py-1.5 px-2 rounded transition text-xs ${
+                    className={`p-3 rounded-xl border transition space-y-2 ${
                       action.actionRequired
-                        ? 'bg-amber-50/30 dark:bg-amber-950/20 border-l-2 border-l-amber-500 my-0.5'
-                        : stalled
-                        ? 'bg-red-50/20 dark:bg-red-950/20 border-l-2 border-l-red-500 my-0.5'
-                        : 'hover:bg-muted/30'
+                        ? 'border-amber-400/80 bg-amber-50/20 dark:bg-amber-950/20 shadow-2xs ring-1 ring-amber-400/20'
+                        : 'bg-card hover:border-primary/40 shadow-2xs'
                     }`}
                   >
-                    {/* Left: Ref, Simplified Tag & Title */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-[10px] text-muted-foreground shrink-0">
-                          REQ-{req.id.slice(0, 6)}
-                        </span>
-                        <span className={`rounded px-1.5 py-0.2 text-[9px] font-bold shadow-2xs shrink-0 ${desc.badgeClass}`}>
-                          {shortStatus}
-                        </span>
-                        <h3 className="text-xs font-bold text-foreground truncate min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[10px] text-muted-foreground bg-muted/40 px-1 rounded">
+                            REQ-{req.id.slice(0, 6)}
+                          </span>
+                          <span className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${desc.badgeClass}`}>
+                            {shortStatus}
+                          </span>
+                        </div>
+                        <h3 className="text-sm font-bold text-foreground truncate mt-1">
                           {req.title}
                         </h3>
                       </div>
 
-                      <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground truncate">
-                        <span>Type: {req.requirementType}</span>
-                        <span>•</span>
-                        <span>Quotes: <strong className="text-foreground">{req.quotesCount}</strong>/{req.minQuotesRequired}</span>
-                        <span>•</span>
-                        <span>Date: {formatDateIST(req.createdAt)}</span>
-                      </div>
+                      <span className="text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1">
+                        <span>🔒</span>
+                        <span className="hidden sm:inline">Supplier identities protected</span>
+                        <span className="sm:hidden">Protected</span>
+                      </span>
                     </div>
 
-                    {/* Right: Quick Action Buttons & Slide-Over Drawer Trigger */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {/* ℹ️ Details Button (Opens Slide-over Drawer) */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedRequirement(req)}
-                        className="rounded border bg-card px-2 py-0.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition shadow-2xs"
-                        title="View full requirement details & scoring drawer"
-                      >
-                        ℹ️ Details
-                      </button>
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/40 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-[11px] flex-wrap">
+                        <span className="rounded bg-muted/30 px-1.5 py-0.2 font-medium text-foreground border border-border/40">
+                          🏷️ {req.requirementType}
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          💬 {req.quotesCount > 0 ? `${req.quotesCount} quote(s)` : 'Awaiting quotes'}
+                        </span>
+                        <span>•</span>
+                        <span>📅 {formatDateIST(req.createdAt)}</span>
+                      </div>
 
-                      {req.rfqId && (
-                        <Link
-                          to={`/rfq/${req.rfqId}/quotes`}
-                          className="rounded border bg-card px-2 py-0.5 text-[10px] font-semibold text-foreground hover:bg-muted transition shadow-2xs hidden sm:inline"
-                          title="View quote matrix"
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRequirement(req)}
+                          className="rounded-lg border bg-card px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition shadow-2xs"
                         >
-                          Matrix
+                          Details
+                        </button>
+                        {req.rfqId && (
+                          <Link
+                            to={`/rfq/${req.rfqId}/quotes`}
+                            className="rounded-lg border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted transition shadow-2xs hidden sm:inline"
+                          >
+                            Matrix
+                          </Link>
+                        )}
+                        <Link
+                          to={action.to}
+                          className={`rounded-lg px-3.5 py-1 text-xs font-bold shadow-2xs transition ${
+                            action.primary
+                              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                              : 'border bg-card hover:bg-muted text-foreground'
+                          }`}
+                        >
+                          {action.label}
                         </Link>
-                      )}
-
-                      <Link
-                        to={action.to}
-                        className={`rounded px-2.5 py-0.5 text-[10px] font-bold shadow-2xs transition ${
-                          action.primary
-                            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                            : 'border bg-card hover:bg-muted text-foreground'
-                        }`}
-                      >
-                        {action.label}
-                      </Link>
+                      </div>
                     </div>
                   </div>
                 );
@@ -604,29 +557,37 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Right Column (4 cols): Modular Buyer Summary Panels */}
+        {/* Right Column (4 cols): Command Center Side Panels */}
         <div className="lg:col-span-4 flex flex-col min-h-0 space-y-2 overflow-y-auto zero-scroll-pane">
-          {/* Card 1: Action Center & Health */}
-          <div className="rounded-lg border bg-card p-2.5 shadow-2xs space-y-1.5">
+          {/* Card 1: Pipeline Metrics */}
+          <div className="rounded-lg border bg-card p-2.5 shadow-2xs space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-foreground flex items-center gap-1">
-                <span>🎯</span> Sourcing Health
+                <span>📊</span> Pipeline Summary
               </h3>
-              <span className="rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-1.5 py-0.2">
-                ACTIVE
+              <span className="rounded bg-primary/10 text-primary text-[9px] font-bold px-1.5 py-0.2 border border-primary/20">
+                {org?.organizationName || 'Live'}
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-1.5 text-xs">
-              <div className="rounded border bg-muted/20 p-1.5">
+              <div className="rounded border bg-muted/20 p-2">
                 <span className="text-[10px] text-muted-foreground block">Active Tenders</span>
-                <span className="text-sm font-bold text-foreground">{requirements.length}</span>
+                <span className="text-base font-bold text-foreground">{requirements.length}</span>
               </div>
-              <div className="rounded border bg-muted/20 p-1.5">
+              <div className="rounded border bg-muted/20 p-2">
                 <span className="text-[10px] text-muted-foreground block">Action Required</span>
-                <span className={`text-sm font-bold ${actionRequired > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                <span className={`text-base font-bold ${actionRequired > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   {actionRequired}
                 </span>
+              </div>
+              <div className="rounded border bg-muted/20 p-2">
+                <span className="text-[10px] text-muted-foreground block">In Execution</span>
+                <span className="text-base font-bold text-foreground">{poIssuedCount}</span>
+              </div>
+              <div className="rounded border bg-muted/20 p-2">
+                <span className="text-[10px] text-muted-foreground block">Completed</span>
+                <span className="text-base font-bold text-foreground">{settledCount}</span>
               </div>
             </div>
 
@@ -634,42 +595,70 @@ export function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setSelectedPhase('ACTION_REQUIRED')}
-                className="w-full rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-300 text-[10px] font-bold py-1 px-2 transition text-center"
+                className="w-full rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-[11px] font-bold py-1.5 px-2 transition text-center shadow-2xs flex items-center justify-center gap-1"
               >
-                ⚡ Review {actionRequired} Pending Action(s) →
+                <span>⚡</span> Review {actionRequired} Pending Action{actionRequired > 1 ? 's' : ''} →
               </button>
             )}
           </div>
 
-          {/* Card 2: Governance & Voting Rules */}
-          <div className="rounded-lg border bg-card p-2.5 shadow-2xs space-y-1.5">
+          {/* Card 2: Recent Activity Feed */}
+          <div className="rounded-lg border bg-card p-2.5 shadow-2xs space-y-2 flex-1 flex flex-col min-h-[160px]">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-foreground flex items-center gap-1">
-                <span>🏛️</span> Governance Profile
+                <span>⚡</span> Recent Activity
               </h3>
-              <Link to="/org/members" className="text-[10px] text-primary hover:underline font-bold">
-                Members →
-              </Link>
+              <span className="text-[10px] text-muted-foreground">Live Feed</span>
             </div>
 
-            <p className="text-[11px] text-muted-foreground leading-tight">
-              {getGovernanceLabel(org?.orgType)}
-            </p>
-
-            <div className="rounded border bg-muted/20 p-1.5 text-[10px] text-muted-foreground space-y-0.5">
-              <p>• Identity-Protected Quote Masking: <strong>Strictly Enforced</strong></p>
-              <p>• Quorum Decision Model: <strong>Merit-Based Multi-Criteria</strong></p>
+            <div className="space-y-1.5 overflow-y-auto zero-scroll-pane flex-1 text-xs divide-y divide-border/40">
+              {requirements.slice(0, 5).map((r) => {
+                const core = getRequirementCoreState(r);
+                const action = getNextAction(r);
+                return (
+                  <div key={r.id} className="pt-1.5 first:pt-0 flex items-start justify-between gap-1.5">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground truncate text-[11px]">{r.title}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {r.quotesCount > 0 ? `${r.quotesCount} quote(s) received` : 'Requirement registered'} · {formatDateIST(r.createdAt)}
+                      </p>
+                    </div>
+                    <Link
+                      to={action.to}
+                      className="shrink-0 rounded bg-muted/60 hover:bg-muted text-[10px] font-bold px-1.5 py-0.5 text-foreground border transition"
+                    >
+                      {core === 'EVALUATING' ? 'Vote' : core === 'QUOTING' ? 'Quotes' : 'View'}
+                    </Link>
+                  </div>
+                );
+              })}
+              {requirements.length === 0 && (
+                <p className="text-center text-muted-foreground text-[11px] py-4">
+                  No recent activity yet. Post your first requirement to begin.
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Card 3: Direct Settlement & Zero Fees */}
-          <div className="rounded-lg border bg-muted/15 p-2.5 shadow-2xs space-y-1 text-xs">
-            <div className="flex items-center gap-1 text-xs font-bold text-foreground">
-              <span>🛡️</span> Zero-Fee Direct Settlement
+          {/* Card 3: Quick Management Links */}
+          <div className="rounded-lg border bg-card p-2.5 shadow-2xs space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-bold text-foreground">
+              <span>⚙️ Workspace Tools</span>
             </div>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
-              {PRODUCT_NAME} never touches trade funds. All payments &amp; GST invoices settle directly between buyer and vendor with immutable audit trail.
-            </p>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Link
+                to="/org/members"
+                className="flex-1 rounded border bg-muted/20 hover:bg-muted p-1.5 text-center font-semibold text-foreground text-[10px] transition"
+              >
+                👥 Team ({org?.orgType || 'Members'})
+              </Link>
+              <Link
+                to="/reports"
+                className="flex-1 rounded border bg-muted/20 hover:bg-muted p-1.5 text-center font-semibold text-foreground text-[10px] transition"
+              >
+                📊 Sourcing Reports
+              </Link>
+            </div>
           </div>
         </div>
       </div>

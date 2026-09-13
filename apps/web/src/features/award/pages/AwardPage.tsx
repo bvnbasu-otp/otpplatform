@@ -14,6 +14,7 @@ import type {
   VoteTallyEntry,
   VotingSummary,
 } from '@/features/governance/types/governance';
+import { revealSupplier, type RevealedWinner } from '@/features/reveal/api/reveal';
 import { approve, fetchApproval, requestApproval } from '../api/approval';
 import { fetchAward, lockAward, unlockAwardDecision } from '../api/awards';
 import { CancelRfqModal } from '@/features/rfq/components';
@@ -31,6 +32,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
   const [selectedQuote, setSelectedQuote] = useState('');
   const [confirmedAward, setConfirmedAward] = useState(true);
   const [existingPoId, setExistingPoId] = useState<string | null>(null);
+  const [revealedWinner, setRevealedWinner] = useState<RevealedWinner | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -127,7 +129,26 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
       return;
     }
     setSuccess(
-      'Award successfully locked with the vote tally frozen! Click below to reveal the winning supplier.',
+      'Award successfully locked with the vote tally frozen! You can now unmask the winning supplier.',
+    );
+    await load();
+  }
+
+  async function handleDirectReveal() {
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    const result = await revealSupplier(rfqId);
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setRevealedWinner(result.winner);
+    setSuccess(
+      result.winner.aliasBeforeReveal
+        ? `Identity unmasked: ${result.winner.aliasBeforeReveal} is ${result.winner.businessName}. Official Purchase Order generated!`
+        : `Identity unmasked: The winner is ${result.winner.businessName}.`,
     );
     await load();
   }
@@ -238,54 +259,94 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
               </div>
 
               {pendingReveal && (
-                <div className="rounded border border-primary/20 bg-card p-2.5 space-y-1.5">
-                  <p className="text-xs font-medium text-foreground">
-                    Winning quote is locked. Supplier identity is still masked.
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <span>🔒</span> Winning Quote Locked &amp; Ready for Reveal
+                    </span>
+                    <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">
+                      Step 11-12 Fast-Track
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Award is locked with an immutable audit trial. You can unmask the winning supplier now to generate the official Purchase Order and obtain verified contact credentials.
                   </p>
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleDirectReveal()}
+                      className="rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-50 transition flex items-center gap-1.5"
+                      data-testid="direct-reveal-button"
+                    >
+                      <span>🔓</span>
+                      <span>{busy ? 'Unmasking Supplier…' : 'Unmask Supplier & Generate PO Now →'}</span>
+                    </button>
                     <Link
                       to={`/rfq/${rfqId}/reveal`}
-                      className="rounded bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+                      className="rounded-lg border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition flex items-center gap-1"
                     >
-                      Step 12: Winner Contact &amp; GST Reveal →
+                      <span>Credentials &amp; Receipt Room →</span>
                     </Link>
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => void handleUnlockAward()}
-                      className="rounded border px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted"
+                      className="rounded-lg border px-2.5 py-2 text-[11px] font-medium text-muted-foreground hover:bg-muted"
                     >
-                      {busy ? 'Unlocking…' : '🔓 Unlock Decision'}
+                      {busy ? 'Unlocking…' : '↺ Unlock Decision'}
                     </button>
                   </div>
                 </div>
               )}
 
               {award.status === 'REVEALED' && (
-                <div className="flex items-center gap-2 pt-1">
-                  <Link
-                    to={`/rfq/${rfqId}/reveal`}
-                    className="rounded border px-2.5 py-1 text-xs font-medium hover:bg-muted"
-                  >
-                    View Supplier Credentials →
-                  </Link>
-                  {existingPoId ? (
-                    <Link
-                      to={`/purchase-orders/${existingPoId}`}
-                      className="rounded bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90"
-                      data-testid="award-po-link"
-                    >
-                      View Purchase Order →
-                    </Link>
-                  ) : (
+                <div className="rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/70 dark:bg-emerald-950/40 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                      <span>🏆</span> Winning Supplier Revealed
+                    </span>
+                    {existingPoId && (
+                      <span className="text-[10px] bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 font-bold px-2 py-0.5 rounded-full">
+                        PO Active
+                      </span>
+                    )}
+                  </div>
+                  {revealedWinner && (
+                    <div className="rounded-lg border bg-card p-2.5 space-y-1">
+                      <div className="text-xs font-bold text-foreground">{revealedWinner.businessName}</div>
+                      {revealedWinner.contactPhone && (
+                        <div className="text-[11px] text-muted-foreground">Phone: {revealedWinner.contactPhone}</div>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {existingPoId ? (
+                      <Link
+                        to={`/purchase-orders/${existingPoId}`}
+                        className="rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition flex items-center gap-1.5"
+                        data-testid="award-po-link"
+                      >
+                        <span>📄</span>
+                        <span>View Purchase Order (Step 13) →</span>
+                      </Link>
+                    ) : (
+                      <Link
+                        to={`/rfq/${rfqId}/reveal`}
+                        className="rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition flex items-center gap-1.5"
+                        data-testid="award-create-po-link"
+                      >
+                        <span>📄</span>
+                        <span>Generate Purchase Order →</span>
+                      </Link>
+                    )}
                     <Link
                       to={`/rfq/${rfqId}/reveal`}
-                      className="rounded bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90"
-                      data-testid="award-create-po-link"
+                      className="rounded-lg border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
                     >
-                      Generate Purchase Order →
+                      View Full Credentials &amp; Audit Receipt →
                     </Link>
-                  )}
+                  </div>
                 </div>
               )}
             </section>

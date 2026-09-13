@@ -102,9 +102,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Canonical Vocabulary Enforcement
-        run: |
-          echo "Verifying 0 prohibited vocabulary terms in source files..."
-          node -e "const fs = require('fs'); const regex = /\b(bid|bids|bidder|bidders|bidding|blind)\b/i; let bad = 0; function scan(d){ for(const f of fs.readdirSync(d)){ const p = d+'/'+f; if(f==='node_modules'||f==='.git'||f==='dist') continue; if(fs.statSync(p).isDirectory()) scan(p); else if(/\.(tsx|jsx)$/.test(f) && !f.includes('.test.')) { const lines = fs.readFileSync(p,'utf8').split('\n'); lines.forEach((l,i)=>{ if(regex.test(l)){ console.error('Violation in ' + p + ':' + (i+1) + ' -> ' + l.trim()); bad++; } }); } } } scan('apps/web/src'); if(bad > 0) { console.error('Vocabulary check failed with ' + bad + ' violations'); process.exit(1); } else { console.log('Vocabulary check passed with 0 violations.'); }"
+        run: pnpm test:vocab
 
       - name: Compile Production Web Bundle
         run: pnpm --filter @otp/web build

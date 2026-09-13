@@ -202,7 +202,10 @@ export async function fetchRoleContext(): Promise<
 
         if (suppUsers && suppUsers.length > 0) {
           side = 'SUPPLIER';
-          supplierId = suppUsers[0].supplier_id || suppUsers[0].id;
+          const firstSuppUser = suppUsers[0];
+          if (firstSuppUser) {
+            supplierId = firstSuppUser.supplier_id || firstSuppUser.id;
+          }
         } else if (profile.email) {
           // 2. Check suppliers by contact_email
           const { data: directSupp } = await supabase

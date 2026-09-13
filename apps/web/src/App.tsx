@@ -240,6 +240,8 @@ export function App() {
           */}
           <Route path="/buyer" element={<Navigate to="/signup?side=buyer" replace />} />
           <Route path="/seller" element={<Navigate to="/signup?side=supplier" replace />} />
+          <Route path="/supplier" element={<Navigate to="/signup?side=supplier" replace />} />
+          <Route path="/supplier/register" element={<Navigate to="/signup?side=supplier" replace />} />
           <Route path="/legal/:topic" element={<LegalPage />} />
           {/*
             Reached from a WhatsApp or SMS message, so it sits outside
@@ -299,6 +301,8 @@ export function App() {
             <Route path="/supplier/rfq/:rfqId" element={<SupplierRfqRoute />} />
             <Route path="/supplier/rfqs/:rfqId" element={<SupplierRfqRoute />} />
             <Route path="/supplier/capabilities" element={<SupplierCapabilitiesPage />} />
+            <Route path="/supplier/onboarding" element={<SupplierCapabilitiesPage />} />
+            <Route path="/supplier/dashboard" element={<Navigate to="/dashboard" replace />} />
             <Route
               path="/purchase-orders"
               element={

@@ -18,7 +18,7 @@ Write-Host "=================================================================" -
 
 # 1. Vocabulary Scan
 Write-Host "`n[1/3] Scanning for canonical procurement vocabulary compliance..." -ForegroundColor Yellow
-& node -e "const fs = require('fs'); const regex = /\b(bid|bids|bidder|bidders|bidding|blind)\b/i; let bad = 0; function scan(d){ for(const f of fs.readdirSync(d)){ const p = d+'/'+f; if(f==='node_modules'||f==='.git'||f==='dist') continue; if(fs.statSync(p).isDirectory()) scan(p); else if(/\.(tsx|jsx)$/.test(f) && !f.includes('.test.')) { const lines = fs.readFileSync(p,'utf8').split('\n'); lines.forEach((l,i)=>{ if(regex.test(l)){ console.error('Violation in ' + p + ':' + (i+1) + ' -> ' + l.trim()); bad++; } }); } } } scan('apps/web/src'); if(bad > 0) { console.error('Vocabulary check failed with ' + bad + ' violations'); process.exit(1); } else { console.log('Vocabulary check passed with 0 violations.'); }"
+& pnpm.cmd test:vocab
 if ($LASTEXITCODE -ne 0) {
   Write-Host "[FAIL] Vocabulary policy violated. Commit rejected." -ForegroundColor Red
   exit 1

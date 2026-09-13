@@ -188,26 +188,33 @@ function Audiences() {
  */
 function HowItWorks() {
   return (
-    <section id="how-it-works" className="scroll-mt-20 border-y bg-muted/40 py-14">
+    <section id="how-it-works" className="scroll-mt-20 border-y bg-muted/40 py-12 sm:py-16">
       <div className="mx-auto max-w-6xl px-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h2 className="text-2xl font-semibold">How {PRODUCT_NAME} Works in 5 Simple Steps</h2>
-          <p className="text-sm text-muted-foreground">
-            From natural-language requirement to settled invoice and PO.
+        <div className="max-w-2xl">
+          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-action">
+            Simple 5-Step Procurement
+          </p>
+          <h2 className="mt-1 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+            How {PRODUCT_NAME} Works
+          </h2>
+          <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
+            From plain-text requirement to delivered order and GST Purchase Order.
           </p>
         </div>
 
         {/* 5-Step Visual Flow Cards */}
-        <ol className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+        <ol className="mt-6 sm:mt-8 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+          <li className="rounded-xl border bg-card p-4 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">1</span>
-                <span className="text-[10px] font-bold text-muted-foreground">STEP 1</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">
+                  01
+                </span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Step 1</span>
               </div>
-              <h3 className="mt-2 text-sm font-bold text-foreground">Post Requirement</h3>
+              <h3 className="mt-2.5 text-sm font-bold text-foreground">Tell us what you need</h3>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Describe what you need in plain words. Fast-track parser extracts specs, city, and budget.
+                Describe in plain words or voice. Our parser extracts specifications, location, and deadline.
               </p>
             </div>
             <div className="mt-3 border-t pt-2 text-[10px] text-action font-semibold">
@@ -215,117 +222,87 @@ function HowItWorks() {
             </div>
           </li>
 
-          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+          <li className="rounded-xl border bg-card p-4 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">2</span>
-                <span className="text-[10px] font-bold text-muted-foreground">STEP 2</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">
+                  02
+                </span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Step 2</span>
               </div>
-              <h3 className="mt-2 text-sm font-bold text-foreground">Get Sealed Quotes</h3>
+              <h3 className="mt-2.5 text-sm font-bold text-foreground">Suppliers compete privately</h3>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Verified regional suppliers submit sealed quotes with turnaround and warranty terms.
+                Verified regional vendors submit sealed quotes with firm turnaround, pricing, and warranty.
               </p>
             </div>
             <div className="mt-3 border-t pt-2 text-[10px] text-action font-semibold">
-              Multi-Channel Quoting →
+              Sealed Quotations →
             </div>
           </li>
 
-          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+          <li className="rounded-xl border bg-card p-4 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">3</span>
-                <span className="text-[10px] font-bold text-muted-foreground">STEP 3</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">
+                  03
+                </span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Step 3</span>
               </div>
-              <h3 className="mt-2 text-sm font-bold text-foreground">Compare Anonymously</h3>
+              <h3 className="mt-2.5 text-sm font-bold text-foreground">Compare the offers</h3>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Side-by-side comparison on merit: cost, delivery TAT, and warranty SLAs under anonymous aliases.
+                Side-by-side comparison on merit: cost, delivery speed, and warranty SLAs under protected aliases.
               </p>
             </div>
             <div className="mt-3 border-t pt-2 text-[10px] text-action font-semibold">
-              Zero Bias Matrix →
+              Zero-Bias Matrix →
             </div>
           </li>
 
-          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+          <li className="rounded-xl border bg-card p-4 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">4</span>
-                <span className="text-[10px] font-bold text-muted-foreground">STEP 4</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-black">
+                  04
+                </span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Step 4</span>
               </div>
-              <h3 className="mt-2 text-sm font-bold text-foreground">Committee Vote</h3>
+              <h3 className="mt-2.5 text-sm font-bold text-foreground">Your team decides</h3>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Democratic quorum voting with weighted ballots, COI declarations, and recorded justifications.
+                Fast-track solo approval or democratic committee voting with recorded decision rationales.
               </p>
             </div>
             <div className="mt-3 border-t pt-2 text-[10px] text-action font-semibold">
-              Quorum Governance →
+              Governance &amp; Vote →
             </div>
           </li>
 
-          <li className="rounded-lg border bg-card p-4 flex flex-col justify-between shadow-2xs">
+          <li className="rounded-xl border bg-card p-4 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-black">5</span>
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">STEP 5</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-black">
+                  05
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase">Step 5</span>
               </div>
-              <h3 className="mt-2 text-sm font-bold text-foreground">Reveal &amp; Issue PO</h3>
+              <h3 className="mt-2.5 text-sm font-bold text-foreground">Award and execute</h3>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Winning identity unmasked mutually; Purchase Order issued with GST ITC compliance.
+                Winning vendor is unmasked, GST Purchase Order issued directly, and milestones tracked to completion.
               </p>
             </div>
-            <div className="mt-3 border-t pt-2 text-[10px] text-emerald-600 font-semibold">
-              Direct PO Issuance ✓
+            <div className="mt-3 border-t pt-2 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+              Direct PO &amp; Delivery ✓
             </div>
           </li>
         </ol>
 
-        {/* 3 Major Lifecycle Groups */}
-        <div className="mt-8">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Complete End-to-End Governance Lifecycle
-          </p>
-          <ol className="mt-3 grid gap-4 md:grid-cols-3" data-testid="lifecycle">
-            {LIFECYCLE_GROUPS.map((group, index) => (
-              <li key={group.name} className="rounded-lg border bg-card p-5">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-semibold text-action">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <h3 className="text-base font-medium">{group.name}</h3>
-                </div>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  {group.body}
-                </p>
-
-                <ul className="mt-4 space-y-1.5 border-t pt-3 text-sm">
-                  {group.stages.map((stage) => (
-                    <li key={stage} className="flex gap-2">
-                      <span aria-hidden="true" className="text-navy-faint">
-                        →
-                      </span>
-                      <span>{stage}</span>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div className="mt-4 rounded-lg border border-dashed bg-card/60 p-5">
-          <p className="text-sm font-medium">Four of Those Stages Run to a Clock</p>
-          <ol className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="phase-list">
-            {PHASES.map((phase) => (
-              <li key={phase.ordinal}>
-                <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-action">
-                  {phase.ordinal}
-                </p>
-                <p className="mt-0.5 text-sm font-medium">{phase.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{phase.window}</p>
-              </li>
-            ))}
-          </ol>
+        {/* Progressive Disclosure Link to FAQ for detailed mechanics */}
+        <div className="mt-6 flex items-center justify-between rounded-lg border bg-card/60 p-3.5 text-xs">
+          <span className="text-muted-foreground">
+            Looking for technical mechanics, cryptographic hashes, or ONDC discovery protocols?
+          </span>
+          <Link to="/faqs" className="font-semibold text-action hover:underline shrink-0 ml-3">
+            Read Technical Architecture in FAQ →
+          </Link>
         </div>
       </div>
     </section>

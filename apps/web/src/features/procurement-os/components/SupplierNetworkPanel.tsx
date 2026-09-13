@@ -34,32 +34,37 @@ export function SupplierNetworkPanel({
   }
 
   return (
-    <section className="rounded-lg border bg-card p-4" data-testid="supplier-network-panel">
+    <section className="rounded-lg border bg-card p-3 shadow-2xs" data-testid="supplier-network-panel">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">🌐 Supplier Networks</h3>
-        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
+        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <span>🌐</span> Sourcing Channels &amp; Network Reach
+        </h3>
+        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/20">
           {totalInvited} Invited
         </span>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Breakdown of invited supplier channels for this requirement. {totalInvited} supplier{totalInvited === 1 ? '' : 's'} invited across {networks.length} network{networks.length === 1 ? '' : 's'}.
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        {totalInvited} regional supplier{totalInvited === 1 ? '' : 's'} invited across {networks.length} channel{networks.length === 1 ? '' : 's'}. Sealed quotes are collected under protected aliases.
       </p>
-      <ul className="mt-3 space-y-2">
+
+      <div className="mt-2.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {networks.map((n) => (
-          <li
+          <div
             key={n.network}
-            className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+            className="flex items-center justify-between rounded-lg border bg-muted/20 p-2 text-xs shadow-2xs"
           >
-            <span className="font-medium">{n.label}</span>
-            <span className="text-muted-foreground">
-              {n.quotedCount}/{n.invitedCount} quoted
-            </span>
-          </li>
+            <div className="min-w-0">
+              <span className="font-bold text-foreground text-[11px] truncate block">{n.label}</span>
+              <span className="text-[10px] text-muted-foreground">Channel: {n.network}</span>
+            </div>
+            <div className="text-right shrink-0">
+              <span className="inline-flex items-center gap-1 rounded bg-card px-2 py-0.5 text-[10px] font-bold text-foreground border shadow-2xs">
+                {n.quotedCount > 0 ? `💬 ${n.quotedCount} Quoted` : '⏳ Awaiting'}
+              </span>
+            </div>
+          </div>
         ))}
-      </ul>
-      <p className="mt-3 text-xs text-muted-foreground">
-        Networks: ONDC · BNI · Associations · Direct · Local registry
-      </p>
+      </div>
     </section>
   );
 }

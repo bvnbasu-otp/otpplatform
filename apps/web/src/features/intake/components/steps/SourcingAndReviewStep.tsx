@@ -74,6 +74,7 @@ export function SourcingAndReviewStep({
   const [source, setSource] = useState<'SUGGESTED' | 'CUSTOM'>(
     draft.sourcing.evaluationWeightsSource || 'SUGGESTED',
   );
+  const [showWeightSliders, setShowWeightSliders] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -165,18 +166,48 @@ export function SourcingAndReviewStep({
         </div>
 
         <div className="mt-5 border-t pt-5">
-          <h3 className="text-sm font-semibold mb-1">Evaluation &amp; Scoring Criteria</h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            Suppliers are ranked transparently against these weights.
-          </p>
-          <EvaluationCriteriaEditor
-            catalog={criteria}
-            weights={weights}
-            onWeightsChange={setWeights}
-            suggested={suggestedWeights}
-            source={source}
-            onSourceChange={setSource}
-          />
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">Evaluation &amp; Scoring Criteria</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Quotes are scored transparently on merit against these weights.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowWeightSliders(!showWeightSliders)}
+            >
+              {showWeightSliders ? 'Hide Sliders ▲' : '⚙️ Customize Weights ▼'}
+            </Button>
+          </div>
+
+          {/* Quick summary badges */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {Object.entries(normalizedWeights).map(([code, weight]) => (
+              <span
+                key={code}
+                className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1 text-xs font-semibold text-foreground shadow-2xs"
+              >
+                <span>{criterionName.get(code) ?? code}:</span>
+                <strong className="text-primary">{Math.round(weight * 100)}%</strong>
+              </span>
+            ))}
+          </div>
+
+          {showWeightSliders && (
+            <div className="mt-4 rounded-lg border bg-card p-4 space-y-3">
+              <EvaluationCriteriaEditor
+                catalog={criteria}
+                weights={weights}
+                onWeightsChange={setWeights}
+                suggested={suggestedWeights}
+                source={source}
+                onSourceChange={setSource}
+              />
+            </div>
+          )}
         </div>
       </Card>
 

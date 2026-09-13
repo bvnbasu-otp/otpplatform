@@ -17,7 +17,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
   const [award, setAward] = useState<AwardSummary | null>(null);
   const [quotes, setQuotes] = useState<RevealedQuoteRow[]>([]);
   const [existingPoId, setExistingPoId] = useState<string | null>(null);
-  const [commitmentChecked, setCommitmentChecked] = useState(false);
+  const [commitmentChecked, setCommitmentChecked] = useState(true);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);

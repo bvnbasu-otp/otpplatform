@@ -71,8 +71,8 @@ export async function reviseSupplierQuote(
     .maybeSingle();
 
   if (rfqErr) return { ok: false, error: rfqErr.message };
-  if (rfq?.status !== 'CLARIFICATION') {
-    return { ok: false, error: 'Final quote revisions are only allowed during negotiation' };
+  if (rfq?.status !== 'CLARIFICATION' && rfq?.status !== 'OPEN') {
+    return { ok: false, error: 'Quote revisions are only allowed while RFQ is open or during negotiation' };
   }
 
   const { data: quote, error: quoteErr } = await supabase

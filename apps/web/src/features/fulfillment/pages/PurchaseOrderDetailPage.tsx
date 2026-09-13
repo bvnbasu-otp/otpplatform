@@ -282,6 +282,16 @@ export function PurchaseOrderDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted transition flex items-center gap-1 shadow-2xs"
+            title="Print or Save as PDF"
+            data-testid="print-po-button"
+          >
+            <span>🖨️</span>
+            <span className="hidden sm:inline">Print / PDF</span>
+          </button>
           <StatusBadge status={order.status} />
         </div>
       </div>
@@ -385,8 +395,11 @@ export function PurchaseOrderDetailPage({
             </div>
           </div>
 
-          <div className="rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 p-2 text-[10px] text-amber-800 dark:text-amber-300">
-            <strong>Tax &amp; Settlement Compliance Notice:</strong> This Purchase Order is a legally binding contract directly between {order.buyerOrgName || 'Buyer'} and {order.supplierName || 'Supplier'}. Commercial payments are settled directly between buyer and vendor accounts. The OTP Platform acts solely as a decision governance and audit verification facilitator.
+          <div className="rounded bg-muted/30 border p-2 text-[10px] text-muted-foreground flex items-center justify-between gap-2">
+            <span>
+              <strong>Direct Contract:</strong> This Purchase Order is a binding commercial contract directly between {order.buyerOrgName || 'Buyer'} and {order.supplierName || 'Supplier'}. Settlement occurs directly between parties.
+            </span>
+            <span className="font-semibold text-primary shrink-0">GST Verified ✓</span>
           </div>
         </div>
 

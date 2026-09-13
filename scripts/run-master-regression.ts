@@ -44,6 +44,9 @@ function getExecCommand(cmd: string): string {
   if (cmd.startsWith('node ')) {
     return cmd.replace(/^node\b/, `"${nodeExecutable}"`);
   }
+  if (cmd.startsWith('pnpm test:vocab')) {
+    return `"${nodeExecutable}" ./node_modules/tsx/dist/cli.mjs scripts/verify-vocabulary.ts`;
+  }
   if (cmd.startsWith('pnpm test:domain')) {
     return `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run --config packages/domain/vitest.config.ts`;
   }
@@ -199,7 +202,7 @@ async function main() {
   runStep(
     'Canonical Procurement Vocabulary Scanner',
     'POLICY',
-    'node -e "const fs = require(\'fs\'); const regex = /\\b(bid|bids|bidder|bidders|bidding|blind)\\b/i; let bad = 0; function scan(d){ for(const f of fs.readdirSync(d)){ const p = d+\'/\'+f; if(f===\'node_modules\'||f===\'.git\'||f===\'dist\') continue; if(fs.statSync(p).isDirectory()) scan(p); else if(/\\.(tsx|jsx)$/.test(f) && !f.includes(\'.test.\')) { const lines = fs.readFileSync(p,\'utf8\').split(\'\\n\'); lines.forEach((l,i)=>{ if(regex.test(l)){ bad++; } }); } } } scan(\'apps/web/src\'); if(bad > 0) process.exit(1);"',
+    'pnpm test:vocab',
     1
   );
 
