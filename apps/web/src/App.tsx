@@ -34,6 +34,7 @@ import { OrgMembersPage } from '@/features/org';
 import { ProfilePage } from '@/features/profile';
 import { HomePage } from '@/pages/HomePage';
 import { MaintenancePage } from '@/pages/MaintenancePage';
+import { MobileShowcasePage } from '@/pages/MobileShowcasePage';
 import { getPilotByRfqId } from '@/lib/pilots';
 import {
   MaintenanceProvider,
@@ -218,6 +219,9 @@ export function App() {
             at /dashboard and the header link follows whoever is signed in.
           */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/showcase" element={<MobileShowcasePage />} />
+          <Route path="/mobile" element={<MobileShowcasePage />} />
+          <Route path="/mobile-showcase" element={<MobileShowcasePage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/faqs" element={<FaqPage />} />
           <Route path="/about-us" element={<AboutPage />} />

@@ -168,7 +168,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
   if (isLoading) return <p className="p-8 text-muted-foreground">Loading Evaluation &amp; Voting Room…</p>;
 
   return (
-    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full" data-testid="committee-vote-page">
+    <div className="zero-scroll-container p-2.5 max-w-full mx-auto w-full" data-testid="committee-vote-page">
       <ProcurementStageNavigator
         currentLinearStep={myVote ? 8 : 7}
         currentStage="EVALUATING"
@@ -244,17 +244,17 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       )}
 
       {/* Main Content Pane */}
-      <div className="zero-scroll-pane mt-2 pb-20 sm:pb-12 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
-        {/* Left Column (7 cols): Sealed Quotes & Vote Ballot */}
-        <div className="lg:col-span-7 space-y-2">
+      <div className="zero-scroll-pane mt-2 pb-24 sm:pb-16 space-y-3">
+        {/* Sealed Quotes to Evaluate */}
+        <div className="space-y-3">
           {/* 1. Sealed Quotes to Evaluate */}
-          <section className="rounded-lg border bg-card p-2.5 shadow-2xs">
-            <div className="flex items-center justify-between mb-1.5">
+          <section className="rounded-2xl border bg-card p-3.5 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between pb-1">
               <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">1. Sealed Quotes (Anonymized)</h2>
               <span className="text-[10px] text-muted-foreground font-semibold">Sorted by Merit Score</span>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2.5 grid-cols-1">
               {quotes.map((q, idx) => {
                 const isSelected = selectedQuote === q.quoteId;
                 const isMyVotedQuote = myVote?.recommendedQuoteId === q.quoteId;
@@ -268,48 +268,48 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                       if (!votingOpen) return;
                       handleSelectQuote(q.quoteId);
                     }}
-                    className={`cursor-pointer rounded-lg border p-2 text-xs transition ${
+                    className={`cursor-pointer rounded-2xl border p-3 text-xs transition space-y-2 ${
                       isSelected
-                        ? 'border-primary ring-1 ring-primary/40 bg-primary/5 shadow-2xs'
+                        ? 'border-primary ring-1 ring-primary/40 bg-primary/5 shadow-sm'
                         : 'bg-card hover:border-slate-400'
                     }`}
                   >
-                    <div className="flex items-center justify-between text-[9px] text-muted-foreground pb-1 mb-1 border-b">
-                      <span className="flex items-center gap-0.5 text-primary font-semibold">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pb-1.5 border-b border-border/50">
+                      <span className="flex items-center gap-1 text-primary font-bold">
                         <span>🔒</span> Protected
                       </span>
                       {scoreDisplay && (
-                        <span className="font-bold text-foreground bg-muted px-1 rounded">
+                        <span className="font-bold text-foreground bg-muted px-1.5 py-0.5 rounded-md">
                           ★ {scoreDisplay}
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center justify-between gap-1">
-                      <span className="font-bold text-foreground truncate text-xs">
+                      <span className="font-bold text-foreground truncate text-sm">
                         {q.anonymousLabel}
                       </span>
                       {isMyVotedQuote ? (
-                        <span className="rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 px-1 text-[9px] font-bold">
+                        <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 px-2 py-0.5 text-[9px] font-bold">
                           Live Vote
                         </span>
                       ) : isTopRecommended ? (
-                        <span className="rounded bg-primary/10 text-primary border border-primary/20 px-1 text-[9px] font-bold">
+                        <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[9px] font-bold">
                           ⭐ Top
                         </span>
                       ) : null}
                     </div>
 
-                    <div className="mt-1.5 space-y-1 text-[11px] bg-muted/20 p-1.5 rounded border border-border/40">
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-[10px]">Price:</span>
-                        <strong className="font-mono font-bold text-foreground text-xs">
+                    <div className="flex items-center justify-between text-[11px] bg-muted/20 p-2 rounded-xl border border-border/40">
+                      <div>
+                        <span className="text-muted-foreground text-[10px] block font-semibold">Total Price:</span>
+                        <strong className="font-mono font-black text-foreground text-sm">
                           ₹{q.totalCost.toLocaleString('en-IN')}
                         </strong>
                       </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-muted-foreground">Turnaround:</span>
-                        <span className="font-semibold text-foreground">{q.deliveryDays ? `🚚 ${q.deliveryDays} days` : 'Standard'}</span>
+                      <div className="text-right">
+                        <span className="text-muted-foreground text-[10px] block font-semibold">Turnaround:</span>
+                        <span className="font-bold text-foreground">{q.deliveryDays ? `🚚 ${q.deliveryDays} days` : 'Standard'}</span>
                       </div>
                     </div>
 
@@ -320,13 +320,13 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                           e.stopPropagation();
                           handleSelectQuote(q.quoteId);
                         }}
-                        className={`mt-1.5 w-full rounded py-1 text-[10px] font-bold transition ${
+                        className={`w-full rounded-xl py-2 text-xs font-bold transition ${
                           isSelected
                             ? 'bg-primary text-primary-foreground shadow-2xs'
                             : 'border border-primary/30 text-primary hover:bg-primary/10'
                         }`}
                       >
-                        {isSelected ? '✓ Selected Recommendation' : 'Select'}
+                        {isSelected ? '✓ Selected Candidate' : 'Select for Vote'}
                       </button>
                     )}
                   </div>
@@ -336,7 +336,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
           </section>
 
           {/* 2. Your Vote & Ballot Section */}
-          <section className="rounded-lg border bg-card p-2.5 shadow-2xs">
+          <section className="rounded-2xl border bg-card p-3.5 shadow-2xs space-y-2">
             {myVote && !isRevising ? (
               <div className="space-y-2" data-testid="my-vote">
                 <div className="flex items-center justify-between gap-2 border-b pb-2">
@@ -423,7 +423,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                         {selectedReasons.length > 0 ? `${selectedReasons.length} selected` : 'Selection required'}
                       </span>
                     </div>
-                    <div className="grid sm:grid-cols-2 gap-1 mb-1.5">
+                    <div className="grid grid-cols-1 gap-1 mb-1.5">
                       {VOTE_REASON_PRESETS.map((preset) => {
                         const isChecked = selectedReasons.includes(preset);
                         return (

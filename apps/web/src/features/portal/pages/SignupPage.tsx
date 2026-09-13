@@ -55,142 +55,130 @@ export function SignupPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto max-w-6xl px-4 py-12 lg:py-16">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-16">
+      <div className="mx-auto w-full max-w-md px-3.5 py-6 space-y-6">
+        <div>
           {/*
-            Second in the source order and first on screen at large sizes: the
-            form is the errand, so a phone gets it without scrolling past the
-            sales copy to reach it.
+            Loose, because this page scrolls. The portal's dense setting is
+            there to fit a form into a panel that does not.
           */}
-          <div className="order-2 lg:order-1">
-            {/*
-              The reasons stay put while the form scrolls past them. The card is
-              taller than any viewport, so sticking the card would do nothing;
-              sticking the short column is what actually keeps the left half of a
-              wide screen from going blank halfway down the form.
-            */}
-            <div className="lg:sticky lg:top-24">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-action">
-                {copy.eyebrow}
-              </p>
-              <h1 className="mt-2 text-3xl font-semibold leading-tight">{copy.headline}</h1>
-              <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">
-                {copy.subhead}
-              </p>
+          <FormDensityProvider dense={false}>
+            <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-2xs">
+              {submitted ? (
+                <SignupSuccess
+                  copy={copy}
+                  result={submitted}
+                  onSignIn={() => navigate('/login')}
+                />
+              ) : (
+                <>
+                  {/*
+                    The same segmented switch the sign-in form uses to choose a
+                    code or a password. Signing up and signing in are one errand
+                    with two doors, and "pick one of two" should not be a
+                    different control on each of them.
+                  */}
+                  <div
+                    role="radiogroup"
+                    aria-label="Which side are you on?"
+                    className="inline-flex w-full rounded-md border bg-muted/40 p-0.5 text-xs"
+                  >
+                    {(
+                      [
+                        ['BUYER', 'I need work to be done'],
+                        ['SUPPLIER', 'I provide services'],
+                      ] as [PortalSide, string][]
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={side === value}
+                        onClick={() => chooseSide(value)}
+                        data-testid={`signup-side-${value.toLowerCase()}`}
+                        className={`flex-1 rounded py-1.5 text-center text-xs transition ${
+                          side === value
+                            ? 'bg-card font-bold text-foreground shadow-xs'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
 
-              <ul className="mt-8 grid max-w-2xl gap-x-8 gap-y-6 sm:grid-cols-2">
-                {copy.propositions.map((proposition, index) => {
-                  const Glyph = glyphs[index] ?? glyphs[0]!;
-                  return (
-                    <li key={proposition.title} className="flex gap-3">
-                      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-navy-soft text-action">
-                        <Glyph className="h-[55%] w-[55%]" />
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="text-base font-medium leading-tight">
-                          {proposition.title}
-                        </h3>
-                        <p className="mt-1 text-sm leading-snug text-muted-foreground">
-                          {proposition.body}
-                        </p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                  <h2 className="mt-4 text-lg font-bold text-foreground">{copy.registerTitle}</h2>
+                  <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                    {copy.registerSubtitle}
+                  </p>
 
-              <p className="mt-8 max-w-2xl text-sm text-muted-foreground">
-                Already registered?{' '}
-                <Link to="/login" className="font-medium text-action hover:underline">
-                  Log in
-                </Link>
-                . Want to read more first? See{' '}
-                <Link to="/pricing" className="font-medium text-action hover:underline">
-                  pricing
-                </Link>{' '}
-                or the{' '}
-                <Link to="/faqs" className="font-medium text-action hover:underline">
-                  FAQs
-                </Link>
-                .
-              </p>
+                  <div className="mt-4">
+                    {side === 'BUYER' ? (
+                      <BuyerRegisterForm
+                        onSuccess={setSubmitted}
+                        onSignIn={() => navigate('/login')}
+                        showHeading={false}
+                      />
+                    ) : (
+                      <SupplierRegisterForm
+                        onSuccess={setSubmitted}
+                        onSignIn={() => navigate('/login')}
+                        showHeading={false}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
             </div>
-          </div>
+          </FormDensityProvider>
+        </div>
 
-          <div className="order-1 lg:order-2">
-            {/*
-              Loose, because this page scrolls. The portal's dense setting is
-              there to fit a form into a panel that does not.
-            */}
-            <FormDensityProvider dense={false}>
-              <div className="rounded-lg border bg-card p-6">
-                {submitted ? (
-                  <SignupSuccess
-                    copy={copy}
-                    result={submitted}
-                    onSignIn={() => navigate('/login')}
-                  />
-                ) : (
-                  <>
-                    {/*
-                      The same segmented switch the sign-in form uses to choose a
-                      code or a password. Signing up and signing in are one errand
-                      with two doors, and "pick one of two" should not be a
-                      different control on each of them.
-                    */}
-                    <div
-                      role="radiogroup"
-                      aria-label="Which side are you on?"
-                      className="inline-flex rounded-md border bg-muted/40 p-0.5 text-xs"
-                    >
-                      {(
-                        [
-                          ['BUYER', 'I need work to be done'],
-                          ['SUPPLIER', 'I provide services'],
-                        ] as [PortalSide, string][]
-                      ).map(([value, label]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          role="radio"
-                          aria-checked={side === value}
-                          onClick={() => chooseSide(value)}
-                          data-testid={`signup-side-${value.toLowerCase()}`}
-                          className={`rounded px-2.5 py-1.5 ${
-                            side === value
-                              ? 'bg-card font-medium shadow-sm'
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
+        {/* Propositions below the form */}
+        <div className="rounded-lg border bg-card/60 p-4 space-y-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-action">
+              {copy.eyebrow}
+            </p>
+            <h1 className="mt-1 text-xl font-bold leading-tight">{copy.headline}</h1>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {copy.subhead}
+            </p>
+
+            <ul className="mt-4 space-y-3">
+              {copy.propositions.map((proposition, index) => {
+                const Glyph = glyphs[index] ?? glyphs[0]!;
+                return (
+                  <li key={proposition.title} className="flex gap-2.5">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-navy-soft text-action text-xs">
+                      <Glyph className="h-[55%] w-[55%]" />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-bold leading-tight text-foreground">
+                        {proposition.title}
+                      </h3>
+                      <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                        {proposition.body}
+                      </p>
                     </div>
+                  </li>
+                );
+              })}
+            </ul>
 
-                    <h2 className="mt-5 text-xl font-semibold">{copy.registerTitle}</h2>
-                    <p className="mt-1 text-sm leading-snug text-muted-foreground">
-                      {copy.registerSubtitle}
-                    </p>
-
-                    <div className="mt-5">
-                      {side === 'BUYER' ? (
-                        <BuyerRegisterForm
-                          onSuccess={setSubmitted}
-                          onSignIn={() => navigate('/login')}
-                          showHeading={false}
-                        />
-                      ) : (
-                        <SupplierRegisterForm
-                          onSuccess={setSubmitted}
-                          onSignIn={() => navigate('/login')}
-                          showHeading={false}
-                        />
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            </FormDensityProvider>
+            <p className="mt-4 text-xs text-muted-foreground border-t pt-3">
+              Already registered?{' '}
+              <Link to="/login" className="font-bold text-action hover:underline">
+                Log in
+              </Link>
+              . Want to read more first? See{' '}
+              <Link to="/pricing" className="font-bold text-action hover:underline">
+                pricing
+              </Link>{' '}
+              or the{' '}
+              <Link to="/faqs" className="font-bold text-action hover:underline">
+                FAQs
+              </Link>
+              .
+            </p>
           </div>
         </div>
       </div>

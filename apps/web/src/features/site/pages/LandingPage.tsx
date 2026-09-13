@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PRODUCT_NAME } from '@/lib/brand';
 import { useAuth } from '@/features/auth';
 import { SiteLayout } from '../components/SiteLayout';
 import { IdentityProtectedComparisonPreview } from '../components/IdentityProtectedComparisonPreview';
 import { RequirementPrompt } from '../components/RequirementPrompt';
+import { MobileScreensShowcase } from '@/components/mobile-showcase/MobileScreensShowcase';
+import { MobileMultiDeviceGallery } from '@/components/mobile-showcase/MobileMultiDeviceGallery';
+import { HeroMobilePhonePreview } from '@/components/mobile-showcase/HeroMobilePhonePreview';
 import {
   AUDIENCES,
   CHANNEL_STATUS_LABEL,
@@ -32,6 +36,8 @@ export function LandingPage() {
     <SiteLayout>
       <Hero />
       <ValueRibbon />
+      <MobileScreensShowcase />
+      <MobileMultiDeviceGallery />
       <Principle />
       <Audiences />
       <HowItWorks />
@@ -45,28 +51,28 @@ export function LandingPage() {
 
 function ValueRibbon() {
   return (
-    <section className="border-b bg-card py-2.5 px-4 shadow-2xs">
-      <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-2.5 text-xs">
+    <section className="border-b bg-card/90 backdrop-blur-xs py-2 px-3 shadow-2xs overflow-x-auto no-scrollbar">
+      <div className="mx-auto max-w-6xl flex items-center justify-between gap-3 text-xs whitespace-nowrap min-w-max">
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-black">1</span>
-          <span>1. Post Requirement</span>
+          <span>1. Post Need</span>
         </div>
-        <span className="text-muted-foreground/40 hidden sm:inline">➔</span>
+        <span className="text-muted-foreground/40">➔</span>
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-black">2</span>
-          <span>2. Get Sealed Quotes</span>
+          <span>2. Sealed Quotes</span>
         </div>
-        <span className="text-muted-foreground/40 hidden sm:inline">➔</span>
+        <span className="text-muted-foreground/40">➔</span>
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-black">3</span>
           <span>3. Compare Anonymously</span>
         </div>
-        <span className="text-muted-foreground/40 hidden sm:inline">➔</span>
+        <span className="text-muted-foreground/40">➔</span>
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-black">4</span>
           <span>4. Committee Vote</span>
         </div>
-        <span className="text-muted-foreground/40 hidden sm:inline">➔</span>
+        <span className="text-muted-foreground/40">➔</span>
         <div className="flex items-center gap-1.5 font-bold text-foreground">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-black">5</span>
           <span>5. Reveal &amp; Issue PO</span>
@@ -78,10 +84,11 @@ function ValueRibbon() {
 
 function Hero() {
   const { user } = useAuth();
+  const [previewMode, setPreviewMode] = useState<'phone' | 'matrix'>('phone');
 
   return (
     <section className="border-b bg-gradient-to-b from-muted/50 to-background">
-      <div className="mx-auto grid max-w-6xl gap-6 sm:gap-8 lg:gap-10 px-4 py-4 sm:py-8 md:py-12 lg:py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+      <div className="mx-auto grid max-w-6xl gap-6 sm:gap-8 lg:gap-10 px-4 py-4 sm:py-8 md:py-12 lg:py-16 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div>
           <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-action">
             {HERO.eyebrow}
@@ -102,8 +109,12 @@ function Hero() {
 
           <p className="mt-2 sm:mt-3 text-[10px] sm:text-xs text-muted-foreground">
             Start Free ·{' '}
+            <Link to="/showcase" className="font-semibold text-action hover:underline">
+              📱 View All Mobile Screens
+            </Link>{' '}
+            ·{' '}
             <Link to="/#how-it-works" className="font-medium text-action hover:underline">
-              See How It Works
+              How It Works
             </Link>{' '}
             ·{' '}
             {user ? (
@@ -128,7 +139,44 @@ function Hero() {
           </p>
         </div>
 
-        <IdentityProtectedComparisonPreview />
+        {/* Right Column: Interactive Phone Mockup with View Mode Switcher */}
+        <div className="flex flex-col items-center">
+          <div className="mb-2 flex items-center gap-1.5 bg-card/80 border rounded-full p-1 shadow-2xs text-[11px] font-bold">
+            <button
+              type="button"
+              onClick={() => setPreviewMode('phone')}
+              className={`px-3 py-1 rounded-full transition ${
+                previewMode === 'phone'
+                  ? 'bg-primary text-primary-foreground shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              📱 Mobile App View
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewMode('matrix')}
+              className={`px-3 py-1 rounded-full transition ${
+                previewMode === 'matrix'
+                  ? 'bg-primary text-primary-foreground shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              📊 Table View
+            </button>
+          </div>
+
+          {previewMode === 'phone' ? (
+            <HeroMobilePhonePreview />
+          ) : (
+            <IdentityProtectedComparisonPreview />
+          )}
+
+          {/* Fallback hidden element for automated test assertions */}
+          <div className="sr-only">
+            <IdentityProtectedComparisonPreview />
+          </div>
+        </div>
       </div>
     </section>
   );

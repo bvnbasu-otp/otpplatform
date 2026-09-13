@@ -173,7 +173,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
   const activeLinearStep = award ? 10 : 9;
 
   return (
-    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full" data-testid="award-page">
+    <div className="zero-scroll-container p-2.5 max-w-full mx-auto w-full" data-testid="award-page">
       <ProcurementStageNavigator
         currentLinearStep={activeLinearStep}
         currentStage="AWARDED"
@@ -236,10 +236,10 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
         </div>
       )}
 
-      {/* Main Content Multi-Column Layout */}
-      <div className="zero-scroll-pane mt-2 pb-20 sm:pb-12 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
-        {/* Left / Main Section (7 cols): Award Form or Locked Card */}
-        <div className="lg:col-span-7 space-y-2">
+      {/* Main Content Layout */}
+      <div className="zero-scroll-pane mt-2 pb-24 sm:pb-16 space-y-3">
+        {/* Award Form or Locked Card */}
+        <div className="space-y-3">
           {award ? (
             <section
               className="rounded-lg border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/30 p-3 shadow-2xs space-y-2"

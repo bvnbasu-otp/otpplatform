@@ -12,13 +12,12 @@ interface SiteLink {
 }
 
 const PRIMARY_LINKS: SiteLink[] = [
+  { label: '📱 Mobile Showcase', to: '/showcase' },
   { label: 'How it works', to: '/#how-it-works' },
   { label: 'Pricing', to: '/pricing' },
   { label: 'FAQs', to: '/faqs' },
   { label: 'About us', to: '/about-us' },
 ];
-
-const INACTIVE = 'text-muted-foreground hover:bg-muted/60 hover:text-foreground';
 
 export function SiteHeader() {
   const { user } = useAuth();
@@ -52,88 +51,35 @@ export function SiteHeader() {
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : 'U';
 
   return (
-    <header className="shrink-0 z-40 border-b bg-card max-h-[52px] h-[52px]">
-      <div className="mx-auto flex max-w-7xl h-full items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4">
-        {/* Brand Logo & Desktop Navigation */}
-        <div className="flex items-center gap-3 shrink-0">
+    <header className="shrink-0 z-40 border-b bg-card max-h-[48px] h-12">
+      <div className="mx-auto flex w-full h-full items-center justify-between gap-2 px-3">
+        {/* Brand Logo */}
+        <div className="flex items-center gap-2 shrink-0">
           <Link
             to="/"
-            className="flex items-center gap-2 hover:opacity-90 transition"
+            className="flex items-center gap-1.5 hover:opacity-90 transition"
             onClick={() => {
               setIsMenuOpen(false);
               setIsAccountPopoverOpen(false);
             }}
           >
-            <OtpLogo size={28} />
+            <OtpLogo size={24} />
           </Link>
-
-          {/* Full Top-Level Desktop Navigation Bar */}
-          <nav aria-label="Site" className="hidden md:block">
-            <ul className="flex items-center gap-1 text-xs font-medium">
-              <li>
-                <NavLink
-                  to="/"
-                  end
-                  className={({ isActive }) =>
-                    `rounded-md px-2.5 py-1.5 transition ${isActive ? 'bg-muted font-bold text-foreground' : INACTIVE}`
-                  }
-                >
-                  Home
-                </NavLink>
-              </li>
-              {PRIMARY_LINKS.map((link) => (
-                <li key={link.to}>
-                  <NavLink
-                    to={link.to}
-                    className={({ isActive }) =>
-                      `rounded-md px-2.5 py-1.5 transition ${isActive ? 'bg-muted font-bold text-foreground' : INACTIVE}`
-                    }
-                  >
-                    {link.label}
-                  </NavLink>
-                </li>
-              ))}
-              {user && (
-                <li>
-                  <NavLink
-                    to="/dashboard"
-                    className={({ isActive }) =>
-                      `rounded-md px-2.5 py-1.5 transition ${isActive ? 'bg-muted font-bold text-foreground' : INACTIVE}`
-                    }
-                  >
-                    Dashboard
-                  </NavLink>
-                </li>
-              )}
-            </ul>
-          </nav>
         </div>
 
-        {/* Right Action Cluster (Demo Persona Switcher, User Avatar / Profile Chip, Theme, Auth CTAs, Hamburger) */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <DemoPersonaSwitcher />
-          <ThemeToggle variant="menu" />
-
+        {/* Right Action Cluster: Clean & Minimal (Height ≤ 48px) */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {user ? (
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Desktop User Chip & Dashboard CTA */}
-              <div className="hidden sm:flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[8px] font-bold">
-                    {userInitials}
-                  </span>
-                  <span className="truncate max-w-[130px] font-mono">{user.email}</span>
-                </span>
-                <Link
-                  to="/dashboard"
-                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
-                >
-                  Dashboard →
-                </Link>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <Link
+                to="/dashboard"
+                className="rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+              >
+                Dashboard →
+              </Link>
 
-              {/* Mobile Compact Profile Avatar Button */}
-              <div className="relative sm:hidden">
+              {/* Profile Avatar Button */}
+              <div className="relative">
                 <button
                   type="button"
                   onClick={() => {
@@ -149,37 +95,19 @@ export function SiteHeader() {
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
-              {/* Desktop Auth Links */}
-              <div className="hidden sm:flex items-center gap-1.5">
-                <Link
-                  to="/login"
-                  className="rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                  data-testid="header-log-in"
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/signup"
-                  className="rounded-md border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition shadow-2xs"
-                  data-testid="header-register"
-                >
-                  Register
-                </Link>
-                <Link
-                  to="/requirements/new"
-                  className="whitespace-nowrap rounded-md bg-action px-3 py-1.5 text-xs font-bold text-action-foreground hover:bg-action-hover transition shadow-2xs"
-                  data-testid="header-create-requirement"
-                >
-                  + Create requirement
-                </Link>
-              </div>
-
-              {/* Mobile Compact Create Button */}
               <Link
-                to="/requirements/new"
-                className="sm:hidden whitespace-nowrap rounded-md bg-action px-2.5 py-1 text-[11px] font-bold text-action-foreground hover:bg-action-hover transition shadow-2xs"
+                to="/login"
+                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                data-testid="header-log-in"
               >
-                + Create
+                Log In
+              </Link>
+              <Link
+                to="/signup"
+                className="rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-2xs"
+                data-testid="header-register"
+              >
+                Register
               </Link>
             </div>
           )}
@@ -193,7 +121,7 @@ export function SiteHeader() {
               setIsMenuOpen((prev) => !prev);
               setIsAccountPopoverOpen(false);
             }}
-            className={`rounded-md border p-1.5 md:hidden transition ${
+            className={`rounded-lg border p-1.5 transition ${
               isMenuOpen ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted'
             }`}
           >
@@ -220,11 +148,11 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {/* Mobile Account Options Popover (Triggered from Avatar) */}
+      {/* Account Options Popover */}
       {isAccountPopoverOpen && user && (
         <div
           ref={accountPopoverRef}
-          className="fixed right-3 top-[54px] z-[1050] w-64 max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-60px)] overflow-y-auto rounded-xl border bg-card p-3 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-xs sm:hidden"
+          className="fixed sm:absolute right-3 top-[50px] z-[1050] w-64 max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-60px)] overflow-y-auto rounded-xl border bg-card p-3 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-xs"
         >
           <div className="flex items-center gap-2.5 pb-2.5 border-b">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs shrink-0">
@@ -261,12 +189,12 @@ export function SiteHeader() {
         </div>
       )}
 
-      {/* Slide-Out Overlay Drawer (Z-Index: 1000 Floating) */}
+      {/* Slide-Out Overlay Drawer (Z-Index: 1000) */}
       {isMenuOpen && (
-        <div className="fixed inset-0 top-[52px] z-[1000] md:hidden">
+        <div className="fixed sm:absolute inset-0 top-[48px] z-[1000]">
           {/* Backdrop with Click-to-Close */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+            className="fixed sm:absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
             onClick={() => setIsMenuOpen(false)}
             aria-hidden="true"
           />
@@ -274,9 +202,15 @@ export function SiteHeader() {
           {/* Overlay Navigation Container */}
           <nav
             aria-label="Mobile Navigation"
-            className="relative border-b bg-card shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100dvh-52px)] overflow-y-auto"
+            className="relative border-b bg-card shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100%-48px)] overflow-y-auto"
           >
-            <div className="mx-auto max-w-7xl px-4 py-3 space-y-3 text-xs">
+            <div className="mx-auto w-full px-4 py-3 space-y-3 text-xs">
+              {/* Quick Persona & Theme switcher bar inside drawer */}
+              <div className="flex items-center justify-between pb-2 border-b">
+                <DemoPersonaSwitcher />
+                <ThemeToggle variant="menu" />
+              </div>
+
               {user ? (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
                   <div className="flex items-center gap-2.5 mb-2.5">

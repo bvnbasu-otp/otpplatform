@@ -360,10 +360,17 @@ export function SignInForm({
     <div className="space-y-5">
       {/* 1-Click Demo Accounts Switcher (Only visible in Demo/Staging mode) */}
       {demoEnabled && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-xs" data-testid="demo-quick-login">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/70 dark:bg-amber-950/20 p-3.5 text-xs space-y-2.5" data-testid="demo-quick-login">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-900 dark:text-amber-200 flex items-center gap-1">
+              <span>⚡</span> 1-Tap Demo Switcher
+            </span>
+            <span className="text-[9px] text-muted-foreground font-semibold">Instant Sign In</span>
+          </div>
+
           <div className="space-y-2">
             <div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
+              <span className="text-[10px] font-bold text-muted-foreground block mb-1">
                 Buyer Personas:
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -373,23 +380,23 @@ export function SignInForm({
                     type="button"
                     disabled={busy}
                     onClick={() => void handleQuickDemoSignIn(p.email)}
-                    className="inline-flex items-center gap-1 rounded bg-card px-2 py-1 text-[11px] font-medium border border-amber-300/80 shadow-xs hover:bg-amber-100/60 transition"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-card px-2.5 py-1.5 text-[11px] font-semibold border border-amber-300/80 shadow-2xs hover:bg-amber-100/60 transition active:scale-95"
                     title={`${p.role} (${p.email})`}
                   >
-                    <span className="font-semibold text-foreground">{p.name}</span>
-                    <span className="text-[9px] rounded bg-muted px-1 py-0.2 text-muted-foreground">{p.badge}</span>
+                    <span className="font-bold text-foreground">{p.name}</span>
+                    <span className="text-[9px] rounded-full bg-muted px-1.5 py-0.2 text-muted-foreground font-bold">{p.badge}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-2 border-t border-amber-200/60 pt-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
-                Verified Suppliers (01 – 04 per Domain):
+            <div className="space-y-1.5 border-t border-amber-200/60 pt-2">
+              <span className="text-[10px] font-bold text-muted-foreground block">
+                Verified Suppliers (1-Tap):
               </span>
               {DEMO_SUPPLIER_GROUPS.map((group) => (
                 <div key={group.category} className="space-y-1">
-                  <span className="text-[10px] font-medium text-muted-foreground block">
+                  <span className="text-[10px] font-semibold text-muted-foreground block">
                     {group.category}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -399,11 +406,11 @@ export function SignInForm({
                         type="button"
                         disabled={busy}
                         onClick={() => void handleQuickDemoSignIn(p.email)}
-                        className="inline-flex items-center gap-1 rounded bg-card px-2 py-1 text-[11px] font-medium border border-emerald-300 shadow-xs hover:bg-emerald-50 transition text-emerald-900"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-card px-2.5 py-1.5 text-[11px] font-semibold border border-emerald-300/80 shadow-2xs hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition text-emerald-900 dark:text-emerald-300 active:scale-95"
                         title={`${p.role} (${p.email})`}
                       >
-                        <span className="font-semibold">{p.name}</span>
-                        <span className="text-[9px] rounded bg-emerald-100 px-1 py-0.2 text-emerald-800 font-semibold">{p.badge}</span>
+                        <span className="font-bold">{p.name}</span>
+                        <span className="text-[9px] rounded-full bg-emerald-100 dark:bg-emerald-950 px-1.5 py-0.2 text-emerald-800 dark:text-emerald-300 font-bold">{p.badge}</span>
                       </button>
                     ))}
                   </div>

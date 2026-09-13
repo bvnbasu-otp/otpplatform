@@ -168,13 +168,13 @@ export function PurchaseOrderDetailPage({
 
   if (isLoading) {
     return (
-      <div className="zero-scroll-container p-4 max-w-7xl mx-auto w-full space-y-4">
+      <div className="zero-scroll-container p-3 max-w-full mx-auto w-full space-y-4">
         <div className="h-10 bg-muted/60 rounded-lg animate-pulse" />
         <div className="h-24 bg-card border rounded-lg p-4 animate-pulse space-y-2">
           <div className="h-4 bg-muted w-1/4 rounded" />
           <div className="h-6 bg-muted w-1/2 rounded" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="h-48 bg-card border rounded-lg animate-pulse" />
           <div className="h-48 bg-card border rounded-lg animate-pulse" />
           <div className="h-48 bg-card border rounded-lg animate-pulse" />
@@ -255,7 +255,7 @@ export function PurchaseOrderDetailPage({
   })();
 
   return (
-    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full" data-testid="purchase-order-detail">
+    <div className="zero-scroll-container p-3 max-w-full mx-auto w-full" data-testid="purchase-order-detail">
       <ProcurementStageNavigator
         currentLinearStep={activeLinearStep}
         currentStage={currentStage}
@@ -308,75 +308,75 @@ export function PurchaseOrderDetailPage({
       )}
 
       {/* Main Content Pane */}
-      <div className="zero-scroll-pane mt-2 pb-20 sm:pb-12 space-y-2">
+      <div className="zero-scroll-pane mt-2 pb-24 sm:pb-16 space-y-3">
         {/* Direct Commercial Contract & GST Tax Compliance Parties */}
-        <div className="rounded-lg border bg-card p-3 text-xs shadow-2xs space-y-2.5">
-          <div className="flex items-center justify-between border-b pb-1.5">
+        <div className="rounded-2xl border bg-card p-3.5 text-xs shadow-2xs space-y-3">
+          <div className="flex items-center justify-between border-b pb-2">
             <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
               Direct Commercial Contract &amp; GST Compliance Parties
             </span>
-            <span className="text-[10px] rounded bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 font-bold text-blue-700 dark:text-blue-300 border border-blue-200">
-              Direct B2B Commercial Contract
+            <span className="text-[10px] rounded-full bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 font-bold text-blue-700 dark:text-blue-300 border border-blue-200">
+              Direct B2B Contract
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             {/* Buyer Organization (Bill To / Issuer) */}
-            <div className="rounded-md border bg-muted/10 p-2.5 space-y-1">
+            <div className="rounded-xl border bg-muted/10 p-3 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] uppercase font-bold text-muted-foreground">Bill To (Buyer Organization)</span>
                 {order.buyerOrgType && (
-                  <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                  <span className="text-[9px] uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
                     {order.buyerOrgType}
                   </span>
                 )}
               </div>
-              <p className="font-bold text-foreground text-sm">{order.buyerOrgName || 'Buyer Organization'}</p>
+              <p className="font-extrabold text-foreground text-sm">{order.buyerOrgName || 'Buyer Organization'}</p>
               
               <div className="pt-1 flex items-center justify-between text-[11px]">
-                <span className="text-muted-foreground">Buyer GSTIN:</span>
+                <span className="text-muted-foreground font-semibold">Buyer GSTIN:</span>
                 <span className="font-mono font-bold text-primary">
                   {order.buyerGstin ? order.buyerGstin : <span className="text-muted-foreground font-normal italic">Unregistered / Exempt</span>}
                 </span>
               </div>
               {order.buyerGstin && (
-                <div className="text-[9px] text-emerald-700 dark:text-emerald-400 font-medium">
-                  ✓ Eligible for GST Input Tax Credit (ITC) — Bill To this GSTIN
+                <div className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold">
+                  ✓ Eligible for GST Input Tax Credit (ITC)
                 </div>
               )}
 
               {(order.buyerContactPerson || order.buyerContactPhone || order.buyerContactEmail) && (
                 <div className="text-[11px] text-muted-foreground pt-1 border-t mt-1 space-y-0.5">
-                  {order.buyerContactPerson && <div>Contact: <span className="text-foreground font-medium">{order.buyerContactPerson}</span></div>}
-                  {order.buyerContactPhone && <div>Phone: <span className="text-foreground font-mono">{order.buyerContactPhone}</span></div>}
+                  {order.buyerContactPerson && <div>Contact: <span className="text-foreground font-semibold">{order.buyerContactPerson}</span></div>}
+                  {order.buyerContactPhone && <div>Phone: <span className="text-foreground font-mono font-semibold">{order.buyerContactPhone}</span></div>}
                   {order.buyerContactEmail && <div>Email: <span className="text-foreground">{order.buyerContactEmail}</span></div>}
                 </div>
               )}
 
               {formatAddress(order.buyerAddress, order.buyerCity) && (
                 <div className="text-[10px] text-muted-foreground pt-1 border-t mt-1">
-                  Site / Delivery Address: <span className="text-foreground">{formatAddress(order.buyerAddress, order.buyerCity)}</span>
+                  Delivery Site: <span className="text-foreground font-medium">{formatAddress(order.buyerAddress, order.buyerCity)}</span>
                 </div>
               )}
             </div>
 
             {/* Awarded Supplier (Issued To / Vendor) */}
-            <div className="rounded-md border bg-muted/10 p-2.5 space-y-1">
+            <div className="rounded-xl border bg-muted/10 p-3 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] uppercase font-bold text-muted-foreground">Issued To (Awarded Vendor)</span>
                 {order.supplierGstVerified && (
-                  <span className="rounded bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200">
+                  <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200">
                     ✓ GST Verified
                   </span>
                 )}
               </div>
-              <p className="font-bold text-foreground text-sm">{order.supplierName || 'Awarded Vendor'}</p>
+              <p className="font-extrabold text-foreground text-sm">{order.supplierName || 'Awarded Vendor'}</p>
               {order.supplierLegalName && (
                 <p className="text-[10px] text-muted-foreground">Legal: <span className="text-foreground">{order.supplierLegalName}</span></p>
               )}
 
               <div className="pt-1 flex items-center justify-between text-[11px]">
-                <span className="text-muted-foreground">Vendor GSTIN:</span>
+                <span className="text-muted-foreground font-semibold">Vendor GSTIN:</span>
                 <span className="font-mono font-bold text-foreground">
                   {order.supplierGstin || 'Unregistered'}
                 </span>
@@ -384,7 +384,7 @@ export function PurchaseOrderDetailPage({
 
               {(order.supplierPhone || order.supplierEmail) && (
                 <div className="text-[11px] text-muted-foreground pt-1 border-t mt-1 space-y-0.5">
-                  {order.supplierPhone && <div>Phone: <span className="text-foreground font-mono">{order.supplierPhone}</span></div>}
+                  {order.supplierPhone && <div>Phone: <span className="text-foreground font-mono font-semibold">{order.supplierPhone}</span></div>}
                   {order.supplierEmail && <div>Email: <span className="text-foreground">{order.supplierEmail}</span></div>}
                 </div>
               )}
@@ -395,16 +395,16 @@ export function PurchaseOrderDetailPage({
             </div>
           </div>
 
-          <div className="rounded bg-muted/30 border p-2 text-[10px] text-muted-foreground flex items-center justify-between gap-2">
+          <div className="rounded-xl bg-muted/30 border p-2.5 text-[10px] text-muted-foreground flex items-center justify-between gap-2">
             <span>
-              <strong>Direct Contract:</strong> This Purchase Order is a binding commercial contract directly between {order.buyerOrgName || 'Buyer'} and {order.supplierName || 'Supplier'}. Settlement occurs directly between parties.
+              <strong>Direct Contract:</strong> Binding commercial contract between {order.buyerOrgName || 'Buyer'} and {order.supplierName || 'Supplier'}.
             </span>
             <span className="font-semibold text-primary shrink-0">GST Verified ✓</span>
           </div>
         </div>
 
         {/* PO Lifecycle Actions */}
-        <div className="rounded-lg border bg-card p-2.5 shadow-2xs">
+        <div className="rounded-2xl border bg-card p-3 shadow-2xs">
           <PoActionButtons
             status={order.status}
             role={role}
@@ -415,16 +415,16 @@ export function PurchaseOrderDetailPage({
 
         {/* Auto Create Work Order if missing */}
         {!workOrder && (
-          <div className="rounded-lg border bg-card p-3 shadow-2xs">
+          <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2">
             <p className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">Work Execution &amp; Progress</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Track milestone progress (0% → 100%) and mutual inspection acknowledgment.
             </p>
             <button
               type="button"
               disabled={busy}
               onClick={() => void handleCreateWorkOrder()}
-              className="mt-2 rounded bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50"
+              className="mt-1 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition"
             >
               {busy ? 'Initializing…' : 'Initialize Work Order Progress →'}
             </button>
@@ -433,13 +433,13 @@ export function PurchaseOrderDetailPage({
 
         {/* Work Order & 2-Way Progress Tracking */}
         {workOrder && (
-          <section className="rounded-lg border bg-card p-3 shadow-2xs space-y-2.5" data-testid="work-order-section">
-            <div className="flex items-center justify-between border-b pb-1.5">
+          <section className="rounded-2xl border bg-card p-3.5 shadow-2xs space-y-3" data-testid="work-order-section">
+            <div className="flex items-center justify-between border-b pb-2">
               <h2 className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">Work Execution &amp; Milestones</h2>
-              <span className="text-[10px] text-muted-foreground">{workOrder.title}</span>
+              <span className="text-[10px] text-muted-foreground font-semibold">{workOrder.title}</span>
             </div>
 
-            <div className="rounded-lg border bg-muted/20 p-2.5">
+            <div className="rounded-xl border bg-muted/20 p-3 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <StatusBadge status={workOrder.status} />
@@ -447,16 +447,16 @@ export function PurchaseOrderDetailPage({
                     {workOrder.progressPercent}% Complete
                   </span>
                 </div>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground font-semibold">
                   {workOrder.progressPercent === 100
                     ? workOrder.buyerAcceptedAt
-                      ? '✓ 100% Mutual Acknowledgment Complete'
-                      : '100% Reported · Awaiting Buyer Sign-off'
+                      ? '✓ 100% Complete'
+                      : '100% Reported · Awaiting Sign-off'
                     : 'Milestone In Progress'}
                 </span>
               </div>
 
-              <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700 border">
+              <div className="h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700 border">
                 <div
                   className={`h-full transition-all duration-300 ${
                     workOrder.progressPercent >= 100
@@ -475,13 +475,13 @@ export function PurchaseOrderDetailPage({
 
               {/* Supplier Milestone Update Controls */}
               {role === 'supplier' && workOrder.status !== 'COMPLETED' && (
-                <div className="mt-2.5 pt-2 border-t flex flex-wrap items-center gap-2">
+                <div className="pt-2 border-t flex flex-wrap items-center gap-1.5">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">Update:</span>
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => void handleProgress(25)}
-                    className="rounded border border-yellow-400 bg-yellow-50 px-2 py-0.5 text-[10px] font-bold text-yellow-900 shadow-2xs hover:bg-yellow-100 disabled:opacity-50"
+                    className="rounded-lg border border-yellow-400 bg-yellow-50 px-2.5 py-1 text-[10px] font-bold text-yellow-900 shadow-2xs hover:bg-yellow-100 disabled:opacity-50"
                   >
                     25%
                   </button>
@@ -489,7 +489,7 @@ export function PurchaseOrderDetailPage({
                     type="button"
                     disabled={busy}
                     onClick={() => void handleProgress(50)}
-                    className="rounded border border-blue-400 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-900 shadow-2xs hover:bg-blue-100 disabled:opacity-50"
+                    className="rounded-lg border border-blue-400 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-900 shadow-2xs hover:bg-blue-100 disabled:opacity-50"
                   >
                     50%
                   </button>
@@ -497,7 +497,7 @@ export function PurchaseOrderDetailPage({
                     type="button"
                     disabled={busy}
                     onClick={() => void handleProgress(75)}
-                    className="rounded border border-lime-500 bg-lime-50 px-2 py-0.5 text-[10px] font-bold text-lime-900 shadow-2xs hover:bg-lime-100 disabled:opacity-50"
+                    className="rounded-lg border border-lime-500 bg-lime-50 px-2.5 py-1 text-[10px] font-bold text-lime-900 shadow-2xs hover:bg-lime-100 disabled:opacity-50"
                   >
                     75%
                   </button>
@@ -505,7 +505,7 @@ export function PurchaseOrderDetailPage({
                     type="button"
                     disabled={busy}
                     onClick={() => void handleProgress(100)}
-                    className="rounded bg-emerald-800 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-2xs hover:bg-emerald-900 disabled:opacity-50"
+                    className="rounded-lg bg-emerald-800 px-3 py-1 text-[10px] font-bold text-white shadow-2xs hover:bg-emerald-900 disabled:opacity-50"
                   >
                     ✓ 100% Delivered
                   </button>

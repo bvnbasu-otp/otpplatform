@@ -238,7 +238,7 @@ export function RfqIdentityProtectedComparisonPage({
       )}
 
       {/* Content Scroll Pane */}
-      <div className="zero-scroll-pane mt-2 pb-20 sm:pb-12 space-y-2">
+      <div className="zero-scroll-pane mt-2 pb-24 sm:pb-16 space-y-3">
         <RfqPhasePanel rfqId={rfqId} side="BUYER" />
 
         {/* Full Detailed Comparison Table */}

@@ -463,6 +463,20 @@ html, body {
   }
 }
 
+/* Mobile Safe Area & Touch Helpers */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.touch-callout-none {
+  -webkit-touch-callout: none;
+}
+.tap-highlight-transparent {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Print Optimization for PDF Export */
 @media print {
   body {
