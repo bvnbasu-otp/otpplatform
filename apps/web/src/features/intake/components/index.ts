@@ -1,7 +1,24 @@
 export { AttributeFields } from './AttributeFields';
 export type { AttributeFieldsProps } from './AttributeFields';
-export { ScopeClassificationStep } from './steps/ScopeClassificationStep';
 export { VoiceRequirementDictation } from './VoiceRequirementDictation';
+export type { VoiceRequirementDictationProps } from './VoiceRequirementDictation';
+
+// 6 Progressive Conversational Intake Steps
+export { WhatDoYouNeedStep } from './steps/WhatDoYouNeedStep';
+export type { WhatDoYouNeedStepProps } from './steps/WhatDoYouNeedStep';
+export { WhereLocationStep } from './steps/WhereLocationStep';
+export type { WhereLocationStepProps } from './steps/WhereLocationStep';
+export { WhenAndBudgetStep } from './steps/WhenAndBudgetStep';
+export type { WhenAndBudgetStepProps } from './steps/WhenAndBudgetStep';
+export { ScopeAndSpecificationsStep } from './steps/ScopeAndSpecificationsStep';
+export type { ScopeAndSpecificationsStepProps } from './steps/ScopeAndSpecificationsStep';
+export { AttachmentsStep } from './steps/AttachmentsStep';
+export type { AttachmentsStepProps } from './steps/AttachmentsStep';
+export { ReviewAndPublishStep } from './steps/ReviewAndPublishStep';
+export type { ReviewAndPublishStepProps } from './steps/ReviewAndPublishStep';
+
+// Backward-compatible step exports
+export { ScopeClassificationStep } from './steps/ScopeClassificationStep';
 export { TechnicalSpecificationsStep } from './steps/TechnicalSpecificationsStep';
 export { LogisticsAndCommercialStep } from './steps/LogisticsAndCommercialStep';
 export { SourcingAndReviewStep } from './steps/SourcingAndReviewStep';

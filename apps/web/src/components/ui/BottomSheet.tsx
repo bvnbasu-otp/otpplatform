@@ -71,8 +71,8 @@ export function BottomSheet({
       >
         {/* Handle Bar (Mobile Only) */}
         {showHandle && (
-          <div className="pt-3 pb-1 flex justify-center shrink-0 cursor-grab active:cursor-grabbing sm:hidden">
-            <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
+          <div className="pt-2.5 pb-1 flex justify-center shrink-0 cursor-grab active:cursor-grabbing sm:hidden">
+            <div className="w-10 h-1.25 rounded-full bg-muted-foreground/30" />
           </div>
         )}
 
@@ -81,12 +81,12 @@ export function BottomSheet({
           <div className="px-4 py-3 border-b flex items-start justify-between gap-3 shrink-0">
             <div className="min-w-0 flex-1">
               {title && (
-                <h3 id="bottom-sheet-title" className="text-base font-extrabold text-foreground truncate">
+                <h3 id="bottom-sheet-title" className="text-sm font-extrabold text-foreground truncate">
                   {title}
                 </h3>
               )}
               {subtitle && (
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2 leading-tight">
                   {subtitle}
                 </p>
               )}
@@ -96,7 +96,7 @@ export function BottomSheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition shrink-0"
+              className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition shrink-0 active:scale-95 mobile-touch-target"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
@@ -106,7 +106,7 @@ export function BottomSheet({
         )}
 
         {/* Scrollable Content */}
-        <div className="p-4 overflow-y-auto flex-1 overscroll-contain">
+        <div className="p-4 overflow-y-auto flex-1 overscroll-contain text-xs">
           {children}
         </div>
 

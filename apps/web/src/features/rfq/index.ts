@@ -1,11 +1,19 @@
 export {
   IdentityProtectedQuoteComparisonTable,
   IdentityProtectedQuoteComparisonTable as BlindQuoteComparisonTable,
+  QuoteComparisonSummaryHeader,
+  QuoteBoqBottomSheet,
+  QuoteCard4Pillar,
+  QuoteStickyBottomBar,
   CancelRfqModal,
 } from './components';
 export type {
   IdentityProtectedQuoteComparisonTableProps,
   IdentityProtectedQuoteComparisonTableProps as BlindQuoteComparisonTableProps,
+  QuoteComparisonSummaryHeaderProps,
+  QuoteBoqBottomSheetProps,
+  QuoteCard4PillarProps,
+  QuoteStickyBottomBarProps,
 } from './components';
 
 export {

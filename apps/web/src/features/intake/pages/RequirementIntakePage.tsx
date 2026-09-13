@@ -21,10 +21,12 @@ import {
   saveLocalIntakeDraft,
 } from '../lib/intake-storage';
 import {
-  ScopeClassificationStep,
-  TechnicalSpecificationsStep,
-  LogisticsAndCommercialStep,
-  SourcingAndReviewStep,
+  WhatDoYouNeedStep,
+  WhereLocationStep,
+  WhenAndBudgetStep,
+  ScopeAndSpecificationsStep,
+  AttachmentsStep,
+  ReviewAndPublishStep,
 } from '../components';
 import {
   fetchOrganizationSubscription,
@@ -33,10 +35,21 @@ import {
 } from '@/features/subscription';
 
 const STEPS: WizardStep[] = [
-  { id: 'scope', label: 'Scope & Classification' },
-  { id: 'specifications', label: 'Technical Specifications' },
-  { id: 'terms', label: 'Logistics & Terms' },
-  { id: 'review', label: 'Sourcing & Review' },
+  { id: 'need', label: '1. What' },
+  { id: 'location', label: '2. Where' },
+  { id: 'timing_budget', label: '3. When & Budget' },
+  { id: 'specifications', label: '4. Specs' },
+  { id: 'attachments', label: '5. Attachments' },
+  { id: 'review_publish', label: '6. Review & Publish' },
+];
+
+const STEP_TITLES = [
+  'What do you need?',
+  'Where is this needed?',
+  'When & Budget?',
+  'Scope & Specifications',
+  'Drawings & Attachments',
+  'Review & Publish',
 ];
 
 const parser = new RuleBasedRequirementParser();
@@ -72,18 +85,27 @@ export function RequirementIntakePage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [restoredNotice, setRestoredNotice] = useState(false);
 
+  // Auto-scroll to top on step transitions
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [stepIndex]);
+
   useEffect(() => {
     if (!requirementId) {
       const local = loadLocalIntakeDraft(context.organizationId);
       if (local?.draft?.requirementId && !local.draft.requirementId.startsWith('local-')) {
         setSearchParams({ draft: local.draft.requirementId }, { replace: true });
-        if (typeof local.stepIndex === 'number' && local.stepIndex > 0) setStepIndex(local.stepIndex);
+        if (typeof local.stepIndex === 'number' && local.stepIndex >= 0 && local.stepIndex < STEPS.length) {
+          setStepIndex(local.stepIndex);
+        }
         if (typeof local.furthestIndex === 'number') setFurthestIndex(local.furthestIndex);
         if (local.parsed) setParsed(local.parsed);
         setRestoredNotice(true);
       } else if (local?.draft) {
         setDraft(local.draft);
-        if (typeof local.stepIndex === 'number' && local.stepIndex > 0) setStepIndex(local.stepIndex);
+        if (typeof local.stepIndex === 'number' && local.stepIndex >= 0 && local.stepIndex < STEPS.length) {
+          setStepIndex(local.stepIndex);
+        }
         if (typeof local.furthestIndex === 'number') setFurthestIndex(local.furthestIndex);
         if (local.parsed) setParsed(local.parsed);
         setRestoredNotice(true);
@@ -273,19 +295,25 @@ export function RequirementIntakePage() {
   }
 
   return (
-    <div className="zero-scroll-container p-3 max-w-5xl mx-auto w-full" data-testid="requirement-intake-page">
-      {/* Compressed Top Bar */}
-      <header className="rounded-lg border bg-card px-3 py-1.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
+    <div className="min-h-screen pb-16 max-w-4xl mx-auto w-full px-3 sm:px-6 pt-3" data-testid="requirement-intake-page">
+      {/* Top Header Bar */}
+      <header className="rounded-xl border bg-card px-3.5 py-2.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Link to="/dashboard" className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-            ← Dashboard
+          <Link
+            to="/dashboard"
+            className="text-xs font-bold text-muted-foreground hover:text-foreground transition flex items-center gap-1"
+          >
+            <span>←</span>
+            <span>Dashboard</span>
           </Link>
-          <span className="text-muted-foreground">|</span>
-          <h1 className="text-xs font-bold text-foreground truncate">New Sourcing Requirement</h1>
+          <span className="text-muted-foreground/60">|</span>
+          <h1 className="text-xs sm:text-sm font-extrabold text-foreground truncate">
+            New Requirement
+          </h1>
         </div>
 
         {restoredNotice && draft && (
-          <div className="flex items-center gap-2 text-[11px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 shrink-0">
+          <div className="flex items-center gap-1.5 text-[11px] text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20 shrink-0">
             <span>💾 Draft recovered</span>
             <button
               type="button"
@@ -295,7 +323,7 @@ export function RequirementIntakePage() {
                 setSearchParams({}, { replace: true });
                 window.location.reload();
               }}
-              className="text-[10px] font-bold underline hover:opacity-80 transition"
+              className="text-[10px] font-bold underline hover:opacity-80 transition ml-1"
             >
               Clear
             </button>
@@ -303,8 +331,9 @@ export function RequirementIntakePage() {
         )}
       </header>
 
+      {/* Subscription Notice */}
       {subscription?.isExpired && (
-        <div className="mt-1.5 rounded-lg border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 p-2 text-xs text-rose-900 dark:text-rose-200 shadow-2xs flex items-center justify-between gap-2 shrink-0">
+        <div className="mt-2 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 p-2.5 text-xs text-rose-900 dark:text-rose-200 shadow-2xs flex items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-1.5">
             <span className="font-bold text-xs">🔒 Read-Only: Subscription Expired.</span>
             <span className="text-[11px] text-rose-800 dark:text-rose-300">Recharge via UPI to publish.</span>
@@ -312,33 +341,59 @@ export function RequirementIntakePage() {
           <button
             type="button"
             onClick={() => setIsPaymentModalOpen(true)}
-            className="shrink-0 rounded bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1 text-xs shadow-2xs transition"
+            className="shrink-0 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 text-xs shadow-2xs transition"
           >
             ⚡ Recharge Plan
           </button>
         </div>
       )}
 
-      <div className="mt-2 shrink-0">
-        <WizardStepper
-          className="mb-1"
-          steps={STEPS}
-          currentIndex={stepIndex}
-          furthestIndex={furthestIndex}
-          onStepSelect={setStepIndex}
-        />
+      {/* Progressive Step Progress Meter (Mobile + Desktop Responsive) */}
+      <div className="mt-3 rounded-xl border bg-card/80 p-3 shadow-2xs">
+        {/* Mobile 1-Line Step Meter */}
+        <div className="sm:hidden space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-bold text-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-extrabold border border-primary/20">
+                Step {stepIndex + 1} of {STEPS.length}
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span className="truncate">{STEP_TITLES[stepIndex]}</span>
+            </span>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {Math.round(((stepIndex + 1) / STEPS.length) * 100)}%
+            </span>
+          </div>
+          {/* Progress Bar */}
+          <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300 rounded-full"
+              style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Desktop / Tablet Wizard Stepper */}
+        <div className="hidden sm:block">
+          <WizardStepper
+            steps={STEPS}
+            currentIndex={stepIndex}
+            furthestIndex={furthestIndex}
+            onStepSelect={setStepIndex}
+          />
+        </div>
       </div>
 
       {draftError && (
-        <p className="mt-1 shrink-0 rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+        <p className="mt-2 rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 font-medium">
           {draftError}
         </p>
       )}
 
-      {/* Internal Scroll Content Area */}
-      <div className="zero-scroll-pane mt-2 pb-24 sm:pb-16">
+      {/* Main Step Content Area */}
+      <div className="mt-3">
         {stepIndex === 0 && (
-          <ScopeClassificationStep
+          <WhatDoYouNeedStep
             initialText={draft?.originalText ?? handoff}
             draft={draft}
             taxonomy={taxonomy}
@@ -350,10 +405,9 @@ export function RequirementIntakePage() {
         )}
 
         {stepIndex === 1 && draft && (
-          <TechnicalSpecificationsStep
+          <WhereLocationStep
             draft={draft}
-            requiredAttributes={requiredAttributes}
-            optionalAttributes={optionalAttributes}
+            taxonomy={taxonomy}
             isBusy={isSaving}
             onBack={() => goTo(0)}
             onSubmit={(patch) => void saveAndAdvance(patch, 2)}
@@ -361,9 +415,8 @@ export function RequirementIntakePage() {
         )}
 
         {stepIndex === 2 && draft && (
-          <LogisticsAndCommercialStep
+          <WhenAndBudgetStep
             draft={draft}
-            taxonomy={taxonomy}
             isBusy={isSaving}
             onBack={() => goTo(1)}
             onSubmit={(patch) => void saveAndAdvance(patch, 3)}
@@ -371,25 +424,45 @@ export function RequirementIntakePage() {
         )}
 
         {stepIndex === 3 && draft && (
-          <SourcingAndReviewStep
+          <ScopeAndSpecificationsStep
+            draft={draft}
+            requiredAttributes={requiredAttributes}
+            optionalAttributes={optionalAttributes}
+            isBusy={isSaving}
+            onBack={() => goTo(2)}
+            onSubmit={(patch) => void saveAndAdvance(patch, 4)}
+          />
+        )}
+
+        {stepIndex === 4 && draft && (
+          <AttachmentsStep
+            draft={draft}
+            isBusy={isSaving}
+            onBack={() => goTo(3)}
+            onSubmit={() => goTo(5)}
+          />
+        )}
+
+        {stepIndex === 5 && draft && (
+          <ReviewAndPublishStep
             draft={draft}
             taxonomy={taxonomy}
             criteria={taxonomy.criteria}
             suggestedWeights={suggestedWeights}
             isBusy={isPublishing || isSaving}
             error={publishError}
-            onBack={() => goTo(2)}
-            onEditStep={setStepIndex}
+            onBack={() => goTo(4)}
+            onEditStep={goTo}
             onPublish={(sourcingPatch) => void handlePublishWithSourcing(sourcingPatch)}
           />
         )}
 
         {stepIndex > 0 && !draft && (
-          <div className="rounded border bg-card p-4 text-center">
+          <div className="rounded-xl border bg-card p-6 text-center space-y-3">
             <p className="text-xs text-muted-foreground">
               Draft requirement could not be found or has expired.
             </p>
-            <Button className="mt-2" variant="secondary" onClick={() => goTo(0)}>
+            <Button variant="secondary" onClick={() => goTo(0)} className="min-h-[44px]">
               Start new requirement
             </Button>
           </div>

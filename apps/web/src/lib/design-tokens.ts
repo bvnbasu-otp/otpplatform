@@ -8,9 +8,12 @@
 export const OTP_DESIGN_TOKENS = {
   viewport: {
     targetWidth: '390px',
+    minWidth: '360px',
+    androidStandardWidth: '412px',
     maxWidthDesktopSimulator: '430px',
     minTouchTarget: '44px',
     primaryButtonHeight: '48px',
+    secondaryButtonHeight: '40px',
     headerHeight: '48px',
     bottomNavHeight: '56px',
     bottomNavSafePadding: 'calc(4.5rem + env(safe-area-inset-bottom, 0px))',
@@ -75,6 +78,35 @@ export const OTP_DESIGN_TOKENS = {
       cardBorderLight: '#e2e8f0',
       cardBorderDark: '#1e293b',
       simulatorChassis: '#0f172a',
+    },
+  },
+
+  shell: {
+    header: {
+      height: '48px',
+      bgLight: 'rgba(255, 255, 255, 0.92)',
+      bgDark: 'rgba(9, 14, 26, 0.92)',
+      borderLight: '#e2e8f0',
+      borderDark: '#1e293b',
+    },
+    bottomNav: {
+      height: '56px',
+      fabSize: '48px',
+      fabElevationOffset: '-12px',
+      bgLight: 'rgba(255, 255, 255, 0.95)',
+      bgDark: 'rgba(9, 14, 26, 0.95)',
+    },
+    bottomSheet: {
+      maxHeightDefault: 'max-h-[85vh]',
+      borderRadius: '20px',
+      backdropBg: 'rgba(0, 0, 0, 0.65)',
+      handleWidth: '40px',
+      handleHeight: '4px',
+    },
+    cards: {
+      padding: '14px',
+      borderRadius: '16px',
+      borderWidth: '1px',
     },
   },
 

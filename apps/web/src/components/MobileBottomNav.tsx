@@ -70,7 +70,7 @@ export function MobileBottomNav() {
     <>
       <nav
         aria-label="Mobile Bottom Navigation"
-        className="fixed sm:absolute bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] shrink-0"
+        className="fixed sm:absolute bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] shrink-0 select-none"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-2">
@@ -78,7 +78,7 @@ export function MobileBottomNav() {
           <NavLink
             to={isAuthenticated ? (isAdmin ? '/admin' : '/dashboard') : '/'}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center flex-1 py-1 transition ${
+              `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
                 isActive || (pathname === '/' && !isAuthenticated) || (pathname === '/dashboard' && isAuthenticated)
                   ? 'text-primary font-bold'
                   : 'text-muted-foreground hover:text-foreground font-medium'
@@ -86,14 +86,14 @@ export function MobileBottomNav() {
             }
           >
             <span className="text-lg leading-none">🏠</span>
-            <span className="text-[10px] mt-0.5 tracking-tight">Home</span>
+            <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Home</span>
           </NavLink>
 
-          {/* TAB 2: ORDERS / BROWSE */}
+          {/* TAB 2: ORDERS / MY WORK */}
           <NavLink
             to={isSupplier ? '/supplier/purchase-orders' : isAuthenticated ? '/purchase-orders' : '/#how-it-works'}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center flex-1 py-1 transition ${
+              `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
                 isActive
                   ? 'text-primary font-bold'
                   : 'text-muted-foreground hover:text-foreground font-medium'
@@ -101,28 +101,32 @@ export function MobileBottomNav() {
             }
           >
             <span className="text-lg leading-none">📋</span>
-            <span className="text-[10px] mt-0.5 tracking-tight">{isAuthenticated ? 'Orders' : 'How it works'}</span>
+            <span className="text-[10px] mt-0.5 tracking-tight font-semibold">
+              {isAuthenticated ? 'Orders' : 'How it works'}
+            </span>
           </NavLink>
 
-          {/* TAB 3: CENTER ACTION (Elevated Primary CTA) */}
-          <NavLink
-            to="/requirements/new"
-            className={({ isActive }) =>
-              `relative -top-3 flex flex-col items-center justify-center shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition ${
-                isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''
-              }`
-            }
-            title="Create New Sourcing Requirement"
-          >
-            <span className="text-xl font-bold leading-none">+</span>
-            <span className="sr-only">New Requirement</span>
-          </NavLink>
+          {/* TAB 3: CENTER ACTION (Elevated Global CTA) */}
+          <div className="flex flex-col items-center justify-center flex-1 shrink-0">
+            <NavLink
+              to="/requirements/new"
+              className={({ isActive }) =>
+                `relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target ${
+                  isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:bg-primary/90'
+                }`
+              }
+              title="Create New Sourcing Requirement"
+            >
+              <span className="text-2xl font-bold leading-none select-none">+</span>
+              <span className="sr-only">New Sourcing Requirement</span>
+            </NavLink>
+          </div>
 
           {/* TAB 4: AUDIT / QUOTES */}
           <NavLink
             to={isSupplier ? '/supplier/capabilities' : isAuthenticated ? '/audit' : '/pricing'}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center flex-1 py-1 transition ${
+              `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
                 isActive
                   ? 'text-primary font-bold'
                   : 'text-muted-foreground hover:text-foreground font-medium'
@@ -130,31 +134,31 @@ export function MobileBottomNav() {
             }
           >
             <span className="text-lg leading-none">{isSupplier ? '🏷️' : isAuthenticated ? '🛡️' : '💳'}</span>
-            <span className="text-[10px] mt-0.5 tracking-tight">
+            <span className="text-[10px] mt-0.5 tracking-tight font-semibold">
               {isSupplier ? 'Quotes' : isAuthenticated ? 'Audit' : 'Pricing'}
             </span>
           </NavLink>
 
-          {/* TAB 5: PROFILE CONTEXT & BOTTOM-UP MENU */}
+          {/* TAB 5: PROFILE / ACCOUNT DRAWER */}
           {isAuthenticated ? (
             <button
               type="button"
               onClick={() => setIsAccountSheetOpen(true)}
               data-testid="bottom-nav-profile"
-              className={`flex flex-col items-center justify-center flex-1 py-1 transition active:scale-95 ${
+              className={`flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
                 isAccountSheetOpen
                   ? 'text-primary font-bold'
                   : 'text-muted-foreground hover:text-foreground font-medium'
               }`}
             >
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[9px] font-black text-primary overflow-hidden shadow-2xs">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[9px] font-black text-primary overflow-hidden shadow-2xs border border-primary/20">
                 {context.avatarUrl ? (
                   <img src={context.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                 ) : (
                   userInitials
                 )}
               </span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-bold text-foreground truncate max-w-[48px]">
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold truncate max-w-[48px]">
                 Profile
               </span>
             </button>
@@ -162,7 +166,7 @@ export function MobileBottomNav() {
             <NavLink
               to="/login"
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 py-1 transition ${
+                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
                   isActive
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
@@ -170,7 +174,7 @@ export function MobileBottomNav() {
               }
             >
               <span className="text-lg leading-none">👤</span>
-              <span className="text-[10px] mt-0.5 tracking-tight">Log In</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Log In</span>
             </NavLink>
           )}
         </div>
@@ -218,7 +222,7 @@ export function MobileBottomNav() {
                 setIsAccountSheetOpen(false);
                 setShowProfileModal(true);
               }}
-              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition text-center"
+              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition-all active:scale-95 text-center mobile-touch-target"
             >
               <span>👤</span> Edit Profile
             </button>
@@ -228,7 +232,7 @@ export function MobileBottomNav() {
                 setIsAccountSheetOpen(false);
                 setShowChangePassword(true);
               }}
-              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition text-center"
+              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition-all active:scale-95 text-center mobile-touch-target"
             >
               <span>🔐</span> Password
             </button>
@@ -311,6 +315,24 @@ export function MobileBottomNav() {
             </div>
           )}
 
+          {/* Utility & Legal Links */}
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 px-1">
+            <Link
+              to="/legal/terms"
+              onClick={() => setIsAccountSheetOpen(false)}
+              className="hover:text-foreground transition underline"
+            >
+              Terms &amp; Privacy
+            </Link>
+            <Link
+              to="/faqs"
+              onClick={() => setIsAccountSheetOpen(false)}
+              className="hover:text-foreground transition underline"
+            >
+              FAQs &amp; Help
+            </Link>
+          </div>
+
           {/* Theme Toggle & Sign Out Row */}
           <div className="pt-2 border-t flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -325,7 +347,7 @@ export function MobileBottomNav() {
                 void signOut();
               }}
               data-testid="bottom-sheet-sign-out"
-              className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition"
+              className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition active:scale-95 mobile-touch-target"
             >
               Sign out
             </button>
