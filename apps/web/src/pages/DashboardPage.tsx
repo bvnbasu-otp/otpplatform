@@ -43,6 +43,7 @@ export function DashboardPage() {
   const [expressQuery, setExpressQuery] = useState('');
   const [isSubmittingExpress, setIsSubmittingExpress] = useState(false);
   const [expressError, setExpressError] = useState<string | null>(null);
+  const [isExpressModalOpen, setIsExpressModalOpen] = useState(false);
 
   const handleExpressSubmit = async (queryText?: string, e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -63,6 +64,7 @@ export function DashboardPage() {
       return;
     }
 
+    setIsExpressModalOpen(false);
     navigate(`/rfq/${result.rfqId}/quotes`);
   };
 
@@ -300,66 +302,36 @@ export function DashboardPage() {
         />
       )}
 
-      {/* 2. Swiggy / PhonePe-Style Sourcing Hero Card */}
-      <div className="rounded-2xl border bg-gradient-to-br from-card via-card to-primary/5 p-3.5 sm:p-4 shadow-sm space-y-3">
-        <div className="space-y-0.5">
-          <h1 className="text-base sm:text-lg font-black tracking-tight text-foreground flex items-center gap-1.5">
-            <span>What do you need to buy?</span>
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Get sealed, competitive quotes from verified suppliers in minutes.
-          </p>
-        </div>
-
-        {/* 1-Box Search & Express Input */}
-        <form onSubmit={(e) => void handleExpressSubmit(undefined, e)} className="relative flex items-center">
+      {/* 2. Unified Smart Search & Fast Sourcing Bar */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">🔍</span>
           <input
             type="text"
-            value={expressQuery}
-            disabled={isSubmittingExpress}
-            onChange={(e) => setExpressQuery(e.target.value)}
-            placeholder="e.g. Swimming pool renovation within 14 days under ₹3.5L…"
-            className="w-full rounded-xl border-2 border-primary/30 bg-background pl-3.5 pr-24 py-2.5 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition shadow-inner"
+            placeholder="Search enquiries by title, category, or ID…"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="w-full rounded-xl border bg-card pl-8 pr-8 py-2.5 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-2xs transition"
           />
-          <button
-            type="submit"
-            disabled={!expressQuery.trim() || isSubmittingExpress}
-            className="absolute right-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-extrabold text-primary-foreground shadow-sm hover:bg-primary/90 active:scale-95 transition disabled:opacity-40 flex items-center gap-1"
-          >
-            <span>⚡</span>
-            <span>{isSubmittingExpress ? 'Matching…' : 'Get Quotes'}</span>
-          </button>
-        </form>
-
-        {expressError && (
-          <p className="text-[11px] font-bold text-red-600 bg-red-50 dark:bg-red-950/40 p-2 rounded-lg border border-red-200">
-            ⚠️ {expressError}
-          </p>
-        )}
-
-        {/* Quick Sourcing 1-Tap Tiles (Swiggy / Zomato category pills rail) */}
-        <div className="space-y-1.5 pt-1">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-            Popular 1-Tap Templates:
-          </span>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            {POPULAR_QUICK_TILES.map((tile) => (
-              <button
-                key={tile.label}
-                type="button"
-                onClick={() => {
-                  setExpressQuery(tile.query);
-                  void handleExpressSubmit(tile.query);
-                }}
-                disabled={isSubmittingExpress}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border bg-muted/30 hover:bg-muted text-[11px] font-semibold text-foreground whitespace-nowrap active:scale-95 transition shrink-0 shadow-2xs hover:border-primary/40"
-              >
-                <span>{tile.icon}</span>
-                <span>{tile.label}</span>
-              </button>
-            ))}
-          </div>
+          {searchFilter && (
+            <button
+              type="button"
+              onClick={() => setSearchFilter('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              ✕
+            </button>
+          )}
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsExpressModalOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2.5 text-xs font-extrabold text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-95 transition shrink-0"
+        >
+          <span>⚡</span>
+          <span>Post Enquiry</span>
+        </button>
       </div>
 
       {/* 3. Filter & Glance Bar (Swiggy Order Status Style) */}
@@ -369,11 +341,11 @@ export function DashboardPage() {
           onClick={() => setSelectedPhase('ALL')}
           className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-extrabold whitespace-nowrap transition ${
             selectedPhase === 'ALL'
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+              ? 'bg-amber-500 text-white shadow-sm'
+              : 'text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40'
           }`}
         >
-          <span>🟢</span>
+          <span>🟡</span>
           <span>{activeCount} Active</span>
         </button>
 
@@ -382,13 +354,13 @@ export function DashboardPage() {
           onClick={() => setSelectedPhase('ACTION_REQUIRED')}
           className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-extrabold whitespace-nowrap transition ${
             selectedPhase === 'ACTION_REQUIRED'
-              ? 'bg-amber-500 text-white shadow-sm'
+              ? 'bg-rose-600 text-white shadow-sm'
               : actionRequired > 0
-              ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border border-amber-300'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+              ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
+              : 'text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
           }`}
         >
-          <span>🟡</span>
+          <span>🔴</span>
           <span>{actionRequired} Needs Action</span>
         </button>
 
@@ -398,10 +370,10 @@ export function DashboardPage() {
           className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-extrabold whitespace-nowrap transition ${
             selectedPhase === 'SETTLED'
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+              : 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
           }`}
         >
-          <span>⚪</span>
+          <span>🟢</span>
           <span>{settledCount} Done</span>
         </button>
       </div>
@@ -414,15 +386,11 @@ export function DashboardPage() {
               ? 'Pending Your Action'
               : selectedPhase === 'SETTLED'
               ? 'Completed Orders'
-              : 'Your Procurement Tenders'}
+              : 'My Enquiries'}
           </h2>
-          <input
-            type="text"
-            placeholder="Search…"
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="rounded-lg border bg-background px-2.5 py-1 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 w-28 sm:w-36"
-          />
+          <span className="text-[11px] font-semibold text-muted-foreground">
+            {filteredRequirements.length} {filteredRequirements.length === 1 ? 'record' : 'records'}
+          </span>
         </div>
 
         {isLoading ? (
@@ -599,6 +567,76 @@ export function DashboardPage() {
           </div>
         </BottomSheet>
       )}
+
+      {/* Express Sourcing Bottom Sheet */}
+      <BottomSheet
+        isOpen={isExpressModalOpen}
+        onClose={() => {
+          setIsExpressModalOpen(false);
+          setExpressError(null);
+        }}
+        title="⚡ What do you need to buy?"
+        subtitle="Get sealed, competitive quotes from verified suppliers in minutes."
+      >
+        <div className="space-y-4 text-xs">
+          <form onSubmit={(e) => void handleExpressSubmit(undefined, e)} className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-foreground mb-1">
+                Describe your procurement requirement
+              </label>
+              <textarea
+                rows={3}
+                value={expressQuery}
+                disabled={isSubmittingExpress}
+                onChange={(e) => setExpressQuery(e.target.value)}
+                placeholder="e.g. Swimming pool renovation within 14 days under ₹3.5L…"
+                className="w-full rounded-xl border bg-background p-3 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition shadow-inner"
+              />
+            </div>
+
+            {expressError && (
+              <p className="text-[11px] font-bold text-red-600 bg-red-50 dark:bg-red-950/40 p-2 rounded-lg border border-red-200">
+                ⚠️ {expressError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={!expressQuery.trim() || isSubmittingExpress}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-xs font-black text-primary-foreground shadow-sm hover:bg-primary/90 active:scale-95 transition disabled:opacity-40"
+            >
+              <span>⚡</span>
+              <span>{isSubmittingExpress ? 'Matching Verified Suppliers…' : 'Get Quotes Now →'}</span>
+            </button>
+          </form>
+
+          <div className="pt-2 border-t space-y-2">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
+              Popular 1-Tap Templates:
+            </span>
+            <div className="space-y-1.5">
+              {POPULAR_QUICK_TILES.map((tile) => (
+                <button
+                  key={tile.label}
+                  type="button"
+                  onClick={() => {
+                    setExpressQuery(tile.query);
+                    void handleExpressSubmit(tile.query);
+                  }}
+                  disabled={isSubmittingExpress}
+                  className="w-full flex items-center gap-2.5 p-2.5 rounded-xl border bg-muted/30 hover:bg-muted text-left transition active:scale-95 text-foreground"
+                >
+                  <span className="text-base shrink-0">{tile.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold block truncate text-xs">{tile.label}</span>
+                    <span className="text-[10px] text-muted-foreground line-clamp-1">{tile.query}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* Payment / Subscription Modal */}
       {isPaymentModalOpen && org && (

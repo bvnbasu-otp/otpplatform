@@ -1,97 +1,347 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useLocation, Link } from 'react-router-dom';
 import { useRoleContext } from '@/features/roles';
+import { useAuth } from '@/features/auth';
+import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ChangePasswordModal } from '@/features/roles/components/ChangePasswordModal';
+import { ProfileEditModal } from '@/features/profile';
+import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api/roles';
+import { ThemeToggle } from '@/features/theme';
+
+function initials(nameOrEmail?: string | null): string {
+  if (!nameOrEmail) return '?';
+  const clean = nameOrEmail.trim();
+  if (clean.includes(' ')) {
+    const parts = clean.split(/\s+/).filter(Boolean);
+    return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+  }
+  const name = clean.split('@')[0] ?? '';
+  const parts = name.split(/[._-]+/).filter(Boolean);
+  if (parts.length >= 2) return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+  return name.slice(0, 2).toUpperCase() || '?';
+}
 
 export function MobileBottomNav() {
-  const { context } = useRoleContext();
+  const { user, signOut } = useAuth();
+  const { context, switchTo, switchOrg } = useRoleContext();
   const { pathname } = useLocation();
+
+  const [isAccountSheetOpen, setIsAccountSheetOpen] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [pending, setPending] = useState<string | null>(null);
+  const [pendingOrg, setPendingOrg] = useState<string | null>(null);
 
   const isSupplier = context.side === 'SUPPLIER';
   const isAdmin = context.isPlatformAdmin;
-  const isAuthenticated = Boolean(context.email);
+  const isAuthenticated = Boolean(context.email || user?.email);
+
+  const multiRole = hasMultipleRoles(context);
+  const multiOrg = hasMultipleOrganizations(context);
+  const userInitials = initials(context.fullName || user?.email);
+
+  async function chooseRole(code: string) {
+    if (code === context.activeRole?.code) {
+      setIsAccountSheetOpen(false);
+      return;
+    }
+    setPending(code);
+    const result = await switchTo(code);
+    setPending(null);
+    if (result.ok) {
+      setIsAccountSheetOpen(false);
+    }
+  }
+
+  async function chooseOrg(orgId: string) {
+    if (orgId === context.organizationId) {
+      setIsAccountSheetOpen(false);
+      return;
+    }
+    setPendingOrg(orgId);
+    const result = await switchOrg(orgId);
+    setPendingOrg(null);
+    if (result.ok) {
+      setIsAccountSheetOpen(false);
+    }
+  }
 
   return (
-    <nav
-      aria-label="Mobile Bottom Navigation"
-      className="fixed sm:absolute bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] shrink-0"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-    >
-      <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-2">
-        {/* TAB 1: HOME */}
-        <NavLink
-          to={isAuthenticated ? (isAdmin ? '/admin' : '/dashboard') : '/'}
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center flex-1 py-1 transition ${
-              isActive || (pathname === '/' && !isAuthenticated) || (pathname === '/dashboard' && isAuthenticated)
-                ? 'text-primary font-bold'
-                : 'text-muted-foreground hover:text-foreground font-medium'
-            }`
-          }
-        >
-          <span className="text-lg leading-none">🏠</span>
-          <span className="text-[10px] mt-0.5 tracking-tight">Home</span>
-        </NavLink>
+    <>
+      <nav
+        aria-label="Mobile Bottom Navigation"
+        className="fixed sm:absolute bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] shrink-0"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+        <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-2">
+          {/* TAB 1: HOME */}
+          <NavLink
+            to={isAuthenticated ? (isAdmin ? '/admin' : '/dashboard') : '/'}
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center flex-1 py-1 transition ${
+                isActive || (pathname === '/' && !isAuthenticated) || (pathname === '/dashboard' && isAuthenticated)
+                  ? 'text-primary font-bold'
+                  : 'text-muted-foreground hover:text-foreground font-medium'
+              }`
+            }
+          >
+            <span className="text-lg leading-none">🏠</span>
+            <span className="text-[10px] mt-0.5 tracking-tight">Home</span>
+          </NavLink>
 
-        {/* TAB 2: ORDERS / BROWSE */}
-        <NavLink
-          to={isSupplier ? '/supplier/purchase-orders' : isAuthenticated ? '/purchase-orders' : '/#how-it-works'}
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center flex-1 py-1 transition ${
-              isActive
-                ? 'text-primary font-bold'
-                : 'text-muted-foreground hover:text-foreground font-medium'
-            }`
-          }
-        >
-          <span className="text-lg leading-none">📋</span>
-          <span className="text-[10px] mt-0.5 tracking-tight">{isAuthenticated ? 'Orders' : 'How it works'}</span>
-        </NavLink>
+          {/* TAB 2: ORDERS / BROWSE */}
+          <NavLink
+            to={isSupplier ? '/supplier/purchase-orders' : isAuthenticated ? '/purchase-orders' : '/#how-it-works'}
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center flex-1 py-1 transition ${
+                isActive
+                  ? 'text-primary font-bold'
+                  : 'text-muted-foreground hover:text-foreground font-medium'
+              }`
+            }
+          >
+            <span className="text-lg leading-none">📋</span>
+            <span className="text-[10px] mt-0.5 tracking-tight">{isAuthenticated ? 'Orders' : 'How it works'}</span>
+          </NavLink>
 
-        {/* TAB 3: CENTER ACTION (Elevated Primary CTA like PhonePe / Swiggy) */}
-        <NavLink
-          to="/requirements/new"
-          className={({ isActive }) =>
-            `relative -top-3 flex flex-col items-center justify-center shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition ${
-              isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''
-            }`
-          }
-          title="Create New Sourcing Requirement"
-        >
-          <span className="text-xl font-bold leading-none">+</span>
-          <span className="sr-only">New Requirement</span>
-        </NavLink>
+          {/* TAB 3: CENTER ACTION (Elevated Primary CTA) */}
+          <NavLink
+            to="/requirements/new"
+            className={({ isActive }) =>
+              `relative -top-3 flex flex-col items-center justify-center shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition ${
+                isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''
+              }`
+            }
+            title="Create New Sourcing Requirement"
+          >
+            <span className="text-xl font-bold leading-none">+</span>
+            <span className="sr-only">New Requirement</span>
+          </NavLink>
 
-        {/* TAB 4: AUDIT / QUOTES */}
-        <NavLink
-          to={isSupplier ? '/supplier/capabilities' : isAuthenticated ? '/audit' : '/pricing'}
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center flex-1 py-1 transition ${
-              isActive
-                ? 'text-primary font-bold'
-                : 'text-muted-foreground hover:text-foreground font-medium'
-            }`
-          }
-        >
-          <span className="text-lg leading-none">{isSupplier ? '🏷️' : isAuthenticated ? '🛡️' : '💳'}</span>
-          <span className="text-[10px] mt-0.5 tracking-tight">
-            {isSupplier ? 'Quotes' : isAuthenticated ? 'Audit' : 'Pricing'}
-          </span>
-        </NavLink>
+          {/* TAB 4: AUDIT / QUOTES */}
+          <NavLink
+            to={isSupplier ? '/supplier/capabilities' : isAuthenticated ? '/audit' : '/pricing'}
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center flex-1 py-1 transition ${
+                isActive
+                  ? 'text-primary font-bold'
+                  : 'text-muted-foreground hover:text-foreground font-medium'
+              }`
+            }
+          >
+            <span className="text-lg leading-none">{isSupplier ? '🏷️' : isAuthenticated ? '🛡️' : '💳'}</span>
+            <span className="text-[10px] mt-0.5 tracking-tight">
+              {isSupplier ? 'Quotes' : isAuthenticated ? 'Audit' : 'Pricing'}
+            </span>
+          </NavLink>
 
-        {/* TAB 5: PROFILE / LOGIN */}
-        <NavLink
-          to={isAuthenticated ? (isAdmin ? '/admin' : '/dashboard') : '/login'}
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center flex-1 py-1 transition ${
-              isActive && (pathname === '/login' || pathname === '/profile')
-                ? 'text-primary font-bold'
-                : 'text-muted-foreground hover:text-foreground font-medium'
-            }`
-          }
-        >
-          <span className="text-lg leading-none">👤</span>
-          <span className="text-[10px] mt-0.5 tracking-tight">{isAuthenticated ? 'Profile' : 'Log In'}</span>
-        </NavLink>
-      </div>
-    </nav>
+          {/* TAB 5: PROFILE CONTEXT & BOTTOM-UP MENU */}
+          {isAuthenticated ? (
+            <button
+              type="button"
+              onClick={() => setIsAccountSheetOpen(true)}
+              data-testid="bottom-nav-profile"
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition active:scale-95 ${
+                isAccountSheetOpen
+                  ? 'text-primary font-bold'
+                  : 'text-muted-foreground hover:text-foreground font-medium'
+              }`}
+            >
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[9px] font-black text-primary overflow-hidden shadow-2xs">
+                {context.avatarUrl ? (
+                  <img src={context.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  userInitials
+                )}
+              </span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-bold text-foreground truncate max-w-[48px]">
+                Profile
+              </span>
+            </button>
+          ) : (
+            <NavLink
+              to="/login"
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center flex-1 py-1 transition ${
+                  isActive
+                    ? 'text-primary font-bold'
+                    : 'text-muted-foreground hover:text-foreground font-medium'
+                }`
+              }
+            >
+              <span className="text-lg leading-none">👤</span>
+              <span className="text-[10px] mt-0.5 tracking-tight">Log In</span>
+            </NavLink>
+          )}
+        </div>
+      </nav>
+
+      {/* Bottom-Up Slide-Up Account Menu */}
+      <BottomSheet
+        isOpen={isAccountSheetOpen}
+        onClose={() => setIsAccountSheetOpen(false)}
+        title="My Profile & Workspace"
+      >
+        <div className="space-y-4 text-xs">
+          {/* User Identity Card */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-black text-primary overflow-hidden shadow-xs">
+              {context.avatarUrl ? (
+                <img src={context.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                userInitials
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-extrabold text-sm text-foreground truncate">
+                  {context.fullName || user?.email}
+                </span>
+                <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-extrabold">
+                  {context.isPlatformAdmin ? 'Admin' : context.side === 'SUPPLIER' ? 'Supplier' : 'Buyer'}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
+              {context.organizationName && (
+                <p className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">
+                  🏢 {context.organizationName}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Profile Actions */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAccountSheetOpen(false);
+                setShowProfileModal(true);
+              }}
+              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition text-center"
+            >
+              <span>👤</span> Edit Profile
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAccountSheetOpen(false);
+                setShowChangePassword(true);
+              }}
+              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition text-center"
+            >
+              <span>🔐</span> Password
+            </button>
+          </div>
+
+          {/* Admin link if platform admin */}
+          {context.isPlatformAdmin && (
+            <Link
+              to="/admin"
+              onClick={() => setIsAccountSheetOpen(false)}
+              className="flex w-full items-center justify-between rounded-xl bg-purple-600 px-3.5 py-2.5 font-bold text-white shadow-xs hover:bg-purple-700 transition"
+            >
+              <span className="flex items-center gap-2">
+                <span>⚡</span> Admin Management Console
+              </span>
+              <span>→</span>
+            </Link>
+          )}
+
+          {/* Organization Switcher (if multi-org) */}
+          {multiOrg && !context.isPlatformAdmin && (
+            <div className="rounded-xl border p-3 space-y-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
+                Switch Organization
+              </span>
+              <ul className="space-y-1">
+                {context.organizations.map((o) => {
+                  const active = o.id === context.organizationId;
+                  return (
+                    <li key={o.id}>
+                      <button
+                        type="button"
+                        onClick={() => void chooseOrg(o.id)}
+                        disabled={pendingOrg !== null}
+                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition ${
+                          active ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                        }`}
+                      >
+                        <div className="truncate">
+                          <span className="block truncate font-semibold">{o.name}</span>
+                          <span className="block text-[10px] text-muted-foreground capitalize">
+                            {o.isPersonal ? 'Personal' : o.role.toLowerCase()}
+                          </span>
+                        </div>
+                        {active && <span className="text-primary font-bold">✓</span>}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {/* Role Switcher (if multi-role) */}
+          {multiRole && !context.isPlatformAdmin && (
+            <div className="rounded-xl border p-3 space-y-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
+                Switch Role / View
+              </span>
+              <ul className="space-y-1">
+                {context.roles.map((r) => {
+                  const active = r.code === context.activeRole?.code;
+                  return (
+                    <li key={r.code}>
+                      <button
+                        type="button"
+                        onClick={() => void chooseRole(r.code)}
+                        disabled={pending !== null}
+                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition ${
+                          active ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                        }`}
+                      >
+                        <span className="truncate font-semibold">{r.label}</span>
+                        {active && <span className="text-primary font-bold">✓</span>}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {/* Theme Toggle & Sign Out Row */}
+          <div className="pt-2 border-t flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-muted-foreground">Theme:</span>
+              <ThemeToggle />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsAccountSheetOpen(false);
+                void signOut();
+              }}
+              data-testid="bottom-sheet-sign-out"
+              className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <ChangePasswordModal
+        open={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
+
+      <ProfileEditModal
+        open={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
+    </>
   );
 }

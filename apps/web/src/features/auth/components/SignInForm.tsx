@@ -589,171 +589,170 @@ export function SignInForm({
           className="space-y-3.5"
         >
           <div
-          role="radiogroup"
-          aria-label="How to sign in"
-          className="inline-flex rounded-md border bg-muted/40 p-0.5 text-xs"
-        >
-          {(
-            [
-              ['password', 'Use a password'],
-              ['code', 'Email me a code'],
-            ] as [Method, string][]
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={method === value}
-              onClick={() => chooseMethod(value)}
-              data-testid={`sign-in-method-${value}`}
-              className={`rounded px-2.5 py-1.5 ${
-                method === value ? 'bg-card font-medium shadow-sm' : 'text-muted-foreground'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <Field label="Work email" required>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              aria-describedby={describedBy}
-              type="email"
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              autoFocus={autoFocus}
-              value={email}
-              onChange={(event) => {
-                setEmail(event.target.value);
-                if (codeSent) chooseMethod('code');
-              }}
-              className={controlClasses(invalid)}
-              required
-            />
-        )}
-      </Field>
-
-      {method === 'password' && (
-        <Field label="Password" required>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              aria-describedby={describedBy}
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className={controlClasses(invalid)}
-              required
-            />
-          )}
-        </Field>
-      )}
-
-      {method === 'code' && codeSent && (
-        <Field label="Eight-digit code" required help="Check your inbox, including spam.">
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              aria-describedby={describedBy}
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={8}
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              className={controlClasses(invalid, 'tracking-[0.3em]')}
-              data-testid="otp-code"
-              placeholder="Enter 8-digit code"
-              required
-            />
-          )}
-        </Field>
-      )}
-
-      <label className="flex items-start gap-2 text-xs text-muted-foreground">
-        <input
-          type="checkbox"
-          checked={remember}
-          onChange={(event) => setRemember(event.target.checked)}
-          className="mt-0.5"
-          data-testid="remember-device"
-        />
-        <span>
-          Remember this device. Leave it unchecked on a shared computer and you will be signed
-          out when the tab closes.
-        </span>
-      </label>
-
-      {notice && !error && (
-        <p className="text-xs text-muted-foreground" data-testid="sign-in-notice">
-          {notice}
-        </p>
-      )}
-
-      {error && (
-        <p className="text-sm text-red-600" data-testid="login-error" role="alert">
-          {error}
-        </p>
-      )}
-
-      <Button
-        type="submit"
-        variant="action"
-        size="lg"
-        busy={busy}
-        busyLabel={method === 'code' && !codeSent ? 'Sending…' : 'Signing in…'}
-        className="w-full"
-      >
-        {method === 'code' ? (codeSent ? 'Sign in' : 'Send me a code') : 'Sign in'}
-      </Button>
-
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
-        {method === 'code' && codeSent ? (
-          <button
-            type="button"
-            onClick={() => void requestCode()}
-            className="text-action hover:underline"
+            role="radiogroup"
+            aria-label="How to sign in"
+            className="grid grid-cols-2 rounded-lg border bg-muted/40 p-0.5 text-xs text-center"
           >
-            Send another code
-          </button>
-        ) : method === 'password' ? (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsResettingPassword(true);
-                setError(null);
-              }}
-              className="text-action hover:underline font-medium"
-            >
-              Forgot password?
-            </button>
-            <span className="text-muted-foreground">·</span>
-            <button
-              type="button"
-              onClick={() => chooseMethod('code')}
-              className="text-muted-foreground hover:text-foreground hover:underline"
-            >
-              Sign in with code
-            </button>
+            {(
+              [
+                ['password', 'Use a password'],
+                ['code', 'Email me a code'],
+              ] as [Method, string][]
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={method === value}
+                onClick={() => chooseMethod(value)}
+                data-testid={`sign-in-method-${value}`}
+                className={`rounded py-1.5 font-medium transition ${
+                  method === value
+                    ? 'bg-card text-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        ) : (
-          <span className="text-muted-foreground">
-            No password needed.
-          </span>
-        )}
-        {onRegister && (
-          <button type="button" onClick={onRegister} className="text-action hover:underline">
-            Register instead
-          </button>
-        )}
-      </div>
-    </form>
+
+          <Field label="Work email" required>
+            {({ id, describedBy, invalid }) => (
+              <input
+                id={id}
+                aria-describedby={describedBy}
+                type="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                autoFocus={autoFocus}
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (codeSent) chooseMethod('code');
+                }}
+                className={controlClasses(invalid)}
+                placeholder="name@company.com"
+                required
+              />
+            )}
+          </Field>
+
+          {method === 'password' && (
+            <Field label="Password" required>
+              {({ id, describedBy, invalid }) => (
+                <input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className={controlClasses(invalid)}
+                  placeholder="Enter your password"
+                  required
+                />
+              )}
+            </Field>
+          )}
+
+          {method === 'code' && codeSent && (
+            <Field label="Eight-digit code" required help="Check your inbox, including spam.">
+              {({ id, describedBy, invalid }) => (
+                <input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={8}
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                  className={controlClasses(invalid, 'tracking-[0.3em]')}
+                  data-testid="otp-code"
+                  placeholder="Enter 8-digit code"
+                  required
+                />
+              )}
+            </Field>
+          )}
+
+          <div className="flex items-center justify-between text-xs pt-0.5">
+            <label className="flex items-center gap-2 cursor-pointer select-none text-muted-foreground hover:text-foreground">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(event) => setRemember(event.target.checked)}
+                className="rounded border-border"
+                data-testid="remember-device"
+              />
+              <span className="font-medium">Remember me</span>
+            </label>
+
+            {method === 'password' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResettingPassword(true);
+                  setError(null);
+                }}
+                className="text-action hover:underline font-medium"
+              >
+                Forgot password?
+              </button>
+            )}
+          </div>
+
+          {notice && !error && (
+            <p className="text-xs text-muted-foreground" data-testid="sign-in-notice">
+              {notice}
+            </p>
+          )}
+
+          {error && (
+            <p className="text-sm text-red-600" data-testid="login-error" role="alert">
+              {error}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            variant="action"
+            size="lg"
+            busy={busy}
+            busyLabel={method === 'code' && !codeSent ? 'Sending…' : 'Signing in…'}
+            className="w-full h-11 text-sm font-bold shadow-xs"
+          >
+            {method === 'code' ? (codeSent ? 'Sign in' : 'Send me a code') : 'Sign in'}
+          </Button>
+
+          {method === 'code' && codeSent && (
+            <div className="text-center text-xs">
+              <button
+                type="button"
+                onClick={() => void requestCode()}
+                className="text-action hover:underline font-medium"
+              >
+                Didn't get the code? Send another
+              </button>
+            </div>
+          )}
+
+          <div className="pt-2 text-center text-xs border-t border-border/60 text-muted-foreground">
+            Don't have an account?{' '}
+            {onRegister ? (
+              <button type="button" onClick={onRegister} className="font-bold text-action hover:underline">
+                Create an account →
+              </button>
+            ) : (
+              <Link to="/signup" className="font-bold text-action hover:underline">
+                Create an account →
+              </Link>
+            )}
+          </div>
+        </form>
     )}
   </div>
   );

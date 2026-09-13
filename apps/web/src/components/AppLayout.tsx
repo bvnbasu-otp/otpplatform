@@ -76,8 +76,11 @@ export function AppLayout() {
 
             {/* Right Action Cluster: Clean, minimal, ≤48px */}
             <div className="ml-auto flex items-center gap-1.5 shrink-0">
+              <ThemeToggle />
               <NotificationBell />
-              <AccountMenu />
+              <div className="hidden sm:block">
+                <AccountMenu />
+              </div>
 
               {/* Mobile Hamburger Drawer Button */}
               <button

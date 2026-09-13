@@ -95,20 +95,24 @@ export function SiteHeader() {
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
-              <Link
-                to="/login"
-                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                data-testid="header-log-in"
-              >
-                Log In
-              </Link>
-              <Link
-                to="/signup"
-                className="rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-2xs"
-                data-testid="header-register"
-              >
-                Register
-              </Link>
+              {location.pathname !== '/login' && (
+                <Link
+                  to="/login"
+                  className="rounded-lg px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                  data-testid="header-log-in"
+                >
+                  Log In
+                </Link>
+              )}
+              {location.pathname !== '/signup' && (
+                <Link
+                  to="/signup"
+                  className="rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-2xs"
+                  data-testid="header-register"
+                >
+                  Register
+                </Link>
+              )}
             </div>
           )}
 

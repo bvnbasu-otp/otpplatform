@@ -74,14 +74,14 @@ export function LoginPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-md px-3.5 py-6">
+      <div className="mx-auto w-full max-w-md px-3.5 py-3 sm:py-6">
         {searchParams.get('reset') === 'success' && (
-          <div className="mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-4 text-xs text-emerald-900 dark:text-emerald-300">
-            <p className="font-bold flex items-center gap-1.5 text-sm mb-1">
+          <div className="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-3 text-xs text-emerald-900 dark:text-emerald-300">
+            <p className="font-bold flex items-center gap-1.5 text-xs mb-0.5">
               <span>✓</span> Password Updated Successfully!
             </p>
             <p className="text-emerald-800 dark:text-emerald-400">
-              Your new password is now active. Please sign in with your updated credentials below.
+              Your new password is now active. Please sign in below.
             </p>
           </div>
         )}
@@ -89,55 +89,31 @@ export function LoginPage() {
         {isAdminEmergency && isMaintenanceMode && (
           <div
             data-testid="admin-emergency-banner"
-            className="mb-6 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-left"
+            className="mb-4 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-left"
           >
-            <div className="flex items-center gap-2 font-bold text-amber-600 dark:text-amber-400 text-sm">
+            <div className="flex items-center gap-2 font-bold text-amber-600 dark:text-amber-400 text-xs">
               <span>🛡️</span> Platform Admin Emergency Sign-In
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Platform is currently under scheduled maintenance. Only authorized platform administrators
-              (<code>bvnbasu@gmail.com</code>, <code>admin@otp.test</code>) may sign in to access the ops console.
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Platform is under maintenance. Only authorized platform administrators may sign in.
             </p>
           </div>
         )}
 
-        <h1 className="text-2xl font-semibold">
-          {isAdminEmergency && isMaintenanceMode ? 'Admin Sign In' : 'Log In'}
-        </h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          {isAdminEmergency && isMaintenanceMode
-            ? 'Enter your Super Admin credentials to proceed to the management console.'
-            : 'Buyers and suppliers use the same door. We will take you to the right workspace.'}
-        </p>
-
-        <div className="mt-6 rounded-lg border bg-card p-6">
-          <SignInForm autoFocus />
+        <div className="mb-3">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            {isAdminEmergency && isMaintenanceMode ? 'Admin Sign In' : 'Sign In'}
+          </h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {isAdminEmergency && isMaintenanceMode
+              ? 'Enter Super Admin credentials to proceed to the management console.'
+              : 'Welcome back! Enter your details to access your workspace.'}
+          </p>
         </div>
 
-        {!isAdminEmergency && (
-          <>
-            <p className="mt-5 text-sm text-muted-foreground">
-              Not registered yet?{' '}
-              <Link to="/signup" className="font-medium text-action hover:underline">
-                Create an account
-              </Link>{' '}
-              — or read what the platform does for{' '}
-              <Link to="/faqs?for=buyers" className="font-medium text-action hover:underline">
-                buyers
-              </Link>{' '}
-              and{' '}
-              <Link to="/faqs?for=suppliers" className="font-medium text-action hover:underline">
-                suppliers
-              </Link>
-              .
-            </p>
-
-            <p className="mt-4 text-xs text-muted-foreground">
-              Trouble logging in? A one-time code works even if you have forgotten your password. If
-              the code does not arrive, check the address is the one your organisation registered.
-            </p>
-          </>
-        )}
+        <div className="rounded-xl border bg-card p-4 sm:p-5 shadow-2xs">
+          <SignInForm autoFocus />
+        </div>
       </div>
     </SiteLayout>
   );
