@@ -6,7 +6,6 @@ import { SiteLayout } from '../components/SiteLayout';
 import { IdentityProtectedComparisonPreview } from '../components/IdentityProtectedComparisonPreview';
 import { RequirementPrompt } from '../components/RequirementPrompt';
 import { MobileScreensShowcase } from '@/components/mobile-showcase/MobileScreensShowcase';
-import { MobileMultiDeviceGallery } from '@/components/mobile-showcase/MobileMultiDeviceGallery';
 import { HeroMobilePhonePreview } from '@/components/mobile-showcase/HeroMobilePhonePreview';
 import {
   AUDIENCES,
@@ -22,17 +21,18 @@ import {
 export function LandingPage() {
   return (
     <SiteLayout>
-      <Hero />
-      <ValueRibbon />
-      <MobileScreensShowcase />
-      <MobileMultiDeviceGallery />
-      <SupplierShowcase />
-      <Audiences />
-      <HowItWorksSummary />
-      <Enforced />
-      <SupplierReach />
-      <WhyOtp />
-      <ClosingCta />
+      <div className="overflow-x-hidden max-w-full">
+        <Hero />
+        <ValueRibbon />
+        <MobileScreensShowcase />
+        <SupplierShowcase />
+        <Audiences />
+        <HowItWorksSummary />
+        <Enforced />
+        <SupplierReach />
+        <WhyOtp />
+        <ClosingCta />
+      </div>
     </SiteLayout>
   );
 }
@@ -112,13 +112,13 @@ function Hero() {
 
   return (
     <section className="border-b bg-gradient-to-b from-muted/50 to-background">
-      <div className="mx-auto grid max-w-6xl gap-6 sm:gap-8 lg:gap-10 px-4 py-4 sm:py-8 md:py-12 lg:py-14 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+      <div className="mx-auto grid max-w-6xl gap-6 sm:gap-8 lg:gap-10 px-4 py-6 sm:py-8 md:py-10 lg:py-12 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div>
           <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-action">
             {HERO.eyebrow}
           </p>
           <h1 className="mt-1 sm:mt-2 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold leading-[1.15] sm:leading-[1.1] tracking-tight text-foreground">
-            Tell us what you need. Get scored, identity-protected quotes in 15 seconds.
+            Tell us what you need. Get scored, identity-protected quotes in 30 Minutes
           </h1>
           <p className="mt-2 text-xs sm:text-sm md:text-base font-semibold text-foreground/90">
             {HERO.tagline}
@@ -135,7 +135,7 @@ function Hero() {
             <span>Start Free</span>
             <span>·</span>
             <Link to="/showcase" className="font-semibold text-action hover:underline">
-              📱 View All Mobile Screens
+              📱 View Mobile Simulator
             </Link>
             <span>·</span>
             <Link to="/faqs#workflow" className="font-medium text-action hover:underline">

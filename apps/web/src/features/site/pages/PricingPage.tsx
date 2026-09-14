@@ -12,26 +12,25 @@ export function PricingPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto max-w-6xl px-4 py-14">
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:py-14 overflow-x-hidden">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto">
-          <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-3 py-1 text-xs font-bold border border-emerald-300 dark:border-emerald-700">
-            ⚡ Transparent Prepaid Subscription Plans
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 px-3 py-1 text-xs font-bold border border-emerald-500/30">
+            ⚡ Predictable Prepaid Access
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold mt-3 tracking-tight text-foreground">
-            Simple, Predictable Institutional Pricing
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
+            Simple, Transparent Pricing
           </h1>
-          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-            {PRODUCT_NAME} operates on a transparent <strong>30-day / 365-day prepaid access cycle</strong> for buyers.
-            Suppliers are <strong>100% free forever</strong> with zero commissions and no lead fees.
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            30-day or 365-day prepaid access for buyers. Suppliers quote <strong>100% free forever</strong> with zero commissions.
           </p>
 
-          {/* Billing Cycle Switcher (Strictly Monthly or Yearly) */}
-          <div className="mt-8 inline-flex items-center rounded-xl border bg-muted/40 p-1 text-xs">
+          {/* Billing Cycle Switcher */}
+          <div className="pt-3 inline-flex items-center rounded-xl border bg-muted/40 p-1 text-xs">
             <button
               type="button"
               onClick={() => setCycle('MONTHLY')}
-              className={`rounded-lg px-4 py-2 font-bold transition ${
+              className={`rounded-lg px-4 py-1.5 font-bold transition ${
                 cycle === 'MONTHLY'
                   ? 'bg-card text-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -42,42 +41,39 @@ export function PricingPage() {
             <button
               type="button"
               onClick={() => setCycle('YEARLY')}
-              className={`rounded-lg px-4 py-2 font-bold transition flex items-center gap-1.5 ${
+              className={`rounded-lg px-4 py-1.5 font-bold transition flex items-center gap-1.5 ${
                 cycle === 'YEARLY'
                   ? 'bg-card text-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <span>Yearly (365 Days)</span>
-              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.2 border border-emerald-300 dark:border-emerald-700">
+              <span className="rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.2 border border-emerald-400/40">
                 Save ~17%
               </span>
             </button>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-2">
-            * Strict prepaid cycles (30 days or 365 days). No quarterly or half-yearly commitments.
-          </p>
         </div>
 
-        {/* Pricing Cards Grid */}
-        <div className="mt-10 grid gap-6 lg:grid-cols-3">
-          {/* Tier 1: Individuals & MSME */}
-          <section className="rounded-2xl border-2 border-border bg-card p-6 flex flex-col justify-between shadow-xs">
+        {/* Clean 3-Card Structure: Individual, RWA/MSME, Enterprise */}
+        <div className="mt-8 grid gap-5 lg:grid-cols-3">
+          {/* Card 1: Individual / Single Buyer */}
+          <section className="rounded-2xl border bg-card p-5 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="rounded-md bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5">
-                  Tier 1
+                <span className="rounded-md bg-blue-500/10 text-blue-800 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5">
+                  Individual
                 </span>
-                <span className="text-xs text-muted-foreground font-mono">MSME / Single</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Solo Buyers</span>
               </div>
-              <h2 className="text-xl font-bold mt-2 text-foreground">
-                {SUBSCRIPTION_TIERS.TIER_1_MSME.name}
+              <h2 className="text-lg font-bold mt-2 text-foreground">
+                Individual &amp; Sole Proprietor
               </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                {SUBSCRIPTION_TIERS.TIER_1_MSME.tagline}
+              <p className="text-xs text-muted-foreground mt-0.5">
+                For independent property owners and facility managers.
               </p>
 
-              <div className="mt-5 pb-5 border-b">
+              <div className="mt-4 pb-4 border-b">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
                     ₹{cycle === 'MONTHLY'
@@ -89,52 +85,62 @@ export function PricingPage() {
                   </span>
                 </div>
                 {cycle === 'YEARLY' && (
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
                     ✓ Saves ₹{SUBSCRIPTION_TIERS.TIER_1_MSME.yearlySavings.toLocaleString('en-IN')} vs Monthly
                   </span>
                 )}
               </div>
 
-              <ul className="mt-5 space-y-2.5 text-xs text-muted-foreground">
-                {SUBSCRIPTION_TIERS.TIER_1_MSME.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                    <span>{f}</span>
-                  </li>
-                ))}
+              <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span>Unlimited voice &amp; text RFQ broadcasts</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span>Identity-protected sealed supplier comparison</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span>Direct WhatsApp &amp; SMS vendor dispatch</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span>Single-approver fast-track award lock</span>
+                </li>
               </ul>
             </div>
 
-            <div className="mt-8 pt-4">
+            <div className="mt-6 pt-2">
               <Link
                 to="/signup?side=buyer"
-                className="w-full block text-center rounded-xl bg-primary text-primary-foreground font-bold px-4 py-2.5 text-xs hover:opacity-90 transition shadow-xs"
+                className="w-full block text-center rounded-xl bg-primary text-primary-foreground font-bold px-4 py-2 text-xs hover:opacity-90 transition shadow-2xs"
               >
-                Register as Tier 1 Buyer
+                Register as Individual
               </Link>
             </div>
           </section>
 
-          {/* Tier 2: RWAs & Institutional Committees */}
-          <section className="rounded-2xl border-2 border-primary bg-card p-6 flex flex-col justify-between shadow-md relative">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold uppercase px-3 py-0.5 tracking-wider shadow-xs">
-              Most Popular for RWAs &amp; Trusts
+          {/* Card 2: RWA & MSME (Most Popular) */}
+          <section className="rounded-2xl border-2 border-primary bg-card p-5 flex flex-col justify-between shadow-md relative">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold uppercase px-3 py-0.5 tracking-wider shadow-2xs">
+              Most Popular for RWAs &amp; MSMEs
             </span>
             <div>
               <div className="flex items-center justify-between">
-                <span className="rounded-md bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 text-[10px] font-bold px-2 py-0.5">
-                  Tier 2
+                <span className="rounded-md bg-purple-500/10 text-purple-800 dark:text-purple-300 text-[10px] font-bold px-2 py-0.5">
+                  RWA / MSME
                 </span>
-                <span className="text-xs text-muted-foreground font-mono">Committee Governance</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Committee Mode</span>
               </div>
-              <h2 className="text-xl font-bold mt-2 text-foreground">
-                {SUBSCRIPTION_TIERS.TIER_2_ENTERPRISE.name}
+              <h2 className="text-lg font-bold mt-2 text-foreground">
+                RWA, Housing Society &amp; MSME
               </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                {SUBSCRIPTION_TIERS.TIER_2_ENTERPRISE.tagline}
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Democratic voting &amp; multi-member committee governance.
               </p>
 
-              <div className="mt-5 pb-5 border-b">
+              <div className="mt-4 pb-4 border-b">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
                     ₹{cycle === 'MONTHLY'
@@ -146,66 +152,76 @@ export function PricingPage() {
                   </span>
                 </div>
                 {cycle === 'YEARLY' && (
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
                     ✓ Saves ₹{SUBSCRIPTION_TIERS.TIER_2_ENTERPRISE.yearlySavings.toLocaleString('en-IN')} vs Monthly
                   </span>
                 )}
               </div>
 
-              <ul className="mt-5 space-y-2.5 text-xs text-muted-foreground">
-                {SUBSCRIPTION_TIERS.TIER_2_ENTERPRISE.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                    <span className="font-medium text-foreground">{f}</span>
-                  </li>
-                ))}
+              <ul className="mt-4 space-y-2 text-xs text-foreground/90">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span><strong>Everything in Individual</strong> for whole team</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span>Multi-member voting room &amp; quorum controls</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span>1-Tap preset decision justifications</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span>Exportable statutory audit log &amp; GST Purchase Orders</span>
+                </li>
               </ul>
             </div>
 
-            <div className="mt-8 pt-4">
+            <div className="mt-6 pt-2">
               <Link
                 to="/signup?side=buyer"
-                className="w-full block text-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 text-xs transition shadow-md"
+                className="w-full block text-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs transition shadow-xs"
               >
-                Register as Tier 2 Institution
+                Register as RWA / MSME
               </Link>
             </div>
           </section>
 
-          {/* Supplier Free Access */}
-          <section className="rounded-2xl border-2 border-border bg-card p-6 flex flex-col justify-between shadow-xs">
+          {/* Card 3: Verified Supplier (Free Forever) */}
+          <section className="rounded-2xl border bg-card p-5 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5">
+                <span className="rounded-md bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5">
                   Suppliers
                 </span>
-                <span className="text-xs text-muted-foreground font-mono">Zero Commission</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Zero Fee</span>
               </div>
-              <h2 className="text-xl font-bold mt-2 text-foreground">
-                Supplier Quoting Access
+              <h2 className="text-lg font-bold mt-2 text-foreground">
+                Verified Supplier Network
               </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                For Contractors, Fabricators, Service Providers &amp; Vendors
+              <p className="text-xs text-muted-foreground mt-0.5">
+                For contractors, fabricators, and local trade vendors.
               </p>
 
-              <div className="mt-5 pb-5 border-b">
+              <div className="mt-4 pb-4 border-b">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">₹0</span>
                   <span className="text-xs text-muted-foreground">/ Free Forever</span>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                  ✓ No lead fees · No cut of contract value
+                <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
+                  ✓ ₹0 lead fees · 0% commission on contract value
                 </span>
               </div>
 
-              <ul className="mt-5 space-y-2.5 text-xs text-muted-foreground">
+              <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>100% Free to register and quote on live RFQs</span>
+                  <span>15-Second mobile quoting via WhatsApp &amp; Web</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Verified GSTIN &amp; PAN seller badge recognition</span>
+                  <span>Identity-protected fair merit evaluation</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
@@ -213,19 +229,15 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Direct Purchase Orders and payment settlements</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>WhatsApp &amp; Web instant notification channels</span>
+                  <span>Direct Purchase Orders and bank settlements</span>
                 </li>
               </ul>
             </div>
 
-            <div className="mt-8 pt-4">
+            <div className="mt-6 pt-2">
               <Link
                 to="/signup?side=supplier"
-                className="w-full block text-center rounded-xl border-2 border-primary text-primary hover:bg-primary/5 font-bold px-4 py-2.5 text-xs transition"
+                className="w-full block text-center rounded-xl border border-primary text-primary hover:bg-primary/5 font-bold px-4 py-2 text-xs transition"
               >
                 Register as Verified Supplier
               </Link>
@@ -233,17 +245,12 @@ export function PricingPage() {
           </section>
         </div>
 
-        {/* Operating System Note */}
-        <section className="mt-12 rounded-2xl border border-dashed p-6 bg-muted/20 text-center max-w-3xl mx-auto">
-          <h3 className="text-sm font-bold text-foreground">
-            Identity-Protected Institutional Procurement
-          </h3>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            The Open Trade &amp; Procurement (OTP) Platform is an Identity-Protected Institutional
-            Procurement Operating System. It prevents corruption, committee bias, and kickbacks by
-            cryptographically decoupling technical merit and commercial pricing from supplier identity.
+        {/* Minimal Governance Note */}
+        <div className="mt-8 rounded-xl border border-dashed p-4 bg-muted/20 text-center max-w-2xl mx-auto text-xs text-muted-foreground">
+          <p>
+            <strong>Direct Settlement Guarantee:</strong> {PRODUCT_NAME} facilitates neutral, identity-protected evaluation. Buyers settle directly with awarded vendors via RTGS/NEFT/UPI with zero intermediary fee deductions.
           </p>
-        </section>
+        </div>
       </div>
     </SiteLayout>
   );

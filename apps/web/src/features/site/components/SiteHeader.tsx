@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { OtpLogo } from '@/components/ui/OtpLogo';
 import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 import { SupplierCapabilityModal } from '@/features/supplier';
+import { QuickRegisterModal } from '@/features/portal';
 import { SupportHelpButtonModal } from '@/features/support';
 import { ThemeBottomSheet } from '@/features/theme';
 
@@ -16,6 +17,7 @@ export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAccountPopoverOpen, setIsAccountPopoverOpen] = useState(false);
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
+  const [isQuickRegisterOpen, setIsQuickRegisterOpen] = useState(false);
   const [showThemeSheet, setShowThemeSheet] = useState(false);
   const accountPopoverRef = useRef<HTMLDivElement>(null);
 
@@ -101,7 +103,7 @@ export function SiteHeader() {
                 <span>+</span>
                 <span>Add Capabilities</span>
               </button>
-            ) : (
+            ) : user ? (
               <NavLink
                 to="/requirements/new"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold hover:bg-primary/20 transition"
@@ -112,6 +114,18 @@ export function SiteHeader() {
                 <span>+</span>
                 <span>Post Need</span>
               </NavLink>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsQuickRegisterOpen(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold hover:bg-primary/20 transition cursor-pointer"
+                title="Get Started — Quick Registration"
+                aria-label="Get Started — Quick Registration"
+                data-testid="header-buyer-create-requirement-btn"
+              >
+                <span>+</span>
+                <span>Get Started</span>
+              </button>
             )}
 
             <NavLink
@@ -328,7 +342,7 @@ export function SiteHeader() {
                     <span>Add Business Capabilities</span>
                   </button>
                 </div>
-              ) : !user ? (
+              ) : user ? (
                 <div className="pb-1">
                   <Link
                     to="/requirements/new"
@@ -341,7 +355,23 @@ export function SiteHeader() {
                     <span>Create Requirement</span>
                   </Link>
                 </div>
-              ) : null}
+              ) : (
+                <div className="pb-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsQuickRegisterOpen(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition text-xs cursor-pointer"
+                    title="Get Started — Quick Registration"
+                    data-testid="mobile-create-requirement"
+                  >
+                    <span>+</span>
+                    <span>Get Started / Quick Register</span>
+                  </button>
+                </div>
+              )}
 
               {user && (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
@@ -486,6 +516,12 @@ export function SiteHeader() {
       <SupplierCapabilityModal
         open={isCapabilityModalOpen}
         onClose={() => setIsCapabilityModalOpen(false)}
+      />
+
+      {/* Quick Registration Modal for Unauthenticated Users */}
+      <QuickRegisterModal
+        open={isQuickRegisterOpen}
+        onClose={() => setIsQuickRegisterOpen(false)}
       />
 
       {/* Theme Bottom Sheet Triggered from SiteHeader Profile Popover */}

@@ -26,6 +26,7 @@ import {
   SupplierRegisterForm,
   GstinAutofillField,
   SignupSuccess,
+  QuickRegisterModal,
   BUYER_COPY,
   SUPPLIER_COPY,
   sideFromParam,
@@ -89,6 +90,7 @@ describe('Phase 3 Public Experience & Authentication Screens (Screens 31–40)',
       expect(SupplierRegisterForm).toBeDefined();
       expect(GstinAutofillField).toBeDefined();
       expect(SignupSuccess).toBeDefined();
+      expect(QuickRegisterModal).toBeDefined();
     });
 
     it('supports 1-tap side switching between Buyer and Supplier', () => {

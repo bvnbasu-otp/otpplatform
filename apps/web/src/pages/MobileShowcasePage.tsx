@@ -53,14 +53,12 @@ export function MobileShowcasePage() {
 
         {/* Dynamic Display based on Switcher */}
         {viewMode === 'interactive' ? (
-          <div className="py-4">
+          <div className="py-2">
             <MobileScreensShowcase />
-            <MobileMultiDeviceGallery />
           </div>
         ) : (
-          <div className="py-4">
+          <div className="py-2">
             <MobileMultiDeviceGallery />
-            <MobileScreensShowcase />
           </div>
         )}
 

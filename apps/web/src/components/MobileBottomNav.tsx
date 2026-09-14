@@ -8,6 +8,7 @@ import { ProfileEditModal } from '@/features/profile';
 import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api/roles';
 import { ThemeBottomSheet } from '@/features/theme';
 import { SupplierCapabilityModal } from '@/features/supplier';
+import { QuickRegisterModal } from '@/features/portal';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -29,6 +30,7 @@ export function MobileBottomNav() {
 
   const [isAccountSheetOpen, setIsAccountSheetOpen] = useState(false);
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
+  const [isQuickRegisterOpen, setIsQuickRegisterOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showThemeSheet, setShowThemeSheet] = useState(false);
@@ -215,22 +217,19 @@ export function MobileBottomNav() {
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Pricing</span>
             </NavLink>
 
-            {/* Tab 3: + Elevated Center Button (/requirements/new) */}
+            {/* Tab 3: + Elevated Center Button (Quick Register Modal trigger) */}
             <div className="flex flex-col items-center justify-center flex-1 shrink-0">
-              <NavLink
-                to="/requirements/new"
-                className={({ isActive }) =>
-                  `relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target ${
-                    isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:bg-primary/90'
-                  }`
-                }
-                title="Post a new requirement / broadcast RFQ"
-                aria-label="Post a new requirement / broadcast RFQ"
+              <button
+                type="button"
+                onClick={() => setIsQuickRegisterOpen(true)}
+                className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                title="Get Started — Quick Registration"
+                aria-label="Get Started — Quick Registration"
                 data-testid="bottom-nav-prelogin-create-requirement"
               >
                 <span className="text-2xl font-bold leading-none select-none">+</span>
-                <span className="sr-only">Create Requirement</span>
-              </NavLink>
+                <span className="sr-only">Get Started</span>
+              </button>
             </div>
 
             {/* Tab 4: About Us (/about-us) */}
@@ -452,6 +451,12 @@ export function MobileBottomNav() {
       <SupplierCapabilityModal
         open={isCapabilityModalOpen}
         onClose={() => setIsCapabilityModalOpen(false)}
+      />
+
+      {/* Quick Registration Modal for Unauthenticated Users */}
+      <QuickRegisterModal
+        open={isQuickRegisterOpen}
+        onClose={() => setIsQuickRegisterOpen(false)}
       />
 
       <ChangePasswordModal

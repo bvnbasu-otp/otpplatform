@@ -241,13 +241,13 @@ export function MobileScreensShowcase() {
                 setShowSupplierCapabilityPreview(false);
                 setSlideDirection('left');
               }}
-              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
+              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition mobile-touch-target cursor-pointer ${
                 pipelineMode === 'buyer'
                   ? 'bg-card text-foreground shadow-xs ring-1 ring-border/80'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>🏢</span> Buyer Pipeline (7 Screens)
+              <span>🏢</span> Buyer View (7 Screens)
             </button>
             <button
               type="button"
@@ -258,13 +258,13 @@ export function MobileScreensShowcase() {
                 setShowSupplierCapabilityPreview(false);
                 setSlideDirection('left');
               }}
-              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
+              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition mobile-touch-target cursor-pointer ${
                 pipelineMode === 'supplier'
                   ? 'bg-card text-foreground shadow-xs ring-1 ring-border/80'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>🚚</span> Supplier Pipeline (5 Screens)
+              <span>🚚</span> Supplier View (5 Screens)
             </button>
           </div>
 
@@ -300,20 +300,37 @@ export function MobileScreensShowcase() {
         {/* Dynamic Interactive Presentation: Left Overview / Right Phone Mockup */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Screen Explanation & Interactive Walkthrough Points */}
-          <div className="lg:col-span-5 space-y-6 text-left order-2 lg:order-1">
+          <div className="lg:col-span-5 space-y-5 text-left order-2 lg:order-1">
             <div className="space-y-2">
-              <span className={`inline-block rounded-full border px-3 py-1 text-xs font-extrabold uppercase tracking-wide ${currentScreen.badgeColor}`}>
-                {currentScreen.badge}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`inline-block rounded-full border px-3 py-1 text-xs font-extrabold uppercase tracking-wide ${currentScreen.badgeColor}`}>
+                  {currentScreen.badge}
+                </span>
+                <span className="text-[11px] font-bold text-muted-foreground">
+                  {pipelineMode === 'buyer' ? 'Post Request' : 'Submit 30 min Quote'}
+                </span>
+              </div>
               <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
                 {currentScreen.title}
               </h3>
               <p className="text-sm font-semibold text-primary">
                 {currentScreen.tagline}
               </p>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-0.5">
                 {currentScreen.description}
               </p>
+            </div>
+
+            {/* Dynamic Value Proposition Subtitle Banner */}
+            <div className="rounded-xl bg-primary/5 border border-primary/20 px-3.5 py-2 flex items-center justify-between text-xs">
+              <span className="font-bold text-foreground">
+                {pipelineMode === 'buyer' ? '🎯 Buyer Objective:' : '⚡ Supplier Objective:'}
+              </span>
+              <span className="font-extrabold text-primary">
+                {pipelineMode === 'buyer'
+                  ? 'Post Request → Scored Quotes in 30 Min'
+                  : 'Submit 30 min Quote → Win PO on Merit'}
+              </span>
             </div>
 
             {/* Feature Highlights for Current Screen */}

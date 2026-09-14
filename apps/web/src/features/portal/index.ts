@@ -7,6 +7,7 @@ export { BuyerRegisterForm } from './components/BuyerRegisterForm';
 export { SupplierRegisterForm } from './components/SupplierRegisterForm';
 export { GstinAutofillField } from './components/GstinAutofillField';
 export { SignupSuccess } from './components/SignupSuccess';
+export { QuickRegisterModal } from './components/QuickRegisterModal';
 export { VerificationChoice } from './components/VerificationChoice';
 export { RoleChoiceField } from './components/RoleChoiceField';
 export {

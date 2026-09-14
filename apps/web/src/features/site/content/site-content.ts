@@ -27,7 +27,7 @@ import { PRODUCT_NAME } from '@/lib/brand';
 export const HERO = {
   eyebrow: 'OTP — Open Trade & Procurement',
   title: 'Procure smarter: get competitive quotes without revealing identities.',
-  tagline: 'Identity-protected competitive sourcing. Tell us what you need. OTP helps you discover suppliers, compare offers and make a decision.',
+  tagline: 'Identity-protected competitive sourcing. Tell us what you need. Get scored, identity-protected quotes in 30 Minutes.',
   body:
     'A transparent platform where buyers and suppliers compete on price, quality, and turnaround while identities stay protected until award.',
   prompt: 'What do you need to procure today?',
