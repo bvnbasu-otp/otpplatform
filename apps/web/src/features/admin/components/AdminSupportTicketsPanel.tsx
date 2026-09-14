@@ -137,22 +137,22 @@ export function AdminSupportTicketsPanel() {
       {isLoading ? (
         <p className="py-12 text-center text-xs text-muted-foreground animate-pulse">Loading support tickets…</p>
       ) : tickets.length === 0 ? (
-        <div className="rounded-xl border bg-card p-12 text-center space-y-2">
+        <div className="rounded-2xl border bg-card p-12 text-center space-y-2">
           <span className="text-3xl">🎉</span>
           <h4 className="text-sm font-bold text-foreground">Support Queue is Clean!</h4>
           <p className="text-xs text-muted-foreground">No open support tickets or buyer/supplier escalation requests found.</p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 w-full max-w-full">
           {tickets.map((t) => (
-            <div
+            <article
               key={t.id}
-              className="rounded-xl border bg-card p-4 shadow-xs space-y-3 hover:border-primary/40 transition"
+              className="rounded-2xl border bg-card p-4 shadow-2xs space-y-3.5 hover:border-primary/40 transition flex flex-col justify-between"
             >
-              <div className="flex flex-wrap items-start justify-between gap-2 border-b pb-2.5">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-black text-foreground bg-muted px-2 py-0.5 rounded">
+              <div className="space-y-2 border-b border-border/50 pb-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-mono text-xs font-black text-foreground bg-muted px-2 py-0.5 rounded-md">
                       {t.ticketNumber}
                     </span>
                     <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
@@ -161,7 +161,7 @@ export function AdminSupportTicketsPanel() {
                       t.category === 'OPS' ? 'bg-amber-100 text-amber-900 border border-amber-300' :
                       'bg-blue-100 text-blue-900 border border-blue-300'
                     }`}>
-                      {t.category} → {t.routedEmail}
+                      {t.category}
                     </span>
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                       t.priority === 'CRITICAL' ? 'bg-red-600 text-white animate-pulse' :
@@ -170,76 +170,83 @@ export function AdminSupportTicketsPanel() {
                     }`}>
                       {t.priority}
                     </span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      t.status === 'OPEN' ? 'bg-amber-500/20 text-amber-800' :
-                      t.status === 'IN_REVIEW' ? 'bg-blue-500/20 text-blue-800' :
-                      'bg-emerald-500/20 text-emerald-800'
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                      t.status === 'OPEN' ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300' :
+                      t.status === 'IN_REVIEW' ? 'bg-blue-500/20 text-blue-800 dark:text-blue-300' :
+                      'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300'
                     }`}>
                       {t.status}
                     </span>
                   </div>
-                  <h4 className="text-sm font-bold text-foreground pt-1">{t.subject}</h4>
                 </div>
 
-                <div className="text-right text-[11px] text-muted-foreground">
-                  <span>{new Date(t.createdAt).toLocaleString()}</span>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground">{t.subject}</h4>
+                  <div className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                    {new Date(t.createdAt).toLocaleString()}
+                  </div>
                 </div>
               </div>
 
               {/* Problem Description */}
-              <p className="text-xs text-foreground leading-relaxed bg-muted/20 p-3 rounded-lg border font-mono">
-                {t.description}
-              </p>
+              <div className="space-y-2 text-xs flex-1">
+                <p className="text-xs text-foreground leading-relaxed bg-muted/20 p-3 rounded-xl border font-mono whitespace-pre-wrap">
+                  {t.description}
+                </p>
 
-              {/* Metadata & Actions */}
-              <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
-                <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-                  <span>From: <strong className="text-foreground">{t.userEmail || 'Anonymous'}</strong></span>
-                  <span>Role: <strong>{t.userRole || 'N/A'}</strong> ({t.userSide || 'Portal'})</span>
+                {/* User Info */}
+                <div className="rounded-xl border bg-muted/10 p-2.5 text-[11px] text-muted-foreground space-y-1">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span>From: <strong className="text-foreground">{t.userEmail || 'Anonymous'}</strong></span>
+                    <span>Role: <strong>{t.userRole || 'N/A'}</strong> ({t.userSide || 'Portal'})</span>
+                  </div>
                   {t.pageUrl && (
-                    <span className="truncate max-w-xs" title={t.pageUrl}>
+                    <div className="truncate" title={t.pageUrl}>
                       📍 URL: <span className="font-mono">{t.pageUrl.replace(/^https?:\/\/[^/]+/, '')}</span>
-                    </span>
+                    </div>
                   )}
                 </div>
 
-                {/* Status Toggles */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {t.status === 'OPEN' && (
-                    <button
-                      type="button"
-                      disabled={isUpdating}
-                      onClick={() => handleUpdateStatus(t.id, 'IN_REVIEW')}
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-3.5 py-2 font-semibold text-foreground hover:bg-muted active:scale-98 transition text-xs shadow-2xs"
-                    >
-                      Mark In Review
-                    </button>
-                  )}
-                  {t.status !== 'RESOLVED' && (
-                    <button
-                      type="button"
-                      disabled={isUpdating}
-                      onClick={() => {
-                        const notes = prompt('Enter resolution notes / mediation summary:');
-                        if (notes !== null) {
-                          setResolutionNotes(notes);
-                          void resolveSupportTicket(t.id, 'RESOLVED', notes).then(() => loadTickets());
-                        }
-                      }}
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-700 active:scale-98 transition text-xs shadow-2xs"
-                    >
-                      ✓ Mark Resolved &amp; Close Dispute
-                    </button>
-                  )}
-                </div>
+                {t.resolutionNotes && (
+                  <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-2.5 text-xs text-emerald-950 dark:text-emerald-200 font-medium">
+                    <strong>Mediation &amp; Resolution Notes:</strong> {t.resolutionNotes}
+                  </div>
+                )}
               </div>
 
-              {t.resolutionNotes && (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-2.5 text-xs text-emerald-950 dark:text-emerald-200 font-medium">
-                  <strong>Mediation &amp; Resolution Notes:</strong> {t.resolutionNotes}
-                </div>
-              )}
-            </div>
+              {/* Footer Actions: 44px+ touch targets */}
+              <div className="pt-2 border-t border-border/50 flex flex-wrap items-center gap-2">
+                {t.status === 'OPEN' && (
+                  <button
+                    type="button"
+                    disabled={isUpdating}
+                    onClick={() => handleUpdateStatus(t.id, 'IN_REVIEW')}
+                    className="flex-1 inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-3.5 py-2 font-semibold text-foreground hover:bg-muted active:scale-98 transition text-xs shadow-2xs mobile-touch-target"
+                  >
+                    Mark In Review
+                  </button>
+                )}
+                {t.status !== 'RESOLVED' && (
+                  <button
+                    type="button"
+                    disabled={isUpdating}
+                    onClick={() => {
+                      const notes = prompt('Enter resolution notes / mediation summary:');
+                      if (notes !== null) {
+                        setResolutionNotes(notes);
+                        void resolveSupportTicket(t.id, 'RESOLVED', notes).then(() => loadTickets());
+                      }
+                    }}
+                    className="flex-1 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-700 active:scale-98 transition text-xs shadow-2xs mobile-touch-target"
+                  >
+                    ✓ Mark Resolved &amp; Close Dispute
+                  </button>
+                )}
+              </div>
+            </article>
           ))}
         </div>
       )}

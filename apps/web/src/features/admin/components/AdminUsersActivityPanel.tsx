@@ -37,8 +37,25 @@ const BLOCK_REASONS: AccountBlockReason[] = [
   'Other',
 ];
 
-export function AdminUsersActivityPanel() {
-  const [subTab, setSubTab] = useState<'USERS' | 'ORGANIZATIONS' | 'REGISTRATIONS'>('USERS');
+export interface AdminUsersActivityPanelProps {
+  initialSubTab?: 'USERS' | 'ORGANIZATIONS' | 'REGISTRATIONS';
+  onSubTabChange?: (tab: 'USERS' | 'ORGANIZATIONS' | 'REGISTRATIONS') => void;
+}
+
+export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChange }: AdminUsersActivityPanelProps = {}) {
+  const [subTab, setSubTab] = useState<'USERS' | 'ORGANIZATIONS' | 'REGISTRATIONS'>(initialSubTab);
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
+
+  const handleSubTabChange = (next: 'USERS' | 'ORGANIZATIONS' | 'REGISTRATIONS') => {
+    setSubTab(next);
+    onSubTabChange?.(next);
+  };
+  const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('CARDS');
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [organizations, setOrganizations] = useState<AdminOrganizationItem[]>([]);
   const [requests, setRequests] = useState<AdminSignupRequest[]>([]);
@@ -617,87 +634,137 @@ export function AdminUsersActivityPanel() {
         </div>
       )}
 
-      {/* 2. Sub-Tabs & Refresh Header */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b pb-2">
-        <div className="flex flex-wrap items-center gap-1.5">
+      {/* 2. Responsive 3-Column Sub-Tabs Header (Zero clipping on 360px-412px viewports) */}
+      <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
+        <div className="grid grid-cols-3 gap-1.5 w-full sm:flex sm:w-auto sm:items-center">
+          {/* Subtab 1: Users */}
           <button
             type="button"
-            onClick={() => setSubTab('USERS')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
+            onClick={() => handleSubTabChange('USERS')}
+            className={`inline-flex min-h-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-2 sm:px-3.5 py-2 text-xs font-bold transition active:scale-98 mobile-touch-target ${
               subTab === 'USERS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
             }`}
           >
-            <span>👥</span> Users ({users.length})
+            <span className="shrink-0">👥</span>
+            <span className="truncate">Users</span>
+            <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold shrink-0 ${
+              subTab === 'USERS' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-foreground'
+            }`}>
+              {users.length}
+            </span>
             {onlineUsersCount > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-extrabold text-white">
+              <span className="hidden lg:inline-flex items-center gap-1 rounded-full bg-emerald-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                {onlineUsersCount} Online
-              </span>
-            )}
-            {blockedUsersCount > 0 && (
-              <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[9px] font-extrabold text-white">
-                {blockedUsersCount} Blocked
+                {onlineUsersCount}
               </span>
             )}
           </button>
 
+          {/* Subtab 2: Organizations & Suppliers */}
           <button
             type="button"
-            onClick={() => setSubTab('ORGANIZATIONS')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
+            onClick={() => handleSubTabChange('ORGANIZATIONS')}
+            className={`inline-flex min-h-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-2 sm:px-3.5 py-2 text-xs font-bold transition active:scale-98 mobile-touch-target ${
               subTab === 'ORGANIZATIONS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
             }`}
           >
-            <span>🏢</span> Orgs &amp; Suppliers ({organizations.length})
-            {blockedOrgsCount > 0 && (
-              <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[9px] font-extrabold text-white">
-                {blockedOrgsCount} Blocked
-              </span>
-            )}
+            <span className="shrink-0">🏢</span>
+            <span className="truncate">
+              <span className="sm:hidden">Orgs/Supp.</span>
+              <span className="hidden sm:inline">Orgs &amp; Suppliers</span>
+            </span>
+            <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold shrink-0 ${
+              subTab === 'ORGANIZATIONS' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-foreground'
+            }`}>
+              {organizations.length}
+            </span>
           </button>
 
+          {/* Subtab 3: Approvals Queue */}
           <button
             type="button"
-            onClick={() => setSubTab('REGISTRATIONS')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
+            onClick={() => handleSubTabChange('REGISTRATIONS')}
+            className={`inline-flex min-h-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-2 sm:px-3.5 py-2 text-xs font-bold transition active:scale-98 mobile-touch-target ${
               subTab === 'REGISTRATIONS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
             }`}
           >
-            <span>📋</span> Approvals Queue
-            {pendingRegistrationsCount > 0 && (
-              <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-extrabold text-white">
-                {pendingRegistrationsCount} Pending
+            <span className="shrink-0">📋</span>
+            <span className="truncate">
+              <span className="sm:hidden">Approvals</span>
+              <span className="hidden sm:inline">Approval Queue</span>
+            </span>
+            {pendingRegistrationsCount > 0 ? (
+              <span className="rounded-full bg-amber-500 px-1.5 py-0.2 text-[10px] font-extrabold text-white shrink-0 animate-pulse">
+                {pendingRegistrationsCount}
+              </span>
+            ) : (
+              <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold shrink-0 ${
+                subTab === 'REGISTRATIONS' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-foreground'
+              }`}>
+                {requests.length}
               </span>
             )}
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void loadData()}
-          disabled={isLoading}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs"
-        >
-          <span>↻</span> <span className="hidden sm:inline ml-1">{isLoading ? 'Refreshing…' : 'Refresh'}</span>
-        </button>
+        {/* View Switcher & Refresh Button */}
+        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+          {/* Card / Table Toggle */}
+          <div className="flex items-center rounded-xl border bg-muted/50 p-1 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setViewMode('CARDS')}
+              className={`inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 py-1 transition ${
+                viewMode === 'CARDS'
+                  ? 'bg-card text-foreground font-bold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Switch to Card View"
+            >
+              <span>▦</span> Cards
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('TABLE')}
+              className={`inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 py-1 transition ${
+                viewMode === 'TABLE'
+                  ? 'bg-card text-foreground font-bold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Switch to Table View"
+            >
+              <span>📋</span> Table
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void loadData()}
+            disabled={isLoading}
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs"
+            title="Refresh Roster Data"
+          >
+            <span>↻</span> <span className="hidden sm:inline ml-1">{isLoading ? 'Refreshing…' : 'Refresh'}</span>
+          </button>
+        </div>
       </div>
 
       {/* 3. Search & Multi-Criteria Filter Bar */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border bg-card p-3 shadow-2xs">
-        <div className="flex items-center gap-2 flex-1 min-w-[220px]">
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border bg-card p-2.5 sm:p-3 shadow-2xs">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={
               subTab === 'USERS'
-                ? 'Search user name, email, phone, role, organization...'
+                ? 'Search name, email, phone, role, organization...'
                 : subTab === 'ORGANIZATIONS'
                 ? 'Search business name, GSTIN, contact person, email...'
                 : 'Search applicant name, business, reference (REG-)...'
@@ -715,30 +782,28 @@ export function AdminUsersActivityPanel() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Presence Filter Dropdown */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase mr-0.5">Presence:</span>
+          <div className="flex items-center gap-1 flex-1 sm:flex-initial min-w-[140px]">
             <select
               value={presenceFilter}
               onChange={(e) => setPresenceFilter(e.target.value as any)}
-              className="rounded-xl border bg-background px-2.5 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-h-[44px]"
+              className="w-full rounded-xl border bg-background px-2.5 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-h-[44px]"
               aria-label="Filter by online presence status"
             >
               <option value="ALL">All Presence ({subTab === 'USERS' ? users.length : organizations.length})</option>
               <option value="ONLINE">🟢 Online ({onlineUsersCount})</option>
-              <option value="RECENTLY_ACTIVE">🟡 Recently Active (30m) ({recentlyActiveUsersCount})</option>
+              <option value="RECENTLY_ACTIVE">🟡 Recently Active ({recentlyActiveUsersCount})</option>
               <option value="OFFLINE">⚪ Offline ({offlineUsersCount})</option>
             </select>
           </div>
 
           {/* Side / Role Filter Dropdown */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase mr-0.5">Side:</span>
+          <div className="flex items-center gap-1 flex-1 sm:flex-initial min-w-[110px]">
             <select
               value={sideFilter}
               onChange={(e) => setSideFilter(e.target.value as any)}
-              className="rounded-xl border bg-background px-2.5 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-h-[44px]"
+              className="w-full rounded-xl border bg-background px-2.5 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-h-[44px]"
               aria-label="Filter by user portal side"
             >
               <option value="ALL">All Roles</option>
@@ -749,14 +814,13 @@ export function AdminUsersActivityPanel() {
           </div>
 
           {/* Account Status Filter Chips */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase mr-0.5">Status:</span>
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
             {(['ALL', 'ACTIVE', 'BLOCKED', 'PENDING'] as const).map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => setStatusFilter(s)}
-                className={`rounded-xl px-2.5 py-1.5 text-xs font-bold transition min-h-[44px] mobile-touch-target ${
+                className={`rounded-xl px-2.5 py-1.5 text-xs font-bold transition min-h-[44px] mobile-touch-target shrink-0 ${
                   statusFilter === s
                     ? s === 'BLOCKED'
                       ? 'bg-rose-600 text-white shadow-2xs'
@@ -799,7 +863,7 @@ export function AdminUsersActivityPanel() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Block Action Button */}
             <button
               type="button"
@@ -871,230 +935,201 @@ export function AdminUsersActivityPanel() {
         </div>
       )}
 
-      {/* 5. DATA TABLES CONTAINER WITH EXPLICIT HORIZONTAL OVERFLOW CONTROLS */}
+      {/* 5. DATA CONTAINER: RESPONSIVE CARDS & DATA TABLES */}
       <div className="flex-1 min-h-0 rounded-2xl border bg-card shadow-2xs overflow-hidden flex flex-col w-full max-w-full">
-        {/* SUBTAB 1: USERS DATA TABLE */}
+        {/* ========================================================= */}
+        {/* SUBTAB 1: USERS (Cards on Mobile / Default View) */}
+        {/* ========================================================= */}
         {subTab === 'USERS' && (
-          <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 zero-scroll-pane">
-            <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
-              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
-                <tr>
-                  <th className="p-3 w-10 min-w-[40px] text-center">
-                    <input
-                      type="checkbox"
-                      checked={isAllUsersSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = isSomeUsersSelected;
-                      }}
-                      onChange={toggleSelectAllUsers}
-                      aria-label="Select all visible users"
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
-                    />
-                  </th>
-                  <th className="p-3 min-w-[220px]">User &amp; Contact</th>
-                  <th className="p-3 min-w-[140px]">Presence</th>
-                  <th className="p-3 min-w-[130px]">Account Status</th>
-                  <th className="p-3 min-w-[100px]">Side</th>
-                  <th className="p-3 min-w-[180px]">Organization / Company</th>
-                  <th className="p-3 min-w-[110px]">Role</th>
-                  <th className="p-3 min-w-[120px]">GST Compliance</th>
-                  <th className="p-3 min-w-[120px]">Registered</th>
-                  <th className="p-3 min-w-[150px] text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y text-foreground">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={10} className="py-12 text-center text-muted-foreground">
-                      Loading user accounts and tenant credentials…
-                    </td>
-                  </tr>
-                ) : filteredUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="py-12 text-center text-muted-foreground font-medium">
-                      No users match the current search or status filter.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredUsers.map((u) => {
-                    const isSelected = selectedUserIds.has(u.id);
-                    const isBlocked =
-                      u.status === 'BLOCKED' ||
-                      (u.status as string) === 'SUSPENDED' ||
-                      Boolean(u.blockedAt) ||
-                      Boolean(u.blockedReason);
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 space-y-3 zero-scroll-pane">
+            {isLoading ? (
+              <div className="py-16 text-center text-muted-foreground text-xs animate-pulse">
+                Loading user accounts and tenant credentials…
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="py-16 text-center text-muted-foreground text-xs font-medium">
+                No users match the current search or status filter.
+              </div>
+            ) : viewMode === 'CARDS' ? (
+              /* RESPONSIVE MOBILE ACTION CARDS FOR USERS */
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredUsers.map((u) => {
+                  const isSelected = selectedUserIds.has(u.id);
+                  const isBlocked =
+                    u.status === 'BLOCKED' ||
+                    (u.status as string) === 'SUSPENDED' ||
+                    Boolean(u.blockedAt) ||
+                    Boolean(u.blockedReason);
 
-                    const presenceStatus = getUserOnlineStatus(u.lastSeenAt, now);
-                    const presenceConfig = getPresenceBadgeConfig(presenceStatus);
-                    const relativeTime = formatLastSeenRelative(u.lastSeenAt, now);
-                    const absoluteTime = formatLastSeenAbsolute(u.lastSeenAt);
-                    const initials = (u.fullName || u.email || '?')
-                      .split(' ')
-                      .map((w) => w[0])
-                      .slice(0, 2)
-                      .join('')
-                      .toUpperCase();
+                  const presenceStatus = getUserOnlineStatus(u.lastSeenAt, now);
+                  const presenceConfig = getPresenceBadgeConfig(presenceStatus);
+                  const relativeTime = formatLastSeenRelative(u.lastSeenAt, now);
+                  const absoluteTime = formatLastSeenAbsolute(u.lastSeenAt);
+                  const initials = (u.fullName || u.email || '?')
+                    .split(' ')
+                    .map((w) => w[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase();
 
-                    return (
-                      <tr
-                        key={u.id}
-                        className={`transition hover:bg-muted/20 ${
-                          isSelected ? 'bg-primary/5' : isBlocked ? 'bg-rose-500/5' : ''
-                        }`}
-                      >
-                        {/* Checkbox Column */}
-                        <td className="p-3 text-center w-10 min-w-[40px]">
+                  return (
+                    <article
+                      key={u.id}
+                      className={`rounded-2xl border bg-card p-3.5 shadow-2xs transition flex flex-col justify-between gap-3 ${
+                        isSelected
+                          ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
+                          : isBlocked
+                          ? 'border-rose-300 dark:border-rose-900 bg-rose-50/20 dark:bg-rose-950/10'
+                          : 'hover:border-border'
+                      }`}
+                    >
+                      {/* Card Header */}
+                      <div className="flex items-start justify-between gap-2.5 border-b border-border/50 pb-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {/* Checkbox */}
                           <input
                             type="checkbox"
                             checked={isSelected}
                             disabled={u.isPlatformAdmin}
                             onChange={() => toggleSelectUser(u.id, u.isPlatformAdmin)}
                             aria-label={`Select user ${u.email}`}
-                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary disabled:opacity-30"
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary disabled:opacity-30 shrink-0"
                           />
-                        </td>
 
-                        {/* User & Contact */}
-                        <td className="p-3 min-w-[220px]">
-                          <div className="flex items-start gap-2.5">
-                            <div className="relative shrink-0 mt-0.5">
-                              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
-                                {initials}
-                              </div>
-                              <span
-                                title={`Presence: ${presenceConfig.label} (${relativeTime})\n${absoluteTime}`}
-                                className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${presenceConfig.dotColor}`}
-                              />
+                          {/* Avatar & Presence */}
+                          <div className="relative shrink-0">
+                            <div className="h-9 w-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
+                              {initials}
                             </div>
-
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-bold text-foreground truncate max-w-[150px]" title={u.fullName || undefined}>
-                                  {u.fullName || 'User'}
-                                </span>
-                                {u.isPlatformAdmin && (
-                                  <span className="rounded bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-extrabold border border-primary/30">
-                                    SUPER ADMIN
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-muted-foreground font-mono truncate max-w-[180px]" title={u.email}>
-                                {u.email}
-                              </div>
-                              {u.phone && <div className="text-[10px] text-muted-foreground font-mono">{u.phone}</div>}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Real-time Presence Column */}
-                        <td className="p-3 min-w-[140px]">
-                          <div
-                            className="flex flex-col gap-0.5"
-                            title={`Last seen: ${absoluteTime} (${relativeTime})`}
-                          >
                             <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold border w-fit ${presenceConfig.badgeBg} ${presenceConfig.badgeText} ${presenceConfig.badgeBorder}`}
-                            >
-                              <span className={`h-1.5 w-1.5 rounded-full ${presenceConfig.dotColor}`} />
-                              <span>{presenceConfig.label}</span>
-                            </span>
-                            <span className="text-[10px] text-muted-foreground font-medium pl-1">
-                              {relativeTime}
-                            </span>
+                              title={`Presence: ${presenceConfig.label} (${relativeTime})\n${absoluteTime}`}
+                              className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${presenceConfig.dotColor}`}
+                            />
                           </div>
-                        </td>
 
-                        {/* Status Badge */}
-                        <td className="p-3 min-w-[130px]">
-                          {isBlocked ? (
-                            <div>
-                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
-                                <span>🚫</span> Blocked
-                              </span>
-                              {u.blockedReason && (
-                                <div
-                                  className="mt-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[140px]"
-                                  title={u.blockedReason}
-                                >
-                                  Reason: {u.blockedReason}
-                                </div>
+                          {/* Name & Admin Tag */}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h4 className="font-extrabold text-xs text-foreground truncate" title={u.fullName || undefined}>
+                                {u.fullName || 'User'}
+                              </h4>
+                              {u.isPlatformAdmin && (
+                                <span className="rounded bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-black border border-primary/30">
+                                  ADMIN
+                                </span>
                               )}
                             </div>
+                            <div className="text-[11px] text-muted-foreground font-mono truncate" title={u.email}>
+                              {u.email}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status Chip */}
+                        <div className="shrink-0">
+                          {isBlocked ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
+                              <span>🚫</span> Blocked
+                            </span>
                           ) : u.status === 'PENDING' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold border border-amber-300 dark:border-amber-800">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold border border-amber-300 dark:border-amber-800">
                               <span>⏳</span> Pending
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
                               <span>✓</span> Active
                             </span>
                           )}
-                        </td>
+                        </div>
+                      </div>
 
-                        {/* Side */}
-                        <td className="p-3 min-w-[100px]">
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                              u.side === 'SUPPLIER'
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
-                                : u.side === 'ADMIN'
-                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                            }`}
-                          >
-                            {u.side}
-                          </span>
-                        </td>
-
+                      {/* Card Body Information */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
                         {/* Organization */}
-                        <td className="p-3 min-w-[180px]">
-                          <div className="font-semibold text-foreground truncate max-w-[160px]" title={u.organizationName || 'Personal Workspace'}>
-                            {u.organizationName || 'Personal Workspace'}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">{u.orgType}</div>
-                        </td>
-
-                        {/* Role */}
-                        <td className="p-3 min-w-[110px]">
-                          <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono font-semibold">
-                            {u.role || 'MEMBER'}
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Workspace / Org:</span>
+                          <span className="font-semibold text-foreground truncate block" title={u.organizationName || 'Personal Workspace'}>
+                            {u.organizationName || 'Personal'}
                           </span>
-                        </td>
+                          <span className="text-[10px] text-muted-foreground block">{u.orgType || 'INDIVIDUAL'}</span>
+                        </div>
 
-                        {/* GST Compliance */}
-                        <td className="p-3 min-w-[120px]">
+                        {/* Role & Side */}
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Role &amp; Side:</span>
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                            <span
+                              className={`rounded-full px-2 py-0.2 text-[9px] font-bold ${
+                                u.side === 'SUPPLIER'
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                  : u.side === 'ADMIN'
+                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                  : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                              }`}
+                            >
+                              {u.side}
+                            </span>
+                            <span className="rounded bg-muted px-1.5 py-0.2 text-[9px] font-mono font-semibold">
+                              {u.role || 'MEMBER'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Presence Details */}
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Presence:</span>
+                          <span className="text-[11px] font-medium text-foreground flex items-center gap-1">
+                            <span className={`h-1.5 w-1.5 rounded-full ${presenceConfig.dotColor}`} />
+                            <span>{presenceConfig.label} ({relativeTime})</span>
+                          </span>
+                        </div>
+
+                        {/* GST & Registration Date */}
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">GST Compliance:</span>
                           {u.gstVerified ? (
-                            <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 px-1.5 py-0.5 text-[10px] font-bold">
+                            <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">
                               ✓ Verified
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-0.5 rounded bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-medium">
-                              Unregistered
-                            </span>
+                            <span className="text-[10px] text-muted-foreground">Unregistered</span>
                           )}
-                        </td>
+                        </div>
+                      </div>
 
-                        {/* Registered */}
-                        <td className="p-3 min-w-[120px] text-muted-foreground text-[11px] whitespace-nowrap">
-                          {new Date(u.createdAt).toLocaleDateString('en-IN', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </td>
+                      {/* Block Reason Note if Blocked */}
+                      {isBlocked && u.blockedReason && (
+                        <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2 text-[11px] text-rose-900 dark:text-rose-200">
+                          <strong>Block Reason:</strong> {u.blockedReason}
+                        </div>
+                      )}
 
-                        {/* Row Actions */}
-                        <td className="p-3 min-w-[150px] text-right">
+                      {/* Card Action Footer: 44px+ Touch Targets */}
+                      <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-2">
+                        {u.phone ? (
+                          <a
+                            href={`tel:${u.phone}`}
+                            className="text-[11px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1"
+                          >
+                            📞 {u.phone}
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">
+                            Joined {new Date(u.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                          </span>
+                        )}
+
+                        <div className="flex items-center gap-1.5">
                           {!u.isPlatformAdmin ? (
-                            <div className="flex items-center justify-end gap-1.5">
+                            <>
                               {isBlocked ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleConfirmUnblock('USERS', [u.id])}
-                                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs min-h-[36px] mobile-touch-target"
+                                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-xs transition shadow-2xs mobile-touch-target"
                                   title="Unblock and reactivate account"
                                 >
-                                  Unblock
+                                  <span>🔓</span> Unblock
                                 </button>
                               ) : (
                                 <button
@@ -1102,10 +1137,10 @@ export function AdminUsersActivityPanel() {
                                   onClick={() =>
                                     openBlockModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
                                   }
-                                  className="rounded-lg border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
-                                  title="Block account from accessing platform"
+                                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-3 py-1.5 text-xs transition mobile-touch-target"
+                                  title="Block user account"
                                 >
-                                  Block
+                                  <span>🚫</span> Block
                                 </button>
                               )}
 
@@ -1114,386 +1149,908 @@ export function AdminUsersActivityPanel() {
                                 onClick={() =>
                                   openDeleteModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
                                 }
-                                className="rounded-lg border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
+                                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1.5 text-xs transition mobile-touch-target"
                                 title="Delete user account"
                               >
-                                Delete
+                                🗑️
                               </button>
-                            </div>
+                            </>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground font-semibold">Protected</span>
+                            <span className="text-[10px] text-muted-foreground font-semibold px-2">Protected Admin</span>
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              /* DESKTOP TABLE VIEW FOR USERS */
+              <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+                <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
+                  <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
+                    <tr>
+                      <th className="p-3 w-10 min-w-[40px] text-center">
+                        <input
+                          type="checkbox"
+                          checked={isAllUsersSelected}
+                          ref={(el) => {
+                            if (el) el.indeterminate = isSomeUsersSelected;
+                          }}
+                          onChange={toggleSelectAllUsers}
+                          aria-label="Select all visible users"
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                        />
+                      </th>
+                      <th className="p-3 min-w-[220px]">User &amp; Contact</th>
+                      <th className="p-3 min-w-[140px]">Presence</th>
+                      <th className="p-3 min-w-[130px]">Account Status</th>
+                      <th className="p-3 min-w-[100px]">Side</th>
+                      <th className="p-3 min-w-[180px]">Organization / Company</th>
+                      <th className="p-3 min-w-[110px]">Role</th>
+                      <th className="p-3 min-w-[120px]">GST Compliance</th>
+                      <th className="p-3 min-w-[120px]">Registered</th>
+                      <th className="p-3 min-w-[150px] text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y text-foreground">
+                    {filteredUsers.map((u) => {
+                      const isSelected = selectedUserIds.has(u.id);
+                      const isBlocked =
+                        u.status === 'BLOCKED' ||
+                        (u.status as string) === 'SUSPENDED' ||
+                        Boolean(u.blockedAt) ||
+                        Boolean(u.blockedReason);
+
+                      const presenceStatus = getUserOnlineStatus(u.lastSeenAt, now);
+                      const presenceConfig = getPresenceBadgeConfig(presenceStatus);
+                      const relativeTime = formatLastSeenRelative(u.lastSeenAt, now);
+                      const absoluteTime = formatLastSeenAbsolute(u.lastSeenAt);
+                      const initials = (u.fullName || u.email || '?')
+                        .split(' ')
+                        .map((w) => w[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase();
+
+                      return (
+                        <tr
+                          key={u.id}
+                          className={`transition hover:bg-muted/20 ${
+                            isSelected ? 'bg-primary/5' : isBlocked ? 'bg-rose-500/5' : ''
+                          }`}
+                        >
+                          <td className="p-3 text-center w-10 min-w-[40px]">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              disabled={u.isPlatformAdmin}
+                              onChange={() => toggleSelectUser(u.id, u.isPlatformAdmin)}
+                              aria-label={`Select user ${u.email}`}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary disabled:opacity-30"
+                            />
+                          </td>
+
+                          <td className="p-3 min-w-[220px]">
+                            <div className="flex items-start gap-2.5">
+                              <div className="relative shrink-0 mt-0.5">
+                                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
+                                  {initials}
+                                </div>
+                                <span
+                                  title={`Presence: ${presenceConfig.label} (${relativeTime})\n${absoluteTime}`}
+                                  className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${presenceConfig.dotColor}`}
+                                />
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-foreground truncate max-w-[150px]" title={u.fullName || undefined}>
+                                    {u.fullName || 'User'}
+                                  </span>
+                                  {u.isPlatformAdmin && (
+                                    <span className="rounded bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-extrabold border border-primary/30">
+                                      SUPER ADMIN
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground font-mono truncate max-w-[180px]" title={u.email}>
+                                  {u.email}
+                                </div>
+                                {u.phone && <div className="text-[10px] text-muted-foreground font-mono">{u.phone}</div>}
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="p-3 min-w-[140px]">
+                            <div
+                              className="flex flex-col gap-0.5"
+                              title={`Last seen: ${absoluteTime} (${relativeTime})`}
+                            >
+                              <span
+                                className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold border w-fit ${presenceConfig.badgeBg} ${presenceConfig.badgeText} ${presenceConfig.badgeBorder}`}
+                              >
+                                <span className={`h-1.5 w-1.5 rounded-full ${presenceConfig.dotColor}`} />
+                                <span>{presenceConfig.label}</span>
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-medium pl-1">
+                                {relativeTime}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td className="p-3 min-w-[130px]">
+                            {isBlocked ? (
+                              <div>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
+                                  <span>🚫</span> Blocked
+                                </span>
+                                {u.blockedReason && (
+                                  <div
+                                    className="mt-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[140px]"
+                                    title={u.blockedReason}
+                                  >
+                                    {u.blockedReason}
+                                  </div>
+                                )}
+                              </div>
+                            ) : u.status === 'PENDING' ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold border border-amber-300 dark:border-amber-800">
+                                <span>⏳</span> Pending
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
+                                <span>✓</span> Active
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="p-3 min-w-[100px]">
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                u.side === 'SUPPLIER'
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                  : u.side === 'ADMIN'
+                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                  : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                              }`}
+                            >
+                              {u.side}
+                            </span>
+                          </td>
+
+                          <td className="p-3 min-w-[180px]">
+                            <div className="font-semibold text-foreground truncate max-w-[160px]" title={u.organizationName || 'Personal Workspace'}>
+                              {u.organizationName || 'Personal Workspace'}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">{u.orgType}</div>
+                          </td>
+
+                          <td className="p-3 min-w-[110px]">
+                            <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono font-semibold">
+                              {u.role || 'MEMBER'}
+                            </span>
+                          </td>
+
+                          <td className="p-3 min-w-[120px]">
+                            {u.gstVerified ? (
+                              <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 px-1.5 py-0.5 text-[10px] font-bold">
+                                ✓ Verified
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 rounded bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-medium">
+                                Unregistered
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="p-3 min-w-[120px] text-muted-foreground text-[11px] whitespace-nowrap">
+                            {new Date(u.createdAt).toLocaleDateString('en-IN', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </td>
+
+                          <td className="p-3 min-w-[150px] text-right">
+                            {!u.isPlatformAdmin ? (
+                              <div className="flex items-center justify-end gap-1.5">
+                                {isBlocked ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleConfirmUnblock('USERS', [u.id])}
+                                    className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs min-h-[36px] mobile-touch-target"
+                                    title="Unblock and reactivate account"
+                                  >
+                                    Unblock
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      openBlockModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
+                                    }
+                                    className="rounded-lg border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
+                                    title="Block account from accessing platform"
+                                  >
+                                    Block
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openDeleteModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
+                                  }
+                                  className="rounded-lg border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
+                                  title="Delete user account"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground font-semibold">Protected</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
-        {/* SUBTAB 2: ORGANIZATIONS & SUPPLIERS DATA TABLE */}
+        {/* ========================================================= */}
+        {/* SUBTAB 2: ORGANIZATIONS & SUPPLIERS */}
+        {/* ========================================================= */}
         {subTab === 'ORGANIZATIONS' && (
-          <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 zero-scroll-pane">
-            <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
-              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
-                <tr>
-                  <th className="p-3 w-10 min-w-[40px] text-center">
-                    <input
-                      type="checkbox"
-                      checked={isAllOrgsSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = isSomeOrgsSelected;
-                      }}
-                      onChange={toggleSelectAllOrgs}
-                      aria-label="Select all visible organizations"
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
-                    />
-                  </th>
-                  <th className="p-3 min-w-[220px]">Organization / Business</th>
-                  <th className="p-3 min-w-[140px]">Presence</th>
-                  <th className="p-3 min-w-[140px]">Type &amp; Sector</th>
-                  <th className="p-3 min-w-[130px]">Status</th>
-                  <th className="p-3 min-w-[100px]">Members</th>
-                  <th className="p-3 min-w-[120px]">Active RFQs / POs</th>
-                  <th className="p-3 min-w-[140px]">GST Registration</th>
-                  <th className="p-3 min-w-[160px]">Contact</th>
-                  <th className="p-3 min-w-[150px] text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y text-foreground">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={10} className="py-12 text-center text-muted-foreground">
-                      Loading organizations and supplier tenancies…
-                    </td>
-                  </tr>
-                ) : filteredOrganizations.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="py-12 text-center text-muted-foreground font-medium">
-                      No organizations matching search query.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredOrganizations.map((o) => {
-                    const isSelected = selectedOrgIds.has(o.id);
-                    const isBlocked =
-                      o.status === 'BLOCKED' ||
-                      (o.status as string) === 'SUSPENDED' ||
-                      Boolean(o.blocked_at) ||
-                      Boolean(o.blocked_reason);
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 space-y-3 zero-scroll-pane">
+            {isLoading ? (
+              <div className="py-16 text-center text-muted-foreground text-xs animate-pulse">
+                Loading organizations and supplier tenancies…
+              </div>
+            ) : filteredOrganizations.length === 0 ? (
+              <div className="py-16 text-center text-muted-foreground text-xs font-medium">
+                No organizations matching search query.
+              </div>
+            ) : viewMode === 'CARDS' ? (
+              /* RESPONSIVE MOBILE ACTION CARDS FOR ORGANIZATIONS */
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredOrganizations.map((o) => {
+                  const isSelected = selectedOrgIds.has(o.id);
+                  const isBlocked =
+                    o.status === 'BLOCKED' ||
+                    (o.status as string) === 'SUSPENDED' ||
+                    Boolean(o.blocked_at) ||
+                    Boolean(o.blocked_reason);
 
-                    const orgPresence = getUserOnlineStatus(o.last_seen_at, now);
-                    const orgPresenceConfig = getPresenceBadgeConfig(orgPresence);
-                    const orgRelativeTime = formatLastSeenRelative(o.last_seen_at, now);
-                    const orgAbsoluteTime = formatLastSeenAbsolute(o.last_seen_at);
+                  const orgPresence = getUserOnlineStatus(o.last_seen_at, now);
+                  const orgPresenceConfig = getPresenceBadgeConfig(orgPresence);
+                  const orgRelativeTime = formatLastSeenRelative(o.last_seen_at, now);
 
-                    return (
-                      <tr
-                        key={o.id}
-                        className={`transition hover:bg-muted/20 ${
-                          isSelected ? 'bg-primary/5' : isBlocked ? 'bg-rose-500/5' : ''
-                        }`}
-                      >
-                        {/* Checkbox */}
-                        <td className="p-3 text-center w-10 min-w-[40px]">
+                  return (
+                    <article
+                      key={o.id}
+                      className={`rounded-2xl border bg-card p-3.5 shadow-2xs transition flex flex-col justify-between gap-3 ${
+                        isSelected
+                          ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
+                          : isBlocked
+                          ? 'border-rose-300 dark:border-rose-900 bg-rose-50/20 dark:bg-rose-950/10'
+                          : 'hover:border-border'
+                      }`}
+                    >
+                      {/* Card Header */}
+                      <div className="flex items-start justify-between gap-2.5 border-b border-border/50 pb-2.5">
+                        <div className="flex items-start gap-2.5 min-w-0">
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleSelectOrg(o.id)}
                             aria-label={`Select organization ${o.name}`}
-                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary shrink-0 mt-0.5"
                           />
-                        </td>
 
-                        {/* Name & Tag */}
-                        <td className="p-3 min-w-[220px]">
-                          <div className="flex items-start gap-2">
-                            <span className={`h-2.5 w-2.5 rounded-full mt-1 shrink-0 ${orgPresenceConfig.dotColor}`} title={`Presence: ${orgPresenceConfig.label}`} />
-                            <div>
-                              <div className="font-bold text-foreground" title={o.name}>{o.name}</div>
-                              <span
-                                className={`inline-block mt-0.5 rounded px-1.5 py-0.2 text-[9px] font-extrabold ${
-                                  o.entity_type === 'SUPPLIER'
-                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
-                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                                }`}
-                              >
-                                {o.entity_type === 'SUPPLIER' ? 'Verified Supplier' : 'Buyer Organization'}
-                              </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${orgPresenceConfig.dotColor}`} />
+                              <h4 className="font-extrabold text-xs text-foreground truncate" title={o.name}>
+                                {o.name}
+                              </h4>
                             </div>
-                          </div>
-                        </td>
-
-                        {/* Real-time Presence Column */}
-                        <td className="p-3 min-w-[140px]">
-                          <div
-                            className="flex flex-col gap-0.5"
-                            title={`Last seen: ${orgAbsoluteTime} (${orgRelativeTime})`}
-                          >
                             <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold border w-fit ${orgPresenceConfig.badgeBg} ${orgPresenceConfig.badgeText} ${orgPresenceConfig.badgeBorder}`}
+                              className={`inline-block mt-1 rounded px-1.5 py-0.2 text-[9px] font-extrabold ${
+                                o.entity_type === 'SUPPLIER'
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                  : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                              }`}
                             >
-                              <span className={`h-1.5 w-1.5 rounded-full ${orgPresenceConfig.dotColor}`} />
-                              <span>{orgPresenceConfig.label}</span>
-                            </span>
-                            <span className="text-[10px] text-muted-foreground font-medium pl-1">
-                              {orgRelativeTime}
+                              {o.entity_type === 'SUPPLIER' ? 'Verified Supplier' : 'Buyer Organization'}
                             </span>
                           </div>
-                        </td>
+                        </div>
 
-                        {/* Governance */}
-                        <td className="p-3 min-w-[140px]">
-                          <div className="font-semibold text-foreground">{o.org_type}</div>
-                        </td>
-
-                        {/* Status */}
-                        <td className="p-3 min-w-[130px]">
+                        {/* Status Chip */}
+                        <div className="shrink-0">
                           {isBlocked ? (
-                            <div>
-                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
-                                <span>🚫</span> Suspended
-                              </span>
-                              {o.blocked_reason && (
-                                <div
-                                  className="mt-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[140px]"
-                                  title={o.blocked_reason}
-                                >
-                                  {o.blocked_reason}
-                                </div>
-                              )}
-                            </div>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
+                              <span>🚫</span> Suspended
+                            </span>
                           ) : o.status === 'PENDING' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold border border-amber-300 dark:border-amber-800">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold border border-amber-300 dark:border-amber-800">
                               <span>⏳</span> Pending
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
                               <span>✓</span> Active
                             </span>
                           )}
-                        </td>
+                        </div>
+                      </div>
 
-                        {/* Members */}
-                        <td className="p-3 min-w-[100px]">
-                          <span className="font-semibold text-foreground">{o.member_count}</span>{' '}
-                          <span className="text-[10px] text-muted-foreground">users</span>
-                        </td>
+                      {/* Card Body Details */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Sector / Type:</span>
+                          <span className="font-semibold text-foreground block truncate">{o.org_type || 'General'}</span>
+                        </div>
 
-                        {/* Active RFQs */}
-                        <td className="p-3 min-w-[120px]">
-                          <span className="font-semibold text-foreground">{o.active_orders_count}</span>{' '}
-                          <span className="text-[10px] text-muted-foreground">in flight</span>
-                        </td>
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Activity Volume:</span>
+                          <span className="text-[11px] font-medium text-foreground block">
+                            <strong>{o.member_count}</strong> members · <strong>{o.active_orders_count}</strong> active orders
+                          </span>
+                        </div>
 
-                        {/* GST */}
-                        <td className="p-3 min-w-[140px]">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">GST Registration:</span>
                           {o.gstin ? (
-                            <div>
-                              <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">
-                                ✓ GSTIN
-                              </span>
-                              <div className="font-mono text-[10px] text-muted-foreground mt-0.5" title={o.gstin}>{o.gstin}</div>
-                            </div>
+                            <span className="inline-flex items-center gap-1 font-mono text-[10px] text-foreground font-semibold">
+                              <span className="text-emerald-600">✓</span> {o.gstin}
+                            </span>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground">Non-registered</span>
+                            <span className="text-[10px] text-muted-foreground">Unregistered</span>
                           )}
-                        </td>
+                        </div>
 
-                        {/* Contact */}
-                        <td className="p-3 min-w-[160px]">
-                          {o.contact_email && (
-                            <div className="font-mono text-[10px] text-muted-foreground truncate max-w-[130px]" title={o.contact_email}>
-                              {o.contact_email}
-                            </div>
-                          )}
-                          {o.contact_phone && (
-                            <div className="font-mono text-[10px] text-muted-foreground">{o.contact_phone}</div>
-                          )}
-                        </td>
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Online Presence:</span>
+                          <span className="text-[11px] font-medium text-foreground flex items-center gap-1">
+                            <span>{orgPresenceConfig.label} ({orgRelativeTime})</span>
+                          </span>
+                        </div>
+                      </div>
 
-                        {/* Actions */}
-                        <td className="p-3 min-w-[150px] text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {isBlocked ? (
-                              <button
-                                type="button"
-                                onClick={() => void handleConfirmUnblock('ORGANIZATIONS', [o.id])}
-                                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs min-h-[36px] mobile-touch-target"
-                                title="Unblock organization"
-                              >
-                                Unblock
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => openBlockModal('ORGANIZATIONS', [o.id], [o.name])}
-                                className="rounded-lg border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
-                                title="Suspend organization"
-                              >
-                                Suspend
-                              </button>
-                            )}
+                      {/* Block Reason if applicable */}
+                      {isBlocked && o.blocked_reason && (
+                        <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2 text-[11px] text-rose-900 dark:text-rose-200">
+                          <strong>Suspension Reason:</strong> {o.blocked_reason}
+                        </div>
+                      )}
 
+                      {/* Card Action Footer */}
+                      <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-2">
+                        <div className="min-w-0 text-[11px] text-muted-foreground font-mono truncate" title={o.contact_email || undefined}>
+                          {o.contact_email || o.contact_phone || 'No direct contact'}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isBlocked ? (
                             <button
                               type="button"
-                              onClick={() => openDeleteModal('ORGANIZATIONS', [o.id], [o.name])}
-                              className="rounded-lg border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
-                              title="Delete organization"
+                              onClick={() => void handleConfirmUnblock('ORGANIZATIONS', [o.id])}
+                              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-xs transition shadow-2xs mobile-touch-target"
+                              title="Unblock organization"
                             >
-                              Delete
+                              <span>🔓</span> Unblock
                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => openBlockModal('ORGANIZATIONS', [o.id], [o.name])}
+                              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-3 py-1.5 text-xs transition mobile-touch-target"
+                              title="Suspend organization"
+                            >
+                              <span>🚫</span> Suspend
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => openDeleteModal('ORGANIZATIONS', [o.id], [o.name])}
+                            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1.5 text-xs transition mobile-touch-target"
+                            title="Delete organization"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              /* DESKTOP TABLE VIEW FOR ORGANIZATIONS */
+              <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+                <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
+                  <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
+                    <tr>
+                      <th className="p-3 w-10 min-w-[40px] text-center">
+                        <input
+                          type="checkbox"
+                          checked={isAllOrgsSelected}
+                          ref={(el) => {
+                            if (el) el.indeterminate = isSomeOrgsSelected;
+                          }}
+                          onChange={toggleSelectAllOrgs}
+                          aria-label="Select all visible organizations"
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                        />
+                      </th>
+                      <th className="p-3 min-w-[220px]">Organization / Business</th>
+                      <th className="p-3 min-w-[140px]">Presence</th>
+                      <th className="p-3 min-w-[140px]">Type &amp; Sector</th>
+                      <th className="p-3 min-w-[130px]">Status</th>
+                      <th className="p-3 min-w-[100px]">Members</th>
+                      <th className="p-3 min-w-[120px]">Active RFQs / POs</th>
+                      <th className="p-3 min-w-[140px]">GST Registration</th>
+                      <th className="p-3 min-w-[160px]">Contact</th>
+                      <th className="p-3 min-w-[150px] text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y text-foreground">
+                    {filteredOrganizations.map((o) => {
+                      const isSelected = selectedOrgIds.has(o.id);
+                      const isBlocked =
+                        o.status === 'BLOCKED' ||
+                        (o.status as string) === 'SUSPENDED' ||
+                        Boolean(o.blocked_at) ||
+                        Boolean(o.blocked_reason);
+
+                      const orgPresence = getUserOnlineStatus(o.last_seen_at, now);
+                      const orgPresenceConfig = getPresenceBadgeConfig(orgPresence);
+                      const orgRelativeTime = formatLastSeenRelative(o.last_seen_at, now);
+                      const orgAbsoluteTime = formatLastSeenAbsolute(o.last_seen_at);
+
+                      return (
+                        <tr
+                          key={o.id}
+                          className={`transition hover:bg-muted/20 ${
+                            isSelected ? 'bg-primary/5' : isBlocked ? 'bg-rose-500/5' : ''
+                          }`}
+                        >
+                          <td className="p-3 text-center w-10 min-w-[40px]">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSelectOrg(o.id)}
+                              aria-label={`Select organization ${o.name}`}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                            />
+                          </td>
+
+                          <td className="p-3 min-w-[220px]">
+                            <div className="flex items-start gap-2">
+                              <span className={`h-2.5 w-2.5 rounded-full mt-1 shrink-0 ${orgPresenceConfig.dotColor}`} title={`Presence: ${orgPresenceConfig.label}`} />
+                              <div>
+                                <div className="font-bold text-foreground" title={o.name}>{o.name}</div>
+                                <span
+                                  className={`inline-block mt-0.5 rounded px-1.5 py-0.2 text-[9px] font-extrabold ${
+                                    o.entity_type === 'SUPPLIER'
+                                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                      : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                  }`}
+                                >
+                                  {o.entity_type === 'SUPPLIER' ? 'Verified Supplier' : 'Buyer Organization'}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="p-3 min-w-[140px]">
+                            <div
+                              className="flex flex-col gap-0.5"
+                              title={`Last seen: ${orgAbsoluteTime} (${orgRelativeTime})`}
+                            >
+                              <span
+                                className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold border w-fit ${orgPresenceConfig.badgeBg} ${orgPresenceConfig.badgeText} ${orgPresenceConfig.badgeBorder}`}
+                              >
+                                <span className={`h-1.5 w-1.5 rounded-full ${orgPresenceConfig.dotColor}`} />
+                                <span>{orgPresenceConfig.label}</span>
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-medium pl-1">
+                                {orgRelativeTime}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td className="p-3 min-w-[140px]">
+                            <div className="font-semibold text-foreground">{o.org_type}</div>
+                          </td>
+
+                          <td className="p-3 min-w-[130px]">
+                            {isBlocked ? (
+                              <div>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
+                                  <span>🚫</span> Suspended
+                                </span>
+                                {o.blocked_reason && (
+                                  <div
+                                    className="mt-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[140px]"
+                                    title={o.blocked_reason}
+                                  >
+                                    {o.blocked_reason}
+                                  </div>
+                                )}
+                              </div>
+                            ) : o.status === 'PENDING' ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold border border-amber-300 dark:border-amber-800">
+                                <span>⏳</span> Pending
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
+                                <span>✓</span> Active
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="p-3 min-w-[100px]">
+                            <span className="font-semibold text-foreground">{o.member_count}</span>{' '}
+                            <span className="text-[10px] text-muted-foreground">users</span>
+                          </td>
+
+                          <td className="p-3 min-w-[120px]">
+                            <span className="font-semibold text-foreground">{o.active_orders_count}</span>{' '}
+                            <span className="text-[10px] text-muted-foreground">in flight</span>
+                          </td>
+
+                          <td className="p-3 min-w-[140px]">
+                            {o.gstin ? (
+                              <div>
+                                <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">
+                                  ✓ GSTIN
+                                </span>
+                                <div className="font-mono text-[10px] text-muted-foreground mt-0.5" title={o.gstin}>{o.gstin}</div>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">Non-registered</span>
+                            )}
+                          </td>
+
+                          <td className="p-3 min-w-[160px]">
+                            {o.contact_email && (
+                              <div className="font-mono text-[10px] text-muted-foreground truncate max-w-[130px]" title={o.contact_email}>
+                                {o.contact_email}
+                              </div>
+                            )}
+                            {o.contact_phone && (
+                              <div className="font-mono text-[10px] text-muted-foreground">{o.contact_phone}</div>
+                            )}
+                          </td>
+
+                          <td className="p-3 min-w-[150px] text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {isBlocked ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleConfirmUnblock('ORGANIZATIONS', [o.id])}
+                                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs min-h-[36px] mobile-touch-target"
+                                  title="Unblock organization"
+                                >
+                                  Unblock
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => openBlockModal('ORGANIZATIONS', [o.id], [o.name])}
+                                  className="rounded-lg border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
+                                  title="Suspend organization"
+                                >
+                                  Suspend
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => openDeleteModal('ORGANIZATIONS', [o.id], [o.name])}
+                                className="rounded-lg border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
+                                title="Delete organization"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
-        {/* SUBTAB 3: REGISTRATIONS APPROVAL QUEUE TABLE */}
+        {/* ========================================================= */}
+        {/* SUBTAB 3: REGISTRATIONS / APPROVAL QUEUE */}
+        {/* ========================================================= */}
         {subTab === 'REGISTRATIONS' && (
-          <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 zero-scroll-pane">
-            <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
-              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
-                <tr>
-                  <th className="p-3 min-w-[140px]">Reference &amp; Side</th>
-                  <th className="p-3 min-w-[220px]">Business &amp; Organization</th>
-                  <th className="p-3 min-w-[160px]">Applicant &amp; Role</th>
-                  <th className="p-3 min-w-[180px]">Contact Details</th>
-                  <th className="p-3 min-w-[110px]">Status</th>
-                  <th className="p-3 min-w-[120px]">Submitted</th>
-                  <th className="p-3 min-w-[180px] text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y text-foreground">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-muted-foreground">
-                      Loading registration requests queue…
-                    </td>
-                  </tr>
-                ) : filteredRequests.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-muted-foreground font-medium">
-                      No registration requests matching filter.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredRequests.map((r) => {
-                    const isPending = r.status === 'PENDING';
-                    const isBusy = processingId === r.id;
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 space-y-3 zero-scroll-pane">
+            {isLoading ? (
+              <div className="py-16 text-center text-muted-foreground text-xs animate-pulse">
+                Loading registration requests queue…
+              </div>
+            ) : filteredRequests.length === 0 ? (
+              <div className="py-16 text-center text-muted-foreground text-xs font-medium">
+                No registration requests matching filter.
+              </div>
+            ) : viewMode === 'CARDS' ? (
+              /* RESPONSIVE MOBILE ACTION CARDS FOR REGISTRATIONS */
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredRequests.map((r) => {
+                  const isPending = r.status === 'PENDING';
+                  const isBusy = processingId === r.id;
 
-                    return (
-                      <tr key={r.id} className="hover:bg-muted/20 transition">
-                        <td className="p-3 min-w-[140px]">
-                          <div className="font-mono font-bold text-foreground">{r.reference}</div>
-                          <span
-                            className={`inline-block mt-0.5 rounded-full px-2 py-0.2 text-[9px] font-bold ${
-                              r.side === 'SUPPLIER'
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
-                                : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                            }`}
-                          >
-                            {r.side}
+                  return (
+                    <article
+                      key={r.id}
+                      className={`rounded-2xl border bg-card p-3.5 shadow-2xs transition flex flex-col justify-between gap-3 ${
+                        isPending
+                          ? 'border-amber-400/80 bg-amber-50/10 dark:bg-amber-950/10'
+                          : 'hover:border-border'
+                      }`}
+                    >
+                      {/* Card Header: Reference & Status */}
+                      <div className="flex items-start justify-between gap-2 border-b border-border/50 pb-2.5">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono font-black text-xs text-foreground bg-muted px-2 py-0.5 rounded-lg border">
+                              {r.reference}
+                            </span>
+                            <span
+                              className={`rounded-full px-2 py-0.2 text-[9px] font-extrabold ${
+                                r.side === 'SUPPLIER'
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                  : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                              }`}
+                            >
+                              {r.side}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground block mt-1">
+                            Submitted {new Date(r.created_at).toLocaleDateString('en-IN', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
                           </span>
-                        </td>
+                        </div>
 
-                        <td className="p-3 min-w-[220px]">
-                          <div className="font-bold text-foreground" title={r.business_name}>{r.business_name}</div>
-                          <div className="text-[10px] text-muted-foreground">
+                        {/* Status Chip */}
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold border shrink-0 ${
+                            r.status === 'ONBOARDED'
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                              : r.status === 'REJECTED'
+                              ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800 animate-pulse'
+                          }`}
+                        >
+                          {r.status}
+                        </span>
+                      </div>
+
+                      {/* Card Body Information */}
+                      <div className="space-y-2 text-xs">
+                        {/* Business & Organization */}
+                        <div className="rounded-xl bg-muted/30 p-2.5 space-y-1">
+                          <div className="font-extrabold text-xs text-foreground" title={r.business_name}>
+                            {r.business_name}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">
                             {r.buyer_type ||
                               (r.category_codes?.length
                                 ? `Categories: ${r.category_codes.join(', ')}`
                                 : 'General')}
                           </div>
                           {r.tax_registration_id ? (
-                            <div className="mt-0.5">
-                              <span className="inline-flex items-center gap-1 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold border border-emerald-300 dark:border-emerald-800/60">
-                                ✓ GST: <span className="font-mono">{r.tax_registration_id}</span>
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="text-[9px] text-muted-foreground">GST: Unregistered</div>
-                          )}
-                        </td>
-
-                        <td className="p-3 min-w-[160px]">
-                          <div className="font-semibold text-foreground" title={r.contact_full_name}>{r.contact_full_name}</div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {r.role_label || r.role_code || r.designation || 'Prime Member'}
-                          </div>
-                        </td>
-
-                        <td className="p-3 min-w-[180px]">
-                          <div className="font-mono text-[10px] text-foreground" title={r.email}>{r.email}</div>
-                          <div className="text-[10px] text-muted-foreground">{r.phone}</div>
-                          <div className="text-[9px] text-muted-foreground">
-                            Via: <span className="font-semibold">{r.verification_channel}</span>
-                          </div>
-                        </td>
-
-                        <td className="p-3 min-w-[110px]">
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
-                              r.status === 'ONBOARDED'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                : r.status === 'REJECTED'
-                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                            }`}
-                          >
-                            {r.status}
-                          </span>
-                        </td>
-
-                        <td className="p-3 min-w-[120px] text-muted-foreground text-[10px] whitespace-nowrap">
-                          {new Date(r.created_at).toLocaleDateString('en-IN', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </td>
-
-                        <td className="p-3 min-w-[180px] text-right">
-                          {isPending ? (
-                            <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
-                              <button
-                                type="button"
-                                onClick={() => void handleReview(r, 'APPROVE')}
-                                disabled={isBusy}
-                                className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1 shadow-2xs min-h-[44px] mobile-touch-target"
-                                title="Approve applicant, provision tenant & auth user"
-                              >
-                                <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleReview(r, 'REJECT')}
-                                disabled={isBusy}
-                                className="rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target"
-                                title="Reject registration"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground font-semibold">
-                              {r.status === 'ONBOARDED' ? '✓ Activated' : 'Closed'}
+                            <span className="inline-flex items-center gap-1 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold border border-emerald-300 dark:border-emerald-800/60">
+                              ✓ GST: <span className="font-mono">{r.tax_registration_id}</span>
                             </span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">GST: Unregistered</span>
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                        </div>
+
+                        {/* Applicant & Role */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground block">Applicant &amp; Role:</span>
+                            <span className="font-bold text-foreground block truncate" title={r.contact_full_name}>
+                              {r.contact_full_name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground block truncate">
+                              {r.role_label || r.role_code || r.designation || 'Prime Member'}
+                            </span>
+                          </div>
+
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground block">Verification Channel:</span>
+                            <span className="font-semibold text-foreground text-[11px] block">
+                              Via: <span className="text-primary font-bold">{r.verification_channel || 'DIRECT'}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Contact Details */}
+                        <div className="font-mono text-[11px] text-muted-foreground space-y-0.5">
+                          <div className="truncate text-foreground" title={r.email}>✉ {r.email}</div>
+                          {r.phone && <div>📞 {r.phone}</div>}
+                        </div>
+                      </div>
+
+                      {/* Card Action Footer: Prominent 44px+ Tap Buttons */}
+                      <div className="pt-2.5 border-t border-border/40">
+                        {isPending ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void handleReview(r, 'APPROVE')}
+                              disabled={isBusy}
+                              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 text-xs transition shadow-2xs disabled:opacity-50 mobile-touch-target active:scale-98"
+                              title="Approve applicant, provision tenant & auth user"
+                            >
+                              <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleReview(r, 'REJECT')}
+                              disabled={isBusy}
+                              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 font-bold px-3 py-2 text-xs transition disabled:opacity-50 mobile-touch-target active:scale-98"
+                              title="Reject registration"
+                            >
+                              <span>✕</span> Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>Lifecycle Status:</span>
+                            <span className="font-bold text-foreground">
+                              {r.status === 'ONBOARDED' ? '✓ Activated' : 'Closed / Rejected'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              /* DESKTOP TABLE VIEW FOR REGISTRATIONS */
+              <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+                <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
+                  <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
+                    <tr>
+                      <th className="p-3 min-w-[140px]">Reference &amp; Side</th>
+                      <th className="p-3 min-w-[220px]">Business &amp; Organization</th>
+                      <th className="p-3 min-w-[160px]">Applicant &amp; Role</th>
+                      <th className="p-3 min-w-[180px]">Contact Details</th>
+                      <th className="p-3 min-w-[110px]">Status</th>
+                      <th className="p-3 min-w-[120px]">Submitted</th>
+                      <th className="p-3 min-w-[180px] text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y text-foreground">
+                    {filteredRequests.map((r) => {
+                      const isPending = r.status === 'PENDING';
+                      const isBusy = processingId === r.id;
+
+                      return (
+                        <tr key={r.id} className="hover:bg-muted/20 transition">
+                          <td className="p-3 min-w-[140px]">
+                            <div className="font-mono font-bold text-foreground">{r.reference}</div>
+                            <span
+                              className={`inline-block mt-0.5 rounded-full px-2 py-0.2 text-[9px] font-bold ${
+                                r.side === 'SUPPLIER'
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                  : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                              }`}
+                            >
+                              {r.side}
+                            </span>
+                          </td>
+
+                          <td className="p-3 min-w-[220px]">
+                            <div className="font-bold text-foreground" title={r.business_name}>{r.business_name}</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {r.buyer_type ||
+                                (r.category_codes?.length
+                                  ? `Categories: ${r.category_codes.join(', ')}`
+                                  : 'General')}
+                            </div>
+                            {r.tax_registration_id ? (
+                              <div className="mt-0.5">
+                                <span className="inline-flex items-center gap-1 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold border border-emerald-300 dark:border-emerald-800/60">
+                                  ✓ GST: <span className="font-mono">{r.tax_registration_id}</span>
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-[9px] text-muted-foreground">GST: Unregistered</div>
+                            )}
+                          </td>
+
+                          <td className="p-3 min-w-[160px]">
+                            <div className="font-semibold text-foreground" title={r.contact_full_name}>{r.contact_full_name}</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {r.role_label || r.role_code || r.designation || 'Prime Member'}
+                            </div>
+                          </td>
+
+                          <td className="p-3 min-w-[180px]">
+                            <div className="font-mono text-[10px] text-foreground" title={r.email}>{r.email}</div>
+                            <div className="text-[10px] text-muted-foreground">{r.phone}</div>
+                            <div className="text-[9px] text-muted-foreground">
+                              Via: <span className="font-semibold">{r.verification_channel}</span>
+                            </div>
+                          </td>
+
+                          <td className="p-3 min-w-[110px]">
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                                r.status === 'ONBOARDED'
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                  : r.status === 'REJECTED'
+                                  ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                              }`}
+                            >
+                              {r.status}
+                            </span>
+                          </td>
+
+                          <td className="p-3 min-w-[120px] text-muted-foreground text-[10px] whitespace-nowrap">
+                            {new Date(r.created_at).toLocaleDateString('en-IN', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </td>
+
+                          <td className="p-3 min-w-[180px] text-right">
+                            {isPending ? (
+                              <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => void handleReview(r, 'APPROVE')}
+                                  disabled={isBusy}
+                                  className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1 shadow-2xs min-h-[44px] mobile-touch-target"
+                                  title="Approve applicant, provision tenant & auth user"
+                                >
+                                  <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleReview(r, 'REJECT')}
+                                  disabled={isBusy}
+                                  className="rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target"
+                                  title="Reject registration"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground font-semibold">
+                                {r.status === 'ONBOARDED' ? '✓ Activated' : 'Closed'}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

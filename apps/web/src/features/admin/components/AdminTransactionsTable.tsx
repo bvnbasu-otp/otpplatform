@@ -15,7 +15,7 @@ interface AdminTransactionsTableProps {
   onRefresh: () => void;
 }
 
-type ViewMode = 'PIPELINE' | 'TABLE';
+type ViewMode = 'CARDS' | 'PIPELINE' | 'TABLE';
 
 interface PhaseDef {
   key: CoreProcurementState;
@@ -123,7 +123,7 @@ export function AdminTransactionsTable({
   onExecuteAction,
   onRefresh,
 }: AdminTransactionsTableProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('TABLE');
+  const [viewMode, setViewMode] = useState<ViewMode>('CARDS');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [stalledFilter, setStalledFilter] = useState(false);
@@ -208,42 +208,53 @@ export function AdminTransactionsTable({
   return (
     <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] w-full max-w-full">
       {/* Top Controls Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-card p-3.5 sm:p-4 rounded-2xl border shadow-2xs">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* View Mode Toggle */}
-          <div className="flex rounded-xl border bg-muted/50 p-1 text-xs font-semibold">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-card p-3 sm:p-4 rounded-2xl border shadow-2xs">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1">
+          {/* View Mode Toggle: Cards, Pipeline Radar, Data Table */}
+          <div className="flex items-center rounded-xl border bg-muted/50 p-1 text-xs font-semibold">
             <button
               type="button"
-              onClick={() => setViewMode('PIPELINE')}
-              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition active:scale-98 ${
-                viewMode === 'PIPELINE'
-                  ? 'bg-background text-foreground shadow-xs font-bold'
+              onClick={() => setViewMode('CARDS')}
+              className={`inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 py-1 transition ${
+                viewMode === 'CARDS'
+                  ? 'bg-card text-foreground font-bold shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>📊</span> Pipeline Radar
+              <span>▦</span> Cards
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('PIPELINE')}
+              className={`inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 py-1 transition ${
+                viewMode === 'PIPELINE'
+                  ? 'bg-card text-foreground font-bold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>📊</span> Radar
             </button>
             <button
               type="button"
               onClick={() => setViewMode('TABLE')}
-              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition active:scale-98 ${
+              className={`inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 py-1 transition ${
                 viewMode === 'TABLE'
-                  ? 'bg-background text-foreground shadow-xs font-bold'
+                  ? 'bg-card text-foreground font-bold shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>📋</span> Data Table
+              <span>📋</span> Table
             </button>
           </div>
 
           {/* Search Box */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-[180px]">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search buyer org, requirement, PO#, city..."
-              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
             />
             {search && (
               <button
@@ -260,7 +271,7 @@ export function AdminTransactionsTable({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl border bg-background px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-h-[36px]"
+            className="rounded-xl border bg-background px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-h-[44px]"
           >
             <option value="ALL">All Radar Phases ({transactions.length})</option>
             {ADMIN_PHASES.map((p) => (
@@ -271,7 +282,7 @@ export function AdminTransactionsTable({
           </select>
 
           {/* Stalled Orders Toggle */}
-          <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-muted-foreground hover:text-foreground select-none min-h-[36px]">
+          <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-muted-foreground hover:text-foreground select-none min-h-[44px]">
             <input
               type="checkbox"
               checked={stalledFilter}
@@ -359,7 +370,7 @@ export function AdminTransactionsTable({
         </div>
       )}
 
-      {/* 1. PIPELINE KANBAN VIEW WITH HORIZONTAL OVERFLOW CONTROLS */}
+      {/* 1. PIPELINE KANBAN RADAR VIEW */}
       {!isLoading && viewMode === 'PIPELINE' && filtered.length > 0 && (
         <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 pb-4">
           <div className="flex gap-3 items-start min-w-[1200px]">
@@ -513,205 +524,248 @@ export function AdminTransactionsTable({
         </div>
       )}
 
-      {/* 2. TABULAR VIEW (Responsive Desktop Table -> Mobile Card Transformation) */}
-      {!isLoading && viewMode === 'TABLE' && filtered.length > 0 && (
-        <div className="space-y-3 w-full max-w-full">
-          {/* Mobile Stacked Cards (Visible < md) */}
-          <div className="grid grid-cols-1 gap-3 md:hidden">
-            {filtered.map((tx) => {
-              const phaseKey = resolvePhase(tx);
-              const defaultPhase = ADMIN_PHASES[0]!;
-              const phaseDef = ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
+      {/* 2. RESPONSIVE CARDS VIEW */}
+      {!isLoading && viewMode === 'CARDS' && filtered.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full max-w-full">
+          {filtered.map((tx) => {
+            const phaseKey = resolvePhase(tx);
+            const defaultPhase = ADMIN_PHASES[0]!;
+            const phaseDef = ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
+            const isStalled = tx.idle_hours > 24 && tx.rfq_status !== 'COMPLETED' && tx.rfq_status !== 'CANCELLED';
 
-              return (
-                <article
-                  key={tx.requirement_id}
-                  onClick={() => setInspectingTx(tx)}
-                  className="rounded-2xl border bg-card p-3.5 shadow-xs space-y-2.5 transition active:scale-[0.99]"
-                >
-                  <div className="flex items-start justify-between gap-2 border-b border-border/50 pb-2">
-                    <div className="min-w-0">
-                      <span className="font-mono text-[10px] font-bold text-muted-foreground block truncate">
+            return (
+              <article
+                key={tx.requirement_id}
+                className={`rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-3 transition flex flex-col justify-between ${
+                  isStalled ? 'border-amber-400/80 bg-amber-50/10 dark:bg-amber-950/10' : 'hover:border-primary/40'
+                }`}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 border-b border-border/50 pb-2.5">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-lg border truncate max-w-[140px]">
                         {tx.rfq_public_ref || tx.po_number || 'REQ-PENDING'}
                       </span>
-                      <h4
-                        className="font-extrabold text-xs text-foreground truncate mt-0.5"
-                        title={tx.requirement_title}
-                      >
-                        {tx.requirement_title}
-                      </h4>
+                      {tx.is_demo ? (
+                        <span className="rounded bg-purple-500/10 px-1.5 py-0.2 text-[9px] font-bold text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                          DEMO
+                        </span>
+                      ) : (
+                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                          PROD
+                        </span>
+                      )}
                     </div>
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold border shrink-0 ${phaseDef.badgeClass}`}>
-                      <span>{phaseDef.icon}</span>
-                      <span>{phaseDef.shortLabel}</span>
+                    <span className="text-[10px] text-muted-foreground block mt-1">
+                      {new Date(tx.requirement_created_at).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block">Buyer Org:</span>
-                      <span className="font-semibold text-foreground truncate block" title={tx.organization_name}>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shrink-0 ${phaseDef.badgeClass}`}>
+                    <span>{phaseDef.icon}</span>
+                    <span>{phaseDef.shortLabel}</span>
+                  </span>
+                </div>
+
+                {/* Body */}
+                <div className="space-y-2 text-xs flex-1">
+                  <h4
+                    className="font-extrabold text-xs text-foreground line-clamp-2"
+                    title={tx.requirement_title}
+                  >
+                    {tx.requirement_title}
+                  </h4>
+
+                  <div className="rounded-xl bg-muted/30 p-2.5 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground font-medium">Buyer Organization:</span>
+                      <span className="font-bold text-foreground truncate max-w-[150px]" title={tx.organization_name}>
                         {tx.organization_name}
                       </span>
                     </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block">Order Value:</span>
-                      <span className="font-black text-foreground block font-mono">
-                        {tx.po_amount ? `₹${tx.po_amount.toLocaleString('en-IN')}` : 'Sourcing'}
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground font-medium">Awarded Supplier:</span>
+                      <span className="font-bold text-primary truncate max-w-[150px]">
+                        {tx.awarded_supplier_name || 'Pending Evaluation'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-border/40 pt-1">
+                      <span className="text-muted-foreground font-medium">Order Value:</span>
+                      <span className="font-black text-foreground font-mono text-sm">
+                        {tx.po_amount ? `₹${tx.po_amount.toLocaleString('en-IN')}` : 'Sourcing / Quoting'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px] gap-2">
-                    <span className="text-muted-foreground">
-                      {tx.quotes_count} quotes · {tx.votes_count} votes
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>
+                      <strong>{tx.quotes_count}</strong> Quotes · <strong>{tx.votes_count}</strong> Votes
                     </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setInspectingTx(tx);
-                      }}
-                      className="min-h-[44px] px-3.5 rounded-xl border bg-primary/10 text-primary font-bold hover:bg-primary/20 transition flex items-center justify-center mobile-touch-target"
-                    >
-                      Inspect 🔍
-                    </button>
+                    {tx.delivery_city && <span>📍 {tx.delivery_city}</span>}
                   </div>
-                </article>
-              );
-            })}
-          </div>
+                </div>
 
-          {/* Desktop Table Container with Custom Scrollbars & Column Min-Widths */}
-          <div className="hidden md:block overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 rounded-xl border bg-card shadow-xs">
-            <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
-              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground text-[11px] uppercase tracking-wider shadow-2xs">
-                <tr>
-                  <th className="py-3 px-4 min-w-[220px]">Requirement &amp; Date</th>
-                  <th className="py-3 px-4 min-w-[180px]">Buyer Organization</th>
-                  <th className="py-3 px-4 min-w-[160px]">Category &amp; Specs</th>
-                  <th className="py-3 px-4 min-w-[160px]">Awarded Supplier</th>
-                  <th className="py-3 px-4 min-w-[120px]">Order Value</th>
-                  <th className="py-3 px-4 min-w-[140px]">Procurement Phase</th>
-                  <th className="py-3 px-4 min-w-[130px]">Quotes / Votes</th>
-                  <th className="py-3 px-4 min-w-[140px] text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border text-foreground">
-                {filtered.map((tx) => {
-                  const phaseKey = resolvePhase(tx);
-                  const defaultPhase = ADMIN_PHASES[0]!;
-                  const phaseDef = ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
+                {/* Action Footer */}
+                <div className="pt-2.5 border-t border-border/40 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setInspectingTx(tx)}
+                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 font-bold px-3 py-2 text-xs transition mobile-touch-target active:scale-98"
+                  >
+                    <span>🔍</span> Inspect Details
+                  </button>
 
-                  return (
-                    <tr
-                      key={tx.requirement_id}
-                      className="hover:bg-muted/30 transition cursor-pointer"
-                      onClick={() => setInspectingTx(tx)}
-                    >
-                      <td className="py-3 px-4 min-w-[220px]">
-                        <div
-                          className="font-bold text-foreground line-clamp-1 max-w-xs"
-                          title={tx.requirement_title}
-                        >
-                          {tx.requirement_title}
-                        </div>
-                        <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
-                          {tx.rfq_public_ref || tx.po_number || 'REQ-PENDING'} · {new Date(tx.requirement_created_at).toLocaleDateString('en-IN', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-4 min-w-[180px]">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-foreground line-clamp-1" title={tx.organization_name}>
-                            {tx.organization_name}
-                          </span>
-                          {tx.is_demo ? (
-                            <span className="rounded bg-purple-500/10 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:text-purple-300 border border-purple-500/30">
-                              DEMO
-                            </span>
-                          ) : (
-                            <span className="rounded bg-emerald-500/10 px-1 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                              PROD
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground truncate" title={tx.buyer_email || undefined}>
-                          {tx.buyer_name || tx.buyer_email || tx.organization_city || 'India'}
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-4 min-w-[160px]">
-                        <div className="font-medium text-foreground line-clamp-1" title={tx.category_name || 'Goods/Services'}>
-                          {tx.category_name || 'Goods/Services'}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {tx.quantity ? `${tx.quantity} ${tx.unit || ''}` : 'As specified'} · {tx.delivery_city || 'India'}
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-4 min-w-[160px]">
-                        {tx.awarded_supplier_name ? (
-                          <div>
-                            <div className="font-bold text-primary line-clamp-1" title={tx.awarded_supplier_name}>
-                              {tx.awarded_supplier_name}
-                            </div>
-                            <div className="text-[10px] text-emerald-950 dark:text-emerald-300 font-semibold">✓ Award Confirmed</div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-xs italic">Pending Evaluation</span>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4 min-w-[120px] font-extrabold text-foreground">
-                        {tx.po_amount ? (
-                          `₹${tx.po_amount.toLocaleString('en-IN')}`
-                        ) : (
-                          <span className="text-muted-foreground text-xs">—</span>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4 min-w-[140px]">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${phaseDef.badgeClass}`}>
-                          <span>{phaseDef.icon}</span>
-                          <span>{phaseDef.shortLabel}</span>
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 min-w-[130px]">
-                        <div className="flex items-center gap-1.5 text-xs font-semibold">
-                          <span className="rounded bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 px-1.5 py-0.2 text-[10px]">
-                            {tx.quotes_count} quotes
-                          </span>
-                          <span className="rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 px-1.5 py-0.2 text-[10px]">
-                            {tx.votes_count} votes
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-4 min-w-[140px] text-right" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={() => setInspectingTx(tx)}
-                          className="rounded-lg border bg-background px-3 py-1.5 text-xs font-bold text-primary hover:bg-muted transition min-h-[44px] mobile-touch-target"
-                        >
-                          Inspect 🔍
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  <Link
+                    to={`/admin?tab=buyer_debug&id=${tx.requirement_id}`}
+                    className="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-xl border bg-card hover:bg-muted text-foreground font-semibold px-3 py-2 text-xs transition mobile-touch-target active:scale-98"
+                    title="Open in Buyer Troubleshooter"
+                  >
+                    <span>⚡ Troubleshoot</span>
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
 
-      {/* 3. BUYER ORDER INSPECTION MODAL */}
+      {/* 3. TABULAR VIEW */}
+      {!isLoading && viewMode === 'TABLE' && filtered.length > 0 && (
+        <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 rounded-xl border bg-card shadow-xs">
+          <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
+            <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground text-[11px] uppercase tracking-wider shadow-2xs">
+              <tr>
+                <th className="py-3 px-4 min-w-[220px]">Requirement &amp; Date</th>
+                <th className="py-3 px-4 min-w-[180px]">Buyer Organization</th>
+                <th className="py-3 px-4 min-w-[160px]">Category &amp; Specs</th>
+                <th className="py-3 px-4 min-w-[160px]">Awarded Supplier</th>
+                <th className="py-3 px-4 min-w-[120px]">Order Value</th>
+                <th className="py-3 px-4 min-w-[140px]">Procurement Phase</th>
+                <th className="py-3 px-4 min-w-[130px]">Quotes / Votes</th>
+                <th className="py-3 px-4 min-w-[140px] text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border text-foreground">
+              {filtered.map((tx) => {
+                const phaseKey = resolvePhase(tx);
+                const defaultPhase = ADMIN_PHASES[0]!;
+                const phaseDef = ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
+
+                return (
+                  <tr
+                    key={tx.requirement_id}
+                    className="hover:bg-muted/30 transition cursor-pointer"
+                    onClick={() => setInspectingTx(tx)}
+                  >
+                    <td className="py-3 px-4 min-w-[220px]">
+                      <div
+                        className="font-bold text-foreground line-clamp-1 max-w-xs"
+                        title={tx.requirement_title}
+                      >
+                        {tx.requirement_title}
+                      </div>
+                      <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
+                        {tx.rfq_public_ref || tx.po_number || 'REQ-PENDING'} · {new Date(tx.requirement_created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4 min-w-[180px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-foreground line-clamp-1" title={tx.organization_name}>
+                          {tx.organization_name}
+                        </span>
+                        {tx.is_demo ? (
+                          <span className="rounded bg-purple-500/10 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                            DEMO
+                          </span>
+                        ) : (
+                          <span className="rounded bg-emerald-500/10 px-1 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                            PROD
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate" title={tx.buyer_email || undefined}>
+                        {tx.buyer_name || tx.buyer_email || tx.organization_city || 'India'}
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4 min-w-[160px]">
+                      <div className="font-medium text-foreground line-clamp-1" title={tx.category_name || 'Goods/Services'}>
+                        {tx.category_name || 'Goods/Services'}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {tx.quantity ? `${tx.quantity} ${tx.unit || ''}` : 'As specified'} · {tx.delivery_city || 'India'}
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4 min-w-[160px]">
+                      {tx.awarded_supplier_name ? (
+                        <div>
+                          <div className="font-bold text-primary line-clamp-1" title={tx.awarded_supplier_name}>
+                            {tx.awarded_supplier_name}
+                          </div>
+                          <div className="text-[10px] text-emerald-950 dark:text-emerald-300 font-semibold">✓ Award Confirmed</div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">Pending Evaluation</span>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4 min-w-[120px] font-extrabold text-foreground">
+                      {tx.po_amount ? (
+                        `₹${tx.po_amount.toLocaleString('en-IN')}`
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4 min-w-[140px]">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${phaseDef.badgeClass}`}>
+                        <span>{phaseDef.icon}</span>
+                        <span>{phaseDef.shortLabel}</span>
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4 min-w-[130px]">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold">
+                        <span className="rounded bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 px-1.5 py-0.2 text-[10px]">
+                          {tx.quotes_count} quotes
+                        </span>
+                        <span className="rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 px-1.5 py-0.2 text-[10px]">
+                          {tx.votes_count} votes
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4 min-w-[140px] text-right" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setInspectingTx(tx)}
+                        className="rounded-lg border bg-background px-3 py-1.5 text-xs font-bold text-primary hover:bg-muted transition min-h-[44px] mobile-touch-target"
+                      >
+                        Inspect 🔍
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* 4. BUYER ORDER INSPECTION MODAL */}
       {inspectingTx && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="relative w-full max-w-3xl rounded-2xl bg-card border shadow-2xl p-6 space-y-6 max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
@@ -764,7 +818,7 @@ export function AdminTransactionsTable({
                   <span>🏷️</span> Item Specs &amp; Awardee
                 </div>
                 <div className="text-sm font-bold text-foreground">{inspectingTx.requirement_title}</div>
-                <div className="text-[11px] text-muted-foreground">{inspectingTx.category_name} {inspectingTx.subcategory_name ? `· ${inspectingTx.subcategory_name}` : ''}</div>
+                <div className="text-[11px] text-muted-foreground">{inspectingTx.category_name || 'General'} {inspectingTx.subcategory_name ? `· ${inspectingTx.subcategory_name}` : ''}</div>
                 <div className="space-y-1 font-mono text-[11px] text-muted-foreground pt-1">
                   <div>Quantity: <strong className="text-foreground">{inspectingTx.quantity ? `${txUnit(inspectingTx)}` : 'As specified'}</strong></div>
                   <div>Awarded Supplier: <strong className="text-primary">{inspectingTx.awarded_supplier_name || 'Not yet awarded'}</strong></div>

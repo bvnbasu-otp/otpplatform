@@ -30,27 +30,30 @@ import type {
 } from '../types/admin';
 
 export type AdminTab =
-  | 'HEALTH'
   | 'TRANSACTIONS'
   | 'SELLER_ORDERS'
-  | 'TICKETS'
-  | 'ACTIONS'
-  | 'TESTS'
   | 'BUYER_DEBUG'
   | 'SUPPLIER_DEBUG'
+  | 'HEALTH'
+  | 'TICKETS'
+  | 'TESTS'
+  | 'ACTIONS'
   | 'TERMINAL'
   | 'BACKUPS'
   | 'LOGS'
+  | 'NOTIFICATIONS'
   | 'USERS'
-  | 'NOTIFICATIONS';
+  | 'ORGS_SUPPLIERS'
+  | 'APPROVALS';
 
 export type AdminCategoryKey =
-  | 'SOURCING'
-  | 'SUPPLIER_NETWORK'
-  | 'GOVERNANCE'
-  | 'ANALYTICS'
-  | 'NOTIFICATIONS'
-  | 'SYSTEM_OPS';
+  | 'ORDERS_RADAR'
+  | 'DIAGNOSTICS'
+  | 'HEALTH_SUPPORT'
+  | 'TESTS_OPS'
+  | 'DATABASE_OPS'
+  | 'LOGS_ALERTS'
+  | 'USERS_ORGS';
 
 export interface AdminModuleDef {
   key: AdminTab;
@@ -84,11 +87,11 @@ export interface AdminDynamicCounts {
 
 export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
   {
-    key: 'SOURCING',
-    title: 'Sourcing & RFQs',
-    shortTitle: 'Sourcing',
+    key: 'ORDERS_RADAR',
+    title: 'Buyer Orders / Seller Orders',
+    shortTitle: 'Orders Radar',
     icon: '📊',
-    description: 'Buyer procurement radar, sealed quoting pipelines & supplier order fulfillment',
+    description: 'Buyer procurement radar, live transactions, PO fulfillment & seller settlements',
     colorClass: 'border-blue-500/30 bg-blue-500/5 hover:border-blue-500/60',
     badgeClass: 'bg-blue-100 text-blue-900 dark:bg-blue-950/60 dark:text-blue-200 border-blue-300 dark:border-blue-800',
     modules: [
@@ -98,171 +101,200 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
         shortTitle: 'Buyer Radar',
         icon: '📊',
         description: 'Live buyer requirements, sealed quoting progress, committee evaluations & awards',
-        categoryKey: 'SOURCING',
+        categoryKey: 'ORDERS_RADAR',
         badge: (c) => c.transactionsCount,
       },
       {
         key: 'SELLER_ORDERS',
-        title: 'Supplier Radar / Orders',
-        shortTitle: 'Supplier Radar',
+        title: 'Supplier Radar / Seller Orders',
+        shortTitle: 'Seller Orders',
         icon: '🏪',
         description: 'Purchase orders, fulfillment progress, GST invoices, and settlement status',
-        categoryKey: 'SOURCING',
+        categoryKey: 'ORDERS_RADAR',
         badge: (c) => c.sellerOrdersCount,
       },
     ],
   },
   {
-    key: 'SUPPLIER_NETWORK',
-    title: 'Supplier Network',
-    shortTitle: 'Suppliers',
-    icon: '🚚',
-    description: 'User accounts, tenant organizations, directory presence & supplier troubleshooting',
-    colorClass: 'border-purple-500/30 bg-purple-500/5 hover:border-purple-500/60',
-    badgeClass: 'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-200 border-purple-300 dark:border-purple-800',
-    modules: [
-      {
-        key: 'USERS',
-        title: 'Users & Organization Roster',
-        shortTitle: 'Users & Orgs',
-        icon: '👥',
-        description: 'Account lifecycle, active presence, GST compliance & registration reviews',
-        categoryKey: 'SUPPLIER_NETWORK',
-        badge: (c) => c.usersCount || 'Roster',
-      },
-      {
-        key: 'SUPPLIER_DEBUG',
-        title: 'Supplier Diagnostics',
-        shortTitle: 'Supplier Debug',
-        icon: '🏭',
-        description: 'Supplier GSTIN verification, quote unblocker & PO acceptance simulation',
-        categoryKey: 'SUPPLIER_NETWORK',
-        badge: () => 'Diagnostics',
-      },
-    ],
-  },
-  {
-    key: 'GOVERNANCE',
-    title: 'Governance & Committee',
-    shortTitle: 'Governance',
-    icon: '⚖️',
-    description: 'Buyer evaluation quorums, committee voting overrides & dispute mediation',
-    colorClass: 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60',
-    badgeClass: 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border-amber-300 dark:border-amber-800',
+    key: 'DIAGNOSTICS',
+    title: 'Buyer Debug / Seller Debug',
+    shortTitle: 'Diagnostics',
+    icon: '🔍',
+    description: 'Deep engine diagnostics, intake state transitions, quote unblockers & simulation',
+    colorClass: 'border-cyan-500/30 bg-cyan-500/5 hover:border-cyan-500/60',
+    badgeClass: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-950/60 dark:text-cyan-200 border-cyan-300 dark:border-cyan-800',
     modules: [
       {
         key: 'BUYER_DEBUG',
-        title: 'Buyer Diagnostics',
+        title: 'Buyer Workspace & Intake Diagnostics',
         shortTitle: 'Buyer Debug',
         icon: '🏛️',
-        description: 'Committee quorum deadlock bypass & 8-state order force transitions',
-        categoryKey: 'GOVERNANCE',
-        badge: () => 'Overrides',
+        description: 'Committee quorum deadlock bypass, requirement sync & 8-state order force transitions',
+        categoryKey: 'DIAGNOSTICS',
+        badge: () => 'Intake',
       },
       {
-        key: 'TICKETS',
-        title: 'Support Tickets & Disputes',
-        shortTitle: 'Tickets & Disputes',
-        icon: '🎫',
-        description: 'Buyer/supplier dispute claims, escalation queue & departmental mediation',
-        categoryKey: 'GOVERNANCE',
-        badge: () => 'Disputes',
+        key: 'SUPPLIER_DEBUG',
+        title: 'Seller Network & Engine Diagnostics',
+        shortTitle: 'Seller Debug',
+        icon: '🏭',
+        description: 'Supplier GSTIN verification, quote unblocker & PO acceptance simulation',
+        categoryKey: 'DIAGNOSTICS',
+        badge: () => 'Seller',
       },
     ],
   },
   {
-    key: 'ANALYTICS',
-    title: 'Analytics & Audits',
-    shortTitle: 'Analytics',
-    icon: '📈',
-    description: 'Microservices health telemetry, DB latency & immutable audit trail',
+    key: 'HEALTH_SUPPORT',
+    title: 'Health & Tickets & Refresh',
+    shortTitle: 'Health & Support',
+    icon: '💓',
+    description: 'System uptime telemetry, microservice heartbeats, support tickets & dispute arbitration',
     colorClass: 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/60',
     badgeClass: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200 border-emerald-300 dark:border-emerald-800',
     modules: [
       {
         key: 'HEALTH',
-        title: 'System Health & Uptime',
+        title: 'System Health, Uptime & Telemetry',
         shortTitle: 'System Health',
-        icon: '🫀',
-        description: 'Live PostgREST latency, microservice heartbeats & proactive scans',
-        categoryKey: 'ANALYTICS',
+        icon: '💓',
+        description: 'Live PostgREST latency, microservice heartbeats & proactive telemetry scans',
+        categoryKey: 'HEALTH_SUPPORT',
         badge: (c) => (c.alertsCount > 0 ? `${c.alertsCount} Alerts` : '100% SLA'),
       },
       {
-        key: 'LOGS',
-        title: 'Immutable Audit Trail',
-        shortTitle: 'Audit Logs',
-        icon: '📜',
-        description: 'Cryptographically verified SHA-256 state change events & payloads',
-        categoryKey: 'ANALYTICS',
-        badge: (c) => (c.auditCount ? `${c.auditCount} Events` : 'Logs'),
+        key: 'TICKETS',
+        title: 'Support Tickets & Dispute Arbitration',
+        shortTitle: 'Support Tickets',
+        icon: '🎫',
+        description: 'Buyer/supplier dispute claims, escalation queue & departmental arbitration',
+        categoryKey: 'HEALTH_SUPPORT',
+        badge: () => 'Disputes',
       },
     ],
   },
   {
-    key: 'NOTIFICATIONS',
-    title: 'Notifications & Alerts',
-    shortTitle: 'Notifications',
-    icon: '🔔',
-    description: 'Multi-channel notification engine, WhatsApp pings & platform alarm center',
-    colorClass: 'border-rose-500/30 bg-rose-500/5 hover:border-rose-500/60',
-    badgeClass: 'bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200 border-rose-300 dark:border-rose-800',
+    key: 'TESTS_OPS',
+    title: 'Pre Prod Tests & Restart + Actions',
+    shortTitle: 'Tests & Ops',
+    icon: '🧪',
+    description: 'Pre-prod regression test engine, maintenance switches & service restart circuit breakers',
+    colorClass: 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60',
+    badgeClass: 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border-amber-300 dark:border-amber-800',
     modules: [
       {
+        key: 'TESTS',
+        title: 'Pre-Prod Regression Test Suite Runner',
+        shortTitle: 'Test Runner',
+        icon: '🧪',
+        description: 'Multi-layer regression test matrix, unit validations & live DB benchmarks',
+        categoryKey: 'TESTS_OPS',
+        badge: () => 'Suite',
+      },
+      {
+        key: 'ACTIONS',
+        title: 'Emergency Actions, Service Restart & Circuit Breakers',
+        shortTitle: 'Ops Actions',
+        icon: '⚡',
+        description: 'Scheduled maintenance switch, demo mode switch, emergency reload & circuit reset',
+        categoryKey: 'TESTS_OPS',
+        badge: () => 'Actions',
+      },
+    ],
+  },
+  {
+    key: 'DATABASE_OPS',
+    title: 'SQL Terminal & Backup + Restore',
+    shortTitle: 'Database Ops',
+    icon: '💻',
+    description: 'PostgreSQL SQL query terminal, database snapshots, restore points & retention purge',
+    colorClass: 'border-indigo-500/30 bg-indigo-500/5 hover:border-indigo-500/60',
+    badgeClass: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200 border-indigo-300 dark:border-indigo-800',
+    modules: [
+      {
+        key: 'TERMINAL',
+        title: 'SQL Query Terminal & Templates',
+        shortTitle: 'SQL Terminal',
+        icon: '💻',
+        description: 'Interactive read-only PostgreSQL query console with curated admin templates',
+        categoryKey: 'DATABASE_OPS',
+        badge: () => 'SQL',
+      },
+      {
+        key: 'BACKUPS',
+        title: 'Database Snapshots, Backup & Restore',
+        shortTitle: 'Backup & Restore',
+        icon: '💾',
+        description: 'Database snapshot creator, transactional restore points & retention purge',
+        categoryKey: 'DATABASE_OPS',
+        badge: () => 'Snapshots',
+      },
+    ],
+  },
+  {
+    key: 'LOGS_ALERTS',
+    title: 'Logs & Notifications',
+    shortTitle: 'Logs & Alerts',
+    icon: '📜',
+    description: 'Immutable cryptographic audit trail, platform notifications & emergency banners',
+    colorClass: 'border-purple-500/30 bg-purple-500/5 hover:border-purple-500/60',
+    badgeClass: 'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-200 border-purple-300 dark:border-purple-800',
+    modules: [
+      {
+        key: 'LOGS',
+        title: 'Immutable Cryptographic Audit Trail',
+        shortTitle: 'Audit Logs',
+        icon: '📜',
+        description: 'Cryptographically verified SHA-256 state change events & payload inspect',
+        categoryKey: 'LOGS_ALERTS',
+        badge: (c) => (c.auditCount ? `${c.auditCount} Events` : 'Audit'),
+      },
+      {
         key: 'NOTIFICATIONS',
-        title: 'Platform Notifications & Alerts',
-        shortTitle: 'Alert Center',
+        title: 'Platform Notifications & Broadcast Alerts',
+        shortTitle: 'Notifications',
         icon: '🔔',
-        description: 'Multi-channel notification logs, dispatch status & proactive alerts',
-        categoryKey: 'NOTIFICATIONS',
+        description: 'Multi-channel notification engine, broadcast alerts & emergency platform banners',
+        categoryKey: 'LOGS_ALERTS',
         badge: (c) => (c.notificationsCount > 0 ? `${c.notificationsCount} Alerts` : 'Alerts'),
       },
     ],
   },
   {
-    key: 'SYSTEM_OPS',
-    title: 'System & Operations',
-    shortTitle: 'Operations',
-    icon: '⚙️',
-    description: 'Platform maintenance switches, test suite runner, SQL terminal & backups',
-    colorClass: 'border-slate-500/30 bg-slate-500/5 hover:border-slate-500/60',
-    badgeClass: 'bg-slate-100 text-slate-900 dark:bg-slate-950/60 dark:text-slate-200 border-slate-300 dark:border-slate-800',
+    key: 'USERS_ORGS',
+    title: 'Users & Groups / Orgs & Approvals',
+    shortTitle: 'Users & Orgs',
+    icon: '👥',
+    description: 'User accounts, role governance, tenant organizations, suppliers & approval queue',
+    colorClass: 'border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60',
+    badgeClass: 'bg-pink-100 text-pink-900 dark:bg-pink-950/60 dark:text-pink-200 border-pink-300 dark:border-pink-800',
     modules: [
       {
-        key: 'ACTIONS',
-        title: 'Service Actions',
-        shortTitle: 'Ops Actions',
-        icon: '⚡',
-        description: 'Scheduled maintenance switch, demo mode switch & baseline reset',
-        categoryKey: 'SYSTEM_OPS',
-        badge: () => 'Maintenance',
+        key: 'USERS',
+        title: 'Users Roster & Role Governance',
+        shortTitle: 'Users Roster',
+        icon: '👥',
+        description: 'User accounts, permissions, active presence & KYC compliance',
+        categoryKey: 'USERS_ORGS',
+        badge: (c) => c.usersCount || 'Users',
       },
       {
-        key: 'TESTS',
-        title: 'Regression Test Suite',
-        shortTitle: 'Test Engine',
-        icon: '🧪',
-        description: '631-test multi-layer regression matrix & live DB benchmarks',
-        categoryKey: 'SYSTEM_OPS',
-        badge: () => '631 Tests',
+        key: 'ORGS_SUPPLIERS',
+        title: 'Organizations & Supplier Registry',
+        shortTitle: 'Orgs & Suppliers',
+        icon: '🏢',
+        description: 'Tenant organizations, verified suppliers, GSTINs & enterprise registries',
+        categoryKey: 'USERS_ORGS',
+        badge: () => 'Registry',
       },
       {
-        key: 'TERMINAL',
-        title: 'SQL Query Terminal',
-        shortTitle: 'SQL Terminal',
-        icon: '💻',
-        description: 'Interactive read-only PostgreSQL query console for deep inspection',
-        categoryKey: 'SYSTEM_OPS',
-        badge: () => 'Interactive',
-      },
-      {
-        key: 'BACKUPS',
-        title: 'Backups & Purge',
-        shortTitle: 'DB Backups',
-        icon: '💾',
-        description: 'Database snapshot creator, transactional restore & rollback',
-        categoryKey: 'SYSTEM_OPS',
-        badge: () => 'Snapshots',
+        key: 'APPROVALS',
+        title: 'Approval Queue / Pending Registrations',
+        shortTitle: 'Approval Queue',
+        icon: '⏳',
+        description: 'Pending buyer & supplier onboarding registrations awaiting superadmin review',
+        categoryKey: 'USERS_ORGS',
+        badge: () => 'Queue',
       },
     ],
   },
@@ -285,7 +317,9 @@ export function AdminDashboardPage() {
       rawTab === 'TRANSACTIONS' ||
       rawTab === 'PIPELINE' ||
       rawTab === 'BUYER_ORDERS' ||
-      rawTab === 'BUYER-ORDERS'
+      rawTab === 'BUYER-ORDERS' ||
+      rawTab === 'ORDERS_RADAR' ||
+      rawTab === 'SOURCING'
     ) {
       return 'TRANSACTIONS';
     }
@@ -299,19 +333,50 @@ export function AdminDashboardPage() {
     ) {
       return 'SELLER_ORDERS';
     }
-    if (rawTab === 'NOTIFICATIONS' || rawTab === 'NOTIFICATION' || rawTab === 'ALERTS') {
+    if (rawTab === 'NOTIFICATIONS' || rawTab === 'NOTIFICATION' || rawTab === 'ALERTS' || rawTab === 'LOGS_ALERTS') {
       return 'NOTIFICATIONS';
     }
-    if (rawTab === 'HEALTH') return 'HEALTH';
-    if (rawTab === 'USERS' || rawTab === 'ORGS' || rawTab === 'ORGANIZATIONS') return 'USERS';
-    if (rawTab === 'TICKETS' || rawTab === 'SUPPORT' || rawTab === 'DISPUTES') return 'TICKETS';
-    if (rawTab === 'ACTIONS' || rawTab === 'SERVICE_ACTIONS' || rawTab === 'OPS') return 'ACTIONS';
-    if (rawTab === 'TESTS' || rawTab === 'TEST_RUNNER' || rawTab === 'TEST_ENGINE') return 'TESTS';
+    if (rawTab === 'HEALTH' || rawTab === 'SYSTEM_HEALTH' || rawTab === 'UPTIME' || rawTab === 'HEALTH_SUPPORT') {
+      return 'HEALTH';
+    }
+    if (
+      rawTab === 'ORGS' ||
+      rawTab === 'ORGANIZATIONS' ||
+      rawTab === 'ORGS_SUPPLIERS' ||
+      rawTab === 'ORGS-SUPPLIERS' ||
+      rawTab === 'SUPPLIERS' ||
+      rawTab === 'SUPPLIER_REGISTRY'
+    ) {
+      return 'ORGS_SUPPLIERS';
+    }
+    if (
+      rawTab === 'APPROVALS' ||
+      rawTab === 'APPROVAL_QUEUE' ||
+      rawTab === 'APPROVAL-QUEUE' ||
+      rawTab === 'REGISTRATIONS' ||
+      rawTab === 'PENDING_REGISTRATIONS'
+    ) {
+      return 'APPROVALS';
+    }
+    if (rawTab === 'USERS' || rawTab === 'USER' || rawTab === 'ROSTER' || rawTab === 'USERS_ORGS' || rawTab === 'SUPPLIER_NETWORK') {
+      return 'USERS';
+    }
+    if (rawTab === 'TICKETS' || rawTab === 'SUPPORT' || rawTab === 'DISPUTES' || rawTab === 'DISPUTE' || rawTab === 'GOVERNANCE') {
+      return 'TICKETS';
+    }
+    if (rawTab === 'ACTIONS' || rawTab === 'SERVICE_ACTIONS' || rawTab === 'OPS' || rawTab === 'EMERGENCY' || rawTab === 'SYSTEM_OPS') {
+      return 'ACTIONS';
+    }
+    if (rawTab === 'TESTS' || rawTab === 'TEST_RUNNER' || rawTab === 'TEST_ENGINE' || rawTab === 'REGRESSION' || rawTab === 'TESTS_OPS') {
+      return 'TESTS';
+    }
     if (
       rawTab === 'BUYER_DEBUG' ||
       rawTab === 'BUYER-DEBUG' ||
       rawTab === 'BUYER_TROUBLESHOOT' ||
-      rawTab === 'BUYER-TROUBLESHOOT'
+      rawTab === 'BUYER-TROUBLESHOOT' ||
+      rawTab === 'BUYER_DIAGNOSTICS' ||
+      rawTab === 'DIAGNOSTICS'
     ) {
       return 'BUYER_DEBUG';
     }
@@ -321,13 +386,20 @@ export function AdminDashboardPage() {
       rawTab === 'SELLER_DEBUG' ||
       rawTab === 'SELLER-DEBUG' ||
       rawTab === 'SUPPLIER_TROUBLESHOOT' ||
-      rawTab === 'SUPPLIER-TROUBLESHOOT'
+      rawTab === 'SUPPLIER-TROUBLESHOOT' ||
+      rawTab === 'SELLER_DIAGNOSTICS'
     ) {
       return 'SUPPLIER_DEBUG';
     }
-    if (rawTab === 'TERMINAL' || rawTab === 'SQL' || rawTab === 'QUERY') return 'TERMINAL';
-    if (rawTab === 'BACKUPS' || rawTab === 'BACKUP' || rawTab === 'SNAPSHOTS') return 'BACKUPS';
-    if (rawTab === 'LOGS' || rawTab === 'AUDIT' || rawTab === 'AUDIT_LOGS') return 'LOGS';
+    if (rawTab === 'TERMINAL' || rawTab === 'SQL' || rawTab === 'QUERY' || rawTab === 'SQL_TERMINAL' || rawTab === 'DATABASE_OPS') {
+      return 'TERMINAL';
+    }
+    if (rawTab === 'BACKUPS' || rawTab === 'BACKUP' || rawTab === 'SNAPSHOTS' || rawTab === 'RESTORE') {
+      return 'BACKUPS';
+    }
+    if (rawTab === 'LOGS' || rawTab === 'AUDIT' || rawTab === 'AUDIT_LOGS' || rawTab === 'AUDIT-LOGS' || rawTab === 'ANALYTICS') {
+      return 'LOGS';
+    }
 
     return (rawTab as AdminTab) || 'TRANSACTIONS';
   }, [rawTab]);
@@ -541,7 +613,7 @@ export function AdminDashboardPage() {
                   Administrative Modules &amp; Control Tower Directory
                 </h2>
                 <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-0.5 text-[11px] font-bold">
-                  13 Modules · 6 Categories
+                  {ALL_ADMIN_MODULES.length} Modules · 7 Canonical Categories
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -695,7 +767,7 @@ export function AdminDashboardPage() {
             </div>
 
             {/* Bottom Row: 6 Category Switcher Pills with Dynamic Badges */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 w-full max-w-full">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar scrollbar-none w-full max-w-full px-0.5">
               {ADMIN_CATEGORIES.map((cat) => {
                 const isCatActive = cat.key === currentCategory.key;
                 const firstMod = cat.modules[0]!;
@@ -705,7 +777,6 @@ export function AdminDashboardPage() {
                     key={cat.key}
                     type="button"
                     onClick={() => {
-                      // If clicking current category, switch to its next module or open selector; otherwise open first module
                       if (isCatActive) {
                         const nextModIndex = (cat.modules.findIndex((m) => m.key === activeTab) + 1) % cat.modules.length;
                         setTab(cat.modules[nextModIndex]!.key);
@@ -736,6 +807,46 @@ export function AdminDashboardPage() {
                 );
               })}
             </div>
+
+            {/* Intra-Category Module Switcher (When category has >1 module) */}
+            {currentCategory.modules.length > 1 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pt-1.5 border-t border-border/40 no-scrollbar scrollbar-none w-full max-w-full px-0.5">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider shrink-0 mr-1 hidden sm:inline">
+                  {currentCategory.shortTitle} Modules:
+                </span>
+                {currentCategory.modules.map((mod) => {
+                  const isModActive = mod.key === activeTab;
+                  const modBadge = mod.badge?.(dynamicCounts);
+
+                  return (
+                    <button
+                      key={mod.key}
+                      type="button"
+                      onClick={() => setTab(mod.key)}
+                      className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
+                        isModActive
+                          ? 'bg-foreground text-background shadow-xs font-extrabold'
+                          : 'bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                      }`}
+                    >
+                      <span>{mod.icon}</span>
+                      <span>{mod.shortTitle}</span>
+                      {modBadge !== null && modBadge !== undefined && (
+                        <span
+                          className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
+                            isModActive
+                              ? 'bg-background/20 text-background'
+                              : 'bg-muted text-foreground'
+                          }`}
+                        >
+                          {modBadge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Tab Panels Content */}
@@ -809,7 +920,35 @@ export function AdminDashboardPage() {
               />
             )}
 
-            {activeTab === 'USERS' && <AdminUsersActivityPanel />}
+            {activeTab === 'USERS' && (
+              <AdminUsersActivityPanel
+                initialSubTab="USERS"
+                onSubTabChange={(sub) => {
+                  if (sub === 'ORGANIZATIONS') setTab('ORGS_SUPPLIERS');
+                  else if (sub === 'REGISTRATIONS') setTab('APPROVALS');
+                }}
+              />
+            )}
+
+            {activeTab === 'ORGS_SUPPLIERS' && (
+              <AdminUsersActivityPanel
+                initialSubTab="ORGANIZATIONS"
+                onSubTabChange={(sub) => {
+                  if (sub === 'USERS') setTab('USERS');
+                  else if (sub === 'REGISTRATIONS') setTab('APPROVALS');
+                }}
+              />
+            )}
+
+            {activeTab === 'APPROVALS' && (
+              <AdminUsersActivityPanel
+                initialSubTab="REGISTRATIONS"
+                onSubTabChange={(sub) => {
+                  if (sub === 'USERS') setTab('USERS');
+                  else if (sub === 'ORGANIZATIONS') setTab('ORGS_SUPPLIERS');
+                }}
+              />
+            )}
 
             {activeTab === 'NOTIFICATIONS' && (
               <NotificationsPage
@@ -868,7 +1007,7 @@ export function AdminDashboardPage() {
                       : 'bg-muted/60 text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  All (13)
+                  All ({ALL_ADMIN_MODULES.length})
                 </button>
                 {ADMIN_CATEGORIES.map((cat) => (
                   <button

@@ -9,7 +9,7 @@ interface AdminSellerOrdersTableProps {
   onRefresh: () => void;
 }
 
-type ViewMode = 'PIPELINE' | 'TABLE';
+type ViewMode = 'CARDS' | 'PIPELINE' | 'TABLE';
 
 interface SellerPhaseDef {
   key: string;
@@ -91,7 +91,7 @@ export function AdminSellerOrdersTable({
   onExecuteAction,
   onRefresh,
 }: AdminSellerOrdersTableProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('TABLE');
+  const [viewMode, setViewMode] = useState<ViewMode>('CARDS');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [stalledFilter, setStalledFilter] = useState(false);
@@ -167,6 +167,17 @@ export function AdminSellerOrdersTable({
           <div className="flex rounded-xl border bg-muted/50 p-1 text-xs font-semibold">
             <button
               type="button"
+              onClick={() => setViewMode('CARDS')}
+              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition active:scale-98 ${
+                viewMode === 'CARDS'
+                  ? 'bg-background text-foreground shadow-xs font-bold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>🃏</span> Cards
+            </button>
+            <button
+              type="button"
               onClick={() => setViewMode('PIPELINE')}
               className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition active:scale-98 ${
                 viewMode === 'PIPELINE'
@@ -174,7 +185,7 @@ export function AdminSellerOrdersTable({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>📊</span> Fulfillment Radar
+              <span>📊</span> Radar
             </button>
             <button
               type="button"
@@ -185,7 +196,7 @@ export function AdminSellerOrdersTable({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>📋</span> Data Table
+              <span>📋</span> Table
             </button>
           </div>
 
@@ -312,7 +323,148 @@ export function AdminSellerOrdersTable({
         </div>
       )}
 
-      {/* 1. PIPELINE KANBAN VIEW WITH HORIZONTAL OVERFLOW CONTROLS */}
+      {/* 1. MOBILE-FIRST RESPONSIVE CARDS VIEW */}
+      {!isLoading && viewMode === 'CARDS' && filtered.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 w-full max-w-full">
+          {filtered.map((order) => {
+            const phaseKey = resolveSellerPhase(order);
+            const defaultPhase = SELLER_ADMIN_PHASES[0]!;
+            const phaseDef = SELLER_ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
+            const isStalled = order.idle_hours >= 24;
+
+            return (
+              <article
+                key={order.po_id}
+                className={`rounded-2xl border bg-card p-4 shadow-2xs space-y-3.5 transition hover:shadow-md flex flex-col justify-between ${
+                  isStalled ? 'border-amber-500/50 dark:border-amber-500/40' : ''
+                }`}
+              >
+                {/* Card Header: PO Ref, Prod/Demo, Date, Phase Badge */}
+                <div className="space-y-2 border-b border-border/50 pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono text-xs font-black text-primary truncate">
+                          {order.po_number || 'PO-PENDING'}
+                        </span>
+                        {order.is_demo ? (
+                          <span className="rounded bg-purple-500/10 px-1.5 py-0.2 text-[9px] font-bold text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                            DEMO
+                          </span>
+                        ) : (
+                          <span className="rounded bg-emerald-500/10 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                            PROD
+                          </span>
+                        )}
+                        {isStalled && (
+                          <span className="rounded bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-black text-amber-950 dark:text-amber-200 border border-amber-500/30">
+                            ⚠️ {order.idle_hours}h IDLE
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">
+                        <span>{new Date(order.po_created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        {order.rfq_public_ref && (
+                          <span className="font-mono">RFQ: {order.rfq_public_ref}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black border shrink-0 ${phaseDef.badgeClass}`}>
+                      <span>{phaseDef.icon}</span>
+                      <span>{phaseDef.shortLabel}</span>
+                    </span>
+                  </div>
+
+                  {/* Fulfillment Progress Bar */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-bold text-muted-foreground uppercase">Fulfillment Progress</span>
+                      <span className="font-mono font-black text-foreground">{order.progress_percent || 0}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-muted/60 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-300"
+                        style={{ width: `${order.progress_percent || 0}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Body: Supplier, Buyer, Requirement, Commercials */}
+                <div className="space-y-2.5 text-xs flex-1">
+                  {/* Supplier Box */}
+                  <div className="rounded-xl border bg-muted/20 p-2.5 space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center justify-between">
+                      <span>🏪 Supplier / Seller</span>
+                      {order.supplier_gst_verified && (
+                        <span className="text-emerald-950 dark:text-emerald-300 font-bold text-[9px]">✓ GST Verified</span>
+                      )}
+                    </div>
+                    <div className="font-extrabold text-foreground truncate" title={order.supplier_legal_name || order.supplier_name}>
+                      {order.supplier_legal_name || order.supplier_name}
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono flex-wrap">
+                      {order.supplier_gstin && <span>GSTIN: {order.supplier_gstin}</span>}
+                      {order.supplier_city && <span>📍 {order.supplier_city}</span>}
+                    </div>
+                  </div>
+
+                  {/* Requirement & Buyer */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground">Buyer Requirement:</div>
+                    <div className="font-bold text-foreground text-xs line-clamp-2" title={order.requirement_title}>
+                      {order.requirement_title}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                      <span>🏛️</span>
+                      <span className="font-semibold text-foreground truncate">{order.organization_name}</span>
+                    </div>
+                  </div>
+
+                  {/* Commercials Grid */}
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block">Order Value:</span>
+                      <span className="font-black text-foreground font-mono text-sm">
+                        ₹{(order.po_amount || order.invoice_amount || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block">PO Status:</span>
+                      <span className="font-bold text-foreground capitalize block truncate">
+                        {order.po_status.replace(/_/g, ' ').toLowerCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Action Footer: 44px+ touch targets */}
+                <div className="pt-2 border-t border-border/50 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setInspectingOrder(order)}
+                    className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold transition active:scale-98 shadow-xs hover:bg-primary/90 mobile-touch-target"
+                  >
+                    <span>🔍</span>
+                    <span>Inspect PO</span>
+                  </button>
+
+                  <Link
+                    to={`/app/admin?tab=supplier_debug&id=${order.po_id || order.po_number || ''}`}
+                    className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border bg-muted/40 hover:bg-muted text-foreground text-xs font-bold transition active:scale-98 mobile-touch-target text-center"
+                  >
+                    <span>🩺</span>
+                    <span>Diagnostics</span>
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 2. PIPELINE KANBAN VIEW WITH HORIZONTAL OVERFLOW CONTROLS */}
       {!isLoading && viewMode === 'PIPELINE' && filtered.length > 0 && (
         <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 pb-4">
           <div className="flex gap-3 items-start min-w-[1100px]">

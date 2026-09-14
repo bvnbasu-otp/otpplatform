@@ -4,6 +4,7 @@ import type { DbSnapshotItem } from '../types/admin';
 
 export function AdminBackupRestorePanel() {
   const [backups, setBackups] = useState<DbSnapshotItem[]>([]);
+  const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('CARDS');
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [backupName, setBackupName] = useState('');
@@ -105,7 +106,7 @@ export function AdminBackupRestorePanel() {
       )}
 
       {/* Create Backup Form */}
-      <div className="rounded-xl border bg-card p-5 shadow-xs space-y-4">
+      <div className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-4">
         <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
           <span>📸</span> Create New Database Snapshot
         </h4>
@@ -119,18 +120,18 @@ export function AdminBackupRestorePanel() {
               value={backupName}
               onChange={(e) => setBackupName(e.target.value)}
               placeholder="e.g. Pre-Pilot Staging Snapshot / EOD Backup"
-              className="w-full rounded-lg border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
             />
           </div>
 
-          <div className="w-48">
+          <div className="w-full sm:w-56">
             <label className="block text-xs font-semibold text-muted-foreground mb-1">
               Snapshot Scope:
             </label>
             <select
               value={backupType}
               onChange={(e) => setBackupType(e.target.value)}
-              className="w-full rounded-lg border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px] cursor-pointer"
             >
               <option value="TRANSACTIONAL">Transactional Pipeline</option>
               <option value="FULL">Full Database Snapshot</option>
@@ -141,47 +142,155 @@ export function AdminBackupRestorePanel() {
           <button
             type="submit"
             disabled={isCreating}
-            className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition disabled:opacity-50"
+            className="w-full sm:w-auto inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-98 transition disabled:opacity-50 mobile-touch-target"
           >
-            {isCreating ? 'Creating Snapshot…' : '+ Take DB Snapshot'}
+            {isCreating ? 'Creating Snapshot…' : '📸 Take DB Snapshot'}
           </button>
         </form>
       </div>
 
-      {/* Snapshots Table */}
-      <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
-        <div className="border-b bg-muted/40 p-3 flex items-center justify-between">
-          <h4 className="text-xs font-bold text-foreground">Available Snapshots ({backups.length})</h4>
-          <span className="text-[11px] text-muted-foreground font-medium">Stored in PostgreSQL admin_database_snapshots</span>
-        </div>
+      {/* Snapshots Header & View Mode Switcher */}
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <span>💾</span> Available Snapshots ({backups.length})
+        </h4>
 
-        <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
-          <table className="w-full text-left text-xs min-w-[650px]">
-            <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-semibold text-muted-foreground shadow-2xs">
-              <tr>
-                <th className="p-3">Snapshot Name</th>
-                <th className="p-3">Scope</th>
-                <th className="p-3">Table Records</th>
-                <th className="p-3">Size</th>
-                <th className="p-3">Created At</th>
-                <th className="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y text-foreground">
-              {isLoading && backups.length === 0 ? (
+        <div className="flex rounded-xl border bg-muted/50 p-1 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setViewMode('CARDS')}
+            className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition active:scale-98 ${
+              viewMode === 'CARDS'
+                ? 'bg-background text-foreground shadow-xs font-bold'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>🃏</span> Cards
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('TABLE')}
+            className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition active:scale-98 ${
+              viewMode === 'TABLE'
+                ? 'bg-background text-foreground shadow-xs font-bold'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>📋</span> Table
+          </button>
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {isLoading && backups.length === 0 && (
+        <div className="py-12 text-center text-xs text-muted-foreground animate-pulse">
+          ⏳ Loading database snapshots…
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && backups.length === 0 && (
+        <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
+          <span className="text-4xl">💾</span>
+          <h3 className="text-base font-bold text-foreground">No Database Snapshots Recorded</h3>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Create a snapshot above to preserve the current state of procurement pipelines, accounts, and audit events.
+          </p>
+        </div>
+      )}
+
+      {/* 1. MOBILE-FIRST RESPONSIVE CARDS VIEW */}
+      {!isLoading && viewMode === 'CARDS' && backups.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 w-full max-w-full">
+          {backups.map((s) => (
+            <article
+              key={s.id}
+              className="rounded-2xl border bg-card p-4 shadow-2xs space-y-3.5 transition hover:shadow-md flex flex-col justify-between"
+            >
+              {/* Card Header */}
+              <div className="space-y-1.5 border-b border-border/50 pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h5 className="font-extrabold text-xs text-foreground truncate" title={s.name}>
+                      {s.name}
+                    </h5>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                      {new Date(s.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+
+                  <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[9px] font-bold shrink-0">
+                    {s.snapshotType}
+                  </span>
+                </div>
+              </div>
+
+              {/* Card Body */}
+              <div className="space-y-2 text-xs flex-1">
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Size:</span>
+                    <span className="font-black text-foreground font-mono">
+                      {s.sizeFormatted || `${(s.sizeBytes / 1024).toFixed(1)} KB`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Snapshot ID:</span>
+                    <span className="font-mono text-[10px] text-muted-foreground truncate block" title={s.id}>
+                      {s.id.slice(0, 12)}…
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border bg-muted/20 p-2.5 space-y-1">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground">Preserved Record Counts</div>
+                  {s.tableCounts ? (
+                    <div className="flex items-center gap-2 text-[10px] font-mono text-foreground flex-wrap">
+                      <span>📋 {s.tableCounts.requirements || 0} Reqs</span>
+                      <span>•</span>
+                      <span>💬 {s.tableCounts.quotes || 0} Quotes</span>
+                      <span>•</span>
+                      <span>🏪 {s.tableCounts.purchaseOrders || 0} POs</span>
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-muted-foreground">Master schema &amp; table records</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Card Action Footer: 44px+ touch target */}
+              <div className="pt-2 border-t border-border/50">
+                <button
+                  type="button"
+                  onClick={() => handleRestore(s)}
+                  className="w-full inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition active:scale-98 shadow-xs mobile-touch-target"
+                >
+                  <span>↺</span>
+                  <span>Restore Database State</span>
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {/* 2. TABULAR VIEW */}
+      {!isLoading && viewMode === 'TABLE' && backups.length > 0 && (
+        <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
+          <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+            <table className="w-full text-left text-xs min-w-[650px]">
+              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-semibold text-muted-foreground shadow-2xs">
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-muted-foreground">
-                    Loading database snapshots…
-                  </td>
+                  <th className="p-3">Snapshot Name</th>
+                  <th className="p-3">Scope</th>
+                  <th className="p-3">Table Records</th>
+                  <th className="p-3">Size</th>
+                  <th className="p-3">Created At</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
-              ) : backups.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-10 text-center text-muted-foreground font-medium">
-                    No snapshots recorded yet. Create one above to preserve current database state.
-                  </td>
-                </tr>
-              ) : (
-                backups.map((s) => (
+              </thead>
+              <tbody className="divide-y text-foreground">
+                {backups.map((s) => (
                   <tr key={s.id} className="hover:bg-muted/20 transition">
                     <td className="p-3">
                       <div className="font-bold text-foreground">{s.name}</div>
@@ -216,18 +325,18 @@ export function AdminBackupRestorePanel() {
                       <button
                         type="button"
                         onClick={() => handleRestore(s)}
-                        className="rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 shadow-xs"
+                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs min-h-[44px] mobile-touch-target"
                       >
                         Restore State ↺
                       </button>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Danger Zone */}
       <div className="rounded-xl border border-red-300 bg-red-50/40 p-5 shadow-xs space-y-3">
