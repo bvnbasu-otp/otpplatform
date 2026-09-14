@@ -312,7 +312,7 @@ function QuickQuoteForm({
           <span className="text-[11px] font-semibold text-muted-foreground block mb-1">
             GST % Slab (Auto-Calculates):
           </span>
-          <div className="grid grid-cols-5 gap-1">
+          <div className="grid grid-cols-5 gap-1.5">
             {GST_SLABS.map((slab) => {
               const active = gstRate === slab.rate;
               return (
@@ -320,7 +320,7 @@ function QuickQuoteForm({
                   key={slab.rate}
                   type="button"
                   onClick={() => handleGstRateSelect(slab.rate)}
-                  className={`min-h-[40px] rounded-lg text-center text-xs font-bold transition flex items-center justify-center border ${
+                  className={`min-h-[44px] rounded-lg text-center text-xs font-bold transition flex items-center justify-center border mobile-touch-target ${
                     active
                       ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
                       : 'bg-muted/50 text-foreground border-border hover:bg-muted'
@@ -344,7 +344,7 @@ function QuickQuoteForm({
             </span>
             <span className="text-xs font-bold text-primary">{deliveryDays ? `${deliveryDays} Days` : '—'}</span>
           </div>
-          <div className="grid grid-cols-6 gap-1">
+          <div className="grid grid-cols-6 gap-1.5">
             {DELIVERY_PRESETS.map((days) => {
               const active = deliveryDays === days;
               return (
@@ -352,7 +352,7 @@ function QuickQuoteForm({
                   key={days}
                   type="button"
                   onClick={() => setDeliveryDays(days)}
-                  className={`min-h-[40px] rounded-lg text-xs font-bold transition flex items-center justify-center border ${
+                  className={`min-h-[44px] rounded-lg text-xs font-bold transition flex items-center justify-center border mobile-touch-target ${
                     active
                       ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
                       : 'bg-muted/50 text-foreground border-border hover:bg-muted'
@@ -373,7 +373,7 @@ function QuickQuoteForm({
             </span>
             <span className="text-xs font-bold text-primary">{warrantyMonths === '0' ? 'None' : `${warrantyMonths} Months`}</span>
           </div>
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-4 gap-1.5">
             {WARRANTY_PRESETS.map((w) => {
               const active = warrantyMonths === w.months;
               return (
@@ -381,7 +381,7 @@ function QuickQuoteForm({
                   key={w.months}
                   type="button"
                   onClick={() => setWarrantyMonths(w.months)}
-                  className={`min-h-[40px] rounded-lg text-xs font-bold transition flex items-center justify-center border ${
+                  className={`min-h-[44px] rounded-lg text-xs font-bold transition flex items-center justify-center border mobile-touch-target ${
                     active
                       ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
                       : 'bg-muted/50 text-foreground border-border hover:bg-muted'
@@ -408,7 +408,7 @@ function QuickQuoteForm({
                 inputMode="decimal"
                 value={transportCost}
                 onChange={(e) => setTransportCost(e.target.value)}
-                className="mt-1 w-full rounded-lg border bg-background px-2.5 py-1.5 text-xs font-bold text-foreground min-h-[40px]"
+                className="mt-1 w-full rounded-lg border bg-background px-2.5 py-1.5 text-xs font-bold text-foreground min-h-[44px]"
                 placeholder="0"
               />
             </div>
@@ -420,7 +420,7 @@ function QuickQuoteForm({
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="mt-1 w-full rounded-lg border bg-background px-2.5 py-1.5 text-xs text-foreground min-h-[40px]"
+                className="mt-1 w-full rounded-lg border bg-background px-2.5 py-1.5 text-xs text-foreground min-h-[44px]"
                 placeholder="e.g. includes fitting"
               />
             </div>
@@ -471,7 +471,7 @@ function QuickQuoteForm({
       <button
         type="submit"
         disabled={!canSubmit}
-        className="w-full min-h-[50px] rounded-xl bg-primary px-4 py-3 text-base font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-50 transition active:scale-[0.98] flex items-center justify-center gap-2"
+        className="w-full min-h-[50px] rounded-xl bg-primary px-4 py-3 text-base font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-50 transition active:scale-[0.98] flex items-center justify-center gap-2 mobile-touch-target"
         data-testid="submit-quick-quote-btn"
       >
         <span>⚡</span>
@@ -487,10 +487,10 @@ function QuickQuoteForm({
 
 function QuickQuoteShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col justify-between">
+    <div className="min-h-[100dvh] bg-background flex flex-col justify-between overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       <header className="border-b bg-card/90 px-3 py-2.5 sticky top-0 z-10 backdrop-blur">
         <div className="mx-auto flex max-w-lg items-center justify-between">
-          <Link to="/" className="text-sm font-black tracking-tight text-primary flex items-center gap-1">
+          <Link to="/" className="text-sm font-black tracking-tight text-primary flex items-center gap-1 min-h-[44px]">
             <span>⚡</span>
             <span>{PRODUCT_NAME} WhatsApp Direct</span>
           </Link>

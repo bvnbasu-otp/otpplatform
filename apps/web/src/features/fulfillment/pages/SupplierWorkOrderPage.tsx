@@ -113,7 +113,7 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
         <div className="flex items-center gap-2 min-w-0">
           <Link
             to={`/supplier/purchase-orders/${workOrder.purchaseOrderId}`}
-            className="min-h-[36px] px-2 rounded-lg border bg-muted/30 text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 flex items-center"
+            className="min-h-[44px] px-3 rounded-xl border bg-muted/40 text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 flex items-center mobile-touch-target"
           >
             ← PO Details
           </Link>

@@ -25,7 +25,7 @@ export function MobileGlanceBar({
       <button
         type="button"
         onClick={() => onSelectFilter(selectedFilter === 'ACTIVE' ? 'ALL' : 'ACTIVE')}
-        className={`rounded-2xl border p-2.5 text-center transition-all ${
+        className={`min-h-[48px] rounded-2xl border p-2.5 text-center transition-all mobile-touch-target ${
           selectedFilter === 'ACTIVE'
             ? 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-500/30'
             : 'border-border bg-card hover:bg-muted/40'
@@ -40,7 +40,7 @@ export function MobileGlanceBar({
       <button
         type="button"
         onClick={() => onSelectFilter(selectedFilter === 'ACTION_REQUIRED' ? 'ALL' : 'ACTION_REQUIRED')}
-        className={`rounded-2xl border p-2.5 text-center transition-all ${
+        className={`min-h-[48px] rounded-2xl border p-2.5 text-center transition-all mobile-touch-target ${
           selectedFilter === 'ACTION_REQUIRED'
             ? 'border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/30'
             : 'border-border bg-card hover:bg-muted/40'
@@ -55,7 +55,7 @@ export function MobileGlanceBar({
       <button
         type="button"
         onClick={() => onSelectFilter(selectedFilter === 'COMPLETED' ? 'ALL' : 'COMPLETED')}
-        className={`rounded-2xl border p-2.5 text-center transition-all ${
+        className={`min-h-[48px] rounded-2xl border p-2.5 text-center transition-all mobile-touch-target ${
           selectedFilter === 'COMPLETED'
             ? 'border-slate-500 bg-slate-500/15 ring-2 ring-slate-500/30'
             : 'border-border bg-card hover:bg-muted/40'

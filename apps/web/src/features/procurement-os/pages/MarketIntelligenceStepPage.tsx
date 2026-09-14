@@ -63,7 +63,7 @@ export function MarketIntelligenceStepPage() {
   }, [requirementId, routeRfqId]);
 
   return (
-    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full" data-testid="market-intelligence-step-page">
+    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full overflow-x-hidden" data-testid="market-intelligence-step-page">
       {/* 15-Step Navigator pinned strictly to Step 3 */}
       <ProcurementStageNavigator
         currentLinearStep={3}
@@ -78,7 +78,7 @@ export function MarketIntelligenceStepPage() {
       />
 
       {/* Header Description - High Density Bar */}
-      <div className="rounded-lg border bg-card px-3 py-2 shadow-2xs shrink-0 flex items-center justify-between gap-2">
+      <div className="rounded-lg border bg-card px-3 py-2.5 shadow-2xs shrink-0 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="rounded-md bg-indigo-100 dark:bg-indigo-950/60 px-2 py-0.5 text-[10px] font-bold text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shrink-0">
             Step 3 / 15
@@ -93,11 +93,11 @@ export function MarketIntelligenceStepPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
           {rfqId ? (
             <Link
               to={`/rfq/${rfqId}/clarification`}
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+              className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
               data-testid="proceed-to-negotiation-btn"
             >
               <span>Step 4: Negotiation &amp; Q&amp;A</span>
@@ -107,7 +107,7 @@ export function MarketIntelligenceStepPage() {
             <button
               type="button"
               disabled
-              className="rounded-md bg-primary px-3 py-1 text-xs font-bold text-primary-foreground opacity-50"
+              className="min-h-[44px] rounded-lg bg-primary px-3 py-1 text-xs font-bold text-primary-foreground opacity-50"
             >
               Generating Context…
             </button>

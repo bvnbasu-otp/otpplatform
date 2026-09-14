@@ -177,7 +177,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
         <div className="flex items-center gap-2 min-w-0">
           <Link
             to="/"
-            className="min-h-[36px] px-2 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted flex items-center gap-1 shrink-0"
+            className="min-h-[44px] px-2.5 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted flex items-center gap-1 shrink-0 mobile-touch-target"
           >
             ← Enquiries
           </Link>
@@ -268,7 +268,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
               <button
                 type="button"
                 onClick={() => setIsQuoteSheetOpen(true)}
-                className="min-h-[44px] flex-1 sm:flex-none rounded-xl border bg-card px-4 py-2 text-xs font-bold text-foreground hover:bg-muted transition shadow-xs flex items-center justify-center gap-1.5"
+                className="min-h-[44px] flex-1 sm:flex-none rounded-xl border bg-card px-4 py-2 text-xs font-bold text-foreground hover:bg-muted transition shadow-xs flex items-center justify-center gap-1.5 mobile-touch-target"
               >
                 <span>✏️ Revise Quote Price</span>
               </button>
@@ -277,7 +277,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
               <button
                 type="button"
                 onClick={() => void handleFinalize()}
-                className="min-h-[44px] flex-1 sm:flex-none rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center justify-center gap-1.5"
+                className="min-h-[44px] flex-1 sm:flex-none rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center justify-center gap-1.5 mobile-touch-target"
               >
                 <span>Lock Final Quote 🔒</span>
               </button>
@@ -330,7 +330,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
             type="button"
             onClick={() => setIsQuoteSheetOpen(true)}
             data-testid="open-quote-sheet-cta"
-            className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90 transition flex items-center justify-center gap-2 active:scale-98"
+            className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90 transition flex items-center justify-center gap-2 active:scale-98 mobile-touch-target"
           >
             <span>⚡</span>
             <span>Draft &amp; Submit Quote →</span>

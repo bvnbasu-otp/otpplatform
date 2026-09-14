@@ -152,7 +152,7 @@ export function ReviewAndPublishStep({
                 variant="ghost"
                 size="sm"
                 onClick={() => onEditStep(0)}
-                className="text-xs h-7 px-2"
+                className="text-xs min-h-[36px] px-3 mobile-touch-target"
               >
                 ✏️ Edit
               </Button>
@@ -179,7 +179,7 @@ export function ReviewAndPublishStep({
                 variant="ghost"
                 size="sm"
                 onClick={() => onEditStep(1)}
-                className="text-xs h-7 px-2"
+                className="text-xs min-h-[36px] px-3 mobile-touch-target"
               >
                 ✏️ Edit
               </Button>
@@ -205,7 +205,7 @@ export function ReviewAndPublishStep({
                 variant="ghost"
                 size="sm"
                 onClick={() => onEditStep(2)}
-                className="text-xs h-7 px-2"
+                className="text-xs min-h-[36px] px-3 mobile-touch-target"
               >
                 ✏️ Edit
               </Button>
@@ -237,7 +237,7 @@ export function ReviewAndPublishStep({
                 variant="ghost"
                 size="sm"
                 onClick={() => onEditStep(3)}
-                className="text-xs h-7 px-2"
+                className="text-xs min-h-[36px] px-3 mobile-touch-target"
               >
                 ✏️ Edit
               </Button>

@@ -521,7 +521,7 @@ export function DashboardPage() {
             <button
               type="button"
               onClick={() => setIsPaymentModalOpen(true)}
-              className={`min-h-[32px] inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black border transition active:scale-95 shrink-0 ${
+              className={`min-h-[38px] inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] font-black border transition active:scale-95 shrink-0 mobile-touch-target ${
                 subscription.isExpired
                   ? 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 animate-pulse'
                   : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300'

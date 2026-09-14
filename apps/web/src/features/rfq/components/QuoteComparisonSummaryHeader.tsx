@@ -120,26 +120,26 @@ export function QuoteComparisonSummaryHeader({
 
         {/* 3. Quick Glance Comparative Benchmark Strip (if quotes available) */}
         {quotesCount > 0 && (
-          <div className="grid grid-cols-4 gap-1.5 rounded-xl bg-muted/40 p-2 text-center text-[10px] border border-border/40">
-            <div className="space-y-0.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl bg-muted/40 p-2 sm:p-2.5 text-center text-[10px] border border-border/40">
+            <div className="space-y-0.5 rounded-lg bg-card/60 p-1.5 sm:bg-transparent sm:p-0">
               <span className="text-muted-foreground font-semibold block text-[9px]">L1 Best Price</span>
               <span className="font-mono font-black text-xs text-foreground block truncate">
                 {formatInr(lowestPrice)}
               </span>
             </div>
-            <div className="space-y-0.5 border-l border-border/50">
+            <div className="space-y-0.5 rounded-lg bg-card/60 p-1.5 sm:bg-transparent sm:p-0 sm:border-l sm:border-border/50">
               <span className="text-muted-foreground font-semibold block text-[9px]">Fastest Delivery</span>
               <span className="font-bold text-xs text-foreground block truncate">
                 {fastestTat != null ? `⚡ ${fastestTat} Days` : '—'}
               </span>
             </div>
-            <div className="space-y-0.5 border-l border-border/50">
+            <div className="space-y-0.5 rounded-lg bg-card/60 p-1.5 sm:bg-transparent sm:p-0 sm:border-l sm:border-border/50">
               <span className="text-muted-foreground font-semibold block text-[9px]">Best Warranty</span>
               <span className="font-bold text-xs text-foreground block truncate">
                 {longestWarranty != null ? `🛡️ ${longestWarranty} Mo` : '—'}
               </span>
             </div>
-            <div className="space-y-0.5 border-l border-border/50">
+            <div className="space-y-0.5 rounded-lg bg-card/60 p-1.5 sm:bg-transparent sm:p-0 sm:border-l sm:border-border/50">
               <span className="text-muted-foreground font-semibold block text-[9px]">Top Merit Score</span>
               <span className="font-bold text-xs text-emerald-700 dark:text-emerald-400 block truncate">
                 {highestScore != null ? `★ ${(highestScore / 10).toFixed(1)}/10` : '—'}

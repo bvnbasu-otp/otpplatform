@@ -239,7 +239,7 @@ export function ResetPasswordPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-md px-4 py-14">
+      <div className="mx-auto w-full max-w-md px-4 py-8 sm:py-14 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden">
         <h1 className="text-2xl font-semibold text-foreground">Set New Password</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {user

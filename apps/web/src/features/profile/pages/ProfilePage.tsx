@@ -11,7 +11,7 @@ import {
 } from '../api/profile';
 import { fetchUserOrganization } from '@/features/requirement/api/requirements';
 import { PERSONA_AVATARS, compressAndCropAvatar } from '../lib/avatars';
-import { useTheme } from '@/features/theme';
+import { useTheme, ThemeBottomSheet } from '@/features/theme';
 import { ChangePasswordModal } from '@/features/roles/components/ChangePasswordModal';
 import { listOrgMembers, inviteOrgMember, removeOrgMember, type OrgMember } from '@/features/org/api/org-members';
 
@@ -95,6 +95,7 @@ export function ProfilePage() {
 
   // Password modal
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showThemeSheet, setShowThemeSheet] = useState(false);
 
   // Notification Channel Preferences (persisted in localStorage)
   const [channelWhatsapp, setChannelWhatsapp] = useState(() => {
@@ -145,9 +146,13 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (tabParam === 'team') setActiveTab('team');
-    else if (tabParam === 'preferences') setActiveTab('preferences');
-    else if (tabParam === 'profile') setActiveTab('profile');
-  }, [tabParam]);
+    else if (tabParam === 'preferences') {
+      setActiveTab('preferences');
+      if (searchParams.get('theme') === 'true' || searchParams.get('action') === 'theme') {
+        setShowThemeSheet(true);
+      }
+    } else if (tabParam === 'profile') setActiveTab('profile');
+  }, [tabParam, searchParams]);
 
   const handleTabSwitch = (tab: 'profile' | 'team' | 'preferences') => {
     setActiveTab(tab);
@@ -1042,9 +1047,20 @@ export function ProfilePage() {
         <div className="space-y-3">
           {/* Theme & Display Mode */}
           <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b pb-2">
-              🎨 Appearance &amp; Display Theme
-            </h2>
+            <div className="flex items-center justify-between border-b pb-2">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                🎨 Appearance &amp; Display Theme
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowThemeSheet(true)}
+                data-testid="profile-open-theme-sheet"
+                className="rounded-lg bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 text-[11px] font-bold hover:bg-primary/20 transition active:scale-95 min-h-[36px] inline-flex items-center gap-1"
+              >
+                <span>🎨 Open Theme Sheet</span>
+                <span>→</span>
+              </button>
+            </div>
 
             <div>
               <label className="block text-xs font-bold text-foreground mb-1.5">Display Mode</label>
@@ -1244,6 +1260,12 @@ export function ProfilePage() {
       <ChangePasswordModal
         open={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
+      />
+
+      {/* Mobile Theme Bottom Sheet */}
+      <ThemeBottomSheet
+        isOpen={showThemeSheet}
+        onClose={() => setShowThemeSheet(false)}
       />
     </div>
   );

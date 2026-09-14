@@ -6,7 +6,6 @@ import { SupportHelpButtonModal } from '@/features/support';
 import { OtpLogo } from '@/components/ui/OtpLogo';
 import { useMaintenance } from '@/features/maintenance';
 import { OrgContextSwitcher } from '@/features/org';
-import { ThemeToggle } from '@/features/theme';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileSimulatorFrame } from '@/components/layout/MobileSimulatorFrame';
@@ -76,7 +75,6 @@ export function AppLayout() {
 
             {/* Right Action Cluster: Clean, minimal, ≤48px */}
             <div className="ml-auto flex items-center gap-1.5 shrink-0">
-              <ThemeToggle />
               <NotificationBell />
               <div className="hidden sm:block">
                 <AccountMenu />
@@ -172,10 +170,7 @@ export function AppLayout() {
 
                 {/* Quick Utility Tools in Drawer */}
                 <div className="border-t pt-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ThemeToggle variant="menu" />
-                    <SupportHelpButtonModal />
-                  </div>
+                  <SupportHelpButtonModal />
                   <OrgContextSwitcher />
                 </div>
 

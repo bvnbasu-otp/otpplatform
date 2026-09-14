@@ -177,11 +177,11 @@ export function AdminDashboardPage() {
       )}
 
       {/* Navigation Tabs Bar - Touch-Friendly Scrollable Bar */}
-      <div className="mt-2 shrink-0 flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+      <div className="mt-2 shrink-0 flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar min-w-0 max-w-full">
         <button
           type="button"
           onClick={() => setTab('TRANSACTIONS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'TRANSACTIONS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -193,7 +193,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('SELLER_ORDERS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'SELLER_ORDERS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -205,7 +205,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('HEALTH')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'HEALTH'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -222,7 +222,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('USERS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'USERS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -234,7 +234,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('TICKETS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'TICKETS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -246,7 +246,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('ACTIONS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'ACTIONS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -258,7 +258,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('TESTS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'TESTS'
               ? 'bg-emerald-600 text-white shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -270,7 +270,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('BUYER_DEBUG')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'BUYER_DEBUG'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -282,7 +282,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('SUPPLIER_DEBUG')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'SUPPLIER_DEBUG'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -294,7 +294,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('TERMINAL')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'TERMINAL'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -306,7 +306,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('BACKUPS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'BACKUPS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -318,7 +318,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('LOGS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'LOGS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -330,7 +330,7 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('NOTIFICATIONS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
             activeTab === 'NOTIFICATIONS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'

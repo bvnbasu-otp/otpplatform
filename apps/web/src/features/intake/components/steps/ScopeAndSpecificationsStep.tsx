@@ -219,14 +219,14 @@ export function ScopeAndSpecificationsStep({
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">Warranty Expected</label>
             <div className="flex flex-wrap gap-1.5 pb-1">
-              {WARRANTY_PRESETS.map((preset) => {
+                  {WARRANTY_PRESETS.map((preset) => {
                 const isSelected = warrantyMonths === preset.months;
                 return (
                   <button
                     key={preset.label}
                     type="button"
                     onClick={() => setWarrantyMonths(preset.months)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition active:scale-95 ${
+                    className={`rounded-full border px-3.5 py-2 text-xs font-semibold transition active:scale-95 min-h-[44px] mobile-touch-target ${
                       isSelected
                         ? 'border-primary bg-primary text-primary-foreground shadow-2xs'
                         : 'border-border bg-card text-muted-foreground hover:bg-muted'

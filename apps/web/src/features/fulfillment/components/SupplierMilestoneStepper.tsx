@@ -320,13 +320,13 @@ export function SupplierMilestoneStepper({
                   <p className="text-[10px] text-muted-foreground">{f.size} · {f.time}</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedPhoto(f.name)}
-                className="text-[11px] font-bold text-primary hover:underline shrink-0 p-1 min-h-[36px] flex items-center"
-              >
-                View
-              </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPhoto(f.name)}
+                      className="text-xs font-bold text-primary hover:underline shrink-0 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target"
+                    >
+                      View
+                    </button>
             </div>
           ))}
         </div>

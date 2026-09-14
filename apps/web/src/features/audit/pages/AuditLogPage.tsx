@@ -67,15 +67,15 @@ export function AuditLogPage({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => void loadEvents()}
-              disabled={isLoading}
-              className="rounded-xl border border-border bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition shadow-2xs min-h-[44px] mobile-touch-target flex items-center gap-1.5"
-            >
-              <span>↻</span>
-              <span>{isLoading ? 'Verifying…' : 'Refresh'}</span>
-            </button>
+        <button
+          type="button"
+          onClick={() => void loadEvents()}
+          disabled={isLoading}
+          className="rounded-xl border border-border bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition shadow-2xs min-h-[44px] mobile-touch-target flex items-center gap-1.5"
+        >
+          <span>↻</span>
+          <span>{isLoading ? 'Verifying…' : 'Refresh'}</span>
+        </button>
           </div>
         </div>
 

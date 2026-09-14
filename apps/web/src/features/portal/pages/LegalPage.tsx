@@ -36,9 +36,9 @@ export function LegalPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-3xl px-6 py-10">
-        <h1 className="text-3xl font-semibold text-navy">{page.title}</h1>
-        <p className="mt-3 text-base text-slate">{page.intro}</p>
+      <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-6 sm:py-10 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-navy">{page.title}</h1>
+        <p className="mt-3 text-sm sm:text-base text-slate">{page.intro}</p>
 
         <section className="mt-8 rounded-lg border-l-4 border-action bg-action-soft p-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-navy">

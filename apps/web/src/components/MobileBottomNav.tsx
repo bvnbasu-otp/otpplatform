@@ -6,7 +6,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ChangePasswordModal } from '@/features/roles/components/ChangePasswordModal';
 import { ProfileEditModal } from '@/features/profile';
 import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api/roles';
-import { ThemeToggle } from '@/features/theme';
+import { ThemeBottomSheet } from '@/features/theme';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -29,6 +29,7 @@ export function MobileBottomNav() {
   const [isAccountSheetOpen, setIsAccountSheetOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showThemeSheet, setShowThemeSheet] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [pendingOrg, setPendingOrg] = useState<string | null>(null);
 
@@ -333,12 +334,19 @@ export function MobileBottomNav() {
             </Link>
           </div>
 
-          {/* Theme Toggle & Sign Out Row */}
+          {/* Theme & Settings Shortcut & Sign Out Row */}
           <div className="pt-2 border-t flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-muted-foreground">Theme:</span>
-              <ThemeToggle />
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAccountSheetOpen(false);
+                setShowThemeSheet(true);
+              }}
+              data-testid="bottom-nav-theme-sheet-trigger"
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition active:scale-95 mobile-touch-target"
+            >
+              <span>🎨</span> Appearance
+            </button>
 
             <button
               type="button"
@@ -363,6 +371,11 @@ export function MobileBottomNav() {
       <ProfileEditModal
         open={showProfileModal}
         onClose={() => setShowProfileModal(false)}
+      />
+
+      <ThemeBottomSheet
+        isOpen={showThemeSheet}
+        onClose={() => setShowThemeSheet(false)}
       />
     </>
   );

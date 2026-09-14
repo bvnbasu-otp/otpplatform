@@ -1,7 +1,6 @@
 import React, { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { OtpLogo } from '@/components/ui/OtpLogo';
-import { ThemeToggle } from '@/features/theme';
 import { PRODUCT_NAME } from '@/lib/brand';
 
 export interface MobileSimulatorFrameProps {
@@ -72,7 +71,6 @@ export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
           >
             📱 Mobile Showcase
           </Link>
-          <ThemeToggle variant="menu" />
         </div>
       </header>
 

@@ -146,7 +146,7 @@ export function QuoteForm({
         <button
           type="button"
           onClick={() => setPricingMode('INCLUSIVE')}
-          className={`flex-1 min-h-[38px] rounded-lg py-1.5 px-3 font-bold transition flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-[44px] rounded-lg py-1.5 px-3 font-bold transition flex items-center justify-center gap-1.5 mobile-touch-target ${
             pricingMode === 'INCLUSIVE'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
@@ -158,7 +158,7 @@ export function QuoteForm({
         <button
           type="button"
           onClick={() => setPricingMode('ITEMIZED')}
-          className={`flex-1 min-h-[38px] rounded-lg py-1.5 px-3 font-bold transition flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-[44px] rounded-lg py-1.5 px-3 font-bold transition flex items-center justify-center gap-1.5 mobile-touch-target ${
             pricingMode === 'ITEMIZED'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
@@ -317,7 +317,7 @@ export function QuoteForm({
             </span>
           </div>
 
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-4 gap-1.5">
             {[
               { days: 1, label: '1 Day' },
               { days: 3, label: '3 Days' },
@@ -328,7 +328,7 @@ export function QuoteForm({
                 key={chip.days}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, deliveryDays: chip.days }))}
-                className={`min-h-[40px] rounded-lg text-xs font-bold transition border flex items-center justify-center ${
+                className={`min-h-[44px] rounded-lg text-xs font-bold transition border flex items-center justify-center mobile-touch-target ${
                   form.deliveryDays === chip.days
                     ? 'border-primary bg-primary text-primary-foreground shadow-xs'
                     : 'border-muted bg-muted/30 text-muted-foreground hover:text-foreground'
@@ -346,7 +346,7 @@ export function QuoteForm({
               min={1}
               value={form.deliveryDays}
               onChange={(e) => setNum('deliveryDays', e.target.value)}
-              className="w-20 min-h-[38px] rounded-lg border bg-background px-2 py-1 text-xs font-bold text-center"
+              className="w-20 min-h-[44px] rounded-lg border bg-background px-2 py-1 text-xs font-bold text-center"
               disabled={disabled || isSubmitting}
               required
             />
@@ -365,7 +365,7 @@ export function QuoteForm({
             </span>
           </div>
 
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-4 gap-1.5">
             {[
               { months: 0, label: 'None' },
               { months: 6, label: '6 Mo' },
@@ -376,7 +376,7 @@ export function QuoteForm({
                 key={chip.months}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, warrantyMonths: chip.months }))}
-                className={`min-h-[40px] rounded-lg text-xs font-bold transition border flex items-center justify-center ${
+                className={`min-h-[44px] rounded-lg text-xs font-bold transition border flex items-center justify-center mobile-touch-target ${
                   form.warrantyMonths === chip.months
                     ? 'border-primary bg-primary text-primary-foreground shadow-xs'
                     : 'border-muted bg-muted/30 text-muted-foreground hover:text-foreground'
@@ -394,7 +394,7 @@ export function QuoteForm({
               min={0}
               value={form.warrantyMonths}
               onChange={(e) => setNum('warrantyMonths', e.target.value)}
-              className="w-20 min-h-[38px] rounded-lg border bg-background px-2 py-1 text-xs font-bold text-center"
+              className="w-20 min-h-[44px] rounded-lg border bg-background px-2 py-1 text-xs font-bold text-center"
               disabled={disabled || isSubmitting}
               required
             />
@@ -468,7 +468,7 @@ export function QuoteForm({
         <button
           type="submit"
           disabled={disabled || isSubmitting || total <= 0 || !complianceConfirmed}
-          className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 transition disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+          className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 transition disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98 mobile-touch-target"
           data-testid="submit-sealed-quote-btn"
         >
           <span>🚀</span>

@@ -211,7 +211,7 @@ export function WhatDoYouNeedStep({
               <button
                 key={chip.label}
                 type="button"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 transition shadow-2xs active:scale-95 min-h-[38px]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 px-3.5 py-2 text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 transition shadow-2xs active:scale-95 min-h-[44px] mobile-touch-target"
                 onClick={() => {
                   setError(null);
                   setText(chip.text);

@@ -55,7 +55,7 @@ export function SignupPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-md px-3.5 py-6 space-y-6">
+      <div className="mx-auto w-full max-w-md px-3.5 py-6 space-y-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden">
         <div>
           {/*
             Loose, because this page scrolls. The portal's dense setting is

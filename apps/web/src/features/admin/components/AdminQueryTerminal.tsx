@@ -264,14 +264,14 @@ export function AdminQueryTerminal() {
           className="w-full rounded-lg border bg-muted/20 p-3 font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
         />
 
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <span className="text-[11px] text-muted-foreground">
             🛡️ Safety Guard: Only SELECT / WITH inspection queries are accepted.
           </span>
           <button
             type="submit"
             disabled={isRunning}
-            className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition disabled:opacity-50"
+            className="rounded-xl bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition disabled:opacity-50 min-h-[44px] mobile-touch-target"
           >
             {isRunning ? 'Executing SQL…' : '▶ Run Diagnostic Query'}
           </button>

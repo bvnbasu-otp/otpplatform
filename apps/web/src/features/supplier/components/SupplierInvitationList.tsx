@@ -169,14 +169,14 @@ export function SupplierInvitationList({
                   matchedPo.status === 'ISSUED' ? (
                     <Link
                       to={`/supplier/purchase-orders/${matchedPo.id}`}
-                      className="w-full sm:w-auto min-h-[44px] rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-1.5 active:scale-98"
+                      className="w-full sm:w-auto min-h-[44px] rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-1.5 active:scale-98 mobile-touch-target"
                     >
                       <span>⚡ Accept PO ({formatMoney(matchedPo.totalAmount, matchedPo.currency)}) →</span>
                     </Link>
                   ) : (
                     <Link
                       to={`/supplier/purchase-orders/${matchedPo.id}`}
-                      className="w-full sm:w-auto min-h-[44px] rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition flex items-center justify-center gap-1.5 active:scale-98"
+                      className="w-full sm:w-auto min-h-[44px] rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition flex items-center justify-center gap-1.5 active:scale-98 mobile-touch-target"
                     >
                       <span>Manage Work Order →</span>
                     </Link>
@@ -184,14 +184,14 @@ export function SupplierInvitationList({
                 ) : isAwarded || isCancelled ? (
                   <Link
                     to={`/supplier/rfq/${inv.rfqId}`}
-                    className="w-full sm:w-auto min-h-[44px] rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition flex items-center justify-center gap-1.5"
+                    className="w-full sm:w-auto min-h-[44px] rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition flex items-center justify-center gap-1.5 mobile-touch-target"
                   >
                     <span>View RFQ Summary →</span>
                   </Link>
                 ) : (
                   <Link
                     to={`/supplier/rfq/${inv.rfqId}`}
-                    className={`w-full sm:w-auto min-h-[44px] rounded-xl px-4 py-2 text-xs font-extrabold shadow-md transition flex items-center justify-center gap-1.5 active:scale-98 ${
+                    className={`w-full sm:w-auto min-h-[44px] rounded-xl px-4 py-2 text-xs font-extrabold shadow-md transition flex items-center justify-center gap-1.5 active:scale-98 mobile-touch-target ${
                       isQuoted
                         ? 'border border-border bg-card text-foreground hover:bg-muted'
                         : 'bg-primary text-primary-foreground hover:bg-primary/90'

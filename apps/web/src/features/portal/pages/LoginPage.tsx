@@ -74,7 +74,7 @@ export function LoginPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-md px-3.5 py-3 sm:py-6">
+      <div className="mx-auto w-full max-w-md px-3.5 py-3 sm:py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden">
         {searchParams.get('reset') === 'success' && (
           <div className="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-3 text-xs text-emerald-900 dark:text-emerald-300">
             <p className="font-bold flex items-center gap-1.5 text-xs mb-0.5">

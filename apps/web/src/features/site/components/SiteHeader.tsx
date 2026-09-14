@@ -3,7 +3,6 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { supabase } from '@/lib/supabase';
 import { OtpLogo } from '@/components/ui/OtpLogo';
-import { ThemeToggle } from '@/features/theme';
 import { DemoPersonaSwitcher } from '@/components/demo/DemoPersonaSwitcher';
 
 interface SiteLink {
@@ -209,10 +208,9 @@ export function SiteHeader() {
             className="relative border-b bg-card shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100%-48px)] overflow-y-auto"
           >
             <div className="mx-auto w-full px-4 py-3 space-y-3 text-xs">
-              {/* Quick Persona & Theme switcher bar inside drawer */}
+              {/* Quick Persona switcher inside drawer */}
               <div className="flex items-center justify-between pb-2 border-b">
                 <DemoPersonaSwitcher />
-                <ThemeToggle variant="menu" />
               </div>
 
               {user ? (

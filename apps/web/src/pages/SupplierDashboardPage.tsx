@@ -166,7 +166,7 @@ export function SupplierDashboardPage() {
 
   return (
     <div
-      className="p-3 sm:p-4 max-w-4xl mx-auto w-full space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden"
+      className="p-3 sm:p-4 max-w-4xl mx-auto w-full space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden min-w-0 max-w-full"
       data-testid="supplier-dashboard"
     >
       {/* 1. Header Bar: Supplier Profile & Verification Status */}
@@ -193,14 +193,14 @@ export function SupplierDashboardPage() {
         <div className="flex items-center gap-2 shrink-0">
           <Link
             to="/supplier/purchase-orders"
-            className="min-h-[44px] rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center gap-1 active:scale-98"
+            className="min-h-[44px] rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center gap-1 active:scale-98 mobile-touch-target"
           >
             <span>Active POs</span>
             <span>→</span>
           </Link>
           <Link
             to="/supplier/capabilities"
-            className="hidden sm:inline-flex min-h-[44px] rounded-xl border bg-card px-3 py-2 text-xs font-semibold hover:bg-muted transition items-center"
+            className="hidden sm:inline-flex min-h-[44px] rounded-xl border bg-card px-3 py-2 text-xs font-semibold hover:bg-muted transition items-center mobile-touch-target"
           >
             Capabilities
           </Link>
@@ -235,7 +235,7 @@ export function SupplierDashboardPage() {
                 </div>
                 <Link
                   to={`/supplier/purchase-orders/${po.id}`}
-                  className="min-h-[44px] rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition flex items-center justify-center gap-1.5 active:scale-98"
+                  className="min-h-[44px] rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition flex items-center justify-center gap-1.5 active:scale-98 mobile-touch-target"
                 >
                   <span>⚡ Accept Purchase Order →</span>
                 </Link>
@@ -260,11 +260,11 @@ export function SupplierDashboardPage() {
       </section>
 
       {/* 4. Filter Chips Row */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none min-w-0 max-w-full">
         <button
           type="button"
           onClick={() => setFilterTab('ALL')}
-          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+          className={`min-h-[44px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition mobile-touch-target ${
             filterTab === 'ALL'
               ? 'bg-primary text-primary-foreground shadow-xs'
               : 'bg-card border text-muted-foreground hover:text-foreground'
@@ -275,7 +275,7 @@ export function SupplierDashboardPage() {
         <button
           type="button"
           onClick={() => setFilterTab('ACTION_REQUIRED')}
-          className={`min-h-[36px] shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition border ${
+          className={`min-h-[44px] shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition border mobile-touch-target ${
             filterTab === 'ACTION_REQUIRED'
               ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
               : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-900 dark:text-amber-200'
@@ -289,7 +289,7 @@ export function SupplierDashboardPage() {
         <button
           type="button"
           onClick={() => setFilterTab('EVALUATING')}
-          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+          className={`min-h-[44px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition mobile-touch-target ${
             filterTab === 'EVALUATING'
               ? 'bg-primary text-primary-foreground shadow-xs'
               : 'bg-card border text-muted-foreground hover:text-foreground'
@@ -300,7 +300,7 @@ export function SupplierDashboardPage() {
         <button
           type="button"
           onClick={() => setFilterTab('AWARDED')}
-          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+          className={`min-h-[44px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition mobile-touch-target ${
             filterTab === 'AWARDED'
               ? 'bg-primary text-primary-foreground shadow-xs'
               : 'bg-card border text-muted-foreground hover:text-foreground'
@@ -311,7 +311,7 @@ export function SupplierDashboardPage() {
         <button
           type="button"
           onClick={() => setFilterTab('PO_ISSUED')}
-          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+          className={`min-h-[44px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition mobile-touch-target ${
             filterTab === 'PO_ISSUED'
               ? 'bg-primary text-primary-foreground shadow-xs'
               : 'bg-card border text-muted-foreground hover:text-foreground'
@@ -322,7 +322,7 @@ export function SupplierDashboardPage() {
         <button
           type="button"
           onClick={() => setFilterTab('SETTLED')}
-          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+          className={`min-h-[44px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition mobile-touch-target ${
             filterTab === 'SETTLED'
               ? 'bg-primary text-primary-foreground shadow-xs'
               : 'bg-card border text-muted-foreground hover:text-foreground'
@@ -334,7 +334,7 @@ export function SupplierDashboardPage() {
           <button
             type="button"
             onClick={() => setFilterTab('STALLED')}
-            className={`min-h-[36px] shrink-0 flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition bg-red-50 text-red-700 border border-red-300 dark:bg-red-950/40 dark:text-red-300`}
+            className={`min-h-[44px] shrink-0 flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition bg-red-50 text-red-700 border border-red-300 dark:bg-red-950/40 dark:text-red-300 mobile-touch-target`}
           >
             <span>⚠️ Stalled ({stalledSupplierCount})</span>
           </button>
@@ -371,7 +371,7 @@ export function SupplierDashboardPage() {
             </p>
             <Link
               to="/supplier/capabilities"
-              className="mt-2 inline-flex items-center justify-center min-h-[44px] px-4 rounded-xl font-bold text-primary hover:underline bg-primary/5 border border-primary/20"
+              className="mt-2 inline-flex items-center justify-center min-h-[44px] px-4 rounded-xl font-bold text-primary hover:underline bg-primary/5 border border-primary/20 mobile-touch-target"
             >
               Add more capabilities and PIN codes to receive more enquiries →
             </Link>

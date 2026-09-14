@@ -306,26 +306,26 @@ export function QuoteBoqBottomSheet({
     >
       <div className="space-y-4" data-testid="quote-boq-bottom-sheet-content">
         {/* 1. 4-Pillar Stat Ribbon */}
-        <div className="grid grid-cols-4 gap-1.5 rounded-xl bg-muted/40 p-2 text-center text-[10px] border">
-          <div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl bg-muted/40 p-2 sm:p-2.5 text-center text-[10px] border">
+          <div className="rounded-lg bg-card/60 p-1.5 sm:bg-transparent sm:p-0">
             <span className="text-muted-foreground font-semibold block text-[9px]">Total Quoted</span>
             <span className="font-mono font-black text-xs text-foreground block mt-0.5">
               {formatInr(quote.totalCost)}
             </span>
           </div>
-          <div>
+          <div className="rounded-lg bg-card/60 p-1.5 sm:bg-transparent sm:p-0">
             <span className="text-muted-foreground font-semibold block text-[9px]">Delivery TAT</span>
             <span className="font-bold text-xs text-foreground block mt-0.5">
               ⚡ {quote.deliveryDays} Days
             </span>
           </div>
-          <div>
+          <div className="rounded-lg bg-card/60 p-1.5 sm:bg-transparent sm:p-0">
             <span className="text-muted-foreground font-semibold block text-[9px]">Warranty SLA</span>
             <span className="font-bold text-xs text-foreground block mt-0.5">
               🛡️ {quote.warrantyMonths} Mo
             </span>
           </div>
-          <div>
+          <div className="rounded-lg bg-card/60 p-1.5 sm:bg-transparent sm:p-0">
             <span className="text-muted-foreground font-semibold block text-[9px]">Merit Score</span>
             <span className="font-bold text-xs text-emerald-700 dark:text-emerald-400 block mt-0.5">
               ★ {quote.evaluationScore != null ? `${(quote.evaluationScore / 10).toFixed(1)}/10` : '—'}

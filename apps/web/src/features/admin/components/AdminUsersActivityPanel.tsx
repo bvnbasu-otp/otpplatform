@@ -1484,26 +1484,26 @@ export function AdminUsersActivityPanel() {
 
                         <td className="p-2.5 text-right">
                           {isPending ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                type="button"
-                                onClick={() => void handleReview(r, 'APPROVE')}
-                                disabled={isBusy}
-                                className="rounded bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1 shadow-2xs"
-                                title="Approve applicant, provision tenant & auth user"
-                              >
-                                <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve & Onboard'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleReview(r, 'REJECT')}
-                                disabled={isBusy}
-                                className="rounded border border-rose-300 bg-rose-50 px-2 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
-                                title="Reject registration"
-                              >
-                                ✕
-                              </button>
-                            </div>
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleReview(r, 'APPROVE')}
+                          disabled={isBusy}
+                          className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1 shadow-2xs min-h-[44px] mobile-touch-target"
+                          title="Approve applicant, provision tenant & auth user"
+                        >
+                          <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve & Onboard'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleReview(r, 'REJECT')}
+                          disabled={isBusy}
+                          className="rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target"
+                          title="Reject registration"
+                        >
+                          ✕
+                        </button>
+                      </div>
                           ) : (
                             <span className="text-[10px] text-muted-foreground font-semibold">
                               {r.status === 'ONBOARDED' ? '✓ Activated' : 'Closed'}

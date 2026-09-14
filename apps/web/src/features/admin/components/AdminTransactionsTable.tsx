@@ -493,121 +493,185 @@ export function AdminTransactionsTable({
         </div>
       )}
 
-      {/* 2. TABULAR VIEW */}
+      {/* 2. TABULAR VIEW (Responsive Desktop Table -> Mobile Card Transformation) */}
       {!isLoading && viewMode === 'TABLE' && filtered.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border bg-card shadow-xs">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b bg-muted/40 font-bold text-muted-foreground text-[11px] uppercase tracking-wider">
-                <th className="py-3 px-4">Requirement &amp; Date</th>
-                <th className="py-3 px-4">Buyer Organization</th>
-                <th className="py-3 px-4">Category &amp; Specs</th>
-                <th className="py-3 px-4">Awarded Supplier</th>
-                <th className="py-3 px-4">Order Value</th>
-                <th className="py-3 px-4">Procurement Phase</th>
-                <th className="py-3 px-4">Quotes / Votes</th>
-                <th className="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border text-foreground">
-              {filtered.map((tx) => {
-                const phaseKey = resolvePhase(tx);
-                const defaultPhase = ADMIN_PHASES[0]!;
-                const phaseDef = ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
+        <div className="space-y-3">
+          {/* Mobile Stacked Cards (Visible < md) */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            {filtered.map((tx) => {
+              const phaseKey = resolvePhase(tx);
+              const defaultPhase = ADMIN_PHASES[0]!;
+              const phaseDef = ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
 
-                return (
-                  <tr
-                    key={tx.requirement_id}
-                    className="hover:bg-muted/30 transition cursor-pointer"
-                    onClick={() => setInspectingTx(tx)}
-                  >
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-foreground line-clamp-1 max-w-xs">{tx.requirement_title}</div>
-                      <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
-                        {tx.rfq_public_ref || tx.po_number || 'REQ-PENDING'} · {new Date(tx.requirement_created_at).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-foreground line-clamp-1">{tx.organization_name}</span>
-                        {tx.is_demo ? (
-                          <span className="rounded bg-purple-500/10 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:text-purple-300 border border-purple-500/30">
-                            DEMO
-                          </span>
-                        ) : (
-                          <span className="rounded bg-emerald-500/10 px-1 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                            PROD
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {tx.buyer_name || tx.buyer_email || tx.organization_city || 'India'}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="font-medium text-foreground line-clamp-1">{tx.category_name || 'Goods/Services'}</div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {tx.quantity ? `${tx.quantity} ${tx.unit || ''}` : 'As specified'} · {tx.delivery_city || 'India'}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      {tx.awarded_supplier_name ? (
-                        <div>
-                          <div className="font-bold text-primary line-clamp-1">{tx.awarded_supplier_name}</div>
-                          <div className="text-[10px] text-emerald-950 font-semibold">✓ Award Confirmed</div>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-xs italic">Pending Evaluation</span>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-4 font-extrabold text-foreground">
-                      {tx.po_amount ? (
-                        `₹${tx.po_amount.toLocaleString('en-IN')}`
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${phaseDef.badgeClass}`}>
-                        <span>{phaseDef.icon}</span>
-                        <span>{phaseDef.shortLabel}</span>
+              return (
+                <article
+                  key={tx.requirement_id}
+                  onClick={() => setInspectingTx(tx)}
+                  className="rounded-2xl border bg-card p-3.5 shadow-xs space-y-2.5 transition active:scale-[0.99]"
+                >
+                  <div className="flex items-start justify-between gap-2 border-b border-border/50 pb-2">
+                    <div className="min-w-0">
+                      <span className="font-mono text-[10px] font-bold text-muted-foreground block truncate">
+                        {tx.rfq_public_ref || tx.po_number || 'REQ-PENDING'}
                       </span>
-                    </td>
+                      <h4 className="font-extrabold text-xs text-foreground truncate mt-0.5">
+                        {tx.requirement_title}
+                      </h4>
+                    </div>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold border shrink-0 ${phaseDef.badgeClass}`}>
+                      <span>{phaseDef.icon}</span>
+                      <span>{phaseDef.shortLabel}</span>
+                    </span>
+                  </div>
 
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold">
-                        <span className="rounded bg-purple-100 text-purple-800 px-1.5 py-0.2 text-[10px]">
-                          {tx.quotes_count} quotes
-                        </span>
-                        <span className="rounded bg-amber-100 text-amber-800 px-1.5 py-0.2 text-[10px]">
-                          {tx.votes_count} votes
-                        </span>
-                      </div>
-                    </td>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block">Buyer Org:</span>
+                      <span className="font-semibold text-foreground truncate block">{tx.organization_name}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block">Order Value:</span>
+                      <span className="font-black text-foreground block font-mono">
+                        {tx.po_amount ? `₹${tx.po_amount.toLocaleString('en-IN')}` : 'Sourcing'}
+                      </span>
+                    </div>
+                  </div>
 
-                    <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => setInspectingTx(tx)}
-                        className="rounded-lg border bg-background px-2.5 py-1 text-xs font-bold text-primary hover:bg-muted transition"
-                      >
-                        Inspect 🔍
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                  <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px]">
+                    <span className="text-muted-foreground">
+                      {tx.quotes_count} quotes · {tx.votes_count} votes
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInspectingTx(tx);
+                      }}
+                      className="min-h-[44px] px-3 rounded-xl border bg-primary/10 text-primary font-bold hover:bg-primary/20 transition flex items-center mobile-touch-target"
+                    >
+                      Inspect 🔍
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table (Hidden on Mobile) */}
+          <div className="hidden md:block overflow-x-auto rounded-xl border bg-card shadow-xs">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/40 font-bold text-muted-foreground text-[11px] uppercase tracking-wider">
+                  <th className="py-3 px-4">Requirement &amp; Date</th>
+                  <th className="py-3 px-4">Buyer Organization</th>
+                  <th className="py-3 px-4">Category &amp; Specs</th>
+                  <th className="py-3 px-4">Awarded Supplier</th>
+                  <th className="py-3 px-4">Order Value</th>
+                  <th className="py-3 px-4">Procurement Phase</th>
+                  <th className="py-3 px-4">Quotes / Votes</th>
+                  <th className="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border text-foreground">
+                {filtered.map((tx) => {
+                  const phaseKey = resolvePhase(tx);
+                  const defaultPhase = ADMIN_PHASES[0]!;
+                  const phaseDef = ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
+
+                  return (
+                    <tr
+                      key={tx.requirement_id}
+                      className="hover:bg-muted/30 transition cursor-pointer"
+                      onClick={() => setInspectingTx(tx)}
+                    >
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-foreground line-clamp-1 max-w-xs">{tx.requirement_title}</div>
+                        <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
+                          {tx.rfq_public_ref || tx.po_number || 'REQ-PENDING'} · {new Date(tx.requirement_created_at).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-foreground line-clamp-1">{tx.organization_name}</span>
+                          {tx.is_demo ? (
+                            <span className="rounded bg-purple-500/10 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                              DEMO
+                            </span>
+                          ) : (
+                            <span className="rounded bg-emerald-500/10 px-1 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                              PROD
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {tx.buyer_name || tx.buyer_email || tx.organization_city || 'India'}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-foreground line-clamp-1">{tx.category_name || 'Goods/Services'}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {tx.quantity ? `${tx.quantity} ${tx.unit || ''}` : 'As specified'} · {tx.delivery_city || 'India'}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        {tx.awarded_supplier_name ? (
+                          <div>
+                            <div className="font-bold text-primary line-clamp-1">{tx.awarded_supplier_name}</div>
+                            <div className="text-[10px] text-emerald-950 font-semibold">✓ Award Confirmed</div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs italic">Pending Evaluation</span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4 font-extrabold text-foreground">
+                        {tx.po_amount ? (
+                          `₹${tx.po_amount.toLocaleString('en-IN')}`
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${phaseDef.badgeClass}`}>
+                          <span>{phaseDef.icon}</span>
+                          <span>{phaseDef.shortLabel}</span>
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold">
+                          <span className="rounded bg-purple-100 text-purple-800 px-1.5 py-0.2 text-[10px]">
+                            {tx.quotes_count} quotes
+                          </span>
+                          <span className="rounded bg-amber-100 text-amber-800 px-1.5 py-0.2 text-[10px]">
+                            {tx.votes_count} votes
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => setInspectingTx(tx)}
+                          className="rounded-lg border bg-background px-2.5 py-1 text-xs font-bold text-primary hover:bg-muted transition min-h-[44px] mobile-touch-target"
+                        >
+                          Inspect 🔍
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

@@ -89,7 +89,7 @@ export function controlClasses(
   dense?: boolean,
 ): string {
   return cn(
-    'w-full rounded-md border border-input bg-card text-foreground placeholder:text-muted-foreground/60',
+    'w-full rounded-md border border-input bg-card text-foreground placeholder:text-muted-foreground/60 min-h-[44px]',
     dense ? 'mt-0.5 px-2.5 py-1.5 text-[0.8rem]' : 'mt-1 px-3 py-2 text-sm',
     'focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-primary',
     'disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground',

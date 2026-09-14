@@ -213,10 +213,10 @@ export function SupplierRegisterForm({
                       aria-pressed={selected}
                       onClick={() => toggleCategory(category.code)}
                       title={category.description ?? undefined}
-                      className={`rounded-full border px-2.5 py-1 font-medium transition ${text.chip} ${
+                      className={`rounded-full border px-3 py-1.5 font-bold transition min-h-[44px] mobile-touch-target flex items-center ${text.chip} ${
                         selected
                           ? 'border-action bg-action text-action-foreground'
-                          : 'bg-white hover:bg-muted'
+                          : 'bg-card text-foreground hover:bg-muted'
                       }`}
                     >
                       {category.name}

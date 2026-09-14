@@ -591,7 +591,7 @@ export function SignInForm({
           <div
             role="radiogroup"
             aria-label="How to sign in"
-            className="grid grid-cols-2 rounded-lg border bg-muted/40 p-0.5 text-xs text-center"
+            className="grid grid-cols-2 rounded-xl border bg-muted/40 p-1 text-xs text-center gap-1"
           >
             {(
               [
@@ -606,7 +606,7 @@ export function SignInForm({
                 aria-checked={method === value}
                 onClick={() => chooseMethod(value)}
                 data-testid={`sign-in-method-${value}`}
-                className={`rounded py-1.5 font-medium transition ${
+                className={`rounded-lg py-2 font-bold transition min-h-[44px] mobile-touch-target flex items-center justify-center ${
                   method === value
                     ? 'bg-card text-foreground shadow-xs'
                     : 'text-muted-foreground hover:text-foreground'
@@ -680,12 +680,12 @@ export function SignInForm({
           )}
 
           <div className="flex items-center justify-between text-xs pt-0.5">
-            <label className="flex items-center gap-2 cursor-pointer select-none text-muted-foreground hover:text-foreground">
+            <label className="flex items-center gap-2 cursor-pointer select-none text-muted-foreground hover:text-foreground min-h-[44px] mobile-touch-target">
               <input
                 type="checkbox"
                 checked={remember}
                 onChange={(event) => setRemember(event.target.checked)}
-                className="rounded border-border"
+                className="rounded border-border h-4 w-4"
                 data-testid="remember-device"
               />
               <span className="font-medium">Remember me</span>
@@ -698,7 +698,7 @@ export function SignInForm({
                   setIsResettingPassword(true);
                   setError(null);
                 }}
-                className="text-action hover:underline font-medium"
+                className="text-action hover:underline font-medium min-h-[44px] flex items-center mobile-touch-target"
               >
                 Forgot password?
               </button>

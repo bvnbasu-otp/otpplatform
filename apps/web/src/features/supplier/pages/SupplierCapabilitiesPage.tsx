@@ -207,11 +207,11 @@ export function SupplierCapabilitiesPage() {
   if (isLoading) return <p className="p-8 text-muted-foreground">Loading…</p>;
 
   return (
-    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full" data-testid="supplier-capabilities-page">
+    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]" data-testid="supplier-capabilities-page">
       {/* Compressed Top Bar */}
       <header className="rounded-lg border bg-card px-3 py-1.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Link to="/" className="text-xs font-semibold text-muted-foreground hover:text-foreground shrink-0">
+          <Link to="/" className="text-xs font-semibold text-muted-foreground hover:text-foreground shrink-0 min-h-[44px] flex items-center mobile-touch-target">
             ← Invitations
           </Link>
           <span className="text-muted-foreground">|</span>
@@ -277,13 +277,13 @@ export function SupplierCapabilitiesPage() {
                       maxLength={15}
                       onChange={(e) => setInputGstin(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ''))}
                       placeholder="Enter 15-digit GSTIN (e.g. 29ABCDE1234F1Z5)"
-                      className="flex-1 rounded border px-2.5 py-1 text-xs font-mono"
+                      className="flex-1 rounded-xl border px-3 py-2 text-xs font-mono min-h-[44px]"
                     />
                     <button
                       type="button"
                       disabled={gstSaving || inputGstin.length !== 15}
                       onClick={() => void handleVerifyGstin()}
-                      className="rounded bg-primary px-3 py-1 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50 shrink-0 shadow-2xs"
+                      className="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50 shrink-0 shadow-2xs min-h-[44px] mobile-touch-target"
                     >
                       {gstSaving ? 'Verifying…' : 'Verify & Link'}
                     </button>
@@ -310,7 +310,7 @@ export function SupplierCapabilitiesPage() {
                   <select
                     value={chosen}
                     onChange={(e) => setChosen(e.target.value)}
-                    className="mt-1 w-full rounded border px-2.5 py-1.5 text-xs"
+                    className="mt-1 w-full rounded-xl border px-3 py-2 text-xs min-h-[44px]"
                   >
                     <option value="">Choose capability…</option>
                     {available.map((option) => (
@@ -330,7 +330,7 @@ export function SupplierCapabilitiesPage() {
                       step="any"
                       value={ceiling}
                       onChange={(e) => setCeiling(e.target.value)}
-                      className="mt-1 w-24 rounded border px-2 py-1.5 text-xs"
+                      className="mt-1 w-24 rounded-xl border px-2.5 py-2 text-xs min-h-[44px]"
                     />
                   </label>
                 )}
@@ -339,7 +339,7 @@ export function SupplierCapabilitiesPage() {
                   type="button"
                   disabled={busy || !chosen}
                   onClick={() => void handleDeclare()}
-                  className="rounded bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs disabled:opacity-50 shrink-0"
+                  className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-2xs disabled:opacity-50 shrink-0 min-h-[44px] mobile-touch-target"
                 >
                   + Add
                 </button>
@@ -371,7 +371,7 @@ export function SupplierCapabilitiesPage() {
                             value={row.maxCapacityValue ?? ''}
                             placeholder="any"
                             onChange={(e) => void handleCapacityChange(row, e.target.value)}
-                            className="w-16 rounded border px-1.5 py-0.5 text-xs"
+                            className="w-16 rounded-lg border px-2 py-1 text-xs min-h-[36px]"
                           />
                           {row.capacityUnit}
                         </label>
@@ -380,7 +380,7 @@ export function SupplierCapabilitiesPage() {
                         type="button"
                         disabled={busy}
                         onClick={() => void handleWithdraw(row)}
-                        className="rounded px-2 py-0.5 text-[11px] text-red-600 hover:bg-muted disabled:opacity-50"
+                        className="rounded-lg px-2.5 py-1 text-xs text-red-600 hover:bg-muted disabled:opacity-50 min-h-[44px] flex items-center mobile-touch-target font-semibold"
                       >
                         Remove
                       </button>
@@ -419,7 +419,7 @@ export function SupplierCapabilitiesPage() {
                         type="button"
                         disabled={busy}
                         onClick={() => void handleRemoveArea(area)}
-                        className="rounded px-2 py-0.5 text-[11px] text-red-600 hover:bg-muted disabled:opacity-50"
+                        className="rounded-lg px-2.5 py-1 text-xs text-red-600 hover:bg-muted disabled:opacity-50 min-h-[44px] flex items-center mobile-touch-target font-semibold"
                       >
                         Remove
                       </button>
@@ -435,34 +435,34 @@ export function SupplierCapabilitiesPage() {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="Coimbatore"
-                    className="mt-1 w-full rounded border px-2 py-1 text-xs"
+                    className="mt-1 w-full rounded-xl border px-3 py-2 text-xs min-h-[44px]"
                   />
                 </label>
-                <label className="text-xs w-20">
+                <label className="text-xs w-24">
                   <span className="font-medium text-[11px]">PIN Code</span>
                   <input
                     value={pincode}
                     onChange={(e) => setPincode(e.target.value)}
                     inputMode="numeric"
                     placeholder="641001"
-                    className="mt-1 w-full rounded border px-2 py-1 text-xs"
+                    className="mt-1 w-full rounded-xl border px-3 py-2 text-xs min-h-[44px]"
                   />
                 </label>
-                <label className="text-xs w-16">
+                <label className="text-xs w-20">
                   <span className="font-medium text-[11px]">Radius (km)</span>
                   <input
                     type="number"
                     min={1}
                     value={radius}
                     onChange={(e) => setRadius(e.target.value)}
-                    className="mt-1 w-full rounded border px-2 py-1 text-xs"
+                    className="mt-1 w-full rounded-xl border px-3 py-2 text-xs min-h-[44px]"
                   />
                 </label>
                 <button
                   type="button"
                   disabled={busy || (!city.trim() && !pincode.trim())}
                   onClick={() => void handleAddArea()}
-                  className="rounded border bg-card px-2.5 py-1 text-xs font-bold hover:bg-muted disabled:opacity-50 shadow-2xs"
+                  className="rounded-xl border bg-card px-3.5 py-2 text-xs font-bold hover:bg-muted disabled:opacity-50 shadow-2xs min-h-[44px] mobile-touch-target"
                 >
                   + Add
                 </button>

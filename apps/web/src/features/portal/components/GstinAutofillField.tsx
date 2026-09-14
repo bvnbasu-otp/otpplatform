@@ -147,7 +147,7 @@ export function GstinAutofillField({
                   <button
                     type="button"
                     onClick={handleManualApply}
-                    className="inline-flex items-center gap-1 rounded-md bg-emerald-700 px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-emerald-800 transition"
+                    className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 transition min-h-[44px] mobile-touch-target"
                   >
                     <span>⚡</span>
                     <span>{hasApplied ? 'Re-apply Details' : 'Autofill Name & Address'}</span>

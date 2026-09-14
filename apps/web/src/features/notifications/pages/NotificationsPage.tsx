@@ -493,7 +493,7 @@ export function NotificationsPage({
                   key={tab.id}
                   type="button"
                   onClick={() => setFilter(tab.id as any)}
-                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 font-bold transition min-h-[36px] border ${
+                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 font-bold transition min-h-[44px] border mobile-touch-target ${
                     isSelected
                       ? 'bg-primary text-primary-foreground border-primary shadow-xs'
                       : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'

@@ -136,7 +136,7 @@ export function WhereLocationStep({
                           setError(null);
                           setCity(c === 'Bangalore' ? 'Bengaluru' : c);
                         }}
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition active:scale-95 min-h-[36px] shadow-2xs ${
+                        className={`rounded-full border px-3.5 py-2 text-xs font-semibold transition active:scale-95 min-h-[44px] mobile-touch-target shadow-2xs ${
                           isSelected
                             ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                             : 'border-border bg-card text-foreground hover:border-primary/60 hover:bg-muted'

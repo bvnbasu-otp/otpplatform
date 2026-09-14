@@ -428,7 +428,7 @@ export function InvoicePaymentPanel({
                 <label className="block text-[11px] font-bold text-foreground mb-1">
                   Settlement Method
                 </label>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-1 xs:grid-cols-3 gap-1.5">
                   {([
                     { id: 'UPI', label: 'UPI' },
                     { id: 'BANK_TRANSFER', label: 'NEFT / RTGS' },
@@ -438,7 +438,7 @@ export function InvoicePaymentPanel({
                       key={method.id}
                       type="button"
                       onClick={() => setPaymentMethod(method.id)}
-                      className={`min-h-[44px] rounded-xl text-xs font-black transition border mobile-touch-target ${
+                      className={`min-h-[44px] rounded-xl px-2 py-1 text-[11px] font-black transition border mobile-touch-target flex items-center justify-center text-center ${
                         paymentMethod === method.id
                           ? 'bg-primary text-primary-foreground border-primary shadow-xs'
                           : 'bg-card text-muted-foreground hover:bg-muted border-border'

@@ -215,7 +215,7 @@ export function VoiceRequirementDictation({
         </div>
 
         {/* Language Selector Chips */}
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {LANGUAGES.map((lang) => {
             const active = selectedLanguage === lang.code;
             return (
@@ -232,7 +232,7 @@ export function VoiceRequirementDictation({
                   }
                   setSelectedLanguage(lang.code);
                 }}
-                className={`rounded-lg px-2 py-1 text-xs font-bold transition flex items-center gap-1 border ${
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition flex items-center gap-1 border min-h-[36px] xs:min-h-[40px] mobile-touch-target ${
                   active
                     ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
                     : 'bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border-border/60'

@@ -97,7 +97,7 @@ export function ProcurementStageNavigator({
               <span className="hidden sm:inline">{backToLabel}</span>
             </Link>
             <span className="text-muted-foreground/40 shrink-0">/</span>
-            <span className="font-bold text-foreground truncate max-w-[180px] sm:max-w-xs text-xs">
+            <span className="font-bold text-foreground truncate max-w-[90px] xs:max-w-[140px] sm:max-w-xs text-xs">
               {orderReference ? `${orderReference} · ` : ''}
               {orderTitle || 'Procurement Order'}
             </span>
@@ -105,7 +105,7 @@ export function ProcurementStageNavigator({
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-bold shadow-2xs border shrink-0 ${activeStepDesc.badgeClass}`}
             >
-              {activeStepDesc.icon} Step {activeLinearStep}/15: {activeStepDesc.shortLabel}
+              <span className="hidden xs:inline">{activeStepDesc.icon} </span>Step {activeLinearStep}/15<span className="hidden sm:inline">: {activeStepDesc.shortLabel}</span>
             </span>
           </div>
 
@@ -299,16 +299,29 @@ export function ProcurementStageNavigator({
         {/* Compact Docked Bottom Bar */}
         <div className="mx-auto max-w-7xl px-3 py-1 flex items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-foreground flex items-center gap-1 text-xs">
+            <span className="font-bold text-foreground flex items-center gap-1 text-xs min-w-0">
               <span>{activeStepDesc.icon}</span>
               <span className="hidden sm:inline">Step {activeLinearStep}/15:</span>
-              <span className="text-primary font-black truncate max-w-[140px] sm:max-w-[220px]">
+              <span className="text-primary font-black truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[220px]">
                 {activeStepDesc.title}
               </span>
             </span>
 
-            {/* Mini 15 Progress Dots */}
-            <div className="flex items-center gap-1 pl-2 border-l border-border">
+            {/* Mobile Progress Pill */}
+            <div className="flex sm:hidden items-center gap-1.5 pl-1.5 border-l border-border">
+              <span className="text-[10px] font-bold text-muted-foreground">
+                {Math.round((activeLinearStep / 15) * 100)}%
+              </span>
+              <div className="w-10 xs:w-12 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${(activeLinearStep / 15) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Desktop / Tablet Mini 15 Progress Dots */}
+            <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-border">
               {PROCUREMENT_STEP_NUMBERS.map((stepNum) => {
                 const desc = LINEAR_PROCUREMENT_STEPS[stepNum];
                 const stepState = getLinearStepState(stepNum, activeLinearStep);

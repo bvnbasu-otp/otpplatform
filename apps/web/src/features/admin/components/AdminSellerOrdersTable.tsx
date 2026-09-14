@@ -422,114 +422,178 @@ export function AdminSellerOrdersTable({
         </div>
       )}
 
-      {/* 2. TABULAR VIEW */}
+      {/* 2. TABULAR VIEW (Responsive Desktop Table -> Mobile Card Transformation) */}
       {!isLoading && viewMode === 'TABLE' && filtered.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border bg-card shadow-xs">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b bg-muted/40 font-bold text-muted-foreground text-[11px] uppercase tracking-wider">
-                <th className="py-3 px-4">PO Number &amp; Date</th>
-                <th className="py-3 px-4">Supplier / Seller</th>
-                <th className="py-3 px-4">Buyer Organization</th>
-                <th className="py-3 px-4">Requirement Title</th>
-                <th className="py-3 px-4">Order Value</th>
-                <th className="py-3 px-4">Fulfillment Phase</th>
-                <th className="py-3 px-4">Progress</th>
-                <th className="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border text-foreground">
-              {filtered.map((order) => {
-                const phaseKey = resolveSellerPhase(order);
-                const defaultPhase = SELLER_ADMIN_PHASES[0]!;
-                const phaseDef = SELLER_ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
+        <div className="space-y-3">
+          {/* Mobile Stacked Cards (Visible < md) */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            {filtered.map((order) => {
+              const phaseKey = resolveSellerPhase(order);
+              const defaultPhase = SELLER_ADMIN_PHASES[0]!;
+              const phaseDef = SELLER_ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
 
-                return (
-                  <tr
-                    key={order.po_id}
-                    className="hover:bg-muted/30 transition cursor-pointer"
-                    onClick={() => setInspectingOrder(order)}
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-primary">{order.po_number || 'PO-PENDING'}</span>
-                        {order.is_demo ? (
-                          <span className="rounded bg-purple-500/10 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:text-purple-300 border border-purple-500/30">
-                            DEMO
-                          </span>
-                        ) : (
-                          <span className="rounded bg-emerald-500/10 px-1 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                            PROD
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">
-                        {new Date(order.po_created_at).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-foreground line-clamp-1">{order.supplier_name}</div>
-                      <div className="text-[10px] font-mono text-muted-foreground">
-                        {order.supplier_gstin || 'Unregistered'} · {order.supplier_city || 'India'}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-foreground line-clamp-1">{order.organization_name}</div>
-                      <div className="text-[10px] text-muted-foreground">{order.organization_type || 'INDIVIDUAL'}</div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="font-medium text-foreground line-clamp-1 max-w-xs">{order.requirement_title}</div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {order.category_name || 'Goods/Services'} · {order.quantity ? `${order.quantity} ${order.unit || ''}` : ''}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4 font-extrabold text-foreground">
-                      ₹{(order.po_amount || order.invoice_amount || 0).toLocaleString('en-IN')}
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${phaseDef.badgeClass}`}>
-                        <span>{phaseDef.icon}</span>
-                        <span>{phaseDef.shortLabel}</span>
+              return (
+                <article
+                  key={order.po_id}
+                  onClick={() => setInspectingOrder(order)}
+                  className="rounded-2xl border bg-card p-3.5 shadow-xs space-y-2.5 transition active:scale-[0.99]"
+                >
+                  <div className="flex items-start justify-between gap-2 border-b border-border/50 pb-2">
+                    <div className="min-w-0">
+                      <span className="font-mono text-[10px] font-bold text-primary block truncate">
+                        {order.po_number || 'PO-PENDING'}
                       </span>
-                    </td>
+                      <h4 className="font-extrabold text-xs text-foreground truncate mt-0.5">
+                        {order.supplier_name}
+                      </h4>
+                    </div>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold border shrink-0 ${phaseDef.badgeClass}`}>
+                      <span>{phaseDef.icon}</span>
+                      <span>{phaseDef.shortLabel}</span>
+                    </span>
+                  </div>
 
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${order.progress_percent || 0}%` }}
-                          />
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block">Buyer Org:</span>
+                      <span className="font-semibold text-foreground truncate block">{order.organization_name}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block">Order Value:</span>
+                      <span className="font-black text-foreground block font-mono">
+                        ₹{(order.po_amount || order.invoice_amount || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px]">
+                    <span className="text-muted-foreground font-mono">
+                      Progress: {order.progress_percent || 0}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInspectingOrder(order);
+                      }}
+                      className="min-h-[44px] px-3 rounded-xl border bg-primary/10 text-primary font-bold hover:bg-primary/20 transition flex items-center mobile-touch-target"
+                    >
+                      Inspect 🔍
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table (Hidden on Mobile) */}
+          <div className="hidden md:block overflow-x-auto rounded-xl border bg-card shadow-xs">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/40 font-bold text-muted-foreground text-[11px] uppercase tracking-wider">
+                  <th className="py-3 px-4">PO Number &amp; Date</th>
+                  <th className="py-3 px-4">Supplier / Seller</th>
+                  <th className="py-3 px-4">Buyer Organization</th>
+                  <th className="py-3 px-4">Requirement Title</th>
+                  <th className="py-3 px-4">Order Value</th>
+                  <th className="py-3 px-4">Fulfillment Phase</th>
+                  <th className="py-3 px-4">Progress</th>
+                  <th className="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border text-foreground">
+                {filtered.map((order) => {
+                  const phaseKey = resolveSellerPhase(order);
+                  const defaultPhase = SELLER_ADMIN_PHASES[0]!;
+                  const phaseDef = SELLER_ADMIN_PHASES.find((p) => p.key === phaseKey) ?? defaultPhase;
+
+                  return (
+                    <tr
+                      key={order.po_id}
+                      className="hover:bg-muted/30 transition cursor-pointer"
+                      onClick={() => setInspectingOrder(order)}
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-primary">{order.po_number || 'PO-PENDING'}</span>
+                          {order.is_demo ? (
+                            <span className="rounded bg-purple-500/10 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                              DEMO
+                            </span>
+                          ) : (
+                            <span className="rounded bg-emerald-500/10 px-1 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                              PROD
+                            </span>
+                          )}
                         </div>
-                        <span className="text-[10px] font-mono font-bold text-muted-foreground">
-                          {order.progress_percent || 0}%
-                        </span>
-                      </div>
-                    </td>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {new Date(order.po_created_at).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </div>
+                      </td>
 
-                    <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => setInspectingOrder(order)}
-                        className="rounded-lg border bg-background px-2.5 py-1 text-xs font-bold text-primary hover:bg-muted transition"
-                      >
-                        Inspect 🔍
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-foreground line-clamp-1">{order.supplier_name}</div>
+                        <div className="text-[10px] font-mono text-muted-foreground">
+                          {order.supplier_gstin || 'Unregistered'} · {order.supplier_city || 'India'}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-foreground line-clamp-1">{order.organization_name}</div>
+                        <div className="text-[10px] text-muted-foreground">{order.organization_type || 'INDIVIDUAL'}</div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-foreground line-clamp-1 max-w-xs">{order.requirement_title}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {order.category_name || 'Goods/Services'} · {order.quantity ? `${order.quantity} ${order.unit || ''}` : ''}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4 font-extrabold text-foreground">
+                        ₹{(order.po_amount || order.invoice_amount || 0).toLocaleString('en-IN')}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${phaseDef.badgeClass}`}>
+                          <span>{phaseDef.icon}</span>
+                          <span>{phaseDef.shortLabel}</span>
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary"
+                              style={{ width: `${order.progress_percent || 0}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-muted-foreground">
+                            {order.progress_percent || 0}%
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => setInspectingOrder(order)}
+                          className="rounded-lg border bg-background px-2.5 py-1 text-xs font-bold text-primary hover:bg-muted transition min-h-[44px] mobile-touch-target"
+                        >
+                          Inspect 🔍
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
