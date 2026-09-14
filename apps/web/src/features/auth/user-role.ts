@@ -86,7 +86,9 @@ export async function resolvePortalRole(
       .eq('profile_id', profileId)
       .limit(1);
 
-    if (supplierRows && supplierRows.length > 0) return 'supplier';
+    if (supplierRows && (Array.isArray(supplierRows) ? supplierRows.length > 0 : Boolean(supplierRows))) {
+      return 'supplier';
+    }
   } catch {
     // Fall through to next check
   }
@@ -100,7 +102,9 @@ export async function resolvePortalRole(
         .eq('contact_email', email)
         .limit(1);
 
-      if (directSuppliers && directSuppliers.length > 0) return 'supplier';
+      if (directSuppliers && (Array.isArray(directSuppliers) ? directSuppliers.length > 0 : Boolean(directSuppliers))) {
+        return 'supplier';
+      }
     } catch {
       // Fall through to next check
     }
@@ -129,7 +133,9 @@ export async function resolvePortalRole(
       .eq('profile_id', profileId)
       .limit(1);
 
-    if (orgRows && orgRows.length > 0) return 'buyer';
+    if (orgRows && (Array.isArray(orgRows) ? orgRows.length > 0 : Boolean(orgRows))) {
+      return 'buyer';
+    }
   } catch {
     // Fall through to next check
   }
