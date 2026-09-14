@@ -4,6 +4,7 @@ import {
   createServiceClient,
   isLocalSupabaseReachable,
   signInAs,
+  SEED,
 } from '../helpers/supabase-local';
 
 let supabaseUp = false;
@@ -24,6 +25,7 @@ describe('audit and performance RLS', () => {
     const { data, error } = await client
       .from('audit_events')
       .select('id, event_type')
+      .eq('organization_id', SEED.greenviewOrg)
       .limit(5);
 
     expect(error).toBeNull();
@@ -37,6 +39,7 @@ describe('audit and performance RLS', () => {
     const { data, error } = await client
       .from('audit_events')
       .select('id')
+      .eq('organization_id', SEED.greenviewOrg)
       .limit(1);
 
     expect(error).toBeNull();

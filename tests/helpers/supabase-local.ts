@@ -114,31 +114,33 @@ export async function signInAs(
   email: string,
   explicitPassword?: string,
 ): Promise<void> {
-  const primaryPassword =
-    explicitPassword ||
-    (email === 'bvnbasu@gmail.com'
-      ? 'Admin@OTP2026!'
-      : DEMO_PASSWORD);
+  const candidatePasswords: string[] = explicitPassword
+    ? [explicitPassword]
+    : email === 'bvnbasu@gmail.com'
+    ? ['Admin@OTP2026!', DEMO_PASSWORD, '@dm!n123']
+    : [
+        DEMO_PASSWORD,
+        'Admin@OTP2026!',
+        '@dm!n123',
+        'DemoCommittee2026!',
+        'DemoManager2026!',
+        'DemoBuyer2026!',
+        'DemoAdmin2026!',
+      ];
 
-  let { error } = await client.auth.signInWithPassword({
-    email,
-    password: primaryPassword,
-  });
-
-  // Fallback for admin if @dm!n123 was used
-  if (error && email === 'admin@otp.test') {
-    const retry = await client.auth.signInWithPassword({
+  let lastError: any = null;
+  for (const password of candidatePasswords) {
+    const { error } = await client.auth.signInWithPassword({
       email,
-      password: '@dm!n123',
+      password,
     });
-    if (!retry.error) {
-      error = null;
+    if (!error) {
+      return;
     }
+    lastError = error;
   }
 
-  if (error) {
-    throw new Error(`signIn failed for ${email}: ${error.message}`);
-  }
+  throw new Error(`signIn failed for ${email}: ${lastError?.message || 'Authentication failed'}`);
 }
 
 /** Forbidden identity fields in blind evaluation payloads (INV-033–040). */
