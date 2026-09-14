@@ -265,50 +265,52 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
   };
 
   return (
-    <div className="zero-scroll-container p-2 sm:p-3 max-w-7xl mx-auto w-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col">
+    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Screen Interface (Hidden when printing) */}
-      <div className="flex flex-col h-full overflow-hidden no-print flex-1 min-h-0">
-        {/* Header with Title and Mode Switcher - Compact Single Row */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 sm:gap-2 rounded-lg border bg-card px-2.5 py-1.5 sm:px-3 shadow-2xs shrink-0">
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <h1 className="text-xs font-bold tracking-tight text-foreground flex items-center gap-1 truncate">
-              <span>📊</span>
-              <span className="truncate">Orders &amp; Financial Reporting</span>
-            </h1>
-            <span className="hidden sm:inline-flex text-[10px] text-muted-foreground">
-              · Sourcing Analytics &amp; GST Ledger
-            </span>
+      <div className="flex flex-col space-y-3 no-print">
+        {/* Header with Title and Mode Switcher */}
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border bg-card p-3 shadow-2xs shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-base">📊</span>
+            <div>
+              <h1 className="text-xs sm:text-sm font-black tracking-tight text-foreground truncate">
+                Screen 10: Orders Ledger &amp; Reporting
+              </h1>
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
+                GST Compliance, PO Milestone Tracking &amp; Escrow Settlement
+              </p>
+            </div>
           </div>
 
           {/* View Toggle: Orders vs Analytics */}
-          <div className="flex items-center gap-1 rounded bg-muted/40 p-0.5 text-[11px] shrink-0">
-            <button
-              type="button"
-              onClick={() => handleViewChange('REPORTS')}
-              className={`flex items-center gap-1 rounded px-2 py-0.5 sm:px-2.5 font-bold transition text-[10px] sm:text-[11px] ${
-                activeView === 'REPORTS'
-                  ? 'bg-primary text-primary-foreground shadow-2xs'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              <span>📈 Reports</span>
-            </button>
+          <div className="flex items-center gap-1 rounded-xl bg-muted/40 p-1 text-xs shrink-0 border">
             <button
               type="button"
               onClick={() => handleViewChange('ORDERS')}
-              className={`flex items-center gap-1 rounded px-2 py-0.5 sm:px-2.5 font-bold transition text-[10px] sm:text-[11px] ${
+              className={`min-h-[44px] flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold transition text-xs mobile-touch-target ${
                 activeView === 'ORDERS'
-                  ? 'bg-primary text-primary-foreground shadow-2xs'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
               <span>📦 Ledger ({filteredOrders.length})</span>
             </button>
+            <button
+              type="button"
+              onClick={() => handleViewChange('REPORTS')}
+              className={`min-h-[44px] flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold transition text-xs mobile-touch-target ${
+                activeView === 'REPORTS'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <span>📈 Reports</span>
+            </button>
           </div>
         </div>
 
-        {/* Unified Filter & Period Toolbar (Compact) */}
-        <div className="mt-1.5 shrink-0 overflow-x-auto">
+        {/* Unified Filter & Period Toolbar */}
+        <div className="shrink-0 overflow-x-auto">
           <PeriodFilterBar
             periodType={periodType}
             onPeriodChange={(type) => {
@@ -334,8 +336,8 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
           />
         </div>
 
-        {/* Executive KPI Stats Cards (Compact) */}
-        <div className="mt-1.5 shrink-0 overflow-x-auto">
+        {/* Executive KPI Stats Cards */}
+        <div className="shrink-0 overflow-x-auto">
           <AnalyticsCards
             summary={summary}
             role={perspective}
@@ -346,7 +348,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
 
         {/* Interactive Drill-Down Breakdown Section */}
         {activeMetric && (
-          <div className="mt-1.5 shrink-0 overflow-x-auto max-h-[40vh] overflow-y-auto">
+          <div className="shrink-0 overflow-x-auto">
             <DrillDownSection
               activeMetric={activeMetric}
               onClose={() => setActiveMetric(null)}
@@ -357,10 +359,10 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
           </div>
         )}
 
-        {/* Main Content Area - Scrollable Pane */}
-        <div className="zero-scroll-pane mt-1.5 sm:mt-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        {/* Main Content Area */}
+        <div className="mt-2">
           {activeView === 'REPORTS' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-2.5">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
               {/* Left: Category Spend Breakdown */}
               <div className="lg:col-span-1">
                 <CategorySpendChart
@@ -371,8 +373,8 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
 
               {/* Right: Period Summary Table */}
               <div className="lg:col-span-2">
-                <div className="rounded-lg border border-border bg-card p-2.5 sm:p-3 shadow-2xs">
-                  <div className="flex items-center justify-between mb-2 pb-1 border-b">
+                <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between border-b pb-2">
                     <h3 className="font-bold text-xs text-foreground flex items-center gap-1.5">
                       <span>📋</span>
                       <span>Period Order Transactions ({filteredOrders.length})</span>
@@ -380,33 +382,31 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                     <button
                       type="button"
                       onClick={() => handleViewChange('ORDERS')}
-                      className="text-[11px] text-primary font-semibold hover:underline"
+                      className="min-h-[44px] text-xs text-primary font-bold hover:underline flex items-center"
                     >
                       View All Orders →
                     </button>
                   </div>
 
-                  <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
-                    <PurchaseOrderList
-                      orders={filteredOrders.slice(0, 5)}
-                      role={initialRole}
-                      isLoading={isLoading}
-                      error={error}
-                    />
-                  </div>
+                  <PurchaseOrderList
+                    orders={filteredOrders.slice(0, 5)}
+                    role={initialRole}
+                    isLoading={isLoading}
+                    error={error}
+                  />
                 </div>
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {/* Status Tabs */}
-              <div className="flex flex-wrap items-center gap-1 rounded bg-muted/30 p-0.5 text-[10px] sm:text-[11px]">
+              <div className="flex flex-wrap items-center gap-1 rounded-xl bg-muted/30 p-1 text-xs border overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => handleTabChange('ALL')}
-                  className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
+                  className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-bold transition mobile-touch-target ${
                     filterTab === 'ALL'
-                      ? 'bg-primary text-primary-foreground shadow-2xs font-bold'
+                      ? 'bg-primary text-primary-foreground shadow-xs'
                       : 'bg-card text-muted-foreground hover:bg-muted'
                   }`}
                 >
@@ -415,9 +415,9 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                 <button
                   type="button"
                   onClick={() => handleTabChange('ACTIVE')}
-                  className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
+                  className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-bold transition mobile-touch-target ${
                     filterTab === 'ACTIVE'
-                      ? 'bg-blue-600 text-white shadow-2xs font-bold'
+                      ? 'bg-blue-600 text-white shadow-xs'
                       : 'bg-card text-blue-900 dark:text-blue-200 hover:bg-blue-50'
                   }`}
                 >
@@ -426,9 +426,9 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                 <button
                   type="button"
                   onClick={() => handleTabChange('COMPLETED')}
-                  className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
+                  className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-bold transition mobile-touch-target ${
                     filterTab === 'COMPLETED'
-                      ? 'bg-emerald-700 text-white shadow-2xs font-bold'
+                      ? 'bg-emerald-700 text-white shadow-xs'
                       : 'bg-card text-emerald-900 dark:text-emerald-200 hover:bg-emerald-50'
                   }`}
                 >
@@ -437,9 +437,9 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                 <button
                   type="button"
                   onClick={() => handleTabChange('CANCELLED')}
-                  className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
+                  className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-bold transition mobile-touch-target ${
                     filterTab === 'CANCELLED'
-                      ? 'bg-red-700 text-white shadow-2xs font-bold'
+                      ? 'bg-red-700 text-white shadow-xs'
                       : 'bg-card text-red-900 dark:text-red-200 hover:bg-red-50'
                   }`}
                 >
@@ -448,9 +448,9 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                 <button
                   type="button"
                   onClick={() => handleTabChange('DISPUTED')}
-                  className={`rounded px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition ${
+                  className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-bold transition mobile-touch-target ${
                     filterTab === 'DISPUTED'
-                      ? 'bg-amber-600 text-white shadow-2xs font-bold'
+                      ? 'bg-amber-600 text-white shadow-xs'
                       : 'bg-card text-amber-900 dark:text-amber-200 hover:bg-amber-50'
                   }`}
                 >
@@ -458,14 +458,12 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                 </button>
               </div>
 
-              <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
-                <PurchaseOrderList
-                  orders={filteredOrders}
-                  role={initialRole}
-                  isLoading={isLoading}
-                  error={error}
-                />
-              </div>
+              <PurchaseOrderList
+                orders={filteredOrders}
+                role={initialRole}
+                isLoading={isLoading}
+                error={error}
+              />
             </div>
           )}
         </div>

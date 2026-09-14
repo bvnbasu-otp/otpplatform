@@ -8,6 +8,7 @@ import {
 import { createWorkOrder, fetchWorkOrderByPo, updateWorkOrderProgress } from '../api/work-orders';
 import { DeliveryInspectionPanel } from '../components/DeliveryInspectionPanel';
 import { InvoicePaymentPanel } from '../components/InvoicePaymentPanel';
+import { SupplierMilestoneStepper } from '../components/SupplierMilestoneStepper';
 import { PoActionButtons, StatusBadge } from '../components/FulfillmentStatus';
 import { ProcurementStageNavigator, type CoreProcurementState } from '@/features/lifecycle';
 import { formatMoney, type PurchaseOrderSummary, type WorkOrderSummary } from '../types/fulfillment';
@@ -37,6 +38,8 @@ export function PurchaseOrderDetailPage({
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MILESTONES' | 'INVOICE' | 'PAYMENT'>('OVERVIEW');
+  const [showShareToast, setShowShareToast] = useState(false);
 
   const requestedStage = searchParams.get('stage')?.toUpperCase();
 
@@ -79,11 +82,10 @@ export function PurchaseOrderDetailPage({
   }, [load]);
 
   useEffect(() => {
-    if (requestedStage === 'INVOICED' || requestedStage === 'SETTLED') {
-      const el = document.getElementById('invoicing-section');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
+    if (requestedStage === 'INVOICED') {
+      setActiveTab('INVOICE');
+    } else if (requestedStage === 'SETTLED') {
+      setActiveTab('PAYMENT');
     }
   }, [requestedStage, workOrder]);
 
@@ -166,18 +168,37 @@ export function PurchaseOrderDetailPage({
     }
   }
 
+  const handleSharePo = async () => {
+    if (!order) return;
+    const shareText = `Digital Purchase Order ${order.poNumber} — Total ${formatMoney(order.totalAmount, order.currency)} issued to ${order.supplierName || 'Awarded Vendor'}. View & track on OTP.`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `PO ${order.poNumber}`,
+          text: shareText,
+          url: window.location.href,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
+    await navigator.clipboard.writeText(`${shareText}\n${window.location.href}`);
+    setShowShareToast(true);
+    setTimeout(() => setShowShareToast(false), 3000);
+  };
+
   if (isLoading) {
     return (
       <div className="zero-scroll-container p-3 max-w-full mx-auto w-full space-y-4">
         <div className="h-10 bg-muted/60 rounded-lg animate-pulse" />
-        <div className="h-24 bg-card border rounded-lg p-4 animate-pulse space-y-2">
+        <div className="h-28 bg-card border rounded-2xl p-4 animate-pulse space-y-2">
           <div className="h-4 bg-muted w-1/4 rounded" />
           <div className="h-6 bg-muted w-1/2 rounded" />
         </div>
         <div className="grid grid-cols-1 gap-4">
-          <div className="h-48 bg-card border rounded-lg animate-pulse" />
-          <div className="h-48 bg-card border rounded-lg animate-pulse" />
-          <div className="h-48 bg-card border rounded-lg animate-pulse" />
+          <div className="h-48 bg-card border rounded-2xl animate-pulse" />
+          <div className="h-48 bg-card border rounded-2xl animate-pulse" />
         </div>
       </div>
     );
@@ -185,7 +206,7 @@ export function PurchaseOrderDetailPage({
 
   if (!order) {
     return (
-      <div className="p-6 max-w-xl mx-auto my-12 text-center rounded-xl border border-border bg-card shadow-sm space-y-4">
+      <div className="p-6 max-w-xl mx-auto my-12 text-center rounded-2xl border border-border bg-card shadow-sm space-y-4">
         <div className="text-4xl">📦</div>
         <h2 className="text-lg font-bold text-foreground">Purchase Order Not Found</h2>
         <p className="text-sm text-muted-foreground">{error ?? 'The requested purchase order could not be located or has not been generated yet.'}</p>
@@ -193,15 +214,15 @@ export function PurchaseOrderDetailPage({
           <button
             type="button"
             onClick={() => void load()}
-            className="rounded-md bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+            className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
           >
             ↻ Retry Loading
           </button>
           <Link
             to={role === 'buyer' ? '/purchase-orders' : '/supplier/purchase-orders'}
-            className="rounded-md border border-border bg-muted/40 px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition inline-flex items-center"
+            className="min-h-[44px] rounded-xl border border-border bg-muted/40 px-4 py-2 text-xs font-bold text-foreground hover:bg-muted transition inline-flex items-center mobile-touch-target"
           >
-            ← View Orders & Reports
+            ← View Orders &amp; Reports
           </Link>
         </div>
       </div>
@@ -254,8 +275,22 @@ export function PurchaseOrderDetailPage({
     return 13;
   })();
 
+  const currentFulfillmentChip = (() => {
+    if (order.status === 'COMPLETED' || order.isSettled || workOrder?.buyerAcceptedAt) {
+      return { label: '✅ Delivered & Accepted', class: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300' };
+    }
+    if ((workOrder?.progressPercent || 0) >= 50) {
+      return { label: '🚚 In Transit / Staged', class: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300' };
+    }
+    if ((workOrder?.progressPercent || 0) > 0 || order.status === 'ACCEPTED' || order.status === 'IN_PROGRESS') {
+      return { label: '🟡 In Production', class: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300' };
+    }
+    return { label: '⚪ Order Issued', class: 'bg-muted text-muted-foreground border-border' };
+  })();
+
   return (
-    <div className="zero-scroll-container p-3 max-w-full mx-auto w-full" data-testid="purchase-order-detail">
+    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden" data-testid="purchase-order-detail">
+      {/* 15-Step Linear Procurement Navigator */}
       <ProcurementStageNavigator
         currentLinearStep={activeLinearStep}
         currentStage={currentStage}
@@ -268,260 +303,275 @@ export function PurchaseOrderDetailPage({
         backToLabel="All Purchase Orders"
       />
 
-      {/* Header Bar */}
-      <div className="rounded-lg border bg-card px-3 py-2 shadow-2xs shrink-0 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="rounded-md bg-blue-100 dark:bg-blue-950/60 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
-            Step {activeLinearStep} / 15
-          </span>
-          <div className="min-w-0">
-            <h1 className="text-sm font-bold text-foreground truncate">{order.poNumber}</h1>
-            <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
-              Total: <span className="text-foreground font-bold font-mono">{formatMoney(order.totalAmount, order.currency)}</span> · Vendor: {order.supplierName || 'Awarded Vendor'}
+      {/* Screen 10 Hero Card: High-Impact Digital Purchase Order Details */}
+      <div className="mt-2 rounded-2xl border bg-card p-3.5 sm:p-5 shadow-sm space-y-3.5">
+        <div className="flex flex-wrap items-start justify-between gap-2 border-b pb-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-mono font-black text-foreground bg-muted px-2 py-0.5 rounded-md">
+                {order.poNumber}
+              </span>
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${currentFulfillmentChip.class}`}>
+                {currentFulfillmentChip.label}
+              </span>
+              <StatusBadge status={order.status} />
+            </div>
+            <h1 className="text-base sm:text-lg font-black text-foreground mt-1 truncate">
+              {order.rfqTitle || 'Commercial Purchase Order'}
+            </h1>
+            <p className="text-[11px] text-muted-foreground">
+              Issued {order.issuedAt ? new Date(order.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : new Date(order.createdAt).toLocaleDateString('en-IN')} · Direct Bilateral B2B Contract
             </p>
           </div>
+
+          {/* Value Display */}
+          <div className="text-left sm:text-right shrink-0 bg-primary/5 p-2.5 rounded-xl border border-primary/20">
+            <span className="text-[9px] uppercase font-bold text-muted-foreground block">
+              Total Order Commitment
+            </span>
+            <span className="text-lg sm:text-xl font-mono font-black text-primary">
+              {formatMoney(order.totalAmount, order.currency)}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="rounded border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted transition flex items-center gap-1 shadow-2xs"
-            title="Print or Save as PDF"
-            data-testid="print-po-button"
-          >
-            <span>🖨️</span>
-            <span className="hidden sm:inline">Print / PDF</span>
-          </button>
-          <StatusBadge status={order.status} />
+
+        {/* Bilateral Commercial Parties */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          {/* Buyer Entity */}
+          <div className="rounded-xl border bg-muted/10 p-3 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-extrabold text-muted-foreground">
+                Bill To (Buyer)
+              </span>
+              {order.buyerOrgType && (
+                <span className="text-[9px] uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                  {order.buyerOrgType}
+                </span>
+              )}
+            </div>
+            <p className="font-black text-foreground text-sm">{order.buyerOrgName || 'Buyer Organization'}</p>
+            <div className="flex items-center justify-between text-[11px] pt-0.5">
+              <span className="text-muted-foreground">GSTIN:</span>
+              <span className="font-mono font-bold text-primary">
+                {order.buyerGstin || <span className="text-muted-foreground font-normal italic">Unregistered / Exempt</span>}
+              </span>
+            </div>
+            {formatAddress(order.buyerAddress, order.buyerCity) && (
+              <p className="text-[10px] text-muted-foreground pt-1 border-t truncate">
+                Site: {formatAddress(order.buyerAddress, order.buyerCity)}
+              </p>
+            )}
+          </div>
+
+          {/* Awarded Supplier Entity */}
+          <div className="rounded-xl border bg-muted/10 p-3 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-extrabold text-muted-foreground">
+                Issued To (Awarded Vendor)
+              </span>
+              {order.supplierGstVerified && (
+                <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200">
+                  ✓ GST Verified
+                </span>
+              )}
+            </div>
+            <p className="font-black text-foreground text-sm">{order.supplierName || 'Awarded Vendor'}</p>
+            {order.supplierLegalName && (
+              <p className="text-[10px] text-muted-foreground truncate">Legal: {order.supplierLegalName}</p>
+            )}
+            <div className="flex items-center justify-between text-[11px] pt-0.5">
+              <span className="text-muted-foreground">Vendor GSTIN:</span>
+              <span className="font-mono font-bold text-foreground">
+                {order.supplierGstin || 'Unregistered'}
+              </span>
+            </div>
+            {(order.supplierPhone || order.supplierEmail) && (
+              <p className="text-[10px] text-muted-foreground pt-1 border-t truncate">
+                Contact: {order.supplierPhone || order.supplierEmail}
+              </p>
+            )}
+          </div>
         </div>
+
+        {/* PO Action Buttons (Acceptance / Status Update) */}
+        <PoActionButtons
+          status={order.status}
+          role={role}
+          onAction={(n) => void handlePoAction(n)}
+          disabled={busy}
+        />
       </div>
 
       {error && (
-        <div className="mt-1 rounded-md border border-red-300 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 p-2 text-xs text-red-700 dark:text-red-300 shrink-0">
-          {error}
+        <div className="mt-2 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-bold text-red-700 dark:text-red-300">
+          ⚠️ {error}
         </div>
       )}
+
       {success && (
-        <div className="mt-1 rounded-md border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 p-2 text-xs text-emerald-800 dark:text-emerald-300 shrink-0" data-testid="fulfillment-success">
+        <div className="mt-2 rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300" data-testid="fulfillment-success">
           {success}
         </div>
       )}
 
-      {/* Main Content Pane */}
-      <div className="zero-scroll-pane mt-2 pb-24 sm:pb-16 space-y-3">
-        {/* Direct Commercial Contract & GST Tax Compliance Parties */}
-        <div className="rounded-2xl border bg-card p-3.5 text-xs shadow-2xs space-y-3">
-          <div className="flex items-center justify-between border-b pb-2">
-            <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-              Direct Commercial Contract &amp; GST Compliance Parties
-            </span>
-            <span className="text-[10px] rounded-full bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 font-bold text-blue-700 dark:text-blue-300 border border-blue-200">
-              Direct B2B Contract
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3">
-            {/* Buyer Organization (Bill To / Issuer) */}
-            <div className="rounded-xl border bg-muted/10 p-3 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">Bill To (Buyer Organization)</span>
-                {order.buyerOrgType && (
-                  <span className="text-[9px] uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
-                    {order.buyerOrgType}
-                  </span>
-                )}
-              </div>
-              <p className="font-extrabold text-foreground text-sm">{order.buyerOrgName || 'Buyer Organization'}</p>
-              
-              <div className="pt-1 flex items-center justify-between text-[11px]">
-                <span className="text-muted-foreground font-semibold">Buyer GSTIN:</span>
-                <span className="font-mono font-bold text-primary">
-                  {order.buyerGstin ? order.buyerGstin : <span className="text-muted-foreground font-normal italic">Unregistered / Exempt</span>}
-                </span>
-              </div>
-              {order.buyerGstin && (
-                <div className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold">
-                  ✓ Eligible for GST Input Tax Credit (ITC)
-                </div>
-              )}
-
-              {(order.buyerContactPerson || order.buyerContactPhone || order.buyerContactEmail) && (
-                <div className="text-[11px] text-muted-foreground pt-1 border-t mt-1 space-y-0.5">
-                  {order.buyerContactPerson && <div>Contact: <span className="text-foreground font-semibold">{order.buyerContactPerson}</span></div>}
-                  {order.buyerContactPhone && <div>Phone: <span className="text-foreground font-mono font-semibold">{order.buyerContactPhone}</span></div>}
-                  {order.buyerContactEmail && <div>Email: <span className="text-foreground">{order.buyerContactEmail}</span></div>}
-                </div>
-              )}
-
-              {formatAddress(order.buyerAddress, order.buyerCity) && (
-                <div className="text-[10px] text-muted-foreground pt-1 border-t mt-1">
-                  Delivery Site: <span className="text-foreground font-medium">{formatAddress(order.buyerAddress, order.buyerCity)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Awarded Supplier (Issued To / Vendor) */}
-            <div className="rounded-xl border bg-muted/10 p-3 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">Issued To (Awarded Vendor)</span>
-                {order.supplierGstVerified && (
-                  <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200">
-                    ✓ GST Verified
-                  </span>
-                )}
-              </div>
-              <p className="font-extrabold text-foreground text-sm">{order.supplierName || 'Awarded Vendor'}</p>
-              {order.supplierLegalName && (
-                <p className="text-[10px] text-muted-foreground">Legal: <span className="text-foreground">{order.supplierLegalName}</span></p>
-              )}
-
-              <div className="pt-1 flex items-center justify-between text-[11px]">
-                <span className="text-muted-foreground font-semibold">Vendor GSTIN:</span>
-                <span className="font-mono font-bold text-foreground">
-                  {order.supplierGstin || 'Unregistered'}
-                </span>
-              </div>
-
-              {(order.supplierPhone || order.supplierEmail) && (
-                <div className="text-[11px] text-muted-foreground pt-1 border-t mt-1 space-y-0.5">
-                  {order.supplierPhone && <div>Phone: <span className="text-foreground font-mono font-semibold">{order.supplierPhone}</span></div>}
-                  {order.supplierEmail && <div>Email: <span className="text-foreground">{order.supplierEmail}</span></div>}
-                </div>
-              )}
-
-              <div className="text-[10px] text-muted-foreground pt-1 border-t mt-1">
-                Requirement: <span className="text-foreground font-medium">{order.rfqTitle}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl bg-muted/30 border p-2.5 text-[10px] text-muted-foreground flex items-center justify-between gap-2">
-            <span>
-              <strong>Direct Contract:</strong> Binding commercial contract between {order.buyerOrgName || 'Buyer'} and {order.supplierName || 'Supplier'}.
-            </span>
-            <span className="font-semibold text-primary shrink-0">GST Verified ✓</span>
-          </div>
+      {showShareToast && (
+        <div className="mt-2 rounded-xl border border-blue-300 bg-blue-50 dark:bg-blue-950/40 p-2.5 text-xs font-bold text-blue-800 dark:text-blue-300">
+          ✓ Digital PO summary copied to clipboard for sharing!
         </div>
+      )}
 
-        {/* PO Lifecycle Actions */}
-        <div className="rounded-2xl border bg-card p-3 shadow-2xs">
-          <PoActionButtons
-            status={order.status}
-            role={role}
-            onAction={(n) => void handlePoAction(n)}
-            disabled={busy}
-          />
-        </div>
+      {/* Screen Tabs for 10/11/12/13 Multi-Screen Scopes */}
+      <div className="mt-3 flex items-center gap-1 rounded-xl bg-muted/40 p-1 border overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab('OVERVIEW')}
+          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+            activeTab === 'OVERVIEW'
+              ? 'bg-card text-foreground shadow-xs'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          📄 Screen 10: PO &amp; Ledger
+        </button>
 
-        {/* Auto Create Work Order if missing */}
-        {!workOrder && (
-          <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2">
-            <p className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">Work Execution &amp; Progress</p>
-            <p className="text-xs text-muted-foreground">
-              Track milestone progress (0% → 100%) and mutual inspection acknowledgment.
-            </p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleCreateWorkOrder()}
-              className="mt-1 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition"
-            >
-              {busy ? 'Initializing…' : 'Initialize Work Order Progress →'}
-            </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('MILESTONES')}
+          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+            activeTab === 'MILESTONES'
+              ? 'bg-card text-foreground shadow-xs'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🛠️ Screen 11: Milestones ({workOrder?.progressPercent || 0}%)
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('INVOICE')}
+          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+            activeTab === 'INVOICE'
+              ? 'bg-card text-foreground shadow-xs'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🧾 Screen 12: Invoice
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('PAYMENT')}
+          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+            activeTab === 'PAYMENT'
+              ? 'bg-card text-foreground shadow-xs'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          💳 Screen 13: Escrow
+        </button>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="mt-3 space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+        {/* TAB 1: OVERVIEW & LEDGER */}
+        {activeTab === 'OVERVIEW' && (
+          <div className="space-y-4">
+            {/* Auto Create Work Order if missing */}
+            {!workOrder && (
+              <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2">
+                <p className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">Work Execution &amp; Progress</p>
+                <p className="text-xs text-muted-foreground">
+                  Initialize milestone progress tracking (0% → 100%) and mutual inspection acknowledgment.
+                </p>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleCreateWorkOrder()}
+                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
+                >
+                  {busy ? 'Initializing…' : 'Initialize Work Order Progress →'}
+                </button>
+              </div>
+            )}
+
+            {workOrder && (
+              <SupplierMilestoneStepper
+                workOrder={workOrder}
+                totalAmount={order.totalAmount}
+                currency={order.currency}
+                role={role}
+                onUpdateProgress={handleProgress}
+                busy={busy}
+              />
+            )}
+
+            {workOrder && (
+              <DeliveryInspectionPanel
+                workOrder={workOrder}
+                role={role}
+                onAccepted={() => void load()}
+              />
+            )}
+
+            {workOrder && (
+              <div id="invoicing-section">
+                <InvoicePaymentPanel
+                  workOrderId={workOrder.id}
+                  supplierId={order.supplierId}
+                  role={role}
+                  poAmount={order.totalAmount}
+                  deliveryAccepted={Boolean(workOrder.buyerAcceptedAt)}
+                  onUpdated={() => void load()}
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {/* Work Order & 2-Way Progress Tracking */}
-        {workOrder && (
-          <section className="rounded-2xl border bg-card p-3.5 shadow-2xs space-y-3" data-testid="work-order-section">
-            <div className="flex items-center justify-between border-b pb-2">
-              <h2 className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">Work Execution &amp; Milestones</h2>
-              <span className="text-[10px] text-muted-foreground font-semibold">{workOrder.title}</span>
-            </div>
-
-            <div className="rounded-xl border bg-muted/20 p-3 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={workOrder.status} />
-                  <span className="text-xs font-bold text-foreground font-mono">
-                    {workOrder.progressPercent}% Complete
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground font-semibold">
-                  {workOrder.progressPercent === 100
-                    ? workOrder.buyerAcceptedAt
-                      ? '✓ 100% Complete'
-                      : '100% Reported · Awaiting Sign-off'
-                    : 'Milestone In Progress'}
-                </span>
+        {/* TAB 2: MILESTONES (SCREEN 11 FOCUS) */}
+        {activeTab === 'MILESTONES' && (
+          <div className="space-y-4">
+            {!workOrder ? (
+              <div className="rounded-2xl border bg-card p-4 text-center space-y-2">
+                <p className="text-xs text-muted-foreground">Work Order execution not yet initialized.</p>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleCreateWorkOrder()}
+                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
+                >
+                  Initialize Milestones →
+                </button>
               </div>
-
-              <div className="h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700 border">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    workOrder.progressPercent >= 100
-                      ? 'bg-emerald-600'
-                      : workOrder.progressPercent >= 75
-                      ? 'bg-lime-500'
-                      : workOrder.progressPercent >= 50
-                      ? 'bg-blue-500'
-                      : workOrder.progressPercent >= 25
-                      ? 'bg-yellow-400'
-                      : 'bg-slate-300'
-                  }`}
-                  style={{ width: `${workOrder.progressPercent}%` }}
+            ) : (
+              <>
+                <SupplierMilestoneStepper
+                  workOrder={workOrder}
+                  totalAmount={order.totalAmount}
+                  currency={order.currency}
+                  role={role}
+                  onUpdateProgress={handleProgress}
+                  busy={busy}
                 />
+
+                <DeliveryInspectionPanel
+                  workOrder={workOrder}
+                  role={role}
+                  onAccepted={() => void load()}
+                />
+              </>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: INVOICE (SCREEN 12 FOCUS) */}
+        {activeTab === 'INVOICE' && (
+          <div>
+            {!workOrder ? (
+              <div className="rounded-2xl border bg-card p-4 text-center text-xs text-muted-foreground">
+                Please initialize milestones to access invoicing.
               </div>
-
-              {/* Supplier Milestone Update Controls */}
-              {role === 'supplier' && workOrder.status !== 'COMPLETED' && (
-                <div className="pt-2 border-t flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Update:</span>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void handleProgress(25)}
-                    className="rounded-lg border border-yellow-400 bg-yellow-50 px-2.5 py-1 text-[10px] font-bold text-yellow-900 shadow-2xs hover:bg-yellow-100 disabled:opacity-50"
-                  >
-                    25%
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void handleProgress(50)}
-                    className="rounded-lg border border-blue-400 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-900 shadow-2xs hover:bg-blue-100 disabled:opacity-50"
-                  >
-                    50%
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void handleProgress(75)}
-                    className="rounded-lg border border-lime-500 bg-lime-50 px-2.5 py-1 text-[10px] font-bold text-lime-900 shadow-2xs hover:bg-lime-100 disabled:opacity-50"
-                  >
-                    75%
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void handleProgress(100)}
-                    className="rounded-lg bg-emerald-800 px-3 py-1 text-[10px] font-bold text-white shadow-2xs hover:bg-emerald-900 disabled:opacity-50"
-                  >
-                    ✓ 100% Delivered
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Delivery & Inspection Panel */}
-            <DeliveryInspectionPanel
-              workOrder={workOrder}
-              role={role}
-              onAccepted={() => void load()}
-            />
-
-            {/* Invoicing & Settlement Panel */}
-            <div id="invoicing-section">
+            ) : (
               <InvoicePaymentPanel
                 workOrderId={workOrder.id}
                 supplierId={order.supplierId}
@@ -530,9 +580,72 @@ export function PurchaseOrderDetailPage({
                 deliveryAccepted={Boolean(workOrder.buyerAcceptedAt)}
                 onUpdated={() => void load()}
               />
-            </div>
-          </section>
+            )}
+          </div>
         )}
+
+        {/* TAB 4: PAYMENT (SCREEN 13 FOCUS) */}
+        {activeTab === 'PAYMENT' && (
+          <div>
+            {!workOrder ? (
+              <div className="rounded-2xl border bg-card p-4 text-center text-xs text-muted-foreground">
+                Please initialize milestones to access payment settlement.
+              </div>
+            ) : (
+              <InvoicePaymentPanel
+                workOrderId={workOrder.id}
+                supplierId={order.supplierId}
+                role={role}
+                poAmount={order.totalAmount}
+                deliveryAccepted={Boolean(workOrder.buyerAcceptedAt)}
+                onUpdated={() => void load()}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Screen 10 Sticky Bottom Bar: [ 📥 Download PO / Share ] & [ Update Milestone Progress ] */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          {/* Left: Summary Mini Pill */}
+          <div className="min-w-0 hidden sm:block">
+            <span className="text-[10px] font-bold text-muted-foreground block truncate">
+              {order.poNumber} · {order.supplierName || 'Awarded Vendor'}
+            </span>
+            <span className="font-mono font-black text-xs text-foreground">
+              {formatMoney(order.totalAmount, order.currency)}
+            </span>
+          </div>
+
+          {/* Action Button Pair with Touch Targets >= 44px */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleSharePo}
+              className="flex-1 sm:flex-initial min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-extrabold text-foreground shadow-xs hover:bg-muted active:scale-98 transition mobile-touch-target"
+              title="Share PO Details"
+            >
+              <span>📥</span>
+              <span>Download / Share</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!workOrder) {
+                  void handleCreateWorkOrder();
+                } else {
+                  setActiveTab('MILESTONES');
+                }
+              }}
+              className="flex-1 sm:flex-initial min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
+            >
+              <span>⚡</span>
+              <span>Update Milestones</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { formatDateTimeIST } from '@/lib/date-utils';
 import { fetchCurrentProfile } from '@/features/auth/user-role';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
@@ -29,15 +29,16 @@ import {
   type VotingSummary,
 } from '../types/governance';
 
-const VOTE_REASON_PRESETS = [
-  'Optimal price-to-quality ratio within fair market benchmark',
-  'Fastest turnaround & guaranteed delivery timeline',
-  'Superior warranty terms & post-execution support',
-  'Fully compliant with all technical specifications & quality criteria',
-  'Most competitive commercial pricing with high cost efficiency',
+const RATIONALE_CHIPS = [
+  { id: 'optimal_value', label: '⭐ Optimal Value', text: 'Optimal price-to-quality ratio within fair market benchmark' },
+  { id: 'superior_warranty', label: '🛡️ Superior Warranty', text: 'Superior warranty terms & post-execution support' },
+  { id: 'fastest_delivery', label: '⚡ Fastest Delivery', text: 'Fastest turnaround & guaranteed delivery timeline' },
+  { id: 'verified_track_record', label: '✓ Verified Track Record', text: 'Verified track record with consistent execution performance' },
+  { id: 'compliant_spec', label: '⚙️ Compliant Spec', text: 'Fully compliant with all technical specifications & quality criteria' },
 ];
 
 export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlQuoteId = searchParams.get('quote') || searchParams.get('quoteId');
 
@@ -58,12 +59,20 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showTallyBreakdown, setShowTallyBreakdown] = useState(false);
+  const [showAuditLog, setShowAuditLog] = useState(false);
 
   const handleSelectQuote = (quoteId: string) => {
     setSelectedQuote(quoteId);
     if (myVote && quoteId !== myVote.recommendedQuoteId) {
       setIsRevising(true);
     }
+  };
+
+  const toggleRationaleChip = (chipText: string) => {
+    setSelectedReasons((prev) =>
+      prev.includes(chipText) ? prev.filter((r) => r !== chipText) : [...prev, chipText],
+    );
   };
 
   const load = useCallback(async () => {
@@ -91,7 +100,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       if (quotesRes.ok) setQuotes(fetchedQuotes);
       if (tallyRes.ok) setTally(tallyRes.tally);
       if (summaryRes.ok) setSummary(summaryRes.summary);
-      
+
       if (mineRes.ok && mineRes.vote) {
         setMyVote(mineRes.vote);
         setSelectedQuote(urlQuoteId || mineRes.vote.recommendedQuoteId || '');
@@ -114,12 +123,28 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
   const votingOpen = summary?.votingOpen ?? true;
   const liveVoteIds = currentVoteIds(votes);
   const hasReason = selectedReasons.length > 0 || Boolean(comment.trim());
-  const isSoloBuyer = myVote?.buyerType === 'INDIVIDUAL' || (summary?.assignedMembers != null && summary.assignedMembers <= 1);
+  const isSoloBuyer =
+    myVote?.buyerType === 'INDIVIDUAL' ||
+    (summary?.assignedMembers != null && summary.assignedMembers <= 1);
+
+  // Quorum Metrics
+  const assigned = summary?.assignedMembers ?? (isSoloBuyer ? 1 : 3);
+  const votedCount = summary?.membersVoted ?? (myVote ? 1 : 0);
+  const quorumRequired = summary?.quorumRequired ?? (isSoloBuyer ? 1 : Math.ceil(assigned / 2));
+  const quorumMet = summary?.quorumMet ?? (votedCount >= quorumRequired);
+  const quorumPercent = Math.min(100, Math.round((votedCount / (assigned || 1)) * 100));
+
+  const selectedCandidate = quotes.find((q) => q.quoteId === selectedQuote);
 
   async function handleCastVote() {
     if (!selectedQuote || !profileId) return;
     if (!coiConfirmed) {
-      setError('Please confirm that you have no conflict of interest before voting.');
+      setError('Please confirm that you have no conflict of interest before proceeding.');
+      return;
+    }
+
+    if (!hasReason) {
+      setError('Please select at least 1 rationale chip or provide a justification note.');
       return;
     }
 
@@ -127,7 +152,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
     setError(null);
     setSuccess(null);
 
-    // Auto-record COI if not already recorded
+    // Auto-record COI declaration if missing
     if (!myCoi) {
       const coiRes = await declareCoi(rfqId, profileId, 'DECLARED_NONE');
       if (!coiRes.ok) {
@@ -135,12 +160,6 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
         setError(coiRes.error);
         return;
       }
-    }
-
-    const hasReason = selectedReasons.length > 0 || Boolean(comment.trim());
-    if (!hasReason) {
-      setError('Please select at least one reason / recommendation or enter a justification note before submitting your vote.');
-      return;
     }
 
     const combinedJustification = [...selectedReasons, comment.trim()].filter(Boolean).join('. ');
@@ -157,464 +176,610 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
     setSuccess(
       result.revised
         ? 'Your evaluation decision has been updated.'
-        : 'Evaluation decision successfully recorded!',
+        : isSoloBuyer
+        ? 'Winning candidate selected & recorded. Proceeding to Award!'
+        : 'Evaluation vote successfully recorded!',
     );
     setComment('');
     setSelectedReasons([]);
     setIsRevising(false);
     await load();
+
+    if (isSoloBuyer) {
+      // Direct fast-track to award for solo buyers
+      navigate(`/rfq/${rfqId}/award`);
+    }
   }
 
-  if (isLoading) return <p className="p-8 text-muted-foreground">Loading Evaluation &amp; Voting Room…</p>;
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center p-6 text-sm text-muted-foreground">
+        <div className="text-center space-y-2">
+          <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p>Loading Committee Decision Room…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="zero-scroll-container p-2.5 max-w-full mx-auto w-full" data-testid="committee-vote-page">
+    <div
+      className="zero-scroll-container min-h-screen bg-background text-foreground overflow-x-hidden max-w-full pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]"
+      data-testid="committee-vote-page"
+    >
       <ProcurementStageNavigator
         currentLinearStep={myVote ? 8 : 7}
         currentStage="EVALUATING"
-        orderTitle={isSoloBuyer ? "Buyer Evaluation & Decision" : "Committee Voting Room & Cast Your Vote"}
+        orderTitle={isSoloBuyer ? 'Buyer Decision Room' : 'Committee Decision Room & Ballot'}
         orderReference={`RFQ-${rfqId.slice(0, 8)}`}
         rfqId={rfqId}
         role="buyer"
         backToUrl={`/rfq/${rfqId}/evaluation`}
-        backToLabel="Step 6: Fair Comparison"
+        backToLabel="Fair Comparison"
       />
 
-      {/* Header & Quick Action Row */}
-      <div className="rounded-lg border bg-card px-3 py-2 shadow-2xs shrink-0 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="rounded-md bg-cyan-100 dark:bg-cyan-950/60 px-2 py-0.5 text-[10px] font-bold text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 shrink-0">
-            {myVote ? 'Step 8 / 15' : 'Step 7 / 15'}
-          </span>
-          <div className="min-w-0">
-            <h1 className="text-sm font-bold text-foreground truncate">
+      <div className="px-3.5 sm:px-6 max-w-4xl mx-auto w-full space-y-4 pt-2">
+        {/* Header Bar */}
+        <div className="rounded-2xl border bg-card/90 backdrop-blur-xs p-3.5 sm:p-4 shadow-2xs space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-cyan-100 dark:bg-cyan-950/70 px-2.5 py-0.5 text-[11px] font-bold text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
+                Screen 8 · Step {myVote ? '8' : '7'} of 15
+              </span>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
+                  isSoloBuyer
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                    : 'bg-primary/10 border-primary/30 text-primary'
+                }`}
+              >
+                {isSoloBuyer ? '⚡ Direct Solo Authority' : '🏛️ Multi-Member Governance'}
+              </span>
+            </div>
+
+            {(summary?.quorumMet || votes.length > 0 || myVote) && (
+              <Link
+                to={`/rfq/${rfqId}/award`}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 dark:bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 active:scale-[0.98] transition min-h-[44px]"
+                data-testid="proceed-to-award-button"
+              >
+                <span>Proceed to Award (Step 9)</span>
+                <span>→</span>
+              </Link>
+            )}
+          </div>
+
+          <div>
+            <h1 className="text-base sm:text-lg font-black tracking-tight text-foreground">
               {isSoloBuyer
-                ? (myVote ? 'Confirmed Winning Supplier (Selected)' : 'Direct Decision & Winning Supplier Selection')
-                : (myVote ? 'Cast / Recast Your Vote (Ballot Active)' : 'Committee Voting Room & COI Clearance')}
+                ? 'Select Winning Candidate & Authorize Award'
+                : 'Committee Decision Room & Voting Ballot'}
             </h1>
-            <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
-              {isSoloBuyer
-                ? 'Single-approver governance · Select winning quote on evaluated merit and proceed to Award'
-                : 'Sealed anonymous evaluation · Committee quorum tracking · Mandatory Conflict of Interest (COI) clearance'}
+            <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+              Core Decision: <span className="font-semibold text-foreground">&ldquo;Which offer should I support and why?&rdquo;</span> — Evaluate shortlisted candidates on merit, TAT, warranty, and commercial value.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {isSoloBuyer ? (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px]">
-              <span className="text-emerald-800 dark:text-emerald-300 font-bold">
-                {myVote ? '✓ Decision Recorded' : '⚡ Direct Authority'}
+        {/* Live Quorum Meter (Visual Progress Bar) */}
+        {!isSoloBuyer && (
+          <section
+            aria-label="Quorum Status"
+            className="rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-2.5"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">🗳️</span>
+                <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                  Live Quorum Meter
+                </span>
+              </div>
+              <span
+                className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                  quorumMet
+                    ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                    : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                }`}
+              >
+                {quorumMet ? '✓ Quorum Reached' : `${quorumRequired - votedCount} more vote(s) needed`}
               </span>
             </div>
-          ) : (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 border text-[11px]">
-              <span className="text-muted-foreground font-medium">Quorum:</span>
-              <span className={`font-bold ${summary?.quorumMet ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
-                {summary?.membersVoted ?? 0}/{summary?.assignedMembers ?? 0} {summary?.quorumMet ? '(Met)' : `(Need ${summary?.quorumRequired ?? 1})`}
+
+            {/* Visual Bar */}
+            <div className="space-y-1">
+              <div className="h-3 w-full rounded-full bg-muted/60 overflow-hidden p-0.5 border border-border/40">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    quorumMet ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-primary'
+                  }`}
+                  style={{ width: `${Math.max(8, quorumPercent)}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium pt-0.5">
+                <span>
+                  <strong>{votedCount} of {assigned}</strong> votes recorded
+                </span>
+                <span className="font-bold text-foreground">
+                  {quorumPercent}% Quorum reached
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/40 text-[11px]">
+              <span className="text-muted-foreground">
+                Quorum rule: Minimum <strong>{quorumRequired}</strong> affirmative vote(s) required to unlock Award lock.
               </span>
+              <button
+                type="button"
+                onClick={() => setShowTallyBreakdown(!showTallyBreakdown)}
+                className="text-primary font-bold hover:underline py-1"
+              >
+                {showTallyBreakdown ? 'Hide Standings ▲' : 'View Standings Table ▼'}
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Alerts & Feedback */}
+        {error && (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-300 bg-red-50/90 dark:bg-red-950/50 dark:border-red-900 p-3 text-xs font-semibold text-red-800 dark:text-red-200 shadow-2xs"
+          >
+            {error}
+          </div>
+        )}
+        {success && (
+          <div
+            role="status"
+            className="rounded-xl border border-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/50 dark:border-emerald-900 p-3 text-xs font-semibold text-emerald-800 dark:text-emerald-200 shadow-2xs"
+            data-testid="governance-success"
+          >
+            {success}
+          </div>
+        )}
+
+        {/* Section 1: Candidate Comparison Cards (4-Pillar Metrics) */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <span>1. Shortlisted Candidates</span>
+                <span className="rounded-full bg-primary/10 text-primary px-2 py-0.2 text-[10px] font-bold">
+                  {quotes.length} Sealed Offers
+                </span>
+              </h2>
+              <p className="text-[11px] text-muted-foreground">
+                Ranked by Merit Score · Identity-protected prior to award confirmation
+              </p>
+            </div>
+            <span className="text-[10px] text-muted-foreground italic hidden sm:block">
+              Tap card to select candidate
+            </span>
+          </div>
+
+          <div className="grid gap-3 grid-cols-1">
+            {quotes.map((q, idx) => {
+              const isSelected = selectedQuote === q.quoteId;
+              const isMyVotedQuote = myVote?.recommendedQuoteId === q.quoteId;
+              const isTopRanked =
+                idx === 0 ||
+                (quotes[0]?.evaluationScore != null && q.evaluationScore === quotes[0]?.evaluationScore);
+              const scoreValue = q.evaluationScore != null ? (q.evaluationScore / 10).toFixed(1) : null;
+              const deliveryDisplay = q.deliveryDays ? `${q.deliveryDays} Days TAT` : 'Standard SLA';
+              const warrantyDisplay = q.warrantyMonths ? `${q.warrantyMonths} Months` : '12 Mo Standard';
+
+              return (
+                <div
+                  key={q.quoteId}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    if (!votingOpen) return;
+                    handleSelectQuote(q.quoteId);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelectQuote(q.quoteId);
+                    }
+                  }}
+                  className={`relative cursor-pointer rounded-2xl border p-4 transition-all duration-200 space-y-3 min-h-[44px] ${
+                    isSelected
+                      ? 'border-primary ring-2 ring-primary/40 bg-primary/5 shadow-md'
+                      : 'bg-card hover:border-slate-400 dark:hover:border-slate-600 shadow-2xs'
+                  }`}
+                >
+                  {/* Card Header & Badges */}
+                  <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
+                          isSelected
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-muted-foreground/40 bg-card text-muted-foreground'
+                        }`}
+                      >
+                        {isSelected ? '✓' : idx + 1}
+                      </div>
+                      <span className="font-bold text-foreground truncate text-sm">
+                        {q.anonymousLabel}
+                      </span>
+                      <span className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        🔒 Sealed
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isMyVotedQuote ? (
+                        <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-2.5 py-0.5 text-[10px] font-black">
+                          ✓ Your Vote
+                        </span>
+                      ) : isTopRanked ? (
+                        <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold">
+                          ⭐ Top Merit
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* 4-Pillar Metrics Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-muted/20 dark:bg-muted/10 p-2.5 rounded-xl border border-border/50">
+                    {/* Pillar 1: Total Price */}
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block tracking-wide">
+                        1. Total Price
+                      </span>
+                      <span className="font-mono font-black text-foreground text-sm sm:text-base block">
+                        ₹{q.totalCost.toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground">
+                        {q.totalCost === Math.min(...quotes.map((item) => item.totalCost)) ? 'Lowest rate' : 'All-inclusive'}
+                      </span>
+                    </div>
+
+                    {/* Pillar 2: Delivery TAT */}
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block tracking-wide">
+                        2. Delivery TAT
+                      </span>
+                      <span className="font-bold text-foreground text-xs sm:text-sm flex items-center gap-1">
+                        <span>⚡</span>
+                        <span>{deliveryDisplay}</span>
+                      </span>
+                      <span className="text-[9px] text-muted-foreground">Turnaround SLA</span>
+                    </div>
+
+                    {/* Pillar 3: Warranty */}
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block tracking-wide">
+                        3. Warranty
+                      </span>
+                      <span className="font-bold text-foreground text-xs sm:text-sm flex items-center gap-1">
+                        <span>🛡️</span>
+                        <span>{warrantyDisplay}</span>
+                      </span>
+                      <span className="text-[9px] text-muted-foreground">Post-work cover</span>
+                    </div>
+
+                    {/* Pillar 4: Merit Score */}
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block tracking-wide">
+                        4. Merit Score
+                      </span>
+                      <span className="font-bold text-foreground text-xs sm:text-sm flex items-center gap-1">
+                        <span className="text-amber-500">★</span>
+                        <span>{scoreValue ? `${scoreValue}/10` : 'Evaluated'}</span>
+                      </span>
+                      <span className="text-[9px] text-muted-foreground">Objective weighted</span>
+                    </div>
+                  </div>
+
+                  {/* Card Bottom Selection Control */}
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {isSelected ? '✓ Candidate highlighted for your ballot' : 'Tap to choose this candidate'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectQuote(q.quoteId);
+                      }}
+                      className={`rounded-xl px-3 py-1.5 text-xs font-bold transition min-h-[44px] min-w-[120px] ${
+                        isSelected
+                          ? 'bg-primary text-primary-foreground shadow-xs'
+                          : 'border border-primary/40 text-primary hover:bg-primary/10'
+                      }`}
+                    >
+                      {isSelected ? '✓ Selected' : 'Select'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Section 2: Voting Ballot & 1-Tap Rationale Chips */}
+        <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3.5">
+          {myVote && !isRevising ? (
+            <div className="space-y-3" data-testid="my-vote">
+              <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    Recorded Evaluation Ballot
+                  </span>
+                  <h3 className="text-sm font-bold text-foreground">
+                    {formatVoteChoice(myVote.choice)} — {myVote.recommendedAlias ?? 'Selected Candidate'}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground">
+                    Weight: {formatVotingPower(myVote.votingPower)} · Cast: {formatDateTimeIST(myVote.castAt)}
+                  </p>
+                </div>
+                {votingOpen && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRevising(true);
+                      setComment('');
+                    }}
+                    className="rounded-xl border border-primary/40 bg-card px-3 py-2 text-xs font-bold text-primary hover:bg-muted min-h-[44px]"
+                  >
+                    ↺ Revise Vote
+                  </button>
+                )}
+              </div>
+
+              {myVote.comment && (
+                <div className="rounded-xl border bg-muted/20 p-3 text-xs text-muted-foreground">
+                  <span className="font-bold text-foreground block mb-0.5">Recorded Rationale:</span>
+                  &ldquo;{myVote.comment}&rdquo;
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3.5" data-testid="vote-form">
+              <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                <div>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                    {myVote ? '↺ Revise Your Decision Ballot' : '2. 1-Tap Decision Ballot & Justification'}
+                  </h2>
+                  <p className="text-[11px] text-muted-foreground">
+                    Select 1-tap rationale chips below to justify your recommendation on record.
+                  </p>
+                </div>
+                {myVote && (
+                  <span className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold">
+                    Revision Active
+                  </span>
+                )}
+              </div>
+
+              {/* Active Candidate Confirmation */}
+              <div className="rounded-xl border bg-muted/20 p-3 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground block">
+                  Chosen Recommendation:
+                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-black text-foreground">
+                    {selectedCandidate ? selectedCandidate.anonymousLabel : 'No candidate selected yet'}
+                  </span>
+                  {selectedCandidate && (
+                    <span className="font-mono font-bold text-foreground text-xs">
+                      ₹{selectedCandidate.totalCost.toLocaleString('en-IN')}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 1-Tap Rationale Chips */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-foreground">
+                    1-Tap Recommendation Rationale <span className="text-red-500 font-bold">*</span>
+                  </label>
+                  <span className="text-[10px] text-muted-foreground font-semibold">
+                    {selectedReasons.length > 0 ? `${selectedReasons.length} selected` : 'Required'}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {RATIONALE_CHIPS.map((chip) => {
+                    const isSelected = selectedReasons.includes(chip.text);
+                    return (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={() => toggleRationaleChip(chip.text)}
+                        className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 min-h-[44px] ${
+                          isSelected
+                            ? 'bg-primary text-primary-foreground shadow-xs font-bold ring-2 ring-primary/40'
+                            : 'border border-border bg-card text-foreground hover:bg-muted/50'
+                        }`}
+                      >
+                        <span>{chip.label}</span>
+                        {isSelected && <span>✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Custom Justification Notes */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-muted-foreground block">
+                  Additional Justification Commentary (Optional):
+                </label>
+                <textarea
+                  className="w-full rounded-xl border border-input bg-card p-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  placeholder="Add specific observations regarding delivery TAT, compliance, or benchmark comparison..."
+                  rows={2}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                />
+              </div>
+
+              {/* COI Affirmation Checkbox (≥44px Touch Target) */}
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/80 bg-muted/20 p-3 text-xs text-foreground transition hover:bg-muted/40 min-h-[44px]">
+                <input
+                  type="checkbox"
+                  checked={coiConfirmed}
+                  onChange={(e) => setCoiConfirmed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded text-primary focus:ring-primary"
+                />
+                <span className="leading-snug text-[11px]">
+                  <strong>Conflict of Interest (COI) Affirmation:</strong> I declare and certify that I have no personal, commercial, or relational conflict of interest with any participating supplier in this RFQ.
+                </span>
+              </label>
+
+              {!hasReason && (
+                <div
+                  className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2.5 text-[11px] text-amber-800 dark:text-amber-200"
+                  data-testid="reason-required-warning"
+                >
+                  ⚠️ <strong>Rationale Required:</strong> Please tap at least one rationale chip above or enter notes before submitting your vote.
+                </div>
+              )}
             </div>
           )}
+        </section>
 
-          {(summary?.quorumMet || votes.length > 0 || myVote) ? (
-            <Link
-              to={`/rfq/${rfqId}/award`}
-              className="inline-flex items-center gap-1 rounded bg-emerald-700 px-3 py-1 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 transition"
-              data-testid="proceed-to-award-button"
+        {/* Section 3: Tally & Audit Collapsible Standings */}
+        {showTallyBreakdown && (
+          <section
+            className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2 animate-in fade-in"
+            data-testid="tally-section"
+          >
+            <div className="flex items-center justify-between border-b pb-2">
+              <h2 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                3. Evaluation Standings &amp; Vote Tally
+              </h2>
+              <span className="text-[10px] text-muted-foreground">Live Weight Distribution</span>
+            </div>
+            <WeightedTallyTable tally={tally} summary={summary} highlightQuoteId={selectedQuote} />
+          </section>
+        )}
+
+        {/* Section 4: Decision & Revision Audit Log */}
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={() => setShowAuditLog(!showAuditLog)}
+            className="w-full flex items-center justify-between rounded-xl border bg-card p-3 text-xs font-bold text-muted-foreground hover:text-foreground transition min-h-[44px]"
+          >
+            <span>📜 View Full Decision Audit Trail ({votes.length} votes recorded)</span>
+            <span>{showAuditLog ? '▲' : '▼'}</span>
+          </button>
+
+          {showAuditLog && (
+            <section
+              className="mt-2 rounded-2xl border bg-card p-3.5 shadow-2xs space-y-2"
+              data-testid="votes-list"
             >
-              <span>Step 9: Award →</span>
-            </Link>
-          ) : (
-            <span className="text-[10px] text-muted-foreground border rounded px-2 py-1 bg-muted/20">
-              🔒 Step 9: Awaiting Decision
-            </span>
+              {votes.length === 0 ? (
+                <p className="text-xs text-muted-foreground p-2">No evaluation votes recorded yet.</p>
+              ) : (
+                <ul className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {votes.map((v) => {
+                    const superseded = !liveVoteIds.has(v.id);
+                    return (
+                      <li
+                        key={v.id}
+                        className={`rounded-xl border p-2.5 text-xs transition ${
+                          superseded
+                            ? 'border-dashed bg-muted/20 opacity-70'
+                            : 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/30'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-foreground">
+                            {v.voterName ?? v.profileId.slice(0, 8)} → {v.anonymousLabel ?? 'Candidate'}
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.2 text-[9px] font-black ${
+                              superseded
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}
+                          >
+                            {superseded ? 'Superseded' : '✓ Live Vote'}
+                          </span>
+                        </div>
+                        {v.comment && (
+                          <p className="mt-1 text-[11px] text-muted-foreground italic">
+                            &ldquo;{v.comment}&rdquo;
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
           )}
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/40 p-2 text-xs font-semibold text-red-700 dark:text-red-300 shrink-0 mt-1">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300 shrink-0 mt-1" data-testid="governance-success">
-          {success}
-        </div>
-      )}
-
-      {/* Main Content Pane */}
-      <div className="zero-scroll-pane mt-2 pb-24 sm:pb-16 space-y-3">
-        {/* Sealed Quotes to Evaluate */}
-        <div className="space-y-3">
-          {/* 1. Sealed Quotes to Evaluate */}
-          <section className="rounded-2xl border bg-card p-3.5 shadow-2xs space-y-2">
-            <div className="flex items-center justify-between pb-1">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">1. Sealed Quotes (Anonymized)</h2>
-              <span className="text-[10px] text-muted-foreground font-semibold">Sorted by Merit Score</span>
-            </div>
-
-            <div className="grid gap-2.5 grid-cols-1">
-              {quotes.map((q, idx) => {
-                const isSelected = selectedQuote === q.quoteId;
-                const isMyVotedQuote = myVote?.recommendedQuoteId === q.quoteId;
-                const isTopRecommended = idx === 0 || (quotes[0]?.evaluationScore != null && q.evaluationScore === quotes[0]?.evaluationScore);
-                const scoreDisplay = q.evaluationScore != null ? `${(q.evaluationScore / 10).toFixed(1)}/10` : null;
-
-                return (
-                  <div
-                    key={q.quoteId}
-                    onClick={() => {
-                      if (!votingOpen) return;
-                      handleSelectQuote(q.quoteId);
-                    }}
-                    className={`cursor-pointer rounded-2xl border p-3 text-xs transition space-y-2 ${
-                      isSelected
-                        ? 'border-primary ring-1 ring-primary/40 bg-primary/5 shadow-sm'
-                        : 'bg-card hover:border-slate-400'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pb-1.5 border-b border-border/50">
-                      <span className="flex items-center gap-1 text-primary font-bold">
-                        <span>🔒</span> Protected
-                      </span>
-                      {scoreDisplay && (
-                        <span className="font-bold text-foreground bg-muted px-1.5 py-0.5 rounded-md">
-                          ★ {scoreDisplay}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="font-bold text-foreground truncate text-sm">
-                        {q.anonymousLabel}
-                      </span>
-                      {isMyVotedQuote ? (
-                        <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 px-2 py-0.5 text-[9px] font-bold">
-                          Live Vote
-                        </span>
-                      ) : isTopRecommended ? (
-                        <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[9px] font-bold">
-                          ⭐ Top
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] bg-muted/20 p-2 rounded-xl border border-border/40">
-                      <div>
-                        <span className="text-muted-foreground text-[10px] block font-semibold">Total Price:</span>
-                        <strong className="font-mono font-black text-foreground text-sm">
-                          ₹{q.totalCost.toLocaleString('en-IN')}
-                        </strong>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-muted-foreground text-[10px] block font-semibold">Turnaround:</span>
-                        <span className="font-bold text-foreground">{q.deliveryDays ? `🚚 ${q.deliveryDays} days` : 'Standard'}</span>
-                      </div>
-                    </div>
-
-                    {votingOpen && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectQuote(q.quoteId);
-                        }}
-                        className={`w-full rounded-xl py-2 text-xs font-bold transition ${
-                          isSelected
-                            ? 'bg-primary text-primary-foreground shadow-2xs'
-                            : 'border border-primary/30 text-primary hover:bg-primary/10'
-                        }`}
-                      >
-                        {isSelected ? '✓ Selected Candidate' : 'Select for Vote'}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* 2. Your Vote & Ballot Section */}
-          <section className="rounded-2xl border bg-card p-3.5 shadow-2xs space-y-2">
-            {myVote && !isRevising ? (
-              <div className="space-y-2" data-testid="my-vote">
-                <div className="flex items-center justify-between gap-2 border-b pb-2">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                      Your Current Cast Vote
-                    </span>
-                    <p className="text-xs font-bold text-foreground">
-                      {formatVoteChoice(myVote.choice)} — {myVote.recommendedAlias ?? 'Selected Supplier'}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Power: {formatVotingPower(myVote.votingPower)} · Cast: {formatDateTimeIST(myVote.castAt)}
-                    </p>
-                  </div>
-                  {votingOpen ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsRevising(true);
-                        setComment('');
-                      }}
-                      className="rounded border bg-card px-2.5 py-1 text-xs font-semibold text-primary hover:bg-muted"
-                    >
-                      ↺ Revise Vote
-                    </button>
-                  ) : (
-                    <span className="rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                      🔒 Locked
-                    </span>
-                  )}
-                </div>
-                {myVote.comment && (
-                  <div className="rounded border bg-card p-2 text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">Justification: </span>
-                    &ldquo;{myVote.comment}&rdquo;
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-2" data-testid="vote-form">
-                <div className="flex items-center justify-between gap-2 border-b pb-1.5">
-                  <h2 className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">
-                    {myVote ? '↺ Revise Your Vote' : '2. Cast Your Evaluation Vote'}
-                  </h2>
-                  {myVote && (
-                    <span className="rounded bg-amber-100 text-amber-800 px-1.5 py-0.2 text-[9px] font-bold">
-                      Revision Mode
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-foreground mb-1">
-                      Recommended Supplier:
-                    </label>
-                    <select
-                      value={selectedQuote}
-                      onChange={(e) => {
-                        setSelectedQuote(e.target.value);
-                        if (myVote && e.target.value !== myVote.recommendedQuoteId) {
-                          setIsRevising(true);
-                        }
-                      }}
-                      className="w-full rounded border px-2 py-1 text-xs bg-card font-medium text-foreground focus:border-primary focus:outline-none"
-                    >
-                      {!selectedQuote && (
-                        <option value="" disabled>-- Select Recommended Supplier --</option>
-                      )}
-                      {quotes.map((q) => (
-                        <option key={q.quoteId} value={q.quoteId}>
-                          {q.anonymousLabel} — ₹{q.totalCost.toLocaleString('en-IN')} (TAT: {q.deliveryDays ? `${q.deliveryDays}d` : 'Std'}) {myVote?.recommendedQuoteId === q.quoteId ? '★ [Current Vote]' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-[11px] font-semibold text-foreground">
-                        Reason / Justification <span className="text-red-600 dark:text-red-400 font-bold">*</span>:
-                      </label>
-                      <span className="text-[10px] text-muted-foreground">
-                        {selectedReasons.length > 0 ? `${selectedReasons.length} selected` : 'Selection required'}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-1 mb-1.5">
-                      {VOTE_REASON_PRESETS.map((preset) => {
-                        const isChecked = selectedReasons.includes(preset);
-                        return (
-                          <label
-                            key={preset}
-                            className={`flex items-start gap-1.5 rounded border p-1 text-[10px] cursor-pointer transition ${
-                              isChecked
-                                ? 'border-primary bg-primary/5 font-medium text-foreground'
-                                : 'border-muted bg-card text-muted-foreground hover:bg-muted/30'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedReasons((prev) => [...prev, preset]);
-                                } else {
-                                  setSelectedReasons((prev) => prev.filter((r) => r !== preset));
-                                }
-                              }}
-                              className="mt-0.5 h-3 w-3 rounded text-primary"
-                            />
-                            <span className="leading-tight">{preset}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-
-                    <textarea
-                      className="w-full rounded border p-1.5 text-xs focus:border-primary focus:outline-none"
-                      placeholder="Additional custom justification notes (optional)..."
-                      rows={2}
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                    />
-                  </div>
-
-                  <label className="flex cursor-pointer items-start gap-1.5 text-[10px] text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={coiConfirmed}
-                      onChange={(e) => setCoiConfirmed(e.target.checked)}
-                      className="mt-0.5 h-3.5 w-3.5 rounded text-primary"
-                    />
-                    <span>
-                      <strong>COI Declaration:</strong> I declare that I have no conflict of interest with any participating supplier.
-                    </span>
-                  </label>
-
-                  {!hasReason && (
-                    <div className="rounded border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-1.5 text-[10px] text-amber-800 dark:text-amber-200" data-testid="reason-required-warning">
-                      ⚠️ <strong>Reason Required:</strong> Select at least one preset reason above or enter custom justification.
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      type="button"
-                      disabled={busy || !selectedQuote || !coiConfirmed || !hasReason}
-                      onClick={() => void handleCastVote()}
-                      className="rounded bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition flex items-center gap-1.5"
-                      data-testid="submit-vote-button"
-                    >
-                      {busy
-                        ? 'Recording…'
-                        : isSoloBuyer
-                        ? (myVote ? '✓ Update Selected Supplier' : '✓ Confirm & Approve Winning Supplier →')
-                        : (myVote ? '✓ Confirm Revised Vote' : '🗳️ Submit Vote')}
-                    </button>
-                    {myVote && (
-                      <Link
-                        to={`/rfq/${rfqId}/award`}
-                        className="rounded bg-emerald-700 px-3 py-2 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 transition flex items-center gap-1"
-                      >
-                        <span>Proceed to Award (Step 9) →</span>
-                      </Link>
-                    )}
-                    {myVote && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsRevising(false);
-                          setSelectedQuote(myVote.recommendedQuoteId ?? '');
-                        }}
-                        className="rounded border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
-
-        {/* Right Column (5 cols): Standings & Audit Log */}
-        <div className="lg:col-span-5 space-y-2">
-          {/* Evaluation Standings Tally */}
-          <section className="rounded-lg border bg-card p-2.5 shadow-2xs" data-testid="tally-section">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-              3. Evaluation Standings &amp; Tally
-            </h2>
-            <WeightedTallyTable tally={tally} summary={summary} />
-          </section>
-
-          {/* Decision Audit Log */}
-          <section className="rounded-lg border bg-card p-2.5 shadow-2xs" data-testid="votes-list">
-            <div className="flex items-center justify-between border-b pb-1.5">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                4. Decision &amp; Revision Log
-              </h2>
-              <span className="rounded bg-muted px-1.5 py-0.2 text-[9px] font-semibold text-muted-foreground">
-                {votes.length} Recorded
+      {/* SINGLE STICKY PRIMARY CTA (Fixed Mobile Action Bar) */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-background/95 backdrop-blur-md p-3 sm:px-6 shadow-xl pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
+          {/* Status Indicator */}
+          <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 text-xs">
+            <span className="text-muted-foreground">
+              Candidate: <strong className="text-foreground">{selectedCandidate?.anonymousLabel ?? 'None chosen'}</strong>
+            </span>
+            {selectedCandidate && (
+              <span className="font-mono font-black text-foreground">
+                ₹{selectedCandidate.totalCost.toLocaleString('en-IN')}
               </span>
-            </div>
-
-            {votes.length === 0 ? (
-              <p className="mt-2 text-xs text-muted-foreground">No evaluation votes recorded yet.</p>
-            ) : (
-              <ul className="mt-1.5 space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
-                {votes.map((v) => {
-                  const superseded = !liveVoteIds.has(v.id);
-                  return (
-                    <li
-                      key={v.id}
-                      className={`rounded border p-2 text-[11px] transition ${
-                        superseded
-                          ? 'border-dashed bg-muted/20 opacity-75'
-                          : 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/30 dark:bg-emerald-950/20 shadow-2xs'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <div className="flex items-center gap-1 truncate">
-                          <span className="font-bold text-foreground">
-                            {v.voterName ?? v.profileId.slice(0, 8)}
-                          </span>
-                          <span className="text-muted-foreground">→</span>
-                          <span className="rounded bg-primary/10 px-1 py-0.2 font-bold text-primary">
-                            {v.anonymousLabel ?? 'Supplier'}
-                          </span>
-                        </div>
-
-                        <span
-                          className={`rounded px-1.5 py-0.2 text-[8px] font-bold shrink-0 ${
-                            superseded
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-emerald-100 text-emerald-800'
-                          }`}
-                        >
-                          {superseded ? '↺ Superseded' : '✓ Live'}
-                        </span>
-                      </div>
-
-                      {v.comment && (
-                        <p className="mt-1 text-[10px] text-muted-foreground line-clamp-2 italic">
-                          &ldquo;{v.comment}&rdquo;
-                        </p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
             )}
-          </section>
+          </div>
 
-          {/* Navigation Action Card */}
-          <section className="rounded-lg border bg-card p-2.5 shadow-2xs" data-testid="award-navigation-section">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Next Step (9 / 15)
-                </span>
-                <span className="text-xs font-bold text-foreground">Award Justification</span>
-              </div>
+          {/* Action Buttons */}
+          <div className="w-full sm:w-auto flex items-center gap-2">
+            {myVote && !isRevising ? (
+              <Link
+                to={`/rfq/${rfqId}/award`}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 dark:bg-emerald-600 px-5 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-emerald-800 active:scale-[0.98] transition min-h-[44px]"
+                data-testid="proceed-to-award-button"
+              >
+                <span>🏆 Proceed to Award (Step 9)</span>
+                <span>→</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled={busy || !selectedQuote || !coiConfirmed || !hasReason}
+                onClick={() => void handleCastVote()}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[44px]"
+                data-testid="submit-vote-button"
+              >
+                {busy ? (
+                  <span>Recording Decision…</span>
+                ) : isSoloBuyer ? (
+                  <span>🏆 Proceed to Award →</span>
+                ) : myVote ? (
+                  <span>✓ Confirm &amp; Update Vote</span>
+                ) : (
+                  <span>🗳️ Confirm &amp; Cast Vote</span>
+                )}
+              </button>
+            )}
 
-              {(summary?.quorumMet || votes.length > 0) ? (
-                <Link
-                  to={`/rfq/${rfqId}/award`}
-                  className="rounded bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 transition shrink-0"
-                >
-                  🏆 Step 9: Award →
-                </Link>
-              ) : (
-                <span className="rounded bg-muted px-2 py-1 text-[10px] text-muted-foreground opacity-60">
-                  🔒 Awaiting Votes
-                </span>
-              )}
-            </div>
-          </section>
+            {isRevising && myVote && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRevising(false);
+                  setSelectedQuote(myVote.recommendedQuoteId ?? '');
+                }}
+                className="rounded-xl border bg-card px-3 py-3 text-xs font-bold text-muted-foreground hover:bg-muted min-h-[44px]"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

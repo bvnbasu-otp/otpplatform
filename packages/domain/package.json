@@ -18,7 +18,7 @@
     "lint": "echo 'lint: domain'"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
+    "typescript": "5.6.3",
     "vitest": "^2.1.8"
   }
 }

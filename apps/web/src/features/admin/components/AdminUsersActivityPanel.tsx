@@ -637,25 +637,25 @@ export function AdminUsersActivityPanel() {
 
       {/* 2. Sub-Tabs & Refresh Header */}
       <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b pb-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => setSubTab('USERS')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition shrink-0 ${
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition shrink-0 active:scale-98 ${
               subTab === 'USERS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
-                : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+                : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
             }`}
           >
             <span>👥</span> Users ({users.length})
             {onlineUsersCount > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-extrabold text-white">
                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                 {onlineUsersCount} Online
               </span>
             )}
             {blockedUsersCount > 0 && (
-              <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
+              <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[9px] font-extrabold text-white">
                 {blockedUsersCount} Blocked
               </span>
             )}
@@ -664,15 +664,15 @@ export function AdminUsersActivityPanel() {
           <button
             type="button"
             onClick={() => setSubTab('ORGANIZATIONS')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition shrink-0 ${
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition shrink-0 active:scale-98 ${
               subTab === 'ORGANIZATIONS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
-                : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+                : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
             }`}
           >
-            <span>🏢</span> Organizations &amp; Suppliers ({organizations.length})
+            <span>🏢</span> Orgs &amp; Suppliers ({organizations.length})
             {blockedOrgsCount > 0 && (
-              <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
+              <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[9px] font-extrabold text-white">
                 {blockedOrgsCount} Blocked
               </span>
             )}
@@ -681,15 +681,15 @@ export function AdminUsersActivityPanel() {
           <button
             type="button"
             onClick={() => setSubTab('REGISTRATIONS')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition shrink-0 ${
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition shrink-0 active:scale-98 ${
               subTab === 'REGISTRATIONS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
-                : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+                : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
             }`}
           >
             <span>📋</span> Approvals Queue
             {pendingRegistrationsCount > 0 && (
-              <span className="rounded-full bg-amber-500 px-1.5 py-0.2 text-[9px] font-extrabold text-white">
+              <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-extrabold text-white">
                 {pendingRegistrationsCount} Pending
               </span>
             )}
@@ -700,9 +700,9 @@ export function AdminUsersActivityPanel() {
           type="button"
           onClick={() => void loadData()}
           disabled={isLoading}
-          className="rounded-lg border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted transition flex items-center gap-1 shrink-0"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shrink-0"
         >
-          <span>↻</span> {isLoading ? 'Refreshing…' : 'Refresh'}
+          <span>↻</span> <span className="hidden sm:inline ml-1">{isLoading ? 'Refreshing…' : 'Refresh'}</span>
         </button>
       </div>
 

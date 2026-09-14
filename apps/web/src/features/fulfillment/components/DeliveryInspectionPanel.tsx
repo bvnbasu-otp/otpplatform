@@ -3,7 +3,7 @@ import { formatDateTimeIST } from '@/lib/date-utils';
 import { acceptDeliveryInspection } from '../api/work-orders';
 import type { WorkOrderSummary } from '../types/fulfillment';
 
-interface DeliveryInspectionPanelProps {
+export interface DeliveryInspectionPanelProps {
   workOrder: WorkOrderSummary;
   role: 'buyer' | 'supplier';
   onAccepted?: () => void;
@@ -32,7 +32,10 @@ export function DeliveryInspectionPanel({
 }: DeliveryInspectionPanelProps) {
   const [rating, setRating] = useState<number>(workOrder.rating ?? 5);
   const [hoverRating, setHoverRating] = useState<number>(0);
-  const [selectedObservations, setSelectedObservations] = useState<string[]>([]);
+  const [selectedObservations, setSelectedObservations] = useState<string[]>([
+    'Full physical quantity & packaging verified intact on-site',
+    'Technical specification & material compliance verified',
+  ]);
   const [notes, setNotes] = useState(workOrder.reviewText ?? workOrder.inspectionNotes ?? '');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -40,10 +43,12 @@ export function DeliveryInspectionPanel({
 
   if (workOrder.status !== 'COMPLETED' && workOrder.progressPercent < 100) {
     return (
-      <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-4 text-xs text-muted-foreground">
-        <strong className="font-semibold text-foreground">Phase 3: Execution in Progress ({workOrder.progressPercent}%)</strong>
-        <p className="mt-1">
-          The supplier is actively executing the order. Delivery &amp; quality inspection acknowledgment unlocks once the supplier marks progress at 100%.
+      <div className="rounded-2xl border border-border bg-muted/20 p-4 text-xs text-muted-foreground space-y-1">
+        <strong className="font-bold text-foreground flex items-center gap-1.5">
+          <span>⚙️</span> Execution in Progress ({workOrder.progressPercent}%)
+        </strong>
+        <p className="text-[11px] leading-snug">
+          The supplier is actively executing the milestone scope. Mutual delivery &amp; quality sign-off unlocks once the supplier reports 100% completion.
         </p>
       </div>
     );
@@ -52,19 +57,21 @@ export function DeliveryInspectionPanel({
   if (workOrder.buyerAcceptedAt) {
     const verifiedRating = workOrder.rating ?? 5;
     return (
-      <div className="mt-4 rounded-lg border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30 p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200 dark:border-emerald-800/40 pb-3">
+      <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30 p-4 shadow-2xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200 dark:border-emerald-800/40 pb-2.5">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">✓</span>
-            <p className="font-bold text-emerald-950 dark:text-emerald-200">100% Mutual Delivery &amp; Quality Inspection Acknowledged</p>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-black text-white">✓</span>
+            <p className="font-black text-xs text-emerald-950 dark:text-emerald-200">
+              100% Mutual Delivery &amp; Quality Inspection Acknowledged
+            </p>
           </div>
-          <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+          <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300">
             {formatDateTimeIST(workOrder.buyerAcceptedAt)}
           </span>
         </div>
 
         {/* Verified Star Rating Display */}
-        <div className="mt-3.5 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex items-center gap-1 text-amber-500 text-lg">
             {[1, 2, 3, 4, 5].map((star) => (
               <span key={star} className={star <= verifiedRating ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600'}>
@@ -72,19 +79,19 @@ export function DeliveryInspectionPanel({
               </span>
             ))}
           </div>
-          <span className="rounded-full bg-amber-100 dark:bg-amber-950/60 px-2.5 py-0.5 text-xs font-bold text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">
-            {verifiedRating}.0 / 5.0 Star Rating
+          <span className="rounded-full bg-amber-100 dark:bg-amber-950/60 px-2.5 py-0.5 text-xs font-black text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">
+            {verifiedRating}.0 / 5.0
           </span>
-          <span className="text-xs font-medium text-emerald-900 dark:text-emerald-300">
+          <span className="text-[11px] font-semibold text-emerald-900 dark:text-emerald-300">
             {RATING_LABELS[verifiedRating] ?? 'Verified Buyer Rating'}
           </span>
         </div>
 
         {/* Verified Review Notes */}
         {(workOrder.reviewText || workOrder.inspectionNotes) && (
-          <div className="mt-3 rounded-md border border-emerald-200 dark:border-emerald-800/60 bg-card p-3 text-xs text-emerald-950 dark:text-emerald-200">
+          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-card p-3 text-xs text-emerald-950 dark:text-emerald-200">
             <strong className="font-bold text-emerald-900 dark:text-emerald-300">Buyer Review &amp; Quality Notes: </strong>
-            <p className="mt-1 whitespace-pre-wrap text-foreground">
+            <p className="mt-1 whitespace-pre-wrap text-foreground text-[11px]">
               {workOrder.reviewText ?? workOrder.inspectionNotes}
             </p>
           </div>
@@ -95,10 +102,12 @@ export function DeliveryInspectionPanel({
 
   if (role === 'supplier') {
     return (
-      <div className="mt-4 rounded-md border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 p-4 text-xs text-amber-900 dark:text-amber-200 shadow-sm">
-        <strong className="font-semibold text-amber-950 dark:text-amber-200">✓ 100% Completion Reported by Supplier</strong>
-        <p className="mt-1 text-amber-900 dark:text-amber-300">
-          Awaiting Buyer on-site quality inspection, star rating, and formal sign-off. Once acknowledged by the buyer, you can generate and submit the GST invoice for UPI settlement.
+      <div className="rounded-2xl border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 p-4 text-xs text-amber-900 dark:text-amber-200 shadow-2xs space-y-1">
+        <strong className="font-extrabold text-amber-950 dark:text-amber-200 block">
+          ✓ 100% Completion Reported by Supplier
+        </strong>
+        <p className="text-[11px] text-amber-900 dark:text-amber-300 leading-snug">
+          Awaiting buyer on-site quality inspection, star rating, and formal sign-off. Once acknowledged by the buyer, official tax invoice submission and milestone payment release will unlock.
         </p>
       </div>
     );
@@ -120,7 +129,7 @@ export function DeliveryInspectionPanel({
       setError(result.error);
       return;
     }
-    setSuccess('100% Delivery and quality inspection successfully acknowledged! Rating submitted to supplier performance score.');
+    setSuccess('✓ 100% Delivery & quality inspection successfully acknowledged! Rating submitted to supplier performance score.');
     onAccepted?.();
   }
 
@@ -129,29 +138,33 @@ export function DeliveryInspectionPanel({
   const canSubmit = !busy && rating >= 1 && hasObservations;
 
   return (
-    <section className="mt-5 rounded-lg border border-primary/30 bg-card p-5 shadow-sm" data-testid="delivery-inspection-panel">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-foreground">Buyer Delivery &amp; Inspection Acknowledgment (100%)</h3>
-        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-          Action Required
+    <section className="rounded-2xl border-2 border-primary/40 bg-card p-4 shadow-2xs space-y-3.5" data-testid="delivery-inspection-panel">
+      <div className="flex items-center justify-between border-b pb-2">
+        <div>
+          <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
+            Buyer Delivery &amp; Inspection Sign-off (100%)
+          </h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Verify on-site deliverables, test certificates, and submit supplier quality score.
+          </p>
+        </div>
+        <span className="rounded-full bg-amber-100 dark:bg-amber-950/60 px-2.5 py-0.5 text-[10px] font-black text-amber-800 dark:text-amber-300 border border-amber-300">
+          Sign-off Required
         </span>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        The supplier has reported 100% work completion. Please verify on-site delivery, rate the supplier experience, and acknowledge acceptance.
-      </p>
 
       {/* Star Rating Section */}
-      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/50 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <label className="block text-xs font-bold text-amber-950">
-            Supplier Star Rating <span className="text-red-600 font-bold">*</span>
+      <div className="rounded-xl border border-amber-200 bg-amber-50/50 dark:bg-amber-950/30 p-3 space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <label className="block text-[11px] font-extrabold text-amber-950 dark:text-amber-200">
+            Supplier Star Rating <span className="text-red-500">*</span>
           </label>
-          <span className="text-[11px] font-semibold text-amber-800">
+          <span className="text-[10px] font-semibold text-amber-800 dark:text-amber-300">
             {activeRating ? RATING_LABELS[activeRating] : 'Click stars to rate (1–5)'}
           </span>
         </div>
 
-        <div className="mt-2 flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {[1, 2, 3, 4, 5].map((star) => {
             const isFilled = star <= activeRating;
             return (
@@ -164,12 +177,12 @@ export function DeliveryInspectionPanel({
                 }}
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
-                className="group p-1 text-2xl transition-transform hover:scale-125 focus:outline-none"
+                className="group p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-2xl transition-transform hover:scale-125 focus:outline-none mobile-touch-target"
                 title={`${star} Star${star > 1 ? 's' : ''}`}
               >
                 <span
                   className={`transition-colors ${
-                    isFilled ? 'text-amber-500 drop-shadow-xs' : 'text-slate-300 group-hover:text-amber-300'
+                    isFilled ? 'text-amber-500 drop-shadow-xs' : 'text-slate-300 dark:text-slate-600 group-hover:text-amber-300'
                   }`}
                 >
                   ★
@@ -178,37 +191,29 @@ export function DeliveryInspectionPanel({
             );
           })}
           {rating > 0 && (
-            <span className="ml-2 text-xs font-bold text-amber-900">
+            <span className="ml-2 text-xs font-black text-amber-900 dark:text-amber-200">
               {rating}.0 / 5.0
             </span>
           )}
         </div>
-
-        <p className="mt-2 text-[11px] text-amber-900/80">
-          ⭐ <strong>Reputation &amp; Future Award Impact:</strong> Your rating and review directly builds this supplier’s platform trust record, boosting their merit score for future competitive quotes.
-        </p>
       </div>
 
-      {/* Review Observations Section with Pre-test Checkboxes */}
-      <div className="mt-4 space-y-2.5">
-        <label className="block text-xs font-bold text-foreground" htmlFor="inspection-notes">
-          Inspection Observations &amp; Review Notes:
-          <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-            (Select pre-defined checks, add custom notes, or both)
-          </span>
+      {/* Preset Observations & Notes */}
+      <div className="space-y-2">
+        <label className="block text-[11px] font-bold text-foreground" htmlFor="inspection-notes">
+          Inspection Checklist &amp; Observations:
         </label>
 
-        {/* Multiple Pre-test Checkboxes (Select one, all, or none) */}
-        <div className="grid sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-1.5">
           {PRESET_INSPECTION_OBSERVATIONS.map((obs) => {
             const isChecked = selectedObservations.includes(obs);
             return (
               <label
                 key={obs}
-                className={`flex items-start gap-2 rounded-lg border p-2.5 text-xs cursor-pointer transition ${
+                className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-xs cursor-pointer transition min-h-[44px] mobile-touch-target ${
                   isChecked
-                    ? 'border-primary bg-primary/5 font-medium text-foreground'
-                    : 'border-muted bg-card text-muted-foreground hover:bg-muted/30 hover:text-foreground'
+                    ? 'border-primary bg-primary/5 font-semibold text-foreground'
+                    : 'border-border bg-card text-muted-foreground hover:bg-muted/30'
                 }`}
               >
                 <input
@@ -222,9 +227,9 @@ export function DeliveryInspectionPanel({
                     }
                     if (error) setError(null);
                   }}
-                  className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary"
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary shrink-0"
                 />
-                <span className="leading-tight">{obs}</span>
+                <span className="leading-snug text-[11px]">{obs}</span>
               </label>
             );
           })}
@@ -238,19 +243,20 @@ export function DeliveryInspectionPanel({
             if (error) setError(null);
           }}
           rows={2}
-          placeholder="e.g. Verified on-site delivery of goods/services, technical parameters inspected, quality verified. Prompt and professional execution."
-          className="w-full rounded-md border p-2.5 text-xs bg-background focus:ring-2 focus:ring-primary focus:outline-none"
+          placeholder="Additional quality remarks (e.g. Tested on-site, voltage/RPM within tolerance)."
+          className="w-full rounded-xl border bg-background p-2.5 text-xs focus:ring-2 focus:ring-primary focus:outline-none"
         />
       </div>
 
       {error && (
-        <div className="mt-3 rounded-md border border-red-300 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-semibold text-red-800 dark:text-red-300">
+        <div className="rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-bold text-red-800 dark:text-red-300">
           ⚠️ {error}
         </div>
       )}
+
       {success && (
-        <div className="mt-3 rounded-md border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-          ✓ {success}
+        <div className="rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+          {success}
         </div>
       )}
 
@@ -259,9 +265,9 @@ export function DeliveryInspectionPanel({
           type="button"
           disabled={!canSubmit}
           onClick={() => void handleAccept()}
-          className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50 transition"
+          className="w-full min-h-[44px] rounded-xl bg-primary px-5 py-3 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 disabled:opacity-50 transition flex items-center justify-center gap-1.5 mobile-touch-target"
         >
-          {busy ? 'Submitting Sign-off & Rating…' : '✓ Submit Rating & Acknowledge 100% Delivery →'}
+          {busy ? 'Submitting Sign-off…' : '✓ Sign Off Inspection & Unlock Invoice Settlement →'}
         </button>
       )}
     </section>

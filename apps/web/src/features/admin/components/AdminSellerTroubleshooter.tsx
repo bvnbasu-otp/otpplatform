@@ -352,16 +352,16 @@ export function AdminSellerTroubleshooter({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Header Banner */}
-      <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-purple-500/30 bg-purple-500/5 p-3.5 sm:p-4 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">🏪</span>
+            <span className="text-xl shrink-0">🏪</span>
             <div>
-              <h3 className="text-base font-bold text-foreground">Seller-Side Operational Troubleshooter</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Unblock sealed quotes, force GST verification, simulate PO acknowledgments, and retry payment settlement webhooks across the supplier fleet.
+              <h3 className="text-sm sm:text-base font-bold text-foreground">Supplier Verification &amp; Operational Console</h3>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                Verify GSTIN, MSME certificates, bank accounts, unblock sealed quotes, and trigger 1-tap approvals.
               </p>
             </div>
           </div>
@@ -369,7 +369,7 @@ export function AdminSellerTroubleshooter({
             type="button"
             disabled={isDiagnosing}
             onClick={() => void handleRunDiagnostics()}
-            className="rounded-lg bg-purple-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-purple-700 transition disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-purple-700 active:scale-98 transition disabled:opacity-50 whitespace-nowrap"
           >
             <span>⚡</span> {isDiagnosing ? 'Scanning…' : 'Run Fleet Scan'}
           </button>
@@ -386,20 +386,20 @@ export function AdminSellerTroubleshooter({
       )}
 
       {/* Target Selector */}
-      <div className="rounded-xl border bg-card p-5 shadow-xs space-y-4">
+      <div className="rounded-xl border bg-card p-3.5 sm:p-5 shadow-2xs space-y-4">
         <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
           Step 1: Select or Search Supplier to Diagnose (Input Name or UUID)
         </h4>
 
         {/* Selected Target Supplier Banner */}
         {selectedSupplier && (
-          <div className="rounded-xl border border-purple-500/30 bg-purple-50/50 dark:bg-purple-950/20 p-4 flex flex-wrap items-center justify-between gap-4 animate-in fade-in duration-150">
+          <div className="rounded-xl border border-purple-500/30 bg-purple-50/50 dark:bg-purple-950/20 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150 shadow-2xs">
             <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="rounded-md bg-purple-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                   SUPPLIER
                 </span>
-                <h4 className="text-sm font-bold text-foreground">{selectedSupplier.name}</h4>
+                <h4 className="text-xs sm:text-sm font-bold text-foreground">{selectedSupplier.name}</h4>
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                     selectedSupplier.gstVerified
@@ -422,7 +422,7 @@ export function AdminSellerTroubleshooter({
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
-                  className="rounded border bg-card px-2 py-0.5 text-[11px] font-bold hover:bg-muted text-foreground transition flex items-center gap-1 shadow-2xs"
+                  className="inline-flex min-h-[36px] items-center gap-1 rounded-lg border bg-card px-2.5 py-1 text-xs font-bold hover:bg-muted text-foreground transition shadow-2xs active:scale-98"
                 >
                   {copied ? '✓ Copied!' : '📋 Copy UUID'}
                 </button>
@@ -437,7 +437,7 @@ export function AdminSellerTroubleshooter({
                 type="button"
                 onClick={() => void handleRunDiagnostics(selectedSupplier.uuid)}
                 disabled={isDiagnosing}
-                className="rounded-lg bg-purple-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-purple-700 transition flex items-center gap-1.5 whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-purple-700 active:scale-98 transition whitespace-nowrap"
               >
                 <span>🔍</span> {isDiagnosing ? 'Diagnosing…' : 'Run Diagnostics'}
               </button>
@@ -446,9 +446,9 @@ export function AdminSellerTroubleshooter({
                 type="button"
                 onClick={() => void handleForceVerifyGst()}
                 disabled={actionInProgress === 'GST_VERIFY'}
-                className="rounded-lg border bg-card px-3.5 py-2 text-xs font-bold text-foreground shadow-xs hover:bg-muted transition flex items-center gap-1.5 whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-3.5 py-2 text-xs font-bold text-foreground shadow-xs hover:bg-muted active:scale-98 transition whitespace-nowrap"
               >
-                <span>🛡️</span> {selectedSupplier.gstVerified ? 'Re-verify GST' : 'Force Verify GSTIN'}
+                <span>🛡️</span> {selectedSupplier.gstVerified ? 'Re-verify GSTIN' : '1-Tap Verify GSTIN'}
               </button>
             </div>
           </div>
@@ -481,7 +481,7 @@ export function AdminSellerTroubleshooter({
                   void loadSupplierDetails(suppId);
                 }
               }}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
             >
               <option value="">-- Choose supplier from list --</option>
               {suppliersList.map((s) => (
@@ -496,19 +496,19 @@ export function AdminSellerTroubleshooter({
             <label className="block text-xs font-semibold text-foreground mb-1">
               Search by Name, GSTIN, or UUID:
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => void handleEntitySearch(e.target.value)}
                 placeholder="e.g. 'Apex', '29AABCT1332L', or UUID..."
-                className="w-full rounded-lg border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
               />
               <button
                 type="button"
                 disabled={isDiagnosing || !searchQuery.trim()}
                 onClick={() => void handleRunDiagnostics(searchQuery.trim())}
-                className="rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-98 transition whitespace-nowrap"
               >
                 {isDiagnosing ? 'Scanning…' : 'Search & Run 🔍'}
               </button>
@@ -594,7 +594,7 @@ export function AdminSellerTroubleshooter({
                           type="button"
                           disabled={actionInProgress === `UNBLOCK_${q.id}`}
                           onClick={() => handleUnblockQuote(q.id)}
-                          className="rounded-md bg-purple-600 px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-purple-700 transition disabled:opacity-50"
+                          className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-purple-600 px-3.5 py-1 text-xs font-bold text-white shadow-xs hover:bg-purple-700 active:scale-98 transition disabled:opacity-50"
                         >
                           {actionInProgress === `UNBLOCK_${q.id}` ? 'Submitting…' : '⚡ Unblock & Submit'}
                         </button>
@@ -646,7 +646,7 @@ export function AdminSellerTroubleshooter({
                           type="button"
                           disabled={actionInProgress === `PO_ACK_${po.id}`}
                           onClick={() => handleSimulatePoAck(po.id, po.po_number)}
-                          className="rounded-md bg-foreground text-background px-3 py-1 text-xs font-bold shadow hover:bg-foreground/90 transition disabled:opacity-50"
+                          className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-foreground text-background px-3.5 py-1 text-xs font-bold shadow hover:bg-foreground/90 active:scale-98 transition disabled:opacity-50"
                         >
                           {actionInProgress === `PO_ACK_${po.id}` ? 'Accepting…' : '⚡ Simulate Acceptance'}
                         </button>
@@ -686,7 +686,7 @@ export function AdminSellerTroubleshooter({
                           type="button"
                           disabled={actionInProgress === `WEBHOOK_${inv.id}`}
                           onClick={() => handleRetryPaymentWebhook(inv.id, inv.invoice_number)}
-                          className="rounded-md bg-emerald-600 text-white px-3 py-1 text-xs font-bold shadow hover:bg-emerald-700 transition disabled:opacity-50"
+                          className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 text-white px-3.5 py-1 text-xs font-bold shadow hover:bg-emerald-700 active:scale-98 transition disabled:opacity-50"
                         >
                           {actionInProgress === `WEBHOOK_${inv.id}` ? 'Retrying…' : '⚡ Retry Payment Webhook'}
                         </button>
@@ -761,7 +761,7 @@ export function AdminSellerTroubleshooter({
                         type="button"
                         disabled={actionInProgress === issue.fixAction}
                         onClick={() => handleApplyFix(issue.fixAction, issue.title)}
-                        className="rounded-md bg-foreground text-background px-3 py-1.5 font-bold shadow hover:bg-foreground/90 transition disabled:opacity-50"
+                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-foreground text-background px-4 py-2 text-xs font-bold shadow hover:bg-foreground/90 active:scale-98 transition disabled:opacity-50"
                       >
                         {actionInProgress === issue.fixAction ? 'Applying Fix…' : '⚡ 1-Click Auto Fix'}
                       </button>
@@ -778,7 +778,7 @@ export function AdminSellerTroubleshooter({
 
       {/* Entity Ops Activity Trace */}
       {selectedSupplier && (
-        <div className="rounded-xl border bg-card p-5 shadow-xs space-y-3">
+        <div className="rounded-xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
           <div className="flex items-center justify-between border-b pb-2.5">
             <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
               <span>📜</span> Operational Activity &amp; Audit Trail Timeline
@@ -799,11 +799,11 @@ export function AdminSellerTroubleshooter({
               {auditEvents.map((evt) => (
                 <div
                   key={evt.id}
-                  className="rounded-lg border bg-muted/20 p-3 text-xs flex flex-wrap items-center justify-between gap-2"
+                  className="rounded-xl border bg-muted/20 p-3 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs"
                 >
                   <div className="space-y-0.5">
-                    <div className="flex items-center gap-2 font-bold text-foreground">
-                      <span className="rounded bg-purple-500/10 text-purple-700 dark:text-purple-300 px-1.5 py-0.2 text-[10px] font-mono">
+                    <div className="flex items-center gap-2 font-bold text-foreground flex-wrap">
+                      <span className="rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-300 px-2 py-0.5 text-[10px] font-mono">
                         {evt.event_type}
                       </span>
                       {evt.payload?.action && <span>{evt.payload.action}</span>}
@@ -815,8 +815,8 @@ export function AdminSellerTroubleshooter({
                     )}
                   </div>
 
-                  <div className="text-right text-[11px] text-muted-foreground">
-                    <div>{evt.actor_name || 'SuperAdmin'}</div>
+                  <div className="text-left sm:text-right text-[11px] text-muted-foreground border-t sm:border-t-0 pt-1 sm:pt-0">
+                    <div className="font-semibold text-foreground">{evt.actor_name || 'SuperAdmin'}</div>
                     <div className="font-mono">{new Date(evt.occurred_at).toLocaleString()}</div>
                   </div>
                 </div>

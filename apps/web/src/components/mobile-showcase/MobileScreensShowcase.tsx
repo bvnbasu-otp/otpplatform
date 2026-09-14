@@ -101,7 +101,31 @@ export function MobileScreensShowcase() {
       badge: 'Step 7 · Procure-to-Pay',
       badgeColor: 'bg-emerald-600/10 text-emerald-800 dark:text-emerald-300 border-emerald-400',
       description: 'Unmask verified GST credentials, share PO via WhatsApp PDF, and track pickup to invoice settlement.',
-      component: <ScreenOrderFulfillment onRestart={() => setActiveScreenIndex(0)} />,
+      component: <ScreenOrderFulfillment onRestart={() => setActiveScreenIndex(7)} />,
+    },
+    {
+      id: 'notifications',
+      stepNumber: '14',
+      tabLabel: 'Activity & Audit',
+      icon: '🔔',
+      title: 'Activity Feed & Audit Ledger',
+      tagline: 'Real-time pipeline changes with 1-tap deep links and cryptographic audit proofs.',
+      badge: 'Screen 14 · Activity & Audit',
+      badgeColor: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-300',
+      description: 'Unified segmented feed tracking quotes, committee votes, and immutable SHA-256 state transitions.',
+      component: <ScreenActivityNotifications onNext={() => setActiveScreenIndex(8)} />,
+    },
+    {
+      id: 'profile',
+      stepNumber: '15',
+      tabLabel: 'Profile & Settings',
+      icon: '👤',
+      title: 'User Profile & Team Governance',
+      tagline: 'Verified WhatsApp/Email identity, role governance, and appearance customization.',
+      badge: 'Screen 15 · Profile & Workspace',
+      badgeColor: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-300',
+      description: 'Manage workspace identity, team roles (Admin, Approver, Viewer), and multi-channel notification toggles.',
+      component: <ScreenProfileSettings onRestart={() => setActiveScreenIndex(0)} />,
     },
   ];
 
@@ -283,7 +307,39 @@ export function MobileScreensShowcase() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Live Milestone Stepper:</strong> Swiggy/Zomato style tracking from pickup to invoice sign-off.</span>
+                      <span><strong>Live Delivery Stepper:</strong> Swiggy/Zomato style tracking from pickup to invoice sign-off.</span>
+                    </li>
+                  </>
+                )}
+                {activeScreenIndex === 7 && (
+                  <>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span><strong>Segmented Activity Switcher:</strong> Instantly toggle between Notifications Feed and Cryptographic Audit Trail.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span><strong>1-Tap Deep Link Actions:</strong> Route directly to RFQs, Committee Ballots, and PO Deliveries with a single tap.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span><strong>Cryptographic Verification Badges:</strong> SHA-256 sealed proofs for immutable state auditing.</span>
+                    </li>
+                  </>
+                )}
+                {activeScreenIndex === 8 && (
+                  <>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span><strong>Verified Identity &amp; WhatsApp:</strong> Instant OTP linking for real-time mobile procurement notifications.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span><strong>Role-Based Team Management:</strong> Invite colleagues as Admin, Approver, or Viewer in seconds.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span><strong>Multi-Channel Preferences:</strong> Granular WhatsApp, Email, and In-App notification toggles.</span>
                     </li>
                   </>
                 )}
@@ -847,10 +903,10 @@ function ScreenOrderFulfillment({ onRestart }: { onRestart: () => void }) {
         </span>
       </div>
 
-      {/* Swiggy/Zomato Style Milestone Stepper */}
+      {/* Swiggy/Zomato Style Delivery Stepper */}
       <div className="rounded-2xl border bg-card p-3 space-y-2.5">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-          Live Milestone Fulfillment Tracker:
+          Live Order Fulfillment Tracker:
         </span>
 
         <div className="space-y-2 text-xs">
@@ -872,6 +928,254 @@ function ScreenOrderFulfillment({ onRestart }: { onRestart: () => void }) {
           </div>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={onRestart}
+        className="w-full rounded-xl border border-border bg-card py-2 text-xs font-bold text-foreground hover:bg-muted transition text-center"
+      >
+        ↻ Back to Screen 1 (Cockpit Overview)
+      </button>
+    </div>
+  );
+}
+
+// Screen 14: Activity Feed & Audit Ledger
+function ScreenActivityNotifications({ onNext }: { onNext: () => void }) {
+  const [activeTab, setActiveTab] = useState<'notifications' | 'audit'>('notifications');
+
+  return (
+    <div className="p-3.5 space-y-3 text-left text-foreground">
+      {/* Segmented Tab Switcher */}
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1 border border-border">
+        <button
+          type="button"
+          onClick={() => setActiveTab('notifications')}
+          className={`py-1.5 text-xs font-bold rounded-lg transition ${
+            activeTab === 'notifications'
+              ? 'bg-card text-foreground shadow-xs'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🔔 Notifications (2)
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('audit')}
+          className={`py-1.5 text-xs font-bold rounded-lg transition ${
+            activeTab === 'audit'
+              ? 'bg-card text-foreground shadow-xs'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🛡️ Audit Trail (6)
+        </button>
+      </div>
+
+      {activeTab === 'notifications' ? (
+        <div className="space-y-2.5">
+          {/* Notification Card 1: Quote Received */}
+          <div className="rounded-2xl border border-primary/40 bg-primary/5 p-3 space-y-1.5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[9px] font-bold px-2 py-0.2">
+                🟢 Quote Submitted
+              </span>
+              <span className="text-[10px] text-muted-foreground font-mono">2m ago</span>
+            </div>
+            <h5 className="text-xs font-bold text-foreground">
+              New Sealed Quote: ₹8,200 for 10HP Motor Rewind
+            </h5>
+            <p className="text-[11px] text-muted-foreground">
+              Supplier A7K3 submitted a sealed quote with 12-month warranty.
+            </p>
+            <div className="pt-1 flex items-center justify-between border-t border-border/40">
+              <span className="text-[10px] text-muted-foreground font-mono">Via WhatsApp</span>
+              <span className="text-[10px] font-bold text-primary">Review Quotation →</span>
+            </div>
+          </div>
+
+          {/* Notification Card 2: Vote Requested */}
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3 space-y-1.5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-[9px] font-bold px-2 py-0.2">
+                🗳️ Vote Requested
+              </span>
+              <span className="text-[10px] text-muted-foreground font-mono">14m ago</span>
+            </div>
+            <h5 className="text-xs font-bold text-foreground">
+              Committee Ballot: DG Set Annual Maintenance
+            </h5>
+            <p className="text-[11px] text-muted-foreground">
+              2 of 3 votes recorded. Your approval is required to establish quorum.
+            </p>
+            <div className="pt-1 flex items-center justify-between border-t border-border/40">
+              <span className="text-[10px] text-muted-foreground font-mono">Quorum 67%</span>
+              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Cast Vote →</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-xs flex items-center justify-between">
+            <span className="font-bold text-emerald-800 dark:text-emerald-300 text-[11px]">
+              🛡️ SHA-256 State Ledger
+            </span>
+            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">✓ Verified</span>
+          </div>
+
+          <div className="rounded-xl border bg-card p-2.5 text-xs space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-foreground text-[11px]">Quote · Submitted</span>
+              <span className="text-[9px] text-muted-foreground">10:45 AM</span>
+            </div>
+            <p className="text-[10px] font-mono text-muted-foreground truncate">
+              Proof: 0x8a91f42e · RFQ #0842
+            </p>
+          </div>
+
+          <div className="rounded-xl border bg-card p-2.5 text-xs space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-foreground text-[11px]">Vote · Quorum Verified</span>
+              <span className="text-[9px] text-muted-foreground">11:00 AM</span>
+            </div>
+            <p className="text-[10px] font-mono text-muted-foreground truncate">
+              Proof: 0x3f1c99ba · Quorum 100%
+            </p>
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={onNext}
+        className="w-full rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition text-center"
+      >
+        Next: Screen 15 (Profile &amp; Settings) →
+      </button>
+    </div>
+  );
+}
+
+// Screen 15: Profile, Role & Organization Settings
+function ScreenProfileSettings({ onRestart }: { onRestart: () => void }) {
+  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'preferences'>('profile');
+
+  return (
+    <div className="p-3.5 space-y-3 text-left text-foreground">
+      {/* 3-Way Segmented Control */}
+      <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1 border border-border text-[11px]">
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          className={`py-1.5 font-bold rounded-lg transition ${
+            activeTab === 'profile' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+          }`}
+        >
+          👤 Profile
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('team')}
+          className={`py-1.5 font-bold rounded-lg transition ${
+            activeTab === 'team' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+          }`}
+        >
+          🏢 Team
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('preferences')}
+          className={`py-1.5 font-bold rounded-lg transition ${
+            activeTab === 'preferences' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+          }`}
+        >
+          ⚙️ Settings
+        </button>
+      </div>
+
+      {activeTab === 'profile' && (
+        <div className="space-y-2.5">
+          {/* Identity Card */}
+          <div className="rounded-2xl border border-border bg-card p-3 flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-primary/15 text-primary font-black text-sm flex items-center justify-center shrink-0">
+              BL
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold truncate">Baskar Loganathan</span>
+                <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[8px] font-bold px-1.5 py-0.2">
+                  Buyer Lead
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground truncate">Durgha Rainbow Apartments RWA</p>
+            </div>
+          </div>
+
+          {/* Verified Channels */}
+          <div className="rounded-xl border bg-muted/20 p-2.5 space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground">Primary Email:</span>
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-2 py-0.2 border border-emerald-300">
+                ✓ bvnbasu@yahoo.com
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground">WhatsApp:</span>
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-2 py-0.2 border border-emerald-300">
+                ✓ +91 98400 12345
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'team' && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-foreground">Colleagues (3)</span>
+            <span className="text-[10px] text-primary font-bold">+ Invite</span>
+          </div>
+
+          {[
+            { name: 'Baskar Loganathan (You)', role: 'Buyer Admin', badge: 'bg-primary/10 text-primary' },
+            { name: 'Subramanian R.', role: 'Approver', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' },
+            { name: 'Karthik V.', role: 'Viewer', badge: 'bg-muted text-muted-foreground' },
+          ].map((m) => (
+            <div key={m.name} className="flex items-center justify-between p-2 rounded-xl border bg-card text-xs">
+              <span className="font-semibold text-[11px] truncate">{m.name}</span>
+              <span className={`text-[9px] font-bold px-2 py-0.2 rounded-full ${m.badge}`}>
+                {m.role}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'preferences' && (
+        <div className="space-y-2.5 text-xs">
+          {/* Notification Toggles */}
+          <div className="rounded-xl border bg-card p-2.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold">📱 WhatsApp Channel</span>
+              <span className="text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold">
+                Active
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold">✉️ Email Alerts</span>
+              <span className="text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold">
+                Active
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold">🔔 In-App Live Feed</span>
+              <span className="text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold">
+                Active
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <button
         type="button"

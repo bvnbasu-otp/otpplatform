@@ -10,7 +10,6 @@ export type {
   CoiDeclaration,
   CommitteeVote,
   IdentityProtectedQuoteForVote,
-  BlindQuoteForVote, // Legacy alias
   MyVote,
   RfqGovernanceStatus,
   VoteTallyEntry,

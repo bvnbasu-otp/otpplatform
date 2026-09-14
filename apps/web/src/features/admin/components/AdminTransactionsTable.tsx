@@ -206,27 +206,27 @@ export function AdminTransactionsTable({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Top Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-card p-4 rounded-xl border shadow-xs">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-card p-3.5 sm:p-4 rounded-2xl border shadow-2xs">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* View Mode Toggle */}
-          <div className="flex rounded-lg border bg-muted/50 p-0.5 text-xs font-semibold">
+          <div className="flex rounded-xl border bg-muted/50 p-1 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setViewMode('PIPELINE')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
+              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition active:scale-98 ${
                 viewMode === 'PIPELINE'
                   ? 'bg-background text-foreground shadow-xs font-bold'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>📊</span> Kanban Pipeline
+              <span>📊</span> Pipeline Radar
             </button>
             <button
               type="button"
               onClick={() => setViewMode('TABLE')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
+              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition active:scale-98 ${
                 viewMode === 'TABLE'
                   ? 'bg-background text-foreground shadow-xs font-bold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -237,19 +237,19 @@ export function AdminTransactionsTable({
           </div>
 
           {/* Search Box */}
-          <div className="relative">
+          <div className="relative flex-1 min-w-[200px]">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search buyer org, requirement, PO#, city..."
-              className="w-72 rounded-lg border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground font-bold p-1"
               >
                 ✕
               </button>
@@ -260,9 +260,9 @@ export function AdminTransactionsTable({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border bg-background px-3 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="rounded-xl border bg-background px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
           >
-            <option value="ALL">All Buyer Phases ({transactions.length})</option>
+            <option value="ALL">All Radar Phases ({transactions.length})</option>
             {ADMIN_PHASES.map((p) => (
               <option key={p.key} value={p.key}>
                 {p.icon} {p.label} ({phaseCounts[p.key] || 0})
@@ -276,21 +276,21 @@ export function AdminTransactionsTable({
               type="checkbox"
               checked={stalledFilter}
               onChange={(e) => setStalledFilter(e.target.checked)}
-              className="rounded border text-primary focus:ring-primary"
+              className="rounded border text-primary focus:ring-primary h-4 w-4"
             />
-            <span className="text-amber-900 font-bold">⚠️ Stalled Orders (&gt;24h)</span>
+            <span className="text-amber-900 dark:text-amber-300 font-bold">⚠️ Stalled (&gt;24h)</span>
           </label>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0">
           <span className="text-xs text-muted-foreground">
-            Showing <strong>{filtered.length}</strong> of <strong>{transactions.length}</strong> Buyer Orders
+            <strong>{filtered.length}</strong> of <strong>{transactions.length}</strong> RFQs &amp; Orders
           </span>
           <button
             type="button"
             onClick={onRefresh}
             disabled={isLoading}
-            className="rounded-lg border bg-background p-2 text-xs text-foreground hover:bg-muted transition disabled:opacity-50"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-background p-2 text-xs text-foreground hover:bg-muted active:scale-98 transition disabled:opacity-50 shadow-2xs"
             title="Refresh Orders"
           >
             🔄

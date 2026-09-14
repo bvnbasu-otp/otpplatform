@@ -24,19 +24,19 @@ export const GST_SLABS = [
 
 export function QuoteForm({
   initial,
-  submitLabel,
+  submitLabel = 'Submit Sealed Quote',
   onSubmit,
   disabled,
   quoteId,
 }: {
   initial?: Partial<QuoteSnapshotInput>;
-  submitLabel: string;
+  submitLabel?: string;
   onSubmit: (input: QuoteSnapshotInput) => Promise<{ error: string | null }>;
   disabled?: boolean;
   /** Absent on the first quote: there is no row to hang a file off yet. */
   quoteId?: string;
 }) {
-  const [pricingMode, setPricingMode] = useState<'INCLUSIVE' | 'ITEMIZED'>('ITEMIZED');
+  const [pricingMode, setPricingMode] = useState<'INCLUSIVE' | 'ITEMIZED'>('INCLUSIVE');
   const [gstRate, setGstRate] = useState<number>(() => {
     if (initial?.basePrice && initial?.gstAmount != null && initial.basePrice > 0) {
       const computed = Math.round((initial.gstAmount / initial.basePrice) * 100);
@@ -47,7 +47,6 @@ export function QuoteForm({
 
   const [form, setForm] = useState<QuoteSnapshotInput>(() => {
     const merged = { ...DEFAULT_INPUT, ...initial };
-    // Ensure standard 18% GST if not provided
     if (initial?.gstAmount == null && merged.basePrice > 0) {
       merged.gstAmount = Math.round(merged.basePrice * (18 / 100));
     }
@@ -61,6 +60,8 @@ export function QuoteForm({
     return b + g + t;
   });
 
+  // Compliance checkbox
+  const [complianceConfirmed, setComplianceConfirmed] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -81,7 +82,6 @@ export function QuoteForm({
   const handleGstRateChange = (rate: number) => {
     setGstRate(rate);
     if (pricingMode === 'INCLUSIVE') {
-      // Re-split inclusive total using new rate
       const base = Math.round(inclusiveTotal / (1 + rate / 100));
       const gst = inclusiveTotal - base;
       setForm((f) => ({
@@ -91,7 +91,6 @@ export function QuoteForm({
         transportCost: 0,
       }));
     } else {
-      // Re-calculate GST from existing base price
       const calculatedGst = Math.round(form.basePrice * (rate / 100));
       setForm((f) => {
         const next = { ...f, gstAmount: calculatedGst };
@@ -106,7 +105,6 @@ export function QuoteForm({
     const validTotal = Number.isFinite(num) ? Math.max(0, num) : 0;
     setInclusiveTotal(validTotal);
 
-    // Auto-calculate Base Price & GST based on selected slab
     const base = Math.round(validTotal / (1 + gstRate / 100));
     const gst = validTotal - base;
 
@@ -120,6 +118,11 @@ export function QuoteForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSubmitting) return; // double-submission guard
+    if (!complianceConfirmed) {
+      setError('Please confirm 100% compliance with the technical BoQ specifications.');
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
     const result = await onSubmit(form);
@@ -137,13 +140,13 @@ export function QuoteForm({
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5" data-testid="supplier-quote-form">
-      {/* Fast Mode / Itemized Mode Switcher */}
-      <div className="rounded-xl border bg-muted/30 p-1 flex items-center gap-1 text-xs">
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" data-testid="supplier-quote-form">
+      {/* 1. Pricing Mode Switcher */}
+      <div className="rounded-xl border bg-muted/40 p-1 flex items-center gap-1 text-xs">
         <button
           type="button"
           onClick={() => setPricingMode('INCLUSIVE')}
-          className={`flex-1 rounded-lg py-1.5 px-3 font-bold transition flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-[38px] rounded-lg py-1.5 px-3 font-bold transition flex items-center justify-center gap-1.5 ${
             pricingMode === 'INCLUSIVE'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
@@ -155,25 +158,25 @@ export function QuoteForm({
         <button
           type="button"
           onClick={() => setPricingMode('ITEMIZED')}
-          className={`flex-1 rounded-lg py-1.5 px-3 font-bold transition flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-[38px] rounded-lg py-1.5 px-3 font-bold transition flex items-center justify-center gap-1.5 ${
             pricingMode === 'ITEMIZED'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <span>📋 Itemized Breakdown (Base + GST)</span>
+          <span>📋 Itemized (Base + GST)</span>
         </button>
       </div>
 
-      {/* Mode 1: Fast Inclusive Pricing Input */}
-      {pricingMode === 'INCLUSIVE' && (
-        <div className="rounded-2xl border-2 border-primary/40 bg-primary/5 p-4 sm:p-5 space-y-3">
+      {/* FIELD 1: Total Price / Base Price + GST Breakdown */}
+      {pricingMode === 'INCLUSIVE' ? (
+        <div className="rounded-2xl border-2 border-primary/40 bg-primary/5 p-3.5 sm:p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-primary block">
-              Total Deal Amount (₹ All-inclusive of GST &amp; Transport)
-            </span>
+            <label htmlFor="inclusive-total-input" className="text-xs font-extrabold uppercase tracking-wider text-primary block">
+              💰 Field 1: Total Price (₹ All-inclusive)
+            </label>
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-muted-foreground font-semibold">Tax Slab:</span>
+              <span className="text-muted-foreground font-semibold">Tax:</span>
               <select
                 value={gstRate}
                 onChange={(e) => handleGstRateChange(Number(e.target.value))}
@@ -193,22 +196,23 @@ export function QuoteForm({
               ₹
             </span>
             <input
+              id="inclusive-total-input"
               type="number"
               min={1}
               value={inclusiveTotal || ''}
               onChange={(e) => handleInclusiveChange(e.target.value)}
               placeholder="e.g. 45000"
-              className="w-full rounded-xl border-2 border-primary/60 bg-background pl-8 pr-4 py-2.5 text-lg font-black text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+              className="w-full min-h-[48px] rounded-xl border-2 border-primary/60 bg-background pl-8 pr-4 py-2.5 text-lg font-black text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
               disabled={disabled || isSubmitting}
               required
               autoFocus
             />
           </div>
 
-          {/* Real-time Calculated Tax Split Indicator */}
+          {/* Real-time Calculated Tax Split */}
           {inclusiveTotal > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs bg-background/80 p-2.5 rounded-xl border border-primary/20">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs bg-background/90 p-2.5 rounded-xl border border-primary/20">
+              <div className="flex items-center gap-3 font-mono">
                 <span className="text-muted-foreground">
                   Base: <strong className="text-foreground">₹{form.basePrice.toLocaleString('en-IN')}</strong>
                 </span>
@@ -217,26 +221,23 @@ export function QuoteForm({
                 </span>
               </div>
               <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold border border-emerald-300 dark:border-emerald-700">
-                ✓ Auto-Calculated ({gstRate}%)
+                ✓ Auto-Split
               </span>
             </div>
           )}
         </div>
-      )}
-
-      {/* Mode 2: Detailed Itemized Inputs with Auto-Tax Calculation */}
-      {pricingMode === 'ITEMIZED' && (
-        <div className="space-y-3 rounded-2xl border bg-card p-4">
+      ) : (
+        <div className="space-y-3 rounded-2xl border bg-card p-3.5 sm:p-4">
           <div className="grid gap-3 sm:grid-cols-4">
             <label className="block text-xs sm:col-span-1">
-              <span className="font-bold text-foreground">Base Unit Price (₹)</span>
+              <span className="font-bold text-foreground">Base Price (₹)</span>
               <input
                 type="number"
                 min={0}
                 value={form.basePrice}
                 onChange={(e) => handleBasePriceChange(e.target.value)}
                 placeholder="e.g. 10000"
-                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-xs font-semibold"
+                className="mt-1 w-full min-h-[44px] rounded-lg border bg-background px-3 py-2 text-xs font-semibold"
                 disabled={disabled || isSubmitting}
                 required
               />
@@ -244,13 +245,13 @@ export function QuoteForm({
 
             <label className="block text-xs sm:col-span-1">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-foreground">GST % Slab</span>
+                <span className="font-bold text-foreground">GST Slab</span>
                 <span className="text-[10px] text-emerald-600 font-bold">Auto</span>
               </div>
               <select
                 value={gstRate}
                 onChange={(e) => handleGstRateChange(Number(e.target.value))}
-                className="mt-1 w-full rounded-lg border bg-background px-2.5 py-2 text-xs font-bold text-foreground focus:ring-1 focus:ring-primary"
+                className="mt-1 w-full min-h-[44px] rounded-lg border bg-background px-2.5 py-2 text-xs font-bold text-foreground"
                 disabled={disabled || isSubmitting}
               >
                 {GST_SLABS.map((slab) => (
@@ -264,85 +265,80 @@ export function QuoteForm({
             <label className="block text-xs sm:col-span-1">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-foreground">GST Amount (₹)</span>
-                <span className="text-[10px] text-muted-foreground">{gstRate}%</span>
+                <span className="text-[10px] text-muted-foreground font-mono">{gstRate}%</span>
               </div>
               <input
                 type="number"
                 min={0}
                 value={form.gstAmount}
                 onChange={(e) => setNum('gstAmount', e.target.value)}
-                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 font-mono"
+                className="mt-1 w-full min-h-[44px] rounded-lg border bg-background px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 font-mono"
                 disabled={disabled || isSubmitting}
                 required
               />
             </label>
 
             <label className="block text-xs sm:col-span-1">
-              <span className="font-bold text-foreground">Transport &amp; Handling (₹)</span>
+              <span className="font-bold text-foreground">Freight &amp; Handling (₹)</span>
               <input
                 type="number"
                 min={0}
                 value={form.transportCost}
                 onChange={(e) => setNum('transportCost', e.target.value)}
-                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-xs font-semibold"
+                className="mt-1 w-full min-h-[44px] rounded-lg border bg-background px-3 py-2 text-xs font-semibold"
                 disabled={disabled || isSubmitting}
               />
             </label>
           </div>
 
-          {/* Line-Item Roll-up Summary */}
-          <div className="rounded-xl border border-muted bg-muted/20 p-3 text-xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-              <span>
-                Base: <strong className="text-foreground">₹{form.basePrice.toLocaleString('en-IN')}</strong>
-              </span>
-              <span>
-                + GST ({gstRate}%): <strong className="text-emerald-700 dark:text-emerald-400">₹{form.gstAmount.toLocaleString('en-IN')}</strong>
-              </span>
-              {form.transportCost > 0 && (
-                <span>
-                  + Transport: <strong className="text-foreground">₹{form.transportCost.toLocaleString('en-IN')}</strong>
-                </span>
-              )}
+          <div className="rounded-xl border border-muted bg-muted/20 p-2.5 text-xs flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-3 text-muted-foreground font-mono">
+              <span>Base: ₹{form.basePrice.toLocaleString('en-IN')}</span>
+              <span>+ GST: ₹{form.gstAmount.toLocaleString('en-IN')}</span>
+              {form.transportCost > 0 && <span>+ Freight: ₹{form.transportCost.toLocaleString('en-IN')}</span>}
             </div>
-            <div className="text-right">
-              <span className="text-[11px] text-muted-foreground block">Final Billable Amount:</span>
-              <strong className="text-sm font-black text-foreground">
-                ₹{total.toLocaleString('en-IN')}
-              </strong>
-            </div>
+            <strong className="text-sm font-black text-foreground font-mono">
+              Total: ₹{total.toLocaleString('en-IN')}
+            </strong>
           </div>
         </div>
       )}
 
-      {/* Turnaround & Warranty Presets */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {/* Delivery Days with 1-Tap Chips */}
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-foreground">
-            Delivery / Readiness Time:
-          </label>
-          <div className="flex flex-wrap gap-1.5">
+      {/* FIELD 2 & FIELD 3: Delivery Lead Time (Days TAT) + Warranty SLA (Months) */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {/* FIELD 2: Delivery Lead Time (Days TAT) */}
+        <div className="rounded-xl border bg-card p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-extrabold uppercase tracking-wider text-foreground">
+              ⚡ Field 2: Delivery Lead Time
+            </label>
+            <span className="font-mono text-xs font-bold text-primary">
+              {form.deliveryDays} Days
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1">
             {[
-              { days: 1, label: '⚡ Tomorrow (1d)' },
-              { days: 3, label: '📅 3 Days' },
-              { days: 7, label: '📅 1 Week' },
-              { days: 15, label: '📅 15 Days' },
+              { days: 1, label: '1 Day' },
+              { days: 3, label: '3 Days' },
+              { days: 7, label: '7 Days' },
+              { days: 15, label: '15 Days' },
             ].map((chip) => (
               <button
                 key={chip.days}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, deliveryDays: chip.days }))}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition border ${
+                className={`min-h-[40px] rounded-lg text-xs font-bold transition border flex items-center justify-center ${
                   form.deliveryDays === chip.days
                     ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                    : 'border-muted bg-card text-muted-foreground hover:text-foreground'
+                    : 'border-muted bg-muted/30 text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {chip.label}
               </button>
             ))}
           </div>
+
           <div className="flex items-center gap-2 pt-1">
             <span className="text-[11px] text-muted-foreground">Custom:</span>
             <input
@@ -350,40 +346,47 @@ export function QuoteForm({
               min={1}
               value={form.deliveryDays}
               onChange={(e) => setNum('deliveryDays', e.target.value)}
-              className="w-20 rounded-md border bg-background px-2 py-1 text-xs font-semibold text-center"
+              className="w-20 min-h-[38px] rounded-lg border bg-background px-2 py-1 text-xs font-bold text-center"
               disabled={disabled || isSubmitting}
               required
             />
-            <span className="text-xs text-muted-foreground">days</span>
+            <span className="text-xs text-muted-foreground">days turnaround</span>
           </div>
         </div>
 
-        {/* Warranty with 1-Tap Chips */}
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-foreground">
-            Warranty Period:
-          </label>
-          <div className="flex flex-wrap gap-1.5">
+        {/* FIELD 3: Warranty SLA (Months) */}
+        <div className="rounded-xl border bg-card p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-extrabold uppercase tracking-wider text-foreground">
+              🛡️ Field 3: Warranty SLA
+            </label>
+            <span className="font-mono text-xs font-bold text-primary">
+              {form.warrantyMonths === 0 ? 'None' : `${form.warrantyMonths} Mo`}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1">
             {[
               { months: 0, label: 'None' },
-              { months: 6, label: '6 Months' },
-              { months: 12, label: '⭐ 1 Year' },
+              { months: 6, label: '6 Mo' },
+              { months: 12, label: '1 Year' },
               { months: 24, label: '2 Years' },
             ].map((chip) => (
               <button
                 key={chip.months}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, warrantyMonths: chip.months }))}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition border ${
+                className={`min-h-[40px] rounded-lg text-xs font-bold transition border flex items-center justify-center ${
                   form.warrantyMonths === chip.months
                     ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                    : 'border-muted bg-card text-muted-foreground hover:text-foreground'
+                    : 'border-muted bg-muted/30 text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {chip.label}
               </button>
             ))}
           </div>
+
           <div className="flex items-center gap-2 pt-1">
             <span className="text-[11px] text-muted-foreground">Custom:</span>
             <input
@@ -391,78 +394,90 @@ export function QuoteForm({
               min={0}
               value={form.warrantyMonths}
               onChange={(e) => setNum('warrantyMonths', e.target.value)}
-              className="w-20 rounded-md border bg-background px-2 py-1 text-xs font-semibold text-center"
+              className="w-20 min-h-[38px] rounded-lg border bg-background px-2 py-1 text-xs font-bold text-center"
               disabled={disabled || isSubmitting}
               required
             />
-            <span className="text-xs text-muted-foreground">months</span>
+            <span className="text-xs text-muted-foreground">months warranty</span>
           </div>
         </div>
       </div>
 
-      {/* Notes / Special Inclusions */}
+      {/* Scope Compliance Confirmation Toggle */}
+      <div className="rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/30 p-3">
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={complianceConfirmed}
+            onChange={(e) => setComplianceConfirmed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+            disabled={disabled || isSubmitting}
+          />
+          <span className="text-xs font-bold text-emerald-950 dark:text-emerald-200 leading-snug">
+            ✓ I confirm 100% compliance with technical BoQ specifications and delivery terms.
+          </span>
+        </label>
+      </div>
+
+      {/* Optional Notes */}
       <label className="block text-xs">
-        <span className="font-bold text-foreground">Clarifications / Commercial Terms (Optional)</span>
+        <span className="font-semibold text-muted-foreground">Commercial Clarifications / Inclusions (Optional)</span>
         <textarea
           value={form.notes ?? ''}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-          placeholder="e.g. Price includes loading/unloading. Standard testing certificate provided."
+          placeholder="e.g. Rate includes loading/unloading. Standard test certificate attached."
           className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           rows={2}
           disabled={disabled || isSubmitting}
         />
       </label>
 
-      {/* Attachments Section */}
-      <section className="rounded-xl border bg-muted/20 p-4 space-y-2">
-        <h3 className="text-xs font-bold text-foreground">Attach Formal Quotation PDF / Drawing (Optional)</h3>
-        {quoteId ? (
-          <>
-            <p className="text-[11px] text-muted-foreground">
-              The buyer sees this anonymously as &ldquo;Document 1&rdquo; to protect your identity until you are selected.
-            </p>
-            <AttachmentUploader
-              scope={AttachmentScope.QUOTE}
-              quoteId={quoteId}
-              label="Upload PDF / Image quotation"
-              hint="Files are safely stripped of metadata."
-              disabled={disabled || isSubmitting}
-            />
-          </>
-        ) : (
-          <p className="text-[11px] text-muted-foreground italic">
-            You can attach your formal PDF quotation immediately after submitting this price.
+      {/* Optional Attachments */}
+      {quoteId && (
+        <section className="rounded-xl border bg-muted/20 p-3 space-y-1.5">
+          <h3 className="text-xs font-bold text-foreground">Attach Quotation PDF / Drawing (Optional)</h3>
+          <p className="text-[11px] text-muted-foreground">
+            The buyer sees this anonymously as &ldquo;Document 1&rdquo; to protect your identity until you are selected.
           </p>
-        )}
-      </section>
+          <AttachmentUploader
+            scope={AttachmentScope.QUOTE}
+            quoteId={quoteId}
+            label="Upload PDF / Image quotation"
+            hint="Files are safely stripped of metadata."
+            disabled={disabled || isSubmitting}
+          />
+        </section>
+      )}
 
-      {/* Total Confirmation Card & Submit Button */}
-      <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-        <div>
-          <span className="text-xs text-muted-foreground font-semibold block">Final Quote to Buyer:</span>
-          <span className="text-xl font-black text-emerald-800 dark:text-emerald-300">
-            {Number.isFinite(total) ? new Intl.NumberFormat('en-IN', {
-              style: 'currency',
-              currency: 'INR',
-              maximumFractionDigits: 0,
-            }).format(total) : '₹0'}
-          </span>
-          <span className="text-[11px] text-muted-foreground block">
-            Includes delivery in {form.deliveryDays} day{form.deliveryDays === 1 ? '' : 's'} · {form.warrantyMonths}m warranty
+      {/* Roll-up Summary Card & Sticky Single Primary CTA */}
+      <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-3.5 space-y-3 shadow-sm">
+        <div className="flex items-baseline justify-between">
+          <div>
+            <span className="text-[11px] text-muted-foreground uppercase font-bold block">
+              Final Sealed Quote Amount:
+            </span>
+            <span className="text-xl font-black text-foreground font-mono">
+              ₹{total.toLocaleString('en-IN')}
+            </span>
+          </div>
+          <span className="text-[11px] text-muted-foreground text-right">
+            ⚡ {form.deliveryDays}d TAT · 🛡️ {form.warrantyMonths}m SLA
           </span>
         </div>
 
         <button
           type="submit"
-          disabled={disabled || isSubmitting || total <= 0}
-          className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-extrabold text-white shadow-md hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-2"
+          disabled={disabled || isSubmitting || total <= 0 || !complianceConfirmed}
+          className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 transition disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+          data-testid="submit-sealed-quote-btn"
         >
-          <span>🚀</span> {isSubmitting ? 'Submitting Quote…' : submitLabel || 'Submit Quote Now'}
+          <span>🚀</span>
+          <span>{isSubmitting ? 'Submitting Sealed Quote…' : submitLabel}</span>
         </button>
       </div>
 
       {error && (
-        <p className="text-xs font-bold text-red-600 rounded-lg bg-red-50 p-3 border border-red-200" data-testid="quote-form-error">
+        <p className="text-xs font-bold text-red-600 dark:text-red-300 rounded-xl bg-red-50 dark:bg-red-950/40 p-3 border border-red-200 dark:border-red-900/60" data-testid="quote-form-error">
           ⚠️ {error}
         </p>
       )}

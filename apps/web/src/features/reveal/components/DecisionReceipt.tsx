@@ -104,26 +104,26 @@ export function DecisionReceipt({ rfqId, winningQuoteId, showTable = false }: De
       </ul>
 
       {showTable && (
-        <div className="mt-5 overflow-x-auto rounded-md border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="mt-5 overflow-x-auto rounded-xl border">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/50 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-4 py-2">Merit rank</th>
-                <th className="px-4 py-2">Supplier</th>
-                <th className="px-4 py-2">Quoted as</th>
-                <th className="px-4 py-2">Total</th>
-                <th className="px-4 py-2">Score</th>
+                <th className="px-3 py-2">Merit rank</th>
+                <th className="px-3 py-2">Supplier</th>
+                <th className="px-3 py-2">Quoted as</th>
+                <th className="px-3 py-2">Total</th>
+                <th className="px-3 py-2">Score</th>
               </tr>
             </thead>
             <tbody>
-              {receipt.meritOrder.map((b, index) => (
-                <tr key={b.quoteId} className="border-t">
-                  <td className="px-4 py-2 text-muted-foreground">#{index + 1}</td>
-                  <td className="px-4 py-2 font-medium">
-                    {b.quoteId === receipt.winner.quoteId ? (
+              {receipt.meritOrder.map((cand, index) => (
+                <tr key={cand.quoteId} className="border-t">
+                  <td className="px-3 py-2 text-muted-foreground">#{index + 1}</td>
+                  <td className="px-3 py-2 font-medium">
+                    {cand.quoteId === receipt.winner.quoteId ? (
                       <>
-                        <span className="font-bold text-foreground">{b.businessName}</span>
-                        <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
+                        <span className="font-bold text-foreground">{cand.businessName}</span>
+                        <span className="ml-2 rounded-full bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300">
                           Awarded
                         </span>
                       </>
@@ -133,9 +133,9 @@ export function DecisionReceipt({ rfqId, winningQuoteId, showTable = false }: De
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-muted-foreground">{b.anonymousLabel}</td>
-                  <td className="px-4 py-2">{inr(b.totalCost)}</td>
-                  <td className="px-4 py-2">{b.evaluationScore?.toFixed(1) ?? '—'}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{cand.anonymousLabel}</td>
+                  <td className="px-3 py-2 font-mono">{inr(cand.totalCost)}</td>
+                  <td className="px-3 py-2">{cand.evaluationScore?.toFixed(1) ?? '—'}</td>
                 </tr>
               ))}
             </tbody>

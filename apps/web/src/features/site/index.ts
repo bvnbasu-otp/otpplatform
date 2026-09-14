@@ -2,7 +2,7 @@ export { SiteLayout } from './components/SiteLayout';
 export { SiteHeader } from './components/SiteHeader';
 export {
   IdentityProtectedComparisonPreview,
-  IdentityProtectedComparisonPreview as BlindComparisonPreview,
+  IdentityProtectedComparisonPreview as MaskedComparisonPreview,
 } from './components/IdentityProtectedComparisonPreview';
 export { RequirementPrompt, REQUIREMENT_PROMPT_KEY } from './components/RequirementPrompt';
 export { LandingPage } from './pages/LandingPage';

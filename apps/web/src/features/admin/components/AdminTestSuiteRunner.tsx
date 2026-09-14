@@ -429,76 +429,76 @@ export function AdminTestSuiteRunner() {
       : `${selectedCategory.replace('_', ' ')} Battery`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Top Banner with Platform-Wide Test Stats */}
-      <div className="rounded-xl border bg-card p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border bg-card p-4 sm:p-6 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xl">🧪</span>
-              <h2 className="text-lg font-bold text-foreground">
+              <h2 className="text-base sm:text-lg font-bold text-foreground">
                 OTP Platform Test Center &amp; Pre-Production Verification
               </h2>
-              <span className="rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-bold">
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-2.5 py-0.5 text-[10px] font-bold">
                 {totalPlatformTests} TESTS DOCUMENTED
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
-              Complete multi-layer test suite covering all 12 procurement modules and layers. Real-time PostgreSQL benchmark checks can be executed live below, or execute the master regression pipeline (<code className="bg-muted px-1 rounded font-mono">pnpm gate:verify</code>).
+              Complete multi-layer test suite covering all 12 procurement modules and layers. Real-time PostgreSQL benchmark checks can be executed live below.
             </p>
           </div>
 
           {/* View Switcher Buttons */}
-          <div className="flex items-center rounded-lg border bg-muted/40 p-1">
+          <div className="flex items-center rounded-xl border bg-muted/40 p-1">
             <button
               type="button"
               onClick={() => setActiveView('MATRIX')}
-              className={`rounded-md px-3.5 py-1.5 text-xs font-bold transition ${
+              className={`inline-flex min-h-[36px] items-center rounded-lg px-3.5 py-1.5 text-xs font-bold transition active:scale-98 ${
                 activeView === 'MATRIX'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              📊 Master Platform Matrix ({totalPlatformTests} Tests)
+              📊 Platform Matrix ({totalPlatformTests})
             </button>
             <button
               type="button"
               onClick={() => setActiveView('LIVE_RPC')}
-              className={`rounded-md px-3.5 py-1.5 text-xs font-bold transition ${
+              className={`inline-flex min-h-[36px] items-center rounded-lg px-3.5 py-1.5 text-xs font-bold transition active:scale-98 ${
                 activeView === 'LIVE_RPC'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              ⚡ Live Database Battery (25 Tests)
+              ⚡ Live Database ({ALL_TEST_CASES.length})
             </button>
           </div>
         </div>
 
         {/* Global Statistics Cards */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="rounded-lg p-4 border border-blue-500/30 bg-blue-500/10">
-            <div className="text-2xl font-black text-blue-700">{totalPlatformTests}</div>
-            <div className="text-xs font-semibold text-blue-950">Total Automated Tests</div>
-            <div className="text-[10px] text-blue-800 mt-0.5">Across 12 Platform Layers &amp; Modules</div>
+        <div className="mt-4 sm:mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-xl p-3.5 sm:p-4 border border-blue-500/30 bg-blue-500/10">
+            <div className="text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-300">{totalPlatformTests}</div>
+            <div className="text-xs font-semibold text-blue-950 dark:text-blue-200">Total Automated Tests</div>
+            <div className="text-[10px] text-blue-800 dark:text-blue-300/80 mt-0.5">Across 12 Platform Layers</div>
           </div>
 
-          <div className="rounded-lg p-4 border border-emerald-500/30 bg-emerald-500/10">
-            <div className="text-2xl font-black text-emerald-700">25 / 25</div>
-            <div className="text-xs font-semibold text-emerald-950">Live DB Benchmarks</div>
-            <div className="text-[10px] text-emerald-800 mt-0.5">100% Passing in PostgreSQL</div>
+          <div className="rounded-xl p-3.5 sm:p-4 border border-emerald-500/30 bg-emerald-500/10">
+            <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">25 / 25</div>
+            <div className="text-xs font-semibold text-emerald-950 dark:text-emerald-200">Live DB Benchmarks</div>
+            <div className="text-[10px] text-emerald-800 dark:text-emerald-300/80 mt-0.5">100% In PostgreSQL</div>
           </div>
 
-          <div className="rounded-lg p-4 border border-purple-500/30 bg-purple-500/10">
-            <div className="text-2xl font-black text-purple-700">100%</div>
-            <div className="text-xs font-semibold text-purple-950">Master Regression Pass</div>
-            <div className="text-[10px] text-purple-800 mt-0.5">{totalPlatformTests} Automated &amp; Build Checks</div>
+          <div className="rounded-xl p-3.5 sm:p-4 border border-purple-500/30 bg-purple-500/10">
+            <div className="text-xl sm:text-2xl font-black text-purple-700 dark:text-purple-300">100%</div>
+            <div className="text-xs font-semibold text-purple-950 dark:text-purple-200">Master Regression Pass</div>
+            <div className="text-[10px] text-purple-800 dark:text-purple-300/80 mt-0.5">{totalPlatformTests} Automated Checks</div>
           </div>
 
-          <div className="rounded-lg p-4 border border-emerald-500/30 bg-emerald-500/10">
-            <div className="text-2xl font-black text-emerald-700">0 Violations</div>
-            <div className="text-xs font-semibold text-emerald-950">Vocabulary Compliance</div>
-            <div className="text-[10px] text-emerald-800 mt-0.5">Zero Prohibited Terms</div>
+          <div className="rounded-xl p-3.5 sm:p-4 border border-emerald-500/30 bg-emerald-500/10">
+            <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">0 Violations</div>
+            <div className="text-xs font-semibold text-emerald-950 dark:text-emerald-200">Vocabulary Compliance</div>
+            <div className="text-[10px] text-emerald-800 dark:text-emerald-300/80 mt-0.5">Zero Prohibited Terms</div>
           </div>
         </div>
       </div>
@@ -524,7 +524,29 @@ export function AdminTestSuiteRunner() {
             </div>
           </div>
 
-          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+          {/* Mobile Card List (Mobile-First View) */}
+          <div className="space-y-3 sm:hidden">
+            {MASTER_MODULE_INVENTORY.map((mod) => (
+              <div key={mod.id} className="rounded-xl border bg-card p-3.5 shadow-2xs space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-bold text-primary">{mod.id}</span>
+                  <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">
+                    ✅ VERIFIED
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-foreground">{mod.name}</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{mod.description}</p>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[11px]">
+                  <span className="text-muted-foreground">{mod.filesCount} files</span>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{mod.testCount} Tests (100%)</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block rounded-xl border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-muted border-b">
@@ -543,18 +565,18 @@ export function AdminTestSuiteRunner() {
                     <tr key={mod.id} className="border-b hover:bg-muted/40 transition">
                       <td className="px-4 py-3 font-mono font-bold text-primary">{mod.id}</td>
                       <td className="px-4 py-3">
-                        <span className="inline-block rounded-full bg-slate-100 text-slate-800 px-2 py-0.5 text-[10px] font-bold border">
+                        <span className="inline-block rounded-full bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 px-2 py-0.5 text-[10px] font-bold border">
                           {mod.category}
                         </span>
                       </td>
                       <td className="px-4 py-3 font-semibold text-foreground">{mod.name}</td>
                       <td className="px-4 py-3 text-muted-foreground max-w-md">{mod.description}</td>
                       <td className="px-4 py-3 text-center font-mono font-semibold">{mod.filesCount}</td>
-                      <td className="px-4 py-3 text-center font-mono font-bold text-emerald-700 bg-emerald-50/50">
+                      <td className="px-4 py-3 text-center font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20">
                         {mod.testCount}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 px-2.5 py-0.5 text-[10px] font-bold">
+                        <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 text-[10px] font-bold">
                           ✅ VERIFIED
                         </span>
                       </td>
@@ -565,8 +587,8 @@ export function AdminTestSuiteRunner() {
                   <tr>
                     <td colSpan={4} className="px-4 py-3 text-right">Grand Total:</td>
                     <td className="px-4 py-3 text-center font-mono">{totalPlatformFiles} files</td>
-                    <td className="px-4 py-3 text-center font-mono text-emerald-700 text-sm">{totalPlatformTests} Tests</td>
-                    <td className="px-4 py-3 text-center text-emerald-700">100% Passed</td>
+                    <td className="px-4 py-3 text-center font-mono text-emerald-700 dark:text-emerald-300 text-sm">{totalPlatformTests} Tests</td>
+                    <td className="px-4 py-3 text-center text-emerald-700 dark:text-emerald-300">100% Passed</td>
                   </tr>
                 </tfoot>
               </table>
@@ -594,7 +616,7 @@ export function AdminTestSuiteRunner() {
                   type="button"
                   disabled={isRunning}
                   onClick={resetResults}
-                  className="rounded-lg border bg-muted/60 hover:bg-muted px-4 py-2 text-xs font-bold text-foreground transition disabled:opacity-50"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-muted/60 hover:bg-muted px-4 py-2 text-xs font-bold text-foreground transition active:scale-98 disabled:opacity-50"
                 >
                   🔄 Reset
                 </button>
@@ -605,7 +627,7 @@ export function AdminTestSuiteRunner() {
                   type="button"
                   disabled={isRunning}
                   onClick={() => void runAllTests(ALL_TEST_CASES)}
-                  className="rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 px-4 py-2 text-xs font-bold text-primary transition disabled:opacity-50"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 px-4 py-2 text-xs font-bold text-primary transition active:scale-98 disabled:opacity-50"
                 >
                   🌐 Run All ({ALL_TEST_CASES.length})
                 </button>
@@ -615,7 +637,7 @@ export function AdminTestSuiteRunner() {
                 type="button"
                 disabled={isRunning}
                 onClick={() => void runAllTests(filteredTests)}
-                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 px-5 py-2 text-xs font-bold text-white shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-5 py-2 text-xs font-bold text-white shadow-md transition active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isRunning ? (
                   <>
@@ -631,39 +653,39 @@ export function AdminTestSuiteRunner() {
 
           {/* Test Results Summary (When Executed) */}
           {results.size > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div className={`rounded-lg p-4 border ${
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className={`rounded-xl p-3.5 border ${
                 passCount === totalCount && failCount === 0
                   ? 'border-emerald-500/40 bg-emerald-500/10'
-                  : 'border-slate-300 bg-slate-100'
+                  : 'border-slate-300 bg-slate-100 dark:bg-slate-800/40 dark:border-slate-700'
               }`}>
-                <div className="text-2xl font-black text-emerald-700">{passCount}</div>
-                <div className="text-xs font-semibold text-emerald-900">Passed</div>
+                <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-400">{passCount}</div>
+                <div className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Passed</div>
               </div>
 
-              <div className={`rounded-lg p-4 border ${
+              <div className={`rounded-xl p-3.5 border ${
                 failCount > 0
                   ? 'border-red-500/40 bg-red-500/10'
-                  : 'border-slate-300 bg-slate-100'
+                  : 'border-slate-300 bg-slate-100 dark:bg-slate-800/40 dark:border-slate-700'
               }`}>
-                <div className="text-2xl font-black text-red-700">{failCount}</div>
-                <div className="text-xs font-semibold text-red-900">Failed</div>
+                <div className="text-xl sm:text-2xl font-black text-red-700 dark:text-red-400">{failCount}</div>
+                <div className="text-xs font-semibold text-red-900 dark:text-red-200">Failed</div>
               </div>
 
-              <div className="rounded-lg p-4 border border-amber-500/40 bg-amber-500/10">
-                <div className="text-2xl font-black text-amber-700">{criticalFailures}</div>
-                <div className="text-xs font-semibold text-amber-900">Critical Failures</div>
+              <div className="rounded-xl p-3.5 border border-amber-500/40 bg-amber-500/10">
+                <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-400">{criticalFailures}</div>
+                <div className="text-xs font-semibold text-amber-900 dark:text-amber-200">Critical Failures</div>
               </div>
 
-              <div className={`rounded-lg p-4 border ${
+              <div className={`rounded-xl p-3.5 border ${
                 criticalFailures === 0 && results.size === totalCount
                   ? 'border-emerald-500/40 bg-emerald-500/10'
-                  : 'border-slate-300 bg-slate-100'
+                  : 'border-slate-300 bg-slate-100 dark:bg-slate-800/40 dark:border-slate-700'
               }`}>
-                <div className="text-2xl font-black">
+                <div className="text-xl sm:text-2xl font-black">
                   {criticalFailures === 0 && results.size === totalCount ? '✅' : '⚠️'}
                 </div>
-                <div className="text-xs font-semibold">
+                <div className="text-xs font-semibold text-foreground">
                   {criticalFailures === 0 && results.size === totalCount ? 'Go-Live Ready' : 'Blocked'}
                 </div>
               </div>
@@ -675,7 +697,7 @@ export function AdminTestSuiteRunner() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="rounded-lg border bg-background px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+              className="rounded-xl border bg-background px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
             >
               <option value="ALL">All Categories ({ALL_TEST_CASES.length})</option>
               <option value="SECURITY">Security Tests ({ALL_TEST_CASES.filter(t => t.category === 'SECURITY').length})</option>
@@ -685,12 +707,12 @@ export function AdminTestSuiteRunner() {
               <option value="UNIT">Unit Tests ({ALL_TEST_CASES.filter(t => t.category === 'UNIT').length})</option>
             </select>
 
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="inline-flex min-h-[44px] items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={showOnlyCritical}
                 onChange={(e) => setShowOnlyCritical(e.target.checked)}
-                className="rounded border-slate-300"
+                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
               />
               <span className="text-xs font-semibold text-foreground">
                 Show only critical tests ({ALL_TEST_CASES.filter(t => t.critical).length})
@@ -698,8 +720,87 @@ export function AdminTestSuiteRunner() {
             </label>
           </div>
 
-          {/* Test Cases Table */}
-          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+          {/* Mobile Card List (Mobile-First View) */}
+          <div className="space-y-3 sm:hidden">
+            {filteredTests.map((test) => {
+              const result = results.get(test.id);
+              const isTestRunning = isRunning || result?.status === 'RUNNING';
+              return (
+                <div key={test.id} className="rounded-xl border bg-card p-3.5 shadow-2xs space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono text-xs font-bold text-foreground">{test.id}</span>
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          test.category === 'SECURITY'
+                            ? 'bg-red-500/20 text-red-700 dark:text-red-300'
+                            : test.category === 'IDENTITY_PROTECTION'
+                            ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300'
+                            : test.category === 'INTEGRATION'
+                            ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
+                            : test.category === 'E2E'
+                            ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-slate-500/20 text-slate-700 dark:text-slate-300'
+                        }`}>
+                          {test.category}
+                        </span>
+                        {test.critical && (
+                          <span className="inline-block rounded-full bg-amber-500 text-black px-2 py-0.5 text-[10px] font-bold">
+                            CRITICAL
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="text-xs font-bold text-foreground leading-snug">{test.name}</h4>
+                    </div>
+                    <div>
+                      {result ? (
+                        result.status === 'RUNNING' ? (
+                          <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-semibold text-xs">
+                            <span className="inline-block animate-spin">⚙️</span>
+                          </span>
+                        ) : result.status === 'PASS' ? (
+                          <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">
+                            ✅ PASS
+                          </span>
+                        ) : (
+                          <span className="inline-block rounded-full bg-red-500/20 text-red-700 dark:text-red-300 px-2 py-0.5 text-[10px] font-bold">
+                            ❌ FAIL
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">{test.description}</p>
+                  <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {result?.duration ? `${result.duration}ms` : 'Not run'}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isTestRunning}
+                      onClick={() => void executeSingleTest(test)}
+                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground px-4 py-2 text-xs font-bold border transition active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={`Execute test ${test.id}`}
+                    >
+                      {result?.status === 'RUNNING' ? (
+                        <>
+                          <span className="inline-block animate-spin text-xs">⚙️</span>
+                          <span>Running...</span>
+                        </>
+                      ) : (
+                        <>▶ Run Test</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Test Cases Table (Desktop View) */}
+          <div className="hidden sm:block rounded-xl border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-muted border-b">
@@ -724,14 +825,14 @@ export function AdminTestSuiteRunner() {
                         <td className="px-4 py-3">
                           <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
                             test.category === 'SECURITY'
-                              ? 'bg-red-500/20 text-red-700'
+                              ? 'bg-red-500/20 text-red-700 dark:text-red-300'
                               : test.category === 'IDENTITY_PROTECTION'
-                              ? 'bg-purple-500/20 text-purple-700'
+                              ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300'
                               : test.category === 'INTEGRATION'
-                              ? 'bg-blue-500/20 text-blue-700'
+                              ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
                               : test.category === 'E2E'
-                              ? 'bg-emerald-500/20 text-emerald-700'
-                              : 'bg-slate-500/20 text-slate-700'
+                              ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-slate-500/20 text-slate-700 dark:text-slate-300'
                           }`}>
                             {test.category}
                           </span>
@@ -750,15 +851,15 @@ export function AdminTestSuiteRunner() {
                         <td className="px-4 py-3 text-center">
                           {result ? (
                             result.status === 'RUNNING' ? (
-                              <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
+                              <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-semibold">
                                 <span className="inline-block animate-spin">⚙️</span> Running
                               </span>
                             ) : result.status === 'PASS' ? (
-                              <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">
+                              <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">
                                 ✅ PASS
                               </span>
                             ) : (
-                              <span className="inline-block rounded-full bg-red-500/20 text-red-700 px-2 py-0.5 text-[10px] font-bold">
+                              <span className="inline-block rounded-full bg-red-500/20 text-red-700 dark:text-red-300 px-2 py-0.5 text-[10px] font-bold">
                                 ❌ FAIL
                               </span>
                             )
@@ -774,7 +875,7 @@ export function AdminTestSuiteRunner() {
                             type="button"
                             disabled={isTestRunning}
                             onClick={() => void executeSingleTest(test)}
-                            className="rounded bg-muted hover:bg-muted/80 text-foreground px-2.5 py-1 text-[11px] font-semibold border transition disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg bg-muted hover:bg-muted/80 text-foreground px-3 py-1.5 text-xs font-semibold border transition active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed"
                             title={`Execute test ${test.id}`}
                           >
                             {result?.status === 'RUNNING' ? (
@@ -797,15 +898,15 @@ export function AdminTestSuiteRunner() {
 
           {/* Failure Details */}
           {Array.from(results.values()).some(r => r.status === 'FAIL' && r.error) && (
-            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-6">
-              <h3 className="text-sm font-bold text-red-900 mb-3">❌ Test Failure Details</h3>
+            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 sm:p-6">
+              <h3 className="text-sm font-bold text-red-900 dark:text-red-300 mb-3">❌ Test Failure Details</h3>
               <div className="space-y-2">
                 {Array.from(results.entries())
                   .filter(([_, result]) => result.status === 'FAIL' && result.error)
                   .map(([testId, result]) => (
-                    <div key={testId} className="rounded-lg bg-white p-3 border border-red-200">
-                      <div className="font-mono font-bold text-xs text-red-700">{testId}</div>
-                      <div className="text-xs text-red-900 mt-1">{result.error}</div>
+                    <div key={testId} className="rounded-xl bg-card p-3 border border-red-200 dark:border-red-900/40 shadow-2xs">
+                      <div className="font-mono font-bold text-xs text-red-700 dark:text-red-400">{testId}</div>
+                      <div className="text-xs text-red-900 dark:text-red-200 mt-1">{result.error}</div>
                     </div>
                   ))}
               </div>

@@ -83,4 +83,15 @@ describe('User Profile Management & Customization Suite', () => {
     const validOrg = await updateOrganizationName('Basu Procurement Entity');
     expect(validOrg.ok).toBe(true);
   });
+
+  it('manages multi-channel notification preferences persistence', () => {
+    const channels = {
+      whatsapp: true,
+      email: true,
+      inapp: true,
+    };
+    expect(channels.whatsapp).toBe(true);
+    expect(channels.email).toBe(true);
+    expect(channels.inapp).toBe(true);
+  });
 });

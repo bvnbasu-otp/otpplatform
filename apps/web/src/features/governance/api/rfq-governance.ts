@@ -7,6 +7,11 @@ interface IdentityProtectedQuoteRow {
   total_cost: number | null;
   evaluation_score: number | null;
   delivery_days: number | null;
+  warranty_months?: number | null;
+  rating_band?: number | null;
+  on_time_band?: number | null;
+  experience_band?: string | null;
+  is_gst_verified?: boolean | null;
 }
 
 function mapIdentityProtectedQuote(row: IdentityProtectedQuoteRow): IdentityProtectedQuoteForVote {
@@ -16,6 +21,11 @@ function mapIdentityProtectedQuote(row: IdentityProtectedQuoteRow): IdentityProt
     totalCost: Number(row.total_cost ?? 0),
     evaluationScore: row.evaluation_score != null ? Number(row.evaluation_score) : null,
     deliveryDays: row.delivery_days,
+    warrantyMonths: row.warranty_months,
+    ratingBand: row.rating_band,
+    onTimeBand: row.on_time_band,
+    experienceBand: row.experience_band,
+    isGstVerified: row.is_gst_verified,
   };
 }
 
@@ -62,7 +72,7 @@ export async function fetchIdentityProtectedQuotesForVote(rfqId: string): Promis
 > {
   const { data, error } = await supabase
     .from('quotes_identity_protected')
-    .select('quote_id, anonymous_label, total_cost, evaluation_score, delivery_days')
+    .select('quote_id, anonymous_label, total_cost, evaluation_score, delivery_days, warranty_months, rating_band, on_time_band, experience_band, is_gst_verified')
     .eq('rfq_id', rfqId);
 
   if (error) return { ok: false, error: error.message };
@@ -71,6 +81,3 @@ export async function fetchIdentityProtectedQuotesForVote(rfqId: string): Promis
   quotes.sort((a, b) => (b.evaluationScore ?? 0) - (a.evaluationScore ?? 0));
   return { ok: true, quotes };
 }
-
-// Backward-compatible alias
-export const fetchBlindQuotesForVote = fetchIdentityProtectedQuotesForVote;

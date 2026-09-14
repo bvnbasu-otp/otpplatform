@@ -71,4 +71,4 @@ export function IdentityProtectedComparisonPreview() {
 }
 
 // Legacy alias
-export const BlindComparisonPreview = IdentityProtectedComparisonPreview;
+export const MaskedComparisonPreview = IdentityProtectedComparisonPreview;

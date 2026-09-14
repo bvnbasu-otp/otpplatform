@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SupplierInvitationList } from '@/features/supplier/components/SupplierInvitationList';
 import { useSupplierInvitations } from '@/features/supplier/hooks/use-supplier-invitations';
-import { RoleWorkspaceCard } from '@/features/roles';
 import {
   fetchSupplierPerformance,
   type SupplierPerformanceSummary,
@@ -10,6 +9,7 @@ import {
 import { SupplierPerformanceSection } from '@/features/supplier/components/SupplierPerformanceSection';
 import { fetchPurchaseOrders } from '@/features/fulfillment/api/purchase-orders';
 import { formatMoney, type PurchaseOrderSummary } from '@/features/fulfillment/types/fulfillment';
+import { MobileGlanceBar } from '@/components/ui/MobileGlanceBar';
 
 export function SupplierDashboardPage() {
   const { invitations, isLoading, error, refresh } = useSupplierInvitations();
@@ -64,6 +64,7 @@ export function SupplierDashboardPage() {
       inv.rfqStatus !== 'CLOSED' &&
       inv.rfqStatus !== 'CANCELLED'
   ).length;
+
   const activeQuotedCount = invitations.filter(
     (inv) =>
       inv.status === 'QUOTED' &&
@@ -71,15 +72,16 @@ export function SupplierDashboardPage() {
       inv.rfqStatus !== 'CLOSED' &&
       inv.rfqStatus !== 'CANCELLED'
   ).length;
-  const cancelledLostCount = invitations.filter(
-    (inv) =>
-      inv.rfqStatus === 'CANCELLED' ||
-      (inv.rfqStatus === 'CLOSED' && inv.status !== 'QUOTED')
-  ).length;
-  const ordersInExecution = purchaseOrders.filter((po) => !po.isSettled && po.status !== 'CANCELLED' && po.status !== 'DRAFT').length || (performance?.inExecutionCount ?? 0);
-  const completedOrders = purchaseOrders.filter((po) => po.isSettled || po.status === 'COMPLETED').length || (performance?.completedOrdersCount ?? (performance?.completedJobs ?? 0));
+
+  const ordersInExecution = purchaseOrders.filter(
+    (po) => !po.isSettled && po.status !== 'CANCELLED' && po.status !== 'DRAFT'
+  ).length || (performance?.inExecutionCount ?? 0);
+
+  const completedOrders = purchaseOrders.filter(
+    (po) => po.isSettled || po.status === 'COMPLETED'
+  ).length || (performance?.completedOrdersCount ?? (performance?.completedJobs ?? 0));
+
   const ratingAvg = performance?.ratingAvg ?? 5.0;
-  const totalReviews = performance?.totalReviews ?? 0;
 
   const isInvitationStalled = (inv: (typeof invitations)[0]) => {
     if (inv.rfqStatus === 'AWARDED' || inv.rfqStatus === 'CLOSED' || inv.rfqStatus === 'CANCELLED') return false;
@@ -88,6 +90,30 @@ export function SupplierDashboardPage() {
     return Date.now() - new Date(date).getTime() > 24 * 60 * 60 * 1000;
   };
   const stalledSupplierCount = invitations.filter(isInvitationStalled).length;
+
+  // Active RFQs (all open/quoting/evaluating)
+  const totalActiveRfqs = openInvitations + activeQuotedCount;
+
+  // Glance bar mapping
+  const glanceFilter = filterTab === 'ACTION_REQUIRED'
+    ? 'ACTION_REQUIRED'
+    : filterTab === 'SETTLED'
+    ? 'COMPLETED'
+    : filterTab === 'EVALUATING' || filterTab === 'QUOTING'
+    ? 'ACTIVE'
+    : 'ALL';
+
+  const handleGlanceSelect = (filter: 'ALL' | 'ACTIVE' | 'ACTION_REQUIRED' | 'COMPLETED') => {
+    if (filter === 'ACTIVE') {
+      setFilterTab('EVALUATING');
+    } else if (filter === 'ACTION_REQUIRED') {
+      setFilterTab('ACTION_REQUIRED');
+    } else if (filter === 'COMPLETED') {
+      setFilterTab('SETTLED');
+    } else {
+      setFilterTab('ALL');
+    }
+  };
 
   const filteredInvitations = invitations.filter((inv) => {
     if (filterTab === 'ACTION_REQUIRED') {
@@ -139,279 +165,222 @@ export function SupplierDashboardPage() {
   });
 
   return (
-    <div className="zero-scroll-container p-2 sm:p-3 max-w-7xl mx-auto w-full" data-testid="supplier-dashboard">
-      {/* Header - High Density Single Row */}
-      <header className="rounded-lg border bg-card px-2.5 sm:px-3 py-1.5 sm:py-2 shadow-2xs shrink-0 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <h1 className="text-xs sm:text-sm font-bold tracking-tight text-foreground truncate">Supplier Workspace</h1>
-          {performance && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 shadow-2xs shrink-0">
-              ⭐ {ratingAvg.toFixed(1)} / 5.0 Rating
-            </span>
-          )}
-          <span className="hidden md:inline-flex rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-semibold border border-primary/20">
-            Neutral Anonymity Active
-          </span>
+    <div
+      className="p-3 sm:p-4 max-w-4xl mx-auto w-full space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden"
+      data-testid="supplier-dashboard"
+    >
+      {/* 1. Header Bar: Supplier Profile & Verification Status */}
+      <header className="rounded-2xl border bg-card p-3.5 shadow-xs flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black text-sm shrink-0 border border-primary/20">
+            🏢
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-foreground truncate">
+              Supplier Workspace
+            </h1>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/60 px-2 py-0.2 text-[10px] font-bold text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">
+                ⭐ {ratingAvg.toFixed(1)} Rating
+              </span>
+              <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.2 text-[9px] font-bold">
+                ✓ Verified
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+
+        <div className="flex items-center gap-2 shrink-0">
           <Link
             to="/supplier/purchase-orders"
-            className="rounded bg-primary px-2 sm:px-2.5 py-1 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+            className="min-h-[44px] rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center gap-1 active:scale-98"
           >
-            Active POs →
+            <span>Active POs</span>
+            <span>→</span>
           </Link>
           <Link
             to="/supplier/capabilities"
-            className="hidden sm:inline-flex rounded border bg-card px-2 py-1 text-xs font-medium hover:bg-muted transition"
+            className="hidden sm:inline-flex min-h-[44px] rounded-xl border bg-card px-3 py-2 text-xs font-semibold hover:bg-muted transition items-center"
           >
-            Capabilities →
+            Capabilities
           </Link>
         </div>
       </header>
 
-      {/* Action Required Alert: Purchase Orders Awaiting Acceptance (Compact) */}
+      {/* 2. Urgent Action Alert: Purchase Orders Awaiting Acceptance */}
       {pendingAcceptancePOs.length > 0 && (
-        <div className="mt-1.5 rounded-lg border-2 border-blue-500 bg-blue-50/80 dark:bg-blue-950/30 p-2.5 shadow-2xs shrink-0">
+        <section className="rounded-2xl border-2 border-blue-500 bg-blue-50/80 dark:bg-blue-950/30 p-3.5 shadow-xs space-y-2.5">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-blue-900 dark:text-blue-200 font-bold text-xs">
-              <span>⚡</span>
+            <div className="flex items-center gap-2 text-blue-900 dark:text-blue-200 font-extrabold text-xs">
+              <span className="text-sm">⚡</span>
               <span>Action Required: {pendingAcceptancePOs.length} Purchase Order{pendingAcceptancePOs.length === 1 ? '' : 's'} Awaiting Acceptance</span>
             </div>
-            <span className="rounded-full bg-blue-200 dark:bg-blue-900/60 px-2 py-0.2 text-[9px] font-bold text-blue-900 dark:text-blue-200">
+            <span className="rounded-full bg-blue-200 dark:bg-blue-900/60 px-2 py-0.5 text-[9px] font-black text-blue-900 dark:text-blue-200">
               NEW AWARD
             </span>
           </div>
-          <div className="mt-2 space-y-1.5">
+          <div className="space-y-2">
             {pendingAcceptancePOs.map((po) => (
               <div
                 key={po.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded border bg-card p-2 text-xs shadow-2xs hover:border-blue-300 transition"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border bg-card p-3 text-xs shadow-2xs hover:border-blue-300 transition"
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-foreground">{po.poNumber}</span>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="font-semibold text-foreground truncate">{po.rfqTitle}</span>
-                  <span className="text-muted-foreground">·</span>
-                  <span>Value: <strong className="text-foreground">{formatMoney(po.totalAmount, po.currency)}</strong></span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 font-mono font-bold text-foreground">
+                    <span>{po.poNumber}</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-black">{formatMoney(po.totalAmount, po.currency)}</span>
+                  </div>
+                  <p className="font-semibold text-foreground truncate mt-0.5">{po.rfqTitle}</p>
                 </div>
                 <Link
                   to={`/supplier/purchase-orders/${po.id}`}
-                  className="rounded bg-blue-600 px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 transition flex items-center gap-1"
+                  className="min-h-[44px] rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition flex items-center justify-center gap-1.5 active:scale-98"
                 >
-                  <span>⚡ Accept PO →</span>
+                  <span>⚡ Accept Purchase Order →</span>
                 </Link>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Seller KPI Stat Ribbon (Compact 4-column) */}
-      <section className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
-        {/* Box 1: New RFQ Invitations */}
-        <button
-          type="button"
-          onClick={() => {
-            setFilterTab('ACTION_REQUIRED');
-          }}
-          className={`group rounded-lg border p-2 text-left shadow-2xs transition hover:border-amber-400 ${
-            filterTab === 'ACTION_REQUIRED' ? 'bg-amber-50/70 dark:bg-amber-950/40 border-amber-400 ring-1 ring-amber-300' : 'bg-card'
-          }`}
-          data-testid="stat-new-invitations"
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">New RFQ Invites</p>
-            <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 opacity-80">Quote →</span>
-          </div>
-          <p className="text-lg font-bold text-amber-700 dark:text-amber-400">
-            {openInvitations}
-          </p>
-        </button>
-
-        {/* Box 2: Active Quotes Submitted */}
-        <button
-          type="button"
-          onClick={() => {
-            setFilterTab('EVALUATING');
-          }}
-          className={`group rounded-lg border p-2 text-left shadow-2xs transition hover:border-primary/50 ${
-            filterTab === 'EVALUATING' ? 'bg-primary/5 border-primary ring-1 ring-primary/20' : 'bg-card'
-          }`}
-          data-testid="stat-active-quotes"
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold text-primary">Active Quotes</p>
-            <span className="text-[10px] font-semibold text-primary opacity-80">Review →</span>
-          </div>
-          <p className="text-lg font-bold text-primary">
-            {activeQuotedCount}
-          </p>
-        </button>
-
-        {/* Box 3: Orders in Execution */}
-        <Link
-          to="/supplier/purchase-orders"
-          className="group rounded-lg border bg-card p-2 text-left shadow-2xs transition hover:border-blue-400 hover:bg-blue-50/30 dark:hover:bg-blue-950/30"
-          data-testid="stat-orders-execution"
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold text-blue-800 dark:text-blue-300">In Execution</p>
-            <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 opacity-80">Work →</span>
-          </div>
-          <p className="text-lg font-bold text-blue-700 dark:text-blue-400">
-            {ordersInExecution}
-          </p>
-        </Link>
-
-        {/* Box 4: Completed & Settled */}
-        <Link
-          to="/supplier/purchase-orders"
-          className="group rounded-lg border bg-card p-2 text-left shadow-2xs transition hover:border-emerald-400 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30"
-          data-testid="stat-completed-settled"
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">Completed</p>
-            <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 opacity-80">Invoices →</span>
-          </div>
-          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-            {completedOrders}
-          </p>
-        </Link>
+      {/* 3. Screen 5 Flagship Component: Mobile 3-State Glance Bar */}
+      <section className="space-y-1.5">
+        <h2 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
+          What needs my attention?
+        </h2>
+        <MobileGlanceBar
+          activeCount={totalActiveRfqs}
+          actionRequiredCount={openInvitations}
+          completedCount={completedOrders}
+          selectedFilter={glanceFilter}
+          onSelectFilter={handleGlanceSelect}
+        />
       </section>
 
-      {/* Main Internal Scroll Content Area */}
-      <div className="zero-scroll-pane mt-2 space-y-2">
-        {/* Supplier RFQ Invitations List */}
-        <section id="supplier-rfq-invitations" className="rounded-lg border bg-card p-3 shadow-2xs">
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b pb-2">
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Invited Enquiries &amp; Active RFQs
-              </h2>
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap items-center gap-1 rounded bg-muted/40 p-0.5 text-[11px]">
-              <button
-                type="button"
-                onClick={() => setFilterTab('ALL')}
-                className={`rounded px-2 py-0.5 font-semibold transition ${
-                  filterTab === 'ALL'
-                    ? 'bg-card text-foreground shadow-2xs font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                All ({invitations.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterTab('ACTION_REQUIRED')}
-                className={`flex items-center gap-1 rounded px-2 py-0.5 font-bold transition ${
-                  filterTab === 'ACTION_REQUIRED'
-                    ? 'bg-amber-500 text-white shadow-2xs'
-                    : 'text-amber-900 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200'
-                }`}
-              >
-                <span>⚡ Quote</span>
-                <span
-                  className={`rounded-full px-1 text-[9px] ${
-                    filterTab === 'ACTION_REQUIRED'
-                      ? 'bg-amber-700 text-white'
-                      : 'bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200'
-                  }`}
-                >
-                  {openInvitations}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterTab('EVALUATING')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  filterTab === 'EVALUATING'
-                    ? 'bg-card text-primary shadow-2xs font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                ⚖️ Submitted ({activeQuotedCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterTab('AWARDED')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  filterTab === 'AWARDED'
-                    ? 'bg-card text-teal-700 dark:text-teal-300 shadow-2xs font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                🏆 Awarded ({pendingAcceptancePOs.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterTab('PO_ISSUED')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  filterTab === 'PO_ISSUED'
-                    ? 'bg-card text-blue-700 dark:text-blue-300 shadow-2xs font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                📦 Work Orders ({ordersInExecution})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterTab('SETTLED')}
-                className={`rounded px-1.5 py-0.5 font-semibold transition ${
-                  filterTab === 'SETTLED'
-                    ? 'bg-card text-emerald-800 dark:text-emerald-300 shadow-2xs font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                🏁 Settled ({completedOrders})
-              </button>
-              {stalledSupplierCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setFilterTab('STALLED')}
-                  className={`flex items-center gap-1 rounded px-1.5 py-0.5 font-bold transition ${
-                    filterTab === 'STALLED'
-                      ? 'bg-red-600 text-white shadow-2xs'
-                      : 'text-red-900 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300'
-                  }`}
-                >
-                  <span>⚠️ Stalled</span>
-                  <span className="rounded-full bg-red-800 text-white px-1 text-[9px]">{stalledSupplierCount}</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          <SupplierInvitationList
-            invitations={filteredInvitations}
-            purchaseOrders={purchaseOrders}
-            isLoading={isLoading}
-            error={error}
-          />
-          {!isLoading && !error && filteredInvitations.length === 0 && (
-            <div className="py-6 text-center text-xs text-muted-foreground">
-              <p>
-                {filterTab === 'ACTION_REQUIRED'
-                  ? '✓ All Caught Up! No pending RFQs awaiting your quote response.'
-                  : filterTab === 'EVALUATING'
-                  ? 'No active quotes currently under evaluation.'
-                  : 'No RFQ invitations in this filter.'}
-              </p>
-              <Link to="/supplier/capabilities" className="mt-1.5 inline-block font-semibold text-primary hover:underline">
-                Add more capabilities and PIN codes to receive more enquiries →
-              </Link>
-            </div>
-          )}
-        </section>
-
-        {/* Buyer Ratings, Reviews & Continuous Improvement Section */}
-        <div className="rounded-lg border bg-card p-3 shadow-2xs">
-          <SupplierPerformanceSection performance={performance} isLoading={isPerfLoading} />
-        </div>
+      {/* 4. Filter Chips Row */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setFilterTab('ALL')}
+          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+            filterTab === 'ALL'
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card border text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          All ({invitations.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterTab('ACTION_REQUIRED')}
+          className={`min-h-[36px] shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition border ${
+            filterTab === 'ACTION_REQUIRED'
+              ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+              : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-900 dark:text-amber-200'
+          }`}
+        >
+          <span>🟡 Quotes Due</span>
+          <span className="rounded-full bg-amber-700 text-white px-1.5 py-0.2 text-[10px]">
+            {openInvitations}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterTab('EVALUATING')}
+          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+            filterTab === 'EVALUATING'
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card border text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          ⚖️ Under Evaluation ({activeQuotedCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterTab('AWARDED')}
+          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+            filterTab === 'AWARDED'
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card border text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🏆 Awarded ({pendingAcceptancePOs.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterTab('PO_ISSUED')}
+          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+            filterTab === 'PO_ISSUED'
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card border text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          📦 Work Orders ({ordersInExecution})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterTab('SETTLED')}
+          className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+            filterTab === 'SETTLED'
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card border text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          ⚪ Settled ({completedOrders})
+        </button>
+        {stalledSupplierCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setFilterTab('STALLED')}
+            className={`min-h-[36px] shrink-0 flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition bg-red-50 text-red-700 border border-red-300 dark:bg-red-950/40 dark:text-red-300`}
+          >
+            <span>⚠️ Stalled ({stalledSupplierCount})</span>
+          </button>
+        )}
       </div>
+
+      {/* 5. Active Opportunity List */}
+      <section id="supplier-rfq-invitations" className="space-y-3">
+        <div className="flex items-center justify-between px-0.5">
+          <h2 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+            RFQ Opportunities &amp; Invitations
+          </h2>
+          <span className="text-xs text-muted-foreground">
+            {filteredInvitations.length} {filteredInvitations.length === 1 ? 'Opportunity' : 'Opportunities'}
+          </span>
+        </div>
+
+        <SupplierInvitationList
+          invitations={filteredInvitations}
+          purchaseOrders={purchaseOrders}
+          isLoading={isLoading}
+          error={error}
+        />
+
+        {!isLoading && !error && filteredInvitations.length === 0 && (
+          <div className="rounded-2xl border border-dashed p-8 text-center text-xs text-muted-foreground bg-card space-y-2">
+            <span className="text-2xl block">🎉</span>
+            <p className="font-bold text-foreground">
+              {filterTab === 'ACTION_REQUIRED'
+                ? 'All caught up! No pending RFQs awaiting your quote response.'
+                : filterTab === 'EVALUATING'
+                ? 'No active quotes currently under evaluation.'
+                : 'No RFQ invitations in this filter.'}
+            </p>
+            <Link
+              to="/supplier/capabilities"
+              className="mt-2 inline-flex items-center justify-center min-h-[44px] px-4 rounded-xl font-bold text-primary hover:underline bg-primary/5 border border-primary/20"
+            >
+              Add more capabilities and PIN codes to receive more enquiries →
+            </Link>
+          </div>
+        )}
+      </section>
+
+      {/* 6. Continuous Improvement: Ratings & Performance Scorecard */}
+      <SupplierPerformanceSection performance={performance} isLoading={isPerfLoading} />
     </div>
   );
 }
-

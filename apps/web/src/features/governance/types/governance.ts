@@ -33,10 +33,12 @@ export interface IdentityProtectedQuoteForVote {
   totalCost: number;
   evaluationScore: number | null;
   deliveryDays: number | null;
+  warrantyMonths?: number | null;
+  ratingBand?: number | null;
+  onTimeBand?: number | null;
+  experienceBand?: string | null;
+  isGstVerified?: boolean | null;
 }
-
-// Legacy alias
-export type BlindQuoteForVote = IdentityProtectedQuoteForVote;
 
 export interface RfqGovernanceStatus {
   rfqId: string;

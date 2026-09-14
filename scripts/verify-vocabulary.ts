@@ -20,6 +20,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // -----------------------------------------------------------------------------
 // 1. CONFIGURATION & RULES (MODIFY THESE AS NEEDED)
@@ -138,7 +142,8 @@ export function scanVocabulary(
 // 3. CLI RUNNER
 // -----------------------------------------------------------------------------
 
-if (require.main === module || process.argv[1]?.includes('verify-vocabulary')) {
+const isMain = process.argv[1]?.includes('verify-vocabulary') || (typeof require !== 'undefined' && require.main === module);
+if (isMain) {
   console.log('=================================================================');
   console.log('  🛡️  OTP PLATFORM — CANONICAL PROCUREMENT VOCABULARY SCANNER');
   console.log('=================================================================');

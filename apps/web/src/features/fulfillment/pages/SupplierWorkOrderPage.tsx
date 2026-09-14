@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchWorkOrder, updateWorkOrderProgress } from '../api/work-orders';
 import { DeliveryInspectionPanel } from '../components/DeliveryInspectionPanel';
 import { InvoicePaymentPanel } from '../components/InvoicePaymentPanel';
+import { SupplierMilestoneStepper } from '../components/SupplierMilestoneStepper';
 import { StatusBadge } from '../components/FulfillmentStatus';
 import type { WorkOrderSummary } from '../types/fulfillment';
 
@@ -12,6 +13,7 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [activeTab, setActiveTab] = useState<'MILESTONES' | 'INSPECTION' | 'INVOICING'>('MILESTONES');
 
   const load = useCallback(async () => {
     const cleanId = (workOrderId || '').trim();
@@ -42,7 +44,7 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
     void load();
   }, [load]);
 
-  async function setProgress(percent: number) {
+  async function handleProgress(percent: number) {
     const cleanId = (workOrderId || '').trim();
     if (!cleanId) return;
     setBusy(true);
@@ -70,10 +72,10 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
   if (isLoading) {
     return (
       <div className="zero-scroll-container p-4 max-w-7xl mx-auto w-full space-y-4">
-        <div className="h-10 bg-muted/60 rounded-lg animate-pulse" />
+        <div className="h-10 bg-muted/60 rounded-xl animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="h-48 bg-card border rounded-lg animate-pulse" />
-          <div className="h-48 bg-card border rounded-lg animate-pulse" />
+          <div className="h-48 bg-card border rounded-2xl animate-pulse" />
+          <div className="h-48 bg-card border rounded-2xl animate-pulse" />
         </div>
       </div>
     );
@@ -81,7 +83,7 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
 
   if (!workOrder) {
     return (
-      <div className="p-6 max-w-xl mx-auto my-12 text-center rounded-xl border border-border bg-card shadow-sm space-y-4">
+      <div className="p-6 max-w-xl mx-auto my-12 text-center rounded-2xl border border-border bg-card shadow-sm space-y-4">
         <div className="text-4xl">🛠️</div>
         <h2 className="text-lg font-bold text-foreground">Work Order Not Found</h2>
         <p className="text-sm text-muted-foreground">{error ?? 'The requested work order could not be located.'}</p>
@@ -89,13 +91,13 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
           <button
             type="button"
             onClick={() => void load()}
-            className="rounded-md bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+            className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
           >
             ↻ Retry Loading
           </button>
           <Link
             to="/supplier/purchase-orders"
-            className="rounded-md border border-border bg-muted/40 px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition inline-flex items-center"
+            className="min-h-[44px] rounded-xl border border-border bg-muted/40 px-4 py-2 text-xs font-bold text-foreground hover:bg-muted transition inline-flex items-center mobile-touch-target"
           >
             ← Back to Orders
           </Link>
@@ -105,118 +107,95 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
   }
 
   return (
-    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full" data-testid="supplier-work-order-page">
-      {/* Compressed Top Bar */}
-      <header className="rounded-lg border bg-card px-3 py-1.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
+    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden" data-testid="supplier-work-order-page">
+      {/* Top Header */}
+      <header className="rounded-2xl border bg-card p-3.5 shadow-2xs shrink-0 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Link
             to={`/supplier/purchase-orders/${workOrder.purchaseOrderId}`}
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground shrink-0"
+            className="min-h-[36px] px-2 rounded-lg border bg-muted/30 text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 flex items-center"
           >
             ← PO Details
           </Link>
-          <span className="text-muted-foreground">|</span>
-          <h1 className="text-xs font-bold text-foreground truncate">{workOrder.title}</h1>
+          <div className="min-w-0">
+            <h1 className="text-xs sm:text-sm font-black text-foreground truncate">{workOrder.title}</h1>
+            {workOrder.poNumber && (
+              <p className="text-[10px] font-mono font-bold text-muted-foreground">PO Ref: {workOrder.poNumber}</p>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {workOrder.poNumber && (
-            <span className="text-[10px] font-mono font-bold text-muted-foreground">PO: {workOrder.poNumber}</span>
-          )}
+          <span className="text-xs font-mono font-black text-primary">{workOrder.progressPercent}% Done</span>
           <StatusBadge status={workOrder.status} />
         </div>
       </header>
 
-      {error && <p className="mt-1 shrink-0 text-xs font-bold text-red-600 rounded bg-red-50 p-2 border border-red-200">{error}</p>}
-      {success && <p className="mt-1 shrink-0 text-xs font-bold text-emerald-700 rounded bg-emerald-50 p-2 border border-emerald-200">{success}</p>}
+      {error && <p className="mt-2 text-xs font-bold text-red-600 rounded-xl bg-red-50 p-2.5 border border-red-200">⚠️ {error}</p>}
+      {success && <p className="mt-2 text-xs font-bold text-emerald-700 rounded-xl bg-emerald-50 p-2.5 border border-emerald-200">{success}</p>}
 
-      {/* Main Content Area - Split Column Grid in zero-scroll-pane */}
-      <div className="zero-scroll-pane mt-2">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
-          {/* Left Column (6 cols): Progress Card & Milestone Reporting */}
-          <div className="lg:col-span-6 space-y-2.5">
-            {/* Progress Card */}
-            <div className="rounded-lg border bg-card p-3 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-foreground">{workOrder.progressPercent}% Completed</span>
-                <span className="text-[11px] text-muted-foreground">
-                  {workOrder.progressPercent === 100
-                    ? workOrder.buyerAcceptedAt
-                      ? '✓ 100% Mutually Acknowledged'
-                      : 'Awaiting Buyer Sign-off'
-                    : 'Execution in Progress'}
-                </span>
-              </div>
+      {/* Screen 11 Navigation Sub-Tabs */}
+      <div className="mt-3 flex items-center gap-1 rounded-xl bg-muted/40 p-1 border overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab('MILESTONES')}
+          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+            activeTab === 'MILESTONES'
+              ? 'bg-card text-foreground shadow-xs'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🛠️ Screen 11: Milestones ({workOrder.progressPercent}%)
+        </button>
 
-              <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200 border">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    workOrder.progressPercent >= 100
-                      ? 'bg-emerald-800'
-                      : workOrder.progressPercent >= 75
-                      ? 'bg-lime-500'
-                      : workOrder.progressPercent >= 50
-                      ? 'bg-blue-500'
-                      : workOrder.progressPercent >= 25
-                      ? 'bg-yellow-400'
-                      : 'bg-slate-300'
-                  }`}
-                  style={{ width: `${workOrder.progressPercent}%` }}
-                />
-              </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('INSPECTION')}
+          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+            activeTab === 'INSPECTION'
+              ? 'bg-card text-foreground shadow-xs'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🔍 Inspection Status
+        </button>
 
-              {/* Milestone Buttons for Supplier */}
-              {workOrder.status !== 'COMPLETED' && (
-                <div className="mt-3 border-t pt-2.5">
-                  <p className="text-[11px] font-bold text-muted-foreground">Report Execution Milestone:</p>
-                  <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void setProgress(25)}
-                      className="rounded border border-yellow-400 bg-yellow-50 py-1.5 px-2 text-[11px] font-bold text-yellow-900 shadow-2xs hover:bg-yellow-100 disabled:opacity-50"
-                    >
-                      25% (Started)
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void setProgress(50)}
-                      className="rounded border border-blue-400 bg-blue-50 py-1.5 px-2 text-[11px] font-bold text-blue-900 shadow-2xs hover:bg-blue-100 disabled:opacity-50"
-                    >
-                      50% (In Progress)
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void setProgress(75)}
-                      className="rounded border border-lime-500 bg-lime-50 py-1.5 px-2 text-[11px] font-bold text-lime-900 shadow-2xs hover:bg-lime-100 disabled:opacity-50"
-                    >
-                      75% (Near End)
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void setProgress(100)}
-                      className="rounded bg-emerald-800 py-1.5 px-2 text-[11px] font-bold text-white shadow-2xs hover:bg-emerald-900 disabled:opacity-50"
-                    >
-                      ✓ 100% (Done)
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('INVOICING')}
+          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+            activeTab === 'INVOICING'
+              ? 'bg-card text-foreground shadow-xs'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🧾 Invoicing &amp; Payment
+        </button>
+      </div>
 
-            {/* Delivery Inspection Section */}
-            <DeliveryInspectionPanel
-              workOrder={workOrder}
-              role="supplier"
-              onAccepted={() => void load()}
-            />
-          </div>
+      {/* Tab Panels */}
+      <div className="mt-3 space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+        {activeTab === 'MILESTONES' && (
+          <SupplierMilestoneStepper
+            workOrder={workOrder}
+            totalAmount={50000}
+            currency="INR"
+            role="supplier"
+            onUpdateProgress={handleProgress}
+            busy={busy}
+          />
+        )}
 
-          {/* Right Column (6 cols): Invoicing Section */}
-          <div className="lg:col-span-6 space-y-2.5">
+        {activeTab === 'INSPECTION' && (
+          <DeliveryInspectionPanel
+            workOrder={workOrder}
+            role="supplier"
+            onAccepted={() => void load()}
+          />
+        )}
+
+        {activeTab === 'INVOICING' && (
+          <div>
             {workOrder.progressPercent >= 100 ? (
               <InvoicePaymentPanel
                 workOrderId={workOrder.id}
@@ -226,12 +205,16 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
                 onUpdated={() => void load()}
               />
             ) : (
-              <div className="rounded-lg border bg-card p-4 text-center text-xs text-muted-foreground shadow-2xs">
-                <p>Complete execution to 100% and obtain buyer delivery inspection to unlock official GST invoice generation and milestone payment release.</p>
+              <div className="rounded-2xl border bg-card p-6 text-center text-xs text-muted-foreground shadow-2xs space-y-2">
+                <span className="text-3xl block">⏳</span>
+                <p className="font-bold text-foreground">Invoicing Locked</p>
+                <p className="text-[11px]">
+                  Complete milestone execution to 100% and obtain buyer delivery inspection to unlock official GST invoice generation and milestone payment release.
+                </p>
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

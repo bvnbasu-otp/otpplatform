@@ -204,15 +204,15 @@ export function AdminQueryTerminal() {
   const columns = result?.data && result.data.length > 0 ? Object.keys(result.data[0]) : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Top Banner */}
-      <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xl">💻</span>
-            <h3 className="text-base font-bold text-foreground">Interactive Diagnostic SQL Query Terminal</h3>
+            <span className="text-xl shrink-0">💻</span>
+            <h3 className="text-sm sm:text-base font-bold text-foreground">Interactive Diagnostic SQL Query Terminal</h3>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
             Safely execute read-only PostgreSQL queries across all schemas to inspect raw database states and troubleshoot reported issues.
           </p>
         </div>

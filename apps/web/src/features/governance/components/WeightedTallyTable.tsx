@@ -52,39 +52,41 @@ export function WeightedTallyTable({
       )}
 
       {tally.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No recommendations yet.</p>
+        <p className="text-xs text-muted-foreground p-2">No recommendations yet.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="py-2 font-medium">Supplier</th>
-              <th className="py-2 text-right font-medium">Weight</th>
-              <th className="py-2 text-right font-medium">Share</th>
-              <th className="py-2 text-right font-medium">Members</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tally.map((row) => (
-              <tr
-                key={row.anonymousLabel}
-                className={
-                  highlightQuoteId && row.quoteId === highlightQuoteId
-                    ? 'border-b bg-primary/5'
-                    : 'border-b'
-                }
-              >
-                <td className="py-2 font-medium">{row.anonymousLabel}</td>
-                <td className="py-2 text-right tabular-nums">{row.recommendWeight}</td>
-                <td className="py-2 text-right tabular-nums text-muted-foreground">
-                  {totalWeight > 0
-                    ? `${Math.round((row.recommendWeight / totalWeight) * 100)}%`
-                    : '—'}
-                </td>
-                <td className="py-2 text-right tabular-nums">{row.recommendCount}</td>
+        <div className="overflow-x-auto rounded-xl border">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b bg-muted/30 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                <th className="px-3 py-2 font-bold">Candidate</th>
+                <th className="px-3 py-2 text-right font-bold">Weight</th>
+                <th className="px-3 py-2 text-right font-bold">Share</th>
+                <th className="px-3 py-2 text-right font-bold">Members</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tally.map((row) => (
+                <tr
+                  key={row.anonymousLabel}
+                  className={
+                    highlightQuoteId && row.quoteId === highlightQuoteId
+                      ? 'border-b bg-primary/10 font-bold'
+                      : 'border-b'
+                  }
+                >
+                  <td className="px-3 py-2 font-medium">{row.anonymousLabel}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{row.recommendWeight}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                    {totalWeight > 0
+                      ? `${Math.round((row.recommendWeight / totalWeight) * 100)}%`
+                      : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{row.recommendCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {split && (

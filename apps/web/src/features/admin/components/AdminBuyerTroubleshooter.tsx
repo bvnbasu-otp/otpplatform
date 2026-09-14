@@ -348,16 +348,16 @@ export function AdminBuyerTroubleshooter({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Header Banner */}
-      <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-3.5 sm:p-4 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">🏛️</span>
+            <span className="text-xl shrink-0">🏛️</span>
             <div>
-              <h3 className="text-base font-bold text-foreground">Buyer-Side Transaction &amp; Governance Troubleshooter</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Diagnose why a buyer requirement or RFQ is stalled, force state progression across all 8 lifecycle states, bypass committee deadlocks, and verify GST compliance.
+              <h3 className="text-sm sm:text-base font-bold text-foreground">Buyer Governance &amp; Diagnostic Radar</h3>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                Diagnose RFQs, force state transitions across lifecycle states, bypass committee deadlocks, and verify tenant compliance.
               </p>
             </div>
           </div>
@@ -365,7 +365,7 @@ export function AdminBuyerTroubleshooter({
             type="button"
             disabled={isDiagnosing}
             onClick={() => void handleRunDiagnostics()}
-            className="rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 active:scale-98 transition disabled:opacity-50 whitespace-nowrap"
           >
             <span>⚡</span> {isDiagnosing ? 'Scanning…' : 'Run Fleet Scan'}
           </button>
@@ -382,20 +382,20 @@ export function AdminBuyerTroubleshooter({
       )}
 
       {/* Target Selector */}
-      <div className="rounded-xl border bg-card p-5 shadow-xs space-y-4">
+      <div className="rounded-xl border bg-card p-3.5 sm:p-5 shadow-2xs space-y-4">
         <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
           Step 1: Select or Search Buyer Requirement to Diagnose (Input Name or UUID)
         </h4>
 
         {/* Selected Target Entity Banner */}
         {selectedEntity && (
-          <div className="rounded-xl border border-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20 p-4 flex flex-wrap items-center justify-between gap-4 animate-in fade-in duration-150">
+          <div className="rounded-xl border border-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150 shadow-2xs">
             <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="rounded-md bg-blue-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                   {selectedEntity.type}
                 </span>
-                <h4 className="text-sm font-bold text-foreground">{selectedEntity.name}</h4>
+                <h4 className="text-xs sm:text-sm font-bold text-foreground">{selectedEntity.name}</h4>
                 {selectedEntity.currentState && (
                   <span className="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-mono font-bold text-primary">
                     State: {selectedEntity.currentState}
@@ -414,7 +414,7 @@ export function AdminBuyerTroubleshooter({
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
-                  className="rounded border bg-card px-2 py-0.5 text-[11px] font-bold hover:bg-muted text-foreground transition flex items-center gap-1 shadow-2xs"
+                  className="inline-flex min-h-[36px] items-center gap-1 rounded-lg border bg-card px-2.5 py-1 text-xs font-bold hover:bg-muted text-foreground transition shadow-2xs active:scale-98"
                 >
                   {copied ? '✓ Copied!' : '📋 Copy UUID'}
                 </button>
@@ -429,7 +429,7 @@ export function AdminBuyerTroubleshooter({
                 type="button"
                 onClick={() => void handleRunDiagnostics(selectedEntity.uuid)}
                 disabled={isDiagnosing}
-                className="rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition flex items-center gap-1.5 whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 active:scale-98 transition whitespace-nowrap"
               >
                 <span>🔍</span> {isDiagnosing ? 'Diagnosing…' : 'Run Diagnostics'}
               </button>
@@ -437,7 +437,7 @@ export function AdminBuyerTroubleshooter({
               <button
                 type="button"
                 onClick={() => void handleSwitchTenantContext()}
-                className="rounded-lg border bg-card px-3.5 py-2 text-xs font-bold text-foreground shadow-xs hover:bg-muted transition flex items-center gap-1.5 whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border bg-card px-3.5 py-2 text-xs font-bold text-foreground shadow-xs hover:bg-muted active:scale-98 transition whitespace-nowrap"
                 title="Switch active organization and view this order from the buyer organization perspective"
               >
                 <span>👁️</span> View in Buyer Perspective
@@ -473,7 +473,7 @@ export function AdminBuyerTroubleshooter({
                   void loadTargetDetails(reqId);
                 }
               }}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
             >
               <option value="">-- Choose requirement from list --</option>
               {transactions.map((tx) => (
@@ -488,19 +488,19 @@ export function AdminBuyerTroubleshooter({
             <label className="block text-xs font-semibold text-foreground mb-1">
               Search by Name or UUID (Buyer Org, Requirement, PO#):
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => void handleEntitySearch(e.target.value)}
                 placeholder="e.g. 'Greenview', 'Borewell', or UUID..."
-                className="w-full rounded-lg border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
               />
               <button
                 type="button"
                 disabled={isDiagnosing || !searchQuery.trim()}
                 onClick={() => void handleRunDiagnostics(searchQuery.trim())}
-                className="rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-98 transition whitespace-nowrap"
               >
                 {isDiagnosing ? 'Scanning…' : 'Search & Run 🔍'}
               </button>
@@ -590,7 +590,7 @@ export function AdminBuyerTroubleshooter({
               <button
                 type="submit"
                 disabled={isTransitioning || transitionReason.trim().length < 5}
-                className="w-full rounded-lg bg-foreground text-background py-2 text-xs font-bold shadow hover:bg-foreground/90 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="w-full inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-foreground text-background py-2 text-xs font-bold shadow hover:bg-foreground/90 transition active:scale-98 disabled:opacity-50"
               >
                 <span>⚡</span> {isTransitioning ? 'Applying State Transition…' : `Force Move to [${targetState}]`}
               </button>
@@ -598,7 +598,7 @@ export function AdminBuyerTroubleshooter({
           </div>
 
           {/* Governance & Compliance Overrides */}
-          <div className="rounded-xl border bg-card p-5 shadow-xs space-y-4">
+          <div className="rounded-xl border bg-card p-4 sm:p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between border-b pb-2.5">
               <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <span>🛡️</span> Governance &amp; GST Compliance Overrides
@@ -609,14 +609,14 @@ export function AdminBuyerTroubleshooter({
             </div>
 
             {/* Approval Gate Bypass */}
-            <div className="rounded-lg border p-3 bg-muted/20 space-y-2">
-              <div className="flex items-center justify-between">
+            <div className="rounded-xl border p-3.5 bg-muted/20 space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <span className="text-xs font-bold text-foreground">Committee Quorum Override</span>
                 <button
                   type="button"
                   disabled={actionInProgress === 'GATE_BYPASS'}
                   onClick={handleBypassApprovalGate}
-                  className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition disabled:opacity-50"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-700 active:scale-98 transition disabled:opacity-50"
                 >
                   {actionInProgress === 'GATE_BYPASS' ? 'Bypassing…' : '⚡ Bypass Quorum Gate'}
                 </button>
@@ -627,15 +627,15 @@ export function AdminBuyerTroubleshooter({
             </div>
 
             {/* Buyer GST Compliance Inspection & Toggle */}
-            <div className="rounded-lg border p-3 bg-muted/20 space-y-2.5">
-              <div className="flex items-center justify-between">
+            <div className="rounded-xl border p-3.5 bg-muted/20 space-y-2.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div>
                   <span className="text-xs font-bold text-foreground block">Buyer Tax Compliance Status</span>
                   <span className="text-[11px] text-muted-foreground">
                     GSTIN: <span className="font-mono">{selectedEntity.buyerGstin || 'Not Registered'}</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                       selectedEntity.gstVerified
@@ -658,7 +658,7 @@ export function AdminBuyerTroubleshooter({
                   type="button"
                   disabled={actionInProgress === 'GST_TOGGLE'}
                   onClick={() => handleToggleBuyerGst(!selectedEntity.gstVerified, Boolean(selectedEntity.taxExempt))}
-                  className="rounded-md border bg-card px-2.5 py-1 text-xs font-bold hover:bg-muted text-foreground transition shadow-2xs"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-3.5 py-2 text-xs font-bold hover:bg-muted text-foreground transition shadow-2xs active:scale-98"
                 >
                   {selectedEntity.gstVerified ? 'Mark Unverified' : '✓ Force Mark GST Verified'}
                 </button>
@@ -666,7 +666,7 @@ export function AdminBuyerTroubleshooter({
                   type="button"
                   disabled={actionInProgress === 'GST_TOGGLE'}
                   onClick={() => handleToggleBuyerGst(Boolean(selectedEntity.gstVerified), !selectedEntity.taxExempt)}
-                  className="rounded-md border bg-card px-2.5 py-1 text-xs font-bold hover:bg-muted text-foreground transition shadow-2xs"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-3.5 py-2 text-xs font-bold hover:bg-muted text-foreground transition shadow-2xs active:scale-98"
                 >
                   {selectedEntity.taxExempt ? 'Remove Tax Exemption' : 'Toggle Tax Exempt'}
                 </button>
@@ -737,7 +737,7 @@ export function AdminBuyerTroubleshooter({
                         type="button"
                         disabled={actionInProgress === issue.fixAction}
                         onClick={() => handleApplyFix(issue.fixAction, issue.title)}
-                        className="rounded-md bg-foreground text-background px-3 py-1.5 font-bold shadow hover:bg-foreground/90 transition disabled:opacity-50"
+                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-foreground text-background px-4 py-2 text-xs font-bold shadow hover:bg-foreground/90 transition active:scale-98 disabled:opacity-50"
                       >
                         {actionInProgress === issue.fixAction ? 'Applying Fix…' : '⚡ 1-Click Auto Fix'}
                       </button>
@@ -754,7 +754,7 @@ export function AdminBuyerTroubleshooter({
 
       {/* Entity Ops Activity Trace */}
       {selectedEntity && (
-        <div className="rounded-xl border bg-card p-5 shadow-xs space-y-3">
+        <div className="rounded-xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
           <div className="flex items-center justify-between border-b pb-2.5">
             <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
               <span>📜</span> Operational Activity &amp; Audit Trail Timeline
@@ -775,11 +775,11 @@ export function AdminBuyerTroubleshooter({
               {auditEvents.map((evt) => (
                 <div
                   key={evt.id}
-                  className="rounded-lg border bg-muted/20 p-3 text-xs flex flex-wrap items-center justify-between gap-2"
+                  className="rounded-xl border bg-muted/20 p-3 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs"
                 >
                   <div className="space-y-0.5">
-                    <div className="flex items-center gap-2 font-bold text-foreground">
-                      <span className="rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1.5 py-0.2 text-[10px] font-mono">
+                    <div className="flex items-center gap-2 font-bold text-foreground flex-wrap">
+                      <span className="rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 px-2 py-0.5 text-[10px] font-mono">
                         {evt.event_type}
                       </span>
                       {evt.payload?.from_state && evt.payload?.to_state && (
@@ -795,8 +795,8 @@ export function AdminBuyerTroubleshooter({
                     )}
                   </div>
 
-                  <div className="text-right text-[11px] text-muted-foreground">
-                    <div>{evt.actor_name || 'SuperAdmin'}</div>
+                  <div className="text-left sm:text-right text-[11px] text-muted-foreground border-t sm:border-t-0 pt-1 sm:pt-0">
+                    <div className="font-semibold text-foreground">{evt.actor_name || 'SuperAdmin'}</div>
                     <div className="font-mono">{new Date(evt.occurred_at).toLocaleString()}</div>
                   </div>
                 </div>

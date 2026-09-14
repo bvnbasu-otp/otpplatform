@@ -75,15 +75,15 @@ export function AdminBackupRestorePanel() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Top Banner */}
-      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xl">💾</span>
-            <h3 className="text-base font-bold text-foreground">Database Snapshot &amp; Point-in-Time Recovery Engine</h3>
+            <span className="text-xl shrink-0">💾</span>
+            <h3 className="text-sm sm:text-base font-bold text-foreground">Database Snapshot &amp; Point-in-Time Recovery Engine</h3>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
             Create atomic database snapshots of master data, procurement pipelines, quotes, and cryptographic audit records.
           </p>
         </div>
@@ -91,7 +91,7 @@ export function AdminBackupRestorePanel() {
           type="button"
           onClick={loadBackups}
           disabled={isLoading}
-          className="rounded-lg border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs"
         >
           {isLoading ? 'Refreshing…' : '🔄 Refresh Backups'}
         </button>

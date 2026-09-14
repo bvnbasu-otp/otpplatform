@@ -125,16 +125,16 @@ export function AdminDashboardPage() {
   };
 
   return (
-    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full">
-      {/* Top Header Banner - Compact Single Row */}
-      <header className="rounded-lg border bg-card px-3 py-1.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
+    <div className="zero-scroll-container p-2 sm:p-3 max-w-7xl mx-auto w-full pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      {/* Top Header Banner - Mobile-First Responsive Bar */}
+      <header className="rounded-xl border bg-card px-3 sm:px-4 py-2 sm:py-2.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-xs font-bold tracking-tight text-foreground flex items-center gap-1.5 truncate">
-            <span>🛡️</span> Admin Console
+          <h1 className="text-sm sm:text-base font-black tracking-tight text-foreground flex items-center gap-1.5 truncate">
+            <span>🛡️</span> Control Tower
           </h1>
           {/* Single Platform Operating Mode Badge */}
           <span
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.2 text-[10px] font-bold shrink-0 ${
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold shrink-0 ${
               isPlatformInDemoMode
                 ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30'
                 : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
@@ -146,73 +146,74 @@ export function AdminDashboardPage() {
             }
           >
             <span>{isPlatformInDemoMode ? '🧪' : '🚀'}</span>
-            {isPlatformInDemoMode ? 'STAGING & DEMO' : 'LIVE PROD'}
+            <span className="hidden sm:inline">{isPlatformInDemoMode ? 'STAGING & DEMO' : 'LIVE PROD'}</span>
+            <span className="sm:hidden">{isPlatformInDemoMode ? 'DEMO' : 'PROD'}</span>
           </span>
         </div>
 
         <button
           type="button"
           onClick={refreshAllData}
-          className="rounded border bg-card px-2 py-0.5 text-[11px] font-medium hover:bg-muted transition shrink-0 shadow-2xs"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-1 text-xs font-semibold hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs"
         >
-          🔄 Refresh
+          🔄 <span className="hidden sm:inline ml-1">Refresh</span>
         </button>
       </header>
 
       {/* Global Status Flash Banner */}
       {statusMessage && (
-        <div className="mt-1 shrink-0 flex items-center justify-between rounded bg-emerald-500/10 border border-emerald-500/30 p-1.5 text-xs text-emerald-950 dark:text-emerald-200">
+        <div className="mt-2 shrink-0 flex items-center justify-between rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-2.5 sm:p-3 text-xs text-emerald-950 dark:text-emerald-200 animate-in fade-in">
           <div className="flex items-center gap-1.5 font-semibold">
             <span>✓</span> {statusMessage}
           </div>
           <button
             type="button"
             onClick={() => setStatusMessage(null)}
-            className="text-muted-foreground hover:text-foreground font-bold text-xs"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-muted-foreground hover:text-foreground font-bold text-xs"
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* Navigation Tabs Bar - Compact Single Row */}
-      <div className="mt-1.5 shrink-0 flex items-center gap-1 overflow-x-auto pb-1 text-[11px]">
+      {/* Navigation Tabs Bar - Touch-Friendly Scrollable Bar */}
+      <div className="mt-2 shrink-0 flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
         <button
           type="button"
           onClick={() => setTab('TRANSACTIONS')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'TRANSACTIONS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
-          <span>📊</span> Buyer Orders ({transactions.length})
+          <span>📊</span> Buyer Radar ({transactions.length})
         </button>
 
         <button
           type="button"
           onClick={() => setTab('SELLER_ORDERS')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'SELLER_ORDERS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
-          <span>🏪</span> Seller Orders ({sellerOrders.length})
+          <span>🏪</span> Supplier Radar ({sellerOrders.length})
         </button>
 
         <button
           type="button"
           onClick={() => setTab('HEALTH')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'HEALTH'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
           <span>🫀</span> Health
           {alerts.length > 0 && (
-            <span className="rounded-full bg-amber-500 px-1 text-[9px] text-white">
+            <span className="rounded-full bg-amber-500 px-1.5 py-0.2 text-[10px] text-white">
               {alerts.length}
             </span>
           )}
@@ -220,11 +221,23 @@ export function AdminDashboardPage() {
 
         <button
           type="button"
+          onClick={() => setTab('USERS')}
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
+            activeTab === 'USERS'
+              ? 'bg-primary text-primary-foreground shadow-2xs'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
+          }`}
+        >
+          <span>👥</span> Users &amp; Orgs
+        </button>
+
+        <button
+          type="button"
           onClick={() => setTab('TICKETS')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'TICKETS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
           <span>🎫</span> Tickets
@@ -233,34 +246,34 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('ACTIONS')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'ACTIONS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
-          <span>⚡</span> Restart &amp; Actions
+          <span>⚡</span> Ops Actions
         </button>
 
         <button
           type="button"
           onClick={() => setTab('TESTS')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'TESTS'
               ? 'bg-emerald-600 text-white shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
-          <span>🧪</span> Pre-Prod Tests
+          <span>🧪</span> Test Engine
         </button>
 
         <button
           type="button"
           onClick={() => setTab('BUYER_DEBUG')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'BUYER_DEBUG'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
           <span>🏛️</span> Buyer Debug
@@ -269,10 +282,10 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('SUPPLIER_DEBUG')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'SUPPLIER_DEBUG'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
           <span>👥</span> Supplier Debug
@@ -281,22 +294,22 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('TERMINAL')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'TERMINAL'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
-          <span>💻</span> SQL Terminal
+          <span>💻</span> Terminal
         </button>
 
         <button
           type="button"
           onClick={() => setTab('BACKUPS')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'BACKUPS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
           <span>💾</span> Backups
@@ -305,10 +318,10 @@ export function AdminDashboardPage() {
         <button
           type="button"
           onClick={() => setTab('LOGS')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'LOGS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
           <span>📜</span> Logs
@@ -316,26 +329,14 @@ export function AdminDashboardPage() {
 
         <button
           type="button"
-          onClick={() => setTab('USERS')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
-            activeTab === 'USERS'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <span>👥</span> Users &amp; Orgs
-        </button>
-
-        <button
-          type="button"
           onClick={() => setTab('NOTIFICATIONS')}
-          className={`flex items-center gap-1 rounded px-2.5 py-1 font-bold transition shrink-0 ${
+          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 ${
             activeTab === 'NOTIFICATIONS'
               ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
+              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
           }`}
         >
-          <span>🔔</span> Notifications ({health?.counts?.notifications ?? 0})
+          <span>🔔</span> Alerts ({health?.counts?.notifications ?? 0})
         </button>
       </div>
 

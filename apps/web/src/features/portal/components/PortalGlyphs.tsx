@@ -134,9 +134,9 @@ export function TransparentQuotingGlyph({ className }: GlyphProps) {
   );
 }
 
-export const TransparentBiddingGlyph = TransparentQuotingGlyph;
+export const MaskedQuotingGlyph = TransparentQuotingGlyph;
 
-export function MilestoneGlyph({ className }: GlyphProps) {
+export function OrderTrackingGlyph({ className }: GlyphProps) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -155,6 +155,8 @@ export function MilestoneGlyph({ className }: GlyphProps) {
   );
 }
 
+export const MilestoneGlyph = OrderTrackingGlyph;
+
 export type Glyph = (props: GlyphProps) => ReactElement;
 
 /**
@@ -171,5 +173,5 @@ export const BUYER_GLYPHS: [Glyph, ...Glyph[]] = [
 export const SUPPLIER_GLYPHS: [Glyph, ...Glyph[]] = [
   DirectLeadsGlyph,
   TransparentQuotingGlyph,
-  MilestoneGlyph,
+  OrderTrackingGlyph,
 ];

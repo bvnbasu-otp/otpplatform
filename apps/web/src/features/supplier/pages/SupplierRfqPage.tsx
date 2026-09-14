@@ -25,6 +25,7 @@ import {
 import { QuoteForm } from '../components/QuoteForm';
 import { SupplierQuotePanel } from '../components/SupplierQuotePanel';
 import { SupplierRequirementPanel } from '../components/SupplierRequirementPanel';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import type {
   QuoteSnapshotInput,
   SupplierQuote,
@@ -41,6 +42,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [mode, setMode] = useState<'view' | 'revise'>('view');
   const [success, setSuccess] = useState<string | null>(null);
+  const [isQuoteSheetOpen, setIsQuoteSheetOpen] = useState(false);
 
   const rfqStatus = invitation?.rfqStatus ?? 'OPEN';
   const rfqOpen = rfqStatus === 'OPEN';
@@ -102,7 +104,8 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
     );
     if (!result.ok) return { error: result.error };
 
-    setSuccess('Initial quote submitted.');
+    setSuccess('Sealed quote submitted successfully.');
+    setIsQuoteSheetOpen(false);
     await load();
     return { error: null };
   }
@@ -115,6 +118,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
 
     setSuccess('Final quote updated.');
     setMode('view');
+    setIsQuoteSheetOpen(false);
     await load();
     return { error: null };
   }
@@ -131,15 +135,27 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
   }
 
   if (isLoading) {
-    return <p className="p-8 text-muted-foreground">Loading RFQ…</p>;
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-xs font-semibold text-muted-foreground">Loading RFQ Opportunity…</p>
+      </div>
+    );
   }
 
   if (!invitation) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <p className="text-red-600">Invitation not found or access denied.</p>
-        <Link to="/" className="mt-4 inline-block text-sm text-primary">
-          ← Back
+      <div className="mx-auto max-w-md px-4 py-12 text-center space-y-3">
+        <span className="text-3xl block">⚠️</span>
+        <h2 className="text-sm font-bold text-foreground">Opportunity Not Found</h2>
+        <p className="text-xs text-red-600 dark:text-red-300">
+          Invitation not found or access denied for your supplier account.
+        </p>
+        <Link
+          to="/"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs"
+        >
+          ← Return to Supplier Workspace
         </Link>
       </div>
     );
@@ -152,185 +168,191 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
   const canSubmitInitial = rfqOpen && !quote;
 
   return (
-    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full" data-testid="supplier-rfq-page">
-      {/* Compressed Top Bar */}
-      <header className="rounded-lg border bg-card px-3 py-1.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
+    <div
+      className="p-3 sm:p-4 max-w-4xl mx-auto w-full space-y-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden"
+      data-testid="supplier-rfq-page"
+    >
+      {/* 1. Header Bar: Navigation, Ref & Aliasing */}
+      <header className="rounded-2xl border bg-card p-3 shadow-xs flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Link to="/" className="text-xs font-semibold text-muted-foreground hover:text-foreground shrink-0">
+          <Link
+            to="/"
+            className="min-h-[36px] px-2 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted flex items-center gap-1 shrink-0"
+          >
             ← Enquiries
           </Link>
-          <span className="text-muted-foreground">|</span>
-          <h1 className="text-xs font-bold text-foreground truncate">{invitation.rfqTitle}</h1>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-xs font-mono font-bold text-foreground truncate">
+            {invitation.publicRef || 'RFQ'}
+          </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
             Alias: {invitation.anonymousLabel}
           </span>
-          <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold">
+          <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-0.5 text-[10px] font-bold">
             {rfqStatus === 'OPEN'
               ? '⚡ Quoting Active'
               : rfqStatus === 'EVALUATING'
-              ? '⚖️ Evaluation in Progress'
+              ? '⚖️ Evaluation'
               : quote?.status === 'SELECTED'
               ? '🏆 Won Award'
               : quote?.status === 'NOT_SELECTED'
-              ? '❌ Tender Concluded'
+              ? '❌ Concluded'
               : rfqStatus === 'AWARDED' || rfqStatus === 'CLOSED'
               ? '🔒 Closed'
               : rfqStatus}
           </span>
-          {quote && mode === 'view' && canRevise && (
-            <button
-              type="button"
-              onClick={() => setMode('revise')}
-              className="rounded border bg-card px-2.5 py-0.5 text-xs font-bold text-foreground hover:bg-muted transition shadow-2xs"
-            >
-              ✏️ Revise Price
-            </button>
-          )}
         </div>
       </header>
 
-      {/* Lifecycle Progress Bar */}
-      <div className="mt-1.5 shrink-0">
-        <RfqPhasePanel rfqId={rfqId} side="SUPPLIER" />
-      </div>
+      {/* 2. Lifecycle Stage Navigator */}
+      <RfqPhasePanel rfqId={rfqId} side="SUPPLIER" />
 
+      {/* Feedback Alerts */}
       {error && (
-        <p className="mt-1 shrink-0 text-xs font-bold text-red-600 dark:text-red-300 rounded border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 p-2">
+        <div className="p-3 text-xs font-bold text-red-700 dark:text-red-300 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40">
           ⚠️ {error}
-        </p>
+        </div>
       )}
       {success && (
-        <p className="mt-1 shrink-0 text-xs font-bold text-emerald-800 dark:text-emerald-300 rounded border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 p-2" data-testid="supplier-success">
+        <div
+          className="p-3 text-xs font-bold text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40"
+          data-testid="supplier-success"
+        >
           ✓ {success}
-        </p>
+        </div>
       )}
 
-      {/* Main Content Area - Split Column Grid in zero-scroll-pane */}
-      <div className="zero-scroll-pane mt-2">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
-          {/* Left Column (7 cols): Quote Submission / Quote Panel / Q&A */}
-          <div className="lg:col-span-7 space-y-2.5">
-            {quote && mode === 'view' && (
-              <div className="space-y-2.5">
-                <SupplierQuotePanel quote={quote} />
+      {/* 3. Screen 6 Core: Supplier RFQ Opportunity Review Card */}
+      <SupplierRequirementPanel rfq={invitation} />
 
-                <section className="rounded-lg border bg-card p-3 space-y-1.5 shadow-2xs">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-foreground">Quotation Documents &amp; Catalogues</h3>
-                    <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.2 rounded">Metadata Protected</span>
-                  </div>
-                  <AttachmentUploader
-                    scope={AttachmentScope.QUOTE}
-                    quoteId={quote.quoteId}
-                    label="Priced drawing, datasheet, or photo of similar work"
-                    hint="The buyer sees a neutral label, never your internal filename."
-                    disabled={quote.status === 'FINAL'}
-                  />
-                </section>
+      {/* Buyer Attached Documents */}
+      {buyerFiles.length > 0 && (
+        <section className="rounded-2xl border bg-card p-4 space-y-2 shadow-xs">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+            📎 Customer Technical Documents &amp; Drawings:
+          </h3>
+          <AttachmentList attachments={buyerFiles} />
+        </section>
+      )}
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {canRevise && (
-                    <button
-                      type="button"
-                      onClick={() => setMode('revise')}
-                      className="rounded border bg-card px-3 py-1.5 text-xs font-bold hover:bg-muted transition shadow-2xs"
-                    >
-                      ✏️ Revise Quote Price
-                    </button>
-                  )}
-                  {canSubmitFinal && (
-                    <button
-                      type="button"
-                      onClick={() => void handleFinalize()}
-                      className="rounded bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs"
-                    >
-                      Lock Final Quote 🔒
-                    </button>
-                  )}
-                </div>
-              </div>
+      {/* 4. Active Quote Card & Review Actions (if quote exists) */}
+      {quote && mode === 'view' && (
+        <div className="space-y-3">
+          <SupplierQuotePanel
+            quote={quote}
+            onReviseQuote={canRevise ? () => setIsQuoteSheetOpen(true) : undefined}
+          />
+
+          <section className="rounded-2xl border bg-card p-4 space-y-2 shadow-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-foreground">Quotation Documents &amp; Catalogues</h3>
+              <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-semibold">
+                Metadata Protected
+              </span>
+            </div>
+            <AttachmentUploader
+              scope={AttachmentScope.QUOTE}
+              quoteId={quote.quoteId}
+              label="Upload priced drawing, datasheet, or photos"
+              hint="The buyer sees a neutral label, never your internal filename."
+              disabled={quote.status === 'FINAL'}
+            />
+          </section>
+
+          {/* Action Row */}
+          <div className="flex flex-wrap items-center gap-2">
+            {canRevise && (
+              <button
+                type="button"
+                onClick={() => setIsQuoteSheetOpen(true)}
+                className="min-h-[44px] flex-1 sm:flex-none rounded-xl border bg-card px-4 py-2 text-xs font-bold text-foreground hover:bg-muted transition shadow-xs flex items-center justify-center gap-1.5"
+              >
+                <span>✏️ Revise Quote Price</span>
+              </button>
             )}
-
-            {quote && mode === 'revise' && (
-              <div className="rounded-lg border bg-card p-3 shadow-2xs">
-                <h2 className="mb-2 text-xs font-bold">Update Final Quote (v{quote.currentVersion + 1})</h2>
-                <QuoteForm
-                  initial={quote.snapshot ?? undefined}
-                  submitLabel="Save final quote"
-                  onSubmit={handleRevise}
-                  quoteId={quote.quoteId}
-                />
-                <button
-                  type="button"
-                  onClick={() => setMode('view')}
-                  className="mt-2 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-
-            {canSubmitInitial && (
-              <div className="rounded-lg border bg-card p-3 shadow-2xs">
-                <h2 className="mb-2 text-xs font-bold">Submit Initial Quote</h2>
-                <QuoteForm submitLabel="Submit initial quote" onSubmit={handleSubmit} />
-              </div>
-            )}
-
-            {inClarification && invitation && (
-              <section className="rounded-lg border bg-card p-3 shadow-2xs">
-                <h2 className="mb-2 text-xs font-bold">Negotiation &amp; Q&amp;A</h2>
-                <ClarificationThread
-                  rfqId={rfqId}
-                  invitationId={invitation.invitationId}
-                  messages={clarificationMessages}
-                  authorSide="SUPPLIER"
-                  onPosted={() => void load()}
-                />
-              </section>
-            )}
-
-            {!rfqOpen && !inClarification && !quote && (
-              <div className="rounded-lg border border-slate-300 bg-slate-50 dark:bg-slate-900/30 p-3 space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm">ℹ️</span>
-                  <h3 className="text-xs font-bold text-foreground">Requirement Closed &amp; Awarded</h3>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  The quotation and evaluation window for this requirement has ended. The buyer has placed the order with another supplier.
-                </p>
-              </div>
-            )}
-
-            {quote?.status === 'NOT_SELECTED' && (
-              <div className="rounded-lg border border-amber-300 bg-amber-50/70 dark:bg-amber-950/20 p-3 space-y-1 shadow-2xs">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm">❌</span>
-                  <h3 className="text-xs font-bold text-amber-950 dark:text-amber-200">Tender Concluded · Not Awarded</h3>
-                </div>
-                <p className="text-[11px] text-amber-900/80 dark:text-amber-300">
-                  The customer has completed evaluation and awarded the contract to another supplier. Thank you for submitting your competitive quote.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Right Column (5 cols): Requirement Specifications & Documents */}
-          <div className="lg:col-span-5 space-y-2.5">
-            <SupplierRequirementPanel rfq={invitation} />
-
-            {buyerFiles.length > 0 && (
-              <section className="rounded-lg border bg-card p-3 space-y-1.5 shadow-2xs">
-                <h2 className="text-xs font-bold text-foreground">Customer Documents &amp; Specifications</h2>
-                <AttachmentList attachments={buyerFiles} />
-              </section>
+            {canSubmitFinal && (
+              <button
+                type="button"
+                onClick={() => void handleFinalize()}
+                className="min-h-[44px] flex-1 sm:flex-none rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center justify-center gap-1.5"
+              >
+                <span>Lock Final Quote 🔒</span>
+              </button>
             )}
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Q&A / Clarification Thread */}
+      {inClarification && invitation && (
+        <section className="rounded-2xl border bg-card p-4 shadow-xs space-y-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+            💬 Neutral Clarification &amp; Technical Q&amp;A
+          </h3>
+          <ClarificationThread
+            rfqId={rfqId}
+            invitationId={invitation.invitationId}
+            messages={clarificationMessages}
+            authorSide="SUPPLIER"
+            onPosted={() => void load()}
+          />
+        </section>
+      )}
+
+      {/* Closed / Awarded Info State */}
+      {!rfqOpen && !inClarification && !quote && (
+        <div className="rounded-2xl border border-slate-300 bg-slate-50 dark:bg-slate-900/30 p-4 space-y-1 text-center">
+          <span className="text-2xl block">🔒</span>
+          <h3 className="text-xs font-bold text-foreground">Requirement Closed &amp; Awarded</h3>
+          <p className="text-[11px] text-muted-foreground">
+            The quotation and evaluation window for this requirement has ended.
+          </p>
+        </div>
+      )}
+
+      {quote?.status === 'NOT_SELECTED' && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50/70 dark:bg-amber-950/20 p-4 space-y-1 shadow-xs text-center">
+          <span className="text-2xl block">❌</span>
+          <h3 className="text-xs font-bold text-amber-950 dark:text-amber-200">Tender Concluded · Not Awarded</h3>
+          <p className="text-[11px] text-amber-900/80 dark:text-amber-300">
+            The customer has completed evaluation and awarded the contract to another competitive quote.
+          </p>
+        </div>
+      )}
+
+      {/* 5. Sticky Bottom Bar for Screen 6 CTA */}
+      {canSubmitInitial && (
+        <div className="fixed sm:static bottom-0 left-0 right-0 z-30 p-3 sm:p-0 bg-background/95 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none border-t sm:border-t-0 border-border/80">
+          <button
+            type="button"
+            onClick={() => setIsQuoteSheetOpen(true)}
+            data-testid="open-quote-sheet-cta"
+            className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90 transition flex items-center justify-center gap-2 active:scale-98"
+          >
+            <span>⚡</span>
+            <span>Draft &amp; Submit Quote →</span>
+          </button>
+        </div>
+      )}
+
+      {/* 6. Screen 7 Micro-Flow Bottom Sheet */}
+      <BottomSheet
+        isOpen={isQuoteSheetOpen}
+        onClose={() => setIsQuoteSheetOpen(false)}
+        title={quote ? `Revise Quote (v${quote.currentVersion + 1})` : '⚡ Submit Sealed Quote'}
+        subtitle={invitation.rfqTitle}
+        maxHeight="max-h-[90vh]"
+      >
+        <QuoteForm
+          initial={quote?.snapshot ?? undefined}
+          submitLabel={quote ? 'Update Final Quote' : 'Submit Sealed Quote'}
+          onSubmit={quote ? handleRevise : handleSubmit}
+          quoteId={quote?.quoteId}
+        />
+      </BottomSheet>
     </div>
   );
 }

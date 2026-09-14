@@ -108,25 +108,25 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
-        <div className="flex flex-wrap items-center gap-3 flex-1 max-w-lg">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search event type, entity ID, correlation ID, JSON payload..."
-            className="w-full rounded-lg border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0">
           {/* Active Operating Mode Scope Badge */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/60 border text-[11px] font-semibold text-muted-foreground">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/60 border text-xs font-semibold text-muted-foreground">
             <span>Scope:</span>
             <span
-              className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                 isProd
                   ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                   : 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30'
@@ -140,7 +140,7 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
           <select
             value={entityFilter}
             onChange={(e) => setEntityFilter(e.target.value)}
-            className="rounded-lg border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
           >
             <option value="ALL">All Entity Types</option>
             <option value="RFQ">RFQs &amp; Quotes</option>
@@ -156,7 +156,7 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
             type="button"
             onClick={loadLogs}
             disabled={isLoading}
-            className="rounded-lg border bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted focus:outline-none transition"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs"
           >
             {isLoading ? 'Syncing…' : '🔄 Refresh Logs'}
           </button>
@@ -165,7 +165,7 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
             type="button"
             onClick={handleClear}
             disabled={isClearing}
-            className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 focus:outline-none transition disabled:opacity-50"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 active:scale-98 transition disabled:opacity-50 shadow-2xs"
             title={`Safely purge ${isProd ? 'Live Production' : 'Staging & Demo'} audit logs & notifications without affecting the other environment`}
           >
             {isClearing ? 'Clearing…' : `🗑️ Clear ${isProd ? 'Prod' : 'Demo'} Logs`}

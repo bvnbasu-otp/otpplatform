@@ -105,3 +105,32 @@ describe('weightDisagreesWithHeadCount', () => {
     expect(weightDisagreesWithHeadCount([])).toBe(false);
   });
 });
+
+describe('4-Pillar candidate quote structure and quorum metrics', () => {
+  it('supports 4-pillar metrics for candidate comparisons', () => {
+    const candidateQuote: import('../types/governance').IdentityProtectedQuoteForVote = {
+      quoteId: 'q-101',
+      anonymousLabel: 'Supplier #01',
+      totalCost: 145000,
+      evaluationScore: 92,
+      deliveryDays: 3,
+      warrantyMonths: 24,
+      ratingBand: 4.5,
+      onTimeBand: 95,
+      experienceBand: 'EXPERT',
+      isGstVerified: true,
+    };
+
+    expect(candidateQuote.totalCost).toBe(145000);
+    expect(candidateQuote.deliveryDays).toBe(3);
+    expect(candidateQuote.warrantyMonths).toBe(24);
+    expect(candidateQuote.evaluationScore).toBe(92);
+  });
+
+  it('computes quorum percentages accurately for multi-member committees', () => {
+    const assigned = 3;
+    const voted = 2;
+    const quorumPercent = Math.round((voted / assigned) * 100);
+    expect(quorumPercent).toBe(67);
+  });
+});

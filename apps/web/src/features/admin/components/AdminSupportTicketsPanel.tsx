@@ -42,16 +42,16 @@ export function AdminSupportTicketsPanel() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Top Banner */}
-      <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xl">🎫</span>
-            <h3 className="text-base font-bold text-foreground">Support Tickets &amp; Targeted User Inquiries</h3>
+            <span className="text-xl shrink-0">🎫</span>
+            <h3 className="text-sm sm:text-base font-bold text-foreground">Disputes &amp; Support Escalations Console</h3>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Incoming buyer and supplier feedback, bug reports, feature enhancements, and escalations routed directly to <strong>bvnbasu@gmail.com</strong> (Primary Admin) and logged in OTP Ops Console.
+          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+            Incoming buyer and supplier dispute claims, mediation tickets, and feedback routed to Ops with resolution notes.
           </p>
         </div>
 
@@ -59,22 +59,22 @@ export function AdminSupportTicketsPanel() {
           type="button"
           onClick={loadTickets}
           disabled={isLoading}
-          className="rounded-lg border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs"
         >
           {isLoading ? 'Refreshing…' : '🔄 Refresh Queue'}
         </button>
       </div>
 
       {/* Filter Chips Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/20 p-3 rounded-xl border">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-muted/20 p-3 rounded-2xl border">
         {/* Category Filters */}
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           <span className="font-bold text-muted-foreground mr-1">Category:</span>
           <button
             type="button"
             onClick={() => setSelectedCategory('')}
-            className={`rounded-lg px-2.5 py-1 font-semibold transition ${
-              selectedCategory === '' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
+            className={`inline-flex min-h-[36px] items-center rounded-lg px-2.5 py-1 font-semibold transition active:scale-98 ${
+              selectedCategory === '' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'bg-card text-muted-foreground hover:text-foreground'
             }`}
           >
             All Tickets ({tickets.length})
@@ -82,8 +82,8 @@ export function AdminSupportTicketsPanel() {
           <button
             type="button"
             onClick={() => setSelectedCategory('BUG')}
-            className={`rounded-lg px-2.5 py-1 font-semibold transition ${
-              selectedCategory === 'BUG' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
+            className={`inline-flex min-h-[36px] items-center rounded-lg px-2.5 py-1 font-semibold transition active:scale-98 ${
+              selectedCategory === 'BUG' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'bg-card text-muted-foreground hover:text-foreground'
             }`}
           >
             🐛 Bugs
@@ -91,26 +91,26 @@ export function AdminSupportTicketsPanel() {
           <button
             type="button"
             onClick={() => setSelectedCategory('FEATURE')}
-            className={`rounded-lg px-2.5 py-1 font-semibold transition ${
-              selectedCategory === 'FEATURE' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
+            className={`inline-flex min-h-[36px] items-center rounded-lg px-2.5 py-1 font-semibold transition active:scale-98 ${
+              selectedCategory === 'FEATURE' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'bg-card text-muted-foreground hover:text-foreground'
             }`}
           >
-            💡 Features &amp; Enhancements
+            💡 Features
           </button>
           <button
             type="button"
             onClick={() => setSelectedCategory('OPS')}
-            className={`rounded-lg px-2.5 py-1 font-semibold transition ${
-              selectedCategory === 'OPS' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
+            className={`inline-flex min-h-[36px] items-center rounded-lg px-2.5 py-1 font-semibold transition active:scale-98 ${
+              selectedCategory === 'OPS' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'bg-card text-muted-foreground hover:text-foreground'
             }`}
           >
-            🛡️ Operations
+            🛡️ Ops / Dispute
           </button>
           <button
             type="button"
             onClick={() => setSelectedCategory('SALES')}
-            className={`rounded-lg px-2.5 py-1 font-semibold transition ${
-              selectedCategory === 'SALES' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
+            className={`inline-flex min-h-[36px] items-center rounded-lg px-2.5 py-1 font-semibold transition active:scale-98 ${
+              selectedCategory === 'SALES' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'bg-card text-muted-foreground hover:text-foreground'
             }`}
           >
             💼 Sales
@@ -122,7 +122,7 @@ export function AdminSupportTicketsPanel() {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="rounded-lg border bg-card px-2.5 py-1 text-xs font-semibold text-foreground"
+            className="rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground cursor-pointer"
           >
             <option value="">All Statuses</option>
             <option value="OPEN">Open Only</option>
@@ -204,13 +204,13 @@ export function AdminSupportTicketsPanel() {
                 </div>
 
                 {/* Status Toggles */}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {t.status === 'OPEN' && (
                     <button
                       type="button"
                       disabled={isUpdating}
                       onClick={() => handleUpdateStatus(t.id, 'IN_REVIEW')}
-                      className="rounded-lg border bg-card px-2.5 py-1 font-semibold text-foreground hover:bg-muted transition text-[11px]"
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-3.5 py-2 font-semibold text-foreground hover:bg-muted active:scale-98 transition text-xs shadow-2xs"
                     >
                       Mark In Review
                     </button>
@@ -220,23 +220,23 @@ export function AdminSupportTicketsPanel() {
                       type="button"
                       disabled={isUpdating}
                       onClick={() => {
-                        const notes = prompt('Enter resolution notes / action taken:');
+                        const notes = prompt('Enter resolution notes / mediation summary:');
                         if (notes !== null) {
                           setResolutionNotes(notes);
                           void resolveSupportTicket(t.id, 'RESOLVED', notes).then(() => loadTickets());
                         }
                       }}
-                      className="rounded-lg bg-emerald-600 px-3 py-1 font-bold text-white hover:bg-emerald-700 transition text-[11px]"
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-700 active:scale-98 transition text-xs shadow-2xs"
                     >
-                      ✓ Mark Resolved
+                      ✓ Mark Resolved &amp; Close Dispute
                     </button>
                   )}
                 </div>
               </div>
 
               {t.resolutionNotes && (
-                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2 text-[11px] text-emerald-950 font-medium">
-                  <strong>Resolution:</strong> {t.resolutionNotes}
+                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-2.5 text-xs text-emerald-950 dark:text-emerald-200 font-medium">
+                  <strong>Mediation &amp; Resolution Notes:</strong> {t.resolutionNotes}
                 </div>
               )}
             </div>

@@ -94,5 +94,6 @@ export function toSnapshotPayload(
     deliveryDays: input.deliveryDays,
     warrantyMonths: input.warrantyMonths,
     currency: input.currency,
+    notes: input.notes,
   };
 }

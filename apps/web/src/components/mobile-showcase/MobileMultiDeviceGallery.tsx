@@ -209,7 +209,7 @@ export function MobileMultiDeviceGallery() {
               title="6. Winner Unmask & PO"
               badge="Procure to Pay"
               badgeColor="bg-emerald-600/10 text-emerald-800 dark:text-emerald-300 border-emerald-400"
-              subtitle="Digital GST PO & Milestone Tracking"
+              subtitle="Digital GST PO & Delivery Tracking"
               size="sm"
             >
               <div className="p-3 space-y-2 text-left text-foreground">

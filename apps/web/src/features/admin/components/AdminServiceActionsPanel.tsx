@@ -123,21 +123,21 @@ export function AdminServiceActionsPanel({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Platform Operating Mode Banner (Live Production vs Demo/Staging) */}
-      <div className={`rounded-xl border p-5 transition ${
+      <div className={`rounded-2xl border p-4 sm:p-5 shadow-2xs transition ${
         demoModeEnabled
           ? 'border-indigo-500/40 bg-indigo-500/10'
           : 'border-emerald-500/40 bg-emerald-500/10'
       }`}>
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xl">{demoModeEnabled ? '🧪' : '🚀'}</span>
-              <h3 className="text-sm font-bold text-foreground">
+              <h3 className="text-sm sm:text-base font-bold text-foreground">
                 Platform Operating Mode
               </h3>
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+              <span className={`rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold ${
                 demoModeEnabled
                   ? 'bg-indigo-600 text-white'
                   : 'bg-emerald-600 text-white'
@@ -156,7 +156,7 @@ export function AdminServiceActionsPanel({
             type="button"
             disabled={isTogglingDemo}
             onClick={handleToggleDemoMode}
-            className={`rounded-lg px-4 py-2 text-xs font-bold shadow-sm transition disabled:opacity-50 ${
+            className={`inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 py-2 text-xs font-bold shadow-xs transition active:scale-98 disabled:opacity-50 whitespace-nowrap ${
               demoModeEnabled
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                 : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -172,22 +172,22 @@ export function AdminServiceActionsPanel({
       </div>
 
       {/* Maintenance Mode Scheduled Banner */}
-      <div className={`rounded-xl border p-5 transition ${
+      <div className={`rounded-2xl border p-4 sm:p-5 shadow-2xs transition ${
         maintenanceEnabled
           ? 'border-amber-500/50 bg-amber-500/10'
           : 'border-slate-300 dark:border-slate-800 bg-card'
       }`}>
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xl">🚧</span>
-              <h3 className="text-sm font-bold text-foreground">
+              <h3 className="text-sm sm:text-base font-bold text-foreground">
                 Scheduled Maintenance Mode (Men at Work)
               </h3>
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+              <span className={`rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold ${
                 maintenanceEnabled
                   ? 'bg-amber-500 text-black animate-pulse'
-                  : 'bg-emerald-500/20 text-emerald-700'
+                  : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
               }`}>
                 {maintenanceEnabled ? 'MAINTENANCE ACTIVE' : 'SYSTEM ONLINE (NORMAL)'}
               </span>
@@ -197,12 +197,12 @@ export function AdminServiceActionsPanel({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <a
               href="/maintenance"
               target="_blank"
               rel="noreferrer"
-              className="rounded-lg border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs"
             >
               🎮 Preview Comic Puzzle ↗
             </a>
@@ -211,7 +211,7 @@ export function AdminServiceActionsPanel({
               type="button"
               disabled={isTogglingMaint}
               onClick={handleToggleMaintenance}
-              className={`rounded-lg px-4 py-2 text-xs font-bold shadow-sm transition disabled:opacity-50 ${
+              className={`inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 py-2 text-xs font-bold shadow-xs transition active:scale-98 disabled:opacity-50 whitespace-nowrap ${
                 maintenanceEnabled
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   : 'bg-amber-600 hover:bg-amber-700 text-white'

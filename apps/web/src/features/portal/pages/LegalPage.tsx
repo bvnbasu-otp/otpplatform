@@ -221,7 +221,7 @@ export function LegalPage() {
                 {PRODUCT_NAME} facilitates procurement processes but does not enter into
                 contracts on behalf of users. All purchase orders, work orders, and payment
                 obligations are between the buyer and supplier. The platform records agreements
-                and tracks milestones but does not guarantee performance, handle payments, or
+                and tracks delivery stages but does not guarantee performance, handle payments, or
                 mediate disputes.
               </p>
               <p className="mt-2 font-semibold">

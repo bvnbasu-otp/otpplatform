@@ -334,7 +334,7 @@ function HowItWorks() {
               </div>
               <h3 className="mt-2.5 text-sm font-bold text-foreground">Award and execute</h3>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Winning vendor is unmasked, GST Purchase Order issued directly, and milestones tracked to completion.
+                Winning vendor is unmasked, GST Purchase Order issued directly, and order progress tracked to completion.
               </p>
             </div>
             <div className="mt-3 border-t pt-2 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">

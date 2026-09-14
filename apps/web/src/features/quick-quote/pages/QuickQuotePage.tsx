@@ -165,6 +165,7 @@ function QuickQuoteForm({
   const [deliveryDays, setDeliveryDays] = useState(String(prefilled.deliveryDays ?? '3'));
   const [warrantyMonths, setWarrantyMonths] = useState(String(prefilled.warrantyMonths ?? '0'));
   const [notes, setNotes] = useState('');
+  const [complianceConfirmed, setComplianceConfirmed] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -191,10 +192,14 @@ function QuickQuoteForm({
     [basePrice, gstAmount, transportCost],
   );
 
-  const canSubmit = num(basePrice) > 0 && num(deliveryDays) > 0 && !isSubmitting;
+  const canSubmit = num(basePrice) > 0 && num(deliveryDays) > 0 && complianceConfirmed && !isSubmitting;
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!complianceConfirmed) {
+      setError('Please confirm 100% compliance with technical BoQ specifications.');
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
 
@@ -421,6 +426,22 @@ function QuickQuoteForm({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Scope Compliance Confirmation Toggle */}
+      <div className="rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/30 p-3">
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={complianceConfirmed}
+            onChange={(e) => setComplianceConfirmed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+            disabled={isSubmitting}
+          />
+          <span className="text-xs font-bold text-emerald-950 dark:text-emerald-200 leading-snug">
+            ✓ I confirm 100% compliance with technical BoQ specifications and delivery terms.
+          </span>
+        </label>
       </div>
 
       {/* 4. Live Billable Roll-Up Summary Card */}
