@@ -5,9 +5,9 @@ export function MobileMultiDeviceGallery() {
   const [pipelineView, setPipelineView] = useState<'buyer' | 'supplier'>('buyer');
 
   return (
-    <section className="py-12 sm:py-16 bg-muted/30 border-b border-border/80">
+    <section className="py-12 sm:py-16 bg-muted/30 border-b border-border/80 overflow-x-hidden max-w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
+        <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-8">
           <span className="inline-block rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider px-3 py-1 mb-2">
             Dual-Sided Smartphone Showcase
           </span>
@@ -23,7 +23,7 @@ export function MobileMultiDeviceGallery() {
             <button
               type="button"
               onClick={() => setPipelineView('buyer')}
-              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
+              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition mobile-touch-target ${
                 pipelineView === 'buyer'
                   ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -34,7 +34,7 @@ export function MobileMultiDeviceGallery() {
             <button
               type="button"
               onClick={() => setPipelineView('supplier')}
-              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
+              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition mobile-touch-target ${
                 pipelineView === 'supplier'
                   ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -43,11 +43,20 @@ export function MobileMultiDeviceGallery() {
               <span>🚚</span> Supplier Pipeline (5 Screens)
             </button>
           </div>
+
+          {/* Horizontal Gallery Navigation Hint */}
+          <div className="mt-4 flex items-center justify-center">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-card border border-border/70 text-[10px] text-muted-foreground font-semibold shadow-2xs">
+              <span>👈</span>
+              <span>Swipe or scroll horizontally to explore all {pipelineView === 'buyer' ? '7 Buyer' : '5 Supplier'} screens</span>
+              <span>👉</span>
+            </div>
+          </div>
         </div>
 
         {pipelineView === 'buyer' ? (
           /* 7-SCREEN BUYER PIPELINE GALLERY */
-          <div className="flex items-stretch gap-6 overflow-x-auto pb-6 pt-2 px-2 snap-x snap-mandatory scrollbar-thin">
+          <div className="flex items-stretch gap-6 overflow-x-auto pb-6 pt-2 px-2 snap-x snap-mandatory scrollbar-thin w-full max-w-full">
             {/* DEVICE 1: HOME COCKPIT */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
@@ -300,7 +309,7 @@ export function MobileMultiDeviceGallery() {
           </div>
         ) : (
           /* 5-SCREEN SUPPLIER PIPELINE GALLERY */
-          <div className="flex items-stretch gap-6 overflow-x-auto pb-6 pt-2 px-2 snap-x snap-mandatory scrollbar-thin">
+          <div className="flex items-stretch gap-6 overflow-x-auto pb-6 pt-2 px-2 snap-x snap-mandatory scrollbar-thin w-full max-w-full">
             {/* SUPPLIER DEVICE 1: RADAR & ALERTS */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame

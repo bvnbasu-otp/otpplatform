@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import {
   fetchSystemHealth,
   fetchLiveTransactions,
@@ -442,6 +443,26 @@ export function AdminDashboardPage() {
 
   const currentModule = ALL_ADMIN_MODULES.find((m) => m.key === activeTab) || ALL_ADMIN_MODULES[0]!;
   const currentCategory = ADMIN_CATEGORIES.find((c) => c.key === currentModule.categoryKey) || ADMIN_CATEGORIES[0]!;
+  const currentModuleIndex = ALL_ADMIN_MODULES.findIndex((m) => m.key === activeTab);
+
+  const goToNextModule = useCallback(() => {
+    if (isTilesView) return;
+    const nextIdx = (currentModuleIndex + 1) % ALL_ADMIN_MODULES.length;
+    setTab(ALL_ADMIN_MODULES[nextIdx]!.key);
+  }, [isTilesView, currentModuleIndex]);
+
+  const goToPrevModule = useCallback(() => {
+    if (isTilesView) return;
+    const prevIdx = (currentModuleIndex - 1 + ALL_ADMIN_MODULES.length) % ALL_ADMIN_MODULES.length;
+    setTab(ALL_ADMIN_MODULES[prevIdx]!.key);
+  }, [isTilesView, currentModuleIndex]);
+
+  const mobileSwipeHandlers = useSwipeGesture({
+    onSwipeLeft: goToNextModule,
+    onSwipeRight: goToPrevModule,
+    minDelta: 50,
+    horizontalDominanceRatio: 1.5,
+  });
 
   const loadHealthData = async () => {
     setIsLoadingHealth(true);
@@ -847,10 +868,40 @@ export function AdminDashboardPage() {
                 })}
               </div>
             )}
+
+            {/* Mobile Swipe Navigation Hint & Module Step Indicator */}
+            <div className="flex sm:hidden items-center justify-between gap-1 pt-1.5 border-t border-border/40 text-[11px] px-0.5">
+              <button
+                type="button"
+                onClick={goToPrevModule}
+                className="p-1 rounded-lg border bg-muted/40 text-foreground text-xs font-bold flex items-center gap-0.5 mobile-touch-target"
+                aria-label="Previous module"
+              >
+                <span>‹</span> Prev
+              </button>
+              <div className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+                <span>👈</span>
+                <span className="font-bold text-foreground">
+                  Module {currentModuleIndex + 1} of {ALL_ADMIN_MODULES.length} · {currentModule.shortTitle}
+                </span>
+                <span>👉</span>
+              </div>
+              <button
+                type="button"
+                onClick={goToNextModule}
+                className="p-1 rounded-lg border bg-muted/40 text-foreground text-xs font-bold flex items-center gap-0.5 mobile-touch-target"
+                aria-label="Next module"
+              >
+                Next <span>›</span>
+              </button>
+            </div>
           </div>
 
-          {/* Tab Panels Content */}
-          <main className="zero-scroll-pane mt-2 animate-in fade-in duration-150">
+          {/* Tab Panels Content with Touch Swipe Support */}
+          <main
+            className="zero-scroll-pane mt-2 animate-in fade-in duration-150 touch-pan-y"
+            {...mobileSwipeHandlers.handlers}
+          >
             {activeTab === 'HEALTH' && (
               <AdminHealthDashboard
                 health={health}

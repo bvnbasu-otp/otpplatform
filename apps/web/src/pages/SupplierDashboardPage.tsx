@@ -306,7 +306,7 @@ export function SupplierDashboardPage() {
       </section>
 
       {/* 5. Filter Chips Row */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none min-w-0 max-w-full">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar scrollbar-none min-w-0 max-w-full">
         <button
           type="button"
           onClick={() => setFilterTab('ALL')}

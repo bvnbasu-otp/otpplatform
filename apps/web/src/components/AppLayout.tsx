@@ -47,9 +47,9 @@ export function AppLayout() {
 
   return (
     <MobileSimulatorFrame>
-      <div className="h-full w-full flex flex-col bg-background overflow-hidden relative">
+      <div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden relative">
         {/* Top Mobile & Desktop Navigation Bar (Strict Max-Height: 48px / h-12) */}
-        <header className="shrink-0 z-40 border-b bg-card max-h-[48px] h-12">
+        <header className="shrink-0 z-40 border-b bg-card max-h-[48px] h-12 w-full max-w-full overflow-x-hidden">
           <div className="mx-auto flex w-full h-full items-center justify-between gap-x-2 px-3">
             {/* Brand Logo & Side Identity Tag */}
             <div className="flex items-center gap-1.5 shrink-0">

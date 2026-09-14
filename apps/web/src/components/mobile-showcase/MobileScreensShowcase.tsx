@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { MobilePhoneFrame } from './MobilePhoneFrame';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 
 export interface MobileScreenDef {
   id: string;
@@ -19,6 +20,7 @@ export function MobileScreensShowcase() {
   const [activeScreenIndex, setActiveScreenIndex] = useState(0);
   const [activePhoneTab, setActivePhoneTab] = useState<'home' | 'orders' | 'new' | 'audit' | 'profile'>('home');
   const [showSupplierCapabilityPreview, setShowSupplierCapabilityPreview] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
   const handlePhoneTabClick = (tab: 'home' | 'orders' | 'new' | 'audit' | 'profile') => {
     setActivePhoneTab(tab);
@@ -195,8 +197,25 @@ export function MobileScreensShowcase() {
   const currentScreen: MobileScreenDef = screens[activeScreenIndex] ?? screens[0]!;
   const nextScreen: MobileScreenDef = screens[(activeScreenIndex + 1) % screens.length] ?? screens[0]!;
 
+  const goToNextScreen = useCallback(() => {
+    setSlideDirection('left');
+    setActiveScreenIndex((prev) => (prev + 1) % screens.length);
+  }, [screens.length]);
+
+  const goToPrevScreen = useCallback(() => {
+    setSlideDirection('right');
+    setActiveScreenIndex((prev) => (prev - 1 + screens.length) % screens.length);
+  }, [screens.length]);
+
+  const swipeHandlers = useSwipeGesture({
+    onSwipeLeft: goToNextScreen,
+    onSwipeRight: goToPrevScreen,
+    minDelta: 50,
+    horizontalDominanceRatio: 1.5,
+  });
+
   return (
-    <section className="py-12 sm:py-16 bg-gradient-to-b from-muted/30 via-background to-muted/20 border-y border-border/80">
+    <section className="py-12 sm:py-16 bg-gradient-to-b from-muted/30 via-background to-muted/20 border-y border-border/80 overflow-x-hidden max-w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-8">
@@ -220,6 +239,7 @@ export function MobileScreensShowcase() {
                 setActiveScreenIndex(0);
                 setActivePhoneTab('home');
                 setShowSupplierCapabilityPreview(false);
+                setSlideDirection('left');
               }}
               className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
                 pipelineMode === 'buyer'
@@ -236,6 +256,7 @@ export function MobileScreensShowcase() {
                 setActiveScreenIndex(0);
                 setActivePhoneTab('home');
                 setShowSupplierCapabilityPreview(false);
+                setSlideDirection('left');
               }}
               className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
                 pipelineMode === 'supplier'
@@ -248,15 +269,18 @@ export function MobileScreensShowcase() {
           </div>
 
           {/* Interactive Screen Selector Tabs Carousel */}
-          <div className="mt-4 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 scrollbar-none px-2">
+          <div className="mt-4 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 no-scrollbar scrollbar-none px-2 max-w-full">
             {screens.map((screen, idx) => {
               const isActive = idx === activeScreenIndex;
               return (
                 <button
                   key={screen.id}
                   type="button"
-                  onClick={() => setActiveScreenIndex(idx)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shadow-2xs ${
+                  onClick={() => {
+                    setSlideDirection(idx >= activeScreenIndex ? 'left' : 'right');
+                    setActiveScreenIndex(idx);
+                  }}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shadow-2xs mobile-touch-target ${
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-sm scale-105 ring-2 ring-primary/40'
                       : 'bg-card text-muted-foreground hover:bg-muted border border-border/70 hover:text-foreground'
@@ -505,41 +529,129 @@ export function MobileScreensShowcase() {
               <button
                 type="button"
                 disabled={activeScreenIndex === 0}
-                onClick={() => setActiveScreenIndex((prev) => Math.max(0, prev - 1))}
-                className="px-4 py-2 rounded-xl border bg-card text-xs font-bold text-foreground hover:bg-muted disabled:opacity-40 transition"
+                onClick={goToPrevScreen}
+                className="px-4 py-2 rounded-xl border bg-card text-xs font-bold text-foreground hover:bg-muted disabled:opacity-40 transition mobile-touch-target"
               >
                 ← Previous Screen
               </button>
               <button
                 type="button"
-                onClick={() => setActiveScreenIndex((prev) => (prev + 1) % screens.length)}
-                className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:bg-primary/90 transition text-center"
+                onClick={goToNextScreen}
+                className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:bg-primary/90 transition text-center mobile-touch-target"
               >
                 {activeScreenIndex === screens.length - 1 ? `↻ Replay ${pipelineMode === 'buyer' ? 'Buyer' : 'Supplier'} Pipeline` : `Next: ${nextScreen.tabLabel} →`}
               </button>
             </div>
           </div>
 
-          {/* Right Column: Realistic iPhone Device Mockup Rendering the Current Screen */}
-          <div className="lg:col-span-7 flex justify-center items-center order-1 lg:order-2">
-            <MobilePhoneFrame
-              title={showSupplierCapabilityPreview ? 'Quick Capability Editor' : currentScreen.title}
-              badge={showSupplierCapabilityPreview ? 'Screen 00 · Radar Scope & Capabilities' : currentScreen.badge}
-              badgeColor={
-                showSupplierCapabilityPreview
-                  ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300'
-                  : currentScreen.badgeColor
-              }
-              activeTab={activePhoneTab}
-              onTabClick={handlePhoneTabClick}
-              size="md"
-            >
-              {showSupplierCapabilityPreview ? (
-                <ScreenSupplierCapabilityPreview onClose={() => setShowSupplierCapabilityPreview(false)} />
-              ) : (
-                currentScreen.component
-              )}
-            </MobilePhoneFrame>
+          {/* Right Column: Realistic iPhone Device Mockup Rendering the Current Screen with Touch Swipe */}
+          <div className="lg:col-span-7 flex flex-col items-center justify-center order-1 lg:order-2">
+            <div className="relative flex items-center justify-center w-full">
+              {/* Left Mobile Chevron Button */}
+              <button
+                type="button"
+                onClick={goToPrevScreen}
+                disabled={activeScreenIndex === 0}
+                aria-label="Previous step screen"
+                className="hidden sm:flex absolute -left-4 lg:-left-6 z-40 w-10 h-10 rounded-full bg-card border border-border shadow-md items-center justify-center text-foreground hover:bg-muted disabled:opacity-30 transition active:scale-95"
+              >
+                ‹
+              </button>
+
+              {/* Phone Frame */}
+              <MobilePhoneFrame
+                title={showSupplierCapabilityPreview ? 'Quick Capability Editor' : currentScreen.title}
+                badge={showSupplierCapabilityPreview ? 'Screen 00 · Radar Scope & Capabilities' : currentScreen.badge}
+                badgeColor={
+                  showSupplierCapabilityPreview
+                    ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300'
+                    : currentScreen.badgeColor
+                }
+                activeTab={activePhoneTab}
+                onTabClick={handlePhoneTabClick}
+                size="md"
+              >
+                <div
+                  className={`w-full h-full flex flex-col touch-pan-y relative ${
+                    slideDirection === 'left'
+                      ? 'animate-in slide-in-from-right-4 fade-in duration-200'
+                      : 'animate-in slide-in-from-left-4 fade-in duration-200'
+                  }`}
+                  key={`${pipelineMode}-${activeScreenIndex}-${showSupplierCapabilityPreview}`}
+                  {...swipeHandlers.handlers}
+                >
+                  {showSupplierCapabilityPreview ? (
+                    <ScreenSupplierCapabilityPreview onClose={() => setShowSupplierCapabilityPreview(false)} />
+                  ) : (
+                    currentScreen.component
+                  )}
+                </div>
+              </MobilePhoneFrame>
+
+              {/* Right Mobile Chevron Button */}
+              <button
+                type="button"
+                onClick={goToNextScreen}
+                aria-label="Next step screen"
+                className="hidden sm:flex absolute -right-4 lg:-right-6 z-40 w-10 h-10 rounded-full bg-card border border-border shadow-md items-center justify-center text-foreground hover:bg-muted transition active:scale-95"
+              >
+                ›
+              </button>
+            </div>
+
+            {/* Visual Navigation Indicators (Dots & Step Progress & Swipe Hint) */}
+            <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-sm px-2 select-none">
+              {/* Step Label & Interactive Dot Indicators */}
+              <div className="flex items-center justify-between w-full px-2 text-xs">
+                <button
+                  type="button"
+                  onClick={goToPrevScreen}
+                  disabled={activeScreenIndex === 0}
+                  className="sm:hidden px-2.5 py-1 rounded-lg border bg-card text-foreground hover:bg-muted disabled:opacity-30 transition text-xs font-bold"
+                >
+                  ‹ Prev
+                </button>
+
+                <div className="flex flex-col items-center mx-auto">
+                  <span className="text-[11px] font-bold text-foreground">
+                    Step {activeScreenIndex + 1} of {screens.length} · {currentScreen.tabLabel}
+                  </span>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    {screens.map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setSlideDirection(idx >= activeScreenIndex ? 'left' : 'right');
+                          setActiveScreenIndex(idx);
+                        }}
+                        aria-label={`Go to step ${idx + 1}`}
+                        className={`transition-all rounded-full ${
+                          idx === activeScreenIndex
+                            ? 'w-6 h-2 bg-primary shadow-xs'
+                            : 'w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/60'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={goToNextScreen}
+                  className="sm:hidden px-2.5 py-1 rounded-lg border bg-card text-foreground hover:bg-muted transition text-xs font-bold"
+                >
+                  Next ›
+                </button>
+              </div>
+
+              {/* Visual Swipe Hint */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted/60 border border-border/70 text-[10px] text-muted-foreground font-semibold">
+                <span>👈</span>
+                <span>Swipe left / right on phone screen to navigate steps</span>
+                <span>👉</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

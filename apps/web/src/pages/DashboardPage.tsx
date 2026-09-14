@@ -498,7 +498,7 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="w-full max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 py-3 space-y-3.5 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden">
+    <div className="w-full max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 py-3 space-y-3.5 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden min-w-0 max-w-full">
       {/* 1. Header & Greeting: Personal, Compact, Action Summary */}
       <div className="rounded-2xl border border-border/80 bg-card p-3 sm:p-4 shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between gap-2">
