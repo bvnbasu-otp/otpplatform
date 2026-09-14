@@ -179,7 +179,7 @@ describe('Auth Feature & Portal Role Resolution', () => {
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
       data: { user: null },
       error: null,
-    });
+    } as any);
 
     const profile = await fetchCurrentProfile();
     expect(profile).toBeNull();
