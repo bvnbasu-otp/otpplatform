@@ -1,28 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
+import { useRoleContext } from '@/features/roles';
 import { supabase } from '@/lib/supabase';
 import { OtpLogo } from '@/components/ui/OtpLogo';
 import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
-
-interface SiteLink {
-  label: string;
-  to: string;
-}
-
-const PRE_LOGIN_NAV_LINKS: SiteLink[] = [
-  { label: 'Home', to: '/' },
-  { label: 'Pricing', to: '/pricing' },
-  { label: 'About Us', to: '/about-us' },
-  { label: 'FAQs', to: '/faqs' },
-];
+import { SupplierCapabilityModal } from '@/features/supplier';
+import { SupportHelpButtonModal } from '@/features/support';
+import { ThemeBottomSheet } from '@/features/theme';
 
 export function SiteHeader() {
   const { user } = useAuth();
+  const { context } = useRoleContext();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAccountPopoverOpen, setIsAccountPopoverOpen] = useState(false);
+  const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
+  const [showThemeSheet, setShowThemeSheet] = useState(false);
   const accountPopoverRef = useRef<HTMLDivElement>(null);
+
+  const isSupplier =
+    location.pathname.startsWith('/supplier') ||
+    location.search.includes('side=supplier') ||
+    context.side === 'SUPPLIER';
 
   // Close menus on navigation
   useEffect(() => {
@@ -87,14 +87,33 @@ export function SiteHeader() {
             >
               Pricing
             </NavLink>
-            <NavLink
-              to="/requirements/new"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold hover:bg-primary/20 transition"
-              title="Create Requirement"
-            >
-              <span>+</span>
-              <span>Post Need</span>
-            </NavLink>
+
+            {/* Context-Aware '+' Global Action Button for Desktop */}
+            {isSupplier ? (
+              <button
+                type="button"
+                onClick={() => setIsCapabilityModalOpen(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-700 dark:text-purple-300 font-bold hover:bg-purple-500/20 transition cursor-pointer"
+                title="Maximize Business Reach — Update Capabilities"
+                aria-label="Maximize Business Reach — Update Capabilities"
+                data-testid="header-supplier-capabilities-btn"
+              >
+                <span>+</span>
+                <span>Add Capabilities</span>
+              </button>
+            ) : (
+              <NavLink
+                to="/requirements/new"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold hover:bg-primary/20 transition"
+                title="Post a new requirement / broadcast RFQ"
+                aria-label="Post a new requirement / broadcast RFQ"
+                data-testid="header-buyer-create-requirement-btn"
+              >
+                <span>+</span>
+                <span>Post Need</span>
+              </NavLink>
+            )}
+
             <NavLink
               to="/about-us"
               className={({ isActive }) =>
@@ -123,7 +142,7 @@ export function SiteHeader() {
           <RoleModeToggle size="sm" />
         </div>
 
-        {/* Right Action Cluster: Clean & Minimal (Height ≤ 48px) */}
+        {/* Right Action Cluster: Canonical Sequence [Profile / Theme Trigger] → [Help & Support (?)] */}
         <div className="flex items-center gap-1.5 shrink-0">
           {user ? (
             <div className="flex items-center gap-1.5">
@@ -134,7 +153,7 @@ export function SiteHeader() {
                 Dashboard →
               </Link>
 
-              {/* Profile Avatar Button */}
+              {/* Profile Avatar Trigger Button */}
               <div className="relative">
                 <button
                   type="button"
@@ -148,6 +167,9 @@ export function SiteHeader() {
                   {userInitials}
                 </button>
               </div>
+
+              {/* Help & Support (?) placed after Profile trigger */}
+              <SupportHelpButtonModal />
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
@@ -169,6 +191,8 @@ export function SiteHeader() {
                   Register
                 </Link>
               )}
+              {/* Universal Help & Support modal */}
+              <SupportHelpButtonModal />
             </div>
           )}
 
@@ -234,6 +258,22 @@ export function SiteHeader() {
               <span>→</span>
             </Link>
 
+            {/* Theme Settings Trigger from Profile Popover */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsAccountPopoverOpen(false);
+                setShowThemeSheet(true);
+              }}
+              data-testid="site-header-theme-trigger"
+              className="w-full flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-1.5 font-semibold text-foreground hover:bg-muted transition text-xs"
+            >
+              <span className="flex items-center gap-1.5">
+                <span>🎨</span> Appearance Theme
+              </span>
+              <span>➔</span>
+            </button>
+
             <button
               type="button"
               onClick={async () => {
@@ -271,7 +311,39 @@ export function SiteHeader() {
                 <RoleModeToggle size="sm" />
               </div>
 
-              {user ? (
+              {/* Context-aware action button in mobile drawer */}
+              {isSupplier ? (
+                <div className="pb-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsCapabilityModalOpen(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-purple-600 px-4 py-2.5 font-bold text-white shadow-2xs hover:bg-purple-700 transition text-xs cursor-pointer"
+                    title="Maximize Business Reach — Update Capabilities"
+                    data-testid="mobile-supplier-capabilities-btn"
+                  >
+                    <span>+</span>
+                    <span>Add Business Capabilities</span>
+                  </button>
+                </div>
+              ) : !user ? (
+                <div className="pb-1">
+                  <Link
+                    to="/requirements/new"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition text-xs"
+                    title="Post a new requirement / broadcast RFQ"
+                    data-testid="mobile-create-requirement"
+                  >
+                    <span>+</span>
+                    <span>Create Requirement</span>
+                  </Link>
+                </div>
+              ) : null}
+
+              {user && (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
                   <div className="flex items-center gap-2.5 mb-2.5">
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs shrink-0">
@@ -291,21 +363,9 @@ export function SiteHeader() {
                     <span>→</span>
                   </Link>
                 </div>
-              ) : (
-                <div className="pb-1">
-                  <Link
-                    to="/requirements/new"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition text-xs"
-                    data-testid="mobile-create-requirement"
-                  >
-                    <span>+</span>
-                    <span>Create Requirement</span>
-                  </Link>
-                </div>
               )}
 
-              {/* Primary Navigation Links: Home, Pricing, +, About Us, FAQs */}
+              {/* Primary Navigation Links: Home, Pricing, About Us, FAQs */}
               <div className="space-y-1">
                 <NavLink
                   to="/"
@@ -367,6 +427,23 @@ export function SiteHeader() {
                 )}
               </div>
 
+              {/* Drawer Theme & Support Quick Actions */}
+              <div className="pt-2 border-t flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    setShowThemeSheet(true);
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 font-semibold text-foreground hover:bg-muted transition text-xs shadow-2xs flex-1 justify-center"
+                >
+                  <span>🎨</span> Appearance
+                </button>
+                <div className="flex-1">
+                  <SupportHelpButtonModal className="w-full" />
+                </div>
+              </div>
+
               {/* Bottom Auth Section */}
               {!user ? (
                 <div className="pt-2 border-t flex items-center gap-2">
@@ -404,6 +481,18 @@ export function SiteHeader() {
           </nav>
         </div>
       )}
+
+      {/* Quick Capability Editor Modal for Suppliers */}
+      <SupplierCapabilityModal
+        open={isCapabilityModalOpen}
+        onClose={() => setIsCapabilityModalOpen(false)}
+      />
+
+      {/* Theme Bottom Sheet Triggered from SiteHeader Profile Popover */}
+      <ThemeBottomSheet
+        isOpen={showThemeSheet}
+        onClose={() => setShowThemeSheet(false)}
+      />
     </header>
   );
 }

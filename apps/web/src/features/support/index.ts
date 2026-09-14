@@ -1,1 +1,2 @@
-﻿export { SupportHelpButtonModal } from './components/SupportHelpButtonModal';
+﻿export * from './components/SupportHelpButtonModal';
+export { SupportHelpButtonModal, SupportFeedbackModal } from './components/SupportHelpButtonModal';

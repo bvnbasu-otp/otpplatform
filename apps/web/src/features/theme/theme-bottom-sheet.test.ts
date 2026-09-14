@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ThemeMode, ColorTheme } from './types';
+import { ThemeBottomSheet } from './ThemeBottomSheet';
 
 interface ColorOption {
   id: ColorTheme;
@@ -72,6 +73,10 @@ const MODE_OPTIONS: { id: ThemeMode; label: string; description: string }[] = [
 ];
 
 describe('Theme System & Bottom Sheet Data Models', () => {
+  it('exports ThemeBottomSheet component', () => {
+    expect(ThemeBottomSheet).toBeDefined();
+  });
+
   it('supports all required theme modes (light, dark, system)', () => {
     const modes = MODE_OPTIONS.map((m) => m.id);
     expect(modes).toEqual(['light', 'system', 'dark']);

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { formatDateIST, formatDeadlineCountdown } from '@/lib/date-utils';
 import type { SupplierInvitation } from '../types/supplier-quote';
 import { formatMoney, type PurchaseOrderSummary } from '@/features/fulfillment/types/fulfillment';
+import { useSupplierRadarCapabilities } from '../hooks/use-supplier-radar';
 
 export function SupplierInvitationList({
   invitations,
@@ -14,6 +15,8 @@ export function SupplierInvitationList({
   isLoading?: boolean;
   error?: string | null;
 }) {
+  const { getMatchScore } = useSupplierRadarCapabilities();
+
   if (isLoading) {
     return (
       <div className="py-8 text-center space-y-2">
@@ -50,6 +53,7 @@ export function SupplierInvitationList({
 
         const matchedPo = purchaseOrders?.find((po) => po.rfqId === inv.rfqId);
         const countdown = formatDeadlineCountdown(inv.quoteDeadline);
+        const matchInfo = getMatchScore({ rfqTitle: inv.rfqTitle, rfqId: inv.rfqId });
 
         return (
           <article
@@ -74,6 +78,9 @@ export function SupplierInvitationList({
                 )}
                 <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold truncate">
                   🛡️ {inv.anonymousLabel}
+                </span>
+                <span className="rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30 px-2 py-0.5 text-[10px] font-black">
+                  📡 {matchInfo.badgeLabel}
                 </span>
               </div>
 
@@ -126,6 +133,20 @@ export function SupplierInvitationList({
                   <span>•</span>
                   <span>Invited: {formatDateIST(inv.invitedAt)}</span>
                 </p>
+
+                {/* Match Reasons */}
+                {matchInfo.matchReasons.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {matchInfo.matchReasons.map((reason) => (
+                      <span
+                        key={reason}
+                        className="rounded-md bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800/60 px-1.5 py-0.5 text-[9px] font-semibold text-purple-900 dark:text-purple-300"
+                      >
+                        ✓ {reason}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Deadline & Opportunity Metadata Bar */}

@@ -11,9 +11,15 @@ import { fetchPurchaseOrders } from '@/features/fulfillment/api/purchase-orders'
 import { formatMoney, type PurchaseOrderSummary } from '@/features/fulfillment/types/fulfillment';
 import { MobileGlanceBar } from '@/components/ui/MobileGlanceBar';
 import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
+import {
+  SupplierCapabilityModal,
+  useSupplierRadarCapabilities,
+} from '@/features/supplier';
 
 export function SupplierDashboardPage() {
   const { invitations, isLoading, error, refresh } = useSupplierInvitations();
+  const { profile } = useSupplierRadarCapabilities();
+  const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
   const [performance, setPerformance] = useState<SupplierPerformanceSummary | null>(null);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderSummary[]>([]);
   const [isPerfLoading, setIsPerfLoading] = useState(true);
@@ -193,23 +199,61 @@ export function SupplierDashboardPage() {
 
         <div className="flex items-center gap-2 shrink-0">
           <RoleModeToggle size="sm" />
+          <button
+            type="button"
+            onClick={() => setIsCapabilityModalOpen(true)}
+            className="min-h-[44px] rounded-xl bg-purple-600 px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-purple-700 transition flex items-center gap-1 active:scale-98 mobile-touch-target cursor-pointer"
+            title="Maximize Business Reach — Update Capabilities"
+            data-testid="dashboard-supplier-capabilities-btn"
+          >
+            <span>+ Add Capabilities</span>
+          </button>
           <Link
             to="/supplier/purchase-orders"
-            className="min-h-[44px] rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center gap-1 active:scale-98 mobile-touch-target"
+            className="hidden sm:inline-flex min-h-[44px] rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition items-center gap-1 active:scale-98 mobile-touch-target"
           >
             <span>Active POs</span>
             <span>→</span>
           </Link>
-          <Link
-            to="/supplier/capabilities"
-            className="hidden sm:inline-flex min-h-[44px] rounded-xl border bg-card px-3 py-2 text-xs font-semibold hover:bg-muted transition items-center mobile-touch-target"
-          >
-            Capabilities
-          </Link>
         </div>
       </header>
 
-      {/* 2. Urgent Action Alert: Purchase Orders Awaiting Acceptance */}
+      {/* 2. Supplier Discovery Radar Matching Status Banner */}
+      <section className="rounded-2xl border bg-gradient-to-br from-purple-900/10 via-card to-card p-3.5 shadow-xs space-y-2 border-purple-500/30">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-purple-950 dark:text-purple-300">
+              Supplier Discovery Radar · Active Scope
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsCapabilityModalOpen(true)}
+            className="text-[11px] font-bold text-purple-700 dark:text-purple-300 hover:underline flex items-center gap-1 cursor-pointer"
+            title="Maximize Business Reach — Update Capabilities"
+          >
+            <span>⚙️ Edit Capabilities &amp; Radar Scope →</span>
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          {profile.categories.map((cat) => (
+            <span key={cat} className="rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 px-2 py-0.5 text-[10px] font-bold">
+              ✓ {cat}
+            </span>
+          ))}
+          <span className="rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold">
+            📍 {profile.isPanIndia ? 'Pan-India' : `${profile.radiusKm} km radius (${profile.baseCity})`}
+          </span>
+          {profile.slaBadges.map((sla) => (
+            <span key={sla} className="rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold">
+              ⚡ {sla}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* 3. Urgent Action Alert: Purchase Orders Awaiting Acceptance */}
       {pendingAcceptancePOs.length > 0 && (
         <section className="rounded-2xl border-2 border-blue-500 bg-blue-50/80 dark:bg-blue-950/30 p-3.5 shadow-xs space-y-2.5">
           <div className="flex items-center justify-between gap-2">
@@ -247,7 +291,7 @@ export function SupplierDashboardPage() {
         </section>
       )}
 
-      {/* 3. Screen 5 Flagship Component: Mobile 3-State Glance Bar */}
+      {/* 4. Screen 5 Flagship Component: Mobile 3-State Glance Bar */}
       <section className="space-y-1.5">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
           What needs my attention?
@@ -261,7 +305,7 @@ export function SupplierDashboardPage() {
         />
       </section>
 
-      {/* 4. Filter Chips Row */}
+      {/* 5. Filter Chips Row */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none min-w-0 max-w-full">
         <button
           type="button"
@@ -343,7 +387,7 @@ export function SupplierDashboardPage() {
         )}
       </div>
 
-      {/* 5. Active Opportunity List */}
+      {/* 6. Active Opportunity List with Real-Time Radar Match Scores */}
       <section id="supplier-rfq-invitations" className="space-y-3">
         <div className="flex items-center justify-between px-0.5">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
@@ -371,18 +415,26 @@ export function SupplierDashboardPage() {
                 ? 'No active quotes currently under evaluation.'
                 : 'No RFQ invitations in this filter.'}
             </p>
-            <Link
-              to="/supplier/capabilities"
-              className="mt-2 inline-flex items-center justify-center min-h-[44px] px-4 rounded-xl font-bold text-primary hover:underline bg-primary/5 border border-primary/20 mobile-touch-target"
+            <button
+              type="button"
+              onClick={() => setIsCapabilityModalOpen(true)}
+              className="mt-2 inline-flex items-center justify-center min-h-[44px] px-4 rounded-xl font-bold text-purple-700 dark:text-purple-300 hover:underline bg-purple-500/10 border border-purple-500/20 mobile-touch-target cursor-pointer"
             >
-              Add more capabilities and PIN codes to receive more enquiries →
-            </Link>
+              + Add more capabilities and PIN codes to expand your radar reach →
+            </button>
           </div>
         )}
       </section>
 
-      {/* 6. Continuous Improvement: Ratings & Performance Scorecard */}
+      {/* 7. Continuous Improvement: Ratings & Performance Scorecard */}
       <SupplierPerformanceSection performance={performance} isLoading={isPerfLoading} />
+
+      {/* Quick Capability Editor Modal */}
+      <SupplierCapabilityModal
+        open={isCapabilityModalOpen}
+        onClose={() => setIsCapabilityModalOpen(false)}
+        onSaved={() => refresh()}
+      />
     </div>
   );
 }

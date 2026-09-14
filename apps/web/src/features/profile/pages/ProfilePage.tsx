@@ -30,20 +30,10 @@ const ROLE_BADGE: Record<string, string> = {
   VIEWER: 'bg-muted text-muted-foreground border border-border',
 };
 
-const COLOR_OPTIONS = [
-  { id: 'auto', name: 'Auto Sync', color: '#4f46e5' },
-  { id: 'indigo', name: 'Indigo', color: '#4f46e5' },
-  { id: 'emerald', name: 'Emerald', color: '#059669' },
-  { id: 'amber', name: 'Amber', color: '#d97706' },
-  { id: 'blue', name: 'Ocean Blue', color: '#0284c7' },
-  { id: 'purple', name: 'Royal Purple', color: '#7c3aed' },
-  { id: 'rose', name: 'Crimson Rose', color: '#e11d48' },
-] as const;
-
 export function ProfilePage() {
   const { context, refresh, switchOrg } = useRoleContext();
   const { user } = useAuth();
-  const { theme, setTheme, colorTheme, setColorTheme } = useTheme();
+  const { theme, resolvedTheme, colorTheme } = useTheme();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
@@ -93,7 +83,7 @@ export function ProfilePage() {
   const [removing, setRemoving] = useState<string | null>(null);
   const [switchingOrg, setSwitchingOrg] = useState<string | null>(null);
 
-  // Password modal
+  // Password modal & Canonical Theme Sheet Drawer
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showThemeSheet, setShowThemeSheet] = useState(false);
 
@@ -1045,78 +1035,30 @@ export function ProfilePage() {
       {/* 4. TAB 3: PREFERENCES, NOTIFICATION CHANNELS & SECURITY */}
       {activeTab === 'preferences' && (
         <div className="space-y-3">
-          {/* Theme & Display Mode */}
+          {/* Theme & Display Mode: Restricted to Theme Bottom Sheet */}
           <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
             <div className="flex items-center justify-between border-b pb-2">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                🎨 Appearance &amp; Display Theme
-              </h2>
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  🎨 Appearance &amp; Display Theme
+                </h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Active Mode: <strong className="text-foreground capitalize">{theme} ({resolvedTheme})</strong> · Color Accent: <strong className="text-foreground capitalize">{colorTheme}</strong>
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowThemeSheet(true)}
                 data-testid="profile-open-theme-sheet"
-                className="rounded-lg bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 text-[11px] font-bold hover:bg-primary/20 transition active:scale-95 min-h-[36px] inline-flex items-center gap-1"
+                className="rounded-xl bg-primary text-primary-foreground px-4 py-2 text-xs font-bold hover:bg-primary/90 transition active:scale-95 min-h-[40px] inline-flex items-center gap-1.5 shadow-2xs"
               >
-                <span>🎨 Open Theme Sheet</span>
+                <span>🎨 Change Theme</span>
                 <span>→</span>
               </button>
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">Display Mode</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'light', label: '☀️ Light' },
-                  { id: 'system', label: '💻 System' },
-                  { id: 'dark', label: '🌙 Dark' },
-                ].map((item) => {
-                  const isSelected = theme === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setTheme(item.id as any)}
-                      className={`rounded-xl border py-2.5 text-xs font-bold transition min-h-[44px] mobile-touch-target ${
-                        isSelected
-                          ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                          : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                Accent Color Palette
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {COLOR_OPTIONS.map((opt) => {
-                  const isSelected = colorTheme === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setColorTheme(opt.id as any)}
-                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs transition min-h-[44px] mobile-touch-target ${
-                        isSelected
-                          ? 'border-primary bg-primary/10 font-bold text-foreground shadow-2xs'
-                          : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
-                      }`}
-                    >
-                      <span
-                        className="h-3.5 w-3.5 rounded-full ring-1 ring-border shrink-0"
-                        style={{ backgroundColor: opt.color }}
-                      />
-                      <span className="truncate">{opt.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Display theme, dark/light modes, and curated accent color palettes are managed exclusively via the bottom-up Appearance Sheet.
+            </p>
           </section>
 
           {/* Notification Channels Preferences */}

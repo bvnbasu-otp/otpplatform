@@ -18,6 +18,28 @@ export function MobileScreensShowcase() {
   const [pipelineMode, setPipelineMode] = useState<'buyer' | 'supplier'>('buyer');
   const [activeScreenIndex, setActiveScreenIndex] = useState(0);
   const [activePhoneTab, setActivePhoneTab] = useState<'home' | 'orders' | 'new' | 'audit' | 'profile'>('home');
+  const [showSupplierCapabilityPreview, setShowSupplierCapabilityPreview] = useState(false);
+
+  const handlePhoneTabClick = (tab: 'home' | 'orders' | 'new' | 'audit' | 'profile') => {
+    setActivePhoneTab(tab);
+    if (tab === 'new') {
+      if (pipelineMode === 'buyer') {
+        setShowSupplierCapabilityPreview(false);
+        setActiveScreenIndex(1); // Screen 02: Voice Intake
+      } else {
+        setShowSupplierCapabilityPreview(true);
+      }
+    } else {
+      setShowSupplierCapabilityPreview(false);
+      if (tab === 'home') {
+        setActiveScreenIndex(0);
+      } else if (tab === 'orders') {
+        setActiveScreenIndex(pipelineMode === 'buyer' ? 6 : 4);
+      } else if (tab === 'audit') {
+        setActiveScreenIndex(pipelineMode === 'buyer' ? 4 : 2);
+      }
+    }
+  };
 
   const buyerScreens: MobileScreenDef[] = [
     {
@@ -196,6 +218,8 @@ export function MobileScreensShowcase() {
               onClick={() => {
                 setPipelineMode('buyer');
                 setActiveScreenIndex(0);
+                setActivePhoneTab('home');
+                setShowSupplierCapabilityPreview(false);
               }}
               className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
                 pipelineMode === 'buyer'
@@ -210,6 +234,8 @@ export function MobileScreensShowcase() {
               onClick={() => {
                 setPipelineMode('supplier');
                 setActiveScreenIndex(0);
+                setActivePhoneTab('home');
+                setShowSupplierCapabilityPreview(false);
               }}
               className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
                 pipelineMode === 'supplier'
@@ -497,14 +523,22 @@ export function MobileScreensShowcase() {
           {/* Right Column: Realistic iPhone Device Mockup Rendering the Current Screen */}
           <div className="lg:col-span-7 flex justify-center items-center order-1 lg:order-2">
             <MobilePhoneFrame
-              title={currentScreen.title}
-              badge={currentScreen.badge}
-              badgeColor={currentScreen.badgeColor}
+              title={showSupplierCapabilityPreview ? 'Quick Capability Editor' : currentScreen.title}
+              badge={showSupplierCapabilityPreview ? 'Screen 00 · Radar Scope & Capabilities' : currentScreen.badge}
+              badgeColor={
+                showSupplierCapabilityPreview
+                  ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300'
+                  : currentScreen.badgeColor
+              }
               activeTab={activePhoneTab}
-              onTabClick={(tab) => setActivePhoneTab(tab)}
+              onTabClick={handlePhoneTabClick}
               size="md"
             >
-              {currentScreen.component}
+              {showSupplierCapabilityPreview ? (
+                <ScreenSupplierCapabilityPreview onClose={() => setShowSupplierCapabilityPreview(false)} />
+              ) : (
+                currentScreen.component
+              )}
             </MobilePhoneFrame>
           </div>
         </div>
@@ -1405,3 +1439,128 @@ function ScreenSupplierFulfillmentTracker({ onRestart }: { onRestart: () => void
     </div>
   );
 }
+
+// Quick Capability Editor Mockup for Phone Showcase
+function ScreenSupplierCapabilityPreview({ onClose }: { onClose: () => void }) {
+  const [selectedCats, setSelectedCats] = useState([
+    'HVAC Repair',
+    'Motor Rewind',
+    'CNC Machining',
+  ]);
+  const [radius, setRadius] = useState('50 km');
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <div className="p-3.5 space-y-3 text-left text-foreground animate-in slide-in-from-bottom duration-200">
+      <div className="flex items-center justify-between border-b pb-2">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm">📡</span>
+          <h5 className="text-xs font-bold text-foreground">Quick Capability Editor</h5>
+        </div>
+        <span className="text-[9px] bg-purple-500/20 text-purple-700 dark:text-purple-300 font-bold px-2 py-0.5 rounded-full">
+          Radar Match
+        </span>
+      </div>
+
+      <div className="rounded-xl bg-gradient-to-br from-purple-900 to-indigo-950 text-white p-2.5 space-y-1 text-xs">
+        <div className="flex justify-between items-center text-[10px] font-bold text-purple-200">
+          <span>RADAR MATCH READINESS</span>
+          <span className="text-emerald-400">★ 98% Visibility</span>
+        </div>
+        <p className="text-[10px] text-purple-100">
+          Surfacing ~14 RFQ alerts within {radius} of Whitefield.
+        </p>
+      </div>
+
+      <div className="space-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          Categories &amp; Services:
+        </span>
+        <div className="flex flex-wrap gap-1">
+          {[
+            'HVAC Repair',
+            'Motor Rewind',
+            'CNC Machining',
+            'Raw Metals',
+            'IT Services',
+          ].map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() =>
+                setSelectedCats((prev) =>
+                  prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
+                )
+              }
+              className={`rounded-lg px-2 py-1 text-[10px] font-semibold transition ${
+                selectedCats.includes(cat)
+                  ? 'bg-purple-600 text-white shadow-2xs'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {selectedCats.includes(cat) ? `✓ ${cat}` : `+ ${cat}`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          Operating Radius:
+        </span>
+        <div className="flex gap-1 text-[10px]">
+          {['5 km', '15 km', '50 km', 'Pan-India'].map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setRadius(r)}
+              className={`flex-1 rounded-lg py-1 font-bold transition ${
+                radius === r ? 'bg-primary text-white shadow-2xs' : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          SLA &amp; Trust Badges:
+        </span>
+        <div className="flex flex-wrap gap-1 text-[9px] font-bold">
+          <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 px-1.5 py-0.5 rounded">
+            ✓ 24h SLA
+          </span>
+          <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 px-1.5 py-0.5 rounded">
+            ✓ GST Verified
+          </span>
+          <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 px-1.5 py-0.5 rounded">
+            ✓ MSME ZED
+          </span>
+        </div>
+      </div>
+
+      {saved && (
+        <div className="rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 p-1.5 text-[10px] font-bold text-center">
+          ✓ Radar match recalculated!
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => {
+          setSaved(true);
+          setTimeout(() => {
+            setSaved(false);
+            onClose();
+          }, 600);
+        }}
+        className="w-full rounded-xl bg-purple-600 hover:bg-purple-700 text-white py-2 text-xs font-bold transition shadow-md text-center cursor-pointer"
+      >
+        💾 Save &amp; Recalculate Radar →
+      </button>
+    </div>
+  );
+}
+

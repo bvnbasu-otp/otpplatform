@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileSimulatorFrame } from '@/components/layout/MobileSimulatorFrame';
 import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
+import { SupplierCapabilityModal } from '@/features/supplier';
 import { PRODUCT_NAME } from '@/lib/brand';
 
 const PUBLIC_PRIMARY_LINKS = [
@@ -24,6 +25,7 @@ export function AppLayout() {
   const { pathname, search } = useLocation();
   const { isMaintenanceMode } = useMaintenance();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
 
   // If maintenance is active and user is not a platform admin, redirect to maintenance screen
   if (isMaintenanceMode && !context.isPlatformAdmin) {
@@ -80,12 +82,13 @@ export function AppLayout() {
               </div>
             )}
 
-            {/* Right Action Cluster: Clean, minimal, ≤48px */}
+            {/* Right Action Cluster: Canonical Sequence [Profile/Theme] → [Help & Support (?)] → [Notifications (🔔)] */}
             <div className="ml-auto flex items-center gap-1.5 shrink-0">
-              <NotificationBell />
               <div className="hidden sm:block">
                 <AccountMenu />
               </div>
+              <SupportHelpButtonModal />
+              <NotificationBell />
 
               {/* Mobile Hamburger Drawer Button */}
               <button
@@ -167,17 +170,38 @@ export function AppLayout() {
                         </NavLink>
                       </li>
                     ))}
-                    {/* Create Requirement / Fast Track link for Buyer */}
+
+                    {/* Context-aware Create Requirement for Buyer vs Expand Capabilities for Supplier */}
                     {context.side === 'BUYER' && !context.isPlatformAdmin && (
                       <li>
                         <Link
                           to="/requirements/new"
                           onClick={() => setIsMobileMenuOpen(false)}
                           className="flex items-center justify-between rounded-lg bg-action px-3 py-2 font-bold text-action-foreground shadow-2xs hover:bg-action-hover transition"
+                          title="Post a new requirement / broadcast RFQ"
+                          data-testid="drawer-buyer-create-requirement"
                         >
                           <span>+ Create New Requirement</span>
                           <span>⚡</span>
                         </Link>
+                      </li>
+                    )}
+
+                    {context.side === 'SUPPLIER' && (
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsCapabilityModalOpen(true);
+                          }}
+                          className="w-full flex items-center justify-between rounded-lg bg-purple-600 px-3 py-2 font-bold text-white shadow-2xs hover:bg-purple-700 transition cursor-pointer"
+                          title="Maximize Business Reach — Update Capabilities"
+                          data-testid="drawer-supplier-capabilities-btn"
+                        >
+                          <span>+ Expand Catalog &amp; Services</span>
+                          <span>📡</span>
+                        </button>
                       </li>
                     )}
                   </ul>
@@ -234,6 +258,12 @@ export function AppLayout() {
 
         {/* Mobile Fixed Bottom Navigation Bar (Swiggy / PhonePe style) */}
         <MobileBottomNav />
+
+        {/* Quick Capability Editor Modal for Suppliers */}
+        <SupplierCapabilityModal
+          open={isCapabilityModalOpen}
+          onClose={() => setIsCapabilityModalOpen(false)}
+        />
 
         {/* Hidden / accessible test element for app footer test coverage */}
         <div className="sr-only" data-testid="app-footer">

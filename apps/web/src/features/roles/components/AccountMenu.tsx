@@ -6,6 +6,7 @@ import { useRoleContext } from '../hooks/use-role-context';
 import { PermissionChips } from './PermissionChips';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { ProfileEditModal } from '@/features/profile';
+import { ThemeBottomSheet, useTheme } from '@/features/theme';
 
 function initials(nameOrEmail: string | undefined): string {
   if (!nameOrEmail) return '?';
@@ -25,15 +26,16 @@ function initials(nameOrEmail: string | undefined): string {
  *
  * Switching is a server call, not a client-side view filter: the active role
  * and organization determines what the database will accept, so the menu closes on a real answer
- * rather than an optimistic one. It is why this shows a pending state at all for
- * something that looks like changing a tab.
+ * rather than an optimistic one.
  */
 export function AccountMenu() {
   const { user, signOut } = useAuth();
   const { context, switchTo, switchOrg } = useRoleContext();
+  const { theme, colorTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showThemeSheet, setShowThemeSheet] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [pendingOrg, setPendingOrg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -163,7 +165,7 @@ export function AccountMenu() {
               className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition"
             >
               <span className="flex items-center gap-1.5">
-                <span>👤</span> Edit Profile & Avatar
+                <span>👤</span> Edit Profile &amp; Avatar
               </span>
               <span className="text-[10px] text-muted-foreground">Manage ➔</span>
             </button>
@@ -290,7 +292,25 @@ export function AccountMenu() {
             </p>
           )}
 
+          {/* Theme & Display Mode Option */}
           <div className="mt-3 pt-2 border-t space-y-1">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setShowThemeSheet(true);
+              }}
+              data-testid="account-menu-theme-trigger"
+              className="w-full flex items-center justify-between rounded-md px-2 py-1.5 text-xs hover:bg-muted text-left text-foreground transition"
+            >
+              <span className="flex items-center gap-2">
+                <span>🎨</span> Appearance &amp; Theme
+              </span>
+              <span className="text-[10px] text-muted-foreground font-mono uppercase bg-muted px-1.5 py-0.5 rounded">
+                {theme} · {colorTheme}
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -321,6 +341,11 @@ export function AccountMenu() {
       <ProfileEditModal
         open={showProfileModal}
         onClose={() => setShowProfileModal(false)}
+      />
+
+      <ThemeBottomSheet
+        isOpen={showThemeSheet}
+        onClose={() => setShowThemeSheet(false)}
       />
     </div>
   );

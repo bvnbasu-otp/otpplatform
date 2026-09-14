@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SupportTicketCategory, SupportTicketPriority } from '@/features/admin/types/admin';
+import { SupportHelpButtonModal, SupportFeedbackModal } from './index';
 
 describe('Support Feature Module Tests', () => {
   it('defines valid support ticket categories and priorities', () => {
@@ -17,5 +18,10 @@ describe('Support Feature Module Tests', () => {
     const ROUTED_ADMIN_EMAIL = 'bvnbasu@gmail.com';
     expect(ROUTED_ADMIN_EMAIL).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
     expect(ROUTED_ADMIN_EMAIL).toBe('bvnbasu@gmail.com');
+  });
+
+  it('exports both SupportHelpButtonModal and SupportFeedbackModal components', () => {
+    expect(SupportHelpButtonModal).toBeDefined();
+    expect(SupportFeedbackModal).toBeDefined();
   });
 });

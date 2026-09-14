@@ -275,6 +275,7 @@ export function App() {
           >
             <Route path="/dashboard" element={<HomePage />} />
             <Route path="/requirements/new" element={<RequirementIntakePage />} />
+            <Route path="/intake" element={<RequirementIntakePage />} />
             <Route path="/requirements/:requirementId" element={<RequirementRoute />} />
             <Route
               path="/requirements/:requirementId/discover"

@@ -7,6 +7,7 @@ import { ChangePasswordModal } from '@/features/roles/components/ChangePasswordM
 import { ProfileEditModal } from '@/features/profile';
 import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api/roles';
 import { ThemeBottomSheet } from '@/features/theme';
+import { SupplierCapabilityModal } from '@/features/supplier';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -27,6 +28,7 @@ export function MobileBottomNav() {
   const { pathname } = useLocation();
 
   const [isAccountSheetOpen, setIsAccountSheetOpen] = useState(false);
+  const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showThemeSheet, setShowThemeSheet] = useState(false);
@@ -107,20 +109,36 @@ export function MobileBottomNav() {
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Orders</span>
             </NavLink>
 
-            {/* TAB 3: CENTER ACTION (Elevated Global CTA) */}
+            {/* TAB 3: CENTER ACTION (Elevated Global CTA - Context-Aware for Buyer vs Supplier) */}
             <div className="flex flex-col items-center justify-center flex-1 shrink-0">
-              <NavLink
-                to={isSupplier ? '/supplier/purchase-orders' : '/requirements/new'}
-                className={({ isActive }) =>
-                  `relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target ${
-                    isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:bg-primary/90'
-                  }`
-                }
-                title={isSupplier ? 'Active Orders' : 'Create New Requirement'}
-              >
-                <span className="text-2xl font-bold leading-none select-none">+</span>
-                <span className="sr-only">New Action</span>
-              </NavLink>
+              {isSupplier ? (
+                <button
+                  type="button"
+                  onClick={() => setIsCapabilityModalOpen(true)}
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                  title="Maximize Business Reach — Update Capabilities"
+                  aria-label="Maximize Business Reach — Update Capabilities"
+                  data-testid="bottom-nav-supplier-add-capabilities"
+                >
+                  <span className="text-2xl font-bold leading-none select-none">+</span>
+                  <span className="sr-only">Maximize Business Reach — Update Capabilities</span>
+                </button>
+              ) : (
+                <NavLink
+                  to="/requirements/new"
+                  className={({ isActive }) =>
+                    `relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target ${
+                      isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:bg-primary/90'
+                    }`
+                  }
+                  title="Post a new requirement / broadcast RFQ"
+                  aria-label="Post a new requirement / broadcast RFQ"
+                  data-testid="bottom-nav-buyer-create-requirement"
+                >
+                  <span className="text-2xl font-bold leading-none select-none">+</span>
+                  <span className="sr-only">Create Requirement</span>
+                </NavLink>
+              )}
             </div>
 
             {/* TAB 4: AUDIT / QUOTES */}
@@ -206,7 +224,9 @@ export function MobileBottomNav() {
                     isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:bg-primary/90'
                   }`
                 }
-                title="Create Requirement"
+                title="Post a new requirement / broadcast RFQ"
+                aria-label="Post a new requirement / broadcast RFQ"
+                data-testid="bottom-nav-prelogin-create-requirement"
               >
                 <span className="text-2xl font-bold leading-none select-none">+</span>
                 <span className="sr-only">Create Requirement</span>
@@ -427,6 +447,12 @@ export function MobileBottomNav() {
           </div>
         </div>
       </BottomSheet>
+
+      {/* Quick Capability Editor Modal for Suppliers */}
+      <SupplierCapabilityModal
+        open={isCapabilityModalOpen}
+        onClose={() => setIsCapabilityModalOpen(false)}
+      />
 
       <ChangePasswordModal
         open={showChangePassword}
