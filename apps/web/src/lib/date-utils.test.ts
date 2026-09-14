@@ -32,7 +32,7 @@ describe('date-utils', () => {
     });
 
     it('returns days format for deadlines > 2 days away', () => {
-      const fiveDaysAhead = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
+      const fiveDaysAhead = new Date(Date.now() + 5 * 24 * 3600 * 1000 + 60000).toISOString();
       const res = formatDeadlineCountdown(fiveDaysAhead);
       expect(res.isUrgent).toBe(false);
       expect(res.isPassed).toBe(false);
