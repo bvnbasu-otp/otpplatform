@@ -23,6 +23,8 @@ import { MobileGlanceBar } from '@/components/ui/MobileGlanceBar';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 
+import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
+
 type GlanceFilter = 'ALL' | 'ACTIVE' | 'ACTION_REQUIRED' | 'COMPLETED';
 
 const POPULAR_QUICK_TILES = [
@@ -516,20 +518,23 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Subscription Status Pill */}
-          {subscription && (
-            <button
-              type="button"
-              onClick={() => setIsPaymentModalOpen(true)}
-              className={`min-h-[38px] inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] font-black border transition active:scale-95 shrink-0 mobile-touch-target ${
-                subscription.isExpired
-                  ? 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 animate-pulse'
-                  : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300'
-              }`}
-            >
-              <span>{subscription.isExpired ? '🔒 Plan Expired' : `⚡ ${subscription.daysRemaining}d Active`}</span>
-            </button>
-          )}
+          {/* Subscription Status Pill & Role Mode Switcher */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <RoleModeToggle size="sm" />
+            {subscription && (
+              <button
+                type="button"
+                onClick={() => setIsPaymentModalOpen(true)}
+                className={`min-h-[38px] inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] font-black border transition active:scale-95 shrink-0 mobile-touch-target ${
+                  subscription.isExpired
+                    ? 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 animate-pulse'
+                    : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300'
+                }`}
+              >
+                <span>{subscription.isExpired ? '🔒 Plan Expired' : `⚡ ${subscription.daysRemaining}d Active`}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Attention Summary Bar */}

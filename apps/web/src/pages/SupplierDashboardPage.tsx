@@ -10,6 +10,7 @@ import { SupplierPerformanceSection } from '@/features/supplier/components/Suppl
 import { fetchPurchaseOrders } from '@/features/fulfillment/api/purchase-orders';
 import { formatMoney, type PurchaseOrderSummary } from '@/features/fulfillment/types/fulfillment';
 import { MobileGlanceBar } from '@/components/ui/MobileGlanceBar';
+import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 
 export function SupplierDashboardPage() {
   const { invitations, isLoading, error, refresh } = useSupplierInvitations();
@@ -191,6 +192,7 @@ export function SupplierDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <RoleModeToggle size="sm" />
           <Link
             to="/supplier/purchase-orders"
             className="min-h-[44px] rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center gap-1 active:scale-98 mobile-touch-target"

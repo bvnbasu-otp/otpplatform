@@ -4,8 +4,13 @@
  * NEVER used in match_score or evaluation_score calculations.
  */
 export const SupplierSource = {
-  DIRECT: 'DIRECT',
+  OTP_REGISTERED: 'OTP_REGISTERED',
   ONDC: 'ONDC',
+  LOCAL_DISCOVERY: 'LOCAL_DISCOVERY',
+  INVITED: 'INVITED',
+  IMPORTED: 'IMPORTED',
+  // Keep backward-compatible aliases if needed:
+  DIRECT: 'DIRECT',
   BNI: 'BNI',
   ASSOCIATION: 'ASSOCIATION',
   REFERRAL: 'REFERRAL',
@@ -24,3 +29,4 @@ export const SupplierStatus = {
 
 export type SupplierStatus =
   (typeof SupplierStatus)[keyof typeof SupplierStatus];
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   fetchSystemHealth,
@@ -29,7 +29,7 @@ import type {
   ServiceActionResult,
 } from '../types/admin';
 
-type AdminTab =
+export type AdminTab =
   | 'HEALTH'
   | 'TRANSACTIONS'
   | 'SELLER_ORDERS'
@@ -44,17 +44,301 @@ type AdminTab =
   | 'USERS'
   | 'NOTIFICATIONS';
 
+export type AdminCategoryKey =
+  | 'SOURCING'
+  | 'SUPPLIER_NETWORK'
+  | 'GOVERNANCE'
+  | 'ANALYTICS'
+  | 'NOTIFICATIONS'
+  | 'SYSTEM_OPS';
+
+export interface AdminModuleDef {
+  key: AdminTab;
+  title: string;
+  shortTitle: string;
+  icon: string;
+  description: string;
+  categoryKey: AdminCategoryKey;
+  badge?: (counts: AdminDynamicCounts) => string | number | null;
+}
+
+export interface AdminCategoryDef {
+  key: AdminCategoryKey;
+  title: string;
+  shortTitle: string;
+  icon: string;
+  description: string;
+  colorClass: string;
+  badgeClass: string;
+  modules: AdminModuleDef[];
+}
+
+export interface AdminDynamicCounts {
+  transactionsCount: number;
+  sellerOrdersCount: number;
+  alertsCount: number;
+  notificationsCount: number;
+  usersCount: number;
+  auditCount: number;
+}
+
+export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
+  {
+    key: 'SOURCING',
+    title: 'Sourcing & RFQs',
+    shortTitle: 'Sourcing',
+    icon: '📊',
+    description: 'Buyer procurement radar, sealed quoting pipelines & supplier order fulfillment',
+    colorClass: 'border-blue-500/30 bg-blue-500/5 hover:border-blue-500/60',
+    badgeClass: 'bg-blue-100 text-blue-900 dark:bg-blue-950/60 dark:text-blue-200 border-blue-300 dark:border-blue-800',
+    modules: [
+      {
+        key: 'TRANSACTIONS',
+        title: 'Buyer Radar / Live Transactions',
+        shortTitle: 'Buyer Radar',
+        icon: '📊',
+        description: 'Live buyer requirements, sealed quoting progress, committee evaluations & awards',
+        categoryKey: 'SOURCING',
+        badge: (c) => c.transactionsCount,
+      },
+      {
+        key: 'SELLER_ORDERS',
+        title: 'Supplier Radar / Orders',
+        shortTitle: 'Supplier Radar',
+        icon: '🏪',
+        description: 'Purchase orders, fulfillment progress, GST invoices, and settlement status',
+        categoryKey: 'SOURCING',
+        badge: (c) => c.sellerOrdersCount,
+      },
+    ],
+  },
+  {
+    key: 'SUPPLIER_NETWORK',
+    title: 'Supplier Network',
+    shortTitle: 'Suppliers',
+    icon: '🚚',
+    description: 'User accounts, tenant organizations, directory presence & supplier troubleshooting',
+    colorClass: 'border-purple-500/30 bg-purple-500/5 hover:border-purple-500/60',
+    badgeClass: 'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-200 border-purple-300 dark:border-purple-800',
+    modules: [
+      {
+        key: 'USERS',
+        title: 'Users & Organization Roster',
+        shortTitle: 'Users & Orgs',
+        icon: '👥',
+        description: 'Account lifecycle, active presence, GST compliance & registration reviews',
+        categoryKey: 'SUPPLIER_NETWORK',
+        badge: (c) => c.usersCount || 'Roster',
+      },
+      {
+        key: 'SUPPLIER_DEBUG',
+        title: 'Supplier Diagnostics',
+        shortTitle: 'Supplier Debug',
+        icon: '🏭',
+        description: 'Supplier GSTIN verification, quote unblocker & PO acceptance simulation',
+        categoryKey: 'SUPPLIER_NETWORK',
+        badge: () => 'Diagnostics',
+      },
+    ],
+  },
+  {
+    key: 'GOVERNANCE',
+    title: 'Governance & Committee',
+    shortTitle: 'Governance',
+    icon: '⚖️',
+    description: 'Buyer evaluation quorums, committee voting overrides & dispute mediation',
+    colorClass: 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60',
+    badgeClass: 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border-amber-300 dark:border-amber-800',
+    modules: [
+      {
+        key: 'BUYER_DEBUG',
+        title: 'Buyer Diagnostics',
+        shortTitle: 'Buyer Debug',
+        icon: '🏛️',
+        description: 'Committee quorum deadlock bypass & 8-state order force transitions',
+        categoryKey: 'GOVERNANCE',
+        badge: () => 'Overrides',
+      },
+      {
+        key: 'TICKETS',
+        title: 'Support Tickets & Disputes',
+        shortTitle: 'Tickets & Disputes',
+        icon: '🎫',
+        description: 'Buyer/supplier dispute claims, escalation queue & departmental mediation',
+        categoryKey: 'GOVERNANCE',
+        badge: () => 'Disputes',
+      },
+    ],
+  },
+  {
+    key: 'ANALYTICS',
+    title: 'Analytics & Audits',
+    shortTitle: 'Analytics',
+    icon: '📈',
+    description: 'Microservices health telemetry, DB latency & immutable audit trail',
+    colorClass: 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/60',
+    badgeClass: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200 border-emerald-300 dark:border-emerald-800',
+    modules: [
+      {
+        key: 'HEALTH',
+        title: 'System Health & Uptime',
+        shortTitle: 'System Health',
+        icon: '🫀',
+        description: 'Live PostgREST latency, microservice heartbeats & proactive scans',
+        categoryKey: 'ANALYTICS',
+        badge: (c) => (c.alertsCount > 0 ? `${c.alertsCount} Alerts` : '100% SLA'),
+      },
+      {
+        key: 'LOGS',
+        title: 'Immutable Audit Trail',
+        shortTitle: 'Audit Logs',
+        icon: '📜',
+        description: 'Cryptographically verified SHA-256 state change events & payloads',
+        categoryKey: 'ANALYTICS',
+        badge: (c) => (c.auditCount ? `${c.auditCount} Events` : 'Logs'),
+      },
+    ],
+  },
+  {
+    key: 'NOTIFICATIONS',
+    title: 'Notifications & Alerts',
+    shortTitle: 'Notifications',
+    icon: '🔔',
+    description: 'Multi-channel notification engine, WhatsApp pings & platform alarm center',
+    colorClass: 'border-rose-500/30 bg-rose-500/5 hover:border-rose-500/60',
+    badgeClass: 'bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200 border-rose-300 dark:border-rose-800',
+    modules: [
+      {
+        key: 'NOTIFICATIONS',
+        title: 'Platform Notifications & Alerts',
+        shortTitle: 'Alert Center',
+        icon: '🔔',
+        description: 'Multi-channel notification logs, dispatch status & proactive alerts',
+        categoryKey: 'NOTIFICATIONS',
+        badge: (c) => (c.notificationsCount > 0 ? `${c.notificationsCount} Alerts` : 'Alerts'),
+      },
+    ],
+  },
+  {
+    key: 'SYSTEM_OPS',
+    title: 'System & Operations',
+    shortTitle: 'Operations',
+    icon: '⚙️',
+    description: 'Platform maintenance switches, test suite runner, SQL terminal & backups',
+    colorClass: 'border-slate-500/30 bg-slate-500/5 hover:border-slate-500/60',
+    badgeClass: 'bg-slate-100 text-slate-900 dark:bg-slate-950/60 dark:text-slate-200 border-slate-300 dark:border-slate-800',
+    modules: [
+      {
+        key: 'ACTIONS',
+        title: 'Service Actions',
+        shortTitle: 'Ops Actions',
+        icon: '⚡',
+        description: 'Scheduled maintenance switch, demo mode switch & baseline reset',
+        categoryKey: 'SYSTEM_OPS',
+        badge: () => 'Maintenance',
+      },
+      {
+        key: 'TESTS',
+        title: 'Regression Test Suite',
+        shortTitle: 'Test Engine',
+        icon: '🧪',
+        description: '631-test multi-layer regression matrix & live DB benchmarks',
+        categoryKey: 'SYSTEM_OPS',
+        badge: () => '631 Tests',
+      },
+      {
+        key: 'TERMINAL',
+        title: 'SQL Query Terminal',
+        shortTitle: 'SQL Terminal',
+        icon: '💻',
+        description: 'Interactive read-only PostgreSQL query console for deep inspection',
+        categoryKey: 'SYSTEM_OPS',
+        badge: () => 'Interactive',
+      },
+      {
+        key: 'BACKUPS',
+        title: 'Backups & Purge',
+        shortTitle: 'DB Backups',
+        icon: '💾',
+        description: 'Database snapshot creator, transactional restore & rollback',
+        categoryKey: 'SYSTEM_OPS',
+        badge: () => 'Snapshots',
+      },
+    ],
+  },
+];
+
+// Flat lookup map of all modules
+export const ALL_ADMIN_MODULES: AdminModuleDef[] = ADMIN_CATEGORIES.flatMap((c) => c.modules);
+
 export function AdminDashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get('tab')?.toUpperCase();
-  const activeTab: AdminTab =
-    rawTab === 'ORDERS' || rawTab === 'TRANSACTIONS' || rawTab === 'PIPELINE' || rawTab === 'BUYER_ORDERS' || rawTab === 'BUYER-ORDERS'
-      ? 'TRANSACTIONS'
-      : rawTab === 'SELLER_ORDERS' || rawTab === 'SELLER-ORDERS' || rawTab === 'SELLER_TRANSACTIONS' || rawTab === 'SELLER-TRANSACTIONS' || rawTab === 'SUPPLIER_ORDERS'
-      ? 'SELLER_ORDERS'
-      : rawTab === 'NOTIFICATIONS' || rawTab === 'NOTIFICATION' || rawTab === 'ALERTS'
-      ? 'NOTIFICATIONS'
-      : (rawTab as AdminTab) || 'TRANSACTIONS';
+
+  // Handle aliases and resolve active tab
+  const resolvedTab: AdminTab | 'TILES' = useMemo(() => {
+    if (rawTab === 'TILES' || rawTab === 'GRID' || rawTab === 'OVERVIEW' || rawTab === 'ALL') {
+      return 'TILES';
+    }
+    if (
+      rawTab === 'ORDERS' ||
+      rawTab === 'TRANSACTIONS' ||
+      rawTab === 'PIPELINE' ||
+      rawTab === 'BUYER_ORDERS' ||
+      rawTab === 'BUYER-ORDERS'
+    ) {
+      return 'TRANSACTIONS';
+    }
+    if (
+      rawTab === 'SELLER_ORDERS' ||
+      rawTab === 'SELLER-ORDERS' ||
+      rawTab === 'SELLER_TRANSACTIONS' ||
+      rawTab === 'SELLER-TRANSACTIONS' ||
+      rawTab === 'SUPPLIER_ORDERS' ||
+      rawTab === 'SUPPLIER-ORDERS'
+    ) {
+      return 'SELLER_ORDERS';
+    }
+    if (rawTab === 'NOTIFICATIONS' || rawTab === 'NOTIFICATION' || rawTab === 'ALERTS') {
+      return 'NOTIFICATIONS';
+    }
+    if (rawTab === 'HEALTH') return 'HEALTH';
+    if (rawTab === 'USERS' || rawTab === 'ORGS' || rawTab === 'ORGANIZATIONS') return 'USERS';
+    if (rawTab === 'TICKETS' || rawTab === 'SUPPORT' || rawTab === 'DISPUTES') return 'TICKETS';
+    if (rawTab === 'ACTIONS' || rawTab === 'SERVICE_ACTIONS' || rawTab === 'OPS') return 'ACTIONS';
+    if (rawTab === 'TESTS' || rawTab === 'TEST_RUNNER' || rawTab === 'TEST_ENGINE') return 'TESTS';
+    if (
+      rawTab === 'BUYER_DEBUG' ||
+      rawTab === 'BUYER-DEBUG' ||
+      rawTab === 'BUYER_TROUBLESHOOT' ||
+      rawTab === 'BUYER-TROUBLESHOOT'
+    ) {
+      return 'BUYER_DEBUG';
+    }
+    if (
+      rawTab === 'SUPPLIER_DEBUG' ||
+      rawTab === 'SUPPLIER-DEBUG' ||
+      rawTab === 'SELLER_DEBUG' ||
+      rawTab === 'SELLER-DEBUG' ||
+      rawTab === 'SUPPLIER_TROUBLESHOOT' ||
+      rawTab === 'SUPPLIER-TROUBLESHOOT'
+    ) {
+      return 'SUPPLIER_DEBUG';
+    }
+    if (rawTab === 'TERMINAL' || rawTab === 'SQL' || rawTab === 'QUERY') return 'TERMINAL';
+    if (rawTab === 'BACKUPS' || rawTab === 'BACKUP' || rawTab === 'SNAPSHOTS') return 'BACKUPS';
+    if (rawTab === 'LOGS' || rawTab === 'AUDIT' || rawTab === 'AUDIT_LOGS') return 'LOGS';
+
+    return (rawTab as AdminTab) || 'TRANSACTIONS';
+  }, [rawTab]);
+
+  const activeTab: AdminTab = resolvedTab === 'TILES' ? 'TRANSACTIONS' : resolvedTab;
+  const isTilesView = resolvedTab === 'TILES';
+
+  // Quick module switcher drawer / selector state
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [moduleSearchFilter, setModuleSearchFilter] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<AdminCategoryKey | 'ALL'>('ALL');
 
   const [health, setHealth] = useState<SystemHealthResponse | null>(null);
   const [alerts, setAlerts] = useState<SystemAlertItem[]>([]);
@@ -68,9 +352,24 @@ export function AdminDashboardPage() {
   // Single Platform Operating Mode from Database
   const isPlatformInDemoMode = Boolean(health?.demo_mode_enabled);
 
-  const setTab = (tab: AdminTab) => {
+  const dynamicCounts: AdminDynamicCounts = useMemo(() => {
+    return {
+      transactionsCount: transactions.length,
+      sellerOrdersCount: sellerOrders.length,
+      alertsCount: alerts.length,
+      notificationsCount: health?.counts?.notifications ?? 0,
+      usersCount: health?.counts?.profiles ?? 0,
+      auditCount: health?.counts?.auditEvents ?? 0,
+    };
+  }, [transactions.length, sellerOrders.length, alerts.length, health?.counts]);
+
+  const setTab = (tab: AdminTab | 'TILES') => {
+    setIsSelectorOpen(false);
     setSearchParams({ tab: tab.toLowerCase() });
   };
+
+  const currentModule = ALL_ADMIN_MODULES.find((m) => m.key === activeTab) || ALL_ADMIN_MODULES[0]!;
+  const currentCategory = ADMIN_CATEGORIES.find((c) => c.key === currentModule.categoryKey) || ADMIN_CATEGORIES[0]!;
 
   const loadHealthData = async () => {
     setIsLoadingHealth(true);
@@ -124,15 +423,42 @@ export function AdminDashboardPage() {
     return null;
   };
 
+  const filteredCategoriesForSearch = useMemo(() => {
+    return ADMIN_CATEGORIES.map((cat) => {
+      const filteredMods = cat.modules.filter((mod) => {
+        if (selectedCategoryFilter !== 'ALL' && cat.key !== selectedCategoryFilter) return false;
+        if (!moduleSearchFilter.trim()) return true;
+        const q = moduleSearchFilter.toLowerCase();
+        return (
+          mod.title.toLowerCase().includes(q) ||
+          mod.shortTitle.toLowerCase().includes(q) ||
+          mod.description.toLowerCase().includes(q) ||
+          cat.title.toLowerCase().includes(q)
+        );
+      });
+      return {
+        ...cat,
+        modules: filteredMods,
+      };
+    }).filter((cat) => cat.modules.length > 0);
+  }, [moduleSearchFilter, selectedCategoryFilter]);
+
   return (
     <div className="zero-scroll-container p-2 sm:p-3 max-w-7xl mx-auto w-full pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
-      {/* Top Header Banner - Mobile-First Responsive Bar */}
-      <header className="rounded-xl border bg-card px-3 sm:px-4 py-2 sm:py-2.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-sm sm:text-base font-black tracking-tight text-foreground flex items-center gap-1.5 truncate">
-            <span>🛡️</span> Control Tower
-          </h1>
-          {/* Single Platform Operating Mode Badge */}
+      {/* Top Header Banner */}
+      <header className="rounded-2xl border bg-card px-3.5 sm:px-4 py-2.5 sm:py-3 shadow-2xs shrink-0 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => setTab(isTilesView ? 'TRANSACTIONS' : 'TILES')}
+            className="text-sm sm:text-base font-black tracking-tight text-foreground flex items-center gap-1.5 truncate hover:text-primary transition"
+            title="Toggle Control Tower Overview"
+          >
+            <span className="text-lg">🛡️</span>
+            <span className="truncate">Control Tower</span>
+          </button>
+
+          {/* Operating Mode Badge */}
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold shrink-0 ${
               isPlatformInDemoMode
@@ -151,13 +477,40 @@ export function AdminDashboardPage() {
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={refreshAllData}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-1 text-xs font-semibold hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs"
-        >
-          🔄 <span className="hidden sm:inline ml-1">Refresh</span>
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setTab('TILES')}
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs ${
+              isTilesView
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card text-foreground hover:bg-muted'
+            }`}
+          >
+            <span>▦</span>
+            <span className="hidden sm:inline">All Modules (Grid)</span>
+            <span className="sm:hidden">Modules</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsSelectorOpen(true)}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border bg-card px-3 py-1.5 text-xs font-bold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs"
+            title="Open Quick Module Switcher"
+          >
+            <span>⚡</span>
+            <span className="hidden md:inline">Quick Switch</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={refreshAllData}
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-1 text-xs font-semibold hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs"
+            title="Refresh All Telemetry Data"
+          >
+            🔄 <span className="hidden sm:inline ml-1">Refresh</span>
+          </button>
+        </div>
       </header>
 
       {/* Global Status Flash Banner */}
@@ -176,250 +529,437 @@ export function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Navigation Tabs Bar - Touch-Friendly Scrollable Bar */}
-      <div className="mt-2 shrink-0 flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar min-w-0 max-w-full">
-        <button
-          type="button"
-          onClick={() => setTab('TRANSACTIONS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'TRANSACTIONS'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
+      {/* VIEW 1: FULL CATEGORY TILES GRID VIEW (When in TILES view) */}
+      {isTilesView ? (
+        <div className="mt-3 space-y-4 animate-in fade-in duration-150">
+          {/* Tiles View Header */}
+          <div className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">▦</span>
+                <h2 className="text-base sm:text-lg font-black text-foreground">
+                  Administrative Modules &amp; Control Tower Directory
+                </h2>
+                <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-0.5 text-[11px] font-bold">
+                  13 Modules · 6 Categories
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Select any operational module below to access live procurement radar, diagnostics, governance, and platform utilities.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={moduleSearchFilter}
+                onChange={(e) => setModuleSearchFilter(e.target.value)}
+                placeholder="Filter administrative modules..."
+                className="rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary min-w-[220px]"
+              />
+              {moduleSearchFilter && (
+                <button
+                  type="button"
+                  onClick={() => setModuleSearchFilter('')}
+                  className="text-xs text-muted-foreground hover:text-foreground font-bold px-2 py-1"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 6 Visual Category Tiles Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {filteredCategoriesForSearch.map((category) => {
+              const totalCatBadge = category.modules.reduce((acc, m) => {
+                const b = m.badge?.(dynamicCounts);
+                if (typeof b === 'number') return acc + b;
+                return acc;
+              }, 0);
+
+              return (
+                <div
+                  key={category.key}
+                  className={`rounded-2xl border bg-card p-4 shadow-2xs flex flex-col justify-between space-y-3.5 transition hover:shadow-md ${category.colorClass}`}
+                >
+                  {/* Category Header */}
+                  <div className="space-y-1.5 border-b pb-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{category.icon}</span>
+                        <h3 className="text-sm font-bold text-foreground">{category.title}</h3>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black border ${category.badgeClass}`}>
+                        {category.modules.length} {category.modules.length === 1 ? 'Module' : 'Modules'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground line-clamp-2">
+                      {category.description}
+                    </p>
+                  </div>
+
+                  {/* Category Submodules List */}
+                  <div className="space-y-2 flex-1">
+                    {category.modules.map((mod) => {
+                      const badgeValue = mod.badge?.(dynamicCounts);
+                      const isActive = activeTab === mod.key;
+
+                      return (
+                        <button
+                          key={mod.key}
+                          type="button"
+                          onClick={() => setTab(mod.key)}
+                          className={`w-full text-left rounded-xl border p-2.5 sm:p-3 transition flex items-start justify-between gap-2.5 group active:scale-[0.99] mobile-touch-target ${
+                            isActive
+                              ? 'bg-primary text-primary-foreground border-primary shadow-xs font-bold'
+                              : 'bg-background/80 hover:bg-muted/80 text-foreground border-border/70 hover:border-border'
+                          }`}
+                        >
+                          <div className="space-y-0.5 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span>{mod.icon}</span>
+                              <span className="text-xs font-bold truncate group-hover:text-primary transition">
+                                {mod.title}
+                              </span>
+                            </div>
+                            <p
+                              className={`text-[10px] line-clamp-1 ${
+                                isActive ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                              }`}
+                            >
+                              {mod.description}
+                            </p>
+                          </div>
+
+                          {badgeValue !== null && badgeValue !== undefined && (
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[9px] font-black shrink-0 border ${
+                                isActive
+                                  ? 'bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30'
+                                  : 'bg-muted text-foreground border-border'
+                              }`}
+                            >
+                              {badgeValue}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* VIEW 2: ACTIVE MODULE VIEW WITH BREADCRUMB & CATEGORY SELECTOR */
+        <div className="mt-2 space-y-2.5">
+          {/* Active Navigation & Category Bar */}
+          <div className="rounded-2xl border bg-card p-2 sm:p-2.5 shadow-2xs flex flex-col gap-2">
+            {/* Top Row: Back to Tiles & Current Module Information */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-2 px-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setTab('TILES')}
+                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border bg-muted/50 hover:bg-muted px-2.5 py-1 text-xs font-bold text-foreground transition active:scale-98 shrink-0"
+                  title="Return to Grid / Category Tiles View"
+                >
+                  <span>←</span> All Modules
+                </button>
+
+                <div className="flex items-center gap-1.5 truncate text-xs">
+                  <span className="text-muted-foreground font-semibold hidden sm:inline">
+                    {currentCategory.icon} {currentCategory.shortTitle}
+                  </span>
+                  <span className="text-muted-foreground hidden sm:inline">/</span>
+                  <span className="font-extrabold text-foreground flex items-center gap-1 truncate">
+                    <span>{currentModule.icon}</span>
+                    <span>{currentModule.title}</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Category / Module Change Trigger */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsSelectorOpen(true)}
+                  className="inline-flex min-h-[36px] items-center gap-1 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1 text-xs font-bold transition active:scale-98"
+                >
+                  <span>Change Module</span>
+                  <span>▾</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Row: 6 Category Switcher Pills with Dynamic Badges */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 w-full max-w-full">
+              {ADMIN_CATEGORIES.map((cat) => {
+                const isCatActive = cat.key === currentCategory.key;
+                const firstMod = cat.modules[0]!;
+
+                return (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => {
+                      // If clicking current category, switch to its next module or open selector; otherwise open first module
+                      if (isCatActive) {
+                        const nextModIndex = (cat.modules.findIndex((m) => m.key === activeTab) + 1) % cat.modules.length;
+                        setTab(cat.modules[nextModIndex]!.key);
+                      } else {
+                        setTab(firstMod.key);
+                      }
+                    }}
+                    className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
+                      isCatActive
+                        ? 'bg-primary text-primary-foreground shadow-2xs font-extrabold'
+                        : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.shortTitle}</span>
+                    {cat.modules.length > 1 && (
+                      <span
+                        className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
+                          isCatActive
+                            ? 'bg-primary-foreground/20 text-primary-foreground'
+                            : 'bg-muted-foreground/20 text-muted-foreground'
+                        }`}
+                      >
+                        {cat.modules.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Tab Panels Content */}
+          <main className="zero-scroll-pane mt-2 animate-in fade-in duration-150">
+            {activeTab === 'HEALTH' && (
+              <AdminHealthDashboard
+                health={health}
+                alerts={alerts}
+                isLoading={isLoadingHealth}
+                onRefresh={refreshAllData}
+                onNavigateTab={(tab) => setTab(tab.toUpperCase() as AdminTab)}
+              />
+            )}
+
+            {activeTab === 'TRANSACTIONS' && (
+              <AdminTransactionsTable
+                transactions={transactions}
+                isLoading={isLoadingTx}
+                onExecuteAction={async (action, id, reason) => {
+                  await handleExecuteAction(action, id, { reason });
+                }}
+                onRefresh={refreshAllData}
+              />
+            )}
+
+            {activeTab === 'SELLER_ORDERS' && (
+              <AdminSellerOrdersTable
+                orders={sellerOrders}
+                isLoading={isLoadingSellerOrders}
+                onExecuteAction={async (action, id, reason) => {
+                  await handleExecuteAction(action, id, { reason });
+                }}
+                onRefresh={refreshAllData}
+              />
+            )}
+
+            {activeTab === 'TICKETS' && <AdminSupportTicketsPanel />}
+
+            {activeTab === 'ACTIONS' && (
+              <AdminServiceActionsPanel
+                onExecuteAction={handleExecuteAction}
+                onRefreshTelemetry={refreshAllData}
+              />
+            )}
+
+            {activeTab === 'TESTS' && <AdminTestSuiteRunner />}
+
+            {activeTab === 'BUYER_DEBUG' && (
+              <AdminBuyerTroubleshooter
+                transactions={transactions}
+                initialTargetId={searchParams.get('id') || searchParams.get('target') || undefined}
+                onRefreshTelemetry={refreshAllData}
+              />
+            )}
+
+            {activeTab === 'SUPPLIER_DEBUG' && (
+              <AdminSellerTroubleshooter
+                initialTargetId={searchParams.get('id') || searchParams.get('target') || undefined}
+                onRefreshTelemetry={refreshAllData}
+              />
+            )}
+
+            {activeTab === 'TERMINAL' && <AdminQueryTerminal />}
+
+            {activeTab === 'BACKUPS' && <AdminBackupRestorePanel />}
+
+            {activeTab === 'LOGS' && (
+              <AdminAuditLogsViewer
+                isPlatformInDemoMode={isPlatformInDemoMode}
+                onRefreshTelemetry={refreshAllData}
+              />
+            )}
+
+            {activeTab === 'USERS' && <AdminUsersActivityPanel />}
+
+            {activeTab === 'NOTIFICATIONS' && (
+              <NotificationsPage
+                isPlatformInDemoMode={isPlatformInDemoMode}
+                onRefreshTelemetry={refreshAllData}
+              />
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* QUICK MODULE SELECTOR DRAWER / MODAL */}
+      {isSelectorOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Quick Module Selector"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
         >
-          <span>📊</span> Buyer Radar ({transactions.length})
-        </button>
+          <div className="w-full max-w-2xl rounded-2xl border bg-card p-4 sm:p-5 shadow-2xl animate-in zoom-in-95 duration-150 space-y-4 max-h-[85vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b pb-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚡</span>
+                <h3 className="text-sm sm:text-base font-bold text-foreground">
+                  Quick Module Selector
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSelectorOpen(false)}
+                className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setTab('SELLER_ORDERS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'SELLER_ORDERS'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>🏪</span> Supplier Radar ({sellerOrders.length})
-        </button>
+            {/* Category Filter Pills & Search in Drawer */}
+            <div className="space-y-2 shrink-0">
+              <input
+                type="text"
+                value={moduleSearchFilter}
+                onChange={(e) => setModuleSearchFilter(e.target.value)}
+                placeholder="Search modules (e.g. Buyer, Radar, SQL, Logs, Audit)..."
+                className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                autoFocus
+              />
 
-        <button
-          type="button"
-          onClick={() => setTab('HEALTH')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'HEALTH'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>🫀</span> Health
-          {alerts.length > 0 && (
-            <span className="rounded-full bg-amber-500 px-1.5 py-0.2 text-[10px] text-white">
-              {alerts.length}
-            </span>
-          )}
-        </button>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategoryFilter('ALL')}
+                  className={`rounded-lg px-2.5 py-1 font-semibold transition shrink-0 ${
+                    selectedCategoryFilter === 'ALL'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/60 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  All (13)
+                </button>
+                {ADMIN_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => setSelectedCategoryFilter(cat.key)}
+                    className={`rounded-lg px-2.5 py-1 font-semibold transition shrink-0 flex items-center gap-1 ${
+                      selectedCategoryFilter === cat.key
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/60 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.shortTitle}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setTab('USERS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'USERS'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>👥</span> Users &amp; Orgs
-        </button>
+            {/* Modules List in Drawer */}
+            <div className="overflow-y-auto space-y-3 pr-1 flex-1 min-h-0">
+              {filteredCategoriesForSearch.map((cat) => (
+                <div key={cat.key} className="space-y-1.5">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <span>{cat.icon}</span>
+                    <span>{cat.title}</span>
+                  </div>
 
-        <button
-          type="button"
-          onClick={() => setTab('TICKETS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'TICKETS'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>🎫</span> Tickets
-        </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {cat.modules.map((mod) => {
+                      const isActive = activeTab === mod.key;
+                      const badgeVal = mod.badge?.(dynamicCounts);
 
-        <button
-          type="button"
-          onClick={() => setTab('ACTIONS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'ACTIONS'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>⚡</span> Ops Actions
-        </button>
+                      return (
+                        <button
+                          key={mod.key}
+                          type="button"
+                          onClick={() => setTab(mod.key)}
+                          className={`rounded-xl border p-2.5 text-left transition flex items-start justify-between gap-2 group mobile-touch-target ${
+                            isActive
+                              ? 'bg-primary text-primary-foreground border-primary shadow-xs font-bold'
+                              : 'bg-muted/20 hover:bg-muted/60 text-foreground border-border'
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 text-xs font-bold truncate">
+                              <span>{mod.icon}</span>
+                              <span className="truncate group-hover:text-primary transition">{mod.title}</span>
+                            </div>
+                            <p
+                              className={`text-[10px] line-clamp-1 mt-0.5 ${
+                                isActive ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                              }`}
+                            >
+                              {mod.description}
+                            </p>
+                          </div>
 
-        <button
-          type="button"
-          onClick={() => setTab('TESTS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'TESTS'
-              ? 'bg-emerald-600 text-white shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>🧪</span> Test Engine
-        </button>
+                          {badgeVal !== null && badgeVal !== undefined && (
+                            <span
+                              className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold shrink-0 border ${
+                                isActive
+                                  ? 'bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30'
+                                  : 'bg-muted text-foreground border-border'
+                              }`}
+                            >
+                              {badgeVal}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setTab('BUYER_DEBUG')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'BUYER_DEBUG'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>🏛️</span> Buyer Debug
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setTab('SUPPLIER_DEBUG')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'SUPPLIER_DEBUG'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>👥</span> Supplier Debug
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setTab('TERMINAL')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'TERMINAL'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>💻</span> Terminal
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setTab('BACKUPS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'BACKUPS'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>💾</span> Backups
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setTab('LOGS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'LOGS'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>📜</span> Logs
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setTab('NOTIFICATIONS')}
-          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
-            activeTab === 'NOTIFICATIONS'
-              ? 'bg-primary text-primary-foreground shadow-2xs'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
-          }`}
-        >
-          <span>🔔</span> Alerts ({health?.counts?.notifications ?? 0})
-        </button>
-      </div>
-
-      {/* Tab Panels */}
-      <main className="zero-scroll-pane mt-2 animate-in fade-in duration-200">
-        {activeTab === 'HEALTH' && (
-          <AdminHealthDashboard
-            health={health}
-            alerts={alerts}
-            isLoading={isLoadingHealth}
-            onRefresh={refreshAllData}
-            onNavigateTab={(tab) => setTab(tab.toUpperCase() as AdminTab)}
-          />
-        )}
-
-        {activeTab === 'TRANSACTIONS' && (
-          <AdminTransactionsTable
-            transactions={transactions}
-            isLoading={isLoadingTx}
-            onExecuteAction={async (action, id, reason) => {
-              await handleExecuteAction(action, id, { reason });
-            }}
-            onRefresh={refreshAllData}
-          />
-        )}
-
-        {activeTab === 'SELLER_ORDERS' && (
-          <AdminSellerOrdersTable
-            orders={sellerOrders}
-            isLoading={isLoadingSellerOrders}
-            onExecuteAction={async (action, id, reason) => {
-              await handleExecuteAction(action, id, { reason });
-            }}
-            onRefresh={refreshAllData}
-          />
-        )}
-
-        {activeTab === 'TICKETS' && <AdminSupportTicketsPanel />}
-
-        {activeTab === 'ACTIONS' && (
-          <AdminServiceActionsPanel
-            onExecuteAction={handleExecuteAction}
-            onRefreshTelemetry={refreshAllData}
-          />
-        )}
-
-        {activeTab === 'TESTS' && <AdminTestSuiteRunner />}
-
-        {activeTab === 'BUYER_DEBUG' && (
-          <AdminBuyerTroubleshooter
-            transactions={transactions}
-            initialTargetId={searchParams.get('id') || searchParams.get('target') || undefined}
-            onRefreshTelemetry={refreshAllData}
-          />
-        )}
-
-        {activeTab === 'SUPPLIER_DEBUG' && (
-          <AdminSellerTroubleshooter
-            initialTargetId={searchParams.get('id') || searchParams.get('target') || undefined}
-            onRefreshTelemetry={refreshAllData}
-          />
-        )}
-
-        {activeTab === 'TERMINAL' && <AdminQueryTerminal />}
-
-        {activeTab === 'BACKUPS' && <AdminBackupRestorePanel />}
-
-        {activeTab === 'LOGS' && (
-          <AdminAuditLogsViewer
-            isPlatformInDemoMode={isPlatformInDemoMode}
-            onRefreshTelemetry={refreshAllData}
-          />
-        )}
-
-        {activeTab === 'USERS' && <AdminUsersActivityPanel />}
-
-        {activeTab === 'NOTIFICATIONS' && (
-          <NotificationsPage
-            isPlatformInDemoMode={isPlatformInDemoMode}
-            onRefreshTelemetry={refreshAllData}
-          />
-        )}
-      </main>
+            {/* Modal Footer */}
+            <div className="border-t pt-3 flex items-center justify-between shrink-0 text-xs text-muted-foreground">
+              <span>Press ESC to close</span>
+              <button
+                type="button"
+                onClick={() => setTab('TILES')}
+                className="font-bold text-primary hover:underline"
+              >
+                Open Full Grid View →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

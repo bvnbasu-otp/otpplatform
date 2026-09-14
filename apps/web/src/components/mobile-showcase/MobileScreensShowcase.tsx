@@ -15,120 +15,161 @@ export interface MobileScreenDef {
 }
 
 export function MobileScreensShowcase() {
+  const [pipelineMode, setPipelineMode] = useState<'buyer' | 'supplier'>('buyer');
   const [activeScreenIndex, setActiveScreenIndex] = useState(0);
   const [activePhoneTab, setActivePhoneTab] = useState<'home' | 'orders' | 'new' | 'audit' | 'profile'>('home');
 
-  const screens: MobileScreenDef[] = [
+  const buyerScreens: MobileScreenDef[] = [
     {
-      id: 'home',
+      id: 'buyer-01',
       stepNumber: '01',
-      tabLabel: 'Buyer Cockpit',
+      tabLabel: 'Sourcing Cockpit',
       icon: '🏢',
       title: 'Mobile Sourcing Cockpit',
       tagline: '1-Tap requirement launch, voice search, and real-time order pulse.',
-      badge: 'Step 1 · Home Cockpit',
+      badge: 'Screen 01 · Sourcing Cockpit',
       badgeColor: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-300',
       description: 'Zero desktop complexity. Post a procurement need in 10 seconds via voice or template chips.',
-      component: <ScreenHomeCockpit onNewRequirement={() => setActiveScreenIndex(1)} />,
+      component: <ScreenBuyerCockpit onNewRequirement={() => setActiveScreenIndex(1)} />,
     },
     {
-      id: 'intake',
+      id: 'buyer-02',
       stepNumber: '02',
       tabLabel: 'Voice Intake',
       icon: '🎙️',
-      title: 'Conversational Intake Wizard',
-      tagline: 'Regional voice dictation with automatic spec parsing and 1-tap city pills.',
-      badge: 'Step 2 · Instant Intake',
+      title: 'Conversational Voice Intake',
+      tagline: 'Regional voice dictation with automatic spec parsing and 1-tap city selection.',
+      badge: 'Screen 02 · Voice Intake',
       badgeColor: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300',
       description: 'Supports Tamil, Hindi, Kannada, and English. Extracts quantity, deadline, and technical SLAs automatically.',
-      component: <ScreenIntakeWizard onNext={() => setActiveScreenIndex(2)} />,
+      component: <ScreenBuyerVoiceIntake onNext={() => setActiveScreenIndex(2)} />,
     },
     {
-      id: 'radar',
+      id: 'buyer-03',
       stepNumber: '03',
       tabLabel: 'Supplier Radar',
       icon: '📡',
       title: 'Multi-Channel Supplier Radar',
       tagline: 'Broadcasts sealed RFQ invitations across WhatsApp, ONDC, and SMS.',
-      badge: 'Step 3 · Multi-Channel Reach',
+      badge: 'Screen 03 · Supplier Radar',
       badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300',
       description: 'Reaches local verified vendors without forcing them to create complicated portal accounts.',
-      component: <ScreenSupplierRadar onNext={() => setActiveScreenIndex(3)} />,
+      component: <ScreenBuyerSupplierRadar onNext={() => setActiveScreenIndex(3)} />,
     },
     {
-      id: 'quote',
+      id: 'buyer-04',
       stepNumber: '04',
       tabLabel: 'Supplier Quoting',
       icon: '💬',
-      title: '1-Tap Supplier Rupee Quoting',
+      title: '15-Second Mobile Quoting',
       tagline: 'WhatsApp & mobile-optimized 3-field numeric quote sheet with instant GST.',
-      badge: 'Step 4 · Sealed Quoting',
+      badge: 'Screen 04 · Supplier Quoting',
       badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
       description: 'Suppliers quote in 15 seconds from their phones. All quotes remain cryptographically sealed.',
-      component: <ScreenSupplierQuoting onNext={() => setActiveScreenIndex(4)} />,
+      component: <ScreenBuyerQuoting onNext={() => setActiveScreenIndex(4)} />,
     },
     {
-      id: 'comparison',
+      id: 'buyer-05',
       stepNumber: '05',
       tabLabel: 'Sealed Matrix',
       icon: '⚖️',
-      title: '4-Pillar Sealed Comparison Matrix',
+      title: '4-Pillar Sealed Matrix',
       tagline: 'Zero-bias cards comparing ₹ Price, Delivery TAT, Warranty, and Merit Score.',
-      badge: 'Step 5 · Zero-Bias Matrix',
+      badge: 'Screen 05 · Sealed Matrix',
       badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300',
       description: 'Vendor names are masked as Supplier A7K3, B2M9. Decisions are made 100% on commercial & technical merit.',
-      component: <ScreenComparisonMatrix onNext={() => setActiveScreenIndex(5)} />,
+      component: <ScreenBuyerMatrix onNext={() => setActiveScreenIndex(5)} />,
     },
     {
-      id: 'voting',
+      id: 'buyer-06',
       stepNumber: '06',
       tabLabel: 'Committee Vote',
       icon: '🗳️',
       title: '1-Tap Committee Decision Room',
       tagline: 'Preset rationale chips, live quorum meters, and fast-track solo approvals.',
-      badge: 'Step 6 · Governance',
+      badge: 'Screen 06 · Committee Vote',
       badgeColor: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-300',
       description: 'Eliminates endless WhatsApp committee arguments with transparent 1-tap recorded justifications.',
-      component: <ScreenCommitteeVoting onNext={() => setActiveScreenIndex(6)} />,
+      component: <ScreenBuyerVoting onNext={() => setActiveScreenIndex(6)} />,
     },
     {
-      id: 'fulfillment',
+      id: 'buyer-07',
       stepNumber: '07',
       tabLabel: 'Digital PO & Tracking',
       icon: '📦',
-      title: 'Winner Unmask & Live Tracking',
+      title: 'Digital PO & Live Tracking',
       tagline: 'Instant GST Purchase Order execution and Swiggy-style milestone tracker.',
-      badge: 'Step 7 · Procure-to-Pay',
+      badge: 'Screen 07 · Digital PO & Tracking',
       badgeColor: 'bg-emerald-600/10 text-emerald-800 dark:text-emerald-300 border-emerald-400',
       description: 'Unmask verified GST credentials, share PO via WhatsApp PDF, and track pickup to invoice settlement.',
-      component: <ScreenOrderFulfillment onRestart={() => setActiveScreenIndex(7)} />,
-    },
-    {
-      id: 'notifications',
-      stepNumber: '14',
-      tabLabel: 'Activity & Audit',
-      icon: '🔔',
-      title: 'Activity Feed & Audit Ledger',
-      tagline: 'Real-time pipeline changes with 1-tap deep links and cryptographic audit proofs.',
-      badge: 'Screen 14 · Activity & Audit',
-      badgeColor: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-300',
-      description: 'Unified segmented feed tracking quotes, committee votes, and immutable SHA-256 state transitions.',
-      component: <ScreenActivityNotifications onNext={() => setActiveScreenIndex(8)} />,
-    },
-    {
-      id: 'profile',
-      stepNumber: '15',
-      tabLabel: 'Profile & Settings',
-      icon: '👤',
-      title: 'User Profile & Team Governance',
-      tagline: 'Verified WhatsApp/Email identity, role governance, and appearance customization.',
-      badge: 'Screen 15 · Profile & Workspace',
-      badgeColor: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-300',
-      description: 'Manage workspace identity, team roles (Admin, Approver, Viewer), and multi-channel notification toggles.',
-      component: <ScreenProfileSettings onRestart={() => setActiveScreenIndex(0)} />,
+      component: <ScreenBuyerOrderTracking onRestart={() => setActiveScreenIndex(0)} />,
     },
   ];
 
+  const supplierScreens: MobileScreenDef[] = [
+    {
+      id: 'supplier-01',
+      stepNumber: '01',
+      tabLabel: 'Radar & Alerts',
+      icon: '📡',
+      title: 'Supplier Radar & Notification Hub',
+      tagline: 'View incoming sealed RFQ alerts filtered by location, taxonomy, capacity.',
+      badge: 'Screen 01 · Supplier Radar & Notification Hub',
+      badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300',
+      description: 'Instant alerts received on WhatsApp and mobile app matched by domain taxonomy, HP rating, and radius.',
+      component: <ScreenSupplierHub onNext={() => setActiveScreenIndex(1)} />,
+    },
+    {
+      id: 'supplier-02',
+      stepNumber: '02',
+      tabLabel: '15-Sec Quoting',
+      icon: '⚡',
+      title: '15-Second Quoting Engine',
+      tagline: 'Unit price + GST auto-split, TAT days, warranty SLA under masked alias.',
+      badge: 'Screen 02 · 15-Second Quoting Engine',
+      badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
+      description: 'Suppliers quote unit rates in seconds. Indian GST tax rates split automatically with zero complex account logins.',
+      component: <ScreenSupplierQuotingEngine onNext={() => setActiveScreenIndex(2)} />,
+    },
+    {
+      id: 'supplier-03',
+      stepNumber: '03',
+      tabLabel: 'Quote Status',
+      icon: '📊',
+      title: 'Quote Status & Active Quotes',
+      tagline: 'Live status: Sealed, Under Review, Shortlisted, Outbid, with live revision controls.',
+      badge: 'Screen 03 · Quote Status & Active Quotes',
+      badgeColor: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300',
+      description: 'Real-time quote tracking under identity-protected alias. Edit commercial offers or delivery TAT prior to closing.',
+      component: <ScreenSupplierQuoteStatus onNext={() => setActiveScreenIndex(3)} />,
+    },
+    {
+      id: 'supplier-04',
+      stepNumber: '04',
+      tabLabel: 'PO Sign-off',
+      icon: '📝',
+      title: 'Award Notification & PO Sign-off',
+      tagline: 'Unmasked buyer GST credentials, digital PO acceptance.',
+      badge: 'Screen 04 · Award Notification & PO Sign-off',
+      badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300',
+      description: 'Winning quote triggers unmasked institutional buyer details, milestone schedule, and 1-tap digital PO acceptance.',
+      component: <ScreenSupplierPoSignoff onNext={() => setActiveScreenIndex(4)} />,
+    },
+    {
+      id: 'supplier-05',
+      stepNumber: '05',
+      tabLabel: 'Milestone Tracker',
+      icon: '🚚',
+      title: 'Order Fulfillment & Milestone Tracker',
+      tagline: 'Live status steps: Pickup Scheduled, In Progress, Ready for Delivery, Invoiced.',
+      badge: 'Screen 05 · Order Fulfillment & Milestone Tracker',
+      badgeColor: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-300',
+      description: 'Update execution stages with 1-thumb touch. Auto-generates GST tax invoices and payment release requests.',
+      component: <ScreenSupplierFulfillmentTracker onRestart={() => setActiveScreenIndex(0)} />,
+    },
+  ];
+
+  const screens = pipelineMode === 'buyer' ? buyerScreens : supplierScreens;
   const currentScreen: MobileScreenDef = screens[activeScreenIndex] ?? screens[0]!;
   const nextScreen: MobileScreenDef = screens[(activeScreenIndex + 1) % screens.length] ?? screens[0]!;
 
@@ -136,7 +177,7 @@ export function MobileScreensShowcase() {
     <section className="py-12 sm:py-16 bg-gradient-to-b from-muted/30 via-background to-muted/20 border-y border-border/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-12">
+        <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-3">
             <span>📱</span>
             <span>Mobile-First Procurement Cockpit</span>
@@ -144,12 +185,44 @@ export function MobileScreensShowcase() {
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground tracking-tight">
             Built for Smartphones. Zero Squeezed Desktop.
           </h2>
-          <p className="mt-2.5 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Experience how Indian building committees, MSMEs, and facility managers execute sourcing from their smartphones—via voice, WhatsApp, and 1-tap thumb interactions.
+          <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Experience how Indian building committees, MSMEs, and verified suppliers execute sourcing from their smartphones—via voice, WhatsApp, and 1-tap thumb interactions.
           </p>
 
-          {/* Interactive Screen Selector Tabs (PhonePe / Swiggy Carousel Pills) */}
-          <div className="mt-6 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 scrollbar-none px-2">
+          {/* Top-Level Dual Role Switcher Toggle */}
+          <div className="mt-6 inline-flex items-center justify-center gap-2 p-1 bg-muted/70 rounded-2xl border border-border/80 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => {
+                setPipelineMode('buyer');
+                setActiveScreenIndex(0);
+              }}
+              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
+                pipelineMode === 'buyer'
+                  ? 'bg-card text-foreground shadow-xs ring-1 ring-border/80'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>🏢</span> Buyer Pipeline (7 Screens)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPipelineMode('supplier');
+                setActiveScreenIndex(0);
+              }}
+              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition ${
+                pipelineMode === 'supplier'
+                  ? 'bg-card text-foreground shadow-xs ring-1 ring-border/80'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>🚚</span> Supplier Pipeline (5 Screens)
+            </button>
+          </div>
+
+          {/* Interactive Screen Selector Tabs Carousel */}
+          <div className="mt-4 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 scrollbar-none px-2">
             {screens.map((screen, idx) => {
               const isActive = idx === activeScreenIndex;
               return (
@@ -199,148 +272,203 @@ export function MobileScreensShowcase() {
                 ✨ Key Mobile Ergonomics:
               </h4>
               <ul className="space-y-2 text-xs text-foreground/90">
-                {activeScreenIndex === 0 && (
+                {pipelineMode === 'buyer' ? (
                   <>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>10-Second Intake:</strong> 1-Tap popular tiles like 10HP Motor Rewind, CNC Shafts, and Waterproofing.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Glance Bar Filter:</strong> Filter active orders with a single thumb tap (Active, Action, Settled).</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Zero Desktop Clutter:</strong> Clean vertical cards with high-contrast primary CTA buttons.</span>
-                    </li>
+                    {activeScreenIndex === 0 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>10-Second Intake:</strong> 1-Tap popular tiles like 10HP Motor Rewind, CNC Shafts, and Waterproofing.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Glance Bar Filter:</strong> Filter active orders with a single thumb tap (Active, Action, Settled).</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Zero Desktop Clutter:</strong> Clean vertical cards with high-contrast primary CTA buttons.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 1 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Regional Voice Dictation:</strong> Speak naturally in Tamil, Hindi, or English.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>1-Tap City Selection:</strong> Instant pills for Bengaluru, Chennai, Coimbatore, Hyderabad.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Smart Weight Defaults:</strong> Eliminates tedious multi-slider math on mobile screens.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 2 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>WhatsApp Direct Channel:</strong> Dispatches quotes to local suppliers on WhatsApp.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>ONDC Network Gateway:</strong> Open network interoperability without app install lock-in.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Regional Radar:</strong> Scans verified suppliers within 15 km of delivery site.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 3 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>3-Field Numeric Flow:</strong> Quoting takes under 15 seconds on a smartphone keyboard.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Instant GST Calculator:</strong> 1-Tap chips for +0%, +18%, or +28% GST calculations.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Zero Portal Login Required:</strong> Quoting link sent directly to verified phone number.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 4 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>4-Pillar Visual Metric Cards:</strong> ₹ Rupee, Delivery TAT, Warranty, and Merit Score.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Zero Horizontal Scrolling:</strong> Clean vertical stack replacing wide 12-column tables.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Guaranteed Identity Protection:</strong> Aliases like Supplier A7K3 prevent bias.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 5 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>1-Tap Justification Chips:</strong> Select reasons like "Optimal Price-Quality" in 1 second.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Solo Fast-Track:</strong> Automatically bypasses committee quorum for individual owners.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Immutable Vote Record:</strong> Cryptographic audit trail for society compliance.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 6 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>1-Click Winner Unmask:</strong> Reveals verified GSTIN, phone, and MSME badges.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Instant PDF/WhatsApp PO:</strong> Direct legally compliant GST Purchase Order.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Live Delivery Stepper:</strong> Swiggy/Zomato style tracking from pickup to invoice sign-off.</span>
+                        </li>
+                      </>
+                    )}
                   </>
-                )}
-                {activeScreenIndex === 1 && (
+                ) : (
                   <>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Regional Voice Dictation:</strong> Speak naturally in Tamil, Hindi, or English.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>1-Tap City Selection:</strong> Instant pills for Bengaluru, Chennai, Coimbatore, Hyderabad.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Smart Weight Defaults:</strong> Eliminates tedious multi-slider math on mobile screens.</span>
-                    </li>
-                  </>
-                )}
-                {activeScreenIndex === 2 && (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>WhatsApp Direct Channel:</strong> Dispatches quotes to local suppliers on WhatsApp.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>ONDC Network Gateway:</strong> Open network interoperability without app install lock-in.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Regional Radar:</strong> Scans verified suppliers within 15 km of delivery site.</span>
-                    </li>
-                  </>
-                )}
-                {activeScreenIndex === 3 && (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>3-Field Numeric Flow:</strong> Quoting takes under 15 seconds on a smartphone keyboard.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Instant GST Calculator:</strong> 1-Tap chips for +0%, +18%, or +28% GST calculations.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Zero Portal Login Required:</strong> Quoting link sent directly to verified phone number.</span>
-                    </li>
-                  </>
-                )}
-                {activeScreenIndex === 4 && (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>4-Pillar Visual Metric Cards:</strong> ₹ Rupee, Delivery TAT, Warranty, and Merit Score.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Zero Horizontal Scrolling:</strong> Clean vertical stack replacing wide 12-column tables.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Guaranteed Identity Protection:</strong> Aliases like Supplier A7K3 prevent bias.</span>
-                    </li>
-                  </>
-                )}
-                {activeScreenIndex === 5 && (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>1-Tap Justification Chips:</strong> Select reasons like "Optimal Price-Quality" in 1 second.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Solo Fast-Track:</strong> Automatically bypasses committee quorum for individual owners.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Immutable Vote Record:</strong> Cryptographic audit trail for society compliance.</span>
-                    </li>
-                  </>
-                )}
-                {activeScreenIndex === 6 && (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>1-Click Winner Unmask:</strong> Reveals verified GSTIN, phone, and MSME badges.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Instant PDF/WhatsApp PO:</strong> Direct legally compliant GST Purchase Order.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Live Delivery Stepper:</strong> Swiggy/Zomato style tracking from pickup to invoice sign-off.</span>
-                    </li>
-                  </>
-                )}
-                {activeScreenIndex === 7 && (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Segmented Activity Switcher:</strong> Instantly toggle between Notifications Feed and Cryptographic Audit Trail.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>1-Tap Deep Link Actions:</strong> Route directly to RFQs, Committee Ballots, and PO Deliveries with a single tap.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Cryptographic Verification Badges:</strong> SHA-256 sealed proofs for immutable state auditing.</span>
-                    </li>
-                  </>
-                )}
-                {activeScreenIndex === 8 && (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Verified Identity &amp; WhatsApp:</strong> Instant OTP linking for real-time mobile procurement notifications.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Role-Based Team Management:</strong> Invite colleagues as Admin, Approver, or Viewer in seconds.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span><strong>Multi-Channel Preferences:</strong> Granular WhatsApp, Email, and In-App notification toggles.</span>
-                    </li>
+                    {activeScreenIndex === 0 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Proximity &amp; Category Filters:</strong> Instant alerts matching verified PIN codes and capacity limits.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>WhatsApp Deep Link:</strong> Tap once from WhatsApp alert directly into instant quoting interface.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Sealed Identity Protection:</strong> Buyer sees only your anonymous alias and score metrics pre-award.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 1 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>15-Second Flow:</strong> Fill unit price, delivery days, and warranty in 3 numeric inputs.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Automated GST Calculation:</strong> Instant +0%, +18%, +28% chips calculate tax without accounting software.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Zero App Install Friction:</strong> Quote directly in responsive mobile browser with cryptographic security.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 2 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Live Status Pipeline:</strong> Instant badge indicators (Sealed, Under Review, Shortlisted, Outbid).</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Revision Controls:</strong> Modify pricing or TAT terms prior to tender closure.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Transparent Position:</strong> Clear feedback on commercial competitiveness without buyer bias.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 3 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Unmasked Buyer Credentials:</strong> Verified buyer GSTIN, phone, and delivery site contact unmasked.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>1-Tap PO Sign-off:</strong> Direct digital acceptance with immediate contract lock.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Instant PDF Generation:</strong> Download legally binding GST Purchase Order instantly.</span>
+                        </li>
+                      </>
+                    )}
+                    {activeScreenIndex === 4 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>4-Stage Mobile Stepper:</strong> Pickup Scheduled → In Progress → Ready for Delivery → Invoiced.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Proof Uploads:</strong> Attach delivery receipts, challans, or test certificates with phone camera.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span><strong>Direct Settlement Release:</strong> Buyer signs off delivery for immediate direct escrow/bank transfer.</span>
+                        </li>
+                      </>
+                    )}
                   </>
                 )}
               </ul>
@@ -361,7 +489,7 @@ export function MobileScreensShowcase() {
                 onClick={() => setActiveScreenIndex((prev) => (prev + 1) % screens.length)}
                 className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:bg-primary/90 transition text-center"
               >
-                {activeScreenIndex === screens.length - 1 ? '↻ Replay from Step 1' : `Next: ${nextScreen.tabLabel} →`}
+                {activeScreenIndex === screens.length - 1 ? `↻ Replay ${pipelineMode === 'buyer' ? 'Buyer' : 'Supplier'} Pipeline` : `Next: ${nextScreen.tabLabel} →`}
               </button>
             </div>
           </div>
@@ -386,11 +514,11 @@ export function MobileScreensShowcase() {
 }
 
 /* =========================================================================
- * 7 HIGH-FIDELITY MOBILE SCREENS (COMPONENTS)
+ * 7 HIGH-FIDELITY BUYER SCREENS
  * ========================================================================= */
 
-// Screen 1: Home Cockpit
-function ScreenHomeCockpit({ onNewRequirement }: { onNewRequirement: () => void }) {
+// Buyer Screen 1: Sourcing Cockpit
+function ScreenBuyerCockpit({ onNewRequirement }: { onNewRequirement: () => void }) {
   return (
     <div className="p-3.5 space-y-3.5 text-left text-foreground">
       {/* Org Header Pill */}
@@ -492,8 +620,8 @@ function ScreenHomeCockpit({ onNewRequirement }: { onNewRequirement: () => void 
   );
 }
 
-// Screen 2: Voice & Conversational Intake
-function ScreenIntakeWizard({ onNext }: { onNext: () => void }) {
+// Buyer Screen 2: Voice Intake
+function ScreenBuyerVoiceIntake({ onNext }: { onNext: () => void }) {
   return (
     <div className="p-3.5 space-y-3.5 text-left text-foreground">
       {/* Wizard Step Progress */}
@@ -565,7 +693,6 @@ function ScreenIntakeWizard({ onNext }: { onNext: () => void }) {
         </div>
       </div>
 
-      {/* Primary Sticky CTA */}
       <button
         type="button"
         onClick={onNext}
@@ -577,8 +704,8 @@ function ScreenIntakeWizard({ onNext }: { onNext: () => void }) {
   );
 }
 
-// Screen 3: Multi-Channel Supplier Radar
-function ScreenSupplierRadar({ onNext }: { onNext: () => void }) {
+// Buyer Screen 3: Supplier Radar
+function ScreenBuyerSupplierRadar({ onNext }: { onNext: () => void }) {
   return (
     <div className="p-3.5 space-y-3.5 text-left text-foreground">
       {/* Radar Pulse Banner */}
@@ -648,8 +775,8 @@ function ScreenSupplierRadar({ onNext }: { onNext: () => void }) {
   );
 }
 
-// Screen 4: 1-Tap Supplier Rupee Quoting
-function ScreenSupplierQuoting({ onNext }: { onNext: () => void }) {
+// Buyer Screen 4: Supplier Quoting
+function ScreenBuyerQuoting({ onNext }: { onNext: () => void }) {
   return (
     <div className="p-3.5 space-y-3 text-left text-foreground">
       {/* Supplier Top Badge */}
@@ -724,11 +851,10 @@ function ScreenSupplierQuoting({ onNext }: { onNext: () => void }) {
   );
 }
 
-// Screen 5: 4-Pillar Sealed Comparison Matrix
-function ScreenComparisonMatrix({ onNext }: { onNext: () => void }) {
+// Buyer Screen 5: Sealed Matrix
+function ScreenBuyerMatrix({ onNext }: { onNext: () => void }) {
   return (
     <div className="p-3.5 space-y-3 text-left text-foreground">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h5 className="text-xs font-black text-foreground flex items-center gap-1">
           <span>🔒</span> 3 Sealed Quotes
@@ -752,7 +878,6 @@ function ScreenComparisonMatrix({ onNext }: { onNext: () => void }) {
           </span>
         </div>
 
-        {/* 4-Pillar Metric Grid */}
         <div className="grid grid-cols-4 gap-1 bg-card rounded-xl p-2 border border-primary/20 text-center">
           <div>
             <span className="text-[8px] text-muted-foreground uppercase font-bold block">₹ Total</span>
@@ -816,11 +941,10 @@ function ScreenComparisonMatrix({ onNext }: { onNext: () => void }) {
   );
 }
 
-// Screen 6: 1-Tap Committee Voting & Decision Room
-function ScreenCommitteeVoting({ onNext }: { onNext: () => void }) {
+// Buyer Screen 6: Committee Vote
+function ScreenBuyerVoting({ onNext }: { onNext: () => void }) {
   return (
     <div className="p-3.5 space-y-3.5 text-left text-foreground">
-      {/* Quorum Header */}
       <div className="rounded-xl bg-cyan-500/10 border border-cyan-500/30 p-2.5 flex items-center justify-between">
         <div>
           <span className="text-[9px] font-bold uppercase tracking-wider text-cyan-800 dark:text-cyan-300 block">
@@ -831,7 +955,6 @@ function ScreenCommitteeVoting({ onNext }: { onNext: () => void }) {
         <span className="text-base">🏛️</span>
       </div>
 
-      {/* Selected Recommendation */}
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-2.5 space-y-1">
         <span className="text-[9px] font-bold text-muted-foreground block">Your Recommended Candidate:</span>
         <div className="flex items-center justify-between">
@@ -840,7 +963,6 @@ function ScreenCommitteeVoting({ onNext }: { onNext: () => void }) {
         </div>
       </div>
 
-      {/* 1-Tap Preset Rationale Chips */}
       <div className="space-y-1.5">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
           Decision Justification (1-Tap):
@@ -873,11 +995,10 @@ function ScreenCommitteeVoting({ onNext }: { onNext: () => void }) {
   );
 }
 
-// Screen 7: Winner Reveal, Digital PO & Live Order Tracker
-function ScreenOrderFulfillment({ onRestart }: { onRestart: () => void }) {
+// Buyer Screen 7: Digital PO & Tracking
+function ScreenBuyerOrderTracking({ onRestart }: { onRestart: () => void }) {
   return (
     <div className="p-3.5 space-y-3.5 text-left text-foreground">
-      {/* Unmask Announcement */}
       <div className="rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-3 space-y-1.5 shadow-md">
         <span className="text-[9px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
           🎉 Winning Supplier Unmasked
@@ -892,7 +1013,6 @@ function ScreenOrderFulfillment({ onRestart }: { onRestart: () => void }) {
         </div>
       </div>
 
-      {/* Digital PO Summary */}
       <div className="rounded-xl border bg-card p-2.5 flex items-center justify-between">
         <div>
           <span className="text-[9px] text-muted-foreground block font-bold">Purchase Order Issued:</span>
@@ -903,7 +1023,6 @@ function ScreenOrderFulfillment({ onRestart }: { onRestart: () => void }) {
         </span>
       </div>
 
-      {/* Swiggy/Zomato Style Delivery Stepper */}
       <div className="rounded-2xl border bg-card p-3 space-y-2.5">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
           Live Order Fulfillment Tracker:
@@ -934,255 +1053,354 @@ function ScreenOrderFulfillment({ onRestart }: { onRestart: () => void }) {
         onClick={onRestart}
         className="w-full rounded-xl border border-border bg-card py-2 text-xs font-bold text-foreground hover:bg-muted transition text-center"
       >
-        ↻ Back to Screen 1 (Cockpit Overview)
+        ↻ Back to Screen 01 (Cockpit Overview)
       </button>
     </div>
   );
 }
 
-// Screen 14: Activity Feed & Audit Ledger
-function ScreenActivityNotifications({ onNext }: { onNext: () => void }) {
-  const [activeTab, setActiveTab] = useState<'notifications' | 'audit'>('notifications');
+/* =========================================================================
+ * 5 HIGH-FIDELITY SUPPLIER SCREENS
+ * ========================================================================= */
 
+// Supplier Screen 1: Supplier Radar & Notification Hub
+function ScreenSupplierHub({ onNext }: { onNext: () => void }) {
   return (
     <div className="p-3.5 space-y-3 text-left text-foreground">
-      {/* Segmented Tab Switcher */}
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1 border border-border">
-        <button
-          type="button"
-          onClick={() => setActiveTab('notifications')}
-          className={`py-1.5 text-xs font-bold rounded-lg transition ${
-            activeTab === 'notifications'
-              ? 'bg-card text-foreground shadow-xs'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          🔔 Notifications (2)
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('audit')}
-          className={`py-1.5 text-xs font-bold rounded-lg transition ${
-            activeTab === 'audit'
-              ? 'bg-card text-foreground shadow-xs'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          🛡️ Audit Trail (6)
-        </button>
+      {/* Top Profile Summary */}
+      <div className="flex items-center justify-between border-b pb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+            ⚡
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-foreground">Sri Vinayaka Works</h4>
+            <span className="text-[10px] text-muted-foreground">Whitefield · Rewinding &amp; Pumps</span>
+          </div>
+        </div>
+        <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[9px] font-bold border border-emerald-500/30">
+          ⭐ 4.9 Verified
+        </span>
       </div>
 
-      {activeTab === 'notifications' ? (
-        <div className="space-y-2.5">
-          {/* Notification Card 1: Quote Received */}
-          <div className="rounded-2xl border border-primary/40 bg-primary/5 p-3 space-y-1.5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[9px] font-bold px-2 py-0.2">
-                🟢 Quote Submitted
-              </span>
-              <span className="text-[10px] text-muted-foreground font-mono">2m ago</span>
-            </div>
-            <h5 className="text-xs font-bold text-foreground">
-              New Sealed Quote: ₹8,200 for 10HP Motor Rewind
-            </h5>
-            <p className="text-[11px] text-muted-foreground">
-              Supplier A7K3 submitted a sealed quote with 12-month warranty.
-            </p>
-            <div className="pt-1 flex items-center justify-between border-t border-border/40">
-              <span className="text-[10px] text-muted-foreground font-mono">Via WhatsApp</span>
-              <span className="text-[10px] font-bold text-primary">Review Quotation →</span>
-            </div>
-          </div>
+      {/* Filter Chips Bar */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[10px]">
+        <span className="bg-primary text-white px-2 py-0.5 rounded-md font-bold shrink-0">📍 &lt; 10 km</span>
+        <span className="bg-muted text-foreground px-2 py-0.5 rounded-md font-medium shrink-0">⚡ 5-25 HP</span>
+        <span className="bg-muted text-foreground px-2 py-0.5 rounded-md font-medium shrink-0">🟢 Live RFQs (2)</span>
+      </div>
 
-          {/* Notification Card 2: Vote Requested */}
-          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3 space-y-1.5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-[9px] font-bold px-2 py-0.2">
-                🗳️ Vote Requested
-              </span>
-              <span className="text-[10px] text-muted-foreground font-mono">14m ago</span>
-            </div>
-            <h5 className="text-xs font-bold text-foreground">
-              Committee Ballot: DG Set Annual Maintenance
-            </h5>
-            <p className="text-[11px] text-muted-foreground">
-              2 of 3 votes recorded. Your approval is required to establish quorum.
-            </p>
-            <div className="pt-1 flex items-center justify-between border-t border-border/40">
-              <span className="text-[10px] text-muted-foreground font-mono">Quorum 67%</span>
-              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Cast Vote →</span>
-            </div>
+      {/* Incoming Sealed RFQ Card */}
+      <div className="rounded-2xl border-2 border-primary/40 bg-card p-3 space-y-2 shadow-xs">
+        <div className="flex items-center justify-between">
+          <span className="rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30 px-2 py-0.5 text-[9px] font-bold">
+            ⚡ New Sealed Opportunity
+          </span>
+          <span className="text-[10px] font-mono text-muted-foreground">4.2 km away</span>
+        </div>
+        <div>
+          <h5 className="text-xs font-bold text-foreground">10 HP Submersible Motor Rewind</h5>
+          <p className="text-[10px] text-muted-foreground">Palm Meadows RWA · Requires 6-month warranty</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5 text-[10px] bg-muted/30 p-2 rounded-xl">
+          <div>
+            <span className="text-muted-foreground block text-[9px]">Submission Window:</span>
+            <span className="font-bold text-amber-600">⏳ Closes in 4 hrs</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground block text-[9px]">Protection:</span>
+            <span className="font-bold text-primary">🔒 Identity Sealed</span>
           </div>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-xs flex items-center justify-between">
-            <span className="font-bold text-emerald-800 dark:text-emerald-300 text-[11px]">
-              🛡️ SHA-256 State Ledger
-            </span>
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">✓ Verified</span>
-          </div>
 
-          <div className="rounded-xl border bg-card p-2.5 text-xs space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-foreground text-[11px]">Quote · Submitted</span>
-              <span className="text-[9px] text-muted-foreground">10:45 AM</span>
-            </div>
-            <p className="text-[10px] font-mono text-muted-foreground truncate">
-              Proof: 0x8a91f42e · RFQ #0842
-            </p>
-          </div>
+        <button
+          type="button"
+          onClick={onNext}
+          className="w-full rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition text-center flex items-center justify-center gap-1.5"
+        >
+          <span>⚡ Quote Now in 15s →</span>
+        </button>
+      </div>
+    </div>
+  );
+}
 
-          <div className="rounded-xl border bg-card p-2.5 text-xs space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-foreground text-[11px]">Vote · Quorum Verified</span>
-              <span className="text-[9px] text-muted-foreground">11:00 AM</span>
-            </div>
-            <p className="text-[10px] font-mono text-muted-foreground truncate">
-              Proof: 0x3f1c99ba · Quorum 100%
-            </p>
+// Supplier Screen 2: 15-Second Quoting Engine
+function ScreenSupplierQuotingEngine({ onNext }: { onNext: () => void }) {
+  return (
+    <div className="p-3.5 space-y-3 text-left text-foreground">
+      {/* Privacy Masking Banner */}
+      <div className="rounded-xl bg-primary/10 border border-primary/20 p-2 text-[10px] flex items-center justify-between">
+        <span className="font-bold text-primary flex items-center gap-1">
+          <span>🔒</span> Masked as Supplier A7K3
+        </span>
+        <span className="text-muted-foreground">Zero Bias Evaluation</span>
+      </div>
+
+      {/* 3-Field Numeric Input Sheet */}
+      <div className="space-y-2">
+        <div>
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+            1. Base Quoted Amount (₹ INR):
+          </label>
+          <div className="relative mt-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-foreground">₹</span>
+            <input
+              type="text"
+              readOnly
+              value="8,200"
+              className="w-full rounded-xl border border-primary/40 bg-card pl-7 pr-3 py-2 text-sm font-black text-foreground shadow-2xs"
+            />
           </div>
         </div>
-      )}
+
+        <div>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+            2. GST Tax Split:
+          </span>
+          <div className="grid grid-cols-3 gap-1 mt-1">
+            <button type="button" className="rounded-lg border bg-muted/40 p-1.5 text-center text-[10px] font-semibold text-muted-foreground">
+              +0% Exempt
+            </button>
+            <button type="button" className="rounded-lg border border-primary bg-primary/10 p-1.5 text-center text-[10px] font-bold text-primary">
+              +18% (₹1,476)
+            </button>
+            <button type="button" className="rounded-lg border bg-muted/40 p-1.5 text-center text-[10px] font-semibold text-muted-foreground">
+              +28%
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[9px] font-bold text-muted-foreground block">3. Delivery TAT:</label>
+            <input
+              type="text"
+              readOnly
+              value="3 Days"
+              className="w-full rounded-lg border bg-card p-1.5 text-xs font-bold text-foreground mt-0.5"
+            />
+          </div>
+          <div>
+            <label className="text-[9px] font-bold text-muted-foreground block">Warranty SLA:</label>
+            <input
+              type="text"
+              readOnly
+              value="6 Months"
+              className="w-full rounded-lg border bg-card p-1.5 text-xs font-bold text-foreground mt-0.5"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Net Total Summary */}
+      <div className="rounded-xl border bg-muted/30 p-2 flex items-center justify-between text-xs">
+        <span className="font-bold text-muted-foreground">Total with GST:</span>
+        <span className="font-black text-emerald-600 text-sm">₹9,676</span>
+      </div>
 
       <button
         type="button"
         onClick={onNext}
-        className="w-full rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition text-center"
+        className="w-full rounded-xl bg-emerald-700 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-800 transition text-center flex items-center justify-center gap-1.5"
       >
-        Next: Screen 15 (Profile &amp; Settings) →
+        <span>🔒 Seal &amp; Transmit Quote →</span>
       </button>
     </div>
   );
 }
 
-// Screen 15: Profile, Role & Organization Settings
-function ScreenProfileSettings({ onRestart }: { onRestart: () => void }) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'preferences'>('profile');
-
+// Supplier Screen 3: Quote Status & Active Quotes
+function ScreenSupplierQuoteStatus({ onNext }: { onNext: () => void }) {
   return (
     <div className="p-3.5 space-y-3 text-left text-foreground">
-      {/* 3-Way Segmented Control */}
-      <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1 border border-border text-[11px]">
-        <button
-          type="button"
-          onClick={() => setActiveTab('profile')}
-          className={`py-1.5 font-bold rounded-lg transition ${
-            activeTab === 'profile' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
-          }`}
-        >
-          👤 Profile
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('team')}
-          className={`py-1.5 font-bold rounded-lg transition ${
-            activeTab === 'team' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
-          }`}
-        >
-          🏢 Team
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('preferences')}
-          className={`py-1.5 font-bold rounded-lg transition ${
-            activeTab === 'preferences' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
-          }`}
-        >
-          ⚙️ Settings
-        </button>
+      <div className="flex items-center justify-between">
+        <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          My Active Sealed Quotes (2)
+        </h5>
+        <span className="text-[10px] text-emerald-600 font-bold">● Live Updates</span>
       </div>
 
-      {activeTab === 'profile' && (
-        <div className="space-y-2.5">
-          {/* Identity Card */}
-          <div className="rounded-2xl border border-border bg-card p-3 flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/15 text-primary font-black text-sm flex items-center justify-center shrink-0">
-              BL
+      {/* Active Quote 1: Shortlisted */}
+      <div className="rounded-2xl border-2 border-emerald-500/40 bg-card p-3 space-y-2 shadow-xs">
+        <div className="flex items-center justify-between">
+          <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold">
+            🟢 Shortlisted · L1 Rank
+          </span>
+          <span className="text-[9px] font-mono text-muted-foreground">RFQ #0842</span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h6 className="text-xs font-bold text-foreground">10 HP Borewell Motor</h6>
+            <span className="text-[10px] text-muted-foreground">Alias: Supplier A7K3</span>
+          </div>
+          <span className="text-xs font-black text-foreground">₹8,200 (+18%)</span>
+        </div>
+
+        <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-1.5 text-[10px] text-emerald-800 dark:text-emerald-300">
+          ✓ Quorum voting active in buyer committee. Merit Score: <strong>★ 9.4</strong>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            type="button"
+            className="flex-1 py-1.5 rounded-lg border text-[10px] font-semibold text-muted-foreground hover:bg-muted text-center"
+          >
+            ✏️ Revise Terms
+          </button>
+          <button
+            type="button"
+            onClick={onNext}
+            className="flex-1 py-1.5 rounded-lg bg-primary text-white text-[10px] font-bold text-center"
+          >
+            View Stage →
+          </button>
+        </div>
+      </div>
+
+      {/* Active Quote 2: Sealed Under Review */}
+      <div className="rounded-xl border bg-muted/20 p-2.5 space-y-1.5 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-[9px] font-bold">
+            🟡 Under Review
+          </span>
+          <span className="text-[9px] text-muted-foreground">RFQ #0839</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-foreground text-[11px]">CNC Precision Spindle</span>
+          <span className="font-bold text-muted-foreground text-[11px]">₹14,500</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Supplier Screen 4: Award Notification & PO Sign-off
+function ScreenSupplierPoSignoff({ onNext }: { onNext: () => void }) {
+  return (
+    <div className="p-3.5 space-y-3 text-left text-foreground">
+      {/* Award Banner */}
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-3 space-y-1 shadow-md">
+        <span className="text-[9px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+          🏆 Tender Awarded to You
+        </span>
+        <h5 className="text-xs font-black">
+          PO Issued: PO-2026-0842 (₹9,676 Incl. GST)
+        </h5>
+        <p className="text-[10px] text-white/90">
+          Buyer identity unmasked for execution.
+        </p>
+      </div>
+
+      {/* Unmasked Buyer Credentials Card */}
+      <div className="rounded-xl border bg-card p-2.5 space-y-1.5 text-xs">
+        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
+          Client Entity &amp; Site Details:
+        </span>
+        <div className="space-y-0.5">
+          <h6 className="font-bold text-foreground">Palm Meadows Residents Welfare Association</h6>
+          <p className="text-[10px] text-muted-foreground font-mono">GSTIN: 29AAAAA0000A1Z5</p>
+          <p className="text-[10px] text-muted-foreground">📍 Pump House #2, Phase 1, Whitefield, Bengaluru</p>
+          <p className="text-[10px] text-primary font-semibold">📞 Site Incharge: +91 98450 11223</p>
+        </div>
+      </div>
+
+      {/* Milestone Terms */}
+      <div className="rounded-xl border bg-muted/30 p-2 space-y-1 text-[10px]">
+        <span className="font-bold block">Agreed Terms:</span>
+        <div className="flex justify-between text-muted-foreground">
+          <span>Turnaround Time:</span>
+          <span className="font-bold text-foreground">3 Days</span>
+        </div>
+        <div className="flex justify-between text-muted-foreground">
+          <span>Warranty:</span>
+          <span className="font-bold text-foreground">6 Months (On-Site)</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onNext}
+        className="w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition text-center flex items-center justify-center gap-1.5"
+      >
+        <span>⚡ Accept PO &amp; Commit Delivery →</span>
+      </button>
+    </div>
+  );
+}
+
+// Supplier Screen 5: Order Fulfillment & Milestone Tracker
+function ScreenSupplierFulfillmentTracker({ onRestart }: { onRestart: () => void }) {
+  return (
+    <div className="p-3.5 space-y-3 text-left text-foreground">
+      {/* Order Header */}
+      <div className="flex items-center justify-between border-b pb-2">
+        <div>
+          <span className="text-[9px] font-mono text-muted-foreground">PO-2026-0842</span>
+          <h5 className="text-xs font-bold text-foreground">10 HP Borewell Motor</h5>
+        </div>
+        <span className="rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-2 py-0.5 text-[9px] font-bold border border-blue-500/30">
+          In Execution (50%)
+        </span>
+      </div>
+
+      {/* Interactive Milestone Stepper */}
+      <div className="rounded-2xl border bg-card p-3 space-y-2.5">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+          Execution Milestones:
+        </span>
+
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between text-emerald-600 font-bold">
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px]">✓</span>
+              <span>1. Pickup Scheduled &amp; Received</span>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold truncate">Baskar Loganathan</span>
-                <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[8px] font-bold px-1.5 py-0.2">
-                  Buyer Lead
-                </span>
-              </div>
-              <p className="text-[10px] text-muted-foreground truncate">Durgha Rainbow Apartments RWA</p>
-            </div>
+            <span className="text-[9px] text-muted-foreground font-mono">10:30 AM</span>
           </div>
 
-          {/* Verified Channels */}
-          <div className="rounded-xl border bg-muted/20 p-2.5 space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-muted-foreground">Primary Email:</span>
-              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-2 py-0.2 border border-emerald-300">
-                ✓ bvnbasu@yahoo.com
-              </span>
+          <div className="flex items-center justify-between text-emerald-600 font-bold">
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px]">✓</span>
+              <span>2. Coil Rewinding in Progress</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-muted-foreground">WhatsApp:</span>
-              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-2 py-0.2 border border-emerald-300">
-                ✓ +91 98400 12345
-              </span>
+            <span className="text-[9px] text-muted-foreground font-mono">02:15 PM</span>
+          </div>
+
+          <div className="flex items-center justify-between text-primary font-black animate-pulse">
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">⚙️</span>
+              <span>3. Ready for Delivery &amp; Testing</span>
             </div>
+            <span className="text-[9px] bg-primary/20 px-1.5 py-0.2 rounded text-primary">Pending</span>
+          </div>
+
+          <div className="flex items-center justify-between text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-[10px]">○</span>
+              <span>4. Invoiced &amp; Final Settlement</span>
+            </div>
+            <span className="text-[9px] text-muted-foreground">₹9,676</span>
           </div>
         </div>
-      )}
+      </div>
 
-      {activeTab === 'team' && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-foreground">Colleagues (3)</span>
-            <span className="text-[10px] text-primary font-bold">+ Invite</span>
-          </div>
-
-          {[
-            { name: 'Baskar Loganathan (You)', role: 'Buyer Admin', badge: 'bg-primary/10 text-primary' },
-            { name: 'Subramanian R.', role: 'Approver', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' },
-            { name: 'Karthik V.', role: 'Viewer', badge: 'bg-muted text-muted-foreground' },
-          ].map((m) => (
-            <div key={m.name} className="flex items-center justify-between p-2 rounded-xl border bg-card text-xs">
-              <span className="font-semibold text-[11px] truncate">{m.name}</span>
-              <span className={`text-[9px] font-bold px-2 py-0.2 rounded-full ${m.badge}`}>
-                {m.role}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {activeTab === 'preferences' && (
-        <div className="space-y-2.5 text-xs">
-          {/* Notification Toggles */}
-          <div className="rounded-xl border bg-card p-2.5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold">📱 WhatsApp Channel</span>
-              <span className="text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold">
-                Active
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold">✉️ Email Alerts</span>
-              <span className="text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold">
-                Active
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold">🔔 In-App Live Feed</span>
-              <span className="text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold">
-                Active
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Action Button: Update Milestone */}
+      <button
+        type="button"
+        className="w-full rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition text-center flex items-center justify-center gap-1.5"
+      >
+        <span>📸 Mark Ready for Delivery &amp; Upload Slip →</span>
+      </button>
 
       <button
         type="button"
         onClick={onRestart}
         className="w-full rounded-xl border border-border bg-card py-2 text-xs font-bold text-foreground hover:bg-muted transition text-center"
       >
-        ↻ Back to Screen 1 (Cockpit Overview)
+        ↻ Back to Screen 01 (Radar Hub)
       </button>
     </div>
   );

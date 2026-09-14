@@ -2,95 +2,92 @@ import { Link } from 'react-router-dom';
 import { PRODUCT_FULL_NAME, PRODUCT_NAME } from '@/lib/brand';
 import { SiteLayout } from '../components/SiteLayout';
 
-const PROBLEMS = [
-  {
-    title: 'The quote that was never going to lose',
-    body: 'Most organisations already know who they will pick before the quotes arrive. Competitive tendering then becomes paperwork around a decision that was made socially. Hiding who submitted what removes the only input that bias needs.',
-  },
-  {
-    title: 'The decision nobody can reconstruct',
-    body: 'Six months later, the question is why the second-cheapest quote won. Without a record of the weights in force, the scores they produced and who voted which way, the honest answer is that nobody remembers — which is indistinguishable from something worse.',
-  },
-  {
-    title: 'The follow-up tax',
-    body: 'Chasing three suppliers for revised prices, chasing the treasurer for a signature, chasing the contractor for a completion photo. This is most of the calendar time in a procurement round, and almost none of the value.',
-  },
-];
-
 export function AboutPage() {
   return (
     <SiteLayout>
-      <div className="mx-auto max-w-3xl px-4 py-14">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-action">About Us</p>
-        <h1 className="mt-3 text-3xl font-semibold leading-tight">
-          Procurement should be decided on merit, and be able to prove it
-        </h1>
-        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          {PRODUCT_NAME} — {PRODUCT_FULL_NAME} — exists because the way most organisations buy
-          goods and services is not really a competition. It is a relationship, wrapped in
-          enough paperwork to look like a process. That costs money, it invites kickbacks, and
-          it leaves the people who signed off unable to explain the decision afterwards.
-        </p>
-
-        <h2 className="mt-10 text-xl font-semibold">What We Are Trying to Fix</h2>
-        <div className="mt-4 space-y-5">
-          {PROBLEMS.map((problem) => (
-            <section key={problem.title} className="rounded-lg border bg-card p-5">
-              <h3 className="text-base font-medium">{problem.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                {problem.body}
-              </p>
-            </section>
-          ))}
+      <div className="mx-auto max-w-4xl px-4 py-12">
+        <div className="max-w-2xl">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-action">About Us</p>
+          <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-foreground leading-tight">
+            Procurement decided on merit, backed by cryptographic proof
+          </h1>
+          <p className="mt-3 text-sm sm:text-base leading-relaxed text-muted-foreground">
+            {PRODUCT_NAME} ({PRODUCT_FULL_NAME}) is an identity-protected, mobile-first procurement platform
+            built for Indian MSMEs, Resident Welfare Associations (RWAs), institutions, and facility managers.
+          </p>
         </div>
 
-        <h2 className="mt-10 text-xl font-semibold">How We Go About It</h2>
-        <ul className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
-          <li>
-            <strong className="text-foreground">Structure beats good intentions.</strong> Every
-            rule that matters — the deadline, the masking, the weights, who may vote — is
-            enforced by the database on every path in, including the WhatsApp one. A rule that
-            only the interface applies is a rule that can be skipped.
-          </li>
-          <li>
-            <strong className="text-foreground">Anonymity has to be real to be worth
-            anything.</strong> Aliases are salted per enquiry, so the same supplier is a
-            different alias every time and the pattern cannot be learned. Reliability figures
-            are banded, because an exact rating identifies a firm as surely as its name.
-          </li>
-          <li>
-            <strong className="text-foreground">A record you cannot quietly edit.</strong> Votes,
-            score changes, awards and approvals are appended and never rewritten — not by your
-            administrators, and not by us.
-          </li>
-          <li>
-            <strong className="text-foreground">We are not in the middle of the money.</strong>{' '}
-            Buyers and suppliers contract and settle directly. We hold the process, the record
-            and the evidence; we do not hold funds, and we do not take a cut of the deal.
-          </li>
-        </ul>
+        {/* Core Mission & Pillars Grid */}
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border bg-card p-4 shadow-2xs">
+            <span className="text-lg">🛡️</span>
+            <h2 className="text-sm font-bold mt-2 text-foreground">Zero-Bias Evaluation</h2>
+            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+              Cryptographically masked aliases prevent favoritism, predatory pricing, and vendor lock-in. Quotes compete strictly on price, timeline, and warranty.
+            </p>
+          </div>
 
-        <h2 className="mt-10 text-xl font-semibold">Who it is for</h2>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Any organisation that has to justify a spending decision to somebody else: housing
-          societies and community associations answering to their members, small and mid-sized
-          businesses without a procurement department, institutions with committees and audit
-          obligations, and the suppliers who would rather be judged on their offer than on who
-          they know.
-        </p>
+          <div className="rounded-xl border bg-card p-4 shadow-2xs">
+            <span className="text-lg">📱</span>
+            <h2 className="text-sm font-bold mt-2 text-foreground">Mobile-First Pipeline</h2>
+            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+              7-Screen buyer workflow and 5-screen supplier pipeline optimized for rapid quotes on WhatsApp and seamless on-the-go approvals.
+            </p>
+          </div>
 
-        <div className="mt-10 flex flex-wrap gap-3">
+          <div className="rounded-xl border bg-card p-4 shadow-2xs">
+            <span className="text-lg">⚖️</span>
+            <h2 className="text-sm font-bold mt-2 text-foreground">Direct Settlement</h2>
+            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+              Zero platform commissions, zero middleman custody. Buyers and suppliers contract directly with immutable audit trails.
+            </p>
+          </div>
+        </div>
+
+        {/* Problem vs Solution Summary */}
+        <div className="mt-8 rounded-2xl border bg-muted/20 p-5 sm:p-6">
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wider text-action">
+            Why We Built {PRODUCT_NAME}
+          </h2>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 text-xs leading-relaxed">
+            <div>
+              <h3 className="font-bold text-foreground">Conventional Sourcing Pitfalls</h3>
+              <ul className="mt-1.5 space-y-1.5 text-muted-foreground">
+                <li>• Decisions often made socially before paperwork is filed</li>
+                <li>• Quoting history scattered across fragmented WhatsApp chats and emails</li>
+                <li>• Inability to prove to committee or auditors why a quote was selected</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold text-foreground">{PRODUCT_NAME} Operating System</h3>
+              <ul className="mt-1.5 space-y-1.5 text-muted-foreground">
+                <li>• Database-enforced deadlines, sealed quotes, and anonymous comparisons</li>
+                <li>• Democratic committee voting with recorded rationales</li>
+                <li>• Instant GST Purchase Orders and verifiable delivery tracking</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Banner */}
+        <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link
             to="/signup"
-            className="rounded-md bg-action px-5 py-3 text-sm font-semibold text-action-foreground hover:bg-action-hover"
+            className="rounded-xl bg-action px-5 py-2.5 text-xs font-bold text-action-foreground hover:bg-action-hover shadow-xs"
           >
-            Register your organisation
+            Register Your Organisation →
+          </Link>
+          <Link
+            to="/showcase"
+            className="rounded-xl border bg-card px-5 py-2.5 text-xs font-bold text-foreground hover:bg-muted"
+          >
+            📱 Explore 7-Screen Mobile Pipeline
           </Link>
           <Link
             to="/faqs"
-            className="rounded-md border px-5 py-3 text-sm font-semibold hover:bg-muted"
+            className="rounded-xl border border-transparent px-4 py-2.5 text-xs font-bold text-action hover:underline"
           >
-            Read the FAQs
+            Read FAQs &amp; Architecture
           </Link>
         </div>
       </div>

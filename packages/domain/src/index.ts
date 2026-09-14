@@ -10,6 +10,7 @@ export * from './enums/attachment';
 export * from './types/blind-quote'; // Legacy export - use IdentityProtectedQuote
 export * from './types/revealed-quote';
 export * from './types/procurement-os';
+export * from './types/supplier-decoupled';
 export * from './errors/blind-violation';
 export * from './transitions';
 export * from './taxonomy/types';

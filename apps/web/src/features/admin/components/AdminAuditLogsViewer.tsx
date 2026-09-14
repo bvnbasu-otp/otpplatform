@@ -108,7 +108,7 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
   });
 
   return (
-    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] w-full max-w-full">
       {/* Controls Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1">
@@ -117,13 +117,13 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search event type, entity ID, correlation ID, JSON payload..."
-            className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0">
           {/* Active Operating Mode Scope Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/60 border text-xs font-semibold text-muted-foreground">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted/60 border text-xs font-semibold text-muted-foreground min-h-[44px]">
             <span>Scope:</span>
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
@@ -140,7 +140,7 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
           <select
             value={entityFilter}
             onChange={(e) => setEntityFilter(e.target.value)}
-            className="rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+            className="rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-h-[44px]"
           >
             <option value="ALL">All Entity Types</option>
             <option value="RFQ">RFQs &amp; Quotes</option>
@@ -173,11 +173,11 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
         </div>
       </div>
 
-      {/* Audit Logs Stream */}
-      <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
-        <div className="divide-y text-xs">
+      {/* Audit Logs Stream Container with Explicit Horizontal Scrolling and Word Wrapping */}
+      <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 rounded-xl border bg-card shadow-xs">
+        <div className="divide-y text-xs min-w-[320px]">
           {isLoading && logs.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
+            <div className="py-12 text-center text-muted-foreground animate-pulse">
               Loading cryptographic audit logs…
             </div>
           ) : filteredLogs.length === 0 ? (
@@ -190,10 +190,13 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
               const hasPayload = log.payload && Object.keys(log.payload).length > 0;
 
               return (
-                <div key={log.id} className="p-3 hover:bg-muted/10 transition">
+                <div key={log.id} className="p-3.5 hover:bg-muted/10 transition">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary font-mono">
+                      <span
+                        className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary font-mono min-w-[100px] text-center"
+                        title={log.event_type}
+                      >
                         {log.event_type}
                       </span>
                       {log.is_demo ? (
@@ -209,22 +212,27 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
                         {log.entity_type}
                       </span>
                       {log.entity_id && (
-                        <span className="font-mono text-[11px] text-muted-foreground">
-                          ID: {log.entity_id.slice(0, 8)}…
+                        <span
+                          className="font-mono text-[11px] text-muted-foreground truncate max-w-[200px]"
+                          title={log.entity_id}
+                        >
+                          ID: {log.entity_id}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 text-muted-foreground text-[11px]">
-                      <span>{log.actor_email || 'System'}</span>
+                    <div className="flex items-center gap-2 text-muted-foreground text-[11px] shrink-0">
+                      <span className="truncate max-w-[160px]" title={log.actor_email || 'System'}>
+                        {log.actor_email || 'System'}
+                      </span>
                       <span>•</span>
-                      <span>{formatLogDate(log)}</span>
+                      <span className="font-mono">{formatLogDate(log)}</span>
                     </div>
                   </div>
 
                   {log.organization_name && (
-                    <div className="mt-1 text-[11px] text-muted-foreground font-medium">
-                      Tenant Org: <span className="text-foreground">{log.organization_name}</span>
+                    <div className="mt-1.5 text-[11px] text-muted-foreground font-medium" title={log.organization_name}>
+                      Tenant Org: <span className="text-foreground font-semibold">{log.organization_name}</span>
                     </div>
                   )}
 
@@ -234,13 +242,13 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
                       <button
                         type="button"
                         onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                        className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
+                        className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 min-h-[32px] mobile-touch-target"
                       >
-                        <span>{isExpanded ? '▼ Hide' : '▶ Show'} Payload</span>
+                        <span>{isExpanded ? '▼ Hide' : '▶ Show'} Payload JSON</span>
                       </button>
 
                       {isExpanded && (
-                        <pre className="mt-2 rounded-lg bg-muted/40 p-3 text-[10px] font-mono overflow-x-auto text-foreground border">
+                        <pre className="mt-2 rounded-lg bg-muted/40 p-3 text-[10px] font-mono overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 text-foreground border leading-relaxed">
                           {JSON.stringify(log.payload, null, 2)}
                         </pre>
                       )}

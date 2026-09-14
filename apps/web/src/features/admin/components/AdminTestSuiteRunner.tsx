@@ -547,9 +547,9 @@ export function AdminTestSuiteRunner() {
           </div>
 
           <div className="hidden sm:block rounded-xl border bg-card overflow-hidden shadow-2xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead className="bg-muted border-b">
+            <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+              <table className="w-full text-xs min-w-[800px]">
+                <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur-xs border-b">
                   <tr>
                     <th className="px-4 py-3 text-left font-bold">Module ID</th>
                     <th className="px-4 py-3 text-left font-bold">Category</th>
@@ -801,9 +801,9 @@ export function AdminTestSuiteRunner() {
 
           {/* Test Cases Table (Desktop View) */}
           <div className="hidden sm:block rounded-xl border bg-card overflow-hidden shadow-2xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead className="bg-muted border-b">
+            <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+              <table className="w-full text-xs min-w-[800px]">
+                <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur-xs border-b">
                   <tr>
                     <th className="px-4 py-3 text-left font-bold">Test ID</th>
                     <th className="px-4 py-3 text-left font-bold">Category</th>

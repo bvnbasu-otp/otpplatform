@@ -155,9 +155,9 @@ export function AdminBackupRestorePanel() {
           <span className="text-[11px] text-muted-foreground font-medium">Stored in PostgreSQL admin_database_snapshots</span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b bg-muted/20 font-semibold text-muted-foreground">
+        <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+          <table className="w-full text-left text-xs min-w-[650px]">
+            <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-semibold text-muted-foreground shadow-2xs">
               <tr>
                 <th className="p-3">Snapshot Name</th>
                 <th className="p-3">Scope</th>

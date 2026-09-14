@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
-import { AccountMenu, RoleBadge, isActivePath, navigationFor, useRoleContext } from '@/features/roles';
+import { AccountMenu, isActivePath, navigationFor, useRoleContext } from '@/features/roles';
 import { NotificationBell } from '@/features/notifications';
 import { SupportHelpButtonModal } from '@/features/support';
 import { OtpLogo } from '@/components/ui/OtpLogo';
@@ -9,14 +9,14 @@ import { OrgContextSwitcher } from '@/features/org';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileSimulatorFrame } from '@/components/layout/MobileSimulatorFrame';
+import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 import { PRODUCT_NAME } from '@/lib/brand';
 
 const PUBLIC_PRIMARY_LINKS = [
   { label: 'Home', to: '/' },
-  { label: 'How it works', to: '/#how-it-works' },
   { label: 'Pricing', to: '/pricing' },
-  { label: 'FAQs', to: '/faqs' },
   { label: 'About us', to: '/about-us' },
+  { label: 'FAQs', to: '/faqs' },
 ];
 
 export function AppLayout() {
@@ -72,6 +72,13 @@ export function AppLayout() {
                 </Link>
               )}
             </div>
+
+            {/* Top-Level Role Switcher Toggle */}
+            {!context.isPlatformAdmin && (
+              <div className="hidden sm:flex items-center">
+                <RoleModeToggle size="sm" />
+              </div>
+            )}
 
             {/* Right Action Cluster: Clean, minimal, ≤48px */}
             <div className="ml-auto flex items-center gap-1.5 shrink-0">
@@ -130,6 +137,14 @@ export function AppLayout() {
               className="relative border-b bg-card shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100%-48px)] overflow-y-auto"
             >
               <div className="mx-auto w-full px-4 py-3 space-y-3 text-xs">
+                {/* Role Switcher in Drawer */}
+                {!context.isPlatformAdmin && (
+                  <div className="flex items-center justify-between pb-2 border-b">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">Role Mode</span>
+                    <RoleModeToggle size="sm" />
+                  </div>
+                )}
+
                 {/* 1. Quick Workspace Actions Row */}
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">

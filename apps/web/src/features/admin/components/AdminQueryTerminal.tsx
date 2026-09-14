@@ -204,7 +204,7 @@ export function AdminQueryTerminal() {
   const columns = result?.data && result.data.length > 0 ? Object.keys(result.data[0]) : [];
 
   return (
-    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] w-full max-w-full">
       {/* Top Banner */}
       <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
         <div>
@@ -218,12 +218,12 @@ export function AdminQueryTerminal() {
         </div>
       </div>
 
-      {/* Query Template Chips */}
-      <div className="space-y-2">
+      {/* Query Template Chips with Horizontal Overflow Controls */}
+      <div className="space-y-2 w-full max-w-full">
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
           Quick Diagnostic Query Templates:
         </span>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 pb-1.5">
           {QUERY_TEMPLATES.map((tmpl) => (
             <button
               key={tmpl.name}
@@ -231,7 +231,7 @@ export function AdminQueryTerminal() {
               onClick={() => {
                 setSql(tmpl.sql);
               }}
-              className="rounded-lg border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition"
+              className="rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition shrink-0 whitespace-nowrap shadow-2xs active:scale-98 min-h-[44px] mobile-touch-target"
             >
               📄 {tmpl.name}
             </button>
@@ -249,7 +249,7 @@ export function AdminQueryTerminal() {
             <button
               type="button"
               onClick={() => setSql('')}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground font-semibold px-2 py-1"
             >
               Clear
             </button>
@@ -261,7 +261,7 @@ export function AdminQueryTerminal() {
           value={sql}
           onChange={(e) => setSql(e.target.value)}
           placeholder="SELECT * FROM rfqs LIMIT 10;"
-          className="w-full rounded-lg border bg-muted/20 p-3 font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
+          className="w-full rounded-xl border bg-muted/20 p-3 font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
         />
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
@@ -278,17 +278,17 @@ export function AdminQueryTerminal() {
         </div>
       </form>
 
-      {/* Query Results View */}
+      {/* Query Results View with Explicit Horizontal Scrolling and Sticky Headers */}
       {result && (
-        <div className="rounded-xl border bg-card p-5 shadow-xs space-y-4 animate-in fade-in duration-200">
+        <div className="rounded-xl border bg-card p-4 sm:p-5 shadow-xs space-y-4 animate-in fade-in duration-200 w-full max-w-full">
           {/* Query Status Bar */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span
                 className={`rounded-full px-3 py-0.5 text-[11px] font-black uppercase tracking-wider ${
                   result.success
-                    ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                    : 'bg-red-100 text-red-900 border border-red-300'
+                    ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                    : 'bg-red-100 text-red-900 dark:bg-red-950/60 dark:text-red-300 border border-red-300 dark:border-red-800'
                 }`}
               >
                 {result.success ? '✓ QUERY PASSED' : '✕ QUERY FAILED'}
@@ -299,7 +299,7 @@ export function AdminQueryTerminal() {
                   {result.rowsCount} row(s) returned · {result.executionTimeMs ?? 0}ms
                 </span>
               ) : (
-                <span className="text-xs font-semibold text-red-700">
+                <span className="text-xs font-semibold text-red-700 dark:text-red-400">
                   Execution Error · {result.executionTimeMs ?? 0}ms
                 </span>
               )}
@@ -310,8 +310,8 @@ export function AdminQueryTerminal() {
                 <button
                   type="button"
                   onClick={() => setViewMode('TABLE')}
-                  className={`rounded px-2.5 py-1 font-semibold transition ${
-                    viewMode === 'TABLE' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                  className={`rounded-md px-2.5 py-1 font-semibold transition ${
+                    viewMode === 'TABLE' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'
                   }`}
                 >
                   Table View
@@ -319,8 +319,8 @@ export function AdminQueryTerminal() {
                 <button
                   type="button"
                   onClick={() => setViewMode('JSON')}
-                  className={`rounded px-2.5 py-1 font-semibold transition ${
-                    viewMode === 'JSON' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                  className={`rounded-md px-2.5 py-1 font-semibold transition ${
+                    viewMode === 'JSON' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'
                   }`}
                 >
                   Raw JSON
@@ -331,18 +331,18 @@ export function AdminQueryTerminal() {
 
           {/* Failure Error Card */}
           {!result.success ? (
-            <div className="rounded-lg border border-red-300 bg-red-50/50 p-4 text-xs text-red-950 space-y-2">
+            <div className="rounded-xl border border-red-300 bg-red-50/50 dark:bg-red-950/30 p-4 text-xs text-red-950 dark:text-red-200 space-y-2">
               <div className="font-bold flex items-center gap-2">
                 <span>⚠️</span>
                 <span>Database Error: {result.error}</span>
               </div>
               {result.errorDetail && (
-                <p className="font-mono text-[11px] text-red-900 bg-red-100/60 p-2 rounded">
+                <p className="font-mono text-[11px] text-red-900 dark:text-red-300 bg-red-100/60 dark:bg-red-900/40 p-2 rounded-lg">
                   Detail: {result.errorDetail}
                 </p>
               )}
               {result.errorHint && (
-                <p className="text-[11px] text-red-800">
+                <p className="text-[11px] text-red-800 dark:text-red-300">
                   Hint: {result.errorHint}
                 </p>
               )}
@@ -352,30 +352,37 @@ export function AdminQueryTerminal() {
               Query executed successfully and returned 0 rows.
             </p>
           ) : viewMode === 'TABLE' ? (
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b bg-muted/40 font-semibold text-muted-foreground">
+            <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 rounded-xl border bg-card shadow-2xs max-h-[500px]">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground uppercase text-[11px] shadow-2xs">
                   <tr>
                     {columns.map((col) => (
-                      <th key={col} className="p-2.5 whitespace-nowrap">{col}</th>
+                      <th key={col} className="p-3 whitespace-nowrap min-w-[130px]">{col}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y text-foreground font-mono text-[11px]">
                   {result.data.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-muted/10">
-                      {columns.map((col) => (
-                        <td key={col} className="p-2.5 whitespace-nowrap max-w-xs truncate">
-                          {typeof row[col] === 'object' ? JSON.stringify(row[col]) : String(row[col] ?? '')}
-                        </td>
-                      ))}
+                    <tr key={idx} className="hover:bg-muted/20 transition">
+                      {columns.map((col) => {
+                        const cellVal = typeof row[col] === 'object' ? JSON.stringify(row[col]) : String(row[col] ?? '');
+                        return (
+                          <td
+                            key={col}
+                            className="p-3 whitespace-nowrap max-w-sm truncate min-w-[130px]"
+                            title={cellVal}
+                          >
+                            {cellVal}
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <pre className="rounded-lg bg-muted/40 p-4 text-[11px] font-mono text-foreground overflow-x-auto max-h-96 border">
+            <pre className="rounded-xl bg-muted/40 p-4 text-[11px] font-mono text-foreground overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 max-h-96 border leading-relaxed">
               {JSON.stringify(result.data, null, 2)}
             </pre>
           )}

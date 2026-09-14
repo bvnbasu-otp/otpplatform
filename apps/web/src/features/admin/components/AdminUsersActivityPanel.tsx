@@ -140,9 +140,7 @@ export function AdminUsersActivityPanel() {
     return users.filter((u) => getUserOnlineStatus(u.lastSeenAt, now) === 'OFFLINE').length;
   }, [users, now]);
 
-  // ----------------------------------------------------
   // Filtering
-  // ----------------------------------------------------
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
       const isBlocked =
@@ -239,9 +237,7 @@ export function AdminUsersActivityPanel() {
     });
   }, [requests, statusFilter, search]);
 
-  // ----------------------------------------------------
   // Selection Toggles
-  // ----------------------------------------------------
   const isAllUsersSelected =
     filteredUsers.length > 0 && filteredUsers.every((u) => selectedUserIds.has(u.id));
   const isSomeUsersSelected =
@@ -252,7 +248,6 @@ export function AdminUsersActivityPanel() {
       setSelectedUserIds(new Set());
     } else {
       const next = new Set<string>();
-      // Don't select SuperAdmin users
       filteredUsers.forEach((u) => {
         if (!u.isPlatformAdmin) next.add(u.id);
       });
@@ -294,9 +289,7 @@ export function AdminUsersActivityPanel() {
     });
   };
 
-  // ----------------------------------------------------
   // Modal Openers
-  // ----------------------------------------------------
   const openBlockModal = (
     type: 'USERS' | 'ORGANIZATIONS',
     ids: string[],
@@ -318,9 +311,7 @@ export function AdminUsersActivityPanel() {
     setIsSoftDelete(true);
   };
 
-  // ----------------------------------------------------
   // Execution Handlers
-  // ----------------------------------------------------
   const handleConfirmBlock = async () => {
     if (!blockModalTarget) return;
     const finalReason =
@@ -329,7 +320,6 @@ export function AdminUsersActivityPanel() {
         : selectedBlockReason;
 
     setIsBulkExecuting(true);
-    // Optimistic UI update: immediately mark target users/orgs as BLOCKED in local state
     const previousUsers = [...users];
     const previousOrgs = [...organizations];
     const nowIso = new Date().toISOString();
@@ -369,7 +359,6 @@ export function AdminUsersActivityPanel() {
           setBannerMessage({ type: 'error', text: `✕ ${res.error || 'Failed to block users.'}` });
         }
       } else {
-        // Find if supplier or buyer org
         const isSupplier = organizations.some(
           (o) => blockModalTarget.ids.includes(o.id) && o.entity_type === 'SUPPLIER'
         );
@@ -474,13 +463,8 @@ export function AdminUsersActivityPanel() {
     const previousOrgs = [...organizations];
     const deletedIdSet = new Set(deleteModalTarget.ids);
 
-    // Optimistic UI update: immediately remove/mark deleted in local state
     if (deleteModalTarget.type === 'USERS') {
-      if (isSoftDelete) {
-        setUsers((prev) => prev.filter((u) => !deletedIdSet.has(u.id)));
-      } else {
-        setUsers((prev) => prev.filter((u) => !deletedIdSet.has(u.id)));
-      }
+      setUsers((prev) => prev.filter((u) => !deletedIdSet.has(u.id)));
     } else {
       setOrganizations((prev) => prev.filter((o) => !deletedIdSet.has(o.id)));
     }
@@ -533,9 +517,7 @@ export function AdminUsersActivityPanel() {
     }
   };
 
-  // ----------------------------------------------------
   // Registration Review Handler
-  // ----------------------------------------------------
   const handleReview = async (request: AdminSignupRequest, action: 'APPROVE' | 'REJECT') => {
     setProcessingId(request.id);
     try {
@@ -608,13 +590,13 @@ export function AdminUsersActivityPanel() {
       : 0;
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden space-y-2.5">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden space-y-2.5 w-full max-w-full">
       {/* 1. System Notification Banner */}
       {bannerMessage && (
         <div
           role="status"
           aria-live="polite"
-          className={`shrink-0 flex items-center justify-between rounded-lg p-2.5 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-150 ${
+          className={`shrink-0 flex items-center justify-between rounded-xl p-3 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-150 ${
             bannerMessage.type === 'success'
               ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-950 dark:text-emerald-200'
               : 'bg-rose-500/15 border border-rose-500/30 text-rose-950 dark:text-rose-200'
@@ -627,7 +609,7 @@ export function AdminUsersActivityPanel() {
           <button
             type="button"
             onClick={() => setBannerMessage(null)}
-            className="text-muted-foreground hover:text-foreground font-bold ml-3 px-1"
+            className="text-muted-foreground hover:text-foreground font-bold ml-3 px-1.5 py-0.5"
             title="Dismiss"
           >
             ✕
@@ -641,7 +623,7 @@ export function AdminUsersActivityPanel() {
           <button
             type="button"
             onClick={() => setSubTab('USERS')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition shrink-0 active:scale-98 ${
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
               subTab === 'USERS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -664,7 +646,7 @@ export function AdminUsersActivityPanel() {
           <button
             type="button"
             onClick={() => setSubTab('ORGANIZATIONS')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition shrink-0 active:scale-98 ${
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
               subTab === 'ORGANIZATIONS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -681,7 +663,7 @@ export function AdminUsersActivityPanel() {
           <button
             type="button"
             onClick={() => setSubTab('REGISTRATIONS')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition shrink-0 active:scale-98 ${
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
               subTab === 'REGISTRATIONS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -700,14 +682,14 @@ export function AdminUsersActivityPanel() {
           type="button"
           onClick={() => void loadData()}
           disabled={isLoading}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shrink-0"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs"
         >
           <span>↻</span> <span className="hidden sm:inline ml-1">{isLoading ? 'Refreshing…' : 'Refresh'}</span>
         </button>
       </div>
 
       {/* 3. Search & Multi-Criteria Filter Bar */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2.5 rounded-lg border bg-card p-2.5 shadow-2xs">
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border bg-card p-3 shadow-2xs">
         <div className="flex items-center gap-2 flex-1 min-w-[220px]">
           <input
             type="text"
@@ -720,13 +702,13 @@ export function AdminUsersActivityPanel() {
                 ? 'Search business name, GSTIN, contact person, email...'
                 : 'Search applicant name, business, reference (REG-)...'
             }
-            className="rounded-md border bg-background px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full max-w-sm"
+            className="rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary w-full max-w-sm min-h-[44px]"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="text-xs text-muted-foreground hover:text-foreground font-semibold shrink-0"
+              className="text-xs text-muted-foreground hover:text-foreground font-semibold shrink-0 px-2 py-1"
             >
               Clear
             </button>
@@ -734,13 +716,13 @@ export function AdminUsersActivityPanel() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Presence Filter Dropdown / Chips */}
+          {/* Presence Filter Dropdown */}
           <div className="flex items-center gap-1">
             <span className="text-[10px] font-bold text-muted-foreground uppercase mr-0.5">Presence:</span>
             <select
               value={presenceFilter}
               onChange={(e) => setPresenceFilter(e.target.value as any)}
-              className="rounded-md border bg-background px-2 py-1 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              className="rounded-xl border bg-background px-2.5 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-h-[44px]"
               aria-label="Filter by online presence status"
             >
               <option value="ALL">All Presence ({subTab === 'USERS' ? users.length : organizations.length})</option>
@@ -756,7 +738,7 @@ export function AdminUsersActivityPanel() {
             <select
               value={sideFilter}
               onChange={(e) => setSideFilter(e.target.value as any)}
-              className="rounded-md border bg-background px-2 py-1 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              className="rounded-xl border bg-background px-2.5 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-h-[44px]"
               aria-label="Filter by user portal side"
             >
               <option value="ALL">All Roles</option>
@@ -774,7 +756,7 @@ export function AdminUsersActivityPanel() {
                 key={s}
                 type="button"
                 onClick={() => setStatusFilter(s)}
-                className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
+                className={`rounded-xl px-2.5 py-1.5 text-xs font-bold transition min-h-[44px] mobile-touch-target ${
                   statusFilter === s
                     ? s === 'BLOCKED'
                       ? 'bg-rose-600 text-white shadow-2xs'
@@ -796,7 +778,7 @@ export function AdminUsersActivityPanel() {
         <div
           role="toolbar"
           aria-label="Bulk actions toolbar"
-          className="shrink-0 flex flex-wrap items-center justify-between gap-2 rounded-lg border-2 border-primary/40 bg-primary/10 p-2 text-xs animate-in fade-in slide-in-from-top-1 duration-150"
+          className="shrink-0 flex flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-primary/40 bg-primary/10 p-2.5 text-xs animate-in fade-in slide-in-from-top-1 duration-150"
         >
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
@@ -817,7 +799,7 @@ export function AdminUsersActivityPanel() {
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {/* Block Action Button */}
             <button
               type="button"
@@ -839,7 +821,7 @@ export function AdminUsersActivityPanel() {
                 }
               }}
               disabled={isBulkExecuting}
-              className="flex items-center gap-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 mobile-touch-target"
             >
               <span>🚫</span> Block Account{selectedCount > 1 ? 's' : ''}
             </button>
@@ -855,12 +837,12 @@ export function AdminUsersActivityPanel() {
                 }
               }}
               disabled={isBulkExecuting}
-              className="flex items-center gap-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 mobile-touch-target"
             >
               <span>🔓</span> Unblock / Activate
             </button>
 
-            {/* Delete Action Button (Red Accent / Destructive Intent) */}
+            {/* Delete Action Button */}
             <button
               type="button"
               onClick={() => {
@@ -881,7 +863,7 @@ export function AdminUsersActivityPanel() {
                 }
               }}
               disabled={isBulkExecuting}
-              className="flex items-center gap-1 rounded-md bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold px-3.5 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 mobile-touch-target"
             >
               <span>🗑️</span> Delete {subTab === 'USERS' ? 'User' : 'Org'}{selectedCount > 1 ? 's' : ''}
             </button>
@@ -889,18 +871,15 @@ export function AdminUsersActivityPanel() {
         </div>
       )}
 
-      {/* 5. DATA TABLES CONTAINER (Zero-Scroll strictly internal body scroll) */}
-      <div className="flex-1 min-h-0 rounded-xl border bg-card shadow-2xs overflow-hidden flex flex-col">
-        {/* ====================================================
-            SUBTAB 1: USERS DATA TABLE
-        ==================================================== */}
+      {/* 5. DATA TABLES CONTAINER WITH EXPLICIT HORIZONTAL OVERFLOW CONTROLS */}
+      <div className="flex-1 min-h-0 rounded-2xl border bg-card shadow-2xs overflow-hidden flex flex-col w-full max-w-full">
+        {/* SUBTAB 1: USERS DATA TABLE */}
         {subTab === 'USERS' && (
-          <div className="flex-1 min-h-0 overflow-y-auto zero-scroll-pane">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-semibold text-muted-foreground shadow-2xs">
+          <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 zero-scroll-pane">
+            <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
+              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
                 <tr>
-                  {/* Selection Checkbox Column */}
-                  <th className="p-2.5 w-10 text-center">
+                  <th className="p-3 w-10 min-w-[40px] text-center">
                     <input
                       type="checkbox"
                       checked={isAllUsersSelected}
@@ -912,15 +891,15 @@ export function AdminUsersActivityPanel() {
                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
                     />
                   </th>
-                  <th className="p-2.5">User &amp; Contact</th>
-                  <th className="p-2.5">Presence</th>
-                  <th className="p-2.5">Account Status</th>
-                  <th className="p-2.5">Side</th>
-                  <th className="p-2.5">Organization / Company</th>
-                  <th className="p-2.5">Role</th>
-                  <th className="p-2.5">GST Compliance</th>
-                  <th className="p-2.5">Registered</th>
-                  <th className="p-2.5 text-right">Actions</th>
+                  <th className="p-3 min-w-[220px]">User &amp; Contact</th>
+                  <th className="p-3 min-w-[140px]">Presence</th>
+                  <th className="p-3 min-w-[130px]">Account Status</th>
+                  <th className="p-3 min-w-[100px]">Side</th>
+                  <th className="p-3 min-w-[180px]">Organization / Company</th>
+                  <th className="p-3 min-w-[110px]">Role</th>
+                  <th className="p-3 min-w-[120px]">GST Compliance</th>
+                  <th className="p-3 min-w-[120px]">Registered</th>
+                  <th className="p-3 min-w-[150px] text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y text-foreground">
@@ -964,7 +943,7 @@ export function AdminUsersActivityPanel() {
                         }`}
                       >
                         {/* Checkbox Column */}
-                        <td className="p-2.5 text-center">
+                        <td className="p-3 text-center w-10 min-w-[40px]">
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -976,9 +955,8 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* User & Contact */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[220px]">
                           <div className="flex items-start gap-2.5">
-                            {/* Avatar with dynamic real-time presence dot */}
                             <div className="relative shrink-0 mt-0.5">
                               <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
                                 {initials}
@@ -991,21 +969,25 @@ export function AdminUsersActivityPanel() {
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-bold text-foreground truncate max-w-[150px]">{u.fullName}</span>
+                                <span className="font-bold text-foreground truncate max-w-[150px]" title={u.fullName || undefined}>
+                                  {u.fullName || 'User'}
+                                </span>
                                 {u.isPlatformAdmin && (
                                   <span className="rounded bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-extrabold border border-primary/30">
                                     SUPER ADMIN
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[11px] text-muted-foreground font-mono truncate max-w-[180px]">{u.email}</div>
+                              <div className="text-[11px] text-muted-foreground font-mono truncate max-w-[180px]" title={u.email}>
+                                {u.email}
+                              </div>
                               {u.phone && <div className="text-[10px] text-muted-foreground font-mono">{u.phone}</div>}
                             </div>
                           </div>
                         </td>
 
                         {/* Real-time Presence Column */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[140px]">
                           <div
                             className="flex flex-col gap-0.5"
                             title={`Last seen: ${absoluteTime} (${relativeTime})`}
@@ -1022,8 +1004,8 @@ export function AdminUsersActivityPanel() {
                           </div>
                         </td>
 
-                        {/* Real-time Account Lifecycle Status Badge */}
-                        <td className="p-2.5">
+                        {/* Status Badge */}
+                        <td className="p-3 min-w-[130px]">
                           {isBlocked ? (
                             <div>
                               <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
@@ -1050,7 +1032,7 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Side */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[100px]">
                           <span
                             className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                               u.side === 'SUPPLIER'
@@ -1065,22 +1047,22 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Organization */}
-                        <td className="p-2.5">
-                          <div className="font-semibold text-foreground truncate max-w-[160px]">
+                        <td className="p-3 min-w-[180px]">
+                          <div className="font-semibold text-foreground truncate max-w-[160px]" title={u.organizationName || 'Personal Workspace'}>
                             {u.organizationName || 'Personal Workspace'}
                           </div>
                           <div className="text-[10px] text-muted-foreground">{u.orgType}</div>
                         </td>
 
                         {/* Role */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[110px]">
                           <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono font-semibold">
                             {u.role || 'MEMBER'}
                           </span>
                         </td>
 
                         {/* GST Compliance */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[120px]">
                           {u.gstVerified ? (
                             <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 px-1.5 py-0.5 text-[10px] font-bold">
                               ✓ Verified
@@ -1093,7 +1075,7 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Registered */}
-                        <td className="p-2.5 text-muted-foreground text-[11px] whitespace-nowrap">
+                        <td className="p-3 min-w-[120px] text-muted-foreground text-[11px] whitespace-nowrap">
                           {new Date(u.createdAt).toLocaleDateString('en-IN', {
                             month: 'short',
                             day: 'numeric',
@@ -1102,14 +1084,14 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Row Actions */}
-                        <td className="p-2.5 text-right">
+                        <td className="p-3 min-w-[150px] text-right">
                           {!u.isPlatformAdmin ? (
-                            <div className="flex items-center justify-end gap-1">
+                            <div className="flex items-center justify-end gap-1.5">
                               {isBlocked ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleConfirmUnblock('USERS', [u.id])}
-                                  className="rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-0.5 text-[11px] transition shadow-2xs"
+                                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs min-h-[36px] mobile-touch-target"
                                   title="Unblock and reactivate account"
                                 >
                                   Unblock
@@ -1120,7 +1102,7 @@ export function AdminUsersActivityPanel() {
                                   onClick={() =>
                                     openBlockModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
                                   }
-                                  className="rounded border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2 py-0.5 text-[11px] transition"
+                                  className="rounded-lg border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
                                   title="Block account from accessing platform"
                                 >
                                   Block
@@ -1132,7 +1114,7 @@ export function AdminUsersActivityPanel() {
                                 onClick={() =>
                                   openDeleteModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
                                 }
-                                className="rounded border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2 py-0.5 text-[11px] transition"
+                                className="rounded-lg border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
                                 title="Delete user account"
                               >
                                 Delete
@@ -1151,15 +1133,13 @@ export function AdminUsersActivityPanel() {
           </div>
         )}
 
-        {/* ====================================================
-            SUBTAB 2: ORGANIZATIONS & SUPPLIERS DATA TABLE
-        ==================================================== */}
+        {/* SUBTAB 2: ORGANIZATIONS & SUPPLIERS DATA TABLE */}
         {subTab === 'ORGANIZATIONS' && (
-          <div className="flex-1 min-h-0 overflow-y-auto zero-scroll-pane">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-semibold text-muted-foreground shadow-2xs">
+          <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 zero-scroll-pane">
+            <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
+              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
                 <tr>
-                  <th className="p-2.5 w-10 text-center">
+                  <th className="p-3 w-10 min-w-[40px] text-center">
                     <input
                       type="checkbox"
                       checked={isAllOrgsSelected}
@@ -1171,15 +1151,15 @@ export function AdminUsersActivityPanel() {
                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
                     />
                   </th>
-                  <th className="p-2.5">Organization / Business</th>
-                  <th className="p-2.5">Presence</th>
-                  <th className="p-2.5">Type &amp; Sector</th>
-                  <th className="p-2.5">Status</th>
-                  <th className="p-2.5">Members</th>
-                  <th className="p-2.5">Active RFQs / POs</th>
-                  <th className="p-2.5">GST Registration</th>
-                  <th className="p-2.5">Contact</th>
-                  <th className="p-2.5 text-right">Actions</th>
+                  <th className="p-3 min-w-[220px]">Organization / Business</th>
+                  <th className="p-3 min-w-[140px]">Presence</th>
+                  <th className="p-3 min-w-[140px]">Type &amp; Sector</th>
+                  <th className="p-3 min-w-[130px]">Status</th>
+                  <th className="p-3 min-w-[100px]">Members</th>
+                  <th className="p-3 min-w-[120px]">Active RFQs / POs</th>
+                  <th className="p-3 min-w-[140px]">GST Registration</th>
+                  <th className="p-3 min-w-[160px]">Contact</th>
+                  <th className="p-3 min-w-[150px] text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y text-foreground">
@@ -1217,7 +1197,7 @@ export function AdminUsersActivityPanel() {
                         }`}
                       >
                         {/* Checkbox */}
-                        <td className="p-2.5 text-center">
+                        <td className="p-3 text-center w-10 min-w-[40px]">
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -1228,11 +1208,11 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Name & Tag */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[220px]">
                           <div className="flex items-start gap-2">
                             <span className={`h-2.5 w-2.5 rounded-full mt-1 shrink-0 ${orgPresenceConfig.dotColor}`} title={`Presence: ${orgPresenceConfig.label}`} />
                             <div>
-                              <div className="font-bold text-foreground">{o.name}</div>
+                              <div className="font-bold text-foreground" title={o.name}>{o.name}</div>
                               <span
                                 className={`inline-block mt-0.5 rounded px-1.5 py-0.2 text-[9px] font-extrabold ${
                                   o.entity_type === 'SUPPLIER'
@@ -1247,7 +1227,7 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Real-time Presence Column */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[140px]">
                           <div
                             className="flex flex-col gap-0.5"
                             title={`Last seen: ${orgAbsoluteTime} (${orgRelativeTime})`}
@@ -1265,12 +1245,12 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Governance */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[140px]">
                           <div className="font-semibold text-foreground">{o.org_type}</div>
                         </td>
 
                         {/* Status */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[130px]">
                           {isBlocked ? (
                             <div>
                               <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 px-2 py-0.5 text-[10px] font-extrabold border border-rose-300 dark:border-rose-800">
@@ -1297,25 +1277,25 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Members */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[100px]">
                           <span className="font-semibold text-foreground">{o.member_count}</span>{' '}
                           <span className="text-[10px] text-muted-foreground">users</span>
                         </td>
 
                         {/* Active RFQs */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[120px]">
                           <span className="font-semibold text-foreground">{o.active_orders_count}</span>{' '}
                           <span className="text-[10px] text-muted-foreground">in flight</span>
                         </td>
 
                         {/* GST */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[140px]">
                           {o.gstin ? (
                             <div>
                               <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">
                                 ✓ GSTIN
                               </span>
-                              <div className="font-mono text-[10px] text-muted-foreground mt-0.5">{o.gstin}</div>
+                              <div className="font-mono text-[10px] text-muted-foreground mt-0.5" title={o.gstin}>{o.gstin}</div>
                             </div>
                           ) : (
                             <span className="text-[10px] text-muted-foreground">Non-registered</span>
@@ -1323,9 +1303,9 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Contact */}
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[160px]">
                           {o.contact_email && (
-                            <div className="font-mono text-[10px] text-muted-foreground truncate max-w-[130px]">
+                            <div className="font-mono text-[10px] text-muted-foreground truncate max-w-[130px]" title={o.contact_email}>
                               {o.contact_email}
                             </div>
                           )}
@@ -1335,13 +1315,13 @@ export function AdminUsersActivityPanel() {
                         </td>
 
                         {/* Actions */}
-                        <td className="p-2.5 text-right">
-                          <div className="flex items-center justify-end gap-1">
+                        <td className="p-3 min-w-[150px] text-right">
+                          <div className="flex items-center justify-end gap-1.5">
                             {isBlocked ? (
                               <button
                                 type="button"
                                 onClick={() => void handleConfirmUnblock('ORGANIZATIONS', [o.id])}
-                                className="rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-0.5 text-[11px] transition shadow-2xs"
+                                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs min-h-[36px] mobile-touch-target"
                                 title="Unblock organization"
                               >
                                 Unblock
@@ -1350,7 +1330,7 @@ export function AdminUsersActivityPanel() {
                               <button
                                 type="button"
                                 onClick={() => openBlockModal('ORGANIZATIONS', [o.id], [o.name])}
-                                className="rounded border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2 py-0.5 text-[11px] transition"
+                                className="rounded-lg border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
                                 title="Suspend organization"
                               >
                                 Suspend
@@ -1360,7 +1340,7 @@ export function AdminUsersActivityPanel() {
                             <button
                               type="button"
                               onClick={() => openDeleteModal('ORGANIZATIONS', [o.id], [o.name])}
-                              className="rounded border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2 py-0.5 text-[11px] transition"
+                              className="rounded-lg border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
                               title="Delete organization"
                             >
                               Delete
@@ -1376,21 +1356,19 @@ export function AdminUsersActivityPanel() {
           </div>
         )}
 
-        {/* ====================================================
-            SUBTAB 3: REGISTRATIONS APPROVAL QUEUE TABLE
-        ==================================================== */}
+        {/* SUBTAB 3: REGISTRATIONS APPROVAL QUEUE TABLE */}
         {subTab === 'REGISTRATIONS' && (
-          <div className="flex-1 min-h-0 overflow-y-auto zero-scroll-pane">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-semibold text-muted-foreground shadow-2xs">
+          <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 zero-scroll-pane">
+            <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
+              <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
                 <tr>
-                  <th className="p-2.5">Reference &amp; Side</th>
-                  <th className="p-2.5">Business &amp; Organization</th>
-                  <th className="p-2.5">Applicant &amp; Role</th>
-                  <th className="p-2.5">Contact Details</th>
-                  <th className="p-2.5">Status</th>
-                  <th className="p-2.5">Submitted</th>
-                  <th className="p-2.5 text-right">Actions</th>
+                  <th className="p-3 min-w-[140px]">Reference &amp; Side</th>
+                  <th className="p-3 min-w-[220px]">Business &amp; Organization</th>
+                  <th className="p-3 min-w-[160px]">Applicant &amp; Role</th>
+                  <th className="p-3 min-w-[180px]">Contact Details</th>
+                  <th className="p-3 min-w-[110px]">Status</th>
+                  <th className="p-3 min-w-[120px]">Submitted</th>
+                  <th className="p-3 min-w-[180px] text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y text-foreground">
@@ -1413,7 +1391,7 @@ export function AdminUsersActivityPanel() {
 
                     return (
                       <tr key={r.id} className="hover:bg-muted/20 transition">
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[140px]">
                           <div className="font-mono font-bold text-foreground">{r.reference}</div>
                           <span
                             className={`inline-block mt-0.5 rounded-full px-2 py-0.2 text-[9px] font-bold ${
@@ -1426,8 +1404,8 @@ export function AdminUsersActivityPanel() {
                           </span>
                         </td>
 
-                        <td className="p-2.5">
-                          <div className="font-bold text-foreground">{r.business_name}</div>
+                        <td className="p-3 min-w-[220px]">
+                          <div className="font-bold text-foreground" title={r.business_name}>{r.business_name}</div>
                           <div className="text-[10px] text-muted-foreground">
                             {r.buyer_type ||
                               (r.category_codes?.length
@@ -1445,22 +1423,22 @@ export function AdminUsersActivityPanel() {
                           )}
                         </td>
 
-                        <td className="p-2.5">
-                          <div className="font-semibold text-foreground">{r.contact_full_name}</div>
+                        <td className="p-3 min-w-[160px]">
+                          <div className="font-semibold text-foreground" title={r.contact_full_name}>{r.contact_full_name}</div>
                           <div className="text-[10px] text-muted-foreground">
                             {r.role_label || r.role_code || r.designation || 'Prime Member'}
                           </div>
                         </td>
 
-                        <td className="p-2.5">
-                          <div className="font-mono text-[10px] text-foreground">{r.email}</div>
+                        <td className="p-3 min-w-[180px]">
+                          <div className="font-mono text-[10px] text-foreground" title={r.email}>{r.email}</div>
                           <div className="text-[10px] text-muted-foreground">{r.phone}</div>
                           <div className="text-[9px] text-muted-foreground">
                             Via: <span className="font-semibold">{r.verification_channel}</span>
                           </div>
                         </td>
 
-                        <td className="p-2.5">
+                        <td className="p-3 min-w-[110px]">
                           <span
                             className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
                               r.status === 'ONBOARDED'
@@ -1474,7 +1452,7 @@ export function AdminUsersActivityPanel() {
                           </span>
                         </td>
 
-                        <td className="p-2.5 text-muted-foreground text-[10px] whitespace-nowrap">
+                        <td className="p-3 min-w-[120px] text-muted-foreground text-[10px] whitespace-nowrap">
                           {new Date(r.created_at).toLocaleDateString('en-IN', {
                             month: 'short',
                             day: 'numeric',
@@ -1482,28 +1460,28 @@ export function AdminUsersActivityPanel() {
                           })}
                         </td>
 
-                        <td className="p-2.5 text-right">
+                        <td className="p-3 min-w-[180px] text-right">
                           {isPending ? (
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <button
-                          type="button"
-                          onClick={() => void handleReview(r, 'APPROVE')}
-                          disabled={isBusy}
-                          className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1 shadow-2xs min-h-[44px] mobile-touch-target"
-                          title="Approve applicant, provision tenant & auth user"
-                        >
-                          <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve & Onboard'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleReview(r, 'REJECT')}
-                          disabled={isBusy}
-                          className="rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target"
-                          title="Reject registration"
-                        >
-                          ✕
-                        </button>
-                      </div>
+                            <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void handleReview(r, 'APPROVE')}
+                                disabled={isBusy}
+                                className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1 shadow-2xs min-h-[44px] mobile-touch-target"
+                                title="Approve applicant, provision tenant & auth user"
+                              >
+                                <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleReview(r, 'REJECT')}
+                                disabled={isBusy}
+                                className="rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target"
+                                title="Reject registration"
+                              >
+                                ✕
+                              </button>
+                            </div>
                           ) : (
                             <span className="text-[10px] text-muted-foreground font-semibold">
                               {r.status === 'ONBOARDED' ? '✓ Activated' : 'Closed'}
@@ -1520,9 +1498,7 @@ export function AdminUsersActivityPanel() {
         )}
       </div>
 
-      {/* ====================================================
-          MODAL 1: BLOCK ACCOUNT CONFIRMATION MODAL
-      ==================================================== */}
+      {/* MODAL 1: BLOCK ACCOUNT CONFIRMATION MODAL */}
       {blockModalTarget && (
         <div
           role="dialog"
@@ -1571,7 +1547,7 @@ export function AdminUsersActivityPanel() {
                 <select
                   value={selectedBlockReason}
                   onChange={(e) => setSelectedBlockReason(e.target.value as AccountBlockReason)}
-                  className="w-full rounded-md border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
+                  className="w-full rounded-md border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium min-h-[44px]"
                 >
                   {BLOCK_REASONS.map((r) => (
                     <option key={r} value={r}>
@@ -1613,7 +1589,7 @@ export function AdminUsersActivityPanel() {
                 type="button"
                 onClick={() => setBlockModalTarget(null)}
                 disabled={isBulkExecuting}
-                className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px]"
               >
                 Cancel
               </button>
@@ -1624,7 +1600,7 @@ export function AdminUsersActivityPanel() {
                   isBulkExecuting ||
                   (selectedBlockReason === 'Other' && !customBlockReason.trim())
                 }
-                className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 flex items-center gap-1.5"
+                className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 flex items-center gap-1.5 min-h-[44px]"
               >
                 {isBulkExecuting ? 'Executing Block…' : 'Confirm & Block Account'}
               </button>
@@ -1633,9 +1609,7 @@ export function AdminUsersActivityPanel() {
         </div>
       )}
 
-      {/* ====================================================
-          MODAL 2: TWO-STEP DESTRUCTIVE DELETE CONFIRMATION
-      ==================================================== */}
+      {/* MODAL 2: TWO-STEP DESTRUCTIVE DELETE CONFIRMATION */}
       {deleteModalTarget && (
         <div
           role="dialog"
@@ -1723,7 +1697,7 @@ export function AdminUsersActivityPanel() {
                     value={deleteConfirmationText}
                     onChange={(e) => setDeleteConfirmationText(e.target.value)}
                     placeholder="Type DELETE to confirm"
-                    className="w-full rounded-md border border-rose-400 bg-background px-3 py-2 text-xs font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    className="w-full rounded-md border border-rose-400 bg-background px-3 py-2 text-xs font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-rose-500 min-h-[44px]"
                     autoFocus
                   />
                 </div>
@@ -1736,7 +1710,7 @@ export function AdminUsersActivityPanel() {
                   type="button"
                   onClick={() => setDeleteStep(1)}
                   disabled={isBulkExecuting}
-                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px]"
                 >
                   ← Back to Step 1
                 </button>
@@ -1744,7 +1718,7 @@ export function AdminUsersActivityPanel() {
                 <button
                   type="button"
                   onClick={() => setDeleteModalTarget(null)}
-                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px]"
                 >
                   Cancel
                 </button>
@@ -1754,7 +1728,7 @@ export function AdminUsersActivityPanel() {
                 <button
                   type="button"
                   onClick={() => setDeleteStep(2)}
-                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-1.5 text-xs transition shadow-2xs flex items-center gap-1.5"
+                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-1.5 text-xs transition shadow-2xs flex items-center gap-1.5 min-h-[44px]"
                 >
                   Proceed to Step 2 →
                 </button>
@@ -1763,7 +1737,7 @@ export function AdminUsersActivityPanel() {
                   type="button"
                   onClick={() => void handleConfirmDelete()}
                   disabled={isBulkExecuting || deleteConfirmationText !== 'DELETE'}
-                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-extrabold px-4 py-1.5 text-xs transition shadow-2xs disabled:opacity-40 flex items-center gap-1.5"
+                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-extrabold px-4 py-1.5 text-xs transition shadow-2xs disabled:opacity-40 flex items-center gap-1.5 min-h-[44px]"
                 >
                   {isBulkExecuting ? 'Deleting…' : 'Permanently Execute Deletion'}
                 </button>

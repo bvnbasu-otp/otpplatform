@@ -219,6 +219,8 @@ export function App() {
             at /dashboard and the header link follows whoever is signed in.
           */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/how-it-works" element={<Navigate to="/faqs#workflow" replace />} />
+          <Route path="/howitworks" element={<Navigate to="/faqs#workflow" replace />} />
           <Route path="/showcase" element={<MobileShowcasePage />} />
           <Route path="/mobile" element={<MobileShowcasePage />} />
           <Route path="/mobile-showcase" element={<MobileShowcasePage />} />

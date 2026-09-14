@@ -3,19 +3,18 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { supabase } from '@/lib/supabase';
 import { OtpLogo } from '@/components/ui/OtpLogo';
-import { DemoPersonaSwitcher } from '@/components/demo/DemoPersonaSwitcher';
+import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 
 interface SiteLink {
   label: string;
   to: string;
 }
 
-const PRIMARY_LINKS: SiteLink[] = [
-  { label: '📱 Mobile Showcase', to: '/showcase' },
-  { label: 'How it works', to: '/#how-it-works' },
+const PRE_LOGIN_NAV_LINKS: SiteLink[] = [
+  { label: 'Home', to: '/' },
   { label: 'Pricing', to: '/pricing' },
+  { label: 'About Us', to: '/about-us' },
   { label: 'FAQs', to: '/faqs' },
-  { label: 'About us', to: '/about-us' },
 ];
 
 export function SiteHeader() {
@@ -50,10 +49,10 @@ export function SiteHeader() {
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : 'U';
 
   return (
-    <header className="shrink-0 z-40 border-b bg-card max-h-[48px] h-12">
-      <div className="mx-auto flex w-full h-full items-center justify-between gap-2 px-3">
-        {/* Brand Logo */}
-        <div className="flex items-center gap-2 shrink-0">
+    <header className="shrink-0 z-40 border-b bg-card max-h-[48px] h-12 select-none">
+      <div className="mx-auto flex w-full h-full items-center justify-between gap-2 px-3 max-w-7xl">
+        {/* Left: Brand Logo & Desktop Nav Links */}
+        <div className="flex items-center gap-3 shrink-0">
           <Link
             to="/"
             className="flex items-center gap-1.5 hover:opacity-90 transition"
@@ -64,6 +63,64 @@ export function SiteHeader() {
           >
             <OtpLogo size={24} />
           </Link>
+
+          {/* Desktop Navigation Links (Strictly Home, Pricing, +, About Us, FAQs) */}
+          <nav className="hidden md:flex items-center gap-1 text-xs" aria-label="Desktop Navigation">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `px-2.5 py-1 rounded-lg font-semibold transition ${
+                  isActive ? 'bg-muted text-foreground font-bold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`
+              }
+            >
+              Home
+            </NavLink>
+            <NavLink
+              to="/pricing"
+              className={({ isActive }) =>
+                `px-2.5 py-1 rounded-lg font-semibold transition ${
+                  isActive ? 'bg-muted text-foreground font-bold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`
+              }
+            >
+              Pricing
+            </NavLink>
+            <NavLink
+              to="/requirements/new"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold hover:bg-primary/20 transition"
+              title="Create Requirement"
+            >
+              <span>+</span>
+              <span>Post Need</span>
+            </NavLink>
+            <NavLink
+              to="/about-us"
+              className={({ isActive }) =>
+                `px-2.5 py-1 rounded-lg font-semibold transition ${
+                  isActive ? 'bg-muted text-foreground font-bold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`
+              }
+            >
+              About Us
+            </NavLink>
+            <NavLink
+              to="/faqs"
+              className={({ isActive }) =>
+                `px-2.5 py-1 rounded-lg font-semibold transition ${
+                  isActive ? 'bg-muted text-foreground font-bold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`
+              }
+            >
+              FAQs
+            </NavLink>
+          </nav>
+        </div>
+
+        {/* Center/Right: Role Switcher Toggle */}
+        <div className="hidden sm:flex items-center">
+          <RoleModeToggle size="sm" />
         </div>
 
         {/* Right Action Cluster: Clean & Minimal (Height ≤ 48px) */}
@@ -208,9 +265,10 @@ export function SiteHeader() {
             className="relative border-b bg-card shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100%-48px)] overflow-y-auto"
           >
             <div className="mx-auto w-full px-4 py-3 space-y-3 text-xs">
-              {/* Quick Persona switcher inside drawer */}
+              {/* Role mode switcher inside drawer */}
               <div className="flex items-center justify-between pb-2 border-b">
-                <DemoPersonaSwitcher />
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Mode Switcher</span>
+                <RoleModeToggle size="sm" />
               </div>
 
               {user ? (
@@ -238,16 +296,16 @@ export function SiteHeader() {
                   <Link
                     to="/requirements/new"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-center gap-1.5 rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground shadow-2xs hover:bg-action-hover transition text-xs"
+                    className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition text-xs"
                     data-testid="mobile-create-requirement"
                   >
-                    <span>✨</span>
-                    <span>Create requirement</span>
+                    <span>+</span>
+                    <span>Create Requirement</span>
                   </Link>
                 </div>
               )}
 
-              {/* Primary Navigation Links */}
+              {/* Primary Navigation Links: Home, Pricing, +, About Us, FAQs */}
               <div className="space-y-1">
                 <NavLink
                   to="/"
@@ -261,20 +319,39 @@ export function SiteHeader() {
                 >
                   Home
                 </NavLink>
-                {PRIMARY_LINKS.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center rounded-lg px-3 py-2 transition font-medium ${
-                        isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                      }`
-                    }
-                  >
-                    {link.label}
-                  </NavLink>
-                ))}
+                <NavLink
+                  to="/pricing"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center rounded-lg px-3 py-2 transition font-medium ${
+                      isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                    }`
+                  }
+                >
+                  Pricing
+                </NavLink>
+                <NavLink
+                  to="/about-us"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center rounded-lg px-3 py-2 transition font-medium ${
+                      isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                    }`
+                  }
+                >
+                  About Us
+                </NavLink>
+                <NavLink
+                  to="/faqs"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center rounded-lg px-3 py-2 transition font-medium ${
+                      isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                    }`
+                  }
+                >
+                  FAQs
+                </NavLink>
                 {user && (
                   <NavLink
                     to="/dashboard"
