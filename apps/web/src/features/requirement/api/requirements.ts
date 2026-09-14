@@ -23,16 +23,23 @@ export async function fetchUserOrganization(): Promise<
       .maybeSingle();
 
     if (!activeError && activeData?.organizations) {
-      const org = activeData.organizations as unknown as { id: string; name: string; org_type: string };
-      return {
-        ok: true,
-        org: {
-          organizationId: org.id,
-          organizationName: org.name,
-          orgType: org.org_type,
-          role: activeData.role,
-        },
-      };
+      const rawOrg = activeData.organizations;
+      const org = (Array.isArray(rawOrg) ? rawOrg[0] : rawOrg) as unknown as {
+        id: string;
+        name: string;
+        org_type: string;
+      } | undefined;
+      if (org?.id) {
+        return {
+          ok: true,
+          org: {
+            organizationId: org.id,
+            organizationName: org.name,
+            orgType: org.org_type,
+            role: activeData.role,
+          },
+        };
+      }
     }
   }
 
@@ -46,7 +53,14 @@ export async function fetchUserOrganization(): Promise<
   if (error) return { ok: false, error: error.message };
   if (!data?.organizations) return { ok: false, error: 'No buyer organization found' };
 
-  const org = data.organizations as unknown as { id: string; name: string; org_type: string };
+  const rawOrg = data.organizations;
+  const org = (Array.isArray(rawOrg) ? rawOrg[0] : rawOrg) as unknown as {
+    id: string;
+    name: string;
+    org_type: string;
+  } | undefined;
+  if (!org?.id) return { ok: false, error: 'No buyer organization found' };
+
   return {
     ok: true,
     org: {
@@ -146,10 +160,18 @@ export async function fetchOrganizationRequirements(organizationId: string): Pro
           }[];
         }
       | undefined;
-    const poList = rfq && Array.isArray(rfq.purchase_orders) ? rfq.purchase_orders : [];
-    const po = poList[0];
-    const woList = po && Array.isArray(po.work_orders) ? po.work_orders : [];
-    const wo = woList[0];
+    const poList = rfq && Array.isArray(rfq.purchase_orders)
+      ? rfq.purchase_orders
+      : rfq?.purchase_orders
+      ? [rfq.purchase_orders]
+      : [];
+    const po = poList[0] as any;
+    const woList = po && Array.isArray(po.work_orders)
+      ? po.work_orders
+      : po?.work_orders
+      ? [po.work_orders]
+      : [];
+    const wo = woList[0] as any;
 
     const is100PercentDone =
       wo?.buyer_accepted_at != null ||
