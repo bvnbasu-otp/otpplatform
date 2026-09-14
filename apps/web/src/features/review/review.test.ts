@@ -6,7 +6,11 @@ import { fetchPerformanceRecords } from '@/features/performance/api/fetch-perfor
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
+    from: vi.fn(),
     rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
+    },
   },
 }));
 

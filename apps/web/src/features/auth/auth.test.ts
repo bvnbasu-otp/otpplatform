@@ -14,6 +14,7 @@ vi.mock('@/lib/supabase', () => {
         getUser: vi.fn(),
       },
       from: vi.fn(),
+      rpc: vi.fn(),
     },
   };
 });

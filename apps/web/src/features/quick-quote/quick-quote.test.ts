@@ -10,7 +10,11 @@ import { supabase } from '@/lib/supabase';
 vi.mock('@/lib/supabase', () => {
   return {
     supabase: {
+      from: vi.fn(),
       rpc: vi.fn(),
+      auth: {
+        getUser: vi.fn(),
+      },
     },
   };
 });
