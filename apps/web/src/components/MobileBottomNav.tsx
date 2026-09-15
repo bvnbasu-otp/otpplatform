@@ -6,11 +6,11 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ChangePasswordModal } from '@/features/roles/components/ChangePasswordModal';
 import { ProfileEditModal } from '@/features/profile';
 import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api/roles';
-import { ThemeBottomSheet } from '@/features/theme';
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
 import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
+import { AdminQuickActionsSheet } from '@/features/navigation';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -34,9 +34,9 @@ export function MobileBottomNav() {
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
   const [isQuickRegisterOpen, setIsQuickRegisterOpen] = useState(false);
   const [isBuyerIntakeModalOpen, setIsBuyerIntakeModalOpen] = useState(false);
+  const [isAdminQuickActionsOpen, setIsAdminQuickActionsOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showThemeSheet, setShowThemeSheet] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [pendingOrg, setPendingOrg] = useState<string | null>(null);
 
@@ -86,14 +86,14 @@ export function MobileBottomNav() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {isAuthenticated && !isPublicRoute ? (
-          /* AUTHENTICATED WORKSPACE BOTTOM TABS: Home, Orders, +, Audit/Caps, Profile */
+          /* CANONICAL 5-TAB AUTHENTICATED WORKSPACE BOTTOM NAVIGATION: Home | Orders | + | Audit | Profile */
           <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-2">
             {/* TAB 1: HOME */}
             <NavLink
               to={isAdmin ? '/admin' : '/dashboard'}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
-                  isActive || pathname === '/dashboard'
+                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
+                  isActive || pathname === '/dashboard' || (isAdmin && pathname === '/admin')
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
                 }`
@@ -103,12 +103,12 @@ export function MobileBottomNav() {
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Home</span>
             </NavLink>
 
-            {/* TAB 2: ORDERS / MY WORK */}
+            {/* TAB 2: ORDERS */}
             <NavLink
               to={isSupplier ? '/supplier/purchase-orders' : '/purchase-orders'}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
-                  isActive
+                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
+                  isActive || pathname.startsWith('/purchase-orders') || pathname.startsWith('/supplier/purchase-orders') || pathname.startsWith('/supplier/work-orders')
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
                 }`
@@ -118,13 +118,25 @@ export function MobileBottomNav() {
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Orders</span>
             </NavLink>
 
-            {/* TAB 3: CENTER ACTION (Elevated Global CTA - Context-Aware for Buyer vs Supplier) */}
+            {/* TAB 3: CENTER ACTION '+' (Context-Aware for Buyer vs Supplier vs Admin) */}
             <div className="flex flex-col items-center justify-center flex-1 shrink-0">
-              {isSupplier ? (
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => setIsAdminQuickActionsOpen(true)}
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 text-white shadow-lg shadow-purple-600/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-purple-700 min-h-[48px] min-w-[48px]"
+                  title="Admin Quick Operations"
+                  aria-label="Admin Quick Operations"
+                  data-testid="bottom-nav-admin-quick-actions"
+                >
+                  <span className="text-2xl font-bold leading-none select-none">+</span>
+                  <span className="sr-only">Admin Quick Operations</span>
+                </button>
+              ) : isSupplier ? (
                 <button
                   type="button"
                   onClick={() => setIsCapabilityModalOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
                   title="Maximize Business Reach — Update Capabilities"
                   aria-label="Maximize Business Reach — Update Capabilities"
                   data-testid="bottom-nav-supplier-add-capabilities"
@@ -136,7 +148,7 @@ export function MobileBottomNav() {
                 <button
                   type="button"
                   onClick={() => setIsBuyerIntakeModalOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
                   title="Post a new requirement / broadcast RFQ"
                   aria-label="Post a new requirement / broadcast RFQ"
                   data-testid="bottom-nav-buyer-create-requirement"
@@ -147,33 +159,34 @@ export function MobileBottomNav() {
               )}
             </div>
 
-            {/* TAB 4: AUDIT / QUOTES */}
+            {/* TAB 4: AUDIT (Canonical entry for Buyer, Supplier, Admin) */}
             <NavLink
-              to={isSupplier ? '/supplier/capabilities' : '/audit'}
+              to="/audit"
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
-                  isActive
+                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
+                  isActive || pathname.startsWith('/audit')
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
                 }`
               }
             >
-              <span className="text-lg leading-none">{isSupplier ? '🏷️' : '🛡️'}</span>
+              <span className="text-lg leading-none">🛡️</span>
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">
-                {isSupplier ? 'Quotes' : 'Audit'}
+                Audit
               </span>
             </NavLink>
 
-            {/* TAB 5: PROFILE / ACCOUNT DRAWER */}
-            <button
-              type="button"
-              onClick={() => setIsAccountSheetOpen(true)}
+            {/* TAB 5: PROFILE (Canonical entry for Buyer, Supplier, Admin) */}
+            <NavLink
+              to="/profile"
               data-testid="bottom-nav-profile"
-              className={`flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
-                isAccountSheetOpen
-                  ? 'text-primary font-bold'
-                  : 'text-muted-foreground hover:text-foreground font-medium'
-              }`}
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
+                  isActive || pathname.startsWith('/profile')
+                    ? 'text-primary font-bold'
+                    : 'text-muted-foreground hover:text-foreground font-medium'
+                }`
+              }
             >
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[9px] font-black text-primary overflow-hidden shadow-2xs border border-primary/20">
                 {context.avatarUrl ? (
@@ -185,7 +198,7 @@ export function MobileBottomNav() {
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold truncate max-w-[48px]">
                 Profile
               </span>
-            </button>
+            </NavLink>
           </div>
         ) : (
           /* PUBLIC & PRE-LOGIN STRICT 5 TABS: Home, Pricing, +, About Us, FAQs */
@@ -195,7 +208,7 @@ export function MobileBottomNav() {
               to="/"
               end
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
+                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
                   isActive || pathname === '/'
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
@@ -210,7 +223,7 @@ export function MobileBottomNav() {
             <NavLink
               to="/pricing"
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
+                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
                   isActive
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
@@ -227,7 +240,7 @@ export function MobileBottomNav() {
                 <button
                   type="button"
                   onClick={() => setIsCapabilityModalOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
                   title="Maximize Business Reach — Update Capabilities"
                   aria-label="Maximize Business Reach — Update Capabilities"
                   data-testid="bottom-nav-supplier-add-capabilities"
@@ -239,7 +252,7 @@ export function MobileBottomNav() {
                 <button
                   type="button"
                   onClick={() => setIsBuyerIntakeModalOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
                   title="Post a new requirement / broadcast RFQ"
                   aria-label="Post a new requirement / broadcast RFQ"
                   data-testid="bottom-nav-buyer-create-requirement"
@@ -251,7 +264,7 @@ export function MobileBottomNav() {
                 <button
                   type="button"
                   onClick={() => setIsQuickRegisterOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
                   title="Get Started — Quick Registration"
                   aria-label="Get Started — Quick Registration"
                   data-testid="bottom-nav-prelogin-create-requirement"
@@ -266,7 +279,7 @@ export function MobileBottomNav() {
             <NavLink
               to="/about-us"
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
+                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
                   isActive
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
@@ -281,7 +294,7 @@ export function MobileBottomNav() {
             <NavLink
               to="/faqs"
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target ${
+                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
                   isActive
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
@@ -295,7 +308,7 @@ export function MobileBottomNav() {
         )}
       </nav>
 
-      {/* Bottom-Up Slide-Up Account Menu */}
+      {/* Slide-Up Account Menu (Optional Quick Drawer) */}
       <BottomSheet
         isOpen={isAccountSheetOpen}
         onClose={() => setIsAccountSheetOpen(false)}
@@ -358,7 +371,7 @@ export function MobileBottomNav() {
                 setIsAccountSheetOpen(false);
                 setShowProfileModal(true);
               }}
-              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition-all active:scale-95 text-center mobile-touch-target"
+              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition-all active:scale-95 text-center min-h-[44px] mobile-touch-target"
             >
               <span>👤</span> Edit Profile
             </button>
@@ -368,7 +381,7 @@ export function MobileBottomNav() {
                 setIsAccountSheetOpen(false);
                 setShowChangePassword(true);
               }}
-              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition-all active:scale-95 text-center mobile-touch-target"
+              className="flex items-center justify-center gap-1.5 rounded-xl border bg-card p-2.5 font-bold text-foreground hover:bg-muted transition-all active:scale-95 text-center min-h-[44px] mobile-touch-target"
             >
               <span>🔐</span> Password
             </button>
@@ -379,7 +392,7 @@ export function MobileBottomNav() {
             <Link
               to="/admin"
               onClick={() => setIsAccountSheetOpen(false)}
-              className="flex w-full items-center justify-between rounded-xl bg-purple-600 px-3.5 py-2.5 font-bold text-white shadow-xs hover:bg-purple-700 transition"
+              className="flex w-full items-center justify-between rounded-xl bg-purple-600 px-3.5 py-2.5 font-bold text-white shadow-xs hover:bg-purple-700 transition min-h-[44px] mobile-touch-target"
             >
               <span className="flex items-center gap-2">
                 <span>⚡</span> Admin Management Console
@@ -403,7 +416,7 @@ export function MobileBottomNav() {
                         type="button"
                         onClick={() => void chooseOrg(o.id)}
                         disabled={pendingOrg !== null}
-                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition ${
+                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition min-h-[44px] mobile-touch-target ${
                           active ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
                         }`}
                       >
@@ -437,7 +450,7 @@ export function MobileBottomNav() {
                         type="button"
                         onClick={() => void chooseRole(r.code)}
                         disabled={pending !== null}
-                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition ${
+                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition min-h-[44px] mobile-touch-target ${
                           active ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
                         }`}
                       >
@@ -451,37 +464,15 @@ export function MobileBottomNav() {
             </div>
           )}
 
-          {/* Utility & Legal Links */}
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 px-1">
-            <Link
-              to="/legal/terms"
-              onClick={() => setIsAccountSheetOpen(false)}
-              className="hover:text-foreground transition underline"
-            >
-              Terms &amp; Privacy
-            </Link>
-            <Link
-              to="/faqs"
-              onClick={() => setIsAccountSheetOpen(false)}
-              className="hover:text-foreground transition underline"
-            >
-              FAQs &amp; Help
-            </Link>
-          </div>
-
-          {/* Theme & Settings Shortcut & Sign Out Row */}
+          {/* Canonical Profile Settings Link & Sign Out Row */}
           <div className="pt-2 border-t flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setIsAccountSheetOpen(false);
-                setShowThemeSheet(true);
-              }}
-              data-testid="bottom-nav-theme-sheet-trigger"
-              className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition active:scale-95 mobile-touch-target"
+            <Link
+              to="/profile?tab=preferences"
+              onClick={() => setIsAccountSheetOpen(false)}
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition active:scale-95 min-h-[44px] mobile-touch-target"
             >
-              <span>🎨</span> Appearance
-            </button>
+              <span>⚙️</span> Preferences
+            </Link>
 
             <button
               type="button"
@@ -490,7 +481,7 @@ export function MobileBottomNav() {
                 void signOut();
               }}
               data-testid="bottom-sheet-sign-out"
-              className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition active:scale-95 mobile-touch-target"
+              className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition active:scale-95 min-h-[44px] mobile-touch-target"
             >
               Sign out
             </button>
@@ -502,6 +493,12 @@ export function MobileBottomNav() {
       <SupplierCapabilityModal
         open={isCapabilityModalOpen}
         onClose={() => setIsCapabilityModalOpen(false)}
+      />
+
+      {/* Super Admin Quick Actions Action Sheet */}
+      <AdminQuickActionsSheet
+        isOpen={isAdminQuickActionsOpen}
+        onClose={() => setIsAdminQuickActionsOpen(false)}
       />
 
       {/* Quick Registration Modal for Unauthenticated Users */}
@@ -524,11 +521,6 @@ export function MobileBottomNav() {
       <ProfileEditModal
         open={showProfileModal}
         onClose={() => setShowProfileModal(false)}
-      />
-
-      <ThemeBottomSheet
-        isOpen={showThemeSheet}
-        onClose={() => setShowThemeSheet(false)}
       />
     </>
   );

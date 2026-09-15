@@ -6,7 +6,6 @@ import { useRoleContext } from '../hooks/use-role-context';
 import { PermissionChips } from './PermissionChips';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { ProfileEditModal } from '@/features/profile';
-import { ThemeBottomSheet, useTheme } from '@/features/theme';
 import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 
 function initials(nameOrEmail: string | undefined): string {
@@ -32,11 +31,9 @@ function initials(nameOrEmail: string | undefined): string {
 export function AccountMenu() {
   const { user, signOut } = useAuth();
   const { context, switchTo, switchOrg } = useRoleContext();
-  const { theme, colorTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showThemeSheet, setShowThemeSheet] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [pendingOrg, setPendingOrg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -306,24 +303,18 @@ export function AccountMenu() {
             </p>
           )}
 
-          {/* Theme & Display Mode Option */}
+          {/* Account Actions & Canonical Settings */}
           <div className="mt-3 pt-2 border-t space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                setShowThemeSheet(true);
-              }}
-              data-testid="account-menu-theme-trigger"
+            <Link
+              to="/profile?tab=preferences"
+              onClick={() => setOpen(false)}
               className="w-full flex items-center justify-between rounded-md px-2 py-1.5 text-xs hover:bg-muted text-left text-foreground transition"
             >
               <span className="flex items-center gap-2">
-                <span>🎨</span> Appearance &amp; Theme
+                <span>⚙️</span> Preferences &amp; Appearance
               </span>
-              <span className="text-[10px] text-muted-foreground font-mono uppercase bg-muted px-1.5 py-0.5 rounded">
-                {theme} · {colorTheme}
-              </span>
-            </button>
+              <span className="text-[10px] text-muted-foreground">➔</span>
+            </Link>
 
             <button
               type="button"
@@ -355,11 +346,6 @@ export function AccountMenu() {
       <ProfileEditModal
         open={showProfileModal}
         onClose={() => setShowProfileModal(false)}
-      />
-
-      <ThemeBottomSheet
-        isOpen={showThemeSheet}
-        onClose={() => setShowThemeSheet(false)}
       />
     </div>
   );

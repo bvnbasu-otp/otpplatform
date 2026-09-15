@@ -9,7 +9,6 @@ import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
 import { SupportHelpButtonModal } from '@/features/support';
-import { ThemeBottomSheet } from '@/features/theme';
 
 export function SiteHeader() {
   const { user } = useAuth();
@@ -20,7 +19,6 @@ export function SiteHeader() {
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
   const [isQuickRegisterOpen, setIsQuickRegisterOpen] = useState(false);
   const [isBuyerIntakeModalOpen, setIsBuyerIntakeModalOpen] = useState(false);
-  const [showThemeSheet, setShowThemeSheet] = useState(false);
   const accountPopoverRef = useRef<HTMLDivElement>(null);
 
   const isSupplier =
@@ -275,21 +273,17 @@ export function SiteHeader() {
               <span>→</span>
             </Link>
 
-            {/* Theme Settings Trigger from Profile Popover */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsAccountPopoverOpen(false);
-                setShowThemeSheet(true);
-              }}
-              data-testid="site-header-theme-trigger"
+            {/* Profile Settings Link */}
+            <Link
+              to="/profile"
+              onClick={() => setIsAccountPopoverOpen(false)}
               className="w-full flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-1.5 font-semibold text-foreground hover:bg-muted transition text-xs"
             >
               <span className="flex items-center gap-1.5">
-                <span>🎨</span> Appearance Theme
+                <span>👤</span> Profile &amp; Settings
               </span>
               <span>➔</span>
-            </button>
+            </Link>
 
             <button
               type="button"
@@ -463,18 +457,15 @@ export function SiteHeader() {
                 )}
               </div>
 
-              {/* Drawer Theme & Support Quick Actions */}
+              {/* Drawer Support Quick Action */}
               <div className="pt-2 border-t flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    setShowThemeSheet(true);
-                  }}
+                <Link
+                  to="/profile"
+                  onClick={() => setIsMenuOpen(false)}
                   className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 font-semibold text-foreground hover:bg-muted transition text-xs shadow-2xs flex-1 justify-center"
                 >
-                  <span>🎨</span> Appearance
-                </button>
+                  <span>👤</span> Profile
+                </Link>
                 <div className="flex-1">
                   <SupportHelpButtonModal className="w-full" />
                 </div>
@@ -534,12 +525,6 @@ export function SiteHeader() {
       <VoiceTextRequirementIntakeModal
         open={isBuyerIntakeModalOpen}
         onClose={() => setIsBuyerIntakeModalOpen(false)}
-      />
-
-      {/* Theme Bottom Sheet Triggered from SiteHeader Profile Popover */}
-      <ThemeBottomSheet
-        isOpen={showThemeSheet}
-        onClose={() => setShowThemeSheet(false)}
       />
     </header>
   );
