@@ -507,7 +507,6 @@ export function AdminDashboardPage() {
           </div>
         </div>
       ) : (
-      {/* VIEW 2: ACTIVE MODULE VIEW WITH COMPACT ICON & TOOLTIP NAVIGATION */}
         <div className="mt-1 space-y-2">
           {/* Active Navigation & Category Bar */}
           <div className="rounded-2xl border bg-card p-2 shadow-2xs flex flex-col gap-1.5">
