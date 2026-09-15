@@ -298,18 +298,18 @@ export function RfqReviewPublishPage({
             {isQuotingLive ? (
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Link
-                  to={`/rfq/${rfq.id}/market-intelligence`}
+                  to={`/rfq/${rfq.id}/monitoring`}
                   className="min-h-[48px] flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
-                  data-testid="market-intelligence-button"
+                  data-testid="active-rfq-monitoring-button"
                 >
-                  <span>Step 3: Market Intelligence</span>
-                  <span>→</span>
+                  <span>Monitor Live RFQ →</span>
                 </Link>
                 <Link
-                  to={`/rfq/${rfq.id}/clarification`}
+                  to={`/rfq/${rfq.id}/market-intelligence`}
                   className="min-h-[48px] flex-1 sm:flex-initial inline-flex items-center justify-center rounded-xl border bg-muted/40 px-3.5 py-2.5 text-xs font-semibold text-foreground hover:bg-muted transition mobile-touch-target"
+                  data-testid="market-intelligence-button"
                 >
-                  Step 4: Q&amp;A →
+                  Step 3: Intelligence
                 </Link>
               </div>
             ) : (

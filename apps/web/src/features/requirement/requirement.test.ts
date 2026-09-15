@@ -30,9 +30,11 @@ function createSupabaseQueryMock(resolvedResult: { data: any; error: any }) {
 }
 
 describe('Requirement Feature Module Tests', () => {
+  let profileSpy: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
+    profileSpy = vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
       profileId: 'prof-buyer-1',
       email: 'procurement@apex.test',
       fullName: 'Rohan Sharma',
@@ -41,7 +43,7 @@ describe('Requirement Feature Module Tests', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    profileSpy?.mockRestore();
   });
 
   describe('fetchUserOrganization', () => {

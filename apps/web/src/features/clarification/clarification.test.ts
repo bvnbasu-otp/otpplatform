@@ -22,9 +22,11 @@ vi.mock('@/lib/supabase', () => {
 });
 
 describe('Clarification Feature Module Tests', () => {
+  let profileSpy: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
+    profileSpy = vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
       profileId: 'p-1',
       email: 'buyer@test.com',
       fullName: 'Test Buyer',
@@ -32,7 +34,7 @@ describe('Clarification Feature Module Tests', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    profileSpy?.mockRestore();
   });
 
   it('fetches and maps masked clarification messages for buyer correctly', async () => {

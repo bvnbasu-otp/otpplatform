@@ -19,11 +19,15 @@ export type {
 export {
   RfqIdentityProtectedComparisonPage,
   RfqIdentityProtectedComparisonPage as RfqBlindComparisonPage,
+  ActiveRfqMonitoringPage,
 } from './pages';
 export type {
   RfqIdentityProtectedComparisonPageProps,
   RfqIdentityProtectedComparisonPageProps as RfqBlindComparisonPageProps,
 } from './pages';
+
+export * from './types/rfq-monitoring';
+export { fetchActiveRfqMonitoringData } from './api/fetch-active-rfq-monitoring';
 
 export {
   useIdentityProtectedQuotes,

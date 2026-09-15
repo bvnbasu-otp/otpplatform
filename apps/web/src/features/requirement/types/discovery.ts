@@ -12,6 +12,9 @@ export interface MatchedSupplier {
   distanceKm?: number;
   availabilityText: string;
   invitedAt?: string | null;
+  viewedAt?: string | null;
+  declinedAt?: string | null;
+  declineReason?: string | null;
 }
 
 export interface CompactRequirementContext {

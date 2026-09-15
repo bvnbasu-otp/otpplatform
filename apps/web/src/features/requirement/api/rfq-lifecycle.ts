@@ -77,7 +77,7 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
 > {
   const { data, error } = await supabase
     .from('rfq_invitations_manager')
-    .select('invitation_id, rfq_id, anonymous_label, status, match_score, match_reasons, invited_at')
+    .select('invitation_id, rfq_id, anonymous_label, status, match_score, match_reasons, invited_at, viewed_at, declined_at, decline_reason')
     .eq('rfq_id', rfqId)
     .order('match_score', { ascending: false });
 
@@ -128,7 +128,10 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
       isLocal,
       distanceKm: isLocal ? (index === 0 ? 4 : index === 1 ? 8 : 14) : undefined,
       availabilityText: index % 2 === 0 ? 'Available Immediately' : 'Available this week',
-      invitedAt: row.invited_at as string | null,
+      invitedAt: (row.invited_at as string) || null,
+      viewedAt: (row.viewed_at as string) || null,
+      declinedAt: (row.declined_at as string) || null,
+      declineReason: (row.decline_reason as string) || null,
     };
   });
 

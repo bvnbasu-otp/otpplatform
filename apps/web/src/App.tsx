@@ -21,6 +21,7 @@ import { RequirementDetailPage } from '@/features/requirement/pages/RequirementD
 import { RequirementIntakePage } from '@/features/intake';
 import { DiscoverSuppliersPage } from '@/features/requirement/pages/DiscoverSuppliersPage';
 import { RfqReviewPublishPage } from '@/features/requirement/pages/RfqReviewPublishPage';
+import { ActiveRfqMonitoringPage } from '@/features/rfq';
 import { MarketIntelligenceStepPage } from '@/features/procurement-os';
 import { RfqClarificationPage } from '@/features/clarification';
 import { DemoWalkthroughPanel } from '@/features/demo/DemoWalkthroughPanel';
@@ -185,6 +186,12 @@ function RfqReviewRoute() {
   return <RfqReviewPublishPage requirementId={requirementId} rfqId={rfqId} />;
 }
 
+function ActiveRfqMonitoringRoute() {
+  const { requirementId, rfqId } = useParams<{ requirementId?: string; rfqId?: string }>();
+  if (!requirementId && !rfqId) return <Navigate to="/dashboard" replace />;
+  return <ActiveRfqMonitoringPage requirementId={requirementId} rfqId={rfqId} />;
+}
+
 function RequirementRoute() {
   const { requirementId } = useParams<{ requirementId: string }>();
   if (!requirementId) return <Navigate to="/dashboard" replace />;
@@ -297,12 +304,28 @@ export function App() {
               element={<RfqReviewRoute />}
             />
             <Route
+              path="/requirements/:requirementId/monitoring"
+              element={<ActiveRfqMonitoringRoute />}
+            />
+            <Route
+              path="/requirements/:requirementId/live"
+              element={<ActiveRfqMonitoringRoute />}
+            />
+            <Route
               path="/rfq/:rfqId/publish"
               element={<RfqReviewRoute />}
             />
             <Route
               path="/rfq/:rfqId/review"
               element={<RfqReviewRoute />}
+            />
+            <Route
+              path="/rfq/:rfqId/monitoring"
+              element={<ActiveRfqMonitoringRoute />}
+            />
+            <Route
+              path="/rfq/:rfqId/live"
+              element={<ActiveRfqMonitoringRoute />}
             />
             <Route
               path="/requirements/:requirementId/market-intelligence"
@@ -324,8 +347,8 @@ export function App() {
             <Route path="/rfq/:rfqId/award" element={<AwardRoute />} />
             <Route path="/rfq/:rfqId/reveal" element={<RevealRoute />} />
             {/* Route Aliases & Redirects for notification links & deep links */}
-            <Route path="/rfq/:rfqId" element={<RfqIdentityProtectedComparisonRoute />} />
-            <Route path="/rfqs/:rfqId" element={<RfqIdentityProtectedComparisonRoute />} />
+            <Route path="/rfq/:rfqId" element={<ActiveRfqMonitoringRoute />} />
+            <Route path="/rfqs/:rfqId" element={<ActiveRfqMonitoringRoute />} />
             <Route path="/governance/evaluations/:rfqId/vote" element={<CommitteeVoteRoute />} />
             <Route path="/governance/evaluations/:rfqId" element={<CommitteeVoteRoute />} />
             <Route path="/supplier/rfq/:rfqId" element={<SupplierRfqRoute />} />

@@ -66,7 +66,6 @@ describe('Supplier Capability Modal & Radar Matching Engine', () => {
         }
       },
     };
-    vi.restoreAllMocks();
   });
 
   describe('1. Preset Taxonomies & Defaults', () => {
