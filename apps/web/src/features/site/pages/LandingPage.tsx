@@ -252,6 +252,23 @@ function HeroQuoteComparisonVisual() {
 // =============================================================================
 // SECTION 2: HOW OTP WORKS
 // =============================================================================
+const CANONICAL_LIFECYCLE_STAGES = [
+  'Requirement',
+  'Discovery',
+  'RFQ',
+  'Identity-Protected Evaluation',
+  'Market Intelligence',
+  'Committee Vote',
+  'Award',
+  'Reveal',
+  'PO',
+  'Work Order',
+  'Invoice',
+  'Payment',
+  'Performance',
+  'Audit',
+] as const;
+
 function HowItWorksSection() {
   const steps = [
     {
@@ -302,6 +319,29 @@ function HowItWorksSection() {
           <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
             Six simple steps from requirement to completed work order.
           </p>
+        </div>
+
+        {/* Canonical 14-Stage Governed Lifecycle Strip */}
+        <div className="mt-6 rounded-2xl border bg-card/60 p-3.5 sm:p-4 shadow-2xs">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-action">
+              Canonical Procurement Lifecycle
+            </span>
+            <span className="text-[10px] text-muted-foreground font-mono">14 Governed Stages</span>
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] font-medium">
+            {CANONICAL_LIFECYCLE_STAGES.map((stage, idx) => (
+              <span key={stage} className="flex items-center gap-1.5 shrink-0">
+                <span className="shrink-0 rounded-lg border bg-muted/40 px-2.5 py-1 text-foreground shadow-2xs whitespace-nowrap">
+                  <span className="text-muted-foreground font-mono text-[9px] mr-1">{(idx + 1).toString().padStart(2, '0')}</span>
+                  {stage}
+                </span>
+                {idx < CANONICAL_LIFECYCLE_STAGES.length - 1 && (
+                  <span className="text-muted-foreground/50 shrink-0">→</span>
+                )}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* 6-Step Flow (Responsive Vertical on Mobile, Grid on Desktop) */}
@@ -426,7 +466,7 @@ function BuyersAndSuppliersSection() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Quote competitively in 15 seconds with zero sales overhead</span>
+                  <span>Quote competitively within 30 minutes with zero sales overhead</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
@@ -650,7 +690,7 @@ function FaqSection() {
     },
     {
       q: 'How do suppliers participate?',
-      a: 'Verified suppliers receive relevant regional RFQs via WhatsApp or email, review technical requirements, and submit competitive quotes in under 15 seconds.',
+      a: 'Verified suppliers receive relevant regional RFQs via WhatsApp or email, review technical requirements, and submit competitive quotes within 30 minutes.',
     },
     {
       q: 'How much does OTP cost?',

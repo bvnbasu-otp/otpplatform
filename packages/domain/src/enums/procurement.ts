@@ -165,5 +165,33 @@ export const DisputeStatus = {
 export type DisputeStatus =
   (typeof DisputeStatus)[keyof typeof DisputeStatus];
 
+/**
+ * Canonical 14-Stage Procurement Lifecycle
+ *
+ * Sequence:
+ * Requirement -> Discovery -> RFQ -> Identity-Protected Evaluation ->
+ * Market Intelligence -> Committee Vote -> Award -> Reveal ->
+ * PO -> Work Order -> Invoice -> Payment -> Performance -> Audit
+ */
+export const CANONICAL_PROCUREMENT_LIFECYCLE = [
+  'Requirement',
+  'Discovery',
+  'RFQ',
+  'Identity-Protected Evaluation',
+  'Market Intelligence',
+  'Committee Vote',
+  'Award',
+  'Reveal',
+  'PO',
+  'Work Order',
+  'Invoice',
+  'Payment',
+  'Performance',
+  'Audit',
+] as const;
+
+export type CanonicalProcurementStage =
+  (typeof CANONICAL_PROCUREMENT_LIFECYCLE)[number];
+
 // NotificationChannel and NotificationStatus live in ./notifications, for the
 // same reason.

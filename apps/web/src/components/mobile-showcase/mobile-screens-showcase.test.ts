@@ -23,7 +23,7 @@ describe('Mobile-First Flow Pipeline Architecture Tests', () => {
   it('defines 5-screen Multi-Channel Supplier Pipeline architecture with canonical procurement vocabulary', () => {
     const expectedSupplierScreens = [
       { step: '01', title: 'Supplier Radar & Notification Hub' },
-      { step: '02', title: '15-Second Quoting Engine' },
+      { step: '02', title: '30-Minute Quoting Engine' },
       { step: '03', title: 'Quote Status & Active Quotes' },
       { step: '04', title: 'Award Notification & PO Sign-off' },
       { step: '05', title: 'Order Fulfillment & Milestone Tracker' },

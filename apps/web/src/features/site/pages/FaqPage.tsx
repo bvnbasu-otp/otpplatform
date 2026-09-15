@@ -145,7 +145,7 @@ export function FaqPage() {
                     <span className="rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold px-2 py-0.5 text-[10px]">
                       Screen 04 · Supplier Quoting
                     </span>
-                    <h3 className="font-bold text-foreground text-xs">15-Second Quoting</h3>
+                    <h3 className="font-bold text-foreground text-xs">30-Minute Quoting</h3>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
                       Suppliers quote base price, 1-tap GST (+0%, +18%, +28%), turnaround days, and warranty directly on mobile keyboards.
                     </p>

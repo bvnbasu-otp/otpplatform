@@ -178,7 +178,7 @@ export function MobileMultiDeviceGallery() {
                 title="Screen 04 · Supplier Quoting"
                 badge="Supplier Quoting"
                 badgeColor="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300"
-                subtitle="Vendors quote in 15 seconds"
+                subtitle="30 Min from Supplier"
                 size="sm"
               >
                 <div className="p-3 space-y-2.5 text-left text-foreground">
@@ -332,18 +332,18 @@ export function MobileMultiDeviceGallery() {
                     <span className="text-[10px] font-bold block">10 HP Submersible Motor</span>
                     <div className="text-[8px] text-muted-foreground">Palm Meadows RWA</div>
                     <div className="w-full bg-primary text-white text-[9px] font-bold py-1 rounded text-center">
-                      Quote in 15s →
+                      Quote (30 Min) →
                     </div>
                   </div>
                 </div>
               </MobilePhoneFrame>
             </div>
 
-            {/* SUPPLIER DEVICE 2: 15-SEC QUOTING ENGINE */}
+            {/* SUPPLIER DEVICE 2: 30-MIN QUOTING ENGINE */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
                 title="Screen 02 · Quoting Engine"
-                badge="15-Sec Quoting"
+                badge="30-Min Quoting"
                 badgeColor="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300"
                 subtitle="Instant GST auto-calculation & TAT"
                 size="sm"

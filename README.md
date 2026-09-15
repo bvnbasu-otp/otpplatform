@@ -53,18 +53,19 @@ OTP is **not** apartment/RWA software, an IndiaMART clone, anonymous marketplace
 OTP's opportunity is the **specific implementation and combination** of these capabilities working together:
 
 **Requirement**  
-→ supplier discovery  
-→ identity masking  
-→ competitive RFQ  
-→ quote normalization  
-→ negotiation/audit  
-→ committee voting  
-→ award  
-→ identity reveal  
+→ Discovery  
+→ RFQ  
+→ Identity-Protected Evaluation  
+→ Market Intelligence  
+→ Committee Vote  
+→ Award  
+→ Reveal  
 → PO  
-→ work order  
-→ completion  
-→ invoice/payment
+→ Work Order  
+→ Invoice  
+→ Payment  
+→ Performance  
+→ Audit
 
 This **complete, integrated system** is what differentiates OTP from ordinary vendor-management software.
 
@@ -120,7 +121,7 @@ otp/
 
 **10 HP Borewell Motor Winding** — local facility service in Bengaluru. Same engine for MSME, textile, or local business pilots:
 
-Requirement → Discovery (open networks) → RFQ → Identity-Protected Evaluation → Committee Vote → Award → Reveal → PO → Work Order → Invoice → Payment → Performance → Market Intelligence → Audit
+Requirement → Discovery → RFQ → Identity-Protected Evaluation → Market Intelligence → Committee Vote → Award → Reveal → PO → Work Order → Invoice → Payment → Performance → Audit
 
 ## Tech Stack
 
@@ -182,5 +183,6 @@ redirect URLs in [supabase/config.toml](supabase/config.toml).
 ## License
 
 Proprietary — OTP Platform
-#   o t p p l a t f o r m  
+#   o t p p l a t f o r m 
+ 
  

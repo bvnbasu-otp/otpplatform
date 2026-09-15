@@ -59,6 +59,15 @@ To maintain institutional neutrality, the following terminology standards are st
 - ❌ **Do NOT use**: `bidder` or `bidders` ➔ ✅ **Use**: `supplier`, `qualified vendor`, or `candidate`
 - ❌ **Do NOT use**: `bidding` ➔ ✅ **Use**: `quoting`, `sourcing window`, or `evaluation`
 
+### 4.1 Canonical Procurement Lifecycle Sequence
+
+The canonical high-level procurement lifecycle is:
+
+**Requirement → Discovery → RFQ → Identity-Protected Evaluation → Market Intelligence → Committee Vote → Award → Reveal → PO → Work Order → Invoice → Payment → Performance → Audit**
+
+- **Market Intelligence** is positioned as an explicit lifecycle stage between **Identity-Protected Evaluation** and **Committee Vote** to provide market-pricing benchmarks and decision context before voting.
+- The lifecycle culminates at **Performance → Audit** (with **Audit** as the final governing control stage, never terminating at a generic "End").
+
 ---
 
 ## 5. Intellectual Property & Proprietary Innovations

@@ -6,6 +6,7 @@ import {
   validateLinearStepTransition,
   type ProcurementStepNumber,
 } from './linear-pipeline';
+import { CANONICAL_PROCUREMENT_LIFECYCLE } from './procurement';
 
 describe('15-Step Strict Linear Procurement Workflow', () => {
   it('contains exactly 15 sequential steps numbered 1 through 15', () => {
@@ -55,5 +56,32 @@ describe('15-Step Strict Linear Procurement Workflow', () => {
     // Viewing previous steps (<= current) is valid in read-only mode
     expect(validateLinearStepTransition(6, 3).valid).toBe(true);
     expect(validateLinearStepTransition(12, 1).valid).toBe(true);
+  });
+
+  it('defines the canonical 14-stage procurement lifecycle sequence ending at Audit', () => {
+    expect(CANONICAL_PROCUREMENT_LIFECYCLE).toEqual([
+      'Requirement',
+      'Discovery',
+      'RFQ',
+      'Identity-Protected Evaluation',
+      'Market Intelligence',
+      'Committee Vote',
+      'Award',
+      'Reveal',
+      'PO',
+      'Work Order',
+      'Invoice',
+      'Payment',
+      'Performance',
+      'Audit',
+    ]);
+    expect(CANONICAL_PROCUREMENT_LIFECYCLE).toHaveLength(14);
+    expect(CANONICAL_PROCUREMENT_LIFECYCLE[0]).toBe('Requirement');
+    expect(CANONICAL_PROCUREMENT_LIFECYCLE[3]).toBe('Identity-Protected Evaluation');
+    expect(CANONICAL_PROCUREMENT_LIFECYCLE[4]).toBe('Market Intelligence');
+    expect(CANONICAL_PROCUREMENT_LIFECYCLE[5]).toBe('Committee Vote');
+    expect(CANONICAL_PROCUREMENT_LIFECYCLE[12]).toBe('Performance');
+    expect(CANONICAL_PROCUREMENT_LIFECYCLE[13]).toBe('Audit');
+    expect(CANONICAL_PROCUREMENT_LIFECYCLE).not.toContain('End');
   });
 });

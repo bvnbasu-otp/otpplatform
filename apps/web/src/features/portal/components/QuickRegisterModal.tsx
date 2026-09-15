@@ -99,7 +99,7 @@ export function QuickRegisterModal({ open, onClose }: QuickRegisterModalProps) {
           <ul className="space-y-1.5 text-muted-foreground text-[11px] pt-1 border-t border-border/60">
             <li className="flex items-center gap-2">
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-              <span>15-Second mobile quoting via WhatsApp &amp; Web</span>
+              <span>30-Minute mobile quoting via WhatsApp &amp; Web</span>
             </li>
             <li className="flex items-center gap-2">
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>

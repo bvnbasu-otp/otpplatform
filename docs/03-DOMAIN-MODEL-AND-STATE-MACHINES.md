@@ -172,7 +172,18 @@ Governs individual supplier proposals submitted against an RFQ:
 
 ## 4. The 8 Canonical Procurement Lifecycle States
 
-The OTP Platform UI, navigation structure, business logic, and operational troubleshooting suite are strictly aligned around the **8 Core Procurement Lifecycle States**:
+### 4.0 Canonical High-Level Procurement Lifecycle
+
+The high-level conceptual sequence across the entire OTP platform is:
+
+**Requirement → Discovery → RFQ → Identity-Protected Evaluation → Market Intelligence → Committee Vote → Award → Reveal → PO → Work Order → Invoice → Payment → Performance → Audit**
+
+- **Market Intelligence** is positioned as an explicit stage between *Identity-Protected Evaluation* and *Committee Vote* to deliver real-world cluster pricing benchmarks and supplier reliability indicators prior to committee voting.
+- The lifecycle culminates in **Performance → Audit**, with *Audit* serving as the immutable post-settlement verification and compliance control stage.
+
+### 4.1 Underlying State Machine States
+
+The OTP Platform backend data models, telemetry, and operational troubleshooting suite map the workflow into **8 Core Procurement Lifecycle States**:
 
 ```mermaid
 stateDiagram-v2

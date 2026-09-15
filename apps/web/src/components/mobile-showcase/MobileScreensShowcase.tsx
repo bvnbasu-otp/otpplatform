@@ -92,11 +92,11 @@ export function MobileScreensShowcase() {
       stepNumber: '04',
       tabLabel: 'Supplier Quoting',
       icon: '💬',
-      title: '15-Second Mobile Quoting',
+      title: '30-Minute Mobile Quoting',
       tagline: 'WhatsApp & mobile-optimized 3-field numeric quote sheet with instant GST.',
       badge: 'Screen 04 · Supplier Quoting',
       badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
-      description: 'Suppliers quote in 15 seconds from their phones. All quotes remain cryptographically sealed.',
+      description: 'Suppliers quote within 30 minutes from their phones. All quotes remain cryptographically sealed.',
       component: <ScreenBuyerQuoting onNext={() => setActiveScreenIndex(4)} />,
     },
     {
@@ -153,13 +153,13 @@ export function MobileScreensShowcase() {
     {
       id: 'supplier-02',
       stepNumber: '02',
-      tabLabel: '15-Sec Quoting',
+      tabLabel: '30-Min Quoting',
       icon: '⚡',
-      title: '15-Second Quoting Engine',
+      title: '30-Minute Quoting Engine',
       tagline: 'Unit price + GST auto-split, TAT days, warranty SLA under masked alias.',
-      badge: 'Screen 02 · 15-Second Quoting Engine',
+      badge: 'Screen 02 · 30-Minute Quoting Engine',
       badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
-      description: 'Suppliers quote unit rates in seconds. Indian GST tax rates split automatically with zero complex account logins.',
+      description: 'Suppliers quote unit rates within 30 minutes. Indian GST tax rates split automatically with zero complex account logins.',
       component: <ScreenSupplierQuotingEngine onNext={() => setActiveScreenIndex(2)} />,
     },
     {
@@ -214,7 +214,7 @@ export function MobileScreensShowcase() {
 
   const supplierPhaseMappings: PhaseMapping[] = useMemo(() => [
     { phaseNumber: 1, label: 'Radar & Alerts', screenIndices: [0], screensLabel: 'Screen 01' },
-    { phaseNumber: 2, label: '15-Sec Quoting', screenIndices: [1], screensLabel: 'Screen 02' },
+    { phaseNumber: 2, label: '30-Min Quoting', screenIndices: [1], screensLabel: 'Screen 02' },
     { phaseNumber: 3, label: 'Quote Status', screenIndices: [2], screensLabel: 'Screen 03' },
     { phaseNumber: 4, label: 'Award & PO Sign-off', screenIndices: [3], screensLabel: 'Screen 04' },
     { phaseNumber: 5, label: 'Live Fulfillment', screenIndices: [4], screensLabel: 'Screen 05' },
@@ -418,7 +418,7 @@ export function MobileScreensShowcase() {
                       <>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
-                          <span><strong>3-Field Numeric Flow:</strong> Quoting takes under 15 seconds on a smartphone keyboard.</span>
+                          <span><strong>3-Field Numeric Flow:</strong> Quoting takes under 30 minutes on a smartphone keyboard.</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
@@ -501,7 +501,7 @@ export function MobileScreensShowcase() {
                       <>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
-                          <span><strong>15-Second Flow:</strong> Fill unit price, delivery days, and warranty in 3 numeric inputs.</span>
+                          <span><strong>30-Minute Flow:</strong> Fill unit price, delivery days, and warranty in 3 numeric inputs.</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
@@ -1307,14 +1307,14 @@ function ScreenSupplierHub({ onNext }: { onNext: () => void }) {
           onClick={onNext}
           className="w-full rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition text-center flex items-center justify-center gap-1.5"
         >
-          <span>⚡ Quote Now in 15s →</span>
+          <span>⚡ Quote Now (30 Min) →</span>
         </button>
       </div>
     </div>
   );
 }
 
-// Supplier Screen 2: 15-Second Quoting Engine
+// Supplier Screen 2: 30-Minute Quoting Engine
 function ScreenSupplierQuotingEngine({ onNext }: { onNext: () => void }) {
   return (
     <div className="p-3.5 space-y-3 text-left text-foreground">
