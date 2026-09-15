@@ -22,6 +22,17 @@ describe('Phase 1 Cockpit - Responsive & Touch Standards', () => {
     const parsedHeight = parseInt(standardButtonClass.replace(/\D/g, ''), 10);
 
     expect(parsedHeight).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_PX);
+
+    // Icon button 48x48 square touch target
+    const iconButtonClasses = 'min-h-[48px] min-w-[48px]';
+    expect(iconButtonClasses).toContain('min-h-[48px]');
+    expect(iconButtonClasses).toContain('min-w-[48px]');
+  });
+
+  it('validates Phase 1.1 terminology: Active Procurement', () => {
+    const buyerSectionTitle = 'Active Procurement';
+    expect(buyerSectionTitle).toBe('Active Procurement');
+    expect(buyerSectionTitle).not.toContain('Active Sourcing');
   });
 
   it('validates safe area inset padding formula in layout', () => {

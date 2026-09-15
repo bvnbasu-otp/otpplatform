@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchUserOrganization, fetchOrganizationRequirements } from './api/requirements';
 import { supabase } from '@/lib/supabase';
-import { fetchCurrentProfile } from '@/features/auth/user-role';
+import * as userRole from '@/features/auth/user-role';
 
 vi.mock('@/lib/supabase', () => {
   return {
@@ -14,15 +14,6 @@ vi.mock('@/lib/supabase', () => {
     },
   };
 });
-
-vi.mock('@/features/auth/user-role', () => ({
-  fetchCurrentProfile: vi.fn().mockResolvedValue({
-    profileId: 'prof-buyer-1',
-    email: 'procurement@apex.test',
-    fullName: 'Rohan Sharma',
-    activeOrganizationId: 'org-apex-1',
-  }),
-}));
 
 function createSupabaseQueryMock(resolvedResult: { data: any; error: any }) {
   const chain: any = {
@@ -41,12 +32,16 @@ function createSupabaseQueryMock(resolvedResult: { data: any; error: any }) {
 describe('Requirement Feature Module Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(fetchCurrentProfile).mockResolvedValue({
+    vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
       profileId: 'prof-buyer-1',
       email: 'procurement@apex.test',
       fullName: 'Rohan Sharma',
       activeOrganizationId: 'org-apex-1',
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('fetchUserOrganization', () => {
@@ -101,7 +96,7 @@ describe('Requirement Feature Module Tests', () => {
     });
 
     it('falls back to default membership if active organization query yields no org', async () => {
-      vi.mocked(fetchCurrentProfile).mockResolvedValueOnce({
+      vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValueOnce({
         profileId: 'prof-buyer-2',
         email: 'buyer2@apex.test',
         fullName: 'Anita Roy',
@@ -131,7 +126,7 @@ describe('Requirement Feature Module Tests', () => {
     });
 
     it('returns error when user is not authenticated', async () => {
-      vi.mocked(fetchCurrentProfile).mockResolvedValueOnce(null as any);
+      vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValueOnce(null as any);
 
       const res = await fetchUserOrganization();
       expect(res.ok).toBe(false);
@@ -141,7 +136,7 @@ describe('Requirement Feature Module Tests', () => {
     });
 
     it('returns error when supabase query fails in fallback path', async () => {
-      vi.mocked(fetchCurrentProfile).mockResolvedValueOnce({
+      vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValueOnce({
         profileId: 'prof-buyer-3',
         email: 'buyer3@apex.test',
         fullName: 'Suresh Kumar',

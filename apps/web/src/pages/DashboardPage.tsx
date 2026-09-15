@@ -166,7 +166,7 @@ export function DashboardPage() {
             {activeProcurements.length === 0 ? (
               <div className="py-6 text-center bg-card rounded-2xl border border-border/70 p-4 space-y-1 text-xs text-muted-foreground">
                 <span className="text-xl block">✓</span>
-                <p className="font-semibold text-foreground">No active tenders right now.</p>
+                <p className="font-semibold text-foreground">No active procurements right now.</p>
                 <p>All previous procurements have been completed and settled.</p>
               </div>
             ) : (
@@ -206,7 +206,7 @@ export function DashboardPage() {
             </div>
             <Link
               to="/requirements/new"
-              className="min-h-[44px] inline-flex items-center justify-center gap-1 rounded-xl bg-card border border-border/80 hover:bg-muted text-foreground px-3.5 py-2 text-xs font-bold shadow-2xs active:scale-95 transition shrink-0"
+              className="min-h-[48px] inline-flex items-center justify-center gap-1 rounded-xl bg-card border border-border/80 hover:bg-muted text-foreground px-4 py-2.5 text-xs font-bold shadow-2xs active:scale-95 transition shrink-0 mobile-touch-target"
             >
               <span>+ Start Requirement</span>
             </Link>

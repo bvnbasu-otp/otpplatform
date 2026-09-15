@@ -131,7 +131,7 @@ export function deriveBuyerActionItem(req: OrganizationRequirementSummary): Buye
           category: req.requirementType || 'Procurement',
           statusLabel: 'Quotes Arrived',
           statusIcon: '🟢',
-          whyText: `${quotesCount} / ${quorum} quotes received · Sourcing in progress`,
+          whyText: `${quotesCount} / ${quorum} quotes received · Procurement in progress`,
           actionLabel: 'View Quotes →',
           actionUrl: req.rfqId ? `/rfq/${req.rfqId}/committee` : `/requirements/${req.id}`,
           priority: 'P2',

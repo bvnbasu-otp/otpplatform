@@ -190,7 +190,7 @@ export function SupplierDashboardPage() {
               type="button"
               onClick={() => setIsCapabilityModalOpen(true)}
               data-testid="dashboard-supplier-capabilities-btn"
-              className="min-h-[44px] inline-flex items-center justify-center gap-1 rounded-xl bg-card border border-purple-300 dark:border-purple-800 hover:bg-muted text-purple-900 dark:text-purple-300 px-3.5 py-2 text-xs font-bold shadow-2xs active:scale-95 transition shrink-0 cursor-pointer"
+              className="min-h-[48px] inline-flex items-center justify-center gap-1 rounded-xl bg-card border border-purple-300 dark:border-purple-800 hover:bg-muted text-purple-900 dark:text-purple-300 px-4 py-2.5 text-xs font-bold shadow-2xs active:scale-95 transition shrink-0 cursor-pointer mobile-touch-target"
             >
               <span>⚙️ Edit Scope</span>
             </button>

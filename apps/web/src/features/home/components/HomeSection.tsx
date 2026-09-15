@@ -49,7 +49,7 @@ export function HomeSection({
         {actionText && actionUrl && (
           <Link
             to={actionUrl}
-            className="text-[11px] font-bold text-primary hover:underline shrink-0 min-h-[36px] flex items-center px-1"
+            className="text-[11px] font-bold text-primary hover:underline shrink-0 min-h-[48px] min-w-[48px] inline-flex items-center justify-center px-2 py-1 mobile-touch-target"
           >
             {actionText}
           </Link>
@@ -59,7 +59,7 @@ export function HomeSection({
           <button
             type="button"
             onClick={actionOnClick}
-            className="text-[11px] font-bold text-primary hover:underline shrink-0 min-h-[36px] flex items-center px-1 cursor-pointer"
+            className="text-[11px] font-bold text-primary hover:underline shrink-0 min-h-[48px] min-w-[48px] inline-flex items-center justify-center px-2 py-1 cursor-pointer mobile-touch-target"
           >
             {actionText}
           </button>

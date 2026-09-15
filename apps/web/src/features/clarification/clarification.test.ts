@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   fetchClarificationMessagesForBuyer,
   fetchClarificationMessagesForSupplier,
@@ -7,6 +7,7 @@ import {
   closeClarificationForEvaluation,
 } from './api/clarification';
 import { supabase } from '@/lib/supabase';
+import * as userRole from '@/features/auth/user-role';
 
 vi.mock('@/lib/supabase', () => {
   return {
@@ -20,17 +21,18 @@ vi.mock('@/lib/supabase', () => {
   };
 });
 
-vi.mock('@/features/auth/user-role', () => ({
-  fetchCurrentProfile: vi.fn().mockResolvedValue({
-    profileId: 'p-1',
-    email: 'buyer@test.com',
-    fullName: 'Test Buyer',
-  }),
-}));
-
 describe('Clarification Feature Module Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
+      profileId: 'p-1',
+      email: 'buyer@test.com',
+      fullName: 'Test Buyer',
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('fetches and maps masked clarification messages for buyer correctly', async () => {
