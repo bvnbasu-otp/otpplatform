@@ -347,8 +347,8 @@ export function App() {
             <Route path="/rfq/:rfqId/award" element={<AwardRoute />} />
             <Route path="/rfq/:rfqId/reveal" element={<RevealRoute />} />
             {/* Route Aliases & Redirects for notification links & deep links */}
-            <Route path="/rfq/:rfqId" element={<ActiveRfqMonitoringRoute />} />
-            <Route path="/rfqs/:rfqId" element={<ActiveRfqMonitoringRoute />} />
+            <Route path="/rfq/:rfqId" element={<RfqIdentityProtectedComparisonRoute />} />
+            <Route path="/rfqs/:rfqId" element={<RfqIdentityProtectedComparisonRoute />} />
             <Route path="/governance/evaluations/:rfqId/vote" element={<CommitteeVoteRoute />} />
             <Route path="/governance/evaluations/:rfqId" element={<CommitteeVoteRoute />} />
             <Route path="/supplier/rfq/:rfqId" element={<SupplierRfqRoute />} />
