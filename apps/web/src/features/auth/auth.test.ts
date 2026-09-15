@@ -48,6 +48,7 @@ describe('Auth Feature & Portal Role Resolution', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
+    vi.mocked(supabase.from).mockImplementation(() => createMockQueryBuilder([]));
   });
 
   it('correctly identifies superadmin emails', () => {
