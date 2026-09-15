@@ -249,7 +249,7 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         if (statusFilter === 'PENDING' && r.status !== 'PENDING') return false;
         if (statusFilter === 'ACTIVE' && r.status !== 'ONBOARDED') return false;
         if (statusFilter === 'BLOCKED' && r.status !== 'REJECTED') return false;
-        if (statusFilter !== 'PENDING' && statusFilter !== 'ACTIVE' && statusFilter !== 'BLOCKED' && r.status !== statusFilter) return false;
+        if (statusFilter === 'DELETED' || statusFilter === 'SUSPENDED') return false;
       }
       if (sideFilter !== 'ALL' && r.side !== sideFilter) return false;
       if (!search.trim()) return true;
@@ -612,7 +612,12 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
   const handleDirectApproveUser = async (user: AdminUserItem) => {
     setProcessingId(user.id);
     try {
-      if (user.isBlocked) {
+      const isBlocked =
+        user.status === 'BLOCKED' ||
+        (user.status as string) === 'SUSPENDED' ||
+        Boolean(user.blockedAt) ||
+        Boolean(user.blockedReason);
+      if (isBlocked) {
         await handleConfirmUnblock('USERS', [user.id]);
       }
       const { error: profErr } = await supabase
@@ -652,7 +657,7 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
   const handleDirectVerifyOrg = async (org: AdminOrganizationItem) => {
     setProcessingId(org.id);
     try {
-      if (org.side === 'SUPPLIER') {
+      if (org.entity_type === 'SUPPLIER') {
         const { error } = await supabase
           .from('suppliers')
           .update({
