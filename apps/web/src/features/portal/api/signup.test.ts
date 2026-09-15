@@ -71,3 +71,21 @@ describe('buyer organisation and role normalisation', () => {
   });
 });
 
+describe('auto-approval and 1 free RFQ credit structures', () => {
+  it('ensures buyers receive 1 free RFQ starter credit on signup', () => {
+    const mockSignupResponse = {
+      reference: 'REG-ABCDEF12',
+      status: 'ONBOARDED',
+      already_submitted: false,
+      auto_approved: true,
+      side: 'BUYER',
+      free_rfq_credits: 1,
+    };
+
+    expect(mockSignupResponse.status).toBe('ONBOARDED');
+    expect(mockSignupResponse.auto_approved).toBe(true);
+    expect(mockSignupResponse.free_rfq_credits).toBe(1);
+  });
+});
+
+

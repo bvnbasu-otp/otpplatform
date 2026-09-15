@@ -56,7 +56,7 @@ export function DashboardPage() {
 
   const handleExpressSubmit = async (queryText?: string, e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (subscription?.isExpired) {
+    if (subscription?.isExpired && (!subscription.freeRfqCredits || subscription.freeRfqCredits <= 0)) {
       setIsPaymentModalOpen(true);
       return;
     }
@@ -528,11 +528,19 @@ export function DashboardPage() {
                 onClick={() => setIsPaymentModalOpen(true)}
                 className={`min-h-[38px] inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] font-black border transition active:scale-95 shrink-0 mobile-touch-target ${
                   subscription.isExpired
-                    ? 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 animate-pulse'
+                    ? subscription.freeRfqCredits > 0
+                      ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border-amber-300'
+                      : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 animate-pulse'
                     : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300'
                 }`}
               >
-                <span>{subscription.isExpired ? '🔒 Plan Expired' : `⚡ ${subscription.daysRemaining}d Active`}</span>
+                <span>
+                  {subscription.isExpired
+                    ? subscription.freeRfqCredits > 0
+                      ? `🎁 ${subscription.freeRfqCredits} Free RFQ`
+                      : '🔒 Plan Expired'
+                    : `⚡ ${subscription.daysRemaining}d Active`}
+                </span>
               </button>
             )}
           </div>

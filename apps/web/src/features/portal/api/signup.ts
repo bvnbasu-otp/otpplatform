@@ -47,6 +47,11 @@ export interface SignupResult {
   reference: string;
   status: string;
   alreadySubmitted: boolean;
+  autoApproved?: boolean;
+  side?: 'BUYER' | 'SUPPLIER';
+  email?: string;
+  temporaryPassword?: string;
+  freeRfqCredits?: number;
 }
 
 export async function fetchServiceCategories(): Promise<
@@ -104,6 +109,11 @@ export async function submitSignupRequest(
       reference: (row.reference as string) ?? '',
       status: (row.status as string) ?? 'PENDING',
       alreadySubmitted: Boolean(row.already_submitted),
+      autoApproved: Boolean(row.auto_approved || row.status === 'ONBOARDED'),
+      side: (row.side as 'BUYER' | 'SUPPLIER') ?? input.side,
+      email: (row.email as string) ?? input.email,
+      temporaryPassword: (row.temporary_password as string) ?? 'Welcome@OTP2026!',
+      freeRfqCredits: typeof row.free_rfq_credits === 'number' ? row.free_rfq_credits : 1,
     },
   };
 }

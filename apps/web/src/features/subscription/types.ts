@@ -72,6 +72,8 @@ export interface OrganizationSubscription {
   expiresAt: string;
   daysRemaining: number;
   isExpired: boolean;
+  freeRfqCredits: number;
+  rfqCreditsUsed: number;
   paymentReference?: string;
 }
 

@@ -15,6 +15,32 @@ export function SubscriptionExpiryBanner({
   if (level === 'NONE') return null;
 
   if (level === 'EXPIRED') {
+    if (subscription.freeRfqCredits > 0) {
+      return (
+        <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/10 p-4 text-xs text-emerald-950 dark:text-emerald-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">🎁</span>
+            <div>
+              <h4 className="font-bold text-sm text-emerald-900 dark:text-emerald-200">
+                1 Free RFQ Starter Credit Active
+              </h4>
+              <p className="text-emerald-800 dark:text-emerald-300 mt-0.5">
+                You have {subscription.freeRfqCredits} free requirement credit available to publish. Subsequent requirements can be published by renewing your plan.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onRenewClick}
+            className="shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs shadow-md transition flex items-center gap-1.5"
+          >
+            <span>⚡</span> Upgrade / Renew Plan
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-2xl border-2 border-rose-300 dark:border-rose-900 bg-rose-50/90 dark:bg-rose-950/40 p-4 text-xs text-rose-950 dark:text-rose-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-start gap-3">
@@ -24,7 +50,7 @@ export function SubscriptionExpiryBanner({
               Prepaid Subscription Expired · Read-Only Mode Active
             </h4>
             <p className="text-rose-800 dark:text-rose-300 mt-0.5">
-              Your 30-day validity has expired. You can still inspect historical RFQs, quotes, and audit records, but creating new requirements is locked until recharged.
+              Your 30-day validity has expired and you have 0 free RFQ credits remaining. You can still inspect historical RFQs, quotes, and audit records, but creating new requirements is locked until recharged.
             </p>
           </div>
         </div>

@@ -238,9 +238,9 @@ export function RequirementIntakePage() {
   async function handlePublishWithSourcing(sourcingPatch: DraftPatch) {
     if (!draft) return;
 
-    if (subscription?.isExpired) {
+    if (subscription?.isExpired && (!subscription.freeRfqCredits || subscription.freeRfqCredits <= 0)) {
       setIsPaymentModalOpen(true);
-      setPublishError('Your prepaid subscription has expired. Please recharge via UPI to publish requirements.');
+      setPublishError('Your prepaid subscription has expired and you have 0 free RFQ credits remaining. Please recharge via UPI to publish requirements.');
       return;
     }
 
@@ -332,7 +332,14 @@ export function RequirementIntakePage() {
       </header>
 
       {/* Subscription Notice */}
-      {subscription?.isExpired && (
+      {subscription?.isExpired && (subscription.freeRfqCredits > 0 ? (
+        <div className="mt-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-2.5 text-xs text-emerald-950 dark:text-emerald-200 shadow-2xs flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-xs">🎁 1 Free RFQ Starter Credit Available.</span>
+            <span className="text-[11px] text-emerald-800 dark:text-emerald-300">You can publish this requirement for free!</span>
+          </div>
+        </div>
+      ) : (
         <div className="mt-2 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 p-2.5 text-xs text-rose-900 dark:text-rose-200 shadow-2xs flex items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-1.5">
             <span className="font-bold text-xs">🔒 Read-Only: Subscription Expired.</span>
@@ -346,7 +353,7 @@ export function RequirementIntakePage() {
             ⚡ Recharge Plan
           </button>
         </div>
-      )}
+      ))}
 
       {/* Progressive Step Progress Meter (Mobile + Desktop Responsive) */}
       <div className="mt-3 rounded-xl border bg-card/80 p-3 shadow-2xs">

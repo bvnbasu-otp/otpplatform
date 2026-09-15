@@ -18,7 +18,7 @@ export async function fetchOrganizationSubscription(
       // Fallback to direct table query if RPC is not loaded
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
-        .select('id, name, org_type, subscription_tier, subscription_status, subscription_plan, subscription_started_at, subscription_expires_at, payment_reference')
+        .select('id, name, org_type, subscription_tier, subscription_status, subscription_plan, subscription_started_at, subscription_expires_at, free_rfq_credits, rfq_credits_used, payment_reference')
         .eq('id', organizationId)
         .maybeSingle();
 
@@ -44,6 +44,8 @@ export async function fetchOrganizationSubscription(
           expiresAt: expiresAt.toISOString(),
           daysRemaining,
           isExpired,
+          freeRfqCredits: typeof (orgData as any).free_rfq_credits === 'number' ? (orgData as any).free_rfq_credits : 1,
+          rfqCreditsUsed: typeof (orgData as any).rfq_credits_used === 'number' ? (orgData as any).rfq_credits_used : 0,
           paymentReference: orgData.payment_reference || undefined,
         },
       };
@@ -67,6 +69,8 @@ export async function fetchOrganizationSubscription(
         expiresAt: payload.expires_at,
         daysRemaining: Number(payload.days_remaining ?? 0),
         isExpired: Boolean(payload.is_expired),
+        freeRfqCredits: typeof payload.free_rfq_credits === 'number' ? payload.free_rfq_credits : 1,
+        rfqCreditsUsed: typeof payload.rfq_credits_used === 'number' ? payload.rfq_credits_used : 0,
         paymentReference: payload.payment_reference || undefined,
       },
     };
