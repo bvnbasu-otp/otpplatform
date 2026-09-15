@@ -44,7 +44,7 @@ export default defineConfig({
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 1500,
-    emptyOutDir: false,
+    emptyOutDir: true,
     rollupOptions: {
       external: ['@sentry/browser'],
       output: {

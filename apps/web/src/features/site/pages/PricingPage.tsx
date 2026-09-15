@@ -70,7 +70,7 @@ export function PricingPage() {
                 Individual &amp; Sole Proprietor
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                For independent property owners and facility managers.
+                For independent property owners and solo facility managers.
               </p>
 
               <div className="mt-4 pb-4 border-b">
@@ -91,22 +91,22 @@ export function PricingPage() {
                 )}
               </div>
 
-              <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
+              <ul className="mt-4 space-y-2.5 text-xs text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Unlimited voice &amp; text RFQ broadcasts</span>
+                  <span><strong>Limits:</strong> 1 active RFQ at a time · 1 solo approver seat</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Identity-protected sealed supplier comparison</span>
+                  <span><strong>Channel Access:</strong> WhatsApp &amp; SMS direct vendor dispatch</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Direct WhatsApp &amp; SMS vendor dispatch</span>
+                  <span><strong>Top-Ups:</strong> ₹50 per additional concurrent RFQ burst</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Single-approver fast-track award lock</span>
+                  <span>Identity-protected evaluation &amp; instant GST PO execution</span>
                 </li>
               </ul>
             </div>
@@ -134,7 +134,7 @@ export function PricingPage() {
                 <span className="text-[10px] text-muted-foreground font-mono">Committee Mode</span>
               </div>
               <h2 className="text-lg font-bold mt-2 text-foreground">
-                RWA, Housing Society &amp; MSME
+                RWA, Society &amp; MSME
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Democratic voting &amp; multi-member committee governance.
@@ -158,22 +158,22 @@ export function PricingPage() {
                 )}
               </div>
 
-              <ul className="mt-4 space-y-2 text-xs text-foreground/90">
+              <ul className="mt-4 space-y-2.5 text-xs text-foreground/90">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Everything in Individual</strong> for whole team</span>
+                  <span><strong>Limits:</strong> Up to 5 active RFQs · 5 committee voter seats</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Multi-member voting room &amp; quorum controls</span>
+                  <span><strong>Channel Access:</strong> WhatsApp, SMS, Verified Registry &amp; Direct Invites</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>1-Tap preset decision justifications</span>
+                  <span><strong>Top-Ups:</strong> ₹200 for 5 extra active RFQs · ₹500 for concierge sourcing</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Exportable statutory audit log &amp; GST Purchase Orders</span>
+                  <span>Quorum meters, 1-tap decision chips &amp; exportable audit log</span>
                 </li>
               </ul>
             </div>
@@ -188,61 +188,93 @@ export function PricingPage() {
             </div>
           </section>
 
-          {/* Card 3: Verified Supplier (Free Forever) */}
+          {/* Card 3: Enterprise & Multi-Branch Institutions */}
           <section className="rounded-2xl border bg-card p-5 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="rounded-md bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5">
-                  Suppliers
+                <span className="rounded-md bg-indigo-500/10 text-indigo-800 dark:text-indigo-300 text-[10px] font-bold px-2 py-0.5">
+                  Enterprise
                 </span>
-                <span className="text-[10px] text-muted-foreground font-mono">Zero Fee</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Multi-Branch</span>
               </div>
               <h2 className="text-lg font-bold mt-2 text-foreground">
-                Verified Supplier Network
+                Enterprise &amp; Institutional
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                For contractors, fabricators, and local trade vendors.
+                For manufacturing plants, developer chains &amp; educational trusts.
               </p>
 
               <div className="mt-4 pb-4 border-b">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-foreground">₹0</span>
-                  <span className="text-xs text-muted-foreground">/ Free Forever</span>
+                  <span className="text-3xl font-black text-foreground">
+                    ₹{cycle === 'MONTHLY' ? '5,000' : '50,000'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
+                  </span>
                 </div>
-                <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                  ✓ ₹0 lead fees · 0% commission on contract value
-                </span>
+                {cycle === 'YEARLY' && (
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
+                    ✓ Saves ₹10,000 vs Monthly
+                  </span>
+                )}
               </div>
 
-              <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
+              <ul className="mt-4 space-y-2.5 text-xs text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>15-Second mobile quoting via WhatsApp &amp; Web</span>
+                  <span><strong>Limits:</strong> Unlimited active RFQs · Unlimited committee roles</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Identity-protected fair merit evaluation</span>
+                  <span><strong>Channel Access:</strong> WhatsApp, SMS, Registry, ONDC &amp; Custom API</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Automated Indian GST tax slab auto-calculation</span>
+                  <span><strong>Top-Ups:</strong> Dedicated SLA, ERP/SAP connector &amp; custom scoring</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Direct Purchase Orders and bank settlements</span>
+                  <span>Multi-organization hierarchies &amp; legal compliance reports</span>
                 </li>
               </ul>
             </div>
 
             <div className="mt-6 pt-2">
               <Link
-                to="/signup?side=supplier"
-                className="w-full block text-center rounded-xl border border-primary text-primary hover:bg-primary/5 font-bold px-4 py-2 text-xs transition"
+                to="/signup?side=buyer"
+                className="w-full block text-center rounded-xl bg-primary text-primary-foreground font-bold px-4 py-2 text-xs hover:opacity-90 transition shadow-2xs"
               >
-                Register as Verified Supplier
+                Register as Enterprise
               </Link>
             </div>
           </section>
+        </div>
+
+        {/* Verified Supplier Free Quote Callout Banner */}
+        <div className="mt-8 rounded-2xl border-2 border-emerald-500/40 bg-card p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xl font-bold">
+              🚚
+            </span>
+            <div>
+              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                <span>Verified Supplier Network</span>
+                <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold px-2 py-0.5">
+                  ₹0 Free Forever
+                </span>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Suppliers quote 100% free with zero platform commission, zero lead fees, and direct buyer bank settlements.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/signup?side=supplier"
+            className="shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs"
+          >
+            Quote as a Supplier →
+          </Link>
         </div>
 
         {/* Minimal Governance Note */}

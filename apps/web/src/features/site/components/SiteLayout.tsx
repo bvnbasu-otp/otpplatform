@@ -31,19 +31,51 @@ export function SiteLayout({ children }: { children: ReactNode }) {
       <div className="h-full w-full flex flex-col bg-background overflow-hidden relative">
         <SiteHeader />
         <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
-          {children}
+          <div className="flex-1">
+            {children}
+          </div>
+
+          {/* Minimal 5-item Public Footer */}
+          <footer className="mt-auto border-t bg-card/60 backdrop-blur-xs py-6 px-4" data-testid="site-footer">
+            <div className="mx-auto max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+              {/* Brand & Copyright */}
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-foreground">{PRODUCT_NAME}</span>
+                <span>·</span>
+                <span>© {new Date().getFullYear()} All rights reserved.</span>
+              </div>
+
+              {/* Strict 5-Item Navigation Footer Links */}
+              <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-semibold" aria-label="Footer Navigation">
+                <Link to="/" className="hover:text-foreground transition">Home</Link>
+                <Link to="/pricing" className="hover:text-foreground transition">Pricing</Link>
+                <Link to="/signup" className="text-primary hover:underline font-bold">+ Get Started</Link>
+                <Link to="/about-us" className="hover:text-foreground transition">About Us</Link>
+                <Link to="/faqs" className="hover:text-foreground transition">FAQs</Link>
+              </nav>
+
+              {/* Legal Links & Drawer Trigger */}
+              <div className="flex items-center gap-3">
+                <Link to="/legal/terms" className="hover:text-foreground transition">Terms</Link>
+                <Link to="/legal/privacy" className="hover:text-foreground transition">Privacy</Link>
+                <button
+                  type="button"
+                  onClick={() => setIsUtilityDrawerOpen(true)}
+                  className="text-[11px] text-primary hover:underline font-medium"
+                >
+                  Governance Notice 🛡️
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-border/40 text-[10px] text-muted-foreground/80 text-center max-w-3xl mx-auto" data-testid="platform-disclaimer">
+              {PLATFORM_DISCLAIMER_LINES.join(' ')}
+            </div>
+          </footer>
         </main>
 
         {/* Mobile Fixed Bottom Navigation Bar */}
         <MobileBottomNav />
-
-        {/* Hidden / accessible test element for platform disclaimer and site-footer test coverage */}
-        <div className="sr-only" data-testid="site-footer">
-          <div data-testid="platform-disclaimer">
-            {PLATFORM_DISCLAIMER_LINES.join(' ')}
-          </div>
-          <span>© {new Date().getFullYear()} {PRODUCT_NAME}</span>
-        </div>
 
         {/* Quick Utility Drawer / Slide-over Modal for Legal & Support */}
         {isUtilityDrawerOpen && (

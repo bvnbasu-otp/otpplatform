@@ -9,6 +9,7 @@ import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api
 import { ThemeBottomSheet } from '@/features/theme';
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
+import { VoiceTextRequirementIntakeModal } from '@/features/intake';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -31,6 +32,7 @@ export function MobileBottomNav() {
   const [isAccountSheetOpen, setIsAccountSheetOpen] = useState(false);
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
   const [isQuickRegisterOpen, setIsQuickRegisterOpen] = useState(false);
+  const [isBuyerIntakeModalOpen, setIsBuyerIntakeModalOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showThemeSheet, setShowThemeSheet] = useState(false);
@@ -71,6 +73,10 @@ export function MobileBottomNav() {
     }
   }
 
+  const isPublicRoute =
+    ['/', '/pricing', '/about-us', '/faqs', '/showcase', '/mobile', '/mobile-showcase', '/how-it-works', '/howitworks'].includes(pathname) ||
+    pathname.startsWith('/legal');
+
   return (
     <>
       <nav
@@ -78,8 +84,8 @@ export function MobileBottomNav() {
         className="fixed sm:absolute bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] shrink-0 select-none"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        {isAuthenticated ? (
-          /* AUTHENTICATED BOTTOM TABS: Home, Orders, +, Audit/Caps, Profile */
+        {isAuthenticated && !isPublicRoute ? (
+          /* AUTHENTICATED WORKSPACE BOTTOM TABS: Home, Orders, +, Audit/Caps, Profile */
           <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-2">
             {/* TAB 1: HOME */}
             <NavLink
@@ -126,20 +132,17 @@ export function MobileBottomNav() {
                   <span className="sr-only">Maximize Business Reach — Update Capabilities</span>
                 </button>
               ) : (
-                <NavLink
-                  to="/requirements/new"
-                  className={({ isActive }) =>
-                    `relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target ${
-                      isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:bg-primary/90'
-                    }`
-                  }
+                <button
+                  type="button"
+                  onClick={() => setIsBuyerIntakeModalOpen(true)}
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
                   title="Post a new requirement / broadcast RFQ"
                   aria-label="Post a new requirement / broadcast RFQ"
                   data-testid="bottom-nav-buyer-create-requirement"
                 >
                   <span className="text-2xl font-bold leading-none select-none">+</span>
                   <span className="sr-only">Create Requirement</span>
-                </NavLink>
+                </button>
               )}
             </div>
 
@@ -184,7 +187,7 @@ export function MobileBottomNav() {
             </button>
           </div>
         ) : (
-          /* PRE-LOGIN STRICT 5 TABS: Home, Pricing, +, About Us, FAQs */
+          /* PUBLIC & PRE-LOGIN STRICT 5 TABS: Home, Pricing, +, About Us, FAQs */
           <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-2">
             {/* Tab 1: Home (/) */}
             <NavLink
@@ -217,19 +220,45 @@ export function MobileBottomNav() {
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Pricing</span>
             </NavLink>
 
-            {/* Tab 3: + Elevated Center Button (Quick Register Modal trigger) */}
+            {/* Tab 3: + Elevated Center Button (Role & State Aware) */}
             <div className="flex flex-col items-center justify-center flex-1 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsQuickRegisterOpen(true)}
-                className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
-                title="Get Started — Quick Registration"
-                aria-label="Get Started — Quick Registration"
-                data-testid="bottom-nav-prelogin-create-requirement"
-              >
-                <span className="text-2xl font-bold leading-none select-none">+</span>
-                <span className="sr-only">Get Started</span>
-              </button>
+              {isSupplier ? (
+                <button
+                  type="button"
+                  onClick={() => setIsCapabilityModalOpen(true)}
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                  title="Maximize Business Reach — Update Capabilities"
+                  aria-label="Maximize Business Reach — Update Capabilities"
+                  data-testid="bottom-nav-supplier-add-capabilities"
+                >
+                  <span className="text-2xl font-bold leading-none select-none">+</span>
+                  <span className="sr-only">Maximize Business Reach — Update Capabilities</span>
+                </button>
+              ) : user ? (
+                <button
+                  type="button"
+                  onClick={() => setIsBuyerIntakeModalOpen(true)}
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                  title="Post a new requirement / broadcast RFQ"
+                  aria-label="Post a new requirement / broadcast RFQ"
+                  data-testid="bottom-nav-buyer-create-requirement"
+                >
+                  <span className="text-2xl font-bold leading-none select-none">+</span>
+                  <span className="sr-only">Create Requirement</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsQuickRegisterOpen(true)}
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90"
+                  title="Get Started — Quick Registration"
+                  aria-label="Get Started — Quick Registration"
+                  data-testid="bottom-nav-prelogin-create-requirement"
+                >
+                  <span className="text-2xl font-bold leading-none select-none">+</span>
+                  <span className="sr-only">Get Started</span>
+                </button>
+              )}
             </div>
 
             {/* Tab 4: About Us (/about-us) */}
@@ -457,6 +486,12 @@ export function MobileBottomNav() {
       <QuickRegisterModal
         open={isQuickRegisterOpen}
         onClose={() => setIsQuickRegisterOpen(false)}
+      />
+
+      {/* Voice/Text Requirement Intake Modal for Authenticated Buyers */}
+      <VoiceTextRequirementIntakeModal
+        open={isBuyerIntakeModalOpen}
+        onClose={() => setIsBuyerIntakeModalOpen(false)}
       />
 
       <ChangePasswordModal

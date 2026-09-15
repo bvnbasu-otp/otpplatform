@@ -7,6 +7,7 @@ import { OtpLogo } from '@/components/ui/OtpLogo';
 import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
+import { VoiceTextRequirementIntakeModal } from '@/features/intake';
 import { SupportHelpButtonModal } from '@/features/support';
 import { ThemeBottomSheet } from '@/features/theme';
 
@@ -18,6 +19,7 @@ export function SiteHeader() {
   const [isAccountPopoverOpen, setIsAccountPopoverOpen] = useState(false);
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
   const [isQuickRegisterOpen, setIsQuickRegisterOpen] = useState(false);
+  const [isBuyerIntakeModalOpen, setIsBuyerIntakeModalOpen] = useState(false);
   const [showThemeSheet, setShowThemeSheet] = useState(false);
   const accountPopoverRef = useRef<HTMLDivElement>(null);
 
@@ -104,16 +106,17 @@ export function SiteHeader() {
                 <span>Add Capabilities</span>
               </button>
             ) : user ? (
-              <NavLink
-                to="/requirements/new"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold hover:bg-primary/20 transition"
+              <button
+                type="button"
+                onClick={() => setIsBuyerIntakeModalOpen(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold hover:bg-primary/20 transition cursor-pointer"
                 title="Post a new requirement / broadcast RFQ"
                 aria-label="Post a new requirement / broadcast RFQ"
                 data-testid="header-buyer-create-requirement-btn"
               >
                 <span>+</span>
                 <span>Post Need</span>
-              </NavLink>
+              </button>
             ) : (
               <button
                 type="button"
@@ -344,16 +347,19 @@ export function SiteHeader() {
                 </div>
               ) : user ? (
                 <div className="pb-1">
-                  <Link
-                    to="/requirements/new"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition text-xs"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsBuyerIntakeModalOpen(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition text-xs cursor-pointer"
                     title="Post a new requirement / broadcast RFQ"
                     data-testid="mobile-create-requirement"
                   >
                     <span>+</span>
-                    <span>Create Requirement</span>
-                  </Link>
+                    <span>Post Need / RFQ Intake</span>
+                  </button>
                 </div>
               ) : (
                 <div className="pb-1">
@@ -522,6 +528,12 @@ export function SiteHeader() {
       <QuickRegisterModal
         open={isQuickRegisterOpen}
         onClose={() => setIsQuickRegisterOpen(false)}
+      />
+
+      {/* Voice/Text Requirement Intake Modal for Authenticated Buyers */}
+      <VoiceTextRequirementIntakeModal
+        open={isBuyerIntakeModalOpen}
+        onClose={() => setIsBuyerIntakeModalOpen(false)}
       />
 
       {/* Theme Bottom Sheet Triggered from SiteHeader Profile Popover */}

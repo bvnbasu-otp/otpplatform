@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
+import { VoiceTextRequirementIntakeModal } from '@/features/intake';
 
 describe('Context-Aware Global "+" Action Button Logic', () => {
   describe('1. Component Availability & Setup', () => {
@@ -13,16 +14,18 @@ describe('Context-Aware Global "+" Action Button Logic', () => {
       expect(MobileBottomNav).toBeDefined();
       expect(SupplierCapabilityModal).toBeDefined();
       expect(QuickRegisterModal).toBeDefined();
+      expect(VoiceTextRequirementIntakeModal).toBeDefined();
     });
   });
 
   describe('2. Buyer vs Supplier Persona Action Contracts', () => {
-    it('verifies Buyer Mode triggers procurement requirement intake', () => {
+    it('verifies Buyer Mode triggers procurement requirement intake modal', () => {
       const buyerContract = {
         mode: 'BUYER',
         buttonLabel: 'Post Need',
         drawerLabel: '+ Create New Requirement',
         tooltip: 'Post a new requirement / broadcast RFQ',
+        triggersModal: 'VoiceTextRequirementIntakeModal',
         targetRoute: '/requirements/new',
         altTargetRoute: '/intake',
         allowCreateRequirement: true,
@@ -30,6 +33,7 @@ describe('Context-Aware Global "+" Action Button Logic', () => {
 
       expect(buyerContract.allowCreateRequirement).toBe(true);
       expect(buyerContract.tooltip).toBe('Post a new requirement / broadcast RFQ');
+      expect(buyerContract.triggersModal).toBe('VoiceTextRequirementIntakeModal');
       expect(['/requirements/new', '/intake']).toContain(buyerContract.targetRoute);
     });
 
@@ -90,19 +94,21 @@ describe('Context-Aware Global "+" Action Button Logic', () => {
           };
         }
         return {
-          type: 'link',
-          to: '/requirements/new',
+          type: 'button',
           title: 'Post a new requirement / broadcast RFQ',
           ariaLabel: 'Post a new requirement / broadcast RFQ',
           testId: 'bottom-nav-buyer-create-requirement',
-          opensModal: false,
+          opensModal: true,
+          modalName: 'VoiceTextRequirementIntakeModal',
         };
       };
 
       const buyerAction = getActionProps('BUYER');
-      expect(buyerAction.type).toBe('link');
-      expect(buyerAction.to).toBe('/requirements/new');
+      expect(buyerAction.type).toBe('button');
+      expect(buyerAction.opensModal).toBe(true);
+      expect(buyerAction.modalName).toBe('VoiceTextRequirementIntakeModal');
       expect(buyerAction.title).toBe('Post a new requirement / broadcast RFQ');
+      expect(buyerAction.testId).toBe('bottom-nav-buyer-create-requirement');
 
       const supplierAction = getActionProps('SUPPLIER');
       expect(supplierAction.type).toBe('button');

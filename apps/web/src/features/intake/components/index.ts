@@ -2,6 +2,8 @@ export { AttributeFields } from './AttributeFields';
 export type { AttributeFieldsProps } from './AttributeFields';
 export { VoiceRequirementDictation } from './VoiceRequirementDictation';
 export type { VoiceRequirementDictationProps } from './VoiceRequirementDictation';
+export { VoiceTextRequirementIntakeModal } from './VoiceTextRequirementIntakeModal';
+export type { VoiceTextRequirementIntakeModalProps } from './VoiceTextRequirementIntakeModal';
 
 // 6 Progressive Conversational Intake Steps
 export { WhatDoYouNeedStep } from './steps/WhatDoYouNeedStep';
