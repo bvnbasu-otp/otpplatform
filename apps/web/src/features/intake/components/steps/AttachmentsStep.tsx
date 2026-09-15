@@ -45,7 +45,7 @@ export function AttachmentsStep({
           💡 <strong>No files to upload?</strong> You can skip this step and proceed directly to Review &amp; Publish.
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-5 pt-3 border-t border-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <Button variant="ghost" onClick={onBack} className="min-h-[44px]">
             ← Back to Specifications
           </Button>
@@ -54,7 +54,7 @@ export function AttachmentsStep({
             onClick={onSubmit}
             busy={isBusy}
             busyLabel="Processing…"
-            className="min-h-[44px] w-full sm:w-auto"
+            className="min-h-[46px] w-full sm:w-auto font-bold text-xs sm:text-sm shadow-xs"
           >
             Continue to Review &amp; Publish →
           </Button>

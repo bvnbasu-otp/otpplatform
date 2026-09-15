@@ -323,14 +323,14 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
         </div>
       )}
 
-      {/* 5. Sticky Bottom Bar for Screen 6 CTA */}
+      {/* 5. Bottom Action Bar for Screen 6 CTA */}
       {canSubmitInitial && (
-        <div className="fixed sm:static bottom-0 left-0 right-0 z-30 p-3 sm:p-0 bg-background/95 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none border-t sm:border-t-0 border-border/80">
+        <div className="pt-2">
           <button
             type="button"
             onClick={() => setIsQuoteSheetOpen(true)}
             data-testid="open-quote-sheet-cta"
-            className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90 transition flex items-center justify-center gap-2 active:scale-98 mobile-touch-target"
+            className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 transition flex items-center justify-center gap-2 active:scale-98 mobile-touch-target"
           >
             <span>⚡</span>
             <span>Draft &amp; Submit Quote →</span>
@@ -353,6 +353,9 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
           quoteId={quote?.quoteId}
         />
       </BottomSheet>
+
+      {/* Guaranteed scroll clearance spacer above MobileBottomNav */}
+      <div className="h-28 sm:h-16 shrink-0 w-full" aria-hidden="true" />
     </div>
   );
 }

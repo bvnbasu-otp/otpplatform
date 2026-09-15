@@ -369,7 +369,7 @@ export function ReviewAndPublishStep({
       )}
 
       {/* Action CTA with Double-Submission Protection */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-border/70">
         <Button variant="ghost" onClick={onBack} className="min-h-[44px]">
           ← Back to Attachments
         </Button>
@@ -381,7 +381,7 @@ export function ReviewAndPublishStep({
           disabled={isBusy}
           busy={isBusy}
           busyLabel="Publishing RFQ & Discovering Suppliers…"
-          className="min-h-[44px] w-full sm:w-auto font-bold shadow-md"
+          className="min-h-[48px] w-full sm:w-auto font-extrabold text-sm shadow-md"
           data-testid="publish-requirement-btn"
         >
           🚀 Publish RFQ &amp; Discover Suppliers

@@ -433,6 +433,9 @@ export function SupplierDashboardPage() {
         onClose={() => setIsCapabilityModalOpen(false)}
         onSaved={() => refresh()}
       />
+
+      {/* Guaranteed scroll clearance spacer above MobileBottomNav */}
+      <div className="h-28 sm:h-16 shrink-0 w-full" aria-hidden="true" />
     </div>
   );
 }
