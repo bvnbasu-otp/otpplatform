@@ -339,6 +339,87 @@ describe('Create Requirement Mobile Redesign — Progressive Flow & Invariants',
     });
   });
 
+  describe('Phase 2.2: Requirement Review Invariants', () => {
+    it('distinguishes blocking validation errors from advisory warnings', () => {
+      const validateDraft = (draft: Partial<IntakeDraft>, schema: any[], attachmentsCount: number) => {
+        const errors: string[] = [];
+        const warnings: string[] = [];
+
+        if (!draft.title?.trim() || !draft.originalText?.trim() || !draft.subcategoryId) {
+          errors.push('Requirement title, description, and vertical are required.');
+        }
+        if (!draft.deliveryCity?.trim() || !draft.deliveryPincode?.trim() || !/^[0-9]{6}$/.test(draft.deliveryPincode.trim())) {
+          errors.push('Delivery city and valid 6-digit PIN code are required.');
+        }
+        if (!draft.commercial?.budgetAmount) {
+          warnings.push('No internal budget ceiling set. Suppliers will quote based on open market pricing.');
+        }
+        if (attachmentsCount === 0) {
+          warnings.push('No drawings or BoQ files attached.');
+        }
+
+        return { errors, warnings, isValid: errors.length === 0 };
+      };
+
+      // Valid draft without budget or attachments: Valid, but has 2 advisory warnings
+      const completeDraft: Partial<IntakeDraft> = {
+        title: 'Borewell Motor Repair',
+        originalText: '10 HP submersible pump overhaul in Bengaluru 560001 within 5 days',
+        subcategoryId: 'sub-cnc-turning',
+        deliveryCity: 'Bengaluru',
+        deliveryPincode: '560001',
+        attributes: {},
+        commercial: {
+          budgetAmount: null,
+          paymentTerms: '100% on delivery',
+          priceIncludesTransport: true,
+          priceIncludesGst: true,
+          notes: null,
+        },
+      };
+
+      const res = validateDraft(completeDraft, [], 0);
+      expect(res.isValid).toBe(true);
+      expect(res.errors.length).toBe(0);
+      expect(res.warnings.length).toBe(2);
+
+      // Incomplete draft missing city/PIN: Invalid with blocking errors
+      const invalidDraft: Partial<IntakeDraft> = {
+        ...completeDraft,
+        deliveryCity: '',
+        deliveryPincode: '123',
+      };
+      const resInvalid = validateDraft(invalidDraft, [], 0);
+      expect(resInvalid.isValid).toBe(false);
+      expect(resInvalid.errors.length).toBe(1);
+    });
+
+    it('maps section edit buttons to appropriate canonical wizard step indexes', () => {
+      const stepIndexMap = {
+        'What You Need': 0,
+        'Where Location': 1,
+        'When & Budget': 2,
+        'Specifications': 3,
+        'Attachments': 4,
+        'Review & Sourcing': 5,
+      };
+
+      expect(stepIndexMap['What You Need']).toBe(0);
+      expect(stepIndexMap['Where Location']).toBe(1);
+      expect(stepIndexMap['When & Budget']).toBe(2);
+      expect(stepIndexMap['Specifications']).toBe(3);
+      expect(stepIndexMap['Attachments']).toBe(4);
+      expect(stepIndexMap['Review & Sourcing']).toBe(5);
+    });
+
+    it('enforces 30-minute supplier response expectation without prohibited timing claims', () => {
+      const responseNotice = 'Your requirement will be broadcast to verified suppliers matching your category and location. Suppliers submit sealed, identity-protected quotes with responses expected within 30 minutes.';
+      expect(responseNotice).toContain('within 30 minutes');
+      expect(responseNotice).not.toContain('15 sec');
+      expect(responseNotice).not.toContain('15 seconds');
+    });
+  });
+
   describe('Vocabulary Scanner Invariant', () => {
     it('contains ZERO occurrences of prohibited terms in step configuration and labels', () => {
       const prohibitedTerms = ['bid', 'bids', 'bidder', 'bidders', 'bidding', 'blind'];

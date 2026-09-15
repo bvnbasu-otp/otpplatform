@@ -22,27 +22,28 @@ export function isSuperAdminEmail(email?: string | null): boolean {
 }
 
 export async function fetchCurrentProfile(): Promise<UserProfile | null> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
+  const authRes = await supabase.auth.getUser();
+  const authUser = authRes?.data?.user;
+  if (!authUser) return null;
 
   const { data, error } = await supabase
     .from('profiles')
     .select('id, email, full_name, is_platform_admin, active_organization_id')
-    .or(`auth_user_id.eq.${auth.user.id},id.eq.${auth.user.id}`)
+    .or(`auth_user_id.eq.${authUser.id},id.eq.${authUser.id}`)
     .maybeSingle();
 
   if (error || !data) {
-    if (auth.user.email) {
+    if (authUser.email) {
       const { data: fallbackData } = await supabase
         .from('profiles')
         .select('id, email, full_name, is_platform_admin, active_organization_id')
-        .eq('email', auth.user.email)
+        .eq('email', authUser.email)
         .maybeSingle();
       if (fallbackData) {
         const isAdmin = Boolean(
           fallbackData.is_platform_admin ||
             isSuperAdminEmail(fallbackData.email) ||
-            isSuperAdminEmail(auth.user.email)
+            isSuperAdminEmail(authUser.email)
         );
         return {
           profileId: fallbackData.id,
@@ -59,7 +60,7 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
   const isAdmin = Boolean(
     data.is_platform_admin ||
       isSuperAdminEmail(data.email) ||
-      isSuperAdminEmail(auth.user.email)
+      isSuperAdminEmail(authUser.email)
   );
 
   return {

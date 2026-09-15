@@ -11,7 +11,7 @@ vi.mock('@/lib/supabase', () => {
   return {
     supabase: {
       auth: {
-        getUser: vi.fn(),
+        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null } as any),
       },
       from: vi.fn(),
       rpc: vi.fn(),
@@ -38,8 +38,8 @@ function createMockQueryBuilder(data: any = null, error: any = null) {
       const singleData = Array.isArray(data) ? (data[0] ?? null) : data;
       return Promise.resolve({ data: singleData, error });
     }),
-    then: promiseResult.then.bind(promiseResult),
-    catch: promiseResult.catch.bind(promiseResult),
+    then: (resolve: any, reject: any) => promiseResult.then(resolve, reject),
+    catch: (reject: any) => promiseResult.catch(reject),
   };
   return builder;
 }
@@ -47,6 +47,7 @@ function createMockQueryBuilder(data: any = null, error: any = null) {
 describe('Auth Feature & Portal Role Resolution', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
   });
 
   it('correctly identifies superadmin emails', () => {

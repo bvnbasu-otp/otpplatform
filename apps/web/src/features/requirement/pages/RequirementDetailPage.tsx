@@ -98,7 +98,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
         </div>
         <Link
           to={`/requirements/${requirementId}/discover`}
-          className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition shrink-0 mobile-touch-target"
+          className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition shrink-0 mobile-touch-target"
         >
           <span>Step 2: Send Enquiry</span>
           <span>→</span>
@@ -146,14 +146,14 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
                 <>
                   <Link
                     to={`/requirements/${requirementId}/discover`}
-                    className="min-h-[44px] w-full flex items-center justify-between rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
+                    className="min-h-[48px] w-full flex items-center justify-between rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
                   >
                     <span>Discover &amp; Match Suppliers</span>
                     <span>→</span>
                   </Link>
                   <Link
                     to={`/rfq/${rfqId}/evaluation`}
-                    className="min-h-[44px] w-full flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition mobile-touch-target"
+                    className="min-h-[48px] w-full flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition mobile-touch-target"
                   >
                     <span>Identity-Protected Evaluation</span>
                     <span>→</span>
@@ -162,7 +162,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
               ) : (
                 <Link
                   to={`/requirements/${requirementId}/discover`}
-                  className="min-h-[44px] w-full flex items-center justify-between rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
+                  className="min-h-[48px] w-full flex items-center justify-between rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
                 >
                   <span>Step 2: Send Enquiry</span>
                   <span>→</span>
