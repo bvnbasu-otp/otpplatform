@@ -47,7 +47,6 @@ function createMockQueryBuilder(data: any = null, error: any = null) {
 describe('Auth Feature & Portal Role Resolution', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.restoreAllMocks();
     vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
     vi.mocked(supabase.from).mockImplementation(() => createMockQueryBuilder([]));
   });
