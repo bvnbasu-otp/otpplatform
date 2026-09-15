@@ -290,17 +290,17 @@ export function ScopeAndSpecificationsStep({
       </Card>
 
       <div className="mt-5 pt-3 border-t border-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        <Button variant="ghost" onClick={onBack} className="min-h-[44px]">
-          ← Back to When &amp; Budget
+        <Button variant="ghost" onClick={onBack} className="min-h-[48px] mobile-touch-target">
+          ← Back
         </Button>
         <Button
           type="button"
           onClick={handleSubmit}
           busy={isBusy}
           busyLabel="Saving Specifications…"
-          className="min-h-[46px] w-full sm:w-auto font-bold text-xs sm:text-sm shadow-xs"
+          className="min-h-[48px] w-full sm:w-auto font-extrabold text-xs sm:text-sm shadow-xs mobile-touch-target"
         >
-          Continue to Attachments →
+          Continue →
         </Button>
       </div>
     </div>

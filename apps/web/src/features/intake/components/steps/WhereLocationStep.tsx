@@ -257,17 +257,17 @@ export function WhereLocationStep({
         {error && <p className="mt-4 text-sm text-red-600 font-medium">{error}</p>}
 
         <div className="mt-5 pt-3 border-t border-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-          <Button variant="ghost" onClick={onBack} className="min-h-[44px]">
-            ← Back to Requirement
+          <Button variant="ghost" onClick={onBack} className="min-h-[48px] mobile-touch-target">
+            ← Back
           </Button>
           <Button
             type="button"
             onClick={handleSubmit}
             busy={isBusy}
             busyLabel="Saving Location…"
-            className="min-h-[46px] w-full sm:w-auto font-bold text-xs sm:text-sm shadow-xs"
+            className="min-h-[48px] w-full sm:w-auto font-extrabold text-xs sm:text-sm shadow-xs mobile-touch-target"
           >
-            Continue to When &amp; Budget →
+            Continue →
           </Button>
         </div>
       </Card>

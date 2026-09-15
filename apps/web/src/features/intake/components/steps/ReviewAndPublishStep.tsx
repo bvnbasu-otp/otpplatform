@@ -368,10 +368,20 @@ export function ReviewAndPublishStep({
         </div>
       )}
 
+      {/* Sourcing Dispatch Info Callout */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-xs text-foreground space-y-1">
+        <div className="flex items-center gap-1.5 font-bold text-primary">
+          <span>🚀</span> What happens next:
+        </div>
+        <p className="text-muted-foreground leading-relaxed">
+          Your requirement will be broadcast to verified suppliers matching your category and location. Suppliers submit sealed, identity-protected quotes with responses expected within 30 minutes.
+        </p>
+      </div>
+
       {/* Action CTA with Double-Submission Protection */}
       <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-border/70">
-        <Button variant="ghost" onClick={onBack} className="min-h-[44px]">
-          ← Back to Attachments
+        <Button variant="ghost" onClick={onBack} className="min-h-[48px] mobile-touch-target">
+          ← Back
         </Button>
         <Button
           type="button"
@@ -381,10 +391,10 @@ export function ReviewAndPublishStep({
           disabled={isBusy}
           busy={isBusy}
           busyLabel="Publishing RFQ & Discovering Suppliers…"
-          className="min-h-[48px] w-full sm:w-auto font-extrabold text-sm shadow-md"
+          className="min-h-[48px] w-full sm:w-auto font-extrabold text-sm shadow-md mobile-touch-target"
           data-testid="publish-requirement-btn"
         >
-          🚀 Publish RFQ &amp; Discover Suppliers
+          🚀 Start Sourcing →
         </Button>
       </div>
     </div>

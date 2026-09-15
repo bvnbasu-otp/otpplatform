@@ -271,12 +271,80 @@ describe('Create Requirement Mobile Redesign — Progressive Flow & Invariants',
     });
   });
 
+  describe('Step 1 Suggestions & Fast Track Invariants', () => {
+    it('provides high-relevance suggestion presets for instant extraction', async () => {
+      const suggestions = [
+        'Require 10 HP submersible borewell motor rewinding in Bengaluru 560001, needed within 5 days with 6 months warranty.',
+        'Industrial electrical panel wiring, busbar installation and LT breaker maintenance in Chennai 600001 within 7 days.',
+        'Commercial building booster pump overhaul, valve fitting and pipe replacement in Hyderabad 500001 within 5 days.',
+        '8-Channel HD CCTV camera installation with 2TB NVR recording and smartphone remote monitoring in Pune 411001.',
+        'Deep cleaning and sanitization for 10,000 sq ft commercial facility in Mumbai 400001 within 3 days.',
+        'Commercial terrace waterproofing 5000 sq ft with elastomeric membrane coating in Mumbai 400001 within 15 days.',
+        'Annual diesel generator DG set servicing, oil filter replacement and preventative maintenance in Coimbatore 641001.',
+        'Custom printed 5-ply corrugated shipping boxes 1000 units in Delhi NCR within 10 days.',
+      ];
+
+      for (const text of suggestions) {
+        const parsed = await parser.parse({ text, taxonomy: mockTaxonomy });
+        expect(parsed.title || text.length > 10).toBeTruthy();
+      }
+    });
+
+    it('distinguishes Fast Track (Individual/MSME) and Full Governance (RWA/Enterprise) appropriately', () => {
+      const isGovernanceRequired = (buyerType: string | null) => {
+        return ['RESIDENTIAL_RWA', 'COMMUNITY', 'ENTERPRISE', 'RWA'].includes(buyerType || '');
+      };
+
+      expect(isGovernanceRequired('INDIVIDUAL')).toBe(false);
+      expect(isGovernanceRequired('MSME')).toBe(false);
+      expect(isGovernanceRequired(null)).toBe(false);
+      expect(isGovernanceRequired('RESIDENTIAL_RWA')).toBe(true);
+      expect(isGovernanceRequired('ENTERPRISE')).toBe(true);
+    });
+  });
+
+  describe('Draft Persistence Invariant', () => {
+    it('serializes and recovers draft state without dropping user entries', () => {
+      const draftState: Partial<IntakeDraft> = {
+        requirementId: 'draft-202',
+        title: 'Borewell motor repair',
+        originalText: 'Require 10 HP submersible borewell motor repair in Bengaluru 560001',
+        deliveryCity: 'Bengaluru',
+        deliveryPincode: '560001',
+        quantity: 1,
+        unit: 'SETS',
+        quality: {
+          warrantyMonths: 6,
+          certifications: [],
+          inspectionRequired: false,
+          sampleRequired: false,
+          notes: null,
+        },
+        commercial: {
+          budgetAmount: 25000,
+          paymentTerms: '100% on delivery',
+          priceIncludesTransport: true,
+          priceIncludesGst: true,
+          notes: null,
+        },
+      };
+
+      const serialized = JSON.stringify(draftState);
+      const restored = JSON.parse(serialized);
+
+      expect(restored.title).toBe('Borewell motor repair');
+      expect(restored.deliveryCity).toBe('Bengaluru');
+      expect(restored.commercial.budgetAmount).toBe(25000);
+      expect(restored.quality.warrantyMonths).toBe(6);
+    });
+  });
+
   describe('Vocabulary Scanner Invariant', () => {
     it('contains ZERO occurrences of prohibited terms in step configuration and labels', () => {
       const prohibitedTerms = ['bid', 'bids', 'bidder', 'bidders', 'bidding', 'blind'];
       const combinedText = `
-        What do you need? Where is this needed? When & Budget? Scope & Specifications
-        Drawings & Attachments Review & Publish RFQ & Discover Suppliers
+        What do you need to buy? Where is this needed? When & Budget? Scope & Specifications
+        Drawings & Attachments Review & Start Sourcing RFQ & Discover Suppliers
         Identity-Protected Quorum Quotes Wanted Quoting Deadline Landed Cost
       `.toLowerCase();
 

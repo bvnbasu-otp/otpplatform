@@ -28,31 +28,46 @@ export interface WhatDoYouNeedStepProps {
   }) => void;
 }
 
-const TEMPLATE_CHIPS = [
+const SUGGESTION_CHIPS = [
   {
     icon: '⚡',
-    label: 'Motor Rewind',
-    text: 'Require 12.5 HP submersible borewell motor rewinding in Bengaluru 560001, needed within 5 days with 6 months warranty.',
+    label: 'Borewell',
+    text: 'Require 10 HP submersible borewell motor rewinding in Bengaluru 560001, needed within 5 days with 6 months warranty.',
   },
   {
-    icon: '🏊',
-    label: 'Pool Overhaul',
-    text: 'Swimming pool renovation and overhaul with waterproofing, tile replacement and pump maintenance in Chennai 600028, needed in 30 days.',
+    icon: '💡',
+    label: 'Electrical',
+    text: 'Industrial electrical panel wiring, busbar installation and LT breaker maintenance in Chennai 600001 within 7 days.',
   },
   {
-    icon: '⚙️',
-    label: 'CNC Machining',
-    text: 'Supply of 500 pieces EN8 CNC turned shaft 25mm diameter tolerance ±0.05mm, deliver to Coimbatore 641021 in 14 days with 12 months warranty.',
+    icon: '🔧',
+    label: 'Plumbing',
+    text: 'Commercial building booster pump overhaul, valve fitting and pipe replacement in Hyderabad 500001 within 5 days.',
+  },
+  {
+    icon: '🛡️',
+    label: 'Security',
+    text: '8-Channel HD CCTV camera installation with 2TB NVR recording and smartphone remote monitoring in Pune 411001.',
+  },
+  {
+    icon: '🧹',
+    label: 'Cleaning',
+    text: 'Deep cleaning and sanitization for 10,000 sq ft commercial facility in Mumbai 400001 within 3 days.',
   },
   {
     icon: '🏗️',
-    label: 'Waterproofing',
+    label: 'Civil work',
     text: 'Commercial terrace waterproofing 5000 sq ft with elastomeric membrane coating in Mumbai 400001 within 15 days.',
+  },
+  {
+    icon: '⚙️',
+    label: 'Maintenance',
+    text: 'Annual diesel generator DG set servicing, oil filter replacement and preventative maintenance in Coimbatore 641001.',
   },
   {
     icon: '📦',
     label: 'Packaging',
-    text: 'Custom printed 5-ply corrugated shipping boxes 1000 units in Pune 411001 within 10 days.',
+    text: 'Custom printed 5-ply corrugated shipping boxes 1000 units in Delhi NCR within 10 days.',
   },
 ];
 
@@ -182,8 +197,8 @@ export function WhatDoYouNeedStep({
     <div className="space-y-4" data-testid="what-do-you-need-step">
       {/* 1. Conversational Prompt & Large Clean Input */}
       <Card
-        title="What do you need?"
-        description="Describe your procurement requirement in your own words. Our AI parser extracts specifications, quantity, and categories automatically."
+        title="What do you need to buy?"
+        description="Describe your requirement in plain words. Our parser extracts specifications, quantity, and categories automatically."
         action={
           confidence !== null && (
             <Badge tone={confidence >= 0.6 ? 'success' : 'warning'}>
@@ -192,26 +207,26 @@ export function WhatDoYouNeedStep({
           )
         }
       >
-        {/* Quick 1-Tap Template Chips */}
+        {/* Quick 1-Tap Category Suggestions */}
         <div className="mb-3 space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">
-              ⚡ 1-Tap Quick Templates:
+              ⚡ Quick Suggestions:
             </span>
             <button
               type="button"
               onClick={() => setShowVoiceDictation(!showVoiceDictation)}
-              className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline min-h-[36px] py-1 px-1.5"
             >
               <span>{showVoiceDictation ? '✕ Close Voice' : '🎙️ Voice Dictate (Tamil · Hindi · English)'}</span>
             </button>
           </div>
           <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 sm:pb-0 no-scrollbar sm:flex-wrap">
-            {TEMPLATE_CHIPS.map((chip) => (
+            {SUGGESTION_CHIPS.map((chip) => (
               <button
                 key={chip.label}
                 type="button"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 transition shadow-2xs active:scale-95 min-h-[40px] shrink-0 mobile-touch-target whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 px-3.5 py-2 text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 transition shadow-2xs active:scale-95 min-h-[44px] shrink-0 mobile-touch-target whitespace-nowrap"
                 onClick={() => {
                   setError(null);
                   setText(chip.text);
@@ -247,7 +262,7 @@ export function WhatDoYouNeedStep({
               aria-describedby={describedBy}
               invalid={invalid}
               rows={3}
-              placeholder="e.g. 50kW Rooftop Solar Installation with net metering in Bangalore, needed within 30 days"
+              placeholder="e.g. Borewell motor repair in Bengaluru within 5 days with 6 months warranty..."
               value={text}
               onChange={(e) => {
                 setError(null);
@@ -264,7 +279,7 @@ export function WhatDoYouNeedStep({
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-[11px] text-muted-foreground">
-            Include quantities, dimensions, timeline, and location for best AI extraction.
+            Include item name, quantity, timeline, and city for instant extraction.
           </p>
           <Button
             type="button"
@@ -274,6 +289,7 @@ export function WhatDoYouNeedStep({
             busy={isParsing}
             busyLabel="Analyzing with AI…"
             onClick={() => void runParser(text.trim())}
+            className="min-h-[40px] px-3.5"
           >
             ⚡ Re-Extract with AI
           </Button>
@@ -415,9 +431,9 @@ export function WhatDoYouNeedStep({
             onClick={handleSubmit}
             busy={isBusy || isParsing}
             busyLabel="Saving Requirement…"
-            className="min-h-[46px] w-full sm:w-auto font-bold text-xs sm:text-sm shadow-xs"
+            className="min-h-[48px] w-full sm:w-auto font-extrabold text-xs sm:text-sm shadow-xs mobile-touch-target"
           >
-            Continue to Location →
+            Continue →
           </Button>
         </div>
       </Card>

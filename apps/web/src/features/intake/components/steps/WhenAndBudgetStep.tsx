@@ -28,10 +28,11 @@ const TIMING_OPTIONS = [
 ];
 
 const TAT_CHIPS = [
-  { label: '⚡ Immediate', mode: 'IMMEDIATE', days: null },
+  { label: '⚡ ASAP / Immediate', mode: 'IMMEDIATE', days: null },
+  { label: '⏱️ This week (7 days)', mode: 'WITHIN_DAYS', days: 7 },
   { label: 'Within 15 days', mode: 'WITHIN_DAYS', days: 15 },
-  { label: '30 days', mode: 'WITHIN_DAYS', days: 30 },
-  { label: '60 days', mode: 'WITHIN_DAYS', days: 60 },
+  { label: '📅 This month (30 days)', mode: 'WITHIN_DAYS', days: 30 },
+  { label: '🤝 Flexible', mode: 'FLEXIBLE', days: null },
 ];
 
 const BUDGET_PRESETS = [
@@ -362,17 +363,17 @@ export function WhenAndBudgetStep({
         {error && <p className="mt-4 text-sm text-red-600 font-medium">{error}</p>}
 
         <div className="mt-5 pt-3 border-t border-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-          <Button variant="ghost" onClick={onBack} className="min-h-[44px]">
-            ← Back to Location
+          <Button variant="ghost" onClick={onBack} className="min-h-[48px] mobile-touch-target">
+            ← Back
           </Button>
           <Button
             type="button"
             onClick={handleSubmit}
             busy={isBusy}
             busyLabel="Saving Terms…"
-            className="min-h-[46px] w-full sm:w-auto font-bold text-xs sm:text-sm shadow-xs"
+            className="min-h-[48px] w-full sm:w-auto font-extrabold text-xs sm:text-sm shadow-xs mobile-touch-target"
           >
-            Continue to Specifications →
+            Continue →
           </Button>
         </div>
       </Card>
