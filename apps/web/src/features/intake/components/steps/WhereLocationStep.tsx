@@ -121,8 +121,8 @@ export function WhereLocationStep({
             {({ id, describedBy, invalid }) => (
               <div className="space-y-2">
                 {/* 1-Tap City Pills */}
-                <div className="flex flex-wrap gap-1.5 items-center">
-                  <span className="text-[11px] font-semibold text-muted-foreground mr-1">
+                <div className="flex gap-1.5 items-center overflow-x-auto pb-1.5 sm:pb-0 no-scrollbar sm:flex-wrap">
+                  <span className="text-[11px] font-semibold text-muted-foreground mr-1 shrink-0">
                     ⚡ 1-Tap City:
                   </span>
                   {POPULAR_CITIES.map((c) => {
@@ -136,7 +136,7 @@ export function WhereLocationStep({
                           setError(null);
                           setCity(c === 'Bangalore' ? 'Bengaluru' : c);
                         }}
-                        className={`rounded-full border px-3.5 py-2 text-xs font-semibold transition active:scale-95 min-h-[44px] mobile-touch-target shadow-2xs ${
+                        className={`rounded-full border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold transition active:scale-95 min-h-[40px] shrink-0 mobile-touch-target shadow-2xs whitespace-nowrap ${
                           isSelected
                             ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                             : 'border-border bg-card text-foreground hover:border-primary/60 hover:bg-muted'
@@ -256,7 +256,7 @@ export function WhereLocationStep({
 
         {error && <p className="mt-4 text-sm text-red-600 font-medium">{error}</p>}
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-5 pt-3 border-t border-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <Button variant="ghost" onClick={onBack} className="min-h-[44px]">
             ← Back to Requirement
           </Button>
@@ -265,7 +265,7 @@ export function WhereLocationStep({
             onClick={handleSubmit}
             busy={isBusy}
             busyLabel="Saving Location…"
-            className="min-h-[44px] w-full sm:w-auto"
+            className="min-h-[46px] w-full sm:w-auto font-bold text-xs sm:text-sm shadow-xs"
           >
             Continue to When &amp; Budget →
           </Button>

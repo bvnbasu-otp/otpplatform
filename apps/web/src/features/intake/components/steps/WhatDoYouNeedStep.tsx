@@ -206,12 +206,12 @@ export function WhatDoYouNeedStep({
               <span>{showVoiceDictation ? '✕ Close Voice' : '🎙️ Voice Dictate (Tamil · Hindi · English)'}</span>
             </button>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 sm:pb-0 no-scrollbar sm:flex-wrap">
             {TEMPLATE_CHIPS.map((chip) => (
               <button
                 key={chip.label}
                 type="button"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 px-3.5 py-2 text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 transition shadow-2xs active:scale-95 min-h-[44px] mobile-touch-target"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 transition shadow-2xs active:scale-95 min-h-[40px] shrink-0 mobile-touch-target whitespace-nowrap"
                 onClick={() => {
                   setError(null);
                   setText(chip.text);
@@ -246,7 +246,7 @@ export function WhatDoYouNeedStep({
               id={id}
               aria-describedby={describedBy}
               invalid={invalid}
-              rows={4}
+              rows={3}
               placeholder="e.g. 50kW Rooftop Solar Installation with net metering in Bangalore, needed within 30 days"
               value={text}
               onChange={(e) => {
@@ -331,7 +331,7 @@ export function WhatDoYouNeedStep({
         title="Categorization & Procurement Mode"
         description="Verify or adjust the categorized vertical and procurement type for precise supplier routing."
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
           <Field label="Requirement Title" required className="sm:col-span-2">
             {({ id, describedBy, invalid }) => (
               <Input
@@ -407,15 +407,15 @@ export function WhatDoYouNeedStep({
           </Field>
         </div>
 
-        {error && <p className="mt-4 text-sm text-red-600 font-medium">{error}</p>}
+        {error && <p className="mt-3 text-sm text-red-600 font-medium">{error}</p>}
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-5 pt-3 border-t border-border/70 flex items-center justify-end">
           <Button
             type="button"
             onClick={handleSubmit}
             busy={isBusy || isParsing}
             busyLabel="Saving Requirement…"
-            className="min-h-[44px] w-full sm:w-auto"
+            className="min-h-[46px] w-full sm:w-auto font-bold text-xs sm:text-sm shadow-xs"
           >
             Continue to Location →
           </Button>

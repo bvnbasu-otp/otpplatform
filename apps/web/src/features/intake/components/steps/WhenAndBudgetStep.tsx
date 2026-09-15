@@ -227,7 +227,7 @@ export function WhenAndBudgetStep({
             </div>
 
             {/* 1-Tap Budget Range Chips */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 items-center overflow-x-auto pb-1.5 sm:pb-0 no-scrollbar sm:flex-wrap">
               {BUDGET_PRESETS.map((preset) => {
                 const isSelected = budgetAmount === preset.amount;
                 return (
@@ -235,7 +235,7 @@ export function WhenAndBudgetStep({
                     key={preset.label}
                     type="button"
                     onClick={() => setBudgetAmount(preset.amount)}
-                    className={`rounded-full border px-3.5 py-2 text-xs font-semibold transition active:scale-95 min-h-[44px] mobile-touch-target shadow-2xs ${
+                    className={`rounded-full border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold transition active:scale-95 min-h-[40px] shrink-0 mobile-touch-target shadow-2xs whitespace-nowrap ${
                       isSelected
                         ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                         : 'border-border bg-card text-foreground hover:border-primary/60 hover:bg-muted'
@@ -249,7 +249,7 @@ export function WhenAndBudgetStep({
                 <button
                   type="button"
                   onClick={() => setBudgetAmount(null)}
-                  className="rounded-full border border-dashed border-border px-3.5 py-2 text-xs text-muted-foreground hover:text-foreground transition min-h-[44px] mobile-touch-target"
+                  className="rounded-full border border-dashed border-border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs text-muted-foreground hover:text-foreground transition min-h-[40px] shrink-0 mobile-touch-target whitespace-nowrap"
                 >
                   Clear Budget
                 </button>
@@ -361,7 +361,7 @@ export function WhenAndBudgetStep({
 
         {error && <p className="mt-4 text-sm text-red-600 font-medium">{error}</p>}
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-5 pt-3 border-t border-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <Button variant="ghost" onClick={onBack} className="min-h-[44px]">
             ← Back to Location
           </Button>
@@ -370,7 +370,7 @@ export function WhenAndBudgetStep({
             onClick={handleSubmit}
             busy={isBusy}
             busyLabel="Saving Terms…"
-            className="min-h-[44px] w-full sm:w-auto"
+            className="min-h-[46px] w-full sm:w-auto font-bold text-xs sm:text-sm shadow-xs"
           >
             Continue to Specifications →
           </Button>
