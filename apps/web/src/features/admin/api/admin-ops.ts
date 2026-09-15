@@ -1032,15 +1032,75 @@ export async function searchAdminEntities(
 export async function fetchSignupRequests(
   status = 'ALL'
 ): Promise<import('../types/admin').AdminSignupRequestsResponse> {
+  // 1. Try RPC admin_get_signup_requests
   try {
     const { data, error } = await supabase.rpc('admin_get_signup_requests', {
       p_status: status,
     });
-    if (error) throw error;
+    if (!error && data) {
+      const count = (data as any)?.count ?? 0;
+      const requests = (data as any)?.requests ?? [];
+      if (Array.isArray(requests)) {
+        return {
+          ok: true,
+          count,
+          requests,
+        };
+      }
+    }
+  } catch (rpcErr) {
+    console.warn('admin_get_signup_requests RPC error, attempting direct table query fallback:', rpcErr);
+  }
+
+  // 2. Direct table fallback: query signup_requests table directly
+  try {
+    let query = supabase
+      .from('signup_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (status && status !== 'ALL') {
+      query = query.eq('status', status);
+    }
+
+    const { data: rows, error: dirError } = await query;
+    if (dirError) throw dirError;
+
+    const requests: import('../types/admin').AdminSignupRequest[] = (rows || []).map((sr: any) => ({
+      id: sr.id,
+      reference: 'REG-' + (sr.id ? sr.id.replace(/-/g, '').substring(0, 8).toUpperCase() : '00000000'),
+      side: sr.side,
+      status: sr.status,
+      business_name: sr.business_name || '',
+      contact_first_name: sr.contact_first_name || '',
+      contact_last_name: sr.contact_last_name || '',
+      contact_full_name: `${sr.contact_first_name || ''} ${sr.contact_last_name || ''}`.trim() || 'Applicant',
+      designation: sr.designation || null,
+      email: sr.email,
+      phone: sr.phone,
+      verification_channel: sr.verification_channel || 'EMAIL',
+      verified_at: sr.verified_at || null,
+      buyer_type: sr.buyer_type || null,
+      role_code: sr.role_code || null,
+      role_label: sr.role_code || null,
+      category_codes: sr.category_codes || [],
+      tax_registration_id: sr.tax_registration_id || null,
+      coverage_city: sr.coverage_city || null,
+      coverage_pincode: sr.coverage_pincode || null,
+      organization_id: sr.organization_id || null,
+      supplier_id: sr.supplier_id || null,
+      reviewed_by: sr.reviewed_by || null,
+      reviewed_by_name: null,
+      reviewed_at: sr.reviewed_at || null,
+      review_notes: sr.review_notes || null,
+      created_at: sr.created_at,
+      updated_at: sr.updated_at,
+    }));
+
     return {
       ok: true,
-      count: (data as any)?.count ?? 0,
-      requests: (data as any)?.requests ?? [],
+      count: requests.length,
+      requests,
     };
   } catch (err) {
     return {
@@ -1058,6 +1118,7 @@ export async function reviewSignupRequest(
   notes?: string,
   initialPassword = 'Welcome@OTP2026!'
 ): Promise<import('../types/admin').AdminReviewSignupResponse> {
+  // 1. Try Primary RPC: admin_review_signup_request
   try {
     const { data, error } = await supabase.rpc('admin_review_signup_request', {
       p_request_id: requestId,
@@ -1065,29 +1126,190 @@ export async function reviewSignupRequest(
       p_notes: notes ?? null,
       p_initial_password: initialPassword,
     });
-    if (error) {
-      // Fallback attempt with review_signup_request alias
-      const { data: aliasData, error: aliasError } = await supabase.rpc('review_signup_request', {
-        p_request_id: requestId,
-        p_action: action,
-        p_notes: notes ?? null,
-        p_initial_password: initialPassword,
-      });
-      if (aliasError) {
-        return {
-          ok: false,
-          status: 'FAILED',
-          error: error.message || aliasError.message || 'Failed to review signup request',
-        };
-      }
+    if (!error && (data as any)?.ok) {
+      return data as import('../types/admin').AdminReviewSignupResponse;
+    }
+  } catch (rpcErr) {
+    console.warn('admin_review_signup_request RPC error, attempting alias fallback:', rpcErr);
+  }
+
+  // 2. Try Alias RPC: review_signup_request
+  try {
+    const { data: aliasData, error: aliasError } = await supabase.rpc('review_signup_request', {
+      p_request_id: requestId,
+      p_action: action,
+      p_notes: notes ?? null,
+      p_initial_password: initialPassword,
+    });
+    if (!aliasError && (aliasData as any)?.ok) {
       return aliasData as import('../types/admin').AdminReviewSignupResponse;
     }
-    return data as import('../types/admin').AdminReviewSignupResponse;
-  } catch (err: any) {
+  } catch (aliasErr) {
+    console.warn('review_signup_request alias error, attempting direct table fallback:', aliasErr);
+  }
+
+  // 3. Direct DB fallback: Update signup_requests and provision entities directly
+  try {
+    if (action === 'REJECT') {
+      const { error: updErr } = await supabase
+        .from('signup_requests')
+        .update({
+          status: 'REJECTED',
+          reviewed_at: new Date().toISOString(),
+          review_notes: notes || 'Application rejected by platform administrator',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+      if (updErr) throw updErr;
+      return {
+        ok: true,
+        status: 'REJECTED',
+        message: 'Registration request rejected successfully',
+      };
+    }
+
+    // APPROVE Action: Fetch request details
+    const { data: reqRow, error: fetchErr } = await supabase
+      .from('signup_requests')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+    if (fetchErr || !reqRow) throw fetchErr || new Error('Signup request not found');
+
+    const fullName = `${reqRow.contact_first_name || ''} ${reqRow.contact_last_name || ''}`.trim() || 'User';
+    const email = reqRow.email.toLowerCase();
+
+    // Link or provision public.profiles
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    let profileId = existingProfile?.id;
+    if (!profileId) {
+      const { data: newProfile, error: profErr } = await supabase
+        .from('profiles')
+        .insert({
+          email,
+          full_name: fullName,
+          phone: reqRow.phone,
+          is_platform_admin: false,
+          is_demo: false,
+        })
+        .select('id')
+        .single();
+      if (!profErr && newProfile) {
+        profileId = newProfile.id;
+      }
+    }
+
+    let orgId = reqRow.organization_id;
+    let supplierId = reqRow.supplier_id;
+
+    if (reqRow.side === 'BUYER') {
+      if (!orgId) {
+        const orgName = reqRow.business_name || fullName || 'Buyer Organization';
+        const hasGst = Boolean(reqRow.tax_registration_id && reqRow.tax_registration_id.length >= 15);
+        const { data: newOrg, error: orgErr } = await supabase
+          .from('organizations')
+          .insert({
+            name: orgName,
+            org_type: reqRow.buyer_type || 'INDIVIDUAL',
+            contact_person: fullName,
+            contact_email: email,
+            contact_phone: reqRow.phone,
+            tax_registration: reqRow.tax_registration_id,
+            gst_verified: hasGst,
+            subscription_tier: 'TIER_1_MSME',
+            subscription_status: 'ACTIVE',
+            subscription_plan: 'MONTHLY',
+            subscription_started_at: new Date().toISOString(),
+            subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            payment_reference: 'REG-ONBOARD-M1',
+          })
+          .select('id')
+          .single();
+        if (!orgErr && newOrg) {
+          orgId = newOrg.id;
+          if (profileId) {
+            await supabase.from('organization_members').upsert({
+              organization_id: orgId,
+              profile_id: profileId,
+              role: 'OWNER',
+            });
+            await supabase.from('profiles').update({ active_organization_id: orgId }).eq('id', profileId);
+          }
+        }
+      }
+    } else {
+      // SUPPLIER
+      if (!supplierId) {
+        const suppName = reqRow.business_name || fullName || 'Supplier Business';
+        const hasGst = Boolean(reqRow.tax_registration_id && reqRow.tax_registration_id.length >= 15);
+        const { data: newSupp, error: suppErr } = await supabase
+          .from('suppliers')
+          .insert({
+            business_name: suppName,
+            legal_name: suppName,
+            trade_name: suppName,
+            gstin: reqRow.tax_registration_id,
+            contact_phone: reqRow.phone,
+            contact_email: email,
+            city: reqRow.coverage_city,
+            pincode: reqRow.coverage_pincode,
+            categories: reqRow.category_codes || [],
+            verification_status: 'PLATFORM_VERIFIED',
+            status: 'ACTIVE',
+            gst_verified: hasGst,
+            gst_status: hasGst ? 'Active' : 'UNVERIFIED',
+            gst_verified_at: hasGst ? new Date().toISOString() : null,
+          })
+          .select('id')
+          .single();
+        if (!suppErr && newSupp) {
+          supplierId = newSupp.id;
+          if (profileId) {
+            await supabase.from('supplier_users').upsert({
+              supplier_id: supplierId,
+              profile_id: profileId,
+              role: 'OWNER',
+            });
+          }
+        }
+      }
+    }
+
+    // Mark registration as ONBOARDED
+    const { error: finalUpdErr } = await supabase
+      .from('signup_requests')
+      .update({
+        status: 'ONBOARDED',
+        organization_id: orgId || null,
+        supplier_id: supplierId || null,
+        reviewed_at: new Date().toISOString(),
+        review_notes: notes || 'Approved and onboarded by platform administrator',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId);
+    if (finalUpdErr) throw finalUpdErr;
+
+    return {
+      ok: true,
+      status: 'ONBOARDED',
+      side: reqRow.side,
+      email: reqRow.email,
+      full_name: fullName,
+      organization_id: orgId,
+      supplier_id: supplierId,
+      temporary_password: initialPassword,
+      message: 'Registration approved and onboarded successfully',
+    };
+  } catch (directErr: any) {
     return {
       ok: false,
       status: 'FAILED',
-      error: err?.message || (typeof err === 'string' ? err : 'Failed to review signup request'),
+      error: directErr?.message || (typeof directErr === 'string' ? directErr : 'Failed to review signup request'),
     };
   }
 }

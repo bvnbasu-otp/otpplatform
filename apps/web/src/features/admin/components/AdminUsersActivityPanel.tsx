@@ -53,6 +53,10 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
 
   const handleSubTabChange = (next: 'USERS' | 'ORGANIZATIONS' | 'REGISTRATIONS') => {
     setSubTab(next);
+    setStatusFilter('ALL');
+    setSideFilter('ALL');
+    setPresenceFilter('ALL');
+    setSearch('');
     onSubTabChange?.(next);
   };
   const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('CARDS');
@@ -241,7 +245,13 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
 
   const filteredRequests = useMemo(() => {
     return requests.filter((r) => {
-      if (statusFilter !== 'ALL' && r.status !== statusFilter) return false;
+      if (statusFilter !== 'ALL') {
+        if (statusFilter === 'PENDING' && r.status !== 'PENDING') return false;
+        if (statusFilter === 'ACTIVE' && r.status !== 'ONBOARDED') return false;
+        if (statusFilter === 'BLOCKED' && r.status !== 'REJECTED') return false;
+        if (statusFilter !== 'PENDING' && statusFilter !== 'ACTIVE' && statusFilter !== 'BLOCKED' && r.status !== statusFilter) return false;
+      }
+      if (sideFilter !== 'ALL' && r.side !== sideFilter) return false;
       if (!search.trim()) return true;
       const q = search.toLowerCase();
       return (
@@ -249,10 +259,10 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         r.business_name.toLowerCase().includes(q) ||
         r.contact_full_name.toLowerCase().includes(q) ||
         r.email.toLowerCase().includes(q) ||
-        r.phone.includes(q)
+        (r.phone && r.phone.includes(q))
       );
     });
-  }, [requests, statusFilter, search]);
+  }, [requests, statusFilter, sideFilter, search]);
 
   // Selection Toggles
   const isAllUsersSelected =
@@ -597,6 +607,110 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     } finally {
       setProcessingId(null);
     }
+  };
+
+  const handleDirectApproveUser = async (user: AdminUserItem) => {
+    setProcessingId(user.id);
+    try {
+      if (user.isBlocked) {
+        await handleConfirmUnblock('USERS', [user.id]);
+      }
+      const { error: profErr } = await supabase
+        .from('profiles')
+        .update({
+          is_demo: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+      if (profErr) throw profErr;
+
+      if (user.email) {
+        try {
+          await supabase.auth.resetPasswordForEmail(user.email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+          });
+        } catch (e) {
+          console.warn('Password reset dispatch note:', e);
+        }
+      }
+
+      setBannerMessage({
+        type: 'success',
+        text: `✓ User "${user.fullName || user.email}" successfully approved and activated.`,
+      });
+      await loadData();
+    } catch (err: any) {
+      setBannerMessage({
+        type: 'error',
+        text: `Failed to activate user: ${err?.message || String(err)}`,
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDirectVerifyOrg = async (org: AdminOrganizationItem) => {
+    setProcessingId(org.id);
+    try {
+      if (org.side === 'SUPPLIER') {
+        const { error } = await supabase
+          .from('suppliers')
+          .update({
+            status: 'ACTIVE',
+            verification_status: 'PLATFORM_VERIFIED',
+            gst_verified: true,
+            gst_status: 'Active',
+            gst_verified_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', org.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('organizations')
+          .update({
+            subscription_status: 'ACTIVE',
+            gst_verified: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', org.id);
+        if (error) throw error;
+      }
+
+      setBannerMessage({
+        type: 'success',
+        text: `✓ "${org.name}" verified and activated with active platform workspace.`,
+      });
+      await loadData();
+    } catch (err: any) {
+      setBannerMessage({
+        type: 'error',
+        text: `Failed to verify organization: ${err?.message || String(err)}`,
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleApproveAllPending = async () => {
+    const pendingReqs = requests.filter((r) => r.status === 'PENDING');
+    if (pendingReqs.length === 0) return;
+    setIsBulkExecuting(true);
+    let successCount = 0;
+    for (const req of pendingReqs) {
+      try {
+        const res = await reviewSignupRequest(req.id, 'APPROVE');
+        if (res.ok) successCount++;
+      } catch (e) {
+        console.warn('Bulk approve item failed:', req.id, e);
+      }
+    }
+    setIsBulkExecuting(false);
+    setBannerMessage({
+      type: 'success',
+      text: `✓ Approved & activated ${successCount} of ${pendingReqs.length} pending registration(s).`,
+    });
+    await loadData();
   };
 
   const selectedCount =
@@ -1122,6 +1236,17 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                         <div className="flex items-center gap-1.5">
                           {!u.isPlatformAdmin ? (
                             <>
+                              {u.status === 'PENDING' && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDirectApproveUser(u)}
+                                  disabled={processingId === u.id}
+                                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-xs transition shadow-2xs mobile-touch-target disabled:opacity-50 cursor-pointer"
+                                  title="Approve and activate user account"
+                                >
+                                  <span>✓</span> {processingId === u.id ? 'Activating…' : 'Approve'}
+                                </button>
+                              )}
                               {isBlocked ? (
                                 <button
                                   type="button"
@@ -1355,6 +1480,17 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                           <td className="p-3 min-w-[150px] text-right">
                             {!u.isPlatformAdmin ? (
                               <div className="flex items-center justify-end gap-1.5">
+                                {u.status === 'PENDING' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleDirectApproveUser(u)}
+                                    disabled={processingId === u.id}
+                                    className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs min-h-[36px] mobile-touch-target disabled:opacity-50 cursor-pointer"
+                                    title="Approve and activate user account"
+                                  >
+                                    {processingId === u.id ? 'Activating…' : '✓ Approve'}
+                                  </button>
+                                )}
                                 {isBlocked ? (
                                   <button
                                     type="button"
@@ -1536,6 +1672,18 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
+                          {(!o.gst_verified || o.status === 'PENDING') && (
+                            <button
+                              type="button"
+                              onClick={() => void handleDirectVerifyOrg(o)}
+                              disabled={processingId === o.id}
+                              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-xs transition shadow-2xs mobile-touch-target disabled:opacity-50 cursor-pointer"
+                              title="Verify GST and activate organization workspace"
+                            >
+                              <span>✓</span> {processingId === o.id ? 'Activating…' : 'Verify & Activate'}
+                            </button>
+                          )}
+
                           {isBlocked ? (
                             <button
                               type="button"
@@ -1731,6 +1879,17 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
 
                           <td className="p-3 min-w-[150px] text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              {(!o.gst_verified || o.status === 'PENDING') && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDirectVerifyOrg(o)}
+                                  disabled={processingId === o.id}
+                                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 text-xs transition shadow-2xs min-h-[36px] mobile-touch-target disabled:opacity-50 cursor-pointer"
+                                  title="Verify GST and activate organization"
+                                >
+                                  {processingId === o.id ? 'Activating…' : '✓ Verify'}
+                                </button>
+                              )}
                               {isBlocked ? (
                                 <button
                                   type="button"
@@ -1776,19 +1935,62 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         {/* ========================================================= */}
         {subTab === 'REGISTRATIONS' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 space-y-3 zero-scroll-pane">
+            {/* Quick Header Banner for Registrations */}
+            <div className="rounded-xl border bg-muted/40 p-3 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📋</span>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">
+                    Applicant Onboarding &amp; Verification Queue
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    {pendingRegistrationsCount > 0
+                      ? `${pendingRegistrationsCount} pending applicant(s) awaiting review.`
+                      : 'All applicant onboarding requests are up to date.'}
+                  </p>
+                </div>
+              </div>
+
+              {pendingRegistrationsCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => void handleApproveAllPending()}
+                  disabled={isBulkExecuting}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3.5 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 mobile-touch-target cursor-pointer"
+                  title="Approve and activate all pending registrations at once"
+                >
+                  <span>⚡</span> {isBulkExecuting ? 'Approving All…' : `Approve All Pending (${pendingRegistrationsCount})`}
+                </button>
+              )}
+            </div>
+
             {isLoading ? (
               <div className="py-16 text-center text-muted-foreground text-xs animate-pulse">
                 Loading registration requests queue…
               </div>
             ) : filteredRequests.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground text-xs font-medium">
-                No registration requests matching filter.
+              <div className="py-16 text-center text-muted-foreground text-xs font-medium space-y-3">
+                <p>No registration requests matching the current filter ({requests.length} total in system).</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('ALL');
+                    setSideFilter('ALL');
+                    setSearch('');
+                    void loadData();
+                  }}
+                  className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border bg-card px-3.5 py-1.5 text-xs font-bold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs"
+                >
+                  ↻ Reset Filters &amp; Reload Queue
+                </button>
               </div>
             ) : viewMode === 'CARDS' ? (
               /* RESPONSIVE MOBILE ACTION CARDS FOR REGISTRATIONS */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filteredRequests.map((r) => {
-                  const isPending = r.status === 'PENDING';
+                  const statusUpper = (r.status || '').toUpperCase();
+                  const isPending = statusUpper === 'PENDING' || statusUpper === 'NEW' || statusUpper === 'SUBMITTED' || !r.status;
+                  const isOnboarded = statusUpper === 'ONBOARDED' || statusUpper === 'ACTIVE' || statusUpper === 'APPROVED';
                   const isBusy = processingId === r.id;
 
                   return (
@@ -1897,27 +2099,50 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                               type="button"
                               onClick={() => void handleReview(r, 'APPROVE')}
                               disabled={isBusy}
-                              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 text-xs transition shadow-2xs disabled:opacity-50 mobile-touch-target active:scale-98"
+                              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 text-xs transition shadow-2xs disabled:opacity-50 mobile-touch-target active:scale-98 cursor-pointer"
                               title="Approve applicant, provision tenant & auth user"
                             >
-                              <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve'}
+                              <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve & Activate'}
                             </button>
                             <button
                               type="button"
                               onClick={() => void handleReview(r, 'REJECT')}
                               disabled={isBusy}
-                              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 font-bold px-3 py-2 text-xs transition disabled:opacity-50 mobile-touch-target active:scale-98"
+                              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 font-bold px-3 py-2 text-xs transition disabled:opacity-50 mobile-touch-target active:scale-98 cursor-pointer"
                               title="Reject registration"
                             >
                               <span>✕</span> Reject
                             </button>
                           </div>
-                        ) : (
-                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                            <span>Lifecycle Status:</span>
-                            <span className="font-bold text-foreground">
-                              {r.status === 'ONBOARDED' ? '✓ Activated' : 'Closed / Rejected'}
+                        ) : isOnboarded ? (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                              <span>✓</span> Activated
                             </span>
+                            <button
+                              type="button"
+                              onClick={() => void handleReview(r, 'APPROVE')}
+                              disabled={isBusy}
+                              className="inline-flex min-h-[38px] items-center gap-1 rounded-xl border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 px-3 py-1 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer"
+                              title="Re-run provisioning & re-dispatch credentials"
+                            >
+                              <span>↻</span> {isBusy ? 'Re-issuing…' : 'Re-Approve'}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                              <span>✕</span> Closed
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => void handleReview(r, 'APPROVE')}
+                              disabled={isBusy}
+                              className="inline-flex min-h-[38px] items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 text-xs font-bold transition cursor-pointer"
+                              title="Overrule rejection and approve applicant"
+                            >
+                              <span>✓</span> {isBusy ? 'Onboarding…' : 'Overrule & Approve'}
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1942,7 +2167,9 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                   </thead>
                   <tbody className="divide-y text-foreground">
                     {filteredRequests.map((r) => {
-                      const isPending = r.status === 'PENDING';
+                      const statusUpper = (r.status || '').toUpperCase();
+                      const isPending = statusUpper === 'PENDING' || statusUpper === 'NEW' || statusUpper === 'SUBMITTED' || !r.status;
+                      const isOnboarded = statusUpper === 'ONBOARDED' || statusUpper === 'ACTIVE' || statusUpper === 'APPROVED';
                       const isBusy = processingId === r.id;
 
                       return (
@@ -2016,32 +2243,54 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                             })}
                           </td>
 
-                          <td className="p-3 min-w-[180px] text-right">
+                          <td className="p-3 min-w-[200px] text-right">
                             {isPending ? (
                               <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
                                 <button
                                   type="button"
                                   onClick={() => void handleReview(r, 'APPROVE')}
                                   disabled={isBusy}
-                                  className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1 shadow-2xs min-h-[44px] mobile-touch-target"
+                                  className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1 shadow-2xs min-h-[44px] mobile-touch-target cursor-pointer"
                                   title="Approve applicant, provision tenant & auth user"
                                 >
-                                  <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve'}
+                                  <span>✓</span> {isBusy ? 'Onboarding…' : 'Approve & Activate'}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => void handleReview(r, 'REJECT')}
                                   disabled={isBusy}
-                                  className="rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target"
+                                  className="rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target cursor-pointer"
                                   title="Reject registration"
                                 >
                                   ✕
                                 </button>
                               </div>
+                            ) : isOnboarded ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="text-[10px] text-emerald-600 font-bold">✓ Active</span>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleReview(r, 'APPROVE')}
+                                  disabled={isBusy}
+                                  className="rounded-lg border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 px-2.5 py-1 text-[11px] font-bold hover:bg-emerald-100 transition cursor-pointer"
+                                  title="Re-run provisioning & re-dispatch credentials"
+                                >
+                                  {isBusy ? 'Re-issuing…' : 'Re-Approve'}
+                                </button>
+                              </div>
                             ) : (
-                              <span className="text-[10px] text-muted-foreground font-semibold">
-                                {r.status === 'ONBOARDED' ? '✓ Activated' : 'Closed'}
-                              </span>
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="text-[10px] text-rose-600 font-bold">Closed</span>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleReview(r, 'APPROVE')}
+                                  disabled={isBusy}
+                                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 text-[11px] font-bold transition cursor-pointer"
+                                  title="Overrule rejection and approve applicant"
+                                >
+                                  {isBusy ? 'Onboarding…' : 'Approve'}
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>

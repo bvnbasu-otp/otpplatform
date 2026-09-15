@@ -573,6 +573,20 @@ export function AdminDashboardPage() {
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
+            onClick={() => setTab('APPROVALS')}
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs ${
+              activeTab === 'APPROVALS'
+                ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                : 'bg-card text-foreground hover:bg-muted border-amber-500/40 text-amber-900 dark:text-amber-200'
+            }`}
+            title="Open Onboarding Approvals Queue"
+          >
+            <span>📋</span>
+            <span>Approvals</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setTab('TILES')}
             className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs ${
               isTilesView
@@ -581,7 +595,7 @@ export function AdminDashboardPage() {
             }`}
           >
             <span>▦</span>
-            <span className="hidden sm:inline">All Modules (Grid)</span>
+            <span className="hidden sm:inline">All Modules</span>
             <span className="sm:hidden">Modules</span>
           </button>
 
