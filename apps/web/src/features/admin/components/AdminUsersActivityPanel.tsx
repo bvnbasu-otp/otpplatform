@@ -721,7 +721,7 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
       : 0;
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden space-y-2.5 w-full max-w-full">
+    <div className="w-full max-w-full space-y-3 pb-8">
       {/* 1. System Notification Banner */}
       {bannerMessage && (
         <div
@@ -748,20 +748,21 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         </div>
       )}
 
-      {/* 2. Responsive 3-Column Sub-Tabs Header (Zero clipping on 360px-412px viewports) */}
-      <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
-        <div className="grid grid-cols-3 gap-1.5 w-full sm:flex sm:w-auto sm:items-center">
+      {/* 2. Responsive 3-Column Sub-Tabs Header (Compact Icons + Tooltips) */}
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto">
           {/* Subtab 1: Users */}
           <button
             type="button"
             onClick={() => handleSubTabChange('USERS')}
-            className={`inline-flex min-h-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-2 sm:px-3.5 py-2 text-xs font-bold transition active:scale-98 mobile-touch-target ${
+            title={`Users Roster (${users.length} total accounts)`}
+            className={`inline-flex min-h-[40px] items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3.5 py-1.5 text-xs font-bold transition active:scale-98 mobile-touch-target cursor-pointer ${
               subTab === 'USERS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
             }`}
           >
-            <span className="shrink-0">👥</span>
+            <span className="shrink-0 text-sm">👥</span>
             <span className="truncate">Users</span>
             <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold shrink-0 ${
               subTab === 'USERS' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-foreground'
@@ -780,17 +781,15 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
           <button
             type="button"
             onClick={() => handleSubTabChange('ORGANIZATIONS')}
-            className={`inline-flex min-h-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-2 sm:px-3.5 py-2 text-xs font-bold transition active:scale-98 mobile-touch-target ${
+            title={`Organizations & Supplier Registry (${organizations.length} total)`}
+            className={`inline-flex min-h-[40px] items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3.5 py-1.5 text-xs font-bold transition active:scale-98 mobile-touch-target cursor-pointer ${
               subTab === 'ORGANIZATIONS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
             }`}
           >
-            <span className="shrink-0">🏢</span>
-            <span className="truncate">
-              <span className="sm:hidden">Orgs/Supp.</span>
-              <span className="hidden sm:inline">Orgs &amp; Suppliers</span>
-            </span>
+            <span className="shrink-0 text-sm">🏢</span>
+            <span className="truncate">Orgs &amp; Suppliers</span>
             <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold shrink-0 ${
               subTab === 'ORGANIZATIONS' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-foreground'
             }`}>
@@ -802,17 +801,15 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
           <button
             type="button"
             onClick={() => handleSubTabChange('REGISTRATIONS')}
-            className={`inline-flex min-h-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-2 sm:px-3.5 py-2 text-xs font-bold transition active:scale-98 mobile-touch-target ${
+            title="Approval Queue (Pending applicant registrations awaiting superadmin review)"
+            className={`inline-flex min-h-[40px] items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3.5 py-1.5 text-xs font-bold transition active:scale-98 mobile-touch-target cursor-pointer ${
               subTab === 'REGISTRATIONS'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
             }`}
           >
-            <span className="shrink-0">📋</span>
-            <span className="truncate">
-              <span className="sm:hidden">Approvals</span>
-              <span className="hidden sm:inline">Approval Queue</span>
-            </span>
+            <span className="shrink-0 text-sm">📋</span>
+            <span className="truncate">Approvals</span>
             {pendingRegistrationsCount > 0 ? (
               <span className="rounded-full bg-amber-500 px-1.5 py-0.2 text-[10px] font-extrabold text-white shrink-0 animate-pulse">
                 {pendingRegistrationsCount}
@@ -1050,19 +1047,73 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
       )}
 
       {/* 5. DATA CONTAINER: RESPONSIVE CARDS & DATA TABLES */}
-      <div className="flex-1 min-h-0 rounded-2xl border bg-card shadow-2xs overflow-hidden flex flex-col w-full max-w-full">
+      <div className="rounded-2xl border bg-card shadow-2xs p-2.5 sm:p-4 w-full max-w-full space-y-3">
+        {/* Real-time Filter & Record Counts Info Bar */}
+        <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap font-semibold text-foreground">
+            <span>
+              {subTab === 'USERS'
+                ? `Showing ${filteredUsers.length} of ${users.length} user(s)`
+                : subTab === 'ORGANIZATIONS'
+                ? `Showing ${filteredOrganizations.length} of ${organizations.length} org(s) & supplier(s)`
+                : `Showing ${filteredRequests.length} of ${requests.length} onboarding applicant(s)`}
+            </span>
+            {statusFilter !== 'ALL' && (
+              <span className="rounded-md bg-primary/10 text-primary px-1.5 py-0.2 text-[10px] font-bold border border-primary/20">
+                Filter: {statusFilter}
+              </span>
+            )}
+            {sideFilter !== 'ALL' && (
+              <span className="rounded-md bg-muted px-1.5 py-0.2 text-[10px] font-bold border">
+                Role: {sideFilter}
+              </span>
+            )}
+            {search && (
+              <span className="rounded-md bg-muted px-1.5 py-0.2 text-[10px] font-mono border">
+                "{search}"
+              </span>
+            )}
+          </div>
+
+          {(statusFilter !== 'ALL' || sideFilter !== 'ALL' || search || presenceFilter !== 'ALL') && (
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('ALL');
+                setSideFilter('ALL');
+                setPresenceFilter('ALL');
+                setSearch('');
+              }}
+              className="text-[11px] font-bold text-primary hover:underline shrink-0 cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
+
         {/* ========================================================= */}
         {/* SUBTAB 1: USERS (Cards on Mobile / Default View) */}
         {/* ========================================================= */}
         {subTab === 'USERS' && (
-          <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 space-y-3 zero-scroll-pane">
+          <div className="space-y-3 w-full">
             {isLoading ? (
               <div className="py-16 text-center text-muted-foreground text-xs animate-pulse">
                 Loading user accounts and tenant credentials…
               </div>
             ) : filteredUsers.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground text-xs font-medium">
-                No users match the current search or status filter.
+              <div className="py-12 text-center text-muted-foreground text-xs font-medium space-y-3 border rounded-xl bg-muted/20 p-4">
+                <p>No user accounts matching the current filter ({users.length} total in system).</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('ALL');
+                    setSideFilter('ALL');
+                    setSearch('');
+                  }}
+                  className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border bg-card px-3.5 py-1.5 text-xs font-bold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs cursor-pointer"
+                >
+                  ↻ View All Users ({users.length})
+                </button>
               </div>
             ) : viewMode === 'CARDS' ? (
               /* RESPONSIVE MOBILE ACTION CARDS FOR USERS */
@@ -1542,14 +1593,25 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         {/* SUBTAB 2: ORGANIZATIONS & SUPPLIERS */}
         {/* ========================================================= */}
         {subTab === 'ORGANIZATIONS' && (
-          <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 space-y-3 zero-scroll-pane">
+          <div className="space-y-3 w-full">
             {isLoading ? (
               <div className="py-16 text-center text-muted-foreground text-xs animate-pulse">
                 Loading organizations and supplier tenancies…
               </div>
             ) : filteredOrganizations.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground text-xs font-medium">
-                No organizations matching search query.
+              <div className="py-12 text-center text-muted-foreground text-xs font-medium space-y-3 border rounded-xl bg-muted/20 p-4">
+                <p>No organizations or suppliers matching the current filter ({organizations.length} total in system).</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('ALL');
+                    setSideFilter('ALL');
+                    setSearch('');
+                  }}
+                  className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border bg-card px-3.5 py-1.5 text-xs font-bold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs cursor-pointer"
+                >
+                  ↻ View All Orgs &amp; Suppliers ({organizations.length})
+                </button>
               </div>
             ) : viewMode === 'CARDS' ? (
               /* RESPONSIVE MOBILE ACTION CARDS FOR ORGANIZATIONS */
@@ -1934,7 +1996,7 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         {/* SUBTAB 3: REGISTRATIONS / APPROVAL QUEUE */}
         {/* ========================================================= */}
         {subTab === 'REGISTRATIONS' && (
-          <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 space-y-3 zero-scroll-pane">
+          <div className="space-y-3 w-full">
             {/* Quick Header Banner for Registrations */}
             <div className="rounded-xl border bg-muted/40 p-3 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
               <div className="flex items-center gap-2">

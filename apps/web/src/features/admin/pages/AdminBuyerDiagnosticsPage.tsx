@@ -16,8 +16,8 @@ export function AdminBuyerDiagnosticsPage() {
   }, []);
 
   return (
-    <div className="zero-scroll-container p-3 max-w-7xl mx-auto w-full">
-      <div className="zero-scroll-pane">
+    <div className="min-h-screen bg-background text-foreground max-w-7xl mx-auto w-full p-3 pb-36 overflow-x-hidden">
+      <div className="w-full">
         <AdminBuyerTroubleshooter
           transactions={transactions}
           onRefreshTelemetry={loadTx}

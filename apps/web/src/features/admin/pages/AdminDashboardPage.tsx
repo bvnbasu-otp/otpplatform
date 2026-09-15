@@ -537,7 +537,7 @@ export function AdminDashboardPage() {
   }, [moduleSearchFilter, selectedCategoryFilter]);
 
   return (
-    <div className="zero-scroll-container p-2 sm:p-3 max-w-7xl mx-auto w-full pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+    <div className="min-h-screen bg-background text-foreground p-2 sm:p-4 max-w-7xl mx-auto w-full pb-36 sm:pb-24 overflow-x-hidden">
       {/* Top Header Banner */}
       <header className="rounded-2xl border bg-card px-3.5 sm:px-4 py-2.5 sm:py-3 shadow-2xs shrink-0 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -570,52 +570,53 @@ export function AdminDashboardPage() {
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={() => setTab('APPROVALS')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs ${
+            className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
               activeTab === 'APPROVALS'
                 ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
                 : 'bg-card text-foreground hover:bg-muted border-amber-500/40 text-amber-900 dark:text-amber-200'
             }`}
             title="Open Onboarding Approvals Queue"
           >
-            <span>📋</span>
-            <span>Approvals</span>
+            <span className="text-sm">📋</span>
+            <span className="hidden sm:inline">Approvals</span>
           </button>
 
           <button
             type="button"
             onClick={() => setTab('TILES')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs ${
+            className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
               isTilesView
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'bg-card text-foreground hover:bg-muted'
             }`}
+            title="All Administrative Modules (Grid Directory)"
           >
-            <span>▦</span>
-            <span className="hidden sm:inline">All Modules</span>
-            <span className="sm:hidden">Modules</span>
+            <span className="text-sm">▦</span>
+            <span className="hidden sm:inline">Modules</span>
           </button>
 
           <button
             type="button"
             onClick={() => setIsSelectorOpen(true)}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border bg-card px-3 py-1.5 text-xs font-bold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs"
-            title="Open Quick Module Switcher"
+            className="inline-flex min-h-[38px] items-center gap-1 rounded-xl border bg-card px-2.5 sm:px-3 py-1.5 text-xs font-bold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs cursor-pointer"
+            title="Open Quick Module Switcher (⚡)"
           >
-            <span>⚡</span>
+            <span className="text-sm">⚡</span>
             <span className="hidden md:inline">Quick Switch</span>
           </button>
 
           <button
             type="button"
             onClick={refreshAllData}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-1 text-xs font-semibold hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs"
-            title="Refresh All Telemetry Data"
+            className="inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-xl border bg-card px-2 sm:px-2.5 py-1 text-xs font-semibold hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs cursor-pointer"
+            title="Refresh All Telemetry & Records Data"
           >
-            🔄 <span className="hidden sm:inline ml-1">Refresh</span>
+            <span className="text-sm">🔄</span>
+            <span className="hidden sm:inline ml-1">Refresh</span>
           </button>
         </div>
       </header>
@@ -760,49 +761,50 @@ export function AdminDashboardPage() {
           </div>
         </div>
       ) : (
-        /* VIEW 2: ACTIVE MODULE VIEW WITH BREADCRUMB & CATEGORY SELECTOR */
-        <div className="mt-2 space-y-2.5">
+      {/* VIEW 2: ACTIVE MODULE VIEW WITH COMPACT ICON & TOOLTIP NAVIGATION */}
+        <div className="mt-1 space-y-2">
           {/* Active Navigation & Category Bar */}
-          <div className="rounded-2xl border bg-card p-2 sm:p-2.5 shadow-2xs flex flex-col gap-2">
+          <div className="rounded-2xl border bg-card p-2 shadow-2xs flex flex-col gap-1.5">
             {/* Top Row: Back to Tiles & Current Module Information */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-2 px-1">
-              <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5 px-0.5">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <button
                   type="button"
                   onClick={() => setTab('TILES')}
-                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border bg-muted/50 hover:bg-muted px-2.5 py-1 text-xs font-bold text-foreground transition active:scale-98 shrink-0"
-                  title="Return to Grid / Category Tiles View"
+                  className="inline-flex min-h-[32px] items-center gap-1 rounded-lg border bg-muted/50 hover:bg-muted px-2 py-0.5 text-xs font-bold text-foreground transition active:scale-98 shrink-0 cursor-pointer"
+                  title="Return to Grid / All Modules Directory"
                 >
-                  <span>←</span> All Modules
+                  <span>←</span> <span className="hidden sm:inline">Grid</span>
                 </button>
 
-                <div className="flex items-center gap-1.5 truncate text-xs">
-                  <span className="text-muted-foreground font-semibold hidden sm:inline">
-                    {currentCategory.icon} {currentCategory.shortTitle}
+                <div className="flex items-center gap-1 truncate text-xs">
+                  <span className="text-muted-foreground font-semibold hidden md:inline">
+                    {currentCategory.icon} {currentCategory.shortTitle} /
                   </span>
-                  <span className="text-muted-foreground hidden sm:inline">/</span>
                   <span className="font-extrabold text-foreground flex items-center gap-1 truncate">
                     <span>{currentModule.icon}</span>
-                    <span>{currentModule.title}</span>
+                    <span className="truncate">{currentModule.title}</span>
                   </span>
                 </div>
               </div>
 
-              {/* Category / Module Change Trigger */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              {/* Quick Switch Button */}
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsSelectorOpen(true)}
-                  className="inline-flex min-h-[36px] items-center gap-1 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1 text-xs font-bold transition active:scale-98"
+                  className="inline-flex min-h-[32px] items-center gap-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-2.5 py-0.5 text-xs font-bold transition active:scale-98 cursor-pointer"
+                  title="Open Quick Module Selector"
                 >
-                  <span>Change Module</span>
+                  <span>⚡</span>
+                  <span className="hidden sm:inline">Switch</span>
                   <span>▾</span>
                 </button>
               </div>
             </div>
 
-            {/* Bottom Row: 6 Category Switcher Pills with Dynamic Badges */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar scrollbar-none w-full max-w-full px-0.5">
+            {/* Bottom Row: Compact Category Icon Pills with Tooltips */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar scrollbar-none w-full max-w-full px-0.5">
               {ADMIN_CATEGORIES.map((cat) => {
                 const isCatActive = cat.key === currentCategory.key;
                 const firstMod = cat.modules[0]!;
@@ -819,17 +821,18 @@ export function AdminDashboardPage() {
                         setTab(firstMod.key);
                       }
                     }}
-                    className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
+                    title={`${cat.title} (${cat.modules.length} module${cat.modules.length === 1 ? '' : 's'})`}
+                    className={`inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target cursor-pointer ${
                       isCatActive
                         ? 'bg-primary text-primary-foreground shadow-2xs font-extrabold'
                         : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70'
                     }`}
                   >
-                    <span>{cat.icon}</span>
-                    <span>{cat.shortTitle}</span>
+                    <span className="text-sm">{cat.icon}</span>
+                    <span className="hidden sm:inline text-[11px]">{cat.shortTitle}</span>
                     {cat.modules.length > 1 && (
                       <span
-                        className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
+                        className={`rounded-full px-1 py-0.1 text-[9px] font-bold ${
                           isCatActive
                             ? 'bg-primary-foreground/20 text-primary-foreground'
                             : 'bg-muted-foreground/20 text-muted-foreground'
@@ -843,12 +846,9 @@ export function AdminDashboardPage() {
               })}
             </div>
 
-            {/* Intra-Category Module Switcher (When category has >1 module) */}
+            {/* Intra-Category Module Switcher (Compact Icons + Labels) */}
             {currentCategory.modules.length > 1 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pt-1.5 border-t border-border/40 no-scrollbar scrollbar-none w-full max-w-full px-0.5">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider shrink-0 mr-1 hidden sm:inline">
-                  {currentCategory.shortTitle} Modules:
-                </span>
+              <div className="flex items-center gap-1 overflow-x-auto pt-1 border-t border-border/30 no-scrollbar scrollbar-none w-full max-w-full px-0.5">
                 {currentCategory.modules.map((mod) => {
                   const isModActive = mod.key === activeTab;
                   const modBadge = mod.badge?.(dynamicCounts);
@@ -858,17 +858,18 @@ export function AdminDashboardPage() {
                       key={mod.key}
                       type="button"
                       onClick={() => setTab(mod.key)}
-                      className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target ${
+                      title={`${mod.title} — ${mod.description}`}
+                      className={`inline-flex min-h-[32px] items-center gap-1 rounded-lg px-2 sm:px-2.5 py-0.5 text-xs font-bold transition shrink-0 active:scale-98 mobile-touch-target cursor-pointer ${
                         isModActive
                           ? 'bg-foreground text-background shadow-xs font-extrabold'
                           : 'bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/60'
                       }`}
                     >
                       <span>{mod.icon}</span>
-                      <span>{mod.shortTitle}</span>
+                      <span className="text-[11px]">{mod.shortTitle}</span>
                       {modBadge !== null && modBadge !== undefined && (
                         <span
-                          className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
+                          className={`rounded-full px-1.5 py-0.1 text-[9px] font-bold ${
                             isModActive
                               ? 'bg-background/20 text-background'
                               : 'bg-muted text-foreground'
@@ -882,38 +883,11 @@ export function AdminDashboardPage() {
                 })}
               </div>
             )}
-
-            {/* Mobile Swipe Navigation Hint & Module Step Indicator */}
-            <div className="flex sm:hidden items-center justify-between gap-1 pt-1.5 border-t border-border/40 text-[11px] px-0.5">
-              <button
-                type="button"
-                onClick={goToPrevModule}
-                className="p-1 rounded-lg border bg-muted/40 text-foreground text-xs font-bold flex items-center gap-0.5 mobile-touch-target"
-                aria-label="Previous module"
-              >
-                <span>‹</span> Prev
-              </button>
-              <div className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
-                <span>👈</span>
-                <span className="font-bold text-foreground">
-                  Module {currentModuleIndex + 1} of {ALL_ADMIN_MODULES.length} · {currentModule.shortTitle}
-                </span>
-                <span>👉</span>
-              </div>
-              <button
-                type="button"
-                onClick={goToNextModule}
-                className="p-1 rounded-lg border bg-muted/40 text-foreground text-xs font-bold flex items-center gap-0.5 mobile-touch-target"
-                aria-label="Next module"
-              >
-                Next <span>›</span>
-              </button>
-            </div>
           </div>
 
           {/* Tab Panels Content with Touch Swipe Support */}
           <main
-            className="zero-scroll-pane mt-2 animate-in fade-in duration-150 touch-pan-y"
+            className="w-full mt-2 animate-in fade-in duration-150 touch-pan-y"
             {...mobileSwipeHandlers.handlers}
           >
             {activeTab === 'HEALTH' && (
