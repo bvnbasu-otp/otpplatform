@@ -40,6 +40,28 @@ function Invoke-Pnpm {
   } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
     & npx pnpm @Arguments
   } else {
+    $nodeCandidates = @(
+      "C:\Users\bloganat\AppData\Local\Programs\cursor\resources\app\resources\helpers\node.exe"
+    )
+    $foundNode = $null
+    foreach ($candidate in $nodeCandidates) {
+      if (Test-Path $candidate) {
+        $foundNode = $candidate
+        break
+      }
+    }
+    if ($foundNode) {
+      if ($Arguments[0] -eq "gate:verify") {
+        & $foundNode ./node_modules/tsx/dist/cli.mjs scripts/verify-staging-gate.ts $Arguments[1..($Arguments.Length-1)]
+        return
+      } elseif ($Arguments[0] -eq "--filter" -and $Arguments[1] -eq "@otp/web" -and $Arguments[2] -eq "build") {
+        & $foundNode ./node_modules/vite/bin/vite.js build apps/web --config apps/web/vite.config.ts
+        return
+      } elseif ($Arguments[0] -eq "test:smoke") {
+        & $foundNode ./node_modules/tsx/dist/cli.mjs scripts/test-live-smoke.ts
+        return
+      }
+    }
     throw "pnpm is not found in PATH. Please install pnpm (npm install -g pnpm) or ensure Node.js is in PATH."
   }
 }
