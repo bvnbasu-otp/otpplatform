@@ -8,7 +8,7 @@ import {
   type TaxonomySnapshot,
 } from '@otp/domain';
 import { Button, WizardStepper, type WizardStep } from '@/components/ui';
-import { REQUIREMENT_PROMPT_KEY } from '@/features/site';
+import { REQUIREMENT_PROMPT_KEY } from '@/features/site/components/RequirementPrompt';
 import { useRoleContext } from '@/features/roles';
 import { fetchSuggestedWeights } from '../api/taxonomy';
 import { publishDraft } from '../api/draft';

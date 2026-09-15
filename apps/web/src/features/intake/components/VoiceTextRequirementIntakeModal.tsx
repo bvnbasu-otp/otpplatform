@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { VoiceRequirementDictation } from './VoiceRequirementDictation';
-import { REQUIREMENT_PROMPT_KEY } from '@/features/site';
+import { REQUIREMENT_PROMPT_KEY } from '@/features/site/components/RequirementPrompt';
 
 export interface VoiceTextRequirementIntakeModalProps {
   open: boolean;

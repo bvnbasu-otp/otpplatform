@@ -3,7 +3,7 @@ import {
   computeSwipeDirection,
   SwipeGestureTracker,
 } from '@/hooks/useSwipeGesture';
-import { ALL_ADMIN_MODULES, ADMIN_CATEGORIES } from '@/features/admin/pages/AdminDashboardPage';
+import { ALL_ADMIN_MODULES, ADMIN_CATEGORIES } from '@/features/admin';
 import { MobileScreensShowcase } from '@/components/mobile-showcase/MobileScreensShowcase';
 import { MobileMultiDeviceGallery } from '@/components/mobile-showcase/MobileMultiDeviceGallery';
 import { AppLayout } from '@/components/AppLayout';

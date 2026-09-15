@@ -13,5 +13,6 @@ export { AdminSellerTroubleshooter } from './components/AdminSellerTroubleshoote
 export { AdminQueryTerminal } from './components/AdminQueryTerminal';
 export { AdminSupportTicketsPanel } from './components/AdminSupportTicketsPanel';
 export * from './types/admin';
+export * from './types/admin-navigation';
 export * from './api/admin-ops';
 export * from './utils/presence';
