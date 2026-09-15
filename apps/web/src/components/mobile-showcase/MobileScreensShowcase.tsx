@@ -246,14 +246,13 @@ export function MobileScreensShowcase() {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-3">
-            <span>📱</span>
-            <span>Mobile-First Procurement Cockpit</span>
+            <span>Procurement Cockpit</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground tracking-tight">
-            Built for Smartphones. Zero Squeezed Desktop.
+            Procurement Cockpit
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Experience how Indian building committees, MSMEs, and verified suppliers execute sourcing from their smartphones—via voice, WhatsApp, and 1-tap thumb interactions.
+            Experience how Indian building committees, MSMEs, and verified suppliers execute sourcing—via voice, WhatsApp, and 1-tap thumb interactions.
           </p>
 
           {/* Top-Level Dual Role Switcher Toggle */}
@@ -294,45 +293,8 @@ export function MobileScreensShowcase() {
             </button>
           </div>
 
-          {/* High-Level 5-Step Overview Mapping Ribbon */}
-          <div className="mt-5 max-w-2xl mx-auto rounded-2xl border border-primary/20 bg-primary/5 p-2.5 sm:p-3 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
-              <span className="font-extrabold text-foreground flex items-center gap-1.5">
-                <span>🗺️</span>
-                <span>{pipelineMode === 'buyer' ? '5-Step Executive Overview → 7-Screen Mobile Pipeline' : '5-Step Supplier Quoting to Fulfillment Journey'}</span>
-              </span>
-              <span className="rounded-full bg-primary/15 text-primary border border-primary/30 px-2 py-0.5 text-[10px] font-black">
-                Phase {currentPhase.phaseNumber} of 5 ({currentPhase.screensLabel})
-              </span>
-            </div>
-
-            <div className="grid grid-cols-5 gap-1 select-none">
-              {phaseMappings.map((phase: PhaseMapping) => {
-                const isPhaseActive = phase.screenIndices.includes(activeScreenIndex);
-                return (
-                  <button
-                    key={phase.phaseNumber}
-                    type="button"
-                    onClick={() => {
-                      setSlideDirection(phase.screenIndices[0]! >= activeScreenIndex ? 'left' : 'right');
-                      setActiveScreenIndex(phase.screenIndices[0]!);
-                    }}
-                    className={`rounded-xl p-1.5 text-center transition mobile-touch-target cursor-pointer ${
-                      isPhaseActive
-                        ? 'bg-primary text-primary-foreground shadow-xs font-bold ring-1 ring-primary/50'
-                        : 'bg-card/70 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50'
-                    }`}
-                  >
-                    <span className="text-[10px] block font-black">0{phase.phaseNumber}</span>
-                    <span className="text-[9px] block truncate font-medium">{phase.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Interactive Screen Selector Tabs Carousel */}
-          <div className="mt-4 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 no-scrollbar scrollbar-none px-2 max-w-full">
+          <div className="mt-6 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 no-scrollbar scrollbar-none px-2 max-w-full">
             {screens.map((screen, idx) => {
               const isActive = idx === activeScreenIndex;
               return (

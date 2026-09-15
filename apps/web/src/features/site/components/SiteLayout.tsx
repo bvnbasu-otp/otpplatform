@@ -117,7 +117,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                       💰 Pricing Plans
                     </Link>
                     <Link to="/faqs" onClick={() => setIsUtilityDrawerOpen(false)} className="rounded border bg-card p-2 hover:bg-muted transition text-center text-primary">
-                      ❓ FAQs
+                      📖 FAQs
                     </Link>
                     <Link to="/legal/terms" onClick={() => setIsUtilityDrawerOpen(false)} className="rounded border bg-card p-2 hover:bg-muted transition text-center">
                       📄 Terms of Use

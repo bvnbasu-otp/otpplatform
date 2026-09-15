@@ -288,7 +288,7 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">❓</span>
+              <span className="text-lg leading-none">📖</span>
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">FAQs</span>
             </NavLink>
           </div>

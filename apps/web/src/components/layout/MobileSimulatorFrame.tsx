@@ -59,18 +59,8 @@ export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
           <span className="font-mono text-[11px] font-bold text-slate-200">
-            📱 390 × 844px · Mobile Cockpit
+            Procurement Cockpit
           </span>
-        </div>
-
-        {/* Quick Actions Cluster */}
-        <div className="flex items-center gap-2">
-          <Link
-            to="/showcase"
-            className="rounded-md border border-slate-700/80 bg-slate-900/80 px-2.5 py-1 text-[11px] font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition shadow-2xs"
-          >
-            📱 Mobile Showcase
-          </Link>
         </div>
       </header>
 

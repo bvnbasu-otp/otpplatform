@@ -216,7 +216,7 @@ export function SubscriptionPaymentModal({
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      {t === 'TIER_1_MSME' ? 'Tier 1 (MSME / ₹100)' : 'Tier 2 (RWA / ₹1,000)'}
+                      {t === 'TIER_1_MSME' ? 'Tier 1 (MSME / ₹99)' : 'Tier 2 (RWA / ₹1,000)'}
                     </button>
                   ))}
                 </div>

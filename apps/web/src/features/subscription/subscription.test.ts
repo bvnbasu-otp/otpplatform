@@ -9,11 +9,11 @@ import {
 describe('Subscription Pricing & Tier Rules', () => {
   it('enforces exact Tier 1 (MSME / Individual) pricing structures', () => {
     const tier1 = SUBSCRIPTION_TIERS.TIER_1_MSME;
-    expect(tier1.monthlyPrice).toBe(100);
+    expect(tier1.monthlyPrice).toBe(99);
     expect(tier1.monthlyDurationDays).toBe(30);
-    expect(tier1.yearlyPrice).toBe(1000);
+    expect(tier1.yearlyPrice).toBe(999);
     expect(tier1.yearlyDurationDays).toBe(365);
-    expect(tier1.yearlySavings).toBe(200); // 1200 - 1000
+    expect(tier1.yearlySavings).toBe(189);
   });
 
   it('enforces exact Tier 2 (RWA / Institutional Committee) pricing structures', () => {
@@ -36,13 +36,13 @@ describe('Subscription Pricing & Tier Rules', () => {
 
   it('computes subscription fees and duration correctly for monthly and yearly cycles', () => {
     const t1Monthly = computeSubscriptionFee('TIER_1_MSME', 'MONTHLY');
-    expect(t1Monthly.amount).toBe(100);
+    expect(t1Monthly.amount).toBe(99);
     expect(t1Monthly.durationDays).toBe(30);
 
     const t1Yearly = computeSubscriptionFee('TIER_1_MSME', 'YEARLY');
-    expect(t1Yearly.amount).toBe(1000);
+    expect(t1Yearly.amount).toBe(999);
     expect(t1Yearly.durationDays).toBe(365);
-    expect(t1Yearly.savings).toBe(200);
+    expect(t1Yearly.savings).toBe(189);
 
     const t2Monthly = computeSubscriptionFee('TIER_2_ENTERPRISE', 'MONTHLY');
     expect(t2Monthly.amount).toBe(1000);
