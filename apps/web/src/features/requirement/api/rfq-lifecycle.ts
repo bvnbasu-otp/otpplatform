@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { fetchCurrentProfile } from '@/features/auth/user-role';
 import type { MatchedSupplier, CompactRequirementContext } from '../types/discovery';
+import type { RfqReviewData } from '../types/rfq-review';
+import { fetchRequirementAttachments } from '@/features/attachments/api/attachments';
+import { fetchProcurementPolicy } from '@/features/procurement-os/api/fetch-procurement-os';
 
 export type RequirementRfqContext = CompactRequirementContext;
 
@@ -291,4 +294,256 @@ export async function openRfq(rfqId: string): Promise<
     .eq('id', rfq.requirement_id);
 
   return { ok: true };
+}
+
+export async function updateRfqDeadline(
+  rfqId: string,
+  deadlineIso: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const deadlineDate = new Date(deadlineIso);
+  if (isNaN(deadlineDate.getTime())) {
+    return { ok: false, error: 'Invalid deadline date format' };
+  }
+  if (deadlineDate.getTime() <= Date.now()) {
+    return { ok: false, error: 'Quote deadline must be in the future' };
+  }
+
+  const { error } = await supabase
+    .from('rfqs')
+    .update({ quote_deadline: deadlineIso, updated_at: new Date().toISOString() })
+    .eq('id', rfqId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function updateRfqInstructions(
+  requirementId: string,
+  instructions: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { data: req } = await supabase
+    .from('requirements')
+    .select('commercial')
+    .eq('id', requirementId)
+    .maybeSingle();
+
+  const currentCommercial = (req?.commercial ?? {}) as Record<string, any>;
+  const currentSourcing = (currentCommercial.__sourcing ?? {}) as Record<string, any>;
+
+  const updatedCommercial = {
+    ...currentCommercial,
+    __sourcing: {
+      ...currentSourcing,
+      instructions: instructions.trim(),
+    },
+  };
+
+  const { error } = await supabase
+    .from('requirements')
+    .update({ commercial: updatedCommercial, updated_at: new Date().toISOString() })
+    .eq('id', requirementId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function fetchRfqReviewData(
+  requirementId: string,
+  providedRfqId?: string | null,
+): Promise<{ ok: true; data: RfqReviewData } | { ok: false; error: string }> {
+  const ensure = await ensureRfqForRequirement(requirementId);
+  if (!ensure.ok) return { ok: false, error: ensure.error };
+
+  const rfqId = providedRfqId || ensure.rfqId;
+
+  const [reqRes, rfqRes, suppRes, attRes, polRes] = await Promise.all([
+    supabase
+      .from('requirements')
+      .select('id, title, status, description, quantity, unit, attributes, delivery_city, delivery_pincode, delivery_line1, site_notes, required_by_mode, required_by_days, required_by_date, commercial, organization_id, category_id, requirement_type, quality')
+      .eq('id', requirementId)
+      .maybeSingle(),
+    supabase
+      .from('rfqs')
+      .select('id, status, title, quote_deadline, evaluation_deadline, min_quotes_required')
+      .eq('id', rfqId)
+      .maybeSingle(),
+    fetchMatchedSuppliers(rfqId),
+    fetchRequirementAttachments(requirementId),
+    fetchProcurementPolicy(rfqId),
+  ]);
+
+  if (reqRes.error || !reqRes.data) {
+    return { ok: false, error: reqRes.error?.message ?? 'Requirement not found' };
+  }
+  if (rfqRes.error || !rfqRes.data) {
+    return { ok: false, error: rfqRes.error?.message ?? 'RFQ not found' };
+  }
+
+  const req = reqRes.data;
+  const rfq = rfqRes.data;
+
+  // Format delivery timeline
+  let requiredByText = 'Flexible timeline';
+  if (req.required_by_mode === 'IMMEDIATE') {
+    requiredByText = '⚡ ASAP / Immediate';
+  } else if (req.required_by_mode === 'WITHIN_DAYS' && req.required_by_days) {
+    requiredByText = req.required_by_days === 7 ? '⏱️ This week (7 days)' : `Within ${req.required_by_days} days`;
+  } else if (req.required_by_mode === 'SPECIFIC_DATE' && req.required_by_date) {
+    requiredByText = `By ${req.required_by_date}`;
+  }
+
+  // Format budget & commercial
+  const comm = (req.commercial ?? {}) as Record<string, any>;
+  const rawBudget = comm.budgetAmount ?? comm.targetBudget ?? comm.estimatedTotal;
+  const budgetAmount = rawBudget ? Number(rawBudget) : null;
+  const budgetFormatted = budgetAmount ? `₹${budgetAmount.toLocaleString('en-IN')}` : null;
+
+  const sourcing = (comm.__sourcing ?? {}) as Record<string, any>;
+  const geographicReach = sourcing.reach ?? 'LOCAL';
+  const buyerInstructions = sourcing.instructions ?? comm.notes ?? '';
+
+  const quality = (req.quality ?? {}) as Record<string, any>;
+  const qualityNotes = quality.notes ?? null;
+
+  // Default quote deadline to 7 days from now if missing
+  const quoteDeadline = rfq.quote_deadline ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const evaluationDeadline = rfq.evaluation_deadline ?? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  const selectedSuppliers = suppRes.ok ? suppRes.suppliers : [];
+  const attachments = attRes.ok ? attRes.attachments : [];
+
+  const policy = polRes.ok
+    ? polRes.policy
+    : {
+        policyType: 'INDIVIDUAL_DIRECT',
+        minQuotesRequired: 2,
+        minCommitteeVotes: 1,
+        requestRoles: ['BUYER'],
+        approveRoles: ['BUYER'],
+        awardRoles: ['BUYER'],
+        evaluationWeights: { price: 40, delivery: 30, warranty: 30 },
+        committeeVoteRequired: false,
+        conflictDeclarationRequired: false,
+        awardRequiresJustification: false,
+      };
+
+  const isFastTrack = policy.policyType === 'INDIVIDUAL_DIRECT' || !policy.committeeVoteRequired;
+
+  // Validation Engine
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!req.title?.trim() || !req.description?.trim()) {
+    errors.push('Requirement title and description are required before publishing.');
+  }
+  if (!req.delivery_city?.trim() || !req.delivery_pincode?.trim()) {
+    errors.push('Delivery city and PIN code are required.');
+  }
+  if (selectedSuppliers.length === 0) {
+    errors.push('At least 1 verified supplier must be selected in the sourcing pool.');
+  }
+  const deadlineDate = new Date(quoteDeadline);
+  if (isNaN(deadlineDate.getTime()) || deadlineDate.getTime() <= Date.now()) {
+    errors.push('Quote response deadline must be a valid date in the future.');
+  }
+
+  // Warnings (advisory, non-blocking)
+  if (!budgetAmount) {
+    warnings.push('No internal budget ceiling set. Suppliers will submit open market rates.');
+  }
+  if (attachments.length === 0) {
+    warnings.push('No technical drawings or BoQ files attached.');
+  }
+  if (selectedSuppliers.length < policy.minQuotesRequired) {
+    warnings.push(`Selected pool (${selectedSuppliers.length}) is below policy quorum recommendation (${policy.minQuotesRequired} suppliers).`);
+  }
+  if (deadlineDate.getTime() - Date.now() < 24 * 60 * 60 * 1000) {
+    warnings.push('Quote deadline is within 24 hours. Consider giving suppliers 3–7 days to quote.');
+  }
+
+  const reviewData: RfqReviewData = {
+    requirement: {
+      id: req.id,
+      title: req.title,
+      description: req.description,
+      status: req.status,
+      categoryName: req.category_id,
+      requirementMode: req.requirement_type,
+      quantity: req.quantity ? Number(req.quantity) : null,
+      unit: req.unit,
+      deliveryCity: req.delivery_city,
+      deliveryPincode: req.delivery_pincode,
+      deliveryLine1: req.delivery_line1,
+      siteNotes: req.site_notes,
+      requiredByText,
+      budgetFormatted,
+      budgetAmount,
+      attributes: (req.attributes ?? {}) as Record<string, any>,
+      qualityNotes,
+      paymentTerms: comm.paymentTerms ?? '100% on delivery',
+      priceIncludesTransport: Boolean(comm.priceIncludesTransport ?? true),
+      priceIncludesGst: Boolean(comm.priceIncludesGst ?? true),
+      geographicReach,
+    },
+    rfq: {
+      id: rfq.id,
+      status: rfq.status,
+      title: rfq.title,
+      quoteDeadline,
+      evaluationDeadline,
+      minQuotesRequired: policy.minQuotesRequired,
+      buyerInstructions,
+    },
+    selectedSuppliers,
+    attachments,
+    governance: {
+      orgType: polRes.ok ? polRes.policyType : 'INDIVIDUAL',
+      policyType: policy.policyType,
+      minQuotesRequired: policy.minQuotesRequired,
+      minCommitteeVotes: policy.minCommitteeVotes,
+      committeeVoteRequired: policy.committeeVoteRequired,
+      evaluationWeights: policy.evaluationWeights,
+      isFastTrack,
+    },
+    validation: {
+      errors,
+      warnings,
+      isValid: errors.length === 0,
+    },
+  };
+
+  return { ok: true, data: reviewData };
+}
+
+export async function publishRfq(input: {
+  rfqId: string;
+  requirementId: string;
+  quoteDeadline?: string;
+  instructions?: string;
+}): Promise<{ ok: true; rfqId: string; invitedCount: number } | { ok: false; error: string }> {
+  const { rfqId, requirementId, quoteDeadline, instructions } = input;
+
+  if (quoteDeadline) {
+    const deadlineRes = await updateRfqDeadline(rfqId, quoteDeadline);
+    if (!deadlineRes.ok) return deadlineRes;
+  }
+
+  if (instructions !== undefined) {
+    await updateRfqInstructions(requirementId, instructions);
+  }
+
+  // Ensure suppliers are invited
+  let count = await fetchInvitationCount(rfqId);
+  if (count === 0) {
+    const discRes = await discoverAndInvite(rfqId);
+    if (!discRes.ok) return discRes;
+    count = discRes.total;
+  }
+
+  const openRes = await openRfq(rfqId);
+  if (!openRes.ok && !openRes.error.includes('already')) {
+    return openRes;
+  }
+
+  return { ok: true, rfqId, invitedCount: count };
 }

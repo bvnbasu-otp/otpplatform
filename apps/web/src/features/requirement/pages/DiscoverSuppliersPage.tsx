@@ -440,15 +440,13 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 <span>→</span>
               </Link>
             ) : (
-              <button
-                type="button"
-                disabled={busy || selectedIds.size === 0}
-                onClick={() => void handleBroadcastEnquiry()}
-                className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
-                data-testid="run-discovery-button"
+              <Link
+                to={`/requirements/${requirementId}/rfq-review`}
+                className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
+                data-testid="continue-to-rfq-review-cta"
               >
-                <span>{busy ? 'Broadcasting Enquiries…' : `🚀 Send Enquiry to ${selectedIds.size} Supplier(s) →`}</span>
-              </button>
+                <span>Continue to RFQ Review ({selectedIds.size} Selected) →</span>
+              </Link>
             )}
           </div>
         </div>

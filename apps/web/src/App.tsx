@@ -20,6 +20,7 @@ import { SupplierPerformancePage } from '@/features/performance';
 import { RequirementDetailPage } from '@/features/requirement/pages/RequirementDetailPage';
 import { RequirementIntakePage } from '@/features/intake';
 import { DiscoverSuppliersPage } from '@/features/requirement/pages/DiscoverSuppliersPage';
+import { RfqReviewPublishPage } from '@/features/requirement/pages/RfqReviewPublishPage';
 import { MarketIntelligenceStepPage } from '@/features/procurement-os';
 import { RfqClarificationPage } from '@/features/clarification';
 import { DemoWalkthroughPanel } from '@/features/demo/DemoWalkthroughPanel';
@@ -178,6 +179,12 @@ function DiscoverRoute() {
   return <DiscoverSuppliersPage requirementId={requirementId} />;
 }
 
+function RfqReviewRoute() {
+  const { requirementId, rfqId } = useParams<{ requirementId?: string; rfqId?: string }>();
+  if (!requirementId && !rfqId) return <Navigate to="/dashboard" replace />;
+  return <RfqReviewPublishPage requirementId={requirementId} rfqId={rfqId} />;
+}
+
 function RequirementRoute() {
   const { requirementId } = useParams<{ requirementId: string }>();
   if (!requirementId) return <Navigate to="/dashboard" replace />;
@@ -280,6 +287,22 @@ export function App() {
             <Route
               path="/requirements/:requirementId/discover"
               element={<DiscoverRoute />}
+            />
+            <Route
+              path="/requirements/:requirementId/rfq-review"
+              element={<RfqReviewRoute />}
+            />
+            <Route
+              path="/requirements/:requirementId/review-publish"
+              element={<RfqReviewRoute />}
+            />
+            <Route
+              path="/rfq/:rfqId/publish"
+              element={<RfqReviewRoute />}
+            />
+            <Route
+              path="/rfq/:rfqId/review"
+              element={<RfqReviewRoute />}
             />
             <Route
               path="/requirements/:requirementId/market-intelligence"

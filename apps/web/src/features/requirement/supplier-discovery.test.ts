@@ -50,10 +50,6 @@ describe('Phase 2.3 — Supplier Discovery Feature Tests', () => {
     });
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('1. Compact Requirement Context Extraction', () => {
     it('fetches and formats compact requirement context with budget and timeline', async () => {
       const mockReqData = {
