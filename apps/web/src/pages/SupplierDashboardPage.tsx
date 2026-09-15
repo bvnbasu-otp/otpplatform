@@ -10,7 +10,6 @@ import { SupplierPerformanceSection } from '@/features/supplier/components/Suppl
 import { fetchPurchaseOrders } from '@/features/fulfillment/api/purchase-orders';
 import { formatMoney, type PurchaseOrderSummary } from '@/features/fulfillment/types/fulfillment';
 import { MobileGlanceBar } from '@/components/ui/MobileGlanceBar';
-import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 import {
   SupplierCapabilityModal,
   useSupplierRadarCapabilities,
@@ -198,7 +197,6 @@ export function SupplierDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <RoleModeToggle size="sm" />
           <button
             type="button"
             onClick={() => setIsCapabilityModalOpen(true)}

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
@@ -14,6 +14,7 @@ import { PERSONA_AVATARS, compressAndCropAvatar } from '../lib/avatars';
 import { useTheme, ThemeBottomSheet } from '@/features/theme';
 import { ChangePasswordModal } from '@/features/roles/components/ChangePasswordModal';
 import { listOrgMembers, inviteOrgMember, removeOrgMember, type OrgMember } from '@/features/org/api/org-members';
+import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 
 const ROLE_OPTIONS = [
   { value: 'COMMITTEE_MEMBER', label: 'Committee Member — evaluates & votes on RFQs' },
@@ -1035,6 +1036,26 @@ export function ProfilePage() {
       {/* 4. TAB 3: PREFERENCES, NOTIFICATION CHANNELS & SECURITY */}
       {activeTab === 'preferences' && (
         <div className="space-y-3">
+          {/* Portal Workspace Mode */}
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-2">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  🔄 Portal Workspace Mode
+                </h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Switch between Buyer Procurement lead and Supplier Quoting rep portals.
+                </p>
+              </div>
+              <div>
+                <RoleModeToggle size="md" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Your active workspace mode controls whether you are initiating sourcing requests or submitting quotations to buyers.
+            </p>
+          </section>
+
           {/* Theme & Display Mode: Restricted to Theme Bottom Sheet */}
           <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
             <div className="flex items-center justify-between border-b pb-2">

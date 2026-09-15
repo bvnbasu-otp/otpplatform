@@ -10,6 +10,7 @@ import { ThemeBottomSheet } from '@/features/theme';
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
+import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -327,6 +328,27 @@ export function MobileBottomNav() {
               )}
             </div>
           </div>
+
+          {/* Portal / Role Mode Switcher */}
+          {!context.isPlatformAdmin && (
+            <div className="rounded-2xl border border-border/80 bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                  Portal Mode
+                </span>
+                <span className="text-[10px] font-bold text-primary">
+                  {context.side === 'SUPPLIER' ? '🚚 Supplier Portal Active' : '🏢 Buyer Portal Active'}
+                </span>
+              </div>
+              <div className="flex justify-center">
+                <RoleModeToggle
+                  size="md"
+                  className="w-full justify-center py-1 shadow-xs"
+                  onToggle={() => setIsAccountSheetOpen(false)}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Quick Profile Actions */}
           <div className="grid grid-cols-2 gap-2">

@@ -6,9 +6,10 @@ import { useAuth } from '@/features/auth';
 interface RoleModeToggleProps {
   className?: string;
   size?: 'sm' | 'md';
+  onToggle?: (mode: 'buyer' | 'supplier') => void;
 }
 
-export function RoleModeToggle({ className = '', size = 'sm' }: RoleModeToggleProps) {
+export function RoleModeToggle({ className = '', size = 'sm', onToggle }: RoleModeToggleProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -20,6 +21,7 @@ export function RoleModeToggle({ className = '', size = 'sm' }: RoleModeTogglePr
     context.side === 'SUPPLIER';
 
   const handleToggle = async (mode: 'buyer' | 'supplier') => {
+    onToggle?.(mode);
     if (mode === 'supplier') {
       if (!user) {
         navigate('/signup?side=supplier');

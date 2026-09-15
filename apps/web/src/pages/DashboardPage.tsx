@@ -24,8 +24,6 @@ import { MobileGlanceBar } from '@/components/ui/MobileGlanceBar';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 
-import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
-
 type GlanceFilter = 'ALL' | 'ACTIVE' | 'ACTION_REQUIRED' | 'COMPLETED';
 
 const POPULAR_QUICK_TILES = [
@@ -519,9 +517,8 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Subscription Status Pill & Role Mode Switcher */}
+          {/* Subscription Status Pill */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <RoleModeToggle size="sm" />
             {subscription && (
               <button
                 type="button"
