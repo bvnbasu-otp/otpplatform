@@ -17,9 +17,17 @@ vi.mock('@/features/roles/api/roles', () => ({
   switchActiveOrganization: vi.fn(),
 }));
 
+const mockSupabaseClient = {
+  rpc: vi.fn(),
+};
+
+const mockSwitchFn = vi.fn();
+
 describe('Org Feature Module Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSupabaseClient.rpc.mockReset();
+    mockSwitchFn.mockReset();
   });
 
   it('lists organization members and correctly maps membership details', async () => {
@@ -42,12 +50,11 @@ describe('Org Feature Module Tests', () => {
       },
     ];
 
-    vi.mocked(supabase.rpc).mockResolvedValue({
-      data: mockRows,
-      error: null,
-    } as any);
+    const mockResponse = { data: mockRows, error: null };
+    vi.mocked(supabase.rpc).mockResolvedValue(mockResponse as any);
+    mockSupabaseClient.rpc.mockResolvedValue(mockResponse);
 
-    const res = await listOrgMembers('org-1');
+    const res = await listOrgMembers('org-1', mockSupabaseClient as any);
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.members).toHaveLength(2);
@@ -58,12 +65,14 @@ describe('Org Feature Module Tests', () => {
   });
 
   it('invites a new member to the organization successfully', async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({
+    const mockResponse = {
       data: { ok: true, message: 'Invite sent successfully' },
       error: null,
-    } as any);
+    };
+    vi.mocked(supabase.rpc).mockResolvedValue(mockResponse as any);
+    mockSupabaseClient.rpc.mockResolvedValue(mockResponse);
 
-    const res = await inviteOrgMember('org-1', 'new.member@buyer.test', 'MEMBER');
+    const res = await inviteOrgMember('org-1', 'new.member@buyer.test', 'MEMBER', mockSupabaseClient as any);
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.message).toContain('Invite sent successfully');
@@ -71,29 +80,34 @@ describe('Org Feature Module Tests', () => {
   });
 
   it('removes an organization member successfully', async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({
+    const mockResponse = {
       data: { ok: true },
       error: null,
-    } as any);
+    };
+    vi.mocked(supabase.rpc).mockResolvedValue(mockResponse as any);
+    mockSupabaseClient.rpc.mockResolvedValue(mockResponse);
 
-    const res = await removeOrgMember('org-1', 'prof-2');
+    const res = await removeOrgMember('org-1', 'prof-2', mockSupabaseClient as any);
     expect(res.ok).toBe(true);
   });
 
   it('switches active organization via roles API', async () => {
-    vi.mocked(switchOrgRpc).mockResolvedValue({
-      ok: true,
+    const mockResult = {
+      ok: true as const,
       context: {
         organizationId: 'org-2',
         activeRole: null,
         organizations: [],
       } as any,
-    });
+    };
+    vi.mocked(switchOrgRpc).mockResolvedValue(mockResult);
+    mockSwitchFn.mockResolvedValue(mockResult);
 
-    const res = await switchActiveOrganization('org-2');
+    const res = await switchActiveOrganization('org-2', mockSwitchFn);
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.context.organizationId).toBe('org-2');
     }
   });
 });
+

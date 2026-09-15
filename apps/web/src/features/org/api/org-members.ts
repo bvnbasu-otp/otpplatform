@@ -1,4 +1,4 @@
-﻿import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { switchActiveOrganization as switchOrgRpc } from "@/features/roles/api/roles";
 import type { RoleContext } from "@/features/roles/api/roles";
 
@@ -27,8 +27,11 @@ export type SwitchOrgResult =
   | { ok: true; context: RoleContext }
   | { ok: false; error: string };
 
-export async function listOrgMembers(organizationId: string): Promise<OrgMembersResult> {
-  const { data, error } = await supabase.rpc("list_org_members", {
+export async function listOrgMembers(
+  organizationId: string,
+  client = supabase
+): Promise<OrgMembersResult> {
+  const { data, error } = await client.rpc("list_org_members", {
     p_organization_id: organizationId,
   });
   if (error) return { ok: false, error: error.message };
@@ -49,9 +52,10 @@ export async function listOrgMembers(organizationId: string): Promise<OrgMembers
 export async function inviteOrgMember(
   organizationId: string,
   email: string,
-  role: string
+  role: string,
+  client = supabase
 ): Promise<InviteMemberResult> {
-  const { data, error } = await supabase.rpc("invite_org_member", {
+  const { data, error } = await client.rpc("invite_org_member", {
     p_organization_id: organizationId,
     p_email: email.trim().toLowerCase(),
     p_role: role,
@@ -66,9 +70,10 @@ export async function inviteOrgMember(
 
 export async function removeOrgMember(
   organizationId: string,
-  profileId: string
+  profileId: string,
+  client = supabase
 ): Promise<RemoveMemberResult> {
-  const { data, error } = await supabase.rpc("remove_org_member", {
+  const { data, error } = await client.rpc("remove_org_member", {
     p_organization_id: organizationId,
     p_profile_id: profileId,
   });
@@ -80,6 +85,10 @@ export async function removeOrgMember(
   return { ok: true };
 }
 
-export async function switchActiveOrganization(organizationId: string): Promise<SwitchOrgResult> {
-  return switchOrgRpc(organizationId);
+export async function switchActiveOrganization(
+  organizationId: string,
+  switchFn = switchOrgRpc
+): Promise<SwitchOrgResult> {
+  return switchFn(organizationId);
 }
+
