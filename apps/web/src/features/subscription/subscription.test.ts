@@ -81,3 +81,12 @@ describe('Prepaid Subscription Lifecycle & Renewal Reminders', () => {
     expect(getRenewalNoticeLevel(25, false)).toBe('NONE');
   });
 });
+
+describe('OTP Wallet & Credits Engine', () => {
+  it('exports OtpWalletCreditsWidget component', async () => {
+    const { OtpWalletCreditsWidget } = await import('./components/OtpWalletCreditsWidget');
+    expect(OtpWalletCreditsWidget).toBeDefined();
+    expect(typeof OtpWalletCreditsWidget).toBe('function');
+  });
+});
+

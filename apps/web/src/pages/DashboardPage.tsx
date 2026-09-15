@@ -16,6 +16,7 @@ import {
   fetchOrganizationSubscription,
   SubscriptionExpiryBanner,
   SubscriptionPaymentModal,
+  OtpWalletCreditsWidget,
   type OrganizationSubscription,
 } from '@/features/subscription';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -576,6 +577,12 @@ export function DashboardPage() {
           onRenewClick={() => setIsPaymentModalOpen(true)}
         />
       )}
+
+      {/* Product-Led Buyer Rewards: OTP Wallet & Credits Widget */}
+      <OtpWalletCreditsWidget
+        balanceCredits={450}
+        onApplyRenewal={() => setIsPaymentModalOpen(true)}
+      />
 
       {/* 2. 3-Pill Mobile Glance Bar (Active, Action, Settled) */}
       <MobileGlanceBar

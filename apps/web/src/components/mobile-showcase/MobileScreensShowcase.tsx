@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { MobilePhoneFrame } from './MobilePhoneFrame';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 
@@ -13,6 +13,13 @@ export interface MobileScreenDef {
   badgeColor: string;
   description: string;
   component: React.ReactNode;
+}
+
+export interface PhaseMapping {
+  phaseNumber: number;
+  label: string;
+  screenIndices: number[];
+  screensLabel: string;
 }
 
 export function MobileScreensShowcase() {
@@ -146,11 +153,11 @@ export function MobileScreensShowcase() {
     {
       id: 'supplier-02',
       stepNumber: '02',
-      tabLabel: '30-Min Quoting',
+      tabLabel: '15-Sec Quoting',
       icon: '⚡',
-      title: '30 Min Anonymous Quoting',
+      title: '15-Second Quoting Engine',
       tagline: 'Unit price + GST auto-split, TAT days, warranty SLA under masked alias.',
-      badge: 'Screen 02 · 30 Min Anonymous Quoting',
+      badge: 'Screen 02 · 15-Second Quoting Engine',
       badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
       description: 'Suppliers quote unit rates in seconds. Indian GST tax rates split automatically with zero complex account logins.',
       component: <ScreenSupplierQuotingEngine onNext={() => setActiveScreenIndex(2)} />,
@@ -172,9 +179,9 @@ export function MobileScreensShowcase() {
       stepNumber: '04',
       tabLabel: 'PO Sign-off',
       icon: '📝',
-      title: 'Award Unmask & PO Sign-off',
+      title: 'Award Notification & PO Sign-off',
       tagline: 'Unmasked buyer GST credentials, digital PO acceptance.',
-      badge: 'Screen 04 · Award Unmask & PO Sign-off',
+      badge: 'Screen 04 · Award Notification & PO Sign-off',
       badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300',
       description: 'Winning quote triggers unmasked institutional buyer details, milestone schedule, and 1-tap digital PO acceptance.',
       component: <ScreenSupplierPoSignoff onNext={() => setActiveScreenIndex(4)} />,
@@ -184,9 +191,9 @@ export function MobileScreensShowcase() {
       stepNumber: '05',
       tabLabel: 'Milestone Tracker',
       icon: '🚚',
-      title: 'Live Milestone Tracker',
+      title: 'Order Fulfillment & Milestone Tracker',
       tagline: 'Live status steps: Pickup Scheduled, In Progress, Ready for Delivery, Invoiced.',
-      badge: 'Screen 05 · Live Milestone Tracker',
+      badge: 'Screen 05 · Order Fulfillment & Milestone Tracker',
       badgeColor: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-300',
       description: 'Update execution stages with 1-thumb touch. Auto-generates GST tax invoices and payment release requests.',
       component: <ScreenSupplierFulfillmentTracker onRestart={() => setActiveScreenIndex(0)} />,
@@ -196,6 +203,25 @@ export function MobileScreensShowcase() {
   const screens = pipelineMode === 'buyer' ? buyerScreens : supplierScreens;
   const currentScreen: MobileScreenDef = screens[activeScreenIndex] ?? screens[0]!;
   const nextScreen: MobileScreenDef = screens[(activeScreenIndex + 1) % screens.length] ?? screens[0]!;
+
+  const buyerPhaseMappings: PhaseMapping[] = useMemo(() => [
+    { phaseNumber: 1, label: 'Intake & Specs', screenIndices: [0, 1], screensLabel: 'Screens 01 & 02' },
+    { phaseNumber: 2, label: 'Sourcing Radar', screenIndices: [2], screensLabel: 'Screen 03' },
+    { phaseNumber: 3, label: 'Sealed Quoting', screenIndices: [3, 4], screensLabel: 'Screens 04 & 05' },
+    { phaseNumber: 4, label: 'Committee Vote', screenIndices: [5], screensLabel: 'Screen 06' },
+    { phaseNumber: 5, label: 'Digital PO & Tracking', screenIndices: [6], screensLabel: 'Screen 07' },
+  ], []);
+
+  const supplierPhaseMappings: PhaseMapping[] = useMemo(() => [
+    { phaseNumber: 1, label: 'Radar & Alerts', screenIndices: [0], screensLabel: 'Screen 01' },
+    { phaseNumber: 2, label: '15-Sec Quoting', screenIndices: [1], screensLabel: 'Screen 02' },
+    { phaseNumber: 3, label: 'Quote Status', screenIndices: [2], screensLabel: 'Screen 03' },
+    { phaseNumber: 4, label: 'Award & PO Sign-off', screenIndices: [3], screensLabel: 'Screen 04' },
+    { phaseNumber: 5, label: 'Live Fulfillment', screenIndices: [4], screensLabel: 'Screen 05' },
+  ], []);
+
+  const phaseMappings: PhaseMapping[] = pipelineMode === 'buyer' ? buyerPhaseMappings : supplierPhaseMappings;
+  const currentPhase: PhaseMapping = phaseMappings.find((p: PhaseMapping) => p.screenIndices.includes(activeScreenIndex)) || phaseMappings[0]!;
 
   const goToNextScreen = useCallback(() => {
     setSlideDirection('left');
@@ -266,6 +292,43 @@ export function MobileScreensShowcase() {
             >
               <span>🚚</span> Supplier View (5 Screens)
             </button>
+          </div>
+
+          {/* High-Level 5-Step Overview Mapping Ribbon */}
+          <div className="mt-5 max-w-2xl mx-auto rounded-2xl border border-primary/20 bg-primary/5 p-2.5 sm:p-3 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
+              <span className="font-extrabold text-foreground flex items-center gap-1.5">
+                <span>🗺️</span>
+                <span>{pipelineMode === 'buyer' ? '5-Step Executive Overview → 7-Screen Mobile Pipeline' : '5-Step Supplier Quoting to Fulfillment Journey'}</span>
+              </span>
+              <span className="rounded-full bg-primary/15 text-primary border border-primary/30 px-2 py-0.5 text-[10px] font-black">
+                Phase {currentPhase.phaseNumber} of 5 ({currentPhase.screensLabel})
+              </span>
+            </div>
+
+            <div className="grid grid-cols-5 gap-1 select-none">
+              {phaseMappings.map((phase: PhaseMapping) => {
+                const isPhaseActive = phase.screenIndices.includes(activeScreenIndex);
+                return (
+                  <button
+                    key={phase.phaseNumber}
+                    type="button"
+                    onClick={() => {
+                      setSlideDirection(phase.screenIndices[0]! >= activeScreenIndex ? 'left' : 'right');
+                      setActiveScreenIndex(phase.screenIndices[0]!);
+                    }}
+                    className={`rounded-xl p-1.5 text-center transition mobile-touch-target cursor-pointer ${
+                      isPhaseActive
+                        ? 'bg-primary text-primary-foreground shadow-xs font-bold ring-1 ring-primary/50'
+                        : 'bg-card/70 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50'
+                    }`}
+                  >
+                    <span className="text-[10px] block font-black">0{phase.phaseNumber}</span>
+                    <span className="text-[9px] block truncate font-medium">{phase.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Interactive Screen Selector Tabs Carousel */}
