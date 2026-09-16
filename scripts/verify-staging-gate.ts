@@ -10,7 +10,7 @@
  *    - Validates 4 tiers: Unit, Module, Functional, Regression.
  *    - Enforces the Coverage Append Rule across modified features/packages.
  * 3. Master Regression Battery Execution:
- *    - 828+ tests across 12 layers (Domain, Services, Database, Unit, Web,
+ *    - 901+ tests across 12 layers (Domain, Services, Database, Unit, Web,
  *      Integration, Security, Demo E2E, Live Flows, Smoke, Vite Build).
  * 4. Mandatory Post-Gate Log Outputs:
  *    - Gate Result: PASS / FAIL
@@ -152,7 +152,7 @@ const steps: GateStep[] = [
     critical: true,
   },
   {
-    name: 'Master Regression Suite (828+ Tests across 12 Layers)',
+    name: 'Master Regression Suite (901+ Tests across 12 Layers)',
     command: 'pnpm test:regression',
     critical: true,
   },

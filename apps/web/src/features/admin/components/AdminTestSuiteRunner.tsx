@@ -36,27 +36,27 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     filesCount: 1,
     testCount: 1,
     category: 'SECURITY',
-    keySuites: ['policy-scanner.ts'],
+    keySuites: ['policy-scanner.ts', 'verify-vocabulary.ts'],
     status: 'VERIFIED',
   },
   {
     id: 'MOD-DOMAIN',
     name: 'Domain Logic, GST Validation & NLP Parsing Engine',
-    description: 'Rule-based NLP requirement parsing, multilingual Devnagari units, GSTIN checksum validator, smart scoring algorithms, taxonomy LRU cache',
-    filesCount: 11,
-    testCount: 70,
+    description: 'Rule-based NLP requirement parsing, multilingual Devnagari units, GSTIN checksum validator, smart scoring algorithms, taxonomy LRU cache, linear pipeline enums',
+    filesCount: 10,
+    testCount: 71,
     category: 'CORE_DOMAIN',
-    keySuites: ['multilingual-parser.test.ts', 'smart-scoring.test.ts', 'gstin-validator.test.ts', 'taxonomy-cache.test.ts', 'accounting-export.test.ts'],
+    keySuites: ['multilingual-parser.test.ts', 'smart-scoring.test.ts', 'gstin-validator.test.ts', 'taxonomy-cache.test.ts', 'accounting-export.test.ts', 'linear-pipeline.test.ts'],
     status: 'VERIFIED',
   },
   {
     id: 'MOD-SERVICES',
     name: 'Network Discovery, ONDC & External Adapters',
-    description: 'ONDC BAP protocol adapters, notification exponential backoff retry queue, sliding-window rate limiters, transactional email dispatchers',
+    description: 'ONDC BAP protocol adapters, notification exponential backoff retry queue, sliding-window rate limiters, transactional email dispatchers, GST verification services',
     filesCount: 8,
     testCount: 30,
     category: 'INTEGRATION',
-    keySuites: ['ondc-realtime.test.ts', 'rate-limit.test.ts', 'retry-queue.test.ts', 'email-dispatcher.test.ts'],
+    keySuites: ['ondc-realtime.test.ts', 'rate-limit.test.ts', 'retry-queue.test.ts', 'email-dispatcher.test.ts', 'gst-verification.test.ts'],
     status: 'VERIFIED',
   },
   {
@@ -81,12 +81,12 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
   },
   {
     id: 'MOD-WEB-UI',
-    name: 'Web Features, Governance, ProtectedRoute & State Machines',
-    description: 'Role-based PWA routing, centralized <ProtectedRoute> with diagnostic cache sanitization, committee voting, intake, quick-quote, and 8-state lifecycle',
-    filesCount: 48,
-    testCount: 346,
+    name: 'Web Features, Sourcing Cockpits, Governance, ProtectedRoute & State Machines',
+    description: 'Role-based PWA routing, Supplier Home Cockpit (Phase 3.1), Buyer Procurement Cockpit, Active RFQ Monitoring (Phase 2.5), RFQ Review & Publish (Phase 2.4), Supplier Discovery (Phase 2.3), committee voting, intake, quick-quote, and 8-state lifecycle',
+    filesCount: 73,
+    testCount: 615,
     category: 'WEB_UI',
-    keySuites: ['protected-route.test.ts', 'governance.test.ts', 'e2e-sourcing-lifecycle.test.ts', 'buyer-reveal-gst.test.ts', 'admin.test.ts'],
+    keySuites: ['supplier-home.test.ts', 'buyer-home.test.ts', 'active-rfq-monitoring.test.ts', 'rfq-review-publish.test.ts', 'supplier-discovery.test.ts', 'e2e-sourcing-lifecycle.test.ts', 'protected-route.test.ts', 'auth.test.ts'],
     status: 'VERIFIED',
   },
   {
@@ -188,6 +188,20 @@ const ALL_TEST_CASES: TestCase[] = [
     description: 'Attempt to access other organization\'s RFQs/quotes (should fail)',
     critical: true,
   },
+  {
+    id: 'SEC-006',
+    category: 'SECURITY',
+    name: 'Multi-Tenant Session & Role Cache Isolation',
+    description: 'Verify user role resolution and profile switches do not leak across sessions',
+    critical: true,
+  },
+  {
+    id: 'SEC-007',
+    category: 'SECURITY',
+    name: 'RLS View Barrier on rfqs_supplier_masked',
+    description: 'Enforce database-level mask barrier preventing buyer PII leakage to suppliers',
+    critical: true,
+  },
   
   // IDENTITY PROTECTION TESTS
   {
@@ -224,6 +238,20 @@ const ALL_TEST_CASES: TestCase[] = [
     name: 'WhatsApp Business Profile Detection',
     description: 'Ensure business accounts with company names rejected',
     critical: false,
+  },
+  {
+    id: 'ID-006',
+    category: 'IDENTITY_PROTECTION',
+    name: 'Supplier Home Identity-Protected Masking',
+    description: 'Verify opportunity cards enforce anonymous tender badges and buyer masking',
+    critical: true,
+  },
+  {
+    id: 'ID-007',
+    category: 'IDENTITY_PROTECTION',
+    name: 'Zero Prohibited Vocabulary Compliance Scanner',
+    description: 'Automated policy scanner verifying zero usage of prohibited terms across codebase',
+    critical: true,
   },
 
   // INTEGRATION TESTS
@@ -283,6 +311,34 @@ const ALL_TEST_CASES: TestCase[] = [
     description: 'Verify category-level benchmarks (no supplier performance)',
     critical: false,
   },
+  {
+    id: 'INT-009',
+    category: 'INTEGRATION',
+    name: 'Phase 2.3 — Supplier Discovery & Radar Matching',
+    description: 'Radius-based category matching, invite pool configuration and direct supplier invite',
+    critical: true,
+  },
+  {
+    id: 'INT-010',
+    category: 'INTEGRATION',
+    name: 'Phase 2.4 — RFQ Review & Direct Publishing',
+    description: 'RFQ review summary, deadline validation, buyer instructions and atomic publish flow',
+    critical: true,
+  },
+  {
+    id: 'INT-011',
+    category: 'INTEGRATION',
+    name: 'Phase 2.5 — Active RFQ Monitoring & Quorum Management',
+    description: 'Live response metrics, quorum progress, supplier activity tracking and deadline extension',
+    critical: true,
+  },
+  {
+    id: 'INT-012',
+    category: 'INTEGRATION',
+    name: 'Phase 3.1 — Supplier Home Mobile Cockpit & Opportunities',
+    description: '5-tier cockpit hierarchy: Opportunities, Actions, Quotes, Orders, Activity with real data',
+    critical: true,
+  },
 
   // E2E TESTS
   {
@@ -313,6 +369,20 @@ const ALL_TEST_CASES: TestCase[] = [
     description: 'Validate debounced AI parsing (1.2s), Indian standards detection',
     critical: false,
   },
+  {
+    id: 'E2E-005',
+    category: 'E2E',
+    name: 'End-to-End Sourcing Lifecycle Engine',
+    description: 'Intake → Quoting → Evaluation → Award → PO → Work Order → Invoice → Direct Settlement',
+    critical: true,
+  },
+  {
+    id: 'E2E-006',
+    category: 'E2E',
+    name: 'Supplier Mobile Cockpit to Quote Flow',
+    description: 'Supplier Opportunity review → Specification pills → Quote submission transition',
+    critical: true,
+  },
 
   // UNIT TESTS
   {
@@ -335,6 +405,27 @@ const ALL_TEST_CASES: TestCase[] = [
     name: 'Smart Defaults Calculation',
     description: 'Test 50km radius, evaluation weights (60/30/10), network selection',
     critical: false,
+  },
+  {
+    id: 'UNIT-004',
+    category: 'UNIT',
+    name: '48px Minimum Touch Target Standard',
+    description: 'Enforce minimum 48x48px touch targets across all mobile buttons and links',
+    critical: true,
+  },
+  {
+    id: 'UNIT-005',
+    category: 'UNIT',
+    name: 'Responsive Cockpit Viewport Adaptation',
+    description: 'Validate layout on 360x800, 390x844, 412x915 and desktop without horizontal overflow',
+    critical: true,
+  },
+  {
+    id: 'UNIT-006',
+    category: 'UNIT',
+    name: 'GSTIN Checksum & Legal Entity Validation',
+    description: 'Validate 15-digit GSTIN format, state code lookup, and checksum algorithms',
+    critical: true,
   },
 ];
 
@@ -484,7 +575,7 @@ export function AdminTestSuiteRunner() {
           </div>
 
           <div className="rounded-xl p-3.5 sm:p-4 border border-emerald-500/30 bg-emerald-500/10">
-            <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">25 / 25</div>
+            <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">{ALL_TEST_CASES.length} / {ALL_TEST_CASES.length}</div>
             <div className="text-xs font-semibold text-emerald-950 dark:text-emerald-200">Live DB Benchmarks</div>
             <div className="text-[10px] text-emerald-800 dark:text-emerald-300/80 mt-0.5">100% In PostgreSQL</div>
           </div>
@@ -597,13 +688,13 @@ export function AdminTestSuiteRunner() {
         </div>
       )}
 
-      {/* VIEW 2: LIVE IN-DATABASE RPC BATTERY (25 TESTS) */}
+      {/* VIEW 2: LIVE IN-DATABASE RPC BATTERY ({ALL_TEST_CASES.length} TESTS) */}
       {activeView === 'LIVE_RPC' && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <span>⚡</span> Interactive Live Database Health &amp; Security Probes (25 Tests)
+                <span>⚡</span> Interactive Live Database Health &amp; Security Probes ({ALL_TEST_CASES.length} Tests)
               </h3>
               <p className="text-xs text-muted-foreground">
                 Execute live checks directly inside PostgreSQL (<code className="font-mono">admin_run_test_case</code>) to verify live RLS policies, schemas, and cryptographic engines.

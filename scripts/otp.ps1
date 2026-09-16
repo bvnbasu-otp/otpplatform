@@ -75,8 +75,8 @@ if ($Command -eq "help" -or -not $Command) {
   Write-Host "Core Operations:" -ForegroundColor Yellow
   Write-Host "  start      Boots all Docker containers, runs migrations, starts web preview" -ForegroundColor White
   Write-Host "  status     Inspects containers, ports, database integrity, and live site" -ForegroundColor White
-  Write-Host "  test       Executes web unit tests (346 tests) and live smoke battery (10/10)" -ForegroundColor White
-  Write-Host "  gate       Runs the strict 12-layer staging verification gate (631 tests, 100% green)" -ForegroundColor White
+  Write-Host "  test       Executes web unit tests (615 tests) and live smoke battery (10/10)" -ForegroundColor White
+  Write-Host "  gate       Runs the strict 12-layer staging verification gate (901+ tests, 100% green)" -ForegroundColor White
   Write-Host "  policy     Enforces mandatory 4-tier test coverage expansion policy (Coverage Append Rule)" -ForegroundColor White
   Write-Host "  deploy     Full gated production deployment with zero-data-loss and auto-rollback" -ForegroundColor White
   Write-Host "  rollback   Instantly reverts active web bundle to previous stable release and notifies" -ForegroundColor White
@@ -205,7 +205,7 @@ if ($Command -eq "alert") {
 if ($Command -eq "test") {
   Write-Header "FAST OPERATIONAL & UNIT TEST SUITE"
 
-  Write-Host "[1/2] Executing Web Unit Test Battery (346 tests)..." -ForegroundColor Yellow
+  Write-Host "[1/2] Executing Web Unit Test Battery (615 tests)..." -ForegroundColor Yellow
   Invoke-Pnpm --filter web test
   if ($LASTEXITCODE -ne 0) {
     Write-Host "[FAIL] Unit tests failed!" -ForegroundColor Red
@@ -230,7 +230,7 @@ if ($Command -eq "test") {
 # -----------------------------------------------------------------------------
 if ($Command -eq "gate") {
   Write-Header "12-LAYER STAGING VERIFICATION GATE"
-  Write-Host "Executing full 12-layer master regression suite (631 tests)..." -ForegroundColor Yellow
+  Write-Host "Executing full 12-layer master regression suite (901+ tests)..." -ForegroundColor Yellow
   Invoke-Pnpm gate:verify
   exit $LASTEXITCODE
 }

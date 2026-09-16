@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeAdminUserItem, normalizeAdminOrgItem } from './api/admin-ops';
+import { MASTER_MODULE_INVENTORY } from './components/AdminTestSuiteRunner';
+import { ADMIN_CATEGORIES, ALL_ADMIN_MODULES } from './types/admin-navigation';
 import type {
   SystemHealthResponse,
   LiveTransactionItem,
@@ -458,5 +460,49 @@ describe('Super Admin & Ops Console Data Layer', () => {
 
     const normalizedOrg = normalizeAdminOrgItem(rawOrgWithSeenAt);
     expect(normalizedOrg.last_seen_at).toBe('2026-09-12T09:55:00.000Z');
+  });
+
+  it('validates Master Module Test Inventory metrics (901 platform tests across 12 layers)', () => {
+    expect(MASTER_MODULE_INVENTORY).toHaveLength(12);
+
+    const totalTests = MASTER_MODULE_INVENTORY.reduce((sum, m) => sum + m.testCount, 0);
+    const totalFiles = MASTER_MODULE_INVENTORY.reduce((sum, m) => sum + m.filesCount, 0);
+
+    expect(totalTests).toBe(901);
+    expect(totalFiles).toBe(116);
+
+    const webModule = MASTER_MODULE_INVENTORY.find((m) => m.id === 'MOD-WEB-UI');
+    expect(webModule).toBeDefined();
+    expect(webModule?.testCount).toBe(615);
+    expect(webModule?.filesCount).toBe(73);
+
+    const domainModule = MASTER_MODULE_INVENTORY.find((m) => m.id === 'MOD-DOMAIN');
+    expect(domainModule).toBeDefined();
+    expect(domainModule?.testCount).toBe(71);
+    expect(domainModule?.filesCount).toBe(10);
+
+    const servicesModule = MASTER_MODULE_INVENTORY.find((m) => m.id === 'MOD-SERVICES');
+    expect(servicesModule).toBeDefined();
+    expect(servicesModule?.testCount).toBe(30);
+    expect(servicesModule?.filesCount).toBe(8);
+
+    for (const mod of MASTER_MODULE_INVENTORY) {
+      expect(mod.id).toMatch(/^MOD-/);
+      expect(mod.name.length).toBeGreaterThan(0);
+      expect(mod.description.length).toBeGreaterThan(0);
+      expect(mod.testCount).toBeGreaterThan(0);
+      expect(mod.filesCount).toBeGreaterThan(0);
+      expect(mod.status).toBe('VERIFIED');
+    }
+  });
+
+  it('validates Super Admin Category and Module navigation definitions', () => {
+    expect(ADMIN_CATEGORIES).toHaveLength(7);
+    expect(ALL_ADMIN_MODULES.length).toBeGreaterThanOrEqual(14);
+
+    const testModule = ALL_ADMIN_MODULES.find((m) => m.key === 'TESTS');
+    expect(testModule).toBeDefined();
+    expect(testModule?.categoryKey).toBe('TESTS_OPS');
+    expect(testModule?.title).toContain('Test Suite Runner');
   });
 });

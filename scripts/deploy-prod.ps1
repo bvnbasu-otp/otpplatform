@@ -3,7 +3,7 @@
   OTP Platform - Production Gated Deployment Pipeline with Zero-Data-Loss and Atomic Promotion
 .DESCRIPTION
   Enforces the strict platform deployment policy:
-  1. Staging Gate: Verifies 100% green across all 828+ tests in staging/dev before touching production.
+  1. Staging Gate: Verifies 100% green across all 901+ tests in staging/dev before touching production.
   2. Zero Data Loss: Retains Production DB, Buyer/Supplier Orders, and Org/User records unconditionally.
   3. Pre-Deployment Backup: Takes automated physical snapshot of otp-prod-db before any migration.
   4. Tracked Incremental Migrations: Applies only unapplied migrations via otp_schema_migrations.

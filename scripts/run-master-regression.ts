@@ -211,7 +211,7 @@ async function main() {
     'Domain Logic, GST Validation & Parsing Engine',
     'DOMAIN',
     'pnpm test:domain',
-    52
+    71
   );
 
   // 3. Services Tests
@@ -219,7 +219,7 @@ async function main() {
     'Network Discovery & External Services Adapters',
     'SERVICES',
     'pnpm test:services',
-    23
+    30
   );
 
   // 4. Database Tests
@@ -243,7 +243,7 @@ async function main() {
     'Web Features, Governance & State Machine Tests',
     'WEB',
     'pnpm test:web',
-    202
+    615
   );
 
   // Ensure Database Integration Fixtures are loaded for regression validation
