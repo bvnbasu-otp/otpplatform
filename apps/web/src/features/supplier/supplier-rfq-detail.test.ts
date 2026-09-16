@@ -96,18 +96,18 @@ describe('Phase 3.2.1: Supplier RFQ Detail — CTA, Truthfulness & Information H
 
   describe('2. Fix 1: State-Aware Primary CTA Tests', () => {
     // TEST 1: OPEN RFQ + no quote
-    it('TEST 1: provides Respond to RFQ CTA navigating to existing quote workflow', () => {
+    it('TEST 1: provides Respond to RFQ CTA navigating to canonical quote workflow route', () => {
       const rfq = createMockDetail({ rfqStatus: 'OPEN' });
       const quote: SupplierQuote | null = null;
 
       const isQuotingActive = rfq.rfqStatus === 'OPEN' && !quote;
       const primaryAction = isQuotingActive
-        ? { label: 'Respond to RFQ', to: `/supplier/rfq/${rfq.rfqId}`, variant: 'primary' }
+        ? { label: 'Respond to RFQ', to: `/supplier/rfq/${rfq.rfqId}/quote`, variant: 'primary' }
         : null;
 
       expect(primaryAction).not.toBeNull();
       expect(primaryAction?.label).toBe('Respond to RFQ');
-      expect(primaryAction?.to).toBe('/supplier/rfq/rfq-detail-101');
+      expect(primaryAction?.to).toBe('/supplier/rfq/rfq-detail-101/quote');
       expect(primaryAction?.variant).toBe('primary');
     });
 

@@ -6,6 +6,7 @@ import { RequireRole, RoleProvider, useRoleContext } from '@/features/roles';
 import { QuickQuotePage } from '@/features/quick-quote';
 import { RfqIdentityProtectedComparisonPage } from '@/features/rfq';
 import { SupplierRfqPage } from '@/features/supplier/pages/SupplierRfqPage';
+import { SupplierQuoteSubmitPage } from '@/features/supplier/pages/SupplierQuoteSubmitPage';
 import { SupplierCapabilitiesPage } from '@/features/supplier/pages/SupplierCapabilitiesPage';
 import {
   PurchaseOrderDetailPage,
@@ -108,6 +109,13 @@ function SupplierRfqRoute() {
   const sanitized = sanitizeRouteParam(rfqId);
   if (!sanitized) return <Navigate to="/dashboard" replace />;
   return <SupplierRfqPage rfqId={sanitized} />;
+}
+
+function SupplierQuoteSubmitRoute() {
+  const { rfqId } = useParams<{ rfqId: string }>();
+  const sanitized = sanitizeRouteParam(rfqId);
+  if (!sanitized) return <Navigate to="/dashboard" replace />;
+  return <SupplierQuoteSubmitPage rfqId={sanitized} />;
 }
 
 function CommitteeVoteRoute() {
@@ -351,6 +359,8 @@ export function App() {
             <Route path="/rfqs/:rfqId" element={<RfqIdentityProtectedComparisonRoute />} />
             <Route path="/governance/evaluations/:rfqId/vote" element={<CommitteeVoteRoute />} />
             <Route path="/governance/evaluations/:rfqId" element={<CommitteeVoteRoute />} />
+            <Route path="/supplier/rfq/:rfqId/quote" element={<SupplierQuoteSubmitRoute />} />
+            <Route path="/supplier/rfqs/:rfqId/quote" element={<SupplierQuoteSubmitRoute />} />
             <Route path="/supplier/rfq/:rfqId" element={<SupplierRfqRoute />} />
             <Route path="/supplier/rfqs/:rfqId" element={<SupplierRfqRoute />} />
             <Route path="/supplier/capabilities" element={<SupplierCapabilitiesPage />} />

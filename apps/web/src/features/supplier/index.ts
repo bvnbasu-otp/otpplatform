@@ -1,4 +1,5 @@
 export { SupplierRfqPage } from './pages/SupplierRfqPage';
+export { SupplierQuoteSubmitPage } from './pages/SupplierQuoteSubmitPage';
 export { SupplierCapabilitiesPage } from './pages/SupplierCapabilitiesPage';
 export { SupplierInvitationList } from './components/SupplierInvitationList';
 export { SupplierRequirementPanel } from './components/SupplierRequirementPanel';

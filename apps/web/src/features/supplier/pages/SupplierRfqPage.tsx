@@ -139,7 +139,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
     if (rfqOpen) {
       return {
         label: 'Respond to RFQ',
-        to: `/supplier/rfq/${rfqId}`,
+        to: `/supplier/rfq/${rfqId}/quote`,
         icon: '⚡',
         variant: 'primary',
       };
