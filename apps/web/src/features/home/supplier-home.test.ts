@@ -232,7 +232,7 @@ describe('Supplier Home - Scenario States Matrix (States A through T)', () => {
         statusLabel: 'PO Acceptance Pending',
         whyText: 'Buyer has issued Purchase Order · Accept to begin work execution',
         actionLabel: 'Accept & Sign PO →',
-        actionUrl: '/purchase-orders/po-1092',
+        actionUrl: '/supplier/purchase-orders/po-1092',
       },
     ];
     expect(opps).toHaveLength(1);

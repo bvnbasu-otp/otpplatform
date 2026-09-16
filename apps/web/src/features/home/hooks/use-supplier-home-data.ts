@@ -110,7 +110,7 @@ export function useSupplierHomeData() {
         statusLabel: 'PO Acceptance Pending',
         whyText: 'Buyer has issued Purchase Order · Accept to begin work execution',
         actionLabel: 'Accept & Sign PO →',
-        actionUrl: `/purchase-orders/${po.id}`,
+        actionUrl: `/supplier/purchase-orders/${po.id}`,
       });
     }
 
@@ -194,7 +194,7 @@ export function useSupplierHomeData() {
           relativeTime: formatDateIST(po.createdAt),
           icon: '🟢',
           category: 'SUPPLIER',
-          targetUrl: `/purchase-orders/${po.id}`,
+          targetUrl: `/supplier/purchase-orders/${po.id}`,
         });
       } else if (po.status === 'ACCEPTED' || po.status === 'IN_PROGRESS') {
         events.push({
@@ -205,7 +205,7 @@ export function useSupplierHomeData() {
           relativeTime: formatDateIST(po.createdAt),
           icon: '🚚',
           category: 'SUPPLIER',
-          targetUrl: `/purchase-orders/${po.id}`,
+          targetUrl: `/supplier/purchase-orders/${po.id}`,
         });
       }
     }
