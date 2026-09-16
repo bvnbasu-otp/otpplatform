@@ -50,6 +50,70 @@ export class WorkOrderService {
     };
 
     const saved = await this.repos.workOrders.save(wo);
+
+    // Auto-create standard milestone allocations if milestone repo is available
+    if (this.repos.workOrderMilestones) {
+      const m1 = Math.round(po.totalAmount * 0.20 * 100) / 100;
+      const m2 = Math.round(po.totalAmount * 0.40 * 100) / 100;
+      const m3 = Math.round(po.totalAmount * 0.30 * 100) / 100;
+      const m4 = Math.round((po.totalAmount - (m1 + m2 + m3)) * 100) / 100;
+
+      await this.repos.workOrderMilestones.saveMany([
+        {
+          id: createId(),
+          workOrderId: saved.id,
+          milestoneIndex: 1,
+          milestoneTitle: 'Milestone 1: Advance / Mobilization & Requisition',
+          targetPercentage: 25,
+          allocatedAmount: m1,
+          invoicedAmount: 0,
+          status: 'PENDING',
+          isInvoiced: false,
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: createId(),
+          workOrderId: saved.id,
+          milestoneIndex: 2,
+          milestoneTitle: 'Milestone 2: Material Dispatch & In-Transit',
+          targetPercentage: 50,
+          allocatedAmount: m2,
+          invoicedAmount: 0,
+          status: 'PENDING',
+          isInvoiced: false,
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: createId(),
+          workOrderId: saved.id,
+          milestoneIndex: 3,
+          milestoneTitle: 'Milestone 3: Installation & QA Inspection',
+          targetPercentage: 75,
+          allocatedAmount: m3,
+          invoicedAmount: 0,
+          status: 'PENDING',
+          isInvoiced: false,
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: createId(),
+          workOrderId: saved.id,
+          milestoneIndex: 4,
+          milestoneTitle: 'Milestone 4: Final Acceptance & Retention Sign-off',
+          targetPercentage: 100,
+          allocatedAmount: m4,
+          invoicedAmount: 0,
+          status: 'PENDING',
+          isInvoiced: false,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ]);
+    }
+
     await auditLog(
       this.audit,
       actor,

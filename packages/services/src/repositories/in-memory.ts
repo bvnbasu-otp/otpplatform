@@ -5,9 +5,11 @@ import type {
   CoiDeclaration,
   CommitteeVote,
   Invoice,
+  InvoiceLineItemEntity,
   Payment,
   ProcurementPerformanceRecord,
   PurchaseOrder,
+  PurchaseOrderLineItemEntity,
   Quote,
   QuoteVersion,
   Requirement,
@@ -15,6 +17,7 @@ import type {
   RfqInvitation,
   Supplier,
   WorkOrder,
+  WorkOrderMilestoneEntity,
 } from './entities';
 
 function id(): string {
@@ -39,14 +42,66 @@ export class InMemoryRepositories {
   approvals = new Map<string, ApprovalInstance>();
   awards = new Map<string, Award>();
   purchaseOrders = new Map<string, PurchaseOrder>();
+  poLineItems = new Map<string, PurchaseOrderLineItemEntity>();
   workOrders = new Map<string, WorkOrder>();
+  workOrderMilestones = new Map<string, WorkOrderMilestoneEntity>();
   invoices = new Map<string, Invoice>();
+  invoiceLineItems = new Map<string, InvoiceLineItemEntity>();
   payments = new Map<string, Payment>();
   suppliers = new Map<string, Supplier>();
   performance = new Map<string, ProcurementPerformanceRecord>();
 
   static create(): InMemoryRepositories {
     return new InMemoryRepositories();
+  }
+
+  get poLineItemsRepo(): Repositories['poLineItems'] {
+    const store = this.poLineItems;
+    return {
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((item) => item.purchaseOrderId === poId),
+      save: async (item) => {
+        store.set(item.id, item);
+        return item;
+      },
+      saveMany: async (items) => {
+        for (const item of items) store.set(item.id, item);
+        return items;
+      },
+    };
+  }
+
+  get workOrderMilestonesRepo(): Repositories['workOrderMilestones'] {
+    const store = this.workOrderMilestones;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByWorkOrderId: async (woId) =>
+        [...store.values()].filter((m) => m.workOrderId === woId),
+      save: async (m) => {
+        store.set(m.id, m);
+        return m;
+      },
+      saveMany: async (milestones) => {
+        for (const m of milestones) store.set(m.id, m);
+        return milestones;
+      },
+    };
+  }
+
+  get invoiceLineItemsRepo(): Repositories['invoiceLineItems'] {
+    const store = this.invoiceLineItems;
+    return {
+      findByInvoiceId: async (invId) =>
+        [...store.values()].filter((item) => item.invoiceId === invId),
+      save: async (item) => {
+        store.set(item.id, item);
+        return item;
+      },
+      saveMany: async (items) => {
+        for (const item of items) store.set(item.id, item);
+        return items;
+      },
+    };
   }
 
   get requirementsRepo(): Repositories['requirements'] {
@@ -194,6 +249,10 @@ export class InMemoryRepositories {
     const store = this.invoices;
     return {
       findById: async (id) => store.get(id) ?? null,
+      findByWorkOrderId: async (woId) =>
+        [...store.values()].filter((i) => i.workOrderId === woId),
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((i) => i.purchaseOrderId === poId),
       save: async (i) => {
         store.set(i.id, i);
         return i;
@@ -245,8 +304,11 @@ export class InMemoryRepositories {
       approvals: this.approvalsRepo,
       awards: this.awardsRepo,
       purchaseOrders: this.purchaseOrdersRepo,
+      poLineItems: this.poLineItemsRepo,
       workOrders: this.workOrdersRepo,
+      workOrderMilestones: this.workOrderMilestonesRepo,
       invoices: this.invoicesRepo,
+      invoiceLineItems: this.invoiceLineItemsRepo,
       payments: this.paymentsRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,

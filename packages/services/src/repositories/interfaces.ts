@@ -4,9 +4,11 @@ import type {
   CoiDeclaration,
   CommitteeVote,
   Invoice,
+  InvoiceLineItemEntity,
   Payment,
   ProcurementPerformanceRecord,
   PurchaseOrder,
+  PurchaseOrderLineItemEntity,
   Quote,
   QuoteVersion,
   Requirement,
@@ -14,6 +16,7 @@ import type {
   RfqInvitation,
   Supplier,
   WorkOrder,
+  WorkOrderMilestoneEntity,
 } from './entities';
 
 export interface RequirementRepository {
@@ -66,6 +69,25 @@ export interface AwardRepository {
   save(award: Award): Promise<Award>;
 }
 
+export interface PurchaseOrderLineItemRepository {
+  findByPurchaseOrderId(poId: string): Promise<PurchaseOrderLineItemEntity[]>;
+  save(item: PurchaseOrderLineItemEntity): Promise<PurchaseOrderLineItemEntity>;
+  saveMany(items: PurchaseOrderLineItemEntity[]): Promise<PurchaseOrderLineItemEntity[]>;
+}
+
+export interface WorkOrderMilestoneRepository {
+  findById(id: string): Promise<WorkOrderMilestoneEntity | null>;
+  findByWorkOrderId(workOrderId: string): Promise<WorkOrderMilestoneEntity[]>;
+  save(milestone: WorkOrderMilestoneEntity): Promise<WorkOrderMilestoneEntity>;
+  saveMany(milestones: WorkOrderMilestoneEntity[]): Promise<WorkOrderMilestoneEntity[]>;
+}
+
+export interface InvoiceLineItemRepository {
+  findByInvoiceId(invoiceId: string): Promise<InvoiceLineItemEntity[]>;
+  save(item: InvoiceLineItemEntity): Promise<InvoiceLineItemEntity>;
+  saveMany(items: InvoiceLineItemEntity[]): Promise<InvoiceLineItemEntity[]>;
+}
+
 export interface PurchaseOrderRepository {
   findById(id: string): Promise<PurchaseOrder | null>;
   save(po: PurchaseOrder): Promise<PurchaseOrder>;
@@ -79,6 +101,8 @@ export interface WorkOrderRepository {
 
 export interface InvoiceRepository {
   findById(id: string): Promise<Invoice | null>;
+  findByWorkOrderId(workOrderId: string): Promise<Invoice[]>;
+  findByPurchaseOrderId(poId: string): Promise<Invoice[]>;
   save(invoice: Invoice): Promise<Invoice>;
 }
 
@@ -106,8 +130,11 @@ export interface Repositories {
   approvals: ApprovalRepository;
   awards: AwardRepository;
   purchaseOrders: PurchaseOrderRepository;
+  poLineItems?: PurchaseOrderLineItemRepository;
   workOrders: WorkOrderRepository;
+  workOrderMilestones?: WorkOrderMilestoneRepository;
   invoices: InvoiceRepository;
+  invoiceLineItems?: InvoiceLineItemRepository;
   payments: PaymentRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;

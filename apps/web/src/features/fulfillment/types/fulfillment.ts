@@ -72,6 +72,67 @@ export const SUPPLIER_PO_ACTIONS: Partial<
   ISSUED: [{ label: 'Accept purchase order', next: 'ACCEPTED' }],
 };
 
+export interface PoLineItemRecord {
+  id: string;
+  purchaseOrderId: string;
+  itemIndex: number;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  taxableAmount: number;
+  gstRate: number;
+  gstAmount: number;
+  totalAmount: number;
+}
+
+export interface WorkOrderMilestoneRecord {
+  id: string;
+  workOrderId: string;
+  milestoneIndex: number;
+  milestoneTitle: string;
+  targetPercentage: number;
+  allocatedAmount: number;
+  invoicedAmount: number;
+  status: string;
+  isInvoiced: boolean;
+  deliverablePhotos?: string[];
+  supplierNotes?: string | null;
+  buyerNotes?: string | null;
+  submittedAt?: string | null;
+  verifiedAt?: string | null;
+}
+
+export interface InvoiceLineItemRecord {
+  id: string;
+  invoiceId: string;
+  poLineItemId?: string | null;
+  milestoneId?: string | null;
+  lineIndex: number;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxableAmount: number;
+  gstAmount: number;
+  totalAmount: number;
+}
+
+export interface ProgressiveInvoiceRecord {
+  id: string;
+  purchaseOrderId?: string | null;
+  workOrderId: string;
+  milestoneId?: string | null;
+  supplierId: string;
+  invoiceNumber: string;
+  invoiceType: string;
+  amount: number;
+  currency: string;
+  status: string;
+  submittedAt: string | null;
+  approvedAt?: string | null;
+  lineItems?: InvoiceLineItemRecord[];
+}
+
 export function formatMoney(amount: number | null | undefined, currency: string = 'INR'): string {
   if (amount == null || !Number.isFinite(amount)) return '—';
   try {

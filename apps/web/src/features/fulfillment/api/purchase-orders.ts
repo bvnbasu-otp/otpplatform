@@ -491,3 +491,60 @@ export async function createPurchaseOrderFromAward(
 
   return { ok: true, poId: res.po_id };
 }
+
+export async function fetchPoLineItems(poId: string): Promise<
+  { ok: true; lineItems: Array<Record<string, unknown>> } | { ok: false; error: string }
+> {
+  const { data, error } = await supabase
+    .from('purchase_order_line_items')
+    .select('*')
+    .eq('purchase_order_id', poId)
+    .order('item_index', { ascending: true });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, lineItems: data || [] };
+}
+
+export async function fetchPoInvoicingSummary(poId: string): Promise<{
+  ok: true;
+  summary: {
+    totalAuthorizedAmount: number;
+    alreadyInvoicedAmount: number;
+    approvedInvoicedAmount: number;
+    remainingInvoiceableAmount: number;
+    invoiceCount: number;
+    isFullyInvoiced: boolean;
+  };
+} | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('get_purchase_order_invoicing_summary', {
+    p_po_id: poId,
+  });
+
+  if (error) return { ok: false, error: error.message };
+  const res = data as {
+    ok: boolean;
+    total_authorized_amount: number;
+    already_invoiced_amount: number;
+    approved_invoiced_amount: number;
+    remaining_invoiceable_amount: number;
+    invoice_count: number;
+    is_fully_invoiced: boolean;
+    error?: string;
+  };
+
+  if (!res || !res.ok) {
+    return { ok: false, error: res?.error || 'Failed to fetch invoicing summary' };
+  }
+
+  return {
+    ok: true,
+    summary: {
+      totalAuthorizedAmount: Number(res.total_authorized_amount),
+      alreadyInvoicedAmount: Number(res.already_invoiced_amount),
+      approvedInvoicedAmount: Number(res.approved_invoiced_amount),
+      remainingInvoiceableAmount: Number(res.remaining_invoiceable_amount),
+      invoiceCount: Number(res.invoice_count),
+      isFullyInvoiced: Boolean(res.is_fully_invoiced),
+    },
+  };
+}

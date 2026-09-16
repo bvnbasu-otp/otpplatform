@@ -1088,6 +1088,9 @@ export type Database = {
           document_url: string | null
           id: string
           invoice_number: string
+          invoice_type: string
+          milestone_id: string | null
+          purchase_order_id: string | null
           status: Database["public"]["Enums"]["invoice_status"]
           submitted_at: string
           supplier_id: string
@@ -1102,6 +1105,9 @@ export type Database = {
           document_url?: string | null
           id?: string
           invoice_number: string
+          invoice_type?: string
+          milestone_id?: string | null
+          purchase_order_id?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           submitted_at?: string
           supplier_id: string
@@ -1116,6 +1122,9 @@ export type Database = {
           document_url?: string | null
           id?: string
           invoice_number?: string
+          invoice_type?: string
+          milestone_id?: string | null
+          purchase_order_id?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           submitted_at?: string
           supplier_id?: string
@@ -3507,6 +3516,183 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_order_line_items: {
+        Row: {
+          created_at: string
+          description: string
+          gst_amount: number
+          gst_rate: number
+          id: string
+          item_index: number
+          purchase_order_id: string
+          quantity: number
+          taxable_amount: number
+          total_amount: number
+          unit: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          gst_amount?: number
+          gst_rate?: number
+          id?: string
+          item_index: number
+          purchase_order_id: string
+          quantity: number
+          taxable_amount: number
+          total_amount: number
+          unit?: string
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          gst_amount?: number
+          gst_rate?: number
+          id?: string
+          item_index?: number
+          purchase_order_id?: string
+          quantity?: number
+          taxable_amount?: number
+          total_amount?: number
+          unit?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_line_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_order_milestones: {
+        Row: {
+          allocated_amount: number
+          buyer_notes: string | null
+          created_at: string
+          deliverable_photos: string[] | null
+          id: string
+          invoiced_amount: number
+          is_invoiced: boolean
+          milestone_index: number
+          milestone_title: string
+          status: string
+          submitted_at: string | null
+          supplier_notes: string | null
+          target_percentage: number
+          updated_at: string
+          verified_at: string | null
+          work_order_id: string
+        }
+        Insert: {
+          allocated_amount?: number
+          buyer_notes?: string | null
+          created_at?: string
+          deliverable_photos?: string[] | null
+          id?: string
+          invoiced_amount?: number
+          is_invoiced?: boolean
+          milestone_index?: number
+          milestone_title: string
+          status?: string
+          submitted_at?: string | null
+          supplier_notes?: string | null
+          target_percentage: number
+          updated_at?: string
+          verified_at?: string | null
+          work_order_id: string
+        }
+        Update: {
+          allocated_amount?: number
+          buyer_notes?: string | null
+          created_at?: string
+          deliverable_photos?: string[] | null
+          id?: string
+          invoiced_amount?: number
+          is_invoiced?: boolean
+          milestone_index?: number
+          milestone_title?: string
+          status?: string
+          submitted_at?: string | null
+          supplier_notes?: string | null
+          target_percentage?: number
+          updated_at?: string
+          verified_at?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_milestones_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_line_items: {
+        Row: {
+          created_at: string
+          description: string
+          gst_amount: number
+          id: string
+          invoice_id: string
+          line_index: number
+          milestone_id: string | null
+          po_line_item_id: string | null
+          quantity: number
+          taxable_amount: number
+          total_amount: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          gst_amount?: number
+          id?: string
+          invoice_id: string
+          line_index: number
+          milestone_id?: string | null
+          po_line_item_id?: string | null
+          quantity: number
+          taxable_amount: number
+          total_amount: number
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          gst_amount?: number
+          id?: string
+          invoice_id?: string
+          line_index?: number
+          milestone_id?: string | null
+          po_line_item_id?: string | null
+          quantity?: number
+          taxable_amount?: number
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]

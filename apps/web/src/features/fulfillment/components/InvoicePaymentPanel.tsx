@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { formatMoney } from '../types/fulfillment';
 import {
   approveInvoice,
-  fetchInvoiceByWorkOrder,
+  fetchInvoicesByWorkOrder,
   rejectInvoice,
   submitInvoice,
   type InvoiceSummary,
@@ -13,6 +13,11 @@ import {
   verifyPayment,
   type PaymentSummary,
 } from '../api/payments';
+import { fetchWorkOrderMilestones } from '../api/work-orders';
+import {
+  calculateRemainingInvoiceableAmount,
+  validateInvoiceAmountAgainstPo,
+} from '@otp/domain';
 
 export interface InvoicePaymentPanelProps {
   workOrderId: string;
@@ -23,6 +28,17 @@ export interface InvoicePaymentPanelProps {
   onUpdated?: () => void;
 }
 
+export interface MilestoneOption {
+  id: string;
+  milestoneIndex: number;
+  milestoneTitle: string;
+  targetPercentage: number;
+  allocatedAmount: number;
+  invoicedAmount: number;
+  isInvoiced: boolean;
+  status: string;
+}
+
 export function InvoicePaymentPanel({
   workOrderId,
   supplierId,
@@ -31,27 +47,54 @@ export function InvoicePaymentPanel({
   deliveryAccepted = true,
   onUpdated,
 }: InvoicePaymentPanelProps) {
-  const [invoice, setInvoice] = useState<InvoiceSummary | null>(null);
+  const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
+  const [activeInvoice, setActiveInvoice] = useState<InvoiceSummary | null>(null);
   const [payment, setPayment] = useState<PaymentSummary | null>(null);
+  const [milestones, setMilestones] = useState<MilestoneOption[]>([]);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('');
+  const [invoiceType, setInvoiceType] = useState<'PROGRESSIVE' | 'FINAL' | 'ADVANCE' | 'STANDARD'>('PROGRESSIVE');
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [amount, setAmount] = useState(poAmount ? String(poAmount) : '');
+  const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'BANK_TRANSFER' | 'MANUAL' | 'OTHER'>('UPI');
   const [reference, setReference] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   async function load() {
-    const invRes = await fetchInvoiceByWorkOrder(workOrderId);
-    if (!invRes.ok) {
-      setError(invRes.error);
-      return;
+    const [invsRes, mRes] = await Promise.all([
+      fetchInvoicesByWorkOrder(workOrderId),
+      fetchWorkOrderMilestones(workOrderId),
+    ]);
+
+    if (invsRes.ok) {
+      setInvoices(invsRes.invoices);
+      const latest = invsRes.invoices[invsRes.invoices.length - 1] || null;
+      setActiveInvoice(latest);
+      if (latest) {
+        const payRes = await fetchPaymentByInvoice(latest.id);
+        if (payRes.ok) setPayment(payRes.payment);
+      } else {
+        setPayment(null);
+      }
+    } else {
+      setError(invsRes.error);
     }
-    setInvoice(invRes.invoice);
-    if (invRes.invoice) {
-      const payRes = await fetchPaymentByInvoice(invRes.invoice.id);
-      if (payRes.ok) setPayment(payRes.payment);
+
+    if (mRes.ok && mRes.milestones) {
+      const parsedMilestones: MilestoneOption[] = mRes.milestones.map((m: any) => ({
+        id: String(m.id),
+        milestoneIndex: Number(m.milestone_index || 1),
+        milestoneTitle: String(m.milestone_title || `Milestone ${m.milestone_index || 1}`),
+        targetPercentage: Number(m.target_percentage || 0),
+        allocatedAmount: Number(m.allocated_amount || 0),
+        invoicedAmount: Number(m.invoiced_amount || 0),
+        isInvoiced: Boolean(m.is_invoiced),
+        status: String(m.status || 'PENDING'),
+      }));
+      setMilestones(parsedMilestones);
     }
   }
 
@@ -59,32 +102,101 @@ export function InvoicePaymentPanel({
     void load();
   }, [workOrderId]);
 
+  // Derived progressive invoicing ledger calculation
+  const invoicingCalc = calculateRemainingInvoiceableAmount(
+    poAmount,
+    invoices.map((i) => ({ amount: i.amount, status: i.status })),
+  );
+
+  // When selected milestone changes, pre-fill suggested amount
+  const handleMilestoneSelect = (mId: string) => {
+    setSelectedMilestoneId(mId);
+    if (!mId) {
+      setAmount(String(invoicingCalc.remainingInvoiceableAmount || ''));
+      return;
+    }
+    const target = milestones.find((m) => m.id === mId);
+    if (target) {
+      const targetRemaining = Math.max(0, target.allocatedAmount - target.invoicedAmount);
+      setAmount(String(targetRemaining > 0 ? targetRemaining : target.allocatedAmount));
+    }
+  };
+
   async function handleSubmitInvoice(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     setSuccess(null);
+
+    const invAmount = Number(amount);
+    if (!invAmount || invAmount <= 0) {
+      setError('Invoice amount must be strictly greater than 0');
+      setBusy(false);
+      return;
+    }
+
+    // Over-invoicing check
+    const val = validateInvoiceAmountAgainstPo(
+      poAmount,
+      invoices.map((i) => ({ amount: i.amount, status: i.status })),
+      invAmount,
+    );
+
+    if (!val.valid) {
+      setError(val.error || 'Invoice amount exceeds PO authorized limit');
+      setBusy(false);
+      return;
+    }
+
+    const selectedM = milestones.find((m) => m.id === selectedMilestoneId);
+    const lineDescription = selectedM
+      ? `${selectedM.milestoneTitle} — Deliverables & Progress Execution`
+      : `Progressive Milestone Deliverables (${invoiceType})`;
+
+    const lineBase = Math.round((invAmount / 1.18) * 100) / 100;
+    const lineGst = Math.round((invAmount - lineBase) * 100) / 100;
+
     const result = await submitInvoice(
       workOrderId,
       supplierId,
       invoiceNumber || `INV-${Date.now().toString().slice(-6)}`,
-      Number(amount) || poAmount,
+      invAmount,
+      'INR',
+      selectedMilestoneId || null,
+      invoiceType,
+      [
+        {
+          lineIndex: 1,
+          description: lineDescription,
+          quantity: 1,
+          unitPrice: lineBase,
+          taxableAmount: lineBase,
+          gstAmount: lineGst,
+          totalAmount: invAmount,
+          milestoneId: selectedMilestoneId || null,
+        },
+      ],
     );
+
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
       return;
     }
-    setSuccess('✓ Official GST Invoice submitted successfully!');
+
+    setSuccess('✓ Official GST Progressive Invoice submitted successfully!');
+    setInvoiceNumber('');
+    setAmount('');
+    setSelectedMilestoneId('');
+    setShowSubmitModal(false);
     await load();
     onUpdated?.();
   }
 
-  async function handleApprove() {
-    if (!invoice) return;
+  async function handleApprove(invId: string) {
     setBusy(true);
     setError(null);
-    const result = await approveInvoice(invoice.id);
+    const result = await approveInvoice(invId);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
@@ -95,11 +207,10 @@ export function InvoicePaymentPanel({
     onUpdated?.();
   }
 
-  async function handleReject() {
-    if (!invoice) return;
+  async function handleReject(invId: string) {
     setBusy(true);
     setError(null);
-    const result = await rejectInvoice(invoice.id);
+    const result = await rejectInvoice(invId);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
@@ -112,7 +223,7 @@ export function InvoicePaymentPanel({
 
   async function handleRecordPayment(e?: React.FormEvent) {
     if (e) e.preventDefault();
-    if (!invoice) return;
+    if (!activeInvoice) return;
     if (!reference.trim()) {
       setError('Please provide a UPI Transaction UTR or Bank Transfer Reference ID.');
       return;
@@ -120,17 +231,19 @@ export function InvoicePaymentPanel({
     setBusy(true);
     setError(null);
     const result = await recordPayment(
-      invoice.id,
-      invoice.amount,
+      activeInvoice.id,
+      activeInvoice.amount,
       paymentMethod,
-      reference.trim()
+      reference.trim(),
     );
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
       return;
     }
-    setSuccess(`✓ Milestone payment of ${formatMoney(invoice.amount, invoice.currency)} recorded via ${paymentMethod}!`);
+    setSuccess(
+      `✓ Milestone payment of ${formatMoney(activeInvoice.amount, activeInvoice.currency)} recorded via ${paymentMethod}!`,
+    );
     await load();
     onUpdated?.();
   }
@@ -145,20 +258,161 @@ export function InvoicePaymentPanel({
       setError(result.error);
       return;
     }
-    setSuccess('✓ Payment verified and full procurement lifecycle 100% settled!');
+    setSuccess('✓ Payment verified and milestone settlement confirmed!');
     await load();
     onUpdated?.();
   }
 
-  const effectiveAmount = invoice ? invoice.amount : (Number(amount) || poAmount);
+  const effectiveAmount = activeInvoice ? activeInvoice.amount : Number(amount) || poAmount;
   const baseAmount = Math.round(effectiveAmount / 1.18);
   const gstAmount = effectiveAmount - baseAmount;
-  const isMatchingPo = poAmount > 0 ? Math.abs(effectiveAmount - poAmount) < 1 : true;
 
   return (
     <div className="space-y-4" data-testid="invoice-payment-panel">
       {/* =========================================================================
-          SCREEN 12: INVOICE & DELIVERY SIGN-OFF SECTION
+          PROGRESSIVE INVOICING & REMAINING INVOICEABLE AMOUNT BAR (PHASE 5A)
+          ========================================================================= */}
+      <section className="rounded-2xl border bg-card p-4 shadow-2xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm">📊</span>
+              <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
+                Progressive Invoicing Ledger (Phase 5A)
+              </h3>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              PO Authorized: <span className="font-mono font-bold text-foreground">{formatMoney(poAmount, 'INR')}</span> · Invoices: {invoices.length} submitted
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-[10px] font-black border ${
+                invoicingCalc.isFullyInvoiced
+                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300'
+                  : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300'
+              }`}
+            >
+              {invoicingCalc.isFullyInvoiced ? '✓ Fully Invoiced (100%)' : `Remaining: ${formatMoney(invoicingCalc.remainingInvoiceableAmount, 'INR')}`}
+            </span>
+
+            {role === 'supplier' && !invoicingCalc.isFullyInvoiced && (
+              <button
+                type="button"
+                onClick={() => setShowSubmitModal(true)}
+                className="min-h-[44px] rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
+              >
+                + New Invoice
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Amount Allocation Triad */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          <div className="rounded-xl border bg-muted/20 p-2.5 space-y-0.5">
+            <span className="text-[9px] uppercase font-bold text-muted-foreground block">PO Authorized Cap</span>
+            <span className="font-mono font-black text-sm text-foreground">{formatMoney(poAmount, 'INR')}</span>
+          </div>
+
+          <div className="rounded-xl border bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/60 p-2.5 space-y-0.5">
+            <span className="text-[9px] uppercase font-bold text-blue-900 dark:text-blue-300 block">Already Invoiced</span>
+            <span className="font-mono font-black text-sm text-blue-700 dark:text-blue-300">
+              {formatMoney(invoicingCalc.alreadyInvoicedAmount, 'INR')}
+            </span>
+          </div>
+
+          <div className="rounded-xl border bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/60 p-2.5 space-y-0.5">
+            <span className="text-[9px] uppercase font-bold text-emerald-900 dark:text-emerald-300 block">Remaining Invoiceable</span>
+            <span className="font-mono font-black text-sm text-emerald-700 dark:text-emerald-300">
+              {formatMoney(invoicingCalc.remainingInvoiceableAmount, 'INR')}
+            </span>
+          </div>
+        </div>
+
+        {/* Invoices List Table */}
+        {invoices.length > 0 && (
+          <div className="rounded-xl border overflow-hidden pt-1">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/50 border-b text-[10px] uppercase font-bold text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2">Invoice #</th>
+                    <th className="px-3 py-2">Type / Scope</th>
+                    <th className="px-3 py-2 text-right">Amount (₹)</th>
+                    <th className="px-3 py-2 text-center">Status</th>
+                    <th className="px-3 py-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {invoices.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      onClick={() => setActiveInvoice(inv)}
+                      className={`cursor-pointer transition ${
+                        activeInvoice?.id === inv.id ? 'bg-primary/5 font-semibold' : 'hover:bg-muted/20'
+                      }`}
+                    >
+                      <td className="px-3 py-2 font-mono">{inv.invoiceNumber}</td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {inv.invoiceType} {inv.milestoneId ? '· Milestone Linked' : ''}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono font-bold text-foreground">
+                        {formatMoney(inv.amount, inv.currency)}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${
+                            inv.status === 'APPROVED' || inv.status === 'PAID'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : inv.status === 'SUBMITTED'
+                              ? 'bg-blue-100 text-blue-800 border-blue-300'
+                              : 'bg-red-100 text-red-800 border-red-300'
+                          }`}
+                        >
+                          {inv.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {role === 'buyer' && inv.status === 'SUBMITTED' && (
+                          <div className="inline-flex gap-1">
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleApprove(inv.id);
+                              }}
+                              className="px-2 py-1 rounded-md bg-emerald-600 text-white text-[10px] font-bold hover:bg-emerald-700"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleReject(inv.id);
+                              }}
+                              className="px-2 py-1 rounded-md bg-red-100 text-red-800 text-[10px] font-bold hover:bg-red-200"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* =========================================================================
+          SCREEN 12: ACTIVE INVOICE DETAIL & TAX BREAKDOWN
           ========================================================================= */}
       <section className="rounded-2xl border bg-card p-4 shadow-2xs space-y-3.5">
         <div className="flex items-center justify-between border-b pb-2.5">
@@ -170,20 +424,20 @@ export function InvoicePaymentPanel({
               </h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Itemization summary, GST tax breakdown, and automatic match check against PO.
+              Itemization summary, GST tax breakdown, and progressive milestone traceability.
             </p>
           </div>
-          {invoice && (
+          {activeInvoice && (
             <span
               className={`rounded-full px-2.5 py-0.5 text-[10px] font-black border ${
-                invoice.status === 'APPROVED' || invoice.status === 'PAID'
+                activeInvoice.status === 'APPROVED' || activeInvoice.status === 'PAID'
                   ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300'
-                  : invoice.status === 'SUBMITTED'
+                  : activeInvoice.status === 'SUBMITTED'
                   ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300'
                   : 'bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border-red-300'
               }`}
             >
-              {invoice.status}
+              {activeInvoice.status}
             </span>
           )}
         </div>
@@ -200,99 +454,29 @@ export function InvoicePaymentPanel({
           </div>
         )}
 
-        {/* State: Supplier waiting for delivery acceptance */}
-        {!invoice && role === 'supplier' && !deliveryAccepted && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50/70 dark:bg-amber-950/30 p-3.5 text-xs text-amber-900 dark:text-amber-200 space-y-1">
-            <span className="font-extrabold block">⏳ Awaiting Buyer Inspection Sign-off</span>
-            <p className="text-[11px] text-amber-800 dark:text-amber-300">
-              Tax invoice creation unlocks automatically once the buyer acknowledges 100% on-site delivery and rates the service.
-            </p>
+        {/* State: No invoices created yet */}
+        {invoices.length === 0 && role === 'supplier' && (
+          <div className="rounded-xl border border-dashed p-4 text-center space-y-2">
+            <p className="text-xs text-muted-foreground">No invoices submitted yet for this purchase order.</p>
+            <button
+              type="button"
+              onClick={() => setShowSubmitModal(true)}
+              className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
+            >
+              + Create First Milestone Tax Invoice →
+            </button>
           </div>
         )}
 
-        {/* State: Supplier form to create / submit invoice */}
-        {!invoice && role === 'supplier' && deliveryAccepted && (
-          <form onSubmit={(e) => void handleSubmitInvoice(e)} className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-bold text-foreground mb-1">
-                  Tax Invoice Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={invoiceNumber}
-                  onChange={(e) => setInvoiceNumber(e.target.value)}
-                  placeholder="e.g. INV-2026-09-001"
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-foreground mb-1">
-                  Total Tax Invoice Amount (₹ INR) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Invoice Total Amount"
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
-                />
-              </div>
-            </div>
-
-            {/* Live Calculation Preview */}
-            <div className="rounded-xl border bg-muted/20 p-3 text-xs space-y-1">
-              <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-                <span>Taxable Base Value (82%):</span>
-                <span className="font-mono font-semibold text-foreground">{formatMoney(baseAmount, 'INR')}</span>
-              </div>
-              <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-                <span>GST (18% IGST / CGST+SGST):</span>
-                <span className="font-mono font-semibold text-foreground">{formatMoney(gstAmount, 'INR')}</span>
-              </div>
-              <div className="flex items-center justify-between border-t pt-1 font-bold text-foreground">
-                <span>Total Payable with GST:</span>
-                <span className="font-mono text-primary font-black">{formatMoney(effectiveAmount, 'INR')}</span>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full min-h-[44px] rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
-            >
-              {busy ? 'Submitting Tax Invoice…' : '📤 Submit Official GST Invoice →'}
-            </button>
-          </form>
+        {invoices.length === 0 && role === 'buyer' && (
+          <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
+            Awaiting supplier to submit progressive GST invoice for milestone settlement.
+          </div>
         )}
 
-        {/* State: Invoice is submitted / viewable */}
-        {invoice && (
+        {/* State: Active Invoice Detail */}
+        {activeInvoice && (
           <div className="space-y-3">
-            {/* Invoice Matching Check Chip */}
-            <div
-              className={`rounded-xl p-2.5 border text-xs flex items-center justify-between gap-2 ${
-                isMatchingPo
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 text-emerald-900 dark:text-emerald-200'
-                  : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-900 dark:text-amber-200'
-              }`}
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-base">{isMatchingPo ? '✓' : '⚠️'}</span>
-                <span className="font-bold truncate">
-                  {isMatchingPo
-                    ? '100% 3-Way Match Verified (PO = BoQ = Invoice)'
-                    : 'Invoice amount differs from baseline PO contract value'}
-                </span>
-              </div>
-              <span className="font-mono font-black text-[11px] shrink-0">
-                {formatMoney(invoice.amount, invoice.currency)}
-              </span>
-            </div>
-
             {/* Detailed Itemization & Tax Breakdown */}
             <div className="rounded-xl border bg-muted/10 p-3 space-y-2 text-xs">
               <div className="grid grid-cols-2 gap-2 pb-2 border-b">
@@ -300,7 +484,7 @@ export function InvoicePaymentPanel({
                   <span className="text-[10px] uppercase font-bold text-muted-foreground block">
                     Invoice Reference
                   </span>
-                  <span className="font-mono font-bold text-foreground">{invoice.invoiceNumber}</span>
+                  <span className="font-mono font-bold text-foreground">{activeInvoice.invoiceNumber}</span>
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-bold text-muted-foreground block">
@@ -314,7 +498,7 @@ export function InvoicePaymentPanel({
 
               <div className="space-y-1 text-[11px]">
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Taxable Base Value:</span>
+                  <span>Taxable Base Value (82%):</span>
                   <span className="font-mono font-semibold text-foreground">{formatMoney(baseAmount, 'INR')}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
@@ -323,29 +507,31 @@ export function InvoicePaymentPanel({
                 </div>
                 <div className="flex justify-between border-t pt-1 font-extrabold text-foreground text-xs">
                   <span>Gross Invoice Total:</span>
-                  <span className="font-mono text-primary font-black">{formatMoney(invoice.amount, invoice.currency)}</span>
+                  <span className="font-mono text-primary font-black">
+                    {formatMoney(activeInvoice.amount, activeInvoice.currency)}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Buyer Approval / Rejection Actions (Primary Action: [ ✓ Approve Invoice for Payment ]) */}
-            {role === 'buyer' && invoice.status === 'SUBMITTED' && (
+            {/* Buyer Approval / Rejection Actions */}
+            {role === 'buyer' && activeInvoice.status === 'SUBMITTED' && (
               <div className="pt-2 border-t flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => void handleApprove()}
+                  onClick={() => void handleApprove(activeInvoice.id)}
                   className="flex-1 min-h-[44px] rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-emerald-700 active:scale-98 disabled:opacity-50 transition flex items-center justify-center gap-1.5 mobile-touch-target"
                   data-testid="approve-invoice-button"
                 >
                   <span>✓</span>
-                  <span>{busy ? 'Authorizing…' : 'Approve Invoice for Payment'}</span>
+                  <span>{busy ? 'Authorizing…' : `Approve Invoice ${activeInvoice.invoiceNumber} for Payment`}</span>
                 </button>
 
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => void handleReject()}
+                  onClick={() => void handleReject(activeInvoice.id)}
                   className="min-h-[44px] rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/30 px-4 py-2.5 text-xs font-bold text-red-700 dark:text-red-300 hover:bg-red-100 transition mobile-touch-target"
                 >
                   Reject / Request Edit
@@ -407,7 +593,9 @@ export function InvoicePaymentPanel({
                 Beneficiary Virtual Escrow Account
               </span>
               <p className="font-mono font-bold text-foreground">OTP-ESCROW-002984</p>
-              <p className="text-[10px] text-muted-foreground">IFSC: <span className="font-mono text-foreground">HDFC0000001</span> (HDFC Bank Ltd)</p>
+              <p className="text-[10px] text-muted-foreground">
+                IFSC: <span className="font-mono text-foreground">HDFC0000001</span> (HDFC Bank Ltd)
+              </p>
             </div>
 
             <div className="p-2.5 rounded-lg border bg-card space-y-1">
@@ -415,13 +603,15 @@ export function InvoicePaymentPanel({
                 Instant UPI VPA Handle
               </span>
               <p className="font-mono font-bold text-foreground">otp.escrow@hdfcbank</p>
-              <p className="text-[10px] text-muted-foreground">Merchant: <span className="font-semibold text-foreground">Open Trade Platform Escrow</span></p>
+              <p className="text-[10px] text-muted-foreground">
+                Merchant: <span className="font-semibold text-foreground">Open Trade Platform Escrow</span>
+              </p>
             </div>
           </div>
         </div>
 
         {/* State: Buyer payment entry form (when invoice approved) */}
-        {invoice && invoice.status === 'APPROVED' && !payment && role === 'buyer' && (
+        {activeInvoice && activeInvoice.status === 'APPROVED' && !payment && role === 'buyer' && (
           <form onSubmit={(e) => void handleRecordPayment(e)} className="space-y-3 pt-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
@@ -476,7 +666,7 @@ export function InvoicePaymentPanel({
               <span>
                 {busy
                   ? 'Releasing Settlement…'
-                  : `Release Milestone Payment (${formatMoney(invoice.amount, invoice.currency)}) →`}
+                  : `Release Milestone Payment (${formatMoney(activeInvoice.amount, activeInvoice.currency)}) →`}
               </span>
             </button>
           </form>
@@ -505,7 +695,7 @@ export function InvoicePaymentPanel({
                 className="w-full min-h-[44px] rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-emerald-700 active:scale-98 disabled:opacity-50 transition mobile-touch-target"
                 data-testid="verify-payment-button"
               >
-                {busy ? 'Verifying Settle…' : '✓ Verify Ledger & Settle Contract (Step 15)'}
+                {busy ? 'Verifying Settle…' : '✓ Verify Ledger & Confirm Milestone Settlement'}
               </button>
             )}
           </div>
@@ -518,54 +708,184 @@ export function InvoicePaymentPanel({
               <div className="flex items-center gap-2">
                 <span className="text-xl">🏁</span>
                 <span className="font-black text-xs text-emerald-950 dark:text-emerald-200">
-                  Escrow Released &amp; Contract 100% Settled
+                  Payment Remitted &amp; Cryptographically Verified
                 </span>
               </div>
-              <span className="rounded-full bg-emerald-200 dark:bg-emerald-900/60 text-emerald-950 dark:text-emerald-300 px-2.5 py-0.5 text-[10px] font-black border border-emerald-300">
-                ✓ 7. SETTLED
+              <span className="rounded-full bg-emerald-600 text-white px-2.5 py-0.5 text-[10px] font-black">
+                100% SETTLED
               </span>
             </div>
-            <p className="text-xs text-emerald-800 dark:text-emerald-300 leading-snug">
-              Milestone settlement of {formatMoney(payment.amount, payment.currency)} successfully reconciled via {payment.method} (Ref: <span className="font-mono font-bold">{payment.reference || 'VERIFIED'}</span>). Full procurement transaction audit log sealed.
-            </p>
+            <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+              <div>
+                <span className="text-muted-foreground block">Verified Amount</span>
+                <span className="font-mono font-bold text-foreground">
+                  {formatMoney(payment.amount, payment.currency)}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">Bank Reference</span>
+                <span className="font-mono font-bold text-foreground">{payment.reference}</span>
+              </div>
+            </div>
           </div>
         )}
       </section>
 
-      {/* UPI QR Modal Dialog */}
-      {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4 text-center animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="text-sm font-bold text-foreground">Scan UPI QR for Settlement</h3>
+      {/* =========================================================================
+          PROGRESSIVE INVOICE SUBMISSION MODAL
+          ========================================================================= */}
+      {showSubmitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b pb-2.5">
+              <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
+                <span>📤</span>
+                <span>Submit Progressive GST Invoice (Phase 5A)</span>
+              </h3>
               <button
                 type="button"
-                onClick={() => setShowQrModal(false)}
-                className="p-1 rounded-lg text-muted-foreground hover:bg-muted min-h-[44px] min-w-[44px] flex items-center justify-center"
+                onClick={() => setShowSubmitModal(false)}
+                className="text-muted-foreground hover:text-foreground text-sm p-1"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-4 bg-white rounded-2xl inline-block border-2 border-slate-900 shadow-md">
-              <div className="w-44 h-44 bg-slate-900 flex flex-col items-center justify-center text-white rounded-lg space-y-1">
-                <span className="text-3xl">📱</span>
-                <span className="font-mono text-[10px] font-bold">BHIM / UPI / GPay / PhonePe</span>
-                <span className="text-[9px] text-slate-300 font-mono">otp.escrow@hdfcbank</span>
-                <span className="text-xs font-black text-emerald-400 mt-1">₹ {effectiveAmount.toLocaleString('en-IN')}</span>
+            <form onSubmit={(e) => void handleSubmitInvoice(e)} className="space-y-3.5">
+              {/* Milestone Allocation Picker */}
+              <div>
+                <label className="block text-[11px] font-bold text-foreground mb-1">
+                  Target Milestone Allocation
+                </label>
+                <select
+                  value={selectedMilestoneId}
+                  onChange={(e) => handleMilestoneSelect(e.target.value)}
+                  className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                >
+                  <option value="">-- General Progressive / Unlinked --</option>
+                  {milestones.map((m) => (
+                    <option key={m.id} value={m.id} disabled={m.isInvoiced}>
+                      {m.milestoneTitle} ({m.targetPercentage}%) — Cap: {formatMoney(m.allocatedAmount, 'INR')}{' '}
+                      {m.isInvoiced ? '[Fully Invoiced]' : `(Remaining: ${formatMoney(Math.max(0, m.allocatedAmount - m.invoicedAmount), 'INR')})`}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-foreground mb-1">
+                    Invoice Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={invoiceNumber}
+                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                    placeholder="e.g. INV-2026-M1"
+                    className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-foreground mb-1">
+                    Invoice Type
+                  </label>
+                  <select
+                    value={invoiceType}
+                    onChange={(e) => setInvoiceType(e.target.value as any)}
+                    className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                  >
+                    <option value="PROGRESSIVE">PROGRESSIVE</option>
+                    <option value="FINAL">FINAL</option>
+                    <option value="ADVANCE">ADVANCE</option>
+                    <option value="STANDARD">STANDARD</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-foreground mb-1">
+                  Invoice Amount (₹ INR) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder={`Max Remaining: ₹${invoicingCalc.remainingInvoiceableAmount}`}
+                  className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                />
+                <span className="text-[10px] text-muted-foreground block mt-1">
+                  Authorized Remaining Budget: <strong className="text-primary">{formatMoney(invoicingCalc.remainingInvoiceableAmount, 'INR')}</strong>
+                </span>
+              </div>
+
+              {/* Live Statutory Preview */}
+              {Number(amount) > 0 && (
+                <div className="rounded-xl border bg-muted/20 p-3 text-xs space-y-1">
+                  <div className="flex justify-between text-muted-foreground text-[11px]">
+                    <span>Taxable Base Value (82%):</span>
+                    <span className="font-mono font-semibold text-foreground">
+                      {formatMoney(Math.round(Number(amount) / 1.18), 'INR')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground text-[11px]">
+                    <span>GST (18% IGST / CGST+SGST):</span>
+                    <span className="font-mono font-semibold text-foreground">
+                      {formatMoney(Number(amount) - Math.round(Number(amount) / 1.18), 'INR')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1 font-bold text-foreground">
+                    <span>Gross Invoice Total:</span>
+                    <span className="font-mono text-primary font-black">{formatMoney(Number(amount), 'INR')}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitModal(false)}
+                  className="min-h-[44px] rounded-xl border px-4 py-2 text-xs font-bold hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="min-h-[44px] rounded-xl bg-primary px-5 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {busy ? 'Submitting…' : 'Submit Progressive Invoice →'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* UPI QR Modal */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl bg-card border border-border p-5 shadow-2xl text-center space-y-4">
+            <h3 className="text-sm font-black text-foreground">Scan UPI QR to Remit</h3>
+            <div className="bg-white p-4 rounded-xl border inline-block">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                  `upi://pay?pa=otp.escrow@hdfcbank&pn=OpenTradePlatform&am=${effectiveAmount}&cu=INR`,
+                )}`}
+                alt="UPI QR Code"
+                className="w-44 h-44 mx-auto"
+              />
             </div>
-
-            <p className="text-[11px] text-muted-foreground leading-snug">
-              Scan with any UPI app to pay directly into the escrow holding account.
-            </p>
-
+            <p className="font-mono text-xs font-bold text-foreground">otp.escrow@hdfcbank</p>
+            <p className="font-mono text-sm font-black text-primary">{formatMoney(effectiveAmount, 'INR')}</p>
             <button
               type="button"
               onClick={() => setShowQrModal(false)}
-              className="w-full min-h-[44px] rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground"
+              className="w-full min-h-[44px] rounded-xl bg-primary text-primary-foreground text-xs font-bold"
             >
-              Done / Enter Reference
+              Close
             </button>
           </div>
         </div>

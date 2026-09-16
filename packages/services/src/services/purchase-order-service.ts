@@ -65,6 +65,63 @@ export class PurchaseOrderService {
     };
 
     const saved = await this.repos.purchaseOrders.save(po);
+
+    // Auto-generate normalized line items if repo is available
+    if (this.repos.poLineItems) {
+      const base = Math.round((saved.totalAmount / 1.18) * 100) / 100;
+      const item1 = Math.round(base * 0.50 * 100) / 100;
+      const item2 = Math.round(base * 0.30 * 100) / 100;
+      const item3 = Math.round((base - (item1 + item2)) * 100) / 100;
+
+      await this.repos.poLineItems.saveMany([
+        {
+          id: createId(),
+          purchaseOrderId: saved.id,
+          itemIndex: 1,
+          description: `Primary Contract Scope / Core Deliverables (${saved.poNumber})`,
+          quantity: 1,
+          unit: 'lot',
+          unitPrice: item1,
+          taxableAmount: item1,
+          gstRate: 18.0,
+          gstAmount: Math.round(item1 * 0.18 * 100) / 100,
+          totalAmount: Math.round(item1 * 1.18 * 100) / 100,
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: createId(),
+          purchaseOrderId: saved.id,
+          itemIndex: 2,
+          description: 'Execution, Labor, Testing & Site Staging',
+          quantity: 1,
+          unit: 'lot',
+          unitPrice: item2,
+          taxableAmount: item2,
+          gstRate: 18.0,
+          gstAmount: Math.round(item2 * 0.18 * 100) / 100,
+          totalAmount: Math.round(item2 * 1.18 * 100) / 100,
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: createId(),
+          purchaseOrderId: saved.id,
+          itemIndex: 3,
+          description: 'QA Inspection Sign-off & Warranty Activation',
+          quantity: 1,
+          unit: 'lot',
+          unitPrice: item3,
+          taxableAmount: item3,
+          gstRate: 18.0,
+          gstAmount: Math.round(item3 * 0.18 * 100) / 100,
+          totalAmount: Math.round(item3 * 1.18 * 100) / 100,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ]);
+    }
+
     await auditLog(
       this.audit,
       actor,

@@ -470,7 +470,7 @@ describe('Phase 3.5 End-to-End Award, Reveal & Purchase Order Invariants', () =>
 
   it('enforces PurchaseOrderService snapshotting and complete lifecycle transitions', async () => {
     const seeded = await seedRfqWithFinalQuotes();
-    const { services, rfqId, quoteAId } = seeded;
+    const { services, repos, rfqId, quoteAId } = seeded;
 
     await services.rfqs.close(BUYER_MANAGER, rfqId);
     await services.quoteEvaluation.evaluateRfq(BUYER_MANAGER, rfqId);
@@ -592,6 +592,100 @@ describe('Phase 3.5 End-to-End Award, Reveal & Purchase Order Invariants', () =>
     expect(invalidAfterComplete.ok).toBe(false);
     if (!invalidAfterComplete.ok) {
       expect(invalidAfterComplete.error).toBeInstanceOf(TransitionError);
+    }
+
+    // =========================================================================
+    // Phase 5A: Progressive Invoicing & Line Item Allocations
+    // =========================================================================
+    const woRes = await services.workOrders.create(BUYER_MANAGER, po.id, 'Main Borewell Winding');
+    expect(woRes.ok).toBe(true);
+    if (!woRes.ok) throw woRes.error;
+    const wo = woRes.value;
+
+    const milestones = await repos.workOrderMilestones!.findByWorkOrderId(wo.id);
+    expect(milestones.length).toBe(4);
+    const totalAllocated = milestones.reduce((sum: number, m: { allocatedAmount: number }) => sum + m.allocatedAmount, 0);
+    expect(totalAllocated).toBe(po.totalAmount);
+
+    const m1 = milestones[0]!; // Milestone 1: 20% = 2000
+    expect(m1.allocatedAmount).toBe(2000);
+
+    // Progressive Invoice 1 for Milestone 1 (amount = 2000)
+    const inv1Res = await services.invoices.submit(
+      SUPPLIER_A,
+      wo.id,
+      'INV-2026-M1',
+      2000,
+      'INR',
+      m1.id,
+      'PROGRESSIVE',
+      [
+        {
+          lineIndex: 1,
+          description: 'Mobilization & advance for wire requisition',
+          quantity: 1,
+          unitPrice: 1694.92,
+          taxableAmount: 1694.92,
+          gstAmount: 305.08,
+          totalAmount: 2000,
+        },
+      ],
+    );
+    expect(inv1Res.ok).toBe(true);
+    if (!inv1Res.ok) throw inv1Res.error;
+    expect(inv1Res.value.amount).toBe(2000);
+
+    // Verify Milestone 1 is marked invoiced
+    const updatedM1 = await repos.workOrderMilestones!.findById(m1.id);
+    expect(updatedM1?.invoicedAmount).toBe(2000);
+    expect(updatedM1?.isInvoiced).toBe(true);
+
+    // Over-invoicing check on Milestone 1: attempting another invoice on Milestone 1 should fail
+    const overInvoiceMilestoneRes = await services.invoices.submit(
+      SUPPLIER_A,
+      wo.id,
+      'INV-2026-M1-EXTRA',
+      500,
+      'INR',
+      m1.id,
+    );
+    expect(overInvoiceMilestoneRes.ok).toBe(false);
+    if (!overInvoiceMilestoneRes.ok) {
+      expect(overInvoiceMilestoneRes.error.message).toContain('exceeds milestone allocated limit');
+    }
+
+    // Over-invoicing check on PO: attempting to invoice remaining 9000 when PO total is 10000 (already 2000 invoiced, max remaining is 8000)
+    const overInvoicePoRes = await services.invoices.submit(
+      SUPPLIER_A,
+      wo.id,
+      'INV-2026-EXCEED',
+      8500,
+      'INR',
+    );
+    expect(overInvoicePoRes.ok).toBe(false);
+    if (!overInvoicePoRes.ok) {
+      expect(overInvoicePoRes.error.message).toContain('exceeds remaining invoiceable limit');
+    }
+
+    // Submit remaining invoice for 8000
+    const inv2Res = await services.invoices.submit(
+      SUPPLIER_A,
+      wo.id,
+      'INV-2026-FINAL',
+      8000,
+      'INR',
+      null,
+      'FINAL',
+    );
+    expect(inv2Res.ok).toBe(true);
+
+    // Check PO Invoicing summary
+    const summaryRes = await services.invoices.getPoInvoicingSummary(po.id);
+    expect(summaryRes.ok).toBe(true);
+    if (summaryRes.ok) {
+      expect(summaryRes.value.alreadyInvoicedAmount).toBe(10000);
+      expect(summaryRes.value.remainingInvoiceableAmount).toBe(0);
+      expect(summaryRes.value.isFullyInvoiced).toBe(true);
     }
   });
 });

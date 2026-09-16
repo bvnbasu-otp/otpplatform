@@ -224,3 +224,16 @@ export async function acceptDeliveryInspection(
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+export async function fetchWorkOrderMilestones(workOrderId: string): Promise<
+  { ok: true; milestones: Array<Record<string, unknown>> } | { ok: false; error: string }
+> {
+  const { data, error } = await supabase
+    .from('work_order_milestones')
+    .select('*')
+    .eq('work_order_id', workOrderId)
+    .order('milestone_index', { ascending: true });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, milestones: data || [] };
+}

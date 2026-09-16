@@ -155,11 +155,65 @@ export interface WorkOrder {
   updatedAt: string;
 }
 
-export interface Invoice {
+export interface PurchaseOrderLineItemEntity {
+  id: string;
+  purchaseOrderId: string;
+  itemIndex: number;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  taxableAmount: number;
+  gstRate: number;
+  gstAmount: number;
+  totalAmount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface WorkOrderMilestoneEntity {
   id: string;
   workOrderId: string;
+  milestoneIndex: number;
+  milestoneTitle: string;
+  targetPercentage: number;
+  allocatedAmount: number;
+  invoicedAmount: number;
+  status: string;
+  isInvoiced: boolean;
+  deliverablePhotos?: string[];
+  supplierNotes?: string | null;
+  buyerNotes?: string | null;
+  submittedAt?: string | null;
+  verifiedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface InvoiceLineItemEntity {
+  id: string;
+  invoiceId: string;
+  poLineItemId?: string | null;
+  milestoneId?: string | null;
+  lineIndex: number;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxableAmount: number;
+  gstAmount: number;
+  totalAmount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Invoice {
+  id: string;
+  purchaseOrderId?: string;
+  workOrderId: string;
+  milestoneId?: string | null;
   supplierId: string;
   invoiceNumber: string;
+  invoiceType?: string;
   amount: number;
   currency: string;
   status: InvoiceStatus;

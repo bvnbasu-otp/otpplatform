@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { PurchaseOrderStatus } from '@otp/domain';
 import {
+  fetchPoInvoicingSummary,
+  fetchPoLineItems,
   fetchPurchaseOrder,
   updatePurchaseOrderStatus,
 } from '../api/purchase-orders';
@@ -202,6 +204,16 @@ export function PurchaseOrderDetailPage({
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MILESTONES' | 'INVOICE' | 'PAYMENT'>('OVERVIEW');
   const [showShareToast, setShowShareToast] = useState(false);
 
+  const [dbLineItems, setDbLineItems] = useState<PoLineItem[]>([]);
+  const [invoicingSummary, setInvoicingSummary] = useState<{
+    totalAuthorizedAmount: number;
+    alreadyInvoicedAmount: number;
+    approvedInvoicedAmount: number;
+    remainingInvoiceableAmount: number;
+    invoiceCount: number;
+    isFullyInvoiced: boolean;
+  } | null>(null);
+
   const requestedStage = searchParams.get('stage')?.toUpperCase();
 
   const load = useCallback(async () => {
@@ -223,12 +235,37 @@ export function PurchaseOrderDetailPage({
       setOrder(poResult.order);
 
       try {
-        const woResult = await fetchWorkOrderByPo(poResult.order.id);
+        const [woResult, linesResult, summaryResult] = await Promise.all([
+          fetchWorkOrderByPo(poResult.order.id),
+          fetchPoLineItems(poResult.order.id),
+          fetchPoInvoicingSummary(poResult.order.id),
+        ]);
+
         if (woResult.ok) {
           setWorkOrder(woResult.workOrder);
         }
+
+        if (linesResult.ok && linesResult.lineItems.length > 0) {
+          const mapped: PoLineItem[] = linesResult.lineItems.map((li: any) => ({
+            id: String(li.id),
+            name: String(li.description || 'Deliverable Item'),
+            description: String(li.description || ''),
+            quantity: Number(li.quantity || 1),
+            unit: String(li.unit || 'units'),
+            rate: Number(li.unit_price || 0),
+            amount: Number(li.taxable_amount || 0),
+            gstRate: Number(li.gst_rate || 18),
+            gstAmount: Number(li.gst_amount || 0),
+            total: Number(li.total_amount || 0),
+          }));
+          setDbLineItems(mapped);
+        }
+
+        if (summaryResult.ok) {
+          setInvoicingSummary(summaryResult.summary);
+        }
       } catch (woErr) {
-        console.warn('Non-blocking work order fetch warning:', woErr);
+        console.warn('Non-blocking secondary fetch warning:', woErr);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load purchase order';
@@ -693,7 +730,7 @@ export function PurchaseOrderDetailPage({
           <div className="space-y-4">
             {/* Commercial Contract Line Items & BoQ Itemization */}
             {(() => {
-              const lineItems = derivePoLineItems(order.totalAmount, order.rfqTitle);
+              const lineItems = dbLineItems.length > 0 ? dbLineItems : derivePoLineItems(order.totalAmount, order.rfqTitle);
               const taxableBase = Math.round(order.totalAmount / 1.18);
               const gstTotal = order.totalAmount - taxableBase;
 

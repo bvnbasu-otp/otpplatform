@@ -110,6 +110,26 @@ export const InvoiceStatus = {
 export type InvoiceStatus =
   (typeof InvoiceStatus)[keyof typeof InvoiceStatus];
 
+export const InvoiceType = {
+  PROGRESSIVE: 'PROGRESSIVE',
+  FINAL: 'FINAL',
+  ADVANCE: 'ADVANCE',
+  STANDARD: 'STANDARD',
+} as const;
+
+export type InvoiceType =
+  (typeof InvoiceType)[keyof typeof InvoiceType];
+
+export const MilestoneStatus = {
+  PENDING: 'PENDING',
+  SUBMITTED_BY_SUPPLIER: 'SUBMITTED_BY_SUPPLIER',
+  VERIFIED_BY_BUYER: 'VERIFIED_BY_BUYER',
+  DISPUTED: 'DISPUTED',
+} as const;
+
+export type MilestoneStatus =
+  (typeof MilestoneStatus)[keyof typeof MilestoneStatus];
+
 export const PaymentMethod = {
   MANUAL: 'MANUAL',
   UPI: 'UPI',

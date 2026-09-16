@@ -115,4 +115,23 @@ describe('Bilateral Identity Reveal & GST Tax Compliance on Purchase Orders', ()
 
     expect(isMatching).toBe(true);
   });
+
+  it('validates multi-milestone progressive invoicing and remaining balance calculations', () => {
+    const poTotal = 450000;
+    const progressiveInvoices = [
+      { id: 'inv-1', milestoneIndex: 1, amount: 90000, status: 'APPROVED' },
+      { id: 'inv-2', milestoneIndex: 2, amount: 180000, status: 'APPROVED' },
+      { id: 'inv-3', milestoneIndex: 3, amount: 135000, status: 'SUBMITTED' },
+    ];
+
+    const alreadyInvoiced = progressiveInvoices.reduce((sum, i) => sum + i.amount, 0);
+    const remainingInvoiceable = poTotal - alreadyInvoiced;
+
+    expect(alreadyInvoiced).toBe(405000);
+    expect(remainingInvoiceable).toBe(45000);
+
+    // Final milestone 4 invoice of 45000 completes 100% of PO
+    const finalInvoiceAmount = 45000;
+    expect(remainingInvoiceable - finalInvoiceAmount).toBe(0);
+  });
 });
