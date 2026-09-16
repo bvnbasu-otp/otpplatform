@@ -218,24 +218,48 @@ export function AdminQueryTerminal() {
         </div>
       </div>
 
-      {/* Query Template Chips with Horizontal Overflow Controls */}
+      {/* Quick Diagnostic Query Templates List */}
       <div className="space-y-2 w-full max-w-full">
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
-          Quick Diagnostic Query Templates:
-        </span>
-        <div className="flex gap-2 overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 pb-1.5">
-          {QUERY_TEMPLATES.map((tmpl) => (
-            <button
-              key={tmpl.name}
-              type="button"
-              onClick={() => {
-                setSql(tmpl.sql);
-              }}
-              className="rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition shrink-0 whitespace-nowrap shadow-2xs active:scale-98 min-h-[44px] mobile-touch-target"
-            >
-              📄 {tmpl.name}
-            </button>
-          ))}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+            Quick Diagnostic Query Templates ({QUERY_TEMPLATES.length}):
+          </span>
+          <span className="text-[11px] text-muted-foreground font-medium">
+            Tap to load into editor
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full">
+          {QUERY_TEMPLATES.map((tmpl) => {
+            const isSelected = sql.trim() === tmpl.sql.trim();
+            return (
+              <button
+                key={tmpl.name}
+                type="button"
+                onClick={() => {
+                  setSql(tmpl.sql);
+                }}
+                className={`w-full flex items-center justify-between gap-2 rounded-xl border p-3 text-xs text-left transition shadow-2xs active:scale-98 min-h-[48px] mobile-touch-target cursor-pointer ${
+                  isSelected
+                    ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs ring-1 ring-primary/30'
+                    : 'border-border/80 bg-card text-foreground hover:bg-muted/70 hover:border-border'
+                }`}
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="text-base shrink-0">📄</span>
+                  <span className="truncate">{tmpl.name}</span>
+                </span>
+                <span
+                  className={`text-[11px] shrink-0 font-semibold px-2 py-0.5 rounded-md ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground font-bold'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {isSelected ? '✓ Loaded' : 'Load →'}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

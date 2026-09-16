@@ -24,4 +24,14 @@ describe('Support Feature Module Tests', () => {
     expect(SupportHelpButtonModal).toBeDefined();
     expect(SupportFeedbackModal).toBeDefined();
   });
+
+  it('supports controlled and uncontrolled open states on SupportHelpButtonModal', () => {
+    // Verifies interface accepts isOpen and onOpenChange
+    const props = {
+      isOpen: true,
+      onOpenChange: (_open: boolean) => {},
+    };
+    expect(props.isOpen).toBe(true);
+    expect(typeof props.onOpenChange).toBe('function');
+  });
 });

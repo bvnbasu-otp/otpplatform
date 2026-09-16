@@ -47,15 +47,24 @@ export function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click or Escape
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleNotificationClick = async (notif: AppNotification) => {
@@ -77,9 +86,11 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border/80 bg-card text-foreground shadow-sm transition hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-primary/40"
+        className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border/80 bg-card text-foreground shadow-sm transition hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[32px] mobile-touch-target cursor-pointer"
         title="Notifications"
         aria-label="Notifications"
+        aria-expanded={isOpen}
+        data-testid="notification-bell-trigger"
       >
         <span className="text-base">🔔</span>
         {unreadCount > 0 && (
@@ -89,38 +100,62 @@ export function NotificationBell() {
         )}
       </button>
 
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs sm:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Flyout Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-card shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div
+          data-testid="notifications-flyout"
+          className="fixed inset-x-2.5 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.25rem)] sm:max-w-96 max-h-[calc(100vh-4.5rem)] sm:max-h-[85vh] rounded-2xl border border-border bg-card shadow-2xl z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
+        >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border/70 px-4 py-3 bg-muted/30">
+          <div className="flex items-center justify-between border-b border-border/70 px-4 py-3 bg-muted/30 shrink-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-sm text-foreground">Notifications</h3>
+              <span className="text-base">🔔</span>
+              <h3 className="font-extrabold text-sm text-foreground">Notifications</h3>
               {unreadCount > 0 && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-extrabold text-primary border border-primary/20">
                   {unreadCount} unread
                 </span>
               )}
             </div>
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={markAllAsRead}
+                  className="text-xs text-primary hover:underline font-bold"
+                >
+                  Mark all read
+                </button>
+              )}
               <button
                 type="button"
-                onClick={markAllAsRead}
-                className="text-xs text-primary hover:underline font-medium"
+                onClick={() => setIsOpen(false)}
+                className="text-muted-foreground hover:text-foreground text-xs font-bold p-1 rounded-md hover:bg-muted ml-1"
+                title="Close"
+                aria-label="Close notifications"
               >
-                Mark all read
+                ✕
               </button>
-            )}
+            </div>
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex border-b border-border/70 px-3 pt-2 gap-2 bg-muted/10 text-xs">
+          <div className="flex border-b border-border/70 px-3 pt-2 gap-2 bg-muted/10 text-xs shrink-0">
             <button
               type="button"
               onClick={() => setActiveTab('ALL')}
-              className={`pb-2 px-2 font-medium border-b-2 transition ${
+              className={`pb-2 px-2 font-bold border-b-2 transition ${
                 activeTab === 'ALL'
-                  ? 'border-primary text-primary font-semibold'
+                  ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -129,9 +164,9 @@ export function NotificationBell() {
             <button
               type="button"
               onClick={() => setActiveTab('UNREAD')}
-              className={`pb-2 px-2 font-medium border-b-2 transition ${
+              className={`pb-2 px-2 font-bold border-b-2 transition ${
                 activeTab === 'UNREAD'
-                  ? 'border-primary text-primary font-semibold'
+                  ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -140,14 +175,14 @@ export function NotificationBell() {
           </div>
 
           {/* Notification List */}
-          <div className="max-h-[380px] overflow-y-auto divide-y divide-border/40">
+          <div className="flex-1 overflow-y-auto overscroll-contain divide-y divide-border/40">
             {displayedNotifications.length === 0 ? (
               <div className="py-12 text-center text-muted-foreground text-xs">
                 <span className="text-2xl block mb-2">🎉</span>
                 No {activeTab === 'UNREAD' ? 'unread ' : ''}notifications yet
               </div>
             ) : (
-              displayedNotifications.slice(0, 15).map((notif) => {
+              displayedNotifications.slice(0, 20).map((notif) => {
                 const isUnread = notif.status !== 'READ';
                 return (
                   <div
@@ -162,7 +197,7 @@ export function NotificationBell() {
                     <span className="text-lg shrink-0 mt-0.5">{getNotificationIcon(notif.action_type)}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <p className={`text-xs truncate ${isUnread ? 'font-semibold text-foreground' : 'font-medium'}`}>
+                        <p className={`text-xs truncate ${isUnread ? 'font-bold text-foreground' : 'font-medium'}`}>
                           {notif.title || notif.event_type}
                         </p>
                         <span className="text-[10px] text-muted-foreground shrink-0">
@@ -173,7 +208,7 @@ export function NotificationBell() {
                         {notif.body || 'Tap to view details.'}
                       </p>
                       {notif.link && (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium mt-1">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-primary font-bold mt-1">
                           View details →
                         </span>
                       )}
@@ -188,11 +223,11 @@ export function NotificationBell() {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-border/70 p-2 text-center bg-muted/20">
+          <div className="border-t border-border/70 p-2 text-center bg-muted/20 shrink-0">
             <Link
               to="/notifications"
               onClick={() => setIsOpen(false)}
-              className="text-xs text-primary font-semibold hover:underline py-1.5 block w-full transition"
+              className="text-xs text-primary font-bold hover:underline py-1.5 block w-full transition"
             >
               View all notification history →
             </Link>

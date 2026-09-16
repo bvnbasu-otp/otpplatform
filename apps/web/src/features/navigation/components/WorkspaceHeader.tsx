@@ -14,13 +14,14 @@ export interface WorkspaceHeaderProps {
 export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderProps) {
   const { context } = useRoleContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
 
   const homeRoute = getHomeRoute(context);
   const roleLabel = getRoleLabel(context);
 
   return (
     <>
-      <header className="shrink-0 z-40 border-b border-border bg-card max-h-[48px] h-12 w-full max-w-full overflow-x-hidden select-none">
+      <header className="shrink-0 z-40 border-b border-border bg-card h-12 w-full max-w-full select-none">
         <div className="mx-auto flex w-full h-full items-center justify-between gap-x-2 px-3">
           
           {/* LEFT CLUSTER: OTP LOGO | ROLE INDICATOR */}
@@ -65,7 +66,10 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
           {/* RIGHT ACTION CLUSTER: [Help & Support] → [Notifications (🔔)] → [Menu (☰)] */}
           <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* Help & Support Universal Trigger */}
-            <SupportHelpButtonModal />
+            <SupportHelpButtonModal
+              isOpen={isSupportOpen}
+              onOpenChange={setIsSupportOpen}
+            />
 
             {/* Notifications Universal Trigger */}
             <NotificationBell />
@@ -77,7 +81,12 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
               aria-expanded={isMenuOpen}
               aria-controls="workspace-header-menu"
               data-testid="header-menu-trigger"
-              onClick={() => setIsMenuOpen((prev) => !prev)}
+              onClick={() => {
+                setIsMenuOpen((prev) => !prev);
+                if (!isMenuOpen) {
+                  setIsSupportOpen(false);
+                }
+              }}
               className={`flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-bold transition min-h-[32px] mobile-touch-target ${
                 isMenuOpen
                   ? 'border-primary bg-primary text-primary-foreground shadow-2xs'
@@ -113,6 +122,10 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
       <WorkspaceHeaderMenu
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
+        onOpenSupport={() => {
+          setIsMenuOpen(false);
+          setIsSupportOpen(true);
+        }}
         onOpenSupplierCapabilities={onOpenSupplierCapabilities}
       />
     </>

@@ -7,15 +7,32 @@ import type { SupportTicketCategory, SupportTicketPriority } from '@/features/ad
 
 export type SupportFeedbackTab = 'BUG' | 'FEATURE' | 'GENERAL';
 
-interface SupportHelpButtonModalProps {
+export interface SupportHelpButtonModalProps {
   className?: string;
   initialTab?: SupportFeedbackTab;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const ROUTED_ADMIN_EMAIL = 'bvnbasu@gmail.com';
 
-export function SupportHelpButtonModal({ className = '', initialTab = 'BUG' }: SupportHelpButtonModalProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function SupportHelpButtonModal({
+  className = '',
+  initialTab = 'BUG',
+  isOpen: controlledIsOpen,
+  onOpenChange,
+}: SupportHelpButtonModalProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isControlled = controlledIsOpen !== undefined;
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+
+  const setOpen = (open: boolean) => {
+    if (!isControlled) {
+      setInternalIsOpen(open);
+    }
+    onOpenChange?.(open);
+  };
+
   const [activeTab, setActiveTab] = useState<SupportFeedbackTab>(initialTab);
   
   // Bug form fields
@@ -53,11 +70,11 @@ export function SupportHelpButtonModal({ className = '', initialTab = 'BUG' }: S
 
     function handlePointerDown(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+        setOpen(false);
       }
     }
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') setOpen(false);
     }
 
     document.addEventListener('mousedown', handlePointerDown);
@@ -69,7 +86,7 @@ export function SupportHelpButtonModal({ className = '', initialTab = 'BUG' }: S
   }, [isOpen]);
 
   const handleClose = () => {
-    setIsOpen(false);
+    setOpen(false);
     setTicketResult(null);
     setSubmitError(null);
     setBugSubject('');
@@ -177,7 +194,7 @@ export function SupportHelpButtonModal({ className = '', initialTab = 'BUG' }: S
       {/* Universal Header Trigger Button: Help & Support (?) */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setOpen(!isOpen)}
         aria-label="Help and Support"
         aria-expanded={isOpen}
         data-testid="help-and-support-trigger"

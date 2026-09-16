@@ -274,12 +274,13 @@ export function WorkspaceHeaderMenu({
                     onClose();
                     onOpenSupport?.();
                   }}
-                  className="w-full flex items-center justify-between rounded-xl px-3.5 py-2 font-medium text-foreground bg-muted/30 hover:bg-muted transition min-h-[44px] mobile-touch-target text-left"
+                  data-testid="drawer-help-support-btn"
+                  className="w-full flex items-center justify-between gap-2 rounded-xl px-3.5 py-2 font-medium text-foreground bg-muted/30 hover:bg-muted transition min-h-[44px] mobile-touch-target text-left cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <span>🛠️</span> Help &amp; Support Center
                   </span>
-                  <span className="text-[11px] text-muted-foreground">Open ➔</span>
+                  <span className="text-[11px] text-muted-foreground shrink-0">Open →</span>
                 </button>
               </li>
               <li>
