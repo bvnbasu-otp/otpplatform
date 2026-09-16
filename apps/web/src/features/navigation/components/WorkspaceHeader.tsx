@@ -81,16 +81,17 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
               aria-expanded={isMenuOpen}
               aria-controls="workspace-header-menu"
               data-testid="header-menu-trigger"
+              title="Menu"
               onClick={() => {
                 setIsMenuOpen((prev) => !prev);
                 if (!isMenuOpen) {
                   setIsSupportOpen(false);
                 }
               }}
-              className={`flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-bold transition min-h-[32px] mobile-touch-target ${
+              className={`flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-bold transition min-h-[32px] mobile-touch-target cursor-pointer ${
                 isMenuOpen
                   ? 'border-primary bg-primary text-primary-foreground shadow-2xs'
-                  : 'border-border bg-card text-foreground hover:bg-muted'
+                  : 'border-border/80 bg-card text-foreground hover:bg-muted/80'
               }`}
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" aria-hidden="true">
@@ -112,7 +113,6 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
                   />
                 )}
               </svg>
-              <span className="hidden md:inline font-semibold">Menu</span>
             </button>
           </div>
         </div>

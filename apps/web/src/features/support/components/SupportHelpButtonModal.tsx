@@ -198,15 +198,14 @@ export function SupportHelpButtonModal({
         aria-label="Help and Support"
         aria-expanded={isOpen}
         data-testid="help-and-support-trigger"
-        className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition shadow-2xs min-h-[32px] mobile-touch-target ${
+        className={`relative flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-bold transition shadow-2xs min-h-[32px] mobile-touch-target cursor-pointer ${
           isOpen
             ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-            : 'border-border bg-card/90 text-foreground hover:bg-muted hover:text-primary hover:border-primary/40'
+            : 'border-border/80 bg-card text-foreground hover:bg-muted/80 hover:text-primary hover:border-primary/40'
         }`}
         title="Help & Support (?): Report Bugs, Request Features, or Contact Ops"
       >
-        <span className="text-sm leading-none">❓</span>
-        <span className="hidden md:inline">Help &amp; Support</span>
+        <span className="text-base leading-none select-none">❓</span>
       </button>
 
       {/* Mobile Backdrop Overlay */}

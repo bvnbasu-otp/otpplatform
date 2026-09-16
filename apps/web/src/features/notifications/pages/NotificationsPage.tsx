@@ -477,8 +477,8 @@ export function NotificationsPage({
             </div>
           </div>
 
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+          {/* Category Filter Pills (Horizontal Scroll with Guaranteed No-Shrink) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 text-xs w-full max-w-full">
             {[
               { id: 'ALL', label: `All (${notifications.length})`, icon: '📋' },
               { id: 'UNREAD', label: `Unread (${unreadCount})`, icon: '🔔' },
@@ -493,13 +493,13 @@ export function NotificationsPage({
                   key={tab.id}
                   type="button"
                   onClick={() => setFilter(tab.id as any)}
-                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 font-bold transition min-h-[44px] border mobile-touch-target ${
+                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 font-bold transition min-h-[44px] shrink-0 border shadow-2xs active:scale-98 mobile-touch-target cursor-pointer ${
                     isSelected
                       ? 'bg-primary text-primary-foreground border-primary shadow-xs'
                       : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'
                   }`}
                 >
-                  <span>{tab.icon}</span>
+                  <span className="text-sm shrink-0">{tab.icon}</span>
                   <span>{tab.label}</span>
                 </button>
               );

@@ -43,13 +43,12 @@ function formatValue(value: unknown): string {
 export interface SupplierRequirementPanelProps {
   rfq: SupplierRfqDetail;
   buyerFiles?: Attachment[];
-  onOpenQuote?: () => void;
-  canSubmitInitial?: boolean;
   hasQuote?: boolean;
 }
 
 /**
- * Screen 6: Supplier RFQ Opportunity Detail & Requirement Panel
+ * Screen 6: Supplier RFQ Opportunity Detail & Requirement Panel (Phase 3.2)
+ * Core Job: "What is this requirement, what do I need to know, and what is expected?"
  * Answers:
  * 1. What is needed? (Scope & description with expandable summary)
  * 2. Specifications & BoQ (Technical parameters, quantity, quality expectations)
@@ -62,9 +61,7 @@ export interface SupplierRequirementPanelProps {
 export function SupplierRequirementPanel({
   rfq,
   buyerFiles = [],
-  onOpenQuote,
-  canSubmitInitial,
-  hasQuote,
+  hasQuote = false,
 }: SupplierRequirementPanelProps) {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const attributes = Object.entries(rfq.attributes);
@@ -168,19 +165,23 @@ export function SupplierRequirementPanel({
           </div>
         </div>
 
-        {/* First Viewport Quick CTA (when initial submission is open) */}
-        {canSubmitInitial && onOpenQuote && (
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={onOpenQuote}
-              className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-2.5 text-xs font-extrabold text-primary-foreground shadow-sm hover:bg-primary/90 transition flex items-center justify-center gap-1.5 active:scale-98 mobile-touch-target cursor-pointer"
-            >
-              <span>⚡</span>
-              <span>Review &amp; Submit Sealed Quote →</span>
-            </button>
-          </div>
-        )}
+        {/* Opportunity Participation & Response State Bar (Phase 3.2 Read-Only Status) */}
+        <div className="flex items-center justify-between rounded-xl bg-muted/40 p-2.5 border border-border/60 text-xs">
+          <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5">
+            <span>📋</span> Opportunity Status:
+          </span>
+          <span className="font-extrabold text-primary">
+            {hasQuote
+              ? '✓ Quote Submitted · Sealed Evaluation'
+              : rfq.rfqStatus === 'OPEN'
+              ? '⚡ Quoting Active · Open for Response'
+              : rfq.rfqStatus === 'CLARIFICATION'
+              ? '💬 Clarification Stage'
+              : rfq.rfqStatus === 'EVALUATING'
+              ? '⚖️ Evaluation in Progress'
+              : '🔒 Concluded'}
+          </span>
+        </div>
       </section>
 
       {/* 2. WHAT IS NEEDED: Scope Description with Expandable Reading */}
