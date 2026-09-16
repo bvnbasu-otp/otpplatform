@@ -15,7 +15,10 @@ import { formatDeadlineCountdown } from '@/lib/date-utils';
 import { fetchSupplierRfq, markInvitationViewed } from '../api/fetch-invitations';
 import { fetchSupplierQuoteForRfq } from '../api/fetch-quote';
 import { SupplierQuotePanel } from '../components/SupplierQuotePanel';
-import { SupplierRequirementPanel } from '../components/SupplierRequirementPanel';
+import {
+  SupplierRequirementPanel,
+  type SupplierPrimaryAction,
+} from '../components/SupplierRequirementPanel';
 import type {
   SupplierQuote,
   SupplierRfqDetail,
@@ -107,6 +110,48 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
 
   const countdown = formatDeadlineCountdown(invitation.quoteDeadline);
 
+  // Single State-Aware Primary Action (Truthful Routing Only)
+  const primaryAction: SupplierPrimaryAction = (() => {
+    if (quote?.status === 'SELECTED') {
+      return {
+        label: 'View Outcome',
+        to: '/supplier/purchase-orders',
+        icon: '🏆',
+        variant: 'primary',
+      };
+    }
+    if (quote) {
+      return {
+        label: 'View Submitted Quote',
+        href: '#submitted-quote',
+        icon: '📄',
+        variant: 'secondary',
+      };
+    }
+    if (inClarification) {
+      return {
+        label: 'View Clarification',
+        href: '#clarification-thread',
+        icon: '💬',
+        variant: 'primary',
+      };
+    }
+    if (rfqOpen) {
+      return {
+        label: 'Respond to RFQ',
+        to: `/supplier/rfq/${rfqId}`,
+        icon: '⚡',
+        variant: 'primary',
+      };
+    }
+    return {
+      label: 'View RFQ',
+      href: '#requirement-details',
+      icon: '🔒',
+      variant: 'concluded',
+    };
+  })();
+
   return (
     <div
       className="p-3 sm:p-4 max-w-5xl mx-auto w-full space-y-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden"
@@ -167,18 +212,19 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
             rfq={invitation}
             buyerFiles={buyerFiles}
             hasQuote={!!quote}
+            primaryAction={primaryAction}
           />
 
           {/* Read-Only Submitted Quote State (if quote exists) */}
           {quote && (
-            <div className="space-y-4">
+            <div id="submitted-quote" className="space-y-4">
               <SupplierQuotePanel quote={quote} />
             </div>
           )}
 
           {/* Clarification Thread */}
           {inClarification && invitation && (
-            <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
+            <section id="clarification-thread" className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
                 <span>💬</span> Neutral Clarification &amp; Technical Q&amp;A
               </h3>
@@ -264,20 +310,53 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
               </div>
             )}
 
-            {/* Verification & Eligibility Card */}
+            {/* Desktop Primary CTA Link */}
+            {primaryAction.to ? (
+              <Link
+                to={primaryAction.to}
+                data-testid="desktop-supplier-primary-cta"
+                className={`w-full min-h-[48px] rounded-xl px-4 py-3 text-xs font-extrabold shadow-sm transition flex items-center justify-center gap-1.5 active:scale-98 mobile-touch-target ${
+                  primaryAction.variant === 'primary'
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : primaryAction.variant === 'secondary'
+                    ? 'border border-border bg-card text-foreground hover:bg-muted'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {primaryAction.icon && <span>{primaryAction.icon}</span>}
+                <span>{primaryAction.label} →</span>
+              </Link>
+            ) : primaryAction.href ? (
+              <a
+                href={primaryAction.href}
+                data-testid="desktop-supplier-primary-cta"
+                className={`w-full min-h-[48px] rounded-xl px-4 py-3 text-xs font-extrabold shadow-sm transition flex items-center justify-center gap-1.5 active:scale-98 mobile-touch-target ${
+                  primaryAction.variant === 'primary'
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : primaryAction.variant === 'secondary'
+                    ? 'border border-border bg-card text-foreground hover:bg-muted'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {primaryAction.icon && <span>{primaryAction.icon}</span>}
+                <span>{primaryAction.label} →</span>
+              </a>
+            ) : null}
+
+            {/* Participation Notice (Truthful, No Fabricated Match) */}
             <div className="rounded-xl bg-muted/30 border border-border/60 p-3 text-xs space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-foreground text-[11px]">
-                <span className="text-emerald-600 dark:text-emerald-400">✓</span>
-                <span>Eligible Supplier</span>
+                <span>📋</span>
+                <span>Supplier Participation</span>
               </div>
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Your profile meets category and capability requirements for this RFQ.
+                Standard category eligibility and transparent quoting terms apply.
               </p>
             </div>
 
             {/* Shield Notice */}
             <div className="text-[11px] text-muted-foreground leading-relaxed pt-2 border-t border-border/60">
-              🔒 <strong className="text-foreground">Sealed Evaluation:</strong> Prices and technical specifications are protected until buyer award decision.
+              🔒 <strong className="text-foreground">Identity-Protected Evaluation:</strong> Pricing and technical details are protected from competing suppliers.
             </div>
           </div>
         </aside>

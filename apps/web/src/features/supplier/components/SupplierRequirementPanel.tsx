@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatDateIST, formatDeadlineCountdown } from '@/lib/date-utils';
 import {
   REQUIREMENT_MODE_LABELS,
@@ -40,10 +41,20 @@ function formatValue(value: unknown): string {
   return String(value);
 }
 
+export interface SupplierPrimaryAction {
+  label: string;
+  to?: string;
+  href?: string;
+  icon?: string;
+  variant?: 'primary' | 'secondary' | 'neutral' | 'concluded';
+  onClick?: () => void;
+}
+
 export interface SupplierRequirementPanelProps {
   rfq: SupplierRfqDetail;
   buyerFiles?: Attachment[];
   hasQuote?: boolean;
+  primaryAction?: SupplierPrimaryAction;
 }
 
 /**
@@ -53,15 +64,16 @@ export interface SupplierRequirementPanelProps {
  * 1. What is needed? (Scope & description with expandable summary)
  * 2. Specifications & BoQ (Technical parameters, quantity, quality expectations)
  * 3. Location, Fulfilment & Timeline (Response deadline vs delivery timeline)
- * 4. Commercial requirements & Evaluation weights (100% merit-based)
+ * 4. Commercial requirements & Evaluation weights (Objective criteria)
  * 5. Customer attachments & technical drawings
  * 6. Supplier requirements & eligibility verification
- * 7. What happens next (3-step sealed sourcing overview)
+ * 7. What happens next (3-step transparent overview)
  */
 export function SupplierRequirementPanel({
   rfq,
   buyerFiles = [],
   hasQuote = false,
+  primaryAction,
 }: SupplierRequirementPanelProps) {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const attributes = Object.entries(rfq.attributes);
@@ -75,7 +87,7 @@ export function SupplierRequirementPanel({
 
   return (
     <div className="space-y-4 text-left" data-testid="supplier-requirement-panel">
-      {/* 1. First Viewport Hero Card: Identity Shield, Scope Summary, Ref & Quick CTA */}
+      {/* 1. First Viewport Hero Card: Identity Shield, Scope Summary, Ref & State-Aware Next Action */}
       <section className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-2xs space-y-3.5">
         {/* Top Badges Row: Public Ref, Alias & Requirement Mode */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
@@ -127,19 +139,25 @@ export function SupplierRequirementPanel({
           </h1>
         </div>
 
-        {/* Buyer Identity Protection & Merit Guarantee Banner */}
+        {/* Buyer Identity Protection Guarantee Banner (Truthful Data Only) */}
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
               <span>🔒</span>
               <span>Buyer Identity Protected</span>
             </div>
-            <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-extrabold border border-emerald-300 dark:border-emerald-800">
-              ⭐ {rfq.buyerReliabilityScore ?? 96}% Merit Buyer
-            </span>
+            {rfq.buyerReliabilityScore != null && Number.isFinite(rfq.buyerReliabilityScore) ? (
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-extrabold border border-emerald-300 dark:border-emerald-800">
+                ⭐ {rfq.buyerReliabilityScore}% Verified Score
+              </span>
+            ) : (
+              <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-bold border border-border/60">
+                🛡️ Sealed Sourcing
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Buyer name is sealed during quoting for neutral, unbiased evaluation. Your pricing and commercial terms are equally confidential and protected from all competitors.
+            Buyer identity is sealed during quoting for neutral, unbiased evaluation. Your pricing and commercial terms remain protected from competing suppliers.
           </p>
         </div>
 
@@ -165,7 +183,7 @@ export function SupplierRequirementPanel({
           </div>
         </div>
 
-        {/* Opportunity Participation & Response State Bar (Phase 3.2 Read-Only Status) */}
+        {/* Opportunity Participation & Response State Bar */}
         <div className="flex items-center justify-between rounded-xl bg-muted/40 p-2.5 border border-border/60 text-xs">
           <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5">
             <span>📋</span> Opportunity Status:
@@ -182,11 +200,61 @@ export function SupplierRequirementPanel({
               : '🔒 Concluded'}
           </span>
         </div>
+
+        {/* Single State-Aware Primary Next Action (First Viewport) */}
+        {primaryAction && (
+          <div className="pt-1">
+            {primaryAction.to ? (
+              <Link
+                to={primaryAction.to}
+                data-testid="supplier-primary-cta"
+                className={`w-full min-h-[48px] rounded-xl px-4 py-3 text-xs sm:text-sm font-extrabold shadow-sm transition flex items-center justify-center gap-2 active:scale-98 mobile-touch-target cursor-pointer ${
+                  primaryAction.variant === 'primary'
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : primaryAction.variant === 'secondary'
+                    ? 'border border-border bg-card text-foreground hover:bg-muted'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {primaryAction.icon && <span>{primaryAction.icon}</span>}
+                <span>{primaryAction.label}</span>
+                <span>→</span>
+              </Link>
+            ) : primaryAction.href ? (
+              <a
+                href={primaryAction.href}
+                data-testid="supplier-primary-cta"
+                className={`w-full min-h-[48px] rounded-xl px-4 py-3 text-xs sm:text-sm font-extrabold shadow-sm transition flex items-center justify-center gap-2 active:scale-98 mobile-touch-target cursor-pointer ${
+                  primaryAction.variant === 'primary'
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : primaryAction.variant === 'secondary'
+                    ? 'border border-border bg-card text-foreground hover:bg-muted'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {primaryAction.icon && <span>{primaryAction.icon}</span>}
+                <span>{primaryAction.label}</span>
+                <span>→</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={primaryAction.onClick}
+                data-testid="supplier-primary-cta"
+                className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-xs sm:text-sm font-extrabold text-primary-foreground shadow-sm hover:bg-primary/90 transition flex items-center justify-center gap-2 active:scale-98 mobile-touch-target cursor-pointer"
+              >
+                {primaryAction.icon && <span>{primaryAction.icon}</span>}
+                <span>{primaryAction.label}</span>
+                <span>→</span>
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       {/* 2. WHAT IS NEEDED: Scope Description with Expandable Reading */}
       {descriptionText && (
-        <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-2">
+        <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-2" id="requirement-details">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
               <span>📄</span> What is Needed
@@ -218,21 +286,21 @@ export function SupplierRequirementPanel({
               <span>📋</span> Technical Specifications &amp; BoQ
             </h2>
             <span className="text-[10px] text-muted-foreground font-semibold">
-              {attributes.length} {attributes.length === 1 ? 'Specification' : 'Specifications'}
+              {attributes.length} {attributes.length === 1 ? 'parameter' : 'parameters'}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-            {attributes.map(([code, value]) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {attributes.map(([key, val]) => (
               <div
-                key={code}
-                className="rounded-xl bg-muted/20 p-2.5 border border-border/60 flex items-start justify-between gap-2"
+                key={key}
+                className="rounded-xl border bg-muted/20 p-3 space-y-0.5 flex flex-col justify-between"
               >
-                <span className="text-[11px] font-semibold text-muted-foreground">
-                  {humanizeCode(code)}:
+                <span className="text-[11px] font-bold text-muted-foreground">
+                  {humanizeCode(key)}
                 </span>
-                <span className="font-bold text-foreground text-right">
-                  {formatValue(value)}
+                <span className="text-xs font-mono font-bold text-foreground">
+                  {formatValue(val)}
                 </span>
               </div>
             ))}
@@ -240,23 +308,23 @@ export function SupplierRequirementPanel({
         </section>
       )}
 
-      {/* 4. QUALITY & INSPECTION STANDARDS (if available) */}
+      {/* 4. QUALITY & INSPECTION STANDARDS */}
       {qualityEntries.length > 0 && (
         <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
           <h2 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
-            <span>🛡️</span> Quality &amp; Inspection Standards
+            <span>🔍</span> Quality &amp; Inspection Standards
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-            {qualityEntries.map(([code, value]) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {qualityEntries.map(([key, val]) => (
               <div
-                key={code}
-                className="rounded-xl bg-muted/20 p-2.5 border border-border/60 flex items-start justify-between gap-2"
+                key={key}
+                className="rounded-xl border bg-muted/20 p-3 space-y-0.5 flex flex-col justify-between"
               >
-                <span className="text-[11px] font-semibold text-muted-foreground">
-                  {humanizeCode(code)}:
+                <span className="text-[11px] font-bold text-muted-foreground">
+                  {humanizeCode(key)}
                 </span>
-                <span className="font-bold text-foreground text-right">
-                  {formatValue(value)}
+                <span className="text-xs font-bold text-foreground">
+                  {formatValue(val)}
                 </span>
               </div>
             ))}
@@ -264,19 +332,19 @@ export function SupplierRequirementPanel({
         </section>
       )}
 
-      {/* 5. LOCATION, FULFILMENT & EXECUTION TIMELINE */}
+      {/* 5. LOCATION, FULFILMENT & TIMELINE (Response Deadline vs Delivery Timeline) */}
       <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
         <h2 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
           <span>📍</span> Location &amp; Timeline
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div className="rounded-xl border bg-muted/20 p-3 space-y-1">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
               Delivery / Service Location
             </span>
             <span className="text-xs font-bold text-foreground block">
-              📍 {rfq.deliveryCity ?? 'Site Delivery'}
+              📍 {rfq.deliveryCity || 'Location specified upon order'}
             </span>
             {rfq.fulfilmentMode && (
               <span className="text-[11px] text-muted-foreground block">
@@ -299,22 +367,22 @@ export function SupplierRequirementPanel({
         </div>
       </section>
 
-      {/* 6. COMMERCIAL INFORMATION & EVALUATION CRITERIA */}
+      {/* 6. EVALUATION CRITERIA & COMMERCIAL INFORMATION */}
       <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
-            <span>⚖️</span> How Quotes Are Judged &amp; Commercial Terms
+            <span>⚖️</span> Evaluation Criteria &amp; Commercial Terms
           </h2>
-          <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-            100% Merit-Based
+          <span className="text-[10px] font-bold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full border border-border/60">
+            Objective Criteria
           </span>
         </div>
 
-        {/* Weights Matrix */}
-        {weights.length > 0 && (
+        {/* Weights Matrix (Truthful Domain Data Only) */}
+        {weights.length > 0 ? (
           <div className="space-y-1.5">
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-              Objective Evaluation Weights:
+              Evaluation Weight Distribution:
             </span>
             <div className="flex flex-wrap gap-1.5">
               {weights.map(([code, weight]) => (
@@ -335,6 +403,10 @@ export function SupplierRequirementPanel({
               ))}
             </div>
           </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">
+            Quotes are evaluated based on standard commercial, turnaround, and warranty parameters.
+          </p>
         )}
 
         {/* Commercial Specifications (Payment terms, etc.) */}
@@ -387,33 +459,33 @@ export function SupplierRequirementPanel({
         <h2 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
           <span>🛡️</span> Supplier Requirements &amp; Eligibility
         </h2>
-        <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3 space-y-1 text-xs">
-          <div className="flex items-center gap-1.5 font-bold text-emerald-900 dark:text-emerald-300">
-            <span>✓</span>
-            <span>Eligible Supplier · Verified Match</span>
+        <div className="rounded-xl bg-muted/30 border border-border/60 p-3 space-y-1 text-xs">
+          <div className="flex items-center gap-1.5 font-bold text-foreground">
+            <span>📋</span>
+            <span>Eligibility Requirements</span>
           </div>
-          <p className="text-emerald-800/90 dark:text-emerald-300/90 text-[11px] leading-relaxed">
-            Your capability profile matches this requirement's category and operating delivery zone. GST compliance and transparent quotation terms apply.
+          <p className="text-muted-foreground text-[11px] leading-relaxed">
+            Standard category capability requirements and transparent quotation terms apply. Quoting is subject to category authorization.
           </p>
         </div>
       </section>
 
-      {/* 9. WHAT HAPPENS NEXT: 3-STEP TRANSPARENCY OVERVIEW */}
+      {/* 9. WHAT HAPPENS AFTER YOU RESPOND: 3-STEP TRANSPARENCY OVERVIEW */}
       <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
         <h2 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
           <span>ℹ️</span> What Happens After You Respond
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
           <div className="rounded-xl bg-muted/20 p-3 border border-border/60 space-y-1">
-            <span className="font-bold text-primary block">1. Sealed Quoting</span>
+            <span className="font-bold text-primary block">1. Protected Quoting</span>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Your quote is sealed and encrypted. Competing suppliers cannot see your price.
+              Your quote remains protected from competing suppliers. Pricing and terms are evaluated anonymously.
             </p>
           </div>
           <div className="rounded-xl bg-muted/20 p-3 border border-border/60 space-y-1">
-            <span className="font-bold text-primary block">2. Merit Evaluation</span>
+            <span className="font-bold text-primary block">2. Objective Evaluation</span>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Quotes are evaluated side-by-side on price, turnaround, and warranty merit.
+              Quotes are evaluated on price, turnaround, and warranty parameters.
             </p>
           </div>
           <div className="rounded-xl bg-muted/20 p-3 border border-border/60 space-y-1">
@@ -427,4 +499,3 @@ export function SupplierRequirementPanel({
     </div>
   );
 }
-

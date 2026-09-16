@@ -2,7 +2,6 @@ import type { SupplierQuote } from '../types/supplier-quote';
 
 export interface SupplierQuotePanelProps {
   quote: SupplierQuote;
-  onReviseQuote?: () => void;
 }
 
 function formatInr(n: number | null | undefined) {
@@ -18,7 +17,7 @@ function formatInr(n: number | null | undefined) {
   }
 }
 
-export function SupplierQuotePanel({ quote, onReviseQuote }: SupplierQuotePanelProps) {
+export function SupplierQuotePanel({ quote }: SupplierQuotePanelProps) {
   const s = quote.snapshot;
 
   return (
