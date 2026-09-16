@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   SUBSCRIPTION_TIERS,
   computeSubscriptionFee,
+  generateSubscriptionPaymentRef,
   getRenewalNoticeLevel,
   resolveTierForOrgType,
 } from './types';
@@ -87,6 +88,48 @@ describe('OTP Wallet & Credits Engine', () => {
     const { OtpWalletCreditsWidget } = await import('./components/OtpWalletCreditsWidget');
     expect(OtpWalletCreditsWidget).toBeDefined();
     expect(typeof OtpWalletCreditsWidget).toBe('function');
+  });
+});
+
+describe('Cryptographically Secure Payment Reference Generation (FIX-01)', () => {
+  it('generates a valid, cryptographically formatted payment reference', () => {
+    const ref = generateSubscriptionPaymentRef();
+    expect(ref).toMatch(/^UPI-TXN-[A-Z0-9]+-[A-F0-9]{8}$/);
+  });
+
+  it('never uses Math.random() for payment reference generation', () => {
+    const mathRandomSpy = vi.spyOn(Math, 'random');
+    const ref = generateSubscriptionPaymentRef();
+    expect(mathRandomSpy).not.toHaveBeenCalled();
+    expect(ref.startsWith('UPI-TXN-')).toBe(true);
+    mathRandomSpy.mockRestore();
+  });
+
+  it('guarantees uniqueness and collision resistance across 1,000 successive iterations', () => {
+    const count = 1000;
+    const generated = new Set<string>();
+    for (let i = 0; i < count; i += 1) {
+      const ref = generateSubscriptionPaymentRef();
+      expect(generated.has(ref)).toBe(false);
+      generated.add(ref);
+    }
+    expect(generated.size).toBe(count);
+  });
+
+  it('operates securely via crypto.getRandomValues fallback if crypto.randomUUID is absent', () => {
+    const originalRandomUuid = crypto.randomUUID;
+    // Temporarily mask crypto.randomUUID
+    (crypto as any).randomUUID = undefined;
+
+    try {
+      const mathRandomSpy = vi.spyOn(Math, 'random');
+      const ref = generateSubscriptionPaymentRef();
+      expect(mathRandomSpy).not.toHaveBeenCalled();
+      expect(ref).toMatch(/^UPI-TXN-[A-Z0-9]+-[A-F0-9]{8}$/);
+      mathRandomSpy.mockRestore();
+    } finally {
+      (crypto as any).randomUUID = originalRandomUuid;
+    }
   });
 });
 

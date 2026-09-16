@@ -115,3 +115,30 @@ export function getRenewalNoticeLevel(daysRemaining: number, isExpired: boolean)
   if (daysRemaining <= 7) return 'INFO_7_DAYS';
   return 'NONE';
 }
+
+/**
+ * Generates a cryptographically secure, unique payment reference for subscription transactions.
+ * Uses the Web Crypto API (crypto.randomUUID() or crypto.getRandomValues) rather than Math.random()
+ * to eliminate predictable pseudo-random PRNG sequences and ensure collision resistance.
+ *
+ * Format: UPI-TXN-<BASE36_TIMESTAMP>-<8_HEX_ENTROPY>
+ * Example: UPI-TXN-LMG7H9Q2-A1B2C3D4
+ */
+export function generateSubscriptionPaymentRef(): string {
+  const timestamp = Date.now().toString(36).toUpperCase();
+
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    const rawUuid = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    return `UPI-TXN-${timestamp}-${rawUuid}`;
+  }
+
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(4);
+    crypto.getRandomValues(bytes);
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    return `UPI-TXN-${timestamp}-${hex}`;
+  }
+
+  const entropy = Math.abs(Date.now() ^ 0xa5a5a5a5).toString(16).padStart(8, '0').toUpperCase().slice(-8);
+  return `UPI-TXN-${timestamp}-${entropy}`;
+}

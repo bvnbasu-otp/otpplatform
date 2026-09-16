@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   SUBSCRIPTION_TIERS,
   computeSubscriptionFee,
+  generateSubscriptionPaymentRef,
   resolveTierForOrgType,
   type BillingCycle,
   type SubscriptionTierId,
@@ -43,7 +44,7 @@ export function SubscriptionPaymentModal({
   const plan = SUBSCRIPTION_TIERS[selectedTier];
   const fee = computeSubscriptionFee(selectedTier, selectedCycle);
   const dummyUpiId = 'pay@otp';
-  const paymentRef = `UPI-TXN-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const paymentRef = useMemo(() => generateSubscriptionPaymentRef(), [isOpen]);
 
   // Standard Indian UPI Intent string
   const upiIntentUri = `upi://pay?pa=${dummyUpiId}&pn=OTP%20Platform&am=${fee.amount}&cu=INR&tn=Prepaid%20Subscription%20${selectedCycle}%20${selectedTier}`;
