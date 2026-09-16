@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AttachmentScope } from '@otp/domain';
 import { usePortalRole } from '@/features/auth/use-portal-role';
 import {
-  AttachmentUploader,
   fetchSharedRequirementAttachments,
   type Attachment,
 } from '@/features/attachments';
@@ -16,33 +14,21 @@ import { RfqPhasePanel } from '@/features/phase';
 import { formatDeadlineCountdown } from '@/lib/date-utils';
 import { fetchSupplierRfq, markInvitationViewed } from '../api/fetch-invitations';
 import { fetchSupplierQuoteForRfq } from '../api/fetch-quote';
-import {
-  fetchSupplierIdForProfile,
-  finalizeSupplierQuote,
-  reviseSupplierQuote,
-  submitSupplierQuote,
-} from '../api/quote-mutations';
-import { QuoteForm } from '../components/QuoteForm';
 import { SupplierQuotePanel } from '../components/SupplierQuotePanel';
 import { SupplierRequirementPanel } from '../components/SupplierRequirementPanel';
-import { BottomSheet } from '@/components/ui/BottomSheet';
 import type {
-  QuoteSnapshotInput,
   SupplierQuote,
   SupplierRfqDetail,
 } from '../types/supplier-quote';
 
 export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
-  const { profile } = usePortalRole();
+  const { profile: _profile } = usePortalRole();
   const [invitation, setInvitation] = useState<SupplierRfqDetail | null>(null);
   const [quote, setQuote] = useState<SupplierQuote | null>(null);
   const [clarificationMessages, setClarificationMessages] = useState<ClarificationMessage[]>([]);
   const [buyerFiles, setBuyerFiles] = useState<Attachment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [mode, setMode] = useState<'view' | 'revise'>('view');
-  const [success, setSuccess] = useState<string | null>(null);
-  const [isQuoteSheetOpen, setIsQuoteSheetOpen] = useState(false);
 
   const rfqStatus = invitation?.rfqStatus ?? 'OPEN';
   const rfqOpen = rfqStatus === 'OPEN';
@@ -88,52 +74,6 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
     void load();
   }, [load]);
 
-  async function handleSubmit(input: QuoteSnapshotInput) {
-    if (!profile || !invitation) {
-      return { error: 'Session not ready' };
-    }
-    const supplierId = await fetchSupplierIdForProfile(profile.profileId);
-    if (!supplierId) return { error: 'Supplier account not found' };
-
-    const result = await submitSupplierQuote(
-      profile.profileId,
-      rfqId,
-      invitation.invitationId,
-      supplierId,
-      input,
-    );
-    if (!result.ok) return { error: result.error };
-
-    setSuccess('Sealed quote submitted successfully.');
-    setIsQuoteSheetOpen(false);
-    await load();
-    return { error: null };
-  }
-
-  async function handleRevise(input: QuoteSnapshotInput) {
-    if (!profile || !quote) return { error: 'No quote to revise' };
-
-    const result = await reviseSupplierQuote(profile.profileId, quote.quoteId, rfqId, input);
-    if (!result.ok) return { error: result.error };
-
-    setSuccess('Final quote updated.');
-    setMode('view');
-    setIsQuoteSheetOpen(false);
-    await load();
-    return { error: null };
-  }
-
-  async function handleFinalize() {
-    if (!quote) return;
-    const result = await finalizeSupplierQuote(quote.quoteId, rfqId);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    setSuccess('Final quote submitted for identity-protected evaluation.');
-    await load();
-  }
-
   if (isLoading) {
     return (
       <div className="p-3 sm:p-4 max-w-5xl mx-auto w-full space-y-4" data-testid="supplier-rfq-loading">
@@ -165,11 +105,6 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
     );
   }
 
-  const canRevise =
-    (rfqOpen || inClarification) && quote && quote.status !== 'FINAL';
-  const canSubmitFinal =
-    inClarification && quote && ['SUBMITTED', 'REVISED'].includes(quote.status);
-  const canSubmitInitial = rfqOpen && !quote;
   const countdown = formatDeadlineCountdown(invitation.quoteDeadline);
 
   return (
@@ -223,14 +158,6 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
           ⚠️ {error}
         </div>
       )}
-      {success && (
-        <div
-          className="p-3 text-xs font-bold text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 shadow-2xs"
-          data-testid="supplier-success"
-        >
-          ✓ {success}
-        </div>
-      )}
 
       {/* 3. Main Layout Grid (2 Columns on Desktop, 1 Column on Mobile) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
@@ -239,61 +166,13 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
           <SupplierRequirementPanel
             rfq={invitation}
             buyerFiles={buyerFiles}
-            onOpenQuote={() => setIsQuoteSheetOpen(true)}
-            canSubmitInitial={canSubmitInitial}
             hasQuote={!!quote}
           />
 
-          {/* Active Submitted Quote Panel (if quote exists) */}
-          {quote && mode === 'view' && (
+          {/* Read-Only Submitted Quote State (if quote exists) */}
+          {quote && (
             <div className="space-y-4">
-              <SupplierQuotePanel
-                quote={quote}
-                onReviseQuote={canRevise ? () => setIsQuoteSheetOpen(true) : undefined}
-              />
-
-              {/* Quotation Documents Upload */}
-              <section className="rounded-2xl border bg-card p-4 sm:p-5 space-y-2 shadow-2xs">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
-                    📎 Quotation Documents &amp; Catalogues
-                  </h3>
-                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-semibold">
-                    Metadata Protected
-                  </span>
-                </div>
-                <AttachmentUploader
-                  scope={AttachmentScope.QUOTE}
-                  quoteId={quote.quoteId}
-                  label="Upload priced drawing, datasheet, or photos"
-                  hint="The buyer sees a neutral label, never your internal filename."
-                  disabled={quote.status === 'FINAL'}
-                />
-              </section>
-
-              {/* Action Buttons for Existing Quote */}
-              <div className="flex flex-wrap items-center gap-2">
-                {canRevise && (
-                  <button
-                    type="button"
-                    onClick={() => setIsQuoteSheetOpen(true)}
-                    className="min-h-[48px] flex-1 sm:flex-none rounded-xl border bg-card px-4 py-2.5 text-xs font-bold text-foreground hover:bg-muted transition shadow-2xs flex items-center justify-center gap-1.5 mobile-touch-target cursor-pointer"
-                  >
-                    <span>✏️</span>
-                    <span>Revise Quote Price</span>
-                  </button>
-                )}
-                {canSubmitFinal && (
-                  <button
-                    type="button"
-                    onClick={() => void handleFinalize()}
-                    className="min-h-[48px] flex-1 sm:flex-none rounded-xl bg-primary px-4 py-2.5 text-xs font-extrabold text-primary-foreground shadow-sm hover:bg-primary/90 transition flex items-center justify-center gap-1.5 mobile-touch-target cursor-pointer"
-                  >
-                    <span>🔒</span>
-                    <span>Lock Final Quote</span>
-                  </button>
-                )}
-              </div>
+              <SupplierQuotePanel quote={quote} />
             </div>
           )}
 
@@ -339,7 +218,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
         <aside className="hidden lg:block lg:col-span-4 sticky top-4 space-y-4">
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-2xs space-y-4">
             <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-              Action Summary
+              Opportunity Summary
             </h3>
 
             {/* Deadline status */}
@@ -360,46 +239,41 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
               </span>
             </div>
 
-            {/* Primary Action Button */}
-            {canSubmitInitial && (
-              <button
-                type="button"
-                onClick={() => setIsQuoteSheetOpen(true)}
-                data-testid="desktop-open-quote-cta"
-                className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-xs font-extrabold text-primary-foreground shadow-sm hover:bg-primary/90 transition flex items-center justify-center gap-1.5 active:scale-98 mobile-touch-target cursor-pointer"
-              >
-                <span>⚡</span>
-                <span>Draft &amp; Submit Quote →</span>
-              </button>
-            )}
-
-            {quote && (
-              <div className="space-y-2">
-                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 p-3 text-center">
-                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 block">
-                    ✓ Quote Submitted (v{quote.currentVersion})
-                  </span>
-                  <span className="text-[10px] text-muted-foreground block mt-0.5">
-                    Anonymous Evaluation Active
-                  </span>
-                </div>
-                {canRevise && (
-                  <button
-                    type="button"
-                    onClick={() => setIsQuoteSheetOpen(true)}
-                    className="w-full min-h-[48px] rounded-xl border bg-card px-4 py-2.5 text-xs font-bold text-foreground hover:bg-muted transition shadow-2xs flex items-center justify-center gap-1.5 mobile-touch-target cursor-pointer"
-                  >
-                    <span>✏️ Revise Quote Price</span>
-                  </button>
-                )}
+            {/* State-Aware Response Status Indicator */}
+            {quote ? (
+              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 p-3 text-center space-y-1">
+                <span className="text-xs font-black text-emerald-800 dark:text-emerald-300 block">
+                  ✓ Quote Submitted (v{quote.currentVersion})
+                </span>
+                <span className="text-[10px] text-muted-foreground block">
+                  Anonymous Sealed Evaluation Active
+                </span>
               </div>
-            )}
-
-            {!rfqOpen && !quote && (
+            ) : rfqOpen ? (
+              <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-center space-y-1">
+                <span className="text-xs font-black text-primary block">
+                  ⚡ Quoting Active
+                </span>
+                <span className="text-[10px] text-muted-foreground block leading-relaxed">
+                  Open for supplier response. Identity and terms protected under sealed evaluation.
+                </span>
+              </div>
+            ) : (
               <div className="rounded-xl bg-muted p-3 text-center text-xs font-bold text-muted-foreground">
                 🔒 Quoting Window Closed
               </div>
             )}
+
+            {/* Verification & Eligibility Card */}
+            <div className="rounded-xl bg-muted/30 border border-border/60 p-3 text-xs space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-foreground text-[11px]">
+                <span className="text-emerald-600 dark:text-emerald-400">✓</span>
+                <span>Eligible Supplier</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Your profile meets category and capability requirements for this RFQ.
+              </p>
+            </div>
 
             {/* Shield Notice */}
             <div className="text-[11px] text-muted-foreground leading-relaxed pt-2 border-t border-border/60">
@@ -408,40 +282,6 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
           </div>
         </aside>
       </div>
-
-      {/* 4. Mobile Sticky Bottom Action Bar */}
-      {canSubmitInitial && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-background/95 backdrop-blur-md border-t border-border z-30 shadow-lg">
-          <div className="max-w-md mx-auto">
-            <button
-              type="button"
-              onClick={() => setIsQuoteSheetOpen(true)}
-              data-testid="open-quote-sheet-cta"
-              className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 transition flex items-center justify-center gap-2 active:scale-98 mobile-touch-target cursor-pointer"
-            >
-              <span>⚡</span>
-              <span>Draft &amp; Submit Quote →</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 5. Micro-Flow Bottom Sheet (Phase 3.3 Boundary Preserved) */}
-      <BottomSheet
-        isOpen={isQuoteSheetOpen}
-        onClose={() => setIsQuoteSheetOpen(false)}
-        title={quote ? `Revise Quote (v${quote.currentVersion + 1})` : '⚡ Submit Sealed Quote'}
-        subtitle={invitation.rfqTitle}
-        maxHeight="max-h-[90vh]"
-      >
-        <QuoteForm
-          initial={quote?.snapshot ?? undefined}
-          submitLabel={quote ? 'Update Final Quote' : 'Submit Sealed Quote'}
-          onSubmit={quote ? handleRevise : handleSubmit}
-          quoteId={quote?.quoteId}
-        />
-      </BottomSheet>
     </div>
   );
 }
-

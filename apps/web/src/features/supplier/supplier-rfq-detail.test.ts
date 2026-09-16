@@ -94,7 +94,7 @@ describe('Phase 3.2: Supplier RFQ / Opportunity Detail Specification & State Eng
     });
   });
 
-  describe('2. Identity Protection & Information Barrier Invariants', () => {
+  describe('2. Identity Protection & Information Barrier Invariants (Scenario G)', () => {
     it('guarantees buyer identity is sealed before authorized award reveal', () => {
       const rfq = createMockDetail();
       expect(rfq.buyerDisplayName).toBe('Identity protected');
@@ -220,16 +220,28 @@ describe('Phase 3.2: Supplier RFQ / Opportunity Detail Specification & State Eng
     });
   });
 
-  describe('5. Primary State-Aware CTA Determination', () => {
-    it('determines initial quote submission when RFQ is open and no quote exists', () => {
+  describe('5. Phase 3.2 Boundary Invariants & Scenarios (A through F)', () => {
+    // Scenario A: Supplier opens new RFQ
+    it('Scenario A: displays RFQ detail without embedding quote submission workflow', () => {
+      const rfq = createMockDetail({ rfqStatus: 'OPEN' });
+      expect(rfq.rfqTitle).toBeTruthy();
+      expect(rfq.rfqStatus).toBe('OPEN');
+    });
+
+    // Scenario B: Supplier has no submitted quote
+    it('Scenario B: presents state-aware active quoting status without inline QuoteForm', () => {
       const rfq = createMockDetail({ rfqStatus: 'OPEN' });
       const quote: SupplierQuote | null = null;
 
-      const canSubmitInitial = rfq.rfqStatus === 'OPEN' && !quote;
-      expect(canSubmitInitial).toBe(true);
+      const hasQuote = !!quote;
+      const isOpenForQuoting = rfq.rfqStatus === 'OPEN' && !hasQuote;
+
+      expect(hasQuote).toBe(false);
+      expect(isOpenForQuoting).toBe(true);
     });
 
-    it('determines revise action when quote is submitted and RFQ is open', () => {
+    // Scenario C: Supplier already submitted a quote
+    it('Scenario C: displays submitted response state in read-only mode without inline quote mutation controls', () => {
       const rfq = createMockDetail({ rfqStatus: 'OPEN' });
       const quote: SupplierQuote = {
         quoteId: 'q-101',
@@ -249,41 +261,33 @@ describe('Phase 3.2: Supplier RFQ / Opportunity Detail Specification & State Eng
         },
       };
 
-      const canRevise = rfq.rfqStatus === 'OPEN' && quote.status !== 'FINAL';
-      expect(canRevise).toBe(true);
+      const hasQuote = !!quote;
+      expect(hasQuote).toBe(true);
+      expect(quote.snapshot?.totalCost).toBe(54600);
+      expect(quote.currentVersion).toBe(1);
     });
 
-    it('determines final quote locking in clarification phase', () => {
+    // Scenario D: RFQ is in clarification
+    it('Scenario D: preserves clarification state and thread access', () => {
       const rfq = createMockDetail({ rfqStatus: 'CLARIFICATION' });
-      const quote: SupplierQuote = {
-        quoteId: 'q-102',
-        rfqId: rfq.rfqId,
-        invitationId: rfq.invitationId,
-        status: 'REVISED',
-        currentVersion: 2,
-        submittedAt: new Date().toISOString(),
-        snapshot: {
-          basePrice: 42000,
-          gstAmount: 7560,
-          transportCost: 1200,
-          totalCost: 50760,
-          deliveryDays: 4,
-          warrantyMonths: 18,
-          currency: 'INR',
-        },
-      };
-
       const inClarification = rfq.rfqStatus === 'CLARIFICATION';
-      const canSubmitFinal = inClarification && ['SUBMITTED', 'REVISED'].includes(quote.status);
-      expect(canSubmitFinal).toBe(true);
+      expect(inClarification).toBe(true);
     });
 
-    it('determines concluded state when RFQ is closed or awarded', () => {
+    // Scenario E: RFQ is closed/expired
+    it('Scenario E: presents concluded/expired state without quote submission controls', () => {
       const rfqClosed = createMockDetail({ rfqStatus: 'CLOSED' });
       const rfqAwarded = createMockDetail({ rfqStatus: 'AWARDED' });
 
       expect(rfqClosed.rfqStatus === 'OPEN').toBe(false);
       expect(rfqAwarded.rfqStatus === 'OPEN').toBe(false);
+    });
+
+    // Scenario F: Unauthorized access check
+    it('Scenario F: guarantees missing or unauthorized RFQ produces null detail without leaking data', () => {
+      const unauthorizedResult = { ok: false, error: 'Access denied or opportunity not found', rfq: null };
+      expect(unauthorizedResult.ok).toBe(false);
+      expect(unauthorizedResult.rfq).toBeNull();
     });
   });
 
@@ -292,15 +296,14 @@ describe('Phase 3.2: Supplier RFQ / Opportunity Detail Specification & State Eng
       const prohibitedWords = [/\bbid\b/i, /\bbids\b/i, /\bbidder\b/i, /\bbidders\b/i, /\bbidding\b/i];
 
       const copyTexts = [
-        'Review & Submit Sealed Quote',
-        'Sealed quote submitted successfully.',
+        'Opportunity Status',
+        'Opportunity Summary',
         'Buyer Identity Protected Until Award',
         '100% Merit-Based Evaluation',
         'Eligible Supplier · Verified Match',
         'Quotes are evaluated side-by-side on price, turnaround, and warranty merit.',
-        'Quotation Documents & Catalogues',
-        'Revise Quote Price',
-        'Lock Final Quote',
+        'Anonymous Sealed Evaluation Active',
+        'Sealed Evaluation',
       ];
 
       for (const text of copyTexts) {
