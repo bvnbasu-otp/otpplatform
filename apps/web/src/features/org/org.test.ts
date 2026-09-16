@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { listOrgMembers, inviteOrgMember, removeOrgMember, switchActiveOrganization } from './api/org-members';
 import { supabase } from '@/lib/supabase';
 import { switchActiveOrganization as switchOrgRpc } from '@/features/roles/api/roles';
@@ -25,6 +25,13 @@ const mockSwitchFn = vi.fn();
 
 describe('Org Feature Module Tests', () => {
   beforeEach(() => {
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
+    mockSupabaseClient.rpc.mockReset();
+    mockSwitchFn.mockReset();
+  });
+
+  afterEach(() => {
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
     mockSupabaseClient.rpc.mockReset();

@@ -36,6 +36,8 @@ describe('Clarification Feature Module Tests', () => {
 
   afterEach(() => {
     profileSpy?.mockRestore();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
   });
 
   it('fetches and maps masked clarification messages for buyer correctly', async () => {

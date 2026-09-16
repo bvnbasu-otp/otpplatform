@@ -53,6 +53,8 @@ describe('Phase 2.4 — RFQ Review & Publish Feature Tests', () => {
 
   afterEach(() => {
     profileSpy?.mockRestore();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
   });
 
   describe('1. RFQ Review Data Extraction & Mapping', () => {
@@ -250,7 +252,7 @@ describe('Phase 2.4 — RFQ Review & Publish Feature Tests', () => {
   describe('3. Quote Response Deadline Configuration & Validation', () => {
     it('updates quote deadline successfully for future valid date', async () => {
       const futureDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
-      vi.mocked(supabase.from).mockReturnValue(createSupabaseQueryMock({ data: { id: 'rfq-1' }, error: null }));
+      vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock({ data: { id: 'rfq-1' }, error: null }));
 
       const res = await updateRfqDeadline('rfq-1', futureDate);
       expect(res.ok).toBe(true);
@@ -277,7 +279,7 @@ describe('Phase 2.4 — RFQ Review & Publish Feature Tests', () => {
 
   describe('4. Buyer Supplier Instructions Management', () => {
     it('persists customized instructions in requirement commercial sourcing', async () => {
-      vi.mocked(supabase.from).mockReturnValue(
+      vi.mocked(supabase.from).mockImplementation(() =>
         createSupabaseQueryMock({ data: { commercial: { budgetAmount: 50000 } }, error: null })
       );
 

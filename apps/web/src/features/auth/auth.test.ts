@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   isSuperAdminEmail,
   resolvePortalRole,
@@ -52,6 +52,12 @@ describe('Auth Feature & Portal Role Resolution', () => {
     vi.mocked(supabase.auth.getUser).mockReset();
     vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
     vi.mocked(supabase.from).mockImplementation(() => createMockQueryBuilder([]));
+  });
+
+  afterEach(() => {
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.auth.getUser).mockReset();
   });
 
   it('correctly identifies superadmin emails', () => {

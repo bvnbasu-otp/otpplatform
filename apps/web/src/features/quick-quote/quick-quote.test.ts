@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   describeQuickQuoteFailure,
   redeemQuickQuoteLink,
@@ -21,6 +21,11 @@ vi.mock('@/lib/supabase', () => {
 
 describe('Quick Quote Feature Module Tests', () => {
   beforeEach(() => {
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
+  });
+
+  afterEach(() => {
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
   });

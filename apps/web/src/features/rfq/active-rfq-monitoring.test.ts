@@ -49,6 +49,8 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
 
   afterEach(() => {
     profileSpy?.mockRestore();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
   });
 
   describe('1. Active RFQ Data Extraction & Metrics Engine', () => {
@@ -348,7 +350,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
   describe('4. Quote Deadline Management', () => {
     it('extends RFQ deadline successfully for valid future timestamp', async () => {
       const newDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
-      vi.mocked(supabase.from).mockReturnValue(createSupabaseQueryMock({ data: { id: 'rfq-live-101' }, error: null }));
+      vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock({ data: { id: 'rfq-live-101' }, error: null }));
 
       const res = await updateRfqDeadline('rfq-live-101', newDeadline);
       expect(res.ok).toBe(true);

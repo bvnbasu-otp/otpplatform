@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchReviewEligibility, submitBuyerReview } from './api/submit-review';
 import { supabase } from '@/lib/supabase';
 import { fetchLifecycleSignals } from '@/features/lifecycle/api/fetch-lifecycle';
@@ -24,6 +24,11 @@ vi.mock('@/features/performance/api/fetch-performance', () => ({
 
 describe('Review Feature Module Tests', () => {
   beforeEach(() => {
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
+  });
+
+  afterEach(() => {
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
   });

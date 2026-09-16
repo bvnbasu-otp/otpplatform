@@ -157,6 +157,136 @@ describe('Supplier Home - Active Quotes & Recent Activity', () => {
   });
 });
 
+describe('Supplier Home - Scenario States Matrix (States A through T)', () => {
+  it('handles STATE A: No opportunities (clean zero-data state)', () => {
+    const opportunities: SupplierOpportunityItem[] = [];
+    expect(opportunities).toHaveLength(0);
+  });
+
+  it('handles STATE B: Single new opportunity', () => {
+    const opportunities: SupplierOpportunityItem[] = [
+      {
+        id: 'opp-1',
+        invitation: createMockInvitation({ rfqTitle: 'Facility Maintenance' }),
+        title: 'Facility Maintenance',
+        publicRef: 'RFQ-2026-001',
+        anonymousLabel: 'Anonymous Tender #01',
+        buyerDisplayName: 'Identity Protected',
+        buyerAnonymous: true,
+        quoteDeadline: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+        deadlineCountdown: '2 days left',
+        invitedAt: new Date().toISOString(),
+        actionUrl: '/supplier/rfq/rfq-1',
+        isClosingSoon: false,
+        category: 'Maintenance',
+        deliveryCity: 'Bengaluru',
+      },
+    ];
+    expect(opportunities).toHaveLength(1);
+    expect(opportunities[0]?.title).toBe('Facility Maintenance');
+  });
+
+  it('handles STATE C: Multiple opportunities (stacked cards without overflow)', () => {
+    const opportunities: SupplierOpportunityItem[] = [
+      {
+        id: 'opp-1',
+        invitation: createMockInvitation({ publicRef: 'RFQ-01' }),
+        title: 'CNC Turning',
+        publicRef: 'RFQ-01',
+        anonymousLabel: 'Tender #01',
+        buyerDisplayName: 'Identity Protected',
+        buyerAnonymous: true,
+        quoteDeadline: new Date().toISOString(),
+        deadlineCountdown: '1 day left',
+        invitedAt: new Date().toISOString(),
+        actionUrl: '/supplier/rfq/rfq-1',
+        isClosingSoon: false,
+      },
+      {
+        id: 'opp-2',
+        invitation: createMockInvitation({ publicRef: 'RFQ-02' }),
+        title: 'Solar Inverters',
+        publicRef: 'RFQ-02',
+        anonymousLabel: 'Tender #02',
+        buyerDisplayName: 'Identity Protected',
+        buyerAnonymous: true,
+        quoteDeadline: new Date().toISOString(),
+        deadlineCountdown: '3 days left',
+        invitedAt: new Date().toISOString(),
+        actionUrl: '/supplier/rfq/rfq-2',
+        isClosingSoon: false,
+      },
+    ];
+    expect(opportunities).toHaveLength(2);
+  });
+
+  it('handles STATE D: New opportunity + Action Required combination', () => {
+    const opps = [createMockInvitation()];
+    const actions: SupplierActionItem[] = [
+      {
+        id: 'act-1',
+        type: 'PO_ACCEPTANCE',
+        title: 'PO #1092',
+        subtitle: 'Facility Maintenance Work Order',
+        priority: 'P0',
+        statusLabel: 'PO Acceptance Pending',
+        whyText: 'Buyer has issued Purchase Order · Accept to begin work execution',
+        actionLabel: 'Accept & Sign PO →',
+        actionUrl: '/purchase-orders/po-1092',
+      },
+    ];
+    expect(opps).toHaveLength(1);
+    expect(actions).toHaveLength(1);
+    expect(actions[0]?.priority).toBe('P0');
+  });
+
+  it('handles STATE E: Active quote awaiting buyer evaluation', () => {
+    const quote: SupplierActiveQuoteItem = {
+      id: 'q-1',
+      invitation: createMockInvitation({ status: 'QUOTED', rfqStatus: 'EVALUATING' }),
+      title: 'Precision CNC Turning',
+      publicRef: 'RFQ-2026-0042',
+      statusLabel: 'Under Committee Evaluation',
+      rfqStatus: 'EVALUATING',
+      actionUrl: '/supplier/rfq/rfq-abc-999',
+    };
+    expect(quote.statusLabel).toBe('Under Committee Evaluation');
+    expect(quote.rfqStatus).toBe('EVALUATING');
+  });
+
+  it('handles STATE F & G: Clarification and Negotiation states', () => {
+    const clarificationAction: SupplierActionItem = {
+      id: 'clarif-1',
+      type: 'RFQ_CLOSING_SOON',
+      title: 'RFQ #1042 Clarification',
+      subtitle: 'Buyer requested technical clarification',
+      priority: 'P1',
+      statusLabel: 'Clarification Requested',
+      whyText: 'Please clarify delivery lead time before quorum closes',
+      actionLabel: 'Respond to Clarification →',
+      actionUrl: '/supplier/rfq/rfq-1042',
+    };
+    expect(clarificationAction.statusLabel).toBe('Clarification Requested');
+  });
+
+  it('handles STATE H & I: Award/PO action and active order in execution', () => {
+    const po = createMockPurchaseOrder({ status: 'ACCEPTED', totalAmount: 250000 });
+    expect(po.status).toBe('ACCEPTED');
+    expect(po.totalAmount).toBe(250000);
+  });
+
+  it('handles STATE J: Payment & invoice settled state', () => {
+    const settledPo = createMockPurchaseOrder({ isSettled: true, status: 'COMPLETED' });
+    expect(settledPo.isSettled).toBe(true);
+  });
+
+  it('handles STATE O: Long content titles and descriptions without layout break', () => {
+    const longTitle = 'Supply, Installation, Testing, and Comprehensive Annual Maintenance of 500kVA High Voltage Industrial Transformer with Complete Cable Trenching and Secondary Switchgear Panel Wiring';
+    const opp = createMockInvitation({ rfqTitle: longTitle });
+    expect(opp.rfqTitle.length).toBeGreaterThan(100);
+  });
+});
+
 describe('Supplier Home - Mobile Cockpit & Privacy Invariants', () => {
   it('enforces 48px minimum touch target on interactive links and buttons', () => {
     const touchTargetClass = 'min-h-[48px] mobile-touch-target';

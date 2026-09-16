@@ -45,6 +45,8 @@ describe('Requirement Feature Module Tests', () => {
 
   afterEach(() => {
     profileSpy?.mockRestore();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
   });
 
   describe('fetchUserOrganization', () => {

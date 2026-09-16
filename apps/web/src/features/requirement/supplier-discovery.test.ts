@@ -55,6 +55,8 @@ describe('Phase 2.3 — Supplier Discovery Feature Tests', () => {
 
   afterEach(() => {
     profileSpy?.mockRestore();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
   });
 
   describe('1. Compact Requirement Context Extraction', () => {
