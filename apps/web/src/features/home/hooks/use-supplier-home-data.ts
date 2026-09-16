@@ -174,7 +174,7 @@ export function useSupplierHomeData() {
       totalAmount: totalActiveAmount,
       pendingAcceptanceCount,
       completedCount: completedOrdersCount,
-      ratingAvg: performance?.ratingAvg ?? 5.0,
+      ratingAvg: performance?.ratingAvg && performance.ratingAvg > 0 ? performance.ratingAvg : undefined,
       totalReviews: performance?.totalReviews ?? 0,
     };
   }, [purchaseOrders, performance]);

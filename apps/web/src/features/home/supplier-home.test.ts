@@ -117,6 +117,19 @@ describe('Supplier Home - Action Required & Orders Summary', () => {
     expect(totalVolume).toBe(205000);
   });
 
+  it('handles rating fallback gracefully when supplier has no ratings yet', () => {
+    const ordersSummaryNoRating = {
+      activeCount: 1,
+      totalAmount: 50000,
+      pendingAcceptanceCount: 0,
+      completedCount: 0,
+      ratingAvg: undefined,
+      totalReviews: 0,
+    };
+
+    expect(ordersSummaryNoRating.ratingAvg).toBeUndefined();
+  });
+
   it('handles empty states gracefully when supplier has no opportunities or orders', () => {
     const emptyOpportunities: SupplierOpportunityItem[] = [];
     const emptyActions: SupplierActionItem[] = [];

@@ -462,18 +462,18 @@ describe('Super Admin & Ops Console Data Layer', () => {
     expect(normalizedOrg.last_seen_at).toBe('2026-09-12T09:55:00.000Z');
   });
 
-  it('validates Master Module Test Inventory metrics (901 platform tests across 12 layers)', () => {
+  it('validates Master Module Test Inventory metrics (902 platform tests across 12 layers)', () => {
     expect(MASTER_MODULE_INVENTORY).toHaveLength(12);
 
     const totalTests = MASTER_MODULE_INVENTORY.reduce((sum, m) => sum + m.testCount, 0);
     const totalFiles = MASTER_MODULE_INVENTORY.reduce((sum, m) => sum + m.filesCount, 0);
 
-    expect(totalTests).toBe(901);
+    expect(totalTests).toBe(902);
     expect(totalFiles).toBe(116);
 
     const webModule = MASTER_MODULE_INVENTORY.find((m) => m.id === 'MOD-WEB-UI');
     expect(webModule).toBeDefined();
-    expect(webModule?.testCount).toBe(615);
+    expect(webModule?.testCount).toBe(616);
     expect(webModule?.filesCount).toBe(73);
 
     const domainModule = MASTER_MODULE_INVENTORY.find((m) => m.id === 'MOD-DOMAIN');

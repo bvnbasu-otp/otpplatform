@@ -84,7 +84,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     name: 'Web Features, Sourcing Cockpits, Governance, ProtectedRoute & State Machines',
     description: 'Role-based PWA routing, Supplier Home Cockpit (Phase 3.1), Buyer Procurement Cockpit, Active RFQ Monitoring (Phase 2.5), RFQ Review & Publish (Phase 2.4), Supplier Discovery (Phase 2.3), committee voting, intake, quick-quote, and 8-state lifecycle',
     filesCount: 73,
-    testCount: 615,
+    testCount: 616,
     category: 'WEB_UI',
     keySuites: ['supplier-home.test.ts', 'buyer-home.test.ts', 'active-rfq-monitoring.test.ts', 'rfq-review-publish.test.ts', 'supplier-discovery.test.ts', 'e2e-sourcing-lifecycle.test.ts', 'protected-route.test.ts', 'auth.test.ts'],
     status: 'VERIFIED',

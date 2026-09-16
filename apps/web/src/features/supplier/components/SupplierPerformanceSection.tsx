@@ -44,10 +44,12 @@ export function SupplierPerformanceSection({
               className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
                 isTopRated
                   ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                  : 'bg-blue-100 text-blue-900 border border-blue-300'
+                  : performance.isGstVerified
+                    ? 'bg-blue-100 text-blue-900 border border-blue-300'
+                    : 'bg-muted text-muted-foreground border border-border/60'
               }`}
             >
-              {isTopRated ? '⭐ Top Rated Supplier' : '✓ Verified Supplier'}
+              {isTopRated ? '⭐ Top Rated Supplier' : performance.isGstVerified ? '✓ GST Verified' : 'Supplier Profile'}
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -58,15 +60,21 @@ export function SupplierPerformanceSection({
         {/* Big Rating Badge */}
         <div className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50/70 px-4 py-2.5 shadow-xs">
           <div className="text-center">
-            <span className="text-2xl font-black text-amber-900">{ratingAvg.toFixed(1)}</span>
-            <span className="text-xs font-semibold text-amber-800"> / 5.0</span>
-            <div className="mt-0.5 flex items-center justify-center gap-0.5 text-amber-500 text-sm">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <span key={star} className={star <= Math.round(ratingAvg) ? 'text-amber-500' : 'text-slate-300'}>
-                  ★
-                </span>
-              ))}
-            </div>
+            {ratingAvg > 0 ? (
+              <>
+                <span className="text-2xl font-black text-amber-900">{ratingAvg.toFixed(1)}</span>
+                <span className="text-xs font-semibold text-amber-800"> / 5.0</span>
+                <div className="mt-0.5 flex items-center justify-center gap-0.5 text-amber-500 text-sm">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} className={star <= Math.round(ratingAvg) ? 'text-amber-500' : 'text-slate-300'}>
+                      ★
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <span className="text-xs font-semibold text-amber-900">Rating unavailable</span>
+            )}
           </div>
           <div className="border-l border-amber-200 pl-3 text-left">
             <p className="text-xs font-bold text-amber-950">

@@ -20,6 +20,7 @@ export interface SupplierPerformanceSummary {
   completedOrdersCount: number;
   onTimePercent: number;
   totalReviews: number;
+  isGstVerified?: boolean;
   ratingBreakdown: {
     5: number;
     4: number;
@@ -91,11 +92,11 @@ export async function fetchSupplierPerformance(): Promise<
     poData?.[0]?.supplier_id;
 
   // 3. Fetch supplier base details
-  let supplier = null;
+  let supplier: { id: string; name: string; rating_avg: number | null; completed_jobs: number | null; on_time_percent: number | null; gst_verified?: boolean | null } | null = null;
   if (activeSupplierId) {
     const { data: sup } = await supabase
       .from('suppliers')
-      .select('id, name, rating_avg, completed_jobs, on_time_percent')
+      .select('id, name, rating_avg, completed_jobs, on_time_percent, gst_verified')
       .eq('id', activeSupplierId)
       .maybeSingle();
     supplier = sup;
@@ -104,7 +105,7 @@ export async function fetchSupplierPerformance(): Promise<
   if (!supplier) {
     const { data: fallbackSup } = await supabase
       .from('suppliers')
-      .select('id, name, rating_avg, completed_jobs, on_time_percent')
+      .select('id, name, rating_avg, completed_jobs, on_time_percent, gst_verified')
       .order('rating_avg', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -174,19 +175,20 @@ export async function fetchSupplierPerformance(): Promise<
     }
   }
 
-  const computedAvg = ratedCount > 0 ? Number((ratingSum / ratedCount).toFixed(1)) : Number(supplier?.rating_avg ?? 5.0);
+  const computedAvg = ratedCount > 0 ? Number((ratingSum / ratedCount).toFixed(1)) : (supplier?.rating_avg != null ? Number(supplier.rating_avg) : 0);
 
   return {
     ok: true,
     performance: {
       supplierId: supplier?.id ?? 'demo-supplier',
-      supplierName: supplier?.name ?? 'Top Rated Supplier',
+      supplierName: supplier?.name ?? 'Supplier Partner',
       ratingAvg: computedAvg,
       completedJobs: Math.max(Number(supplier?.completed_jobs ?? 0), completedOrdersCount, ratedCount),
       inExecutionCount,
       completedOrdersCount: Math.max(completedOrdersCount, ratedCount),
-      onTimePercent: Number(supplier?.on_time_percent ?? 98),
+      onTimePercent: Number(supplier?.on_time_percent ?? 100),
       totalReviews: ratedCount,
+      isGstVerified: Boolean(supplier?.gst_verified),
       ratingBreakdown,
       reviews,
     },

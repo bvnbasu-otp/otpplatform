@@ -28,9 +28,13 @@ export function SupplierOrdersSummaryCard({
           <p className="text-xs text-muted-foreground mt-0.5">Direct settlement purchase orders</p>
         </div>
 
-        {ratingAvg !== undefined && ratingAvg > 0 && (
+        {ratingAvg !== undefined && ratingAvg > 0 ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 shrink-0">
             ⭐ {ratingAvg.toFixed(1)} Rating
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground border border-border/60 shrink-0">
+            Rating unavailable
           </span>
         )}
       </div>

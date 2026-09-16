@@ -243,7 +243,7 @@ async function main() {
     'Web Features, Governance & State Machine Tests',
     'WEB',
     'pnpm test:web',
-    615
+    616
   );
 
   // Ensure Database Integration Fixtures are loaded for regression validation
