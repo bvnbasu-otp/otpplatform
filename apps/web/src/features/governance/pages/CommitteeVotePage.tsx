@@ -543,10 +543,10 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
               <div className="flex items-center justify-between border-b border-border/50 pb-2">
                 <div>
                   <h2 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                    {myVote ? '↺ Revise Your Decision Ballot' : '2. 1-Tap Decision Ballot & Justification'}
+                    {myVote ? '↺ Revise Your Decision Ballot' : '2. Decision Ballot & Justification'}
                   </h2>
                   <p className="text-[11px] text-muted-foreground">
-                    Select 1-tap rationale chips below to justify your recommendation on record.
+                    Select suggested rationale templates below or enter custom comments to justify your recommendation on record.
                   </p>
                 </div>
                 {myVote && (
@@ -573,11 +573,11 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                 </div>
               </div>
 
-              {/* 1-Tap Rationale Chips */}
+              {/* Rationale Template Chips (Suggestions) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-foreground">
-                    1-Tap Recommendation Rationale <span className="text-red-500 font-bold">*</span>
+                    Suggested Rationale Templates (Tap to select &amp; review) <span className="text-red-500 font-bold">*</span>
                   </label>
                   <span className="text-[10px] text-muted-foreground font-semibold">
                     {selectedReasons.length > 0 ? `${selectedReasons.length} selected` : 'Required'}
@@ -609,11 +609,11 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
               {/* Custom Justification Notes */}
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-muted-foreground block">
-                  Additional Justification Commentary (Optional):
+                  Review / Edit Justification Commentary (Optional or Custom Rationale):
                 </label>
                 <textarea
                   className="w-full rounded-xl border border-input bg-card p-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                  placeholder="Add specific observations regarding delivery TAT, compliance, or benchmark comparison..."
+                  placeholder="Add or customize specific observations regarding delivery TAT, compliance, or benchmark comparison..."
                   rows={2}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}

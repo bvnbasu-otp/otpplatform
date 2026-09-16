@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   CORE_PROCUREMENT_STATES,
   CHRONOLOGICAL_STAGES,
+  GOLDEN_PATH_STATES,
   LINEAR_PROCUREMENT_STEPS,
   PROCUREMENT_STEP_NUMBERS,
   deriveLinearStepNumber,
@@ -10,6 +11,7 @@ import {
   resolveLinearStepUrl,
   getStageStepState,
   resolveStageNavigationUrl,
+  mapLinearStepToCoreState,
   type CoreProcurementState,
   type ProcurementStepNumber,
 } from '../types/procurement-state';
@@ -34,7 +36,7 @@ export interface ProcurementStageNavigatorProps {
 }
 
 export function ProcurementStageNavigator({
-  currentStage = 'DRAFT',
+  currentStage,
   currentLinearStep,
   orderTitle,
   orderReference,
@@ -61,8 +63,15 @@ export function ProcurementStageNavigator({
   const activeLinearStep: ProcurementStepNumber =
     currentLinearStep ?? deriveLinearStepNumber(null, location.pathname);
   const activeStepDesc = LINEAR_PROCUREMENT_STEPS[activeLinearStep] || LINEAR_PROCUREMENT_STEPS[13];
-  const activeLegacyDesc =
-    CORE_PROCUREMENT_STATES[currentStage] ||
+
+  // Derive 7-State Golden Path stage
+  const effectiveStage: CoreProcurementState =
+    isStalled
+      ? 'STALLED'
+      : currentStage ?? mapLinearStepToCoreState(activeLinearStep);
+
+  const activeStageDesc =
+    CORE_PROCUREMENT_STATES[effectiveStage] ||
     CORE_PROCUREMENT_STATES['PO_ISSUED'] ||
     CORE_PROCUREMENT_STATES['DRAFT'];
 
@@ -80,32 +89,34 @@ export function ProcurementStageNavigator({
   const defaultStalledReason =
     stalledReason ||
     (idleHours && idleHours > 24
-      ? `Order has been inactive at Step ${activeLinearStep} (${activeStepDesc.shortLabel}) for ${Math.floor(idleHours)} hours.`
-      : `Order has exceeded time threshold (>24h) at Step ${activeLinearStep} (${activeStepDesc.shortLabel}).`);
+      ? `Order has been inactive at Stage ${activeStageDesc.shortLabel} for ${Math.floor(idleHours)} hours.`
+      : `Order has exceeded time threshold (>24h) at Stage ${activeStageDesc.shortLabel}.`);
 
   return (
-    <div data-testid="procurement-stage-navigator">
-      {/* 1. Ultra-Slim Top Breadcrumb & Action Bar */}
-      <div className="mb-2.5 rounded-lg border border-border bg-card/95 px-3 py-1.5 text-xs shadow-2xs backdrop-blur">
+    <div data-testid="procurement-stage-navigator" className="space-y-2 mb-3">
+      {/* 1. Primary Buyer-Facing 7-State Golden Path Stepper Card */}
+      <div className="rounded-2xl border border-border bg-card/95 p-2.5 sm:p-3 text-xs shadow-2xs backdrop-blur space-y-2">
+        {/* Top bar: Breadcrumb & Actions */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
             <Link
               to={resolvedBackUrl}
-              className="flex items-center gap-1 font-semibold text-muted-foreground hover:text-primary transition shrink-0"
+              className="flex items-center gap-1 font-semibold text-muted-foreground hover:text-primary transition shrink-0 min-h-[32px] mobile-touch-target"
             >
               <span>←</span>
               <span className="hidden sm:inline">{backToLabel}</span>
             </Link>
             <span className="text-muted-foreground/40 shrink-0">/</span>
-            <span className="font-bold text-foreground truncate max-w-[90px] xs:max-w-[140px] sm:max-w-xs text-xs">
+            <span className="font-bold text-foreground truncate max-w-[100px] xs:max-w-[150px] sm:max-w-xs text-xs">
               {orderReference ? `${orderReference} · ` : ''}
               {orderTitle || 'Procurement Order'}
             </span>
             <span className="text-muted-foreground/40 shrink-0">/</span>
             <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold shadow-2xs border shrink-0 ${activeStepDesc.badgeClass}`}
+              className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold shadow-2xs border shrink-0 ${activeStageDesc.badgeClass}`}
             >
-              <span className="hidden xs:inline">{activeStepDesc.icon} </span>Step {activeLinearStep}/15<span className="hidden sm:inline">: {activeStepDesc.shortLabel}</span>
+              <span>{activeStageDesc.icon} </span>
+              <span>Stage {activeStageDesc.stepNumber || 0}/7: {activeStageDesc.shortLabel}</span>
             </span>
           </div>
 
@@ -115,7 +126,7 @@ export function ProcurementStageNavigator({
               <button
                 type="button"
                 onClick={() => setShowStalledDrawer((v) => !v)}
-                className="flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/60 border border-red-300 dark:border-red-800 px-2 py-0.5 text-[10px] font-black text-red-900 dark:text-red-200 shadow-2xs hover:bg-red-200 transition"
+                className="flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/60 border border-red-300 dark:border-red-800 px-2.5 py-1 text-[10px] font-black text-red-900 dark:text-red-200 shadow-2xs hover:bg-red-200 transition min-h-[32px] mobile-touch-target"
                 title="Click to view stall diagnostics and unblocking actions"
               >
                 <span>⚠️ STALLED</span>
@@ -126,16 +137,76 @@ export function ProcurementStageNavigator({
             <button
               type="button"
               onClick={() => setShowSubTabs((v) => !v)}
-              className="rounded border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition"
+              className="rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition min-h-[32px] mobile-touch-target"
+              title="Toggle granular 15-step technical telemetry pipeline"
             >
-              {showSubTabs ? '▲ Hide Steps' : '⚡ 15 Steps'}
+              {showSubTabs ? '▲ Hide 15 Steps' : '⚡ 15 Steps'}
             </button>
           </div>
         </div>
 
+        {/* 7-State Golden Path Navigation Stepper Bar */}
+        <nav aria-label="7-State Golden Path Procurement Pipeline" className="pt-1 border-t border-border/60">
+          <ol className="flex items-center justify-between gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {GOLDEN_PATH_STATES.map((stageKey, idx) => {
+              const stageDesc = CORE_PROCUREMENT_STATES[stageKey];
+              const stepState = getStageStepState(stageKey, effectiveStage);
+              const isCurrent = stepState === 'CURRENT';
+              const isDone = stepState === 'DONE';
+              const targetUrl = resolveStageNavigationUrl(stageKey, ids, role);
+              const isClickable = isDone || isCurrent;
+
+              const stageBadge = (
+                <div
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 rounded-xl border transition select-none shrink-0 ${
+                    isCurrent
+                      ? 'bg-primary text-primary-foreground font-black border-primary shadow-xs ring-2 ring-primary/30'
+                      : isDone
+                      ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 font-bold hover:border-emerald-500'
+                      : 'bg-muted/30 text-muted-foreground border-border/50 opacity-60'
+                  }`}
+                >
+                  <span
+                    className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black ${
+                      isCurrent
+                        ? 'bg-white text-primary'
+                        : isDone
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {isDone ? '✓' : idx + 1}
+                  </span>
+                  <span className="text-[11px] font-bold whitespace-nowrap">
+                    {stageDesc.icon} {stageDesc.shortLabel}
+                  </span>
+                </div>
+              );
+
+              return (
+                <li key={stageKey} className="flex-1 min-w-[75px] xs:min-w-[90px] sm:min-w-0">
+                  {isClickable ? (
+                    <Link
+                      to={targetUrl}
+                      className="block focus:outline-none rounded-xl"
+                      title={`${idx + 1}. ${stageDesc.title} (${isCurrent ? 'Active' : isDone ? 'Completed' : 'Pending'})`}
+                    >
+                      {stageBadge}
+                    </Link>
+                  ) : (
+                    <div title={`${idx + 1}. ${stageDesc.title} (Pending)`}>
+                      {stageBadge}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+
         {/* STALLED Exception & Diagnostic Drawer */}
         {isStalled && showStalledDrawer && (
-          <div className="mt-2 border-t border-red-200 dark:border-red-900 bg-red-50/90 dark:bg-red-950/40 p-2 rounded-md animate-in fade-in-50">
+          <div className="mt-2 border-t border-red-200 dark:border-red-900 bg-red-50/90 dark:bg-red-950/40 p-2.5 rounded-xl animate-in fade-in-50">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="text-sm">🚨</span>
@@ -148,7 +219,7 @@ export function ProcurementStageNavigator({
                 <button
                   type="button"
                   onClick={onStalledAction}
-                  className="rounded bg-red-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-2xs hover:bg-red-700 transition shrink-0"
+                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-red-700 transition shrink-0 min-h-[36px] mobile-touch-target"
                 >
                   ⚡ {stalledActionLabel}
                 </button>
@@ -157,51 +228,58 @@ export function ProcurementStageNavigator({
           </div>
         )}
 
-        {/* 15-Step Linear Traversal Quick Ribbon */}
+        {/* 15-Step Linear Telemetry Traversal Quick Ribbon (Collapsible) */}
         {showSubTabs && (
-          <div className="mt-1.5 border-t border-border/80 pt-1.5 flex flex-wrap items-center gap-1 text-[10px] animate-in fade-in-50">
-            <span className="font-bold uppercase tracking-wider text-muted-foreground mr-1 text-[9px]">
-              Pipeline:
-            </span>
+          <div className="mt-2 border-t border-border/80 pt-2 space-y-1.5 animate-in fade-in-50">
+            <div className="flex items-center justify-between">
+              <span className="font-bold uppercase tracking-wider text-muted-foreground text-[9px]">
+                Detailed Technical Pipeline Telemetry (15 Steps):
+              </span>
+              <span className="text-[10px] font-semibold text-primary">
+                Current Step: {activeLinearStep}/15 ({activeStepDesc.title})
+              </span>
+            </div>
 
-            {PROCUREMENT_STEP_NUMBERS.map((stepNum) => {
-              const desc = LINEAR_PROCUREMENT_STEPS[stepNum];
-              const stepState = getLinearStepState(stepNum, activeLinearStep);
-              const isCurrent = stepState === 'CURRENT';
-              const isDone = stepState === 'DONE';
-              const targetUrl = resolveLinearStepUrl(stepNum, ids);
+            <div className="flex flex-wrap items-center gap-1 text-[10px]">
+              {PROCUREMENT_STEP_NUMBERS.map((stepNum) => {
+                const desc = LINEAR_PROCUREMENT_STEPS[stepNum];
+                const stepState = getLinearStepState(stepNum, activeLinearStep);
+                const isCurrent = stepState === 'CURRENT';
+                const isDone = stepState === 'DONE';
+                const targetUrl = resolveLinearStepUrl(stepNum, ids);
 
-              return (
-                <Link
-                  key={stepNum}
-                  to={targetUrl}
-                  className={`rounded border px-1.5 py-0.5 text-[9px] font-medium transition flex items-center gap-1 ${
-                    isCurrent
-                      ? 'bg-primary text-primary-foreground font-bold border-primary shadow-2xs'
-                      : isDone
-                      ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300'
-                      : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card border-border/60 opacity-70'
-                  }`}
-                  title={`${stepNum}. ${desc.title} (${isCurrent ? 'Active' : isDone ? 'Completed' : 'Pending'})`}
-                >
-                  <span>{isDone ? '✓' : desc.icon}</span>
-                  <span className="truncate max-w-[80px]">{desc.shortLabel}</span>
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    key={stepNum}
+                    to={targetUrl}
+                    className={`rounded-md border px-1.5 py-0.5 text-[9px] font-medium transition flex items-center gap-1 min-h-[28px] ${
+                      isCurrent
+                        ? 'bg-primary text-primary-foreground font-bold border-primary shadow-2xs'
+                        : isDone
+                        ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300'
+                        : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card border-border/60 opacity-70'
+                    }`}
+                    title={`${stepNum}. ${desc.title} (${isCurrent ? 'Active' : isDone ? 'Completed' : 'Pending'})`}
+                  >
+                    <span>{isDone ? '✓' : desc.icon}</span>
+                    <span className="truncate max-w-[80px]">{desc.shortLabel}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
 
-      {/* 2. Fixed/Sticky Bottom Lifecycle Progress Bar (15 Linear Steps) */}
-      <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 shadow-md backdrop-blur transition-all" aria-label="Procurement Progress">
+      {/* 2. Fixed/Sticky Bottom Lifecycle Progress Bar (7 Golden Path + 15 Linear Steps) */}
+      <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 shadow-md backdrop-blur transition-all pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))]" aria-label="Procurement Progress">
         {/* Expanded Drawer (Upward) */}
         {isBottomBarExpanded && (
           <div className="border-b border-border bg-card/98 p-3 shadow-inner max-h-[50vh] overflow-y-auto animate-in slide-in-from-bottom-5">
-            <div className="mx-auto max-w-7xl">
-              <div className="mb-2 flex items-center justify-between">
+            <div className="mx-auto max-w-7xl space-y-3">
+              <div className="flex items-center justify-between">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Strict 15-Step Linear Procurement Pipeline
+                  Complete 15-Step Linear Procurement Pipeline
                 </p>
                 <span className="text-xs font-semibold text-primary">
                   Step {activeLinearStep} of 15: {activeStepDesc.title}
@@ -279,7 +357,7 @@ export function ProcurementStageNavigator({
                           <Link
                             to={targetUrl}
                             title={`Navigate to Step ${stepNum}: ${desc.title}`}
-                            className="block focus:outline-none rounded-lg"
+                            className="block focus:outline-none rounded-lg min-h-[44px] mobile-touch-target"
                             onClick={() => setIsBottomBarExpanded(false)}
                           >
                             {content}
@@ -297,42 +375,42 @@ export function ProcurementStageNavigator({
         )}
 
         {/* Compact Docked Bottom Bar */}
-        <div className="mx-auto max-w-7xl px-3 py-1 flex items-center justify-between gap-2 text-xs">
+        <div className="mx-auto max-w-7xl px-3 py-1.5 flex items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-foreground flex items-center gap-1 text-xs min-w-0">
-              <span>{activeStepDesc.icon}</span>
-              <span className="hidden sm:inline">Step {activeLinearStep}/15:</span>
-              <span className="text-primary font-black truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[220px]">
-                {activeStepDesc.title}
+            <span className="font-bold text-foreground flex items-center gap-1.5 text-xs min-w-0">
+              <span>{activeStageDesc.icon}</span>
+              <span className="hidden sm:inline">Stage {activeStageDesc.stepNumber || 0}/7:</span>
+              <span className="text-primary font-black truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[240px]">
+                {activeStageDesc.title}
               </span>
             </span>
 
             {/* Mobile Progress Pill */}
             <div className="flex sm:hidden items-center gap-1.5 pl-1.5 border-l border-border">
               <span className="text-[10px] font-bold text-muted-foreground">
-                {Math.round((activeLinearStep / 15) * 100)}%
+                {Math.round(((activeStageDesc.stepNumber || 1) / 7) * 100)}%
               </span>
               <div className="w-10 xs:w-12 h-1.5 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: `${(activeLinearStep / 15) * 100}%` }}
+                  style={{ width: `${((activeStageDesc.stepNumber || 1) / 7) * 100}%` }}
                 />
               </div>
             </div>
 
-            {/* Desktop / Tablet Mini 15 Progress Dots */}
+            {/* Desktop / Tablet 7-Stage Progress Nodes */}
             <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-border">
-              {PROCUREMENT_STEP_NUMBERS.map((stepNum) => {
-                const desc = LINEAR_PROCUREMENT_STEPS[stepNum];
-                const stepState = getLinearStepState(stepNum, activeLinearStep);
+              {GOLDEN_PATH_STATES.map((stageKey, idx) => {
+                const desc = CORE_PROCUREMENT_STATES[stageKey];
+                const stepState = getStageStepState(stageKey, effectiveStage);
                 const isCurrent = stepState === 'CURRENT';
                 const isDone = stepState === 'DONE';
-                const targetUrl = resolveLinearStepUrl(stepNum, ids);
+                const targetUrl = resolveStageNavigationUrl(stageKey, ids, role);
                 const isClickable = isDone || isCurrent;
 
                 const dot = (
                   <span
-                    key={stepNum}
+                    key={stageKey}
                     className={`flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black transition ${
                       isCurrent
                         ? 'bg-primary text-primary-foreground ring-1 ring-primary/40'
@@ -340,18 +418,18 @@ export function ProcurementStageNavigator({
                         ? 'bg-emerald-600 text-white'
                         : 'bg-muted/70 text-muted-foreground'
                     }`}
-                    title={`Step ${stepNum}: ${desc.title} (${isCurrent ? 'Active' : isDone ? 'Done' : 'Pending'})`}
+                    title={`Stage ${idx + 1}: ${desc.title} (${isCurrent ? 'Active' : isDone ? 'Done' : 'Pending'})`}
                   >
-                    {isDone ? '✓' : stepNum}
+                    {isDone ? '✓' : idx + 1}
                   </span>
                 );
 
                 return isClickable ? (
-                  <Link key={stepNum} to={targetUrl} className="hover:scale-110 transition">
+                  <Link key={stageKey} to={targetUrl} className="hover:scale-110 transition">
                     {dot}
                   </Link>
                 ) : (
-                  <span key={stepNum}>{dot}</span>
+                  <span key={stageKey}>{dot}</span>
                 );
               })}
             </div>
@@ -359,12 +437,12 @@ export function ProcurementStageNavigator({
 
           <div className="flex items-center gap-2">
             <span className="hidden lg:inline text-[10px] text-muted-foreground truncate max-w-xs">
-              {activeStepDesc.description}
+              {activeStageDesc.description}
             </span>
             <button
               type="button"
               onClick={() => setIsBottomBarExpanded((v) => !v)}
-              className="rounded border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-bold text-foreground hover:bg-muted transition flex items-center gap-1"
+              className="rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-[10px] font-bold text-foreground hover:bg-muted transition flex items-center gap-1 min-h-[32px] mobile-touch-target"
             >
               <span>{isBottomBarExpanded ? '▼ Collapse' : '▲ 15 Steps'}</span>
             </button>

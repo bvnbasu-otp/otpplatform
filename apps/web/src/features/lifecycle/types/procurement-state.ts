@@ -161,6 +161,47 @@ export const CHRONOLOGICAL_STAGES: CoreProcurementState[] = [
   'SETTLED',
 ];
 
+export const GOLDEN_PATH_STATES = CHRONOLOGICAL_STAGES;
+
+/**
+ * Maps a linear step number (1..15) to its corresponding 7-State Golden Path Core State.
+ */
+export function mapLinearStepToCoreState(linearStep: ProcurementStepNumber): CoreProcurementState {
+  if (linearStep <= 1) return 'DRAFT';
+  if (linearStep >= 2 && linearStep <= 5) return 'QUOTING';
+  if (linearStep >= 6 && linearStep <= 8) return 'EVALUATING';
+  if (linearStep >= 9 && linearStep <= 12) return 'AWARDED';
+  if (linearStep === 13 || linearStep === 14) return 'PO_ISSUED';
+  if (linearStep === 15) return 'SETTLED';
+  return 'DRAFT';
+}
+
+/**
+ * Maps a 7-State Golden Path Core State to its starting linear step number (1..15).
+ */
+export function mapCoreStateToDefaultLinearStep(state: CoreProcurementState): ProcurementStepNumber {
+  switch (state) {
+    case 'DRAFT':
+      return 1;
+    case 'QUOTING':
+      return 2;
+    case 'EVALUATING':
+      return 6;
+    case 'AWARDED':
+      return 9;
+    case 'PO_ISSUED':
+      return 13;
+    case 'INVOICED':
+      return 14;
+    case 'SETTLED':
+      return 15;
+    case 'STALLED':
+      return 6;
+    default:
+      return 1;
+  }
+}
+
 /**
  * Determines whether an order is considered STALLED based on inactivity hours (>24h).
  */

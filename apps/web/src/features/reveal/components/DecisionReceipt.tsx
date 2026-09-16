@@ -47,15 +47,18 @@ export function DecisionReceipt({ rfqId, winningQuoteId, showTable = false }: De
 
   if (isLoading) {
     return (
-      <section className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-        Building decision receipt…
+      <section className="rounded-2xl border bg-card p-4 text-sm text-muted-foreground shadow-2xs">
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span>Building cryptographic decision receipt…</span>
+        </div>
       </section>
     );
   }
 
   if (error) {
     return (
-      <section className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+      <section className="rounded-2xl border border-red-300 dark:border-red-900 bg-red-50/90 dark:bg-red-950/40 p-4 text-sm text-red-800 dark:text-red-200 shadow-2xs">
         {error}
       </section>
     );
@@ -64,41 +67,43 @@ export function DecisionReceipt({ rfqId, winningQuoteId, showTable = false }: De
   if (!receipt) return null;
 
   return (
-    <section className="rounded-lg border bg-card p-5" data-testid="decision-receipt">
-      <h2 className="text-sm font-semibold">Decision receipt</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        What the names would have suggested, against what the identity-protected criteria chose.
-      </p>
-
-      <p className="mt-4 text-base font-medium" data-testid="receipt-headline">
-        {receipt.headline}
-      </p>
-
-      <div className="mt-4 rounded-md border bg-muted/30 px-4 py-3">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">Awarded on merit</p>
-        <p className="mt-1 font-medium">{receipt.winner.businessName}</p>
-        <p className="text-sm text-muted-foreground">
-          Quoted as {receipt.winner.anonymousLabel} · {inr(receipt.winner.totalCost)}
-          {receipt.winner.evaluationScore !== null &&
-            ` · score ${receipt.winner.evaluationScore.toFixed(1)}`}
+    <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-4" data-testid="decision-receipt">
+      <div>
+        <h2 className="text-sm font-bold text-foreground">Cryptographic Decision Receipt</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          What the recognizable names would have suggested, against what the identity-protected criteria objectively chose.
         </p>
       </div>
 
-      <ul className="mt-4 space-y-3">
+      <p className="text-sm sm:text-base font-bold text-foreground bg-primary/5 p-3 rounded-xl border border-primary/20" data-testid="receipt-headline">
+        {receipt.headline}
+      </p>
+
+      <div className="rounded-xl border bg-muted/30 dark:bg-muted/15 p-3.5 space-y-1">
+        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">Awarded on Merit</span>
+        <strong className="font-black text-foreground text-sm block">{receipt.winner.businessName}</strong>
+        <p className="text-xs text-muted-foreground">
+          Quoted as <strong className="text-foreground">{receipt.winner.anonymousLabel}</strong> · <span className="font-mono font-bold text-foreground">{inr(receipt.winner.totalCost)}</span>
+          {receipt.winner.evaluationScore !== null &&
+            ` · Merit Score ${receipt.winner.evaluationScore.toFixed(1)}/10`}
+        </p>
+      </div>
+
+      <ul className="space-y-2.5">
         {receipt.comparisons.map((c) => (
-          <li key={c.kind} className="rounded-md border px-4 py-3" data-testid={`receipt-${c.kind}`}>
+          <li key={c.kind} className="rounded-xl border bg-card p-3.5 space-y-1" data-testid={`receipt-${c.kind}`}>
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">
+              <span className="text-[10px] uppercase font-black tracking-wide text-primary">
                 {SIGNAL_TITLE[c.kind]}
               </span>
-              <span className="text-xs text-muted-foreground">{c.reason}</span>
+              <span className="text-[11px] text-muted-foreground">{c.reason}</span>
             </div>
-            <p className="mt-1 font-medium">
+            <strong className="font-bold text-foreground text-xs block">
               {c.supplier.quoteId === receipt.winner.quoteId
                 ? c.supplier.businessName
                 : `Identity-Protected Supplier (${c.supplier.anonymousLabel})`}
-            </p>
-            <p className="text-sm text-muted-foreground">{describeComparison(c)}</p>
+            </strong>
+            <p className="text-xs text-muted-foreground leading-relaxed">{describeComparison(c)}</p>
           </li>
         ))}
       </ul>

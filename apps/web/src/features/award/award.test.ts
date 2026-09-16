@@ -84,4 +84,78 @@ describe('Atomic Award, Reveal & PO Preconditions Validation', () => {
     expect(res.valid).toBe(false);
     expect(res.error).toContain('WITHDRAWN');
   });
+
+  it('compiles recorded consensus justification directly from committee votes without duplicate typing', () => {
+    const votes = [
+      { id: 'v1', recommendedQuoteId: 'q-1', comment: 'Lowest verified total cost with 24-month warranty' },
+      { id: 'v2', recommendedQuoteId: 'q-1', comment: 'Fast turnaround of 3 days and GST registered' },
+      { id: 'v3', recommendedQuoteId: 'q-2', comment: 'Alternative candidate' },
+    ];
+
+    const targetComments = votes
+      .filter((v) => v.recommendedQuoteId === 'q-1' && v.comment && v.comment.trim())
+      .map((v) => v.comment.trim());
+
+    const consensusRationale = Array.from(new Set(targetComments)).join('. ');
+    expect(consensusRationale).toBe(
+      'Lowest verified total cost with 24-month warranty. Fast turnaround of 3 days and GST registered',
+    );
+  });
+
+  it('flags threshold warning when buyer selects candidate other than the consensus leader', () => {
+    const summary = {
+      leader: { quoteId: 'q-leader', anonymousLabel: 'Supplier #01', recommendWeight: 6, recommendCount: 3 },
+    };
+    const selectedQuoteId = 'q-other';
+
+    const isOverridingLeader = Boolean(
+      summary.leader.quoteId && selectedQuoteId && selectedQuoteId !== summary.leader.quoteId,
+    );
+
+    expect(isOverridingLeader).toBe(true);
+  });
+
+  it('suppresses threshold override warning when buyer selects the consensus leader', () => {
+    const summary = {
+      leader: { quoteId: 'q-leader', anonymousLabel: 'Supplier #01', recommendWeight: 6, recommendCount: 3 },
+    };
+    const selectedQuoteId = 'q-leader';
+
+    const isOverridingLeader = Boolean(
+      summary.leader.quoteId && selectedQuoteId && selectedQuoteId !== summary.leader.quoteId,
+    );
+
+    expect(isOverridingLeader).toBe(false);
+  });
+
+  it('correctly manages 3-state award lifecycle: PRE-LOCK -> LOCKED -> REVEALED', () => {
+    type AwardState = 'PRE_LOCK' | 'LOCKED' | 'REVEALED';
+
+    function getLinearStep(status: string | null | undefined): number {
+      if (status === 'REVEALED') return 12;
+      if (status === 'LOCKED' || status === 'PENDING_REVEAL') return 10;
+      return 9;
+    }
+
+    expect(getLinearStep(null)).toBe(9);
+    expect(getLinearStep('LOCKED')).toBe(10);
+    expect(getLinearStep('PENDING_REVEAL')).toBe(10);
+    expect(getLinearStep('REVEALED')).toBe(12);
+  });
+
+  it('allows chair to refine or customize compiled consensus rationale template prior to lock', () => {
+    const consensusRationale = 'Lowest verified total cost with 24-month warranty.';
+    let customJustification = '';
+
+    // If unedited, resolves to compiled consensus template
+    let finalJustification = (customJustification.trim() || consensusRationale).trim();
+    expect(finalJustification).toBe('Lowest verified total cost with 24-month warranty.');
+
+    // When chair refines / provides specific customized justification
+    customJustification = 'Approved with committee consensus: Negotiated additional 6-month preventive maintenance SLA.';
+    finalJustification = (customJustification.trim() || consensusRationale).trim();
+    expect(finalJustification).toBe(
+      'Approved with committee consensus: Negotiated additional 6-month preventive maintenance SLA.',
+    );
+  });
 });

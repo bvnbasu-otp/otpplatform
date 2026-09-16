@@ -1,10 +1,15 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+﻿import { describe, expect, it, beforeEach } from 'vitest';
+import {
+  canTransitionPurchaseOrder,
+  canTransitionRfq,
+  canTransitionQuote,
+} from '@otp/domain';
 import { QuoteEvaluationServiceImpl } from '../evaluation/quote-evaluation-service-impl';
 import { InMemoryRepositories } from '../repositories/in-memory';
 import { createOtpServices } from '../factory/create-otp-services';
 import type { ActorContext } from '../types/actor-context';
 import type { QuoteSnapshot } from '../repositories/entities';
-import { TransitionError, ValidationError } from '../types/errors';
+import { ForbiddenError, TransitionError, ValidationError } from '../types/errors';
 
 const ORG_ID = 'org-1';
 const BUYER_MANAGER: ActorContext = {
@@ -271,6 +276,322 @@ describe('Discovery scoring ignores supplier source', () => {
     expect(result.value.length).toBeGreaterThan(0);
     for (const q of result.value) {
       expect((q as unknown as Record<string, unknown>).supplierId).toBeUndefined();
+    }
+  });
+});
+
+describe('Phase 3.5 Domain State Machines', () => {
+  it('enforces canonical Purchase Order state transitions: DRAFT -> PENDING_APPROVAL -> APPROVED -> ISSUED -> ACCEPTED -> IN_PROGRESS -> COMPLETED', () => {
+    // Valid canonical progression
+    expect(canTransitionPurchaseOrder('DRAFT', 'PENDING_APPROVAL')).toBe(true);
+    expect(canTransitionPurchaseOrder('PENDING_APPROVAL', 'APPROVED')).toBe(true);
+    expect(canTransitionPurchaseOrder('APPROVED', 'ISSUED')).toBe(true);
+    expect(canTransitionPurchaseOrder('ISSUED', 'ACCEPTED')).toBe(true);
+    expect(canTransitionPurchaseOrder('ACCEPTED', 'IN_PROGRESS')).toBe(true);
+    expect(canTransitionPurchaseOrder('IN_PROGRESS', 'COMPLETED')).toBe(true);
+
+    // Valid cancellation paths from intermediate states
+    expect(canTransitionPurchaseOrder('DRAFT', 'CANCELLED')).toBe(true);
+    expect(canTransitionPurchaseOrder('PENDING_APPROVAL', 'CANCELLED')).toBe(true);
+    expect(canTransitionPurchaseOrder('APPROVED', 'CANCELLED')).toBe(true);
+    expect(canTransitionPurchaseOrder('ISSUED', 'CANCELLED')).toBe(true);
+    expect(canTransitionPurchaseOrder('ACCEPTED', 'CANCELLED')).toBe(true);
+
+    // Invalid transitions and illegal forward jumps
+    expect(canTransitionPurchaseOrder('DRAFT', 'ISSUED')).toBe(false);
+    expect(canTransitionPurchaseOrder('DRAFT', 'ACCEPTED')).toBe(false);
+    expect(canTransitionPurchaseOrder('DRAFT', 'COMPLETED')).toBe(false);
+    expect(canTransitionPurchaseOrder('PENDING_APPROVAL', 'ISSUED')).toBe(false);
+    expect(canTransitionPurchaseOrder('IN_PROGRESS', 'CANCELLED')).toBe(false);
+    expect(canTransitionPurchaseOrder('COMPLETED', 'IN_PROGRESS')).toBe(false);
+    expect(canTransitionPurchaseOrder('COMPLETED', 'CANCELLED')).toBe(false);
+  });
+
+  it('enforces canonical RFQ transition: EVALUATING -> AWARDED', () => {
+    expect(canTransitionRfq('EVALUATING', 'AWARDED')).toBe(true);
+    expect(canTransitionRfq('EVALUATING', 'CANCELLED')).toBe(true);
+    expect(canTransitionRfq('DRAFT', 'AWARDED')).toBe(false);
+    expect(canTransitionRfq('OPEN', 'AWARDED')).toBe(false);
+    expect(canTransitionRfq('CLOSED', 'AWARDED')).toBe(false);
+  });
+
+  it('enforces canonical Quote transitions: FINAL -> SELECTED / NOT_SELECTED', () => {
+    expect(canTransitionQuote('FINAL', 'SELECTED')).toBe(true);
+    expect(canTransitionQuote('FINAL', 'NOT_SELECTED')).toBe(true);
+    expect(canTransitionQuote('FINAL', 'SUBMITTED')).toBe(false);
+    expect(canTransitionQuote('FINAL', 'REVISED')).toBe(false);
+    expect(canTransitionQuote('FINAL', 'DRAFT')).toBe(false);
+  });
+});
+
+describe('Phase 3.5 End-to-End Award, Reveal & Purchase Order Invariants', () => {
+  const VALID_JUSTIFICATION = 'Selected based on lowest total cost and verified 12-month warranty coverage.';
+
+  it('enforces AwardService validation rules (RFQ status, Quote status, COI clearance, single award)', async () => {
+    const seeded = await seedOpenRfqWithQuotes();
+    const { services, repos, rfqId, quoteAId, quoteBId } = seeded;
+
+    // 1. Cannot award when RFQ is still OPEN
+    const openAwardRes = await services.awards.createAward(
+      BUYER_APPROVER,
+      rfqId,
+      quoteAId,
+      VALID_JUSTIFICATION,
+    );
+    expect(openAwardRes.ok).toBe(false);
+    if (!openAwardRes.ok) {
+      expect(openAwardRes.error.message).toContain('RFQ must be in EVALUATING status');
+    }
+
+    // Finalize quotes and proceed through evaluation pipeline
+    await services.quotes.finalizeQuote(SUPPLIER_A, quoteAId);
+    await services.quotes.finalizeQuote(SUPPLIER_B, quoteBId);
+    await services.rfqs.close(BUYER_MANAGER, rfqId);
+    await services.quoteEvaluation.evaluateRfq(BUYER_MANAGER, rfqId);
+    await services.rfqs.startEvaluation(BUYER_MANAGER, rfqId);
+
+    // Attempting to award non-final quote fails (simulate quote in non-FINAL status)
+    const quoteA = await repos.quotes.findById(quoteAId);
+    await repos.quotes.save({ ...quoteA!, status: 'SUBMITTED' });
+
+    const nonFinalAwardRes = await services.awards.createAward(
+      BUYER_APPROVER,
+      rfqId,
+      quoteAId,
+      VALID_JUSTIFICATION,
+    );
+    expect(nonFinalAwardRes.ok).toBe(false);
+    if (!nonFinalAwardRes.ok) {
+      expect(nonFinalAwardRes.error.message).toContain('Only FINAL quotes can be awarded');
+    }
+
+    // Restore quoteA back to FINAL
+    await repos.quotes.save({ ...quoteA!, status: 'FINAL' });
+
+    // 2. COI conflict blocks award
+    await repos.coi.save({
+      id: 'coi-1',
+      rfqId,
+      profileId: BUYER_APPROVER.profileId,
+      status: 'DECLARED_CONFLICT',
+      declaredAt: new Date().toISOString(),
+    });
+
+    const coiBlockedRes = await services.awards.createAward(
+      BUYER_APPROVER,
+      rfqId,
+      quoteAId,
+      VALID_JUSTIFICATION,
+    );
+    expect(coiBlockedRes.ok).toBe(false);
+    if (!coiBlockedRes.ok) {
+      expect(coiBlockedRes.error.message).toContain('COI conflict blocks award');
+    }
+
+    // Clear COI for manager
+    const validAwardRes = await services.awards.createAward(
+      BUYER_MANAGER,
+      rfqId,
+      quoteAId,
+      VALID_JUSTIFICATION,
+    );
+    expect(validAwardRes.ok).toBe(true);
+    if (!validAwardRes.ok) throw validAwardRes.error;
+
+    // Verify award record state
+    expect(validAwardRes.value.status).toBe('PENDING_REVEAL');
+    expect(validAwardRes.value.quoteId).toBe(quoteAId);
+    expect(validAwardRes.value.justification).toBe(VALID_JUSTIFICATION);
+
+    // Verify winning and losing quote statuses
+    const updatedWinningQuote = await repos.quotes.findById(quoteAId);
+    expect(updatedWinningQuote?.status).toBe('SELECTED');
+    const updatedLosingQuote = await repos.quotes.findById(quoteBId);
+    expect(updatedLosingQuote?.status).toBe('NOT_SELECTED');
+
+    // Verify RFQ status transitioned to AWARDED
+    const updatedRfq = await repos.rfqs.findById(rfqId);
+    expect(updatedRfq?.status).toBe('AWARDED');
+
+    // 3. Duplicate award on already AWARDED RFQ is blocked
+    const duplicateAwardRes = await services.awards.createAward(
+      BUYER_MANAGER,
+      rfqId,
+      quoteAId,
+      VALID_JUSTIFICATION,
+    );
+    expect(duplicateAwardRes.ok).toBe(false);
+    if (!duplicateAwardRes.ok) {
+      expect(duplicateAwardRes.error.message).toContain('RFQ must be in EVALUATING status');
+    }
+
+    // If RFQ is reset to EVALUATING while award still exists, existing award check blocks it
+    await repos.rfqs.save({ ...updatedRfq!, status: 'EVALUATING' });
+    const existingAwardRes = await services.awards.createAward(
+      BUYER_MANAGER,
+      rfqId,
+      quoteAId,
+      VALID_JUSTIFICATION,
+    );
+    expect(existingAwardRes.ok).toBe(false);
+    if (!existingAwardRes.ok) {
+      expect(existingAwardRes.error.message).toContain('Award already exists for this RFQ');
+    }
+  });
+
+  it('enforces SupplierRevealService unmasking and idempotency', async () => {
+    const seeded = await seedRfqWithFinalQuotes();
+    const { services, rfqId, quoteAId } = seeded;
+
+    await services.rfqs.close(BUYER_MANAGER, rfqId);
+    await services.quoteEvaluation.evaluateRfq(BUYER_MANAGER, rfqId);
+    await services.rfqs.startEvaluation(BUYER_MANAGER, rfqId);
+
+    const awardRes = await services.awards.createAward(
+      BUYER_MANAGER,
+      rfqId,
+      quoteAId,
+      VALID_JUSTIFICATION,
+    );
+    expect(awardRes.ok).toBe(true);
+
+    // Reveal winner
+    const revealRes = await services.supplierReveal.revealForRfq(BUYER_MANAGER, rfqId);
+    expect(revealRes.rfqId).toBe(rfqId);
+    expect(revealRes.supplierId).toBe('supplier-a');
+    expect(revealRes.supplierBusinessName).toBe('Supplier A Co');
+    expect(revealRes.revealedAt).toBeDefined();
+
+    // Idempotent reveal
+    const secondRevealRes = await services.supplierReveal.revealForRfq(BUYER_MANAGER, rfqId);
+    expect(secondRevealRes.supplierId).toBe('supplier-a');
+    expect(secondRevealRes.supplierBusinessName).toBe('Supplier A Co');
+  });
+
+  it('enforces PurchaseOrderService snapshotting and complete lifecycle transitions', async () => {
+    const seeded = await seedRfqWithFinalQuotes();
+    const { services, rfqId, quoteAId } = seeded;
+
+    await services.rfqs.close(BUYER_MANAGER, rfqId);
+    await services.quoteEvaluation.evaluateRfq(BUYER_MANAGER, rfqId);
+    await services.rfqs.startEvaluation(BUYER_MANAGER, rfqId);
+
+    const awardRes = await services.awards.createAward(
+      BUYER_MANAGER,
+      rfqId,
+      quoteAId,
+      VALID_JUSTIFICATION,
+    );
+    if (!awardRes.ok) throw awardRes.error;
+
+    // 1. PO creation fails before award is REVEALED
+    const earlyPoRes = await services.purchaseOrders.createFromAward(
+      BUYER_MANAGER,
+      awardRes.value.id,
+    );
+    expect(earlyPoRes.ok).toBe(false);
+    if (!earlyPoRes.ok) {
+      expect(earlyPoRes.error.message).toContain('Award must be REVEALED before PO creation');
+    }
+
+    // Reveal award
+    await services.supplierReveal.revealForRfq(BUYER_MANAGER, rfqId);
+
+    // 2. PO creation succeeds with snapshot totalCost and currency
+    const poRes = await services.purchaseOrders.createFromAward(
+      BUYER_MANAGER,
+      awardRes.value.id,
+    );
+    expect(poRes.ok).toBe(true);
+    if (!poRes.ok) throw poRes.error;
+
+    const po = poRes.value;
+    expect(po.status).toBe('DRAFT');
+    expect(po.totalAmount).toBe(10000);
+    expect(po.currency).toBe('INR');
+    expect(po.supplierId).toBe('supplier-a');
+    expect(po.poNumber).toMatch(/^PO-\d{4}-\d{2}-\d{2}-/);
+
+    // 3. PO transition: DRAFT -> PENDING_APPROVAL
+    const pendingRes = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'PENDING_APPROVAL',
+    );
+    expect(pendingRes.ok).toBe(true);
+
+    // 4. PO transition: PENDING_APPROVAL -> APPROVED
+    const approvedRes = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'APPROVED',
+    );
+    expect(approvedRes.ok).toBe(true);
+
+    // 5. PO transition: APPROVED -> ISSUED (stamps issuedAt)
+    const issuedRes = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'ISSUED',
+    );
+    expect(issuedRes.ok).toBe(true);
+    if (!issuedRes.ok) throw issuedRes.error;
+    expect(issuedRes.value.issuedAt).toBeDefined();
+
+    // 6. Non-supplier cannot accept PO
+    const buyerAcceptRes = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'ACCEPTED',
+    );
+    expect(buyerAcceptRes.ok).toBe(false);
+    if (!buyerAcceptRes.ok) {
+      expect(buyerAcceptRes.error).toBeInstanceOf(ForbiddenError);
+    }
+
+    // Unauthorized supplier cannot accept PO
+    const wrongSupplierAcceptRes = await services.purchaseOrders.transition(
+      SUPPLIER_B,
+      po.id,
+      'ACCEPTED',
+    );
+    expect(wrongSupplierAcceptRes.ok).toBe(false);
+
+    // 7. Winning supplier accepts PO (stamps acknowledgedAt)
+    const acceptedRes = await services.purchaseOrders.transition(
+      SUPPLIER_A,
+      po.id,
+      'ACCEPTED',
+    );
+    expect(acceptedRes.ok).toBe(true);
+    if (!acceptedRes.ok) throw acceptedRes.error;
+    expect(acceptedRes.value.acknowledgedAt).toBeDefined();
+
+    // 8. Progress to IN_PROGRESS
+    const inProgressRes = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'IN_PROGRESS',
+    );
+    expect(inProgressRes.ok).toBe(true);
+
+    // 9. Complete PO
+    const completedRes = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'COMPLETED',
+    );
+    expect(completedRes.ok).toBe(true);
+
+    // 10. Rejects invalid transition once COMPLETED
+    const invalidAfterComplete = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'IN_PROGRESS',
+    );
+    expect(invalidAfterComplete.ok).toBe(false);
+    if (!invalidAfterComplete.ok) {
+      expect(invalidAfterComplete.error).toBeInstanceOf(TransitionError);
     }
   });
 });

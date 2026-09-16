@@ -407,6 +407,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                 disabled={busy}
                 onClick={() => void handleAwardRunnerUp()}
                 className="inline-flex items-center justify-center gap-1 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30 px-3 py-3 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-100 transition min-h-[44px]"
+                data-testid="runner-up-award-button"
               >
                 Auto-Award to Runner-Up →
               </button>

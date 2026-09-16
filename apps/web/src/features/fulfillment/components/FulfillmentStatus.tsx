@@ -57,7 +57,7 @@ export function PoActionButtons({
             type="button"
             disabled={disabled}
             onClick={() => onAction('ACCEPTED')}
-            className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-blue-700 disabled:opacity-50 transition flex items-center gap-1.5"
+            className="min-h-[44px] rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 transition flex items-center gap-1.5 mobile-touch-target"
           >
             <span>{disabled ? 'Accepting PO…' : '⚡ Accept Purchase Order'}</span>
             <span>→</span>
@@ -92,7 +92,7 @@ export function PoActionButtons({
           type="button"
           disabled={disabled}
           onClick={() => onAction(a.next)}
-          className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50 transition"
+          className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
         >
           {a.label}
         </button>

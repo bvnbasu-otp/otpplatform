@@ -90,8 +90,8 @@ export function WeightedTallyTable({
       )}
 
       {split && (
-        <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          The weighted leader is not the one most members chose. Worth saying out loud
+        <p className="mt-3 rounded-xl border border-amber-300 dark:border-amber-800/70 bg-amber-50/90 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200">
+          ⚠️ The weighted leader is not the one most members chose. Worth saying out loud
           in the justification.
         </p>
       )}

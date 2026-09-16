@@ -5,6 +5,7 @@ import { AboutPage, FaqPage, LandingPage, PricingPage } from '@/features/site';
 import { RequireRole, RoleProvider, useRoleContext } from '@/features/roles';
 import { QuickQuotePage } from '@/features/quick-quote';
 import { RfqIdentityProtectedComparisonPage } from '@/features/rfq';
+import { EvaluationDecisionCockpitPage } from '@/features/evaluation';
 import { SupplierRfqPage } from '@/features/supplier/pages/SupplierRfqPage';
 import { SupplierQuoteSubmitPage } from '@/features/supplier/pages/SupplierQuoteSubmitPage';
 import { SupplierCapabilitiesPage } from '@/features/supplier/pages/SupplierCapabilitiesPage';
@@ -344,6 +345,9 @@ export function App() {
               element={<MarketIntelligenceStepPage />}
             />
             <Route path="/rfq/:rfqId/evaluation" element={<RfqIdentityProtectedComparisonRoute />} />
+            <Route path="/rfq/:rfqId/cockpit" element={<EvaluationDecisionCockpitPage />} />
+            <Route path="/rfq/:rfqId/decision" element={<EvaluationDecisionCockpitPage />} />
+            <Route path="/rfqs/:rfqId/evaluation" element={<EvaluationDecisionCockpitPage />} />
             <Route path="/rfq/:rfqId/quotes" element={<RfqIdentityProtectedComparisonRoute />} />
             <Route path="/rfqs/:rfqId/quotes" element={<RfqIdentityProtectedComparisonRoute />} />
             {/* Legacy routes */}

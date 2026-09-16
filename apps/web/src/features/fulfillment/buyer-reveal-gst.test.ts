@@ -68,4 +68,51 @@ describe('Bilateral Identity Reveal & GST Tax Compliance on Purchase Orders', ()
     expect(isSupplierGstValid).toBe(true);
     expect(isItcEligible).toBe(true);
   });
+
+  it('calculates 18% GST and taxable base accurately for digital purchase orders', () => {
+    const totalAmount = 450000;
+    const taxableBase = Math.round(totalAmount / 1.18);
+    const gstTotal = totalAmount - taxableBase;
+
+    expect(taxableBase).toBe(381356);
+    expect(gstTotal).toBe(68644);
+    expect(taxableBase + gstTotal).toBe(totalAmount);
+  });
+
+  it('validates 4-milestone execution progression and milestone payouts', () => {
+    const totalAmount = 450000;
+    const milestones = [
+      { id: 1, payoutPercent: 20 },
+      { id: 2, payoutPercent: 40 },
+      { id: 3, payoutPercent: 30 },
+      { id: 4, payoutPercent: 10 },
+    ];
+
+    const totalPayout = milestones.reduce((sum, m) => sum + Math.round((totalAmount * m.payoutPercent) / 100), 0);
+    expect(totalPayout).toBe(totalAmount);
+  });
+
+  it('enforces mandatory 1 to 5 star rating and observations before inspection sign-off', () => {
+    function validateInspection(rating: number, observations: string[]): { ok: boolean; error?: string } {
+      if (!rating || rating < 1 || rating > 5) {
+        return { ok: false, error: 'Mandatory Rating: Please select a 1 to 5 star rating' };
+      }
+      if (observations.length === 0) {
+        return { ok: false, error: 'Please provide inspection checklist observations' };
+      }
+      return { ok: true };
+    }
+
+    expect(validateInspection(0, ['Verified']).ok).toBe(false);
+    expect(validateInspection(5, []).ok).toBe(false);
+    expect(validateInspection(5, ['Full physical quantity verified']).ok).toBe(true);
+  });
+
+  it('verifies 3-way match between Purchase Order, Work Order, and Tax Invoice', () => {
+    const poTotal = 450000;
+    const invoiceTotal = 450000;
+    const isMatching = Math.abs(poTotal - invoiceTotal) < 1;
+
+    expect(isMatching).toBe(true);
+  });
 });

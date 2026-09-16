@@ -6,6 +6,8 @@ import {
   getStageStepState,
   resolveLinearStepUrl,
   resolveStageNavigationUrl,
+  mapLinearStepToCoreState,
+  mapCoreStateToDefaultLinearStep,
   CORE_PROCUREMENT_STATES,
   CHRONOLOGICAL_STAGES,
   type CoreProcurementState,
@@ -126,6 +128,28 @@ describe('8 Core Procurement States Lifecycle Engine', () => {
 
   describe('Linear 15-Step Pipeline Derivations', () => {
     const ids = { requirementId: 'req-1', rfqId: 'rfq-1', poId: 'po-1' };
+
+    it('maps linear steps to 7-State Golden Path Core States', () => {
+      expect(mapLinearStepToCoreState(1)).toBe('DRAFT');
+      expect(mapLinearStepToCoreState(2)).toBe('QUOTING');
+      expect(mapLinearStepToCoreState(5)).toBe('QUOTING');
+      expect(mapLinearStepToCoreState(6)).toBe('EVALUATING');
+      expect(mapLinearStepToCoreState(8)).toBe('EVALUATING');
+      expect(mapLinearStepToCoreState(9)).toBe('AWARDED');
+      expect(mapLinearStepToCoreState(12)).toBe('AWARDED');
+      expect(mapLinearStepToCoreState(13)).toBe('PO_ISSUED');
+      expect(mapLinearStepToCoreState(14)).toBe('PO_ISSUED');
+      expect(mapLinearStepToCoreState(15)).toBe('SETTLED');
+    });
+
+    it('maps core states to default starting linear step numbers', () => {
+      expect(mapCoreStateToDefaultLinearStep('DRAFT')).toBe(1);
+      expect(mapCoreStateToDefaultLinearStep('QUOTING')).toBe(2);
+      expect(mapCoreStateToDefaultLinearStep('EVALUATING')).toBe(6);
+      expect(mapCoreStateToDefaultLinearStep('AWARDED')).toBe(9);
+      expect(mapCoreStateToDefaultLinearStep('PO_ISSUED')).toBe(13);
+      expect(mapCoreStateToDefaultLinearStep('SETTLED')).toBe(15);
+    });
 
     it('derives step 3 for market intelligence path', () => {
       expect(deriveLinearStepNumber(null, '/requirements/req-1/market-intelligence')).toBe(3);

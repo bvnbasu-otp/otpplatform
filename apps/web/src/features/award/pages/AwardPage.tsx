@@ -8,11 +8,12 @@ import {
   fetchVotingSummary,
 } from '@/features/governance/api/committee-votes';
 import { WeightedTallyTable } from '@/features/governance/components/WeightedTallyTable';
-import type {
-  CommitteeVote,
-  IdentityProtectedQuoteForVote,
-  VoteTallyEntry,
-  VotingSummary,
+import {
+  weightDisagreesWithHeadCount,
+  type CommitteeVote,
+  type IdentityProtectedQuoteForVote,
+  type VoteTallyEntry,
+  type VotingSummary,
 } from '@/features/governance/types/governance';
 import { revealSupplier, type RevealedWinner } from '@/features/reveal/api/reveal';
 import { fetchRevealedQuotes, type RevealedQuoteRow } from '@/features/reveal/api/fetch-revealed-quotes';
@@ -34,6 +35,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
   const [tally, setTally] = useState<VoteTallyEntry[]>([]);
   const [summary, setSummary] = useState<VotingSummary | null>(null);
   const [selectedQuote, setSelectedQuote] = useState('');
+  const [justification, setJustification] = useState('');
   const [confirmedAward, setConfirmedAward] = useState(true);
   const [existingPoId, setExistingPoId] = useState<string | null>(null);
   const [revealedWinner, setRevealedWinner] = useState<RevealedWinner | null>(null);
@@ -139,7 +141,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
     setBusy(true);
     setError(null);
     setSuccess(null);
-    const finalJustification = consensusRationale;
+    const finalJustification = (justification.trim() || consensusRationale).trim();
     const result = await lockAward(rfqId, selectedQuote, finalJustification);
     setBusy(false);
     if (!result.ok) {
@@ -590,7 +592,10 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                           name="award-quote-select"
                           value={q.quoteId}
                           checked={isSelected}
-                          onChange={() => setSelectedQuote(q.quoteId)}
+                          onChange={() => {
+                            setSelectedQuote(q.quoteId);
+                            setJustification('');
+                          }}
                           className="h-4 w-4 text-primary"
                         />
                         <div className="min-w-0">
@@ -628,29 +633,70 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 })}
               </div>
 
-              {/* Recorded Consensus Justification Box */}
+              {/* Threshold / Consensus Override Warning Banner */}
+              {summary?.leader?.quoteId && selectedQuote && selectedQuote !== summary.leader.quoteId && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50/90 dark:bg-amber-950/50 p-3.5 text-xs text-amber-900 dark:text-amber-200 shadow-2xs space-y-1"
+                  data-testid="threshold-warning"
+                >
+                  <div className="flex items-center gap-1.5 font-black text-amber-950 dark:text-amber-100">
+                    <span>⚠️</span>
+                    <span>Threshold / Consensus Override Advisory</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-900 dark:text-amber-300">
+                    The committee consensus recommendation is <strong className="font-extrabold text-amber-950 dark:text-amber-100">{summary.leader.anonymousLabel}</strong>. You have selected <strong className="font-extrabold text-amber-950 dark:text-amber-100">{winningQuote?.anonymousLabel || 'a different candidate'}</strong>. Please ensure the recorded justification below clarifies the rationale for this divergence before locking.
+                  </p>
+                </div>
+              )}
+
+              {/* Split Vote Advisory */}
+              {weightDisagreesWithHeadCount(tally) && (
+                <div
+                  className="rounded-xl border border-amber-300/80 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200 shadow-2xs space-y-1"
+                  data-testid="split-vote-advisory"
+                >
+                  <div className="flex items-center gap-1.5 font-bold text-amber-950 dark:text-amber-100">
+                    <span>⚖️</span>
+                    <span>Split Committee Vote Notice</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
+                    The weighted voting leader differs from the candidate with the highest head count. Verify the recorded tally before final confirmation.
+                  </p>
+                </div>
+              )}
+
+              {/* Consensus Justification & Award Rationale Box (Editable Template) */}
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1">
-                    <span>📋</span> Recorded Consensus Rationale
-                  </span>
+                  <label
+                    htmlFor="award-justification"
+                    className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1"
+                  >
+                    <span>📋</span> Consensus Rationale &amp; Award Justification (Editable Template)
+                  </label>
                   <Link
                     to={`/rfq/${rfqId}/committee`}
-                    className="text-[11px] font-bold text-primary hover:underline"
+                    className="min-h-[44px] inline-flex items-center text-[11px] font-bold text-primary hover:underline mobile-touch-target"
                   >
-                    ↺ Edit in Voting Room
+                    ↺ View Voting Room
                   </Link>
                 </div>
 
-                <div className="rounded-lg border bg-card p-3 shadow-2xs">
-                  <p className="text-xs text-foreground leading-relaxed italic">
-                    &ldquo;{consensusRationale}&rdquo;
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
-                  <span>✓ Automatically compiled from Step 8 committee votes</span>
-                  <span className="italic">Zero duplicate typing</span>
+                <div className="space-y-1.5">
+                  <textarea
+                    id="award-justification"
+                    rows={3}
+                    value={justification !== '' ? justification : consensusRationale}
+                    onChange={(e) => setJustification(e.target.value)}
+                    className="w-full rounded-lg border bg-card p-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none leading-relaxed"
+                    placeholder="Enter or refine formal award justification..."
+                    data-testid="award-justification-input"
+                  />
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+                    <span>✓ Pre-filled from committee consensus votes · Review &amp; edit before locking</span>
+                    <span className="italic">Editable template</span>
+                  </div>
                 </div>
               </div>
 
