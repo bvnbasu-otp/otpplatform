@@ -69,6 +69,12 @@ export interface SupplierOpportunityItem {
   invitedAt: string;
   actionUrl: string;
   isClosingSoon: boolean;
+  category?: string | null;
+  subcategory?: string | null;
+  deliveryCity?: string | null;
+  quantityText?: string | null;
+  status?: string;
+  statusLabel?: string;
 }
 
 export interface SupplierActiveQuoteItem {

@@ -55,12 +55,13 @@ export type BlindRfqRow = IdentityProtectedRfqRow;
 
 const LIST_COLUMNS =
   'rfq_id, public_ref, title, status, sourcing_mode, quote_deadline, min_quotes_required, ' +
-  'invitation_id, my_alias, my_invitation_status, invited_at, buyer_display_name';
+  'invitation_id, my_alias, my_invitation_status, invited_at, buyer_display_name, ' +
+  'category, subcategory, delivery_city, quantity, unit';
 
 const DETAIL_COLUMNS =
-  `${LIST_COLUMNS}, description, category, subcategory, requirement_mode, quantity, unit, ` +
+  `${LIST_COLUMNS}, description, requirement_mode, ` +
   'attributes, quality, commercial, required_by_mode, required_by_days, required_by_date, ' +
-  'fulfilment_mode, delivery_city, evaluation_weights';
+  'fulfilment_mode, evaluation_weights';
 
 export function toInvitation(row: IdentityProtectedRfqRow): SupplierInvitation {
   return {
@@ -77,6 +78,11 @@ export function toInvitation(row: IdentityProtectedRfqRow): SupplierInvitation {
     buyerAnonymous: row.buyer_display_name === 'Identity protected',
     sourcingMode: row.sourcing_mode,
     minQuotesRequired: row.min_quotes_required,
+    category: row.category ?? null,
+    subcategory: row.subcategory ?? null,
+    deliveryCity: row.delivery_city ?? null,
+    quantity: row.quantity === null || row.quantity === undefined ? null : Number(row.quantity),
+    unit: row.unit ?? null,
   };
 }
 

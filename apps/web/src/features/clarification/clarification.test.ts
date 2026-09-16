@@ -25,7 +25,8 @@ describe('Clarification Feature Module Tests', () => {
   let profileSpy: any;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
     profileSpy = vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
       profileId: 'p-1',
       email: 'buyer@test.com',
@@ -55,7 +56,7 @@ describe('Clarification Feature Module Tests', () => {
       eq: vi.fn(() => chain),
       order: vi.fn().mockResolvedValue({ data: mockRows, error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain);
+    vi.mocked(supabase.from).mockImplementation(() => chain);
 
     const result = await fetchClarificationMessagesForBuyer('rfq-1');
     expect(result.ok).toBe(true);
@@ -84,7 +85,7 @@ describe('Clarification Feature Module Tests', () => {
       eq: vi.fn(() => chain),
       order: vi.fn().mockResolvedValue({ data: mockRows, error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain);
+    vi.mocked(supabase.from).mockImplementation(() => chain);
 
     const result = await fetchClarificationMessagesForSupplier('rfq-1', 'inv-1');
     expect(result.ok).toBe(true);
@@ -100,7 +101,7 @@ describe('Clarification Feature Module Tests', () => {
     const chain: any = {
       insert: mockInsert,
     };
-    vi.mocked(supabase.from).mockReturnValue(chain);
+    vi.mocked(supabase.from).mockImplementation(() => chain);
 
     const res = await postClarificationMessage(
       'rfq-1',
@@ -128,7 +129,7 @@ describe('Clarification Feature Module Tests', () => {
         error: null,
       }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain);
+    vi.mocked(supabase.from).mockImplementation(() => chain);
 
     const res = await fetchRfqStatus('rfq-1');
     expect(res.ok).toBe(true);

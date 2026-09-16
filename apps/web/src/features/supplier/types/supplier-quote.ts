@@ -47,6 +47,11 @@ export interface SupplierInvitation {
   buyerReliabilityTier?: string;
   sourcingMode: SourcingMode | null;
   minQuotesRequired: number | null;
+  category?: string | null;
+  subcategory?: string | null;
+  deliveryCity?: string | null;
+  quantity?: number | null;
+  unit?: string | null;
 }
 
 /** Everything a supplier needs to price the job, and nothing that names the buyer. */

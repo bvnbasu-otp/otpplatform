@@ -10,7 +10,10 @@ export function SupplierQuoteCard({ quote }: SupplierQuoteCardProps) {
   const isEvaluation = quote.rfqStatus === 'EVALUATING';
 
   return (
-    <article className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 space-y-3 transition-all hover:border-primary/40 shadow-2xs">
+    <article
+      className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 space-y-3 transition-all hover:border-primary/40 shadow-2xs"
+      data-testid={`supplier-quote-card-${quote.id}`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -49,7 +52,7 @@ export function SupplierQuoteCard({ quote }: SupplierQuoteCardProps) {
       <div className="pt-0.5">
         <Link
           to={quote.actionUrl}
-          className="min-h-[48px] w-full flex items-center justify-center gap-1.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-foreground px-4 py-2.5 text-xs font-bold shadow-2xs active:scale-98 transition"
+          className="min-h-[48px] w-full flex items-center justify-center gap-1.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-foreground px-4 py-2.5 text-xs font-bold shadow-2xs active:scale-98 transition mobile-touch-target"
         >
           <span>View Submitted Quote</span>
           <span>→</span>

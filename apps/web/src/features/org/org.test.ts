@@ -25,7 +25,8 @@ const mockSwitchFn = vi.fn();
 
 describe('Org Feature Module Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
     mockSupabaseClient.rpc.mockReset();
     mockSwitchFn.mockReset();
   });

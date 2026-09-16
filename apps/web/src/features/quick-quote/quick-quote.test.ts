@@ -21,7 +21,8 @@ vi.mock('@/lib/supabase', () => {
 
 describe('Quick Quote Feature Module Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
   });
 
   it('provides helpful, human-friendly copy for all quick-quote failure states', () => {

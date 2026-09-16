@@ -68,6 +68,8 @@ export function useSupplierHomeData() {
         const countdown = formatDeadlineCountdown(inv.quoteDeadline);
         const deadlineMs = inv.quoteDeadline ? new Date(inv.quoteDeadline).getTime() : null;
         const isClosingSoon = deadlineMs ? deadlineMs - Date.now() < 24 * 60 * 60 * 1000 : false;
+        const quantityText = inv.quantity ? `${inv.quantity} ${inv.unit || 'units'}` : null;
+        const statusLabel = inv.status === 'VIEWED' ? 'Viewed' : 'New Opportunity';
 
         return {
           id: inv.invitationId,
@@ -82,6 +84,12 @@ export function useSupplierHomeData() {
           invitedAt: inv.invitedAt,
           actionUrl: `/supplier/rfq/${inv.rfqId}`,
           isClosingSoon,
+          category: inv.category || null,
+          subcategory: inv.subcategory || null,
+          deliveryCity: inv.deliveryCity || null,
+          quantityText,
+          status: inv.status,
+          statusLabel,
         };
       });
   }, [invitations]);

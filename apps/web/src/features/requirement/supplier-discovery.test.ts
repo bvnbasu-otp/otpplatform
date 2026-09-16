@@ -43,7 +43,8 @@ describe('Phase 2.3 — Supplier Discovery Feature Tests', () => {
   let profileSpy: any;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
     profileSpy = vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
       profileId: 'prof-buyer-1',
       email: 'buyer@apex.test',

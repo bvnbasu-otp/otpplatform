@@ -24,7 +24,8 @@ vi.mock('@/features/performance/api/fetch-performance', () => ({
 
 describe('Review Feature Module Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
   });
 
   it('rejects review eligibility if review has already been submitted', async () => {

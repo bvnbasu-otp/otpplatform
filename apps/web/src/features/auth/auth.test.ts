@@ -26,6 +26,7 @@ function createMockQueryBuilder(data: any = null, error: any = null) {
     eq: vi.fn().mockImplementation(() => builder),
     or: vi.fn().mockImplementation(() => builder),
     in: vi.fn().mockImplementation(() => builder),
+    order: vi.fn().mockImplementation(() => builder),
     limit: vi.fn().mockImplementation(() => {
       const arrayData = Array.isArray(data) ? data : data ? [data] : [];
       return Promise.resolve({ data: arrayData, error });
@@ -46,7 +47,9 @@ function createMockQueryBuilder(data: any = null, error: any = null) {
 
 describe('Auth Feature & Portal Role Resolution', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.auth.getUser).mockReset();
     vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
     vi.mocked(supabase.from).mockImplementation(() => createMockQueryBuilder([]));
   });

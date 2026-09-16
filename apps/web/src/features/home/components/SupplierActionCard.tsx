@@ -16,6 +16,7 @@ export function SupplierActionCard({ action }: SupplierActionCardProps) {
           ? 'border-blue-500/90 bg-blue-50/40 dark:bg-blue-950/25 ring-1 ring-blue-400/30 shadow-xs'
           : 'border-amber-400/90 bg-amber-50/40 dark:bg-amber-950/25 ring-1 ring-amber-400/30 shadow-xs'
       }`}
+      data-testid={`supplier-action-card-${action.id}`}
     >
       {/* Top Meta Row */}
       <div className="flex items-start justify-between gap-2">
@@ -61,7 +62,7 @@ export function SupplierActionCard({ action }: SupplierActionCardProps) {
       <div className="pt-0.5">
         <Link
           to={action.actionUrl}
-          className={`min-h-[48px] w-full flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-extrabold shadow-sm active:scale-98 transition ${
+          className={`min-h-[48px] w-full flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-extrabold shadow-sm active:scale-98 transition mobile-touch-target ${
             isP0
               ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'
               : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20'

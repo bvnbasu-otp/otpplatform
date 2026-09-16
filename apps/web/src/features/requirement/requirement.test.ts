@@ -33,7 +33,8 @@ describe('Requirement Feature Module Tests', () => {
   let profileSpy: any;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
     profileSpy = vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
       profileId: 'prof-buyer-1',
       email: 'procurement@apex.test',
@@ -59,7 +60,7 @@ describe('Requirement Feature Module Tests', () => {
         },
         error: null,
       });
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation(() => mockChain);
 
       const res = await fetchUserOrganization();
       expect(res.ok).toBe(true);
@@ -85,7 +86,7 @@ describe('Requirement Feature Module Tests', () => {
         },
         error: null,
       });
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation(() => mockChain);
 
       const res = await fetchUserOrganization();
       expect(res.ok).toBe(true);
@@ -116,7 +117,7 @@ describe('Requirement Feature Module Tests', () => {
         },
         error: null,
       });
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation(() => mockChain);
 
       const res = await fetchUserOrganization();
       expect(res.ok).toBe(true);
@@ -149,7 +150,7 @@ describe('Requirement Feature Module Tests', () => {
         data: null,
         error: { message: 'Database query timeout' },
       });
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation(() => mockChain);
 
       const res = await fetchUserOrganization();
       expect(res.ok).toBe(false);
@@ -182,7 +183,7 @@ describe('Requirement Feature Module Tests', () => {
       ];
 
       const mockChain = createSupabaseQueryMock({ data: mockReqRows, error: null });
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation(() => mockChain);
 
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: [{ rfq_id: 'rfq-1', quotes_count: 4 }],
@@ -233,7 +234,7 @@ describe('Requirement Feature Module Tests', () => {
       ];
 
       const mockChain = createSupabaseQueryMock({ data: mockReqRows, error: null });
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation(() => mockChain);
 
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: [{ rfq_id: 'rfq-2', quotes_count: 5 }],
@@ -260,7 +261,7 @@ describe('Requirement Feature Module Tests', () => {
         data: null,
         error: { message: 'Failed to fetch requirements' },
       });
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation(() => mockChain);
 
       const res = await fetchOrganizationRequirements('org-apex-1');
       expect(res.ok).toBe(false);
@@ -271,7 +272,7 @@ describe('Requirement Feature Module Tests', () => {
 
     it('returns error when rpc quotes count query fails', async () => {
       const mockChain = createSupabaseQueryMock({ data: [], error: null });
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation(() => mockChain);
 
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: null,
