@@ -4,20 +4,34 @@ import {
   calculatePaymentAllocatedAmount,
   calculatePaymentUnallocatedAmount,
   calculatePoSettlementSummary,
+  calculateVendorSettlementStatement,
   deriveInvoicePaymentStatus,
+  exportToTallyPaymentVoucher,
+  exportToZohoPaymentReceipt,
   generatePoSettlementCertificate,
   isPurchaseOrderFullySettled,
   validatePaymentAllocation,
+  type CreditDebitNote,
+  type CreditDebitNoteStatus,
+  type CreditDebitNoteType,
   type InvoicePaymentSummary,
   type PaymentAllocationSummary,
   type PoSettlementCertificate,
   type PoSettlementSummary,
+  type VendorSettlementStatement,
+  type ZohoPaymentReceiptPayload,
 } from '@otp/domain';
 import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
-import type { Payment, PaymentAllocationEntity } from '../repositories/entities';
+import type {
+  CreditDebitNoteEntity,
+  Invoice,
+  Payment,
+  PaymentAllocationEntity,
+  PurchaseOrder,
+} from '../repositories/entities';
 import type { ActorContext } from '../types/actor-context';
-import { NotFoundError, ValidationError } from '../types/errors';
+import { ForbiddenError, NotFoundError, ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
 import { auditLog, requireOrgAccess } from './service-helpers';
 import { createId, timestamp } from '../repositories/in-memory';
@@ -25,6 +39,7 @@ import { createId, timestamp } from '../repositories/in-memory';
 export interface RecordPaymentOptions {
   purchaseOrderId?: string | null;
   reference?: string | null;
+  paymentReference?: string | null;
   notes?: string | null;
   allocations?: Array<{
     invoiceId: string;
@@ -34,6 +49,8 @@ export interface RecordPaymentOptions {
 }
 
 export class PaymentService {
+  private activeReversals = new Set<string>();
+
   constructor(
     private readonly repos: Repositories,
     private readonly audit: AuditService,
@@ -825,5 +842,532 @@ export class PaymentService {
     );
 
     return ok(cert);
+  }
+
+  /**
+   * Atomically reverses a payment allocation and synchronizes parent invoice & payment state (Phase 5C.3).
+   */
+  async reversePaymentAllocation(
+    actor: ActorContext,
+    params: {
+      allocationId: string;
+      reason: string;
+      idempotencyKey?: string | null;
+    },
+  ): Promise<Result<PaymentAllocationEntity, Error>> {
+    const { allocationId, reason, idempotencyKey } = params;
+
+    if (!reason || reason.trim() === '') {
+      return err(new ValidationError('Reversal reason is required (REV-5C3-INVALID-REASON)'));
+    }
+
+    if (this.activeReversals.has(allocationId)) {
+      return err(new ValidationError('Concurrent reversal operation in progress for this allocation (REV-5C3-CONCURRENT-LOCK)'));
+    }
+    this.activeReversals.add(allocationId);
+
+    try {
+      if (!this.repos.paymentAllocations) {
+        return err(new ValidationError('Payment allocation repository is not configured'));
+      }
+
+      const allocation = await this.repos.paymentAllocations.findById(allocationId);
+      if (!allocation) {
+        return err(new NotFoundError(`Payment allocation not found (REV-5C3-NOT-FOUND)`));
+      }
+
+      // 5C3-RED-01: Check if already reversed or voided
+      if (allocation.status === 'REVERSED' || allocation.status === 'VOIDED') {
+        return err(
+          new ValidationError(`Payment allocation is already ${allocation.status} (REV-5C3-ALREADY-REVERSED)`),
+        );
+      }
+
+      const payment = await this.repos.payments.findById(allocation.paymentId);
+      if (!payment) {
+        return err(new NotFoundError('Associated payment not found (REV-5C3-PAY-NOT-FOUND)'));
+      }
+
+      const invoice = await this.repos.invoices.findById(allocation.invoiceId);
+      if (!invoice) {
+        return err(new NotFoundError('Associated invoice not found (REV-5C3-INV-NOT-FOUND)'));
+      }
+
+      // Resolve PO and Org
+      let poId = invoice.purchaseOrderId || payment.purchaseOrderId || null;
+      if (!poId && invoice.workOrderId) {
+        const wo = await this.repos.workOrders.findById(invoice.workOrderId);
+        if (wo) poId = wo.purchaseOrderId;
+      }
+
+      const po = poId ? await this.repos.purchaseOrders.findById(poId) : null;
+      const orgId = po?.organizationId || null;
+
+      // 5C3-RED-03: Authorization check (Buyer OWNER/MANAGER or Platform Admin)
+      if (!actor.isPlatformAdmin) {
+        if (!orgId || actor.organizationId !== orgId || !['OWNER', 'MANAGER'].includes(actor.orgRole || '')) {
+          return err(
+            new ForbiddenError('Unauthorized: only buyer OWNER or MANAGER can reverse payment allocations (REV-5C3-UNAUTHORIZED)'),
+          );
+        }
+      }
+
+      // 5C3-RED-02: Closed PO Guard (Cannot reverse on COMPLETED PO)
+      if (po && po.status === 'COMPLETED') {
+        return err(
+          new ValidationError('Cannot reverse payment allocation on a COMPLETED purchase order (REV-5C3-PO-CLOSED)'),
+        );
+      }
+
+      // Invariant checks: 5C3-RED-08 & 5C3-RED-09
+      const currentPaid = invoice.paidAmount ?? 0;
+      if (currentPaid < allocation.allocatedAmount) {
+        return err(
+          new ValidationError('Reversal invariant violation: allocation amount exceeds invoice paid balance (REV-5C3-INVALID-INVOICE-PAID)'),
+        );
+      }
+
+      const currentUnallocated = payment.unallocatedAmount ?? 0;
+      if (currentUnallocated + allocation.allocatedAmount > payment.amount) {
+        return err(
+          new ValidationError('Reversal invariant violation: resulting unallocated amount exceeds payment total (REV-5C3-INVALID-PAYMENT-UNALLOC)'),
+        );
+      }
+
+      const now = timestamp();
+      const updatedAllocation: PaymentAllocationEntity = {
+        ...allocation,
+        status: 'REVERSED',
+        notes: reason ? `${allocation.notes ? allocation.notes + ' ' : ''}[REVERSED: ${reason}]` : allocation.notes,
+        updatedAt: now,
+      };
+
+      await this.repos.paymentAllocations.save(updatedAllocation);
+
+      // Sync Payment unallocated_amount
+      const allPaymentAllocs = await this.repos.paymentAllocations.findByPaymentId(payment.id);
+      const newUnallocated = calculatePaymentUnallocatedAmount(payment.amount, allPaymentAllocs);
+      await this.repos.payments.save({
+        ...payment,
+        unallocatedAmount: newUnallocated,
+      });
+
+      // Sync Invoice paid_amount, balance_due, and status
+      const allInvoiceAllocs = await this.repos.paymentAllocations.findByInvoiceId(invoice.id);
+      const newPaid = calculateInvoicePaidAmount(allInvoiceAllocs);
+      const newBal = calculateInvoiceBalanceDue(invoice.amount, allInvoiceAllocs);
+      const newStatus = deriveInvoicePaymentStatus(invoice.amount, newPaid, invoice.status);
+
+      await this.repos.invoices.save({
+        ...invoice,
+        paidAmount: newPaid,
+        balanceDue: newBal,
+        status: newStatus,
+      });
+
+      await auditLog(
+        this.audit,
+        actor,
+        'payment_allocation',
+        allocation.id,
+        'payment_allocation.reversed',
+        null,
+        {
+          paymentId: payment.id,
+          invoiceId: invoice.id,
+          purchaseOrderId: poId,
+          reversedAmount: allocation.allocatedAmount,
+          reason,
+          idempotencyKey,
+        },
+      );
+
+      return ok(updatedAllocation);
+    } finally {
+      this.activeReversals.delete(allocationId);
+    }
+  }
+
+  /**
+   * Issues a statutory Credit or Debit Note against an invoice (Phase 5C.3).
+   */
+  async issueCreditDebitNote(
+    actor: ActorContext,
+    params: {
+      organizationId: string;
+      invoiceId: string;
+      purchaseOrderId?: string | null;
+      noteType: CreditDebitNoteType;
+      amount: number;
+      taxAmount?: number;
+      reason: string;
+      noteNumber?: string;
+      idempotencyKey?: string | null;
+    },
+  ): Promise<Result<CreditDebitNoteEntity, Error>> {
+    const { organizationId, invoiceId, noteType, amount, taxAmount = 0, reason, noteNumber } = params;
+
+    if (amount <= 0) {
+      return err(new ValidationError('Note amount must be strictly greater than 0 (CDN-5C3-INVALID-AMOUNT)'));
+    }
+
+    if (noteType !== 'DEBIT_NOTE' && noteType !== 'CREDIT_NOTE') {
+      return err(new ValidationError('Note type must be DEBIT_NOTE or CREDIT_NOTE (CDN-5C3-INVALID-TYPE)'));
+    }
+
+    if (taxAmount < 0) {
+      return err(new ValidationError('Tax amount must be non-negative (CDN-5C3-INVALID-TAX)'));
+    }
+
+    if (!reason || reason.trim() === '') {
+      return err(new ValidationError('Reason is required when issuing a credit/debit note (CDN-5C3-INVALID-REASON)'));
+    }
+
+    const access = requireOrgAccess(actor, organizationId, ['OWNER', 'MANAGER']);
+    if (!access.ok) return access;
+
+    const invoice = await this.repos.invoices.findById(invoiceId);
+    if (!invoice) {
+      return err(new NotFoundError('Target invoice not found (CDN-5C3-INV-NOT-FOUND)'));
+    }
+
+    if (invoice.status === 'REJECTED') {
+      return err(new ValidationError('Cannot issue credit or debit note against a REJECTED invoice (CDN-5C3-INVOICE-REJECTED)'));
+    }
+
+    // 5C3-RED-04: Validate Debit Note Balance Cap (Cannot exceed invoice amount)
+    if (noteType === 'DEBIT_NOTE' && this.repos.creditDebitNotes) {
+      const existingNotes = await this.repos.creditDebitNotes.findByInvoiceId(invoice.id);
+      const existingDebits = existingNotes
+        .filter((n) => n.noteType === 'DEBIT_NOTE' && (n.status === 'ISSUED' || n.status === 'APPLIED'))
+        .reduce((sum, n) => sum + Number(n.amount || 0), 0);
+
+      if (existingDebits + amount > invoice.amount) {
+        return err(
+          new ValidationError(
+            `Debit note amount (₹${existingDebits + amount}) exceeds permitted invoice ceiling of ₹${invoice.amount} (CDN-5C3-EXCEEDS-BALANCE)`,
+          ),
+        );
+      }
+    }
+
+    let poId = params.purchaseOrderId || invoice.purchaseOrderId || null;
+    if (!poId && invoice.workOrderId) {
+      const wo = await this.repos.workOrders.findById(invoice.workOrderId);
+      if (wo) poId = wo.purchaseOrderId;
+    }
+
+    const now = timestamp();
+    const prefix = noteType === 'DEBIT_NOTE' ? 'DN' : 'CN';
+    const finalNoteNumber =
+      noteNumber || `${prefix}-${now.slice(0, 10).replace(/-/g, '')}-${createId().slice(0, 8).toUpperCase()}`;
+
+    const note: CreditDebitNoteEntity = {
+      id: createId(),
+      organizationId,
+      purchaseOrderId: poId,
+      invoiceId: invoice.id,
+      noteNumber: finalNoteNumber,
+      noteType,
+      amount,
+      taxAmount,
+      reason,
+      status: 'ISSUED',
+      createdBy: actor.profileId,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const savedNote = this.repos.creditDebitNotes
+      ? await this.repos.creditDebitNotes.save(note)
+      : note;
+
+    await auditLog(
+      this.audit,
+      actor,
+      'credit_debit_note',
+      savedNote.id,
+      'credit_debit_note.issued',
+      null,
+      {
+        noteNumber: finalNoteNumber,
+        noteType,
+        amount,
+        taxAmount,
+        invoiceId: invoice.id,
+        purchaseOrderId: poId,
+        reason,
+      },
+    );
+
+    return ok(savedNote);
+  }
+
+  /**
+   * Retrieves full Multi-PO Cumulative Vendor Settlement Statement (Phase 5C.3).
+   */
+  async getVendorSettlementStatement(
+    actor: ActorContext,
+    params: {
+      organizationId: string;
+      supplierId: string;
+      fromDate?: string;
+      toDate?: string;
+    },
+  ): Promise<Result<VendorSettlementStatement, Error>> {
+    const { organizationId, supplierId, fromDate, toDate } = params;
+
+    // 5C3-RED-06: Cross-tenant ERP access check
+    if (!actor.isPlatformAdmin) {
+      const isBuyer = actor.organizationId === organizationId;
+      const isSupplier = actor.supplierIds?.includes(supplierId);
+      if (!isBuyer && !isSupplier) {
+        return err(
+          new ForbiddenError(
+            'Unauthorized: Caller cannot access vendor settlement statements for this tenant (VSS-5C3-UNAUTHORIZED)',
+          ),
+        );
+      }
+    }
+
+    // Retrieve all POs for organization & supplier
+    // We scan purchaseOrders store or repo
+    const allPos: PurchaseOrder[] = [];
+    if ((this.repos.purchaseOrders as any).findByOrganizationId) {
+      const pList = await (this.repos.purchaseOrders as any).findByOrganizationId(organizationId);
+      allPos.push(...pList.filter((p: PurchaseOrder) => p.supplierId === supplierId));
+    } else {
+      // In-memory scan fallback
+      const inMemStore = (this.repos.purchaseOrders as any).store || (this.repos as any).purchaseOrders;
+      if (inMemStore && inMemStore instanceof Map) {
+        for (const p of inMemStore.values()) {
+          if (p.organizationId === organizationId && p.supplierId === supplierId) {
+            allPos.push(p);
+          }
+        }
+      }
+    }
+
+    // Collect all invoices for these POs
+    const allInvoices: Invoice[] = [];
+    for (const po of allPos) {
+      let invList = await this.repos.invoices.findByPurchaseOrderId(po.id);
+      if (invList.length === 0) {
+        const wo = await this.repos.workOrders.findByPurchaseOrderId(po.id);
+        if (wo) {
+          invList = await this.repos.invoices.findByWorkOrderId(wo.id);
+        }
+      }
+      allInvoices.push(...invList);
+    }
+
+    // Collect all payments for these POs
+    const allPayments: Payment[] = [];
+    for (const po of allPos) {
+      let pList: Payment[] = [];
+      if (this.repos.payments.findByPurchaseOrderId) {
+        pList = await this.repos.payments.findByPurchaseOrderId(po.id);
+      }
+      if (pList.length === 0 && this.repos.payments.findByInvoiceId) {
+        for (const inv of allInvoices.filter((i) => i.purchaseOrderId === po.id)) {
+          const invPays = await this.repos.payments.findByInvoiceId(inv.id);
+          pList.push(...invPays);
+        }
+      }
+      allPayments.push(...pList);
+    }
+
+    // Deduplicate payments
+    const uniquePayments: Payment[] = [];
+    const seenPay = new Set<string>();
+    for (const p of allPayments) {
+      if (!seenPay.has(p.id)) {
+        seenPay.add(p.id);
+        uniquePayments.push(p);
+      }
+    }
+
+    // Collect allocations across invoices
+    const allAllocations: PaymentAllocationEntity[] = [];
+    if (this.repos.paymentAllocations) {
+      for (const inv of allInvoices) {
+        const allocs = await this.repos.paymentAllocations.findByInvoiceId(inv.id);
+        allAllocations.push(...allocs);
+      }
+    }
+
+    // Collect credit & debit notes
+    let allNotes: CreditDebitNoteEntity[] = [];
+    if (this.repos.creditDebitNotes) {
+      allNotes = await this.repos.creditDebitNotes.findByOrganizationId(organizationId);
+    }
+
+    const statement = calculateVendorSettlementStatement({
+      buyerOrganizationId: organizationId,
+      supplierId,
+      periodStart: fromDate || null,
+      periodEnd: toDate || null,
+      purchaseOrders: allPos,
+      invoices: allInvoices,
+      payments: uniquePayments,
+      allocations: allAllocations,
+      creditDebitNotes: allNotes,
+    });
+
+    return ok(statement);
+  }
+
+  /**
+   * Exports an approved payment and allocations into statutory Tally XML format (Phase 5C.3).
+   */
+  async exportTallyPaymentVoucher(
+    actor: ActorContext,
+    params: {
+      poId?: string;
+      paymentId: string;
+      bankLedgerName?: string;
+    },
+  ): Promise<Result<string, Error>> {
+    const payment = await this.repos.payments.findById(params.paymentId);
+    if (!payment) return err(new NotFoundError('Payment not found'));
+
+    let poId: string | null = params.poId || payment.purchaseOrderId || null;
+    if (!poId && payment.invoiceId) {
+      const inv = await this.repos.invoices.findById(payment.invoiceId);
+      if (inv) {
+        poId = inv.purchaseOrderId || null;
+        if (!poId && inv.workOrderId) {
+          const wo = await this.repos.workOrders.findById(inv.workOrderId);
+          if (wo) poId = wo.purchaseOrderId || null;
+        }
+      }
+    }
+
+    const po = poId ? await this.repos.purchaseOrders.findById(poId) : null;
+
+    // 5C3-RED-06: Cross-tenant authorization check
+    if (!actor.isPlatformAdmin) {
+      const isBuyer = po && actor.organizationId === po.organizationId;
+      const isSupplier = po && actor.supplierIds?.includes(po.supplierId);
+      if (!isBuyer && !isSupplier) {
+        return err(
+          new ForbiddenError('Unauthorized: Access denied to payment voucher export (5C3-ERP-UNAUTHORIZED)'),
+        );
+      }
+    }
+
+    // Load allocations
+    const allocs = this.repos.paymentAllocations
+      ? await this.repos.paymentAllocations.findByPaymentId(payment.id)
+      : [];
+
+    const activeAllocs = allocs.filter((a) => a.status === 'ALLOCATED');
+    const allocationItems: Array<{ invoiceNumber: string; allocatedAmount: number }> = [];
+
+    for (const a of activeAllocs) {
+      const inv = await this.repos.invoices.findById(a.invoiceId);
+      if (inv) {
+        allocationItems.push({
+          invoiceNumber: inv.invoiceNumber,
+          allocatedAmount: a.allocatedAmount,
+        });
+      }
+    }
+
+    const supplier = po?.supplierId ? await this.repos.suppliers.findById(po.supplierId) : null;
+    const supplierName = supplier?.businessName || 'Supplier';
+
+    const xml = exportToTallyPaymentVoucher({
+      paymentId: payment.id,
+      paymentDate: payment.recordedAt ? payment.recordedAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      paymentReference: (payment as any).reference || payment.id || null,
+      paymentMethod: payment.method,
+      amount: payment.amount,
+      currency: payment.currency,
+      bankLedgerName: params.bankLedgerName || 'Bank Account',
+      supplierName,
+      poNumber: po?.poNumber || po?.id,
+      allocations: allocationItems,
+      unallocatedAmount: payment.unallocatedAmount,
+    });
+
+    return ok(xml);
+  }
+
+  /**
+   * Exports an approved payment and allocations into Zoho Books JSON format (Phase 5C.3).
+   */
+  async exportZohoPaymentReceipt(
+    actor: ActorContext,
+    params: {
+      poId?: string;
+      paymentId: string;
+      bankAccountName?: string;
+    },
+  ): Promise<Result<ZohoPaymentReceiptPayload, Error>> {
+    const payment = await this.repos.payments.findById(params.paymentId);
+    if (!payment) return err(new NotFoundError('Payment not found'));
+
+    let poId: string | null = params.poId || payment.purchaseOrderId || null;
+    if (!poId && payment.invoiceId) {
+      const inv = await this.repos.invoices.findById(payment.invoiceId);
+      if (inv) {
+        poId = inv.purchaseOrderId || null;
+        if (!poId && inv.workOrderId) {
+          const wo = await this.repos.workOrders.findById(inv.workOrderId);
+          if (wo) poId = wo.purchaseOrderId || null;
+        }
+      }
+    }
+
+    const po = poId ? await this.repos.purchaseOrders.findById(poId) : null;
+
+    // 5C3-RED-06: Cross-tenant authorization check
+    if (!actor.isPlatformAdmin) {
+      const isBuyer = po && actor.organizationId === po.organizationId;
+      const isSupplier = po && actor.supplierIds?.includes(po.supplierId);
+      if (!isBuyer && !isSupplier) {
+        return err(
+          new ForbiddenError('Unauthorized: Access denied to payment receipt export (5C3-ERP-UNAUTHORIZED)'),
+        );
+      }
+    }
+
+    const allocs = this.repos.paymentAllocations
+      ? await this.repos.paymentAllocations.findByPaymentId(payment.id)
+      : [];
+
+    const activeAllocs = allocs.filter((a) => a.status === 'ALLOCATED');
+    const allocationItems: Array<{ invoiceNumber: string; invoiceId: string; allocatedAmount: number }> = [];
+
+    for (const a of activeAllocs) {
+      const inv = await this.repos.invoices.findById(a.invoiceId);
+      if (inv) {
+        allocationItems.push({
+          invoiceNumber: inv.invoiceNumber,
+          invoiceId: inv.id,
+          allocatedAmount: a.allocatedAmount,
+        });
+      }
+    }
+
+    const supplier = po?.supplierId ? await this.repos.suppliers.findById(po.supplierId) : null;
+    const supplierName = supplier?.businessName || 'Supplier';
+
+    const payload = exportToZohoPaymentReceipt({
+      paymentId: payment.id,
+      paymentDate: payment.recordedAt ? payment.recordedAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      paymentReference: (payment as any).reference || payment.id || null,
+      paymentMode: payment.method === 'CHEQUE' ? 'Check' : 'Bank Transfer',
+      amount: payment.amount,
+      currency: payment.currency,
+      bankAccountName: params.bankAccountName || 'Bank Account',
+      supplierName,
+      poNumber: po?.poNumber || po?.id,
+      allocations: allocationItems,
+      unallocatedAmount: payment.unallocatedAmount,
+    });
+
+    return ok(payload);
   }
 }

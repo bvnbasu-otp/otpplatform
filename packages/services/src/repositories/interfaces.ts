@@ -3,6 +3,7 @@ import type {
   Award,
   CoiDeclaration,
   CommitteeVote,
+  CreditDebitNoteEntity,
   Invoice,
   InvoiceLineItemEntity,
   Payment,
@@ -91,6 +92,9 @@ export interface InvoiceLineItemRepository {
 
 export interface PurchaseOrderRepository {
   findById(id: string): Promise<PurchaseOrder | null>;
+  findByOrganizationId?(orgId: string): Promise<PurchaseOrder[]>;
+  findBySupplierId?(supplierId: string): Promise<PurchaseOrder[]>;
+  findAll?(): Promise<PurchaseOrder[]>;
   save(po: PurchaseOrder): Promise<PurchaseOrder>;
 }
 
@@ -131,6 +135,16 @@ export interface PerformanceRepository {
   save(record: ProcurementPerformanceRecord): Promise<ProcurementPerformanceRecord>;
 }
 
+export interface CreditDebitNoteRepository {
+  findById(id: string): Promise<CreditDebitNoteEntity | null>;
+  findByInvoiceId(invoiceId: string): Promise<CreditDebitNoteEntity[]>;
+  findByPurchaseOrderId(poId: string): Promise<CreditDebitNoteEntity[]>;
+  findByOrganizationId(orgId: string): Promise<CreditDebitNoteEntity[]>;
+  findBySupplierId?(supplierId: string): Promise<CreditDebitNoteEntity[]>;
+  save(note: CreditDebitNoteEntity): Promise<CreditDebitNoteEntity>;
+  saveMany?(notes: CreditDebitNoteEntity[]): Promise<CreditDebitNoteEntity[]>;
+}
+
 export interface Repositories {
   requirements: RequirementRepository;
   rfqs: RfqRepository;
@@ -149,6 +163,7 @@ export interface Repositories {
   invoiceLineItems?: InvoiceLineItemRepository;
   payments: PaymentRepository;
   paymentAllocations?: PaymentAllocationRepository;
+  creditDebitNotes?: CreditDebitNoteRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

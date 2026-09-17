@@ -4,6 +4,7 @@ import type {
   Award,
   CoiDeclaration,
   CommitteeVote,
+  CreditDebitNoteEntity,
   Invoice,
   InvoiceLineItemEntity,
   Payment,
@@ -50,6 +51,7 @@ export class InMemoryRepositories {
   invoiceLineItems = new Map<string, InvoiceLineItemEntity>();
   payments = new Map<string, Payment>();
   paymentAllocations = new Map<string, PaymentAllocationEntity>();
+  creditDebitNotes = new Map<string, CreditDebitNoteEntity>();
   suppliers = new Map<string, Supplier>();
   performance = new Map<string, ProcurementPerformanceRecord>();
 
@@ -227,6 +229,11 @@ export class InMemoryRepositories {
     const store = this.purchaseOrders;
     return {
       findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((p) => p.organizationId === orgId),
+      findBySupplierId: async (supplierId) =>
+        [...store.values()].filter((p) => p.supplierId === supplierId),
+      findAll: async () => [...store.values()],
       save: async (p) => {
         store.set(p.id, p);
         return p;
@@ -296,6 +303,27 @@ export class InMemoryRepositories {
     };
   }
 
+  get creditDebitNotesRepo(): Repositories['creditDebitNotes'] {
+    const store = this.creditDebitNotes;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByInvoiceId: async (invId) =>
+        [...store.values()].filter((n) => n.invoiceId === invId),
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((n) => n.purchaseOrderId === poId),
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((n) => n.organizationId === orgId),
+      save: async (n) => {
+        store.set(n.id, n);
+        return n;
+      },
+      saveMany: async (notes) => {
+        for (const n of notes) store.set(n.id, n);
+        return notes;
+      },
+    };
+  }
+
   get suppliersRepo(): Repositories['suppliers'] {
     const store = this.suppliers;
     return {
@@ -337,6 +365,7 @@ export class InMemoryRepositories {
       invoiceLineItems: this.invoiceLineItemsRepo,
       payments: this.paymentsRepo,
       paymentAllocations: this.paymentAllocationsRepo,
+      creditDebitNotes: this.creditDebitNotesRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

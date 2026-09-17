@@ -27,5 +27,8 @@ export * from './gst/gstin-lookup';
 export * from './types/progressive-invoicing';
 export * from './tax';
 export * from './types/payment-allocation';
+export * from './types/vendor-settlement';
 export * from './accounting/tally-xml-exporter';
 export * from './accounting/zoho-json-exporter';
+export * from './accounting/tally-payment-voucher';
+export * from './accounting/zoho-payment-receipt';

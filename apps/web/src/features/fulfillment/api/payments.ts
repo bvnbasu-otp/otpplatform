@@ -6,9 +6,17 @@ import type {
   PaymentAllocationStatus,
   PoSettlementSummary,
   PoSettlementCertificate,
+  CreditDebitNote,
+  CreditDebitNoteType,
+  CreditDebitNoteStatus,
+  VendorSettlementStatement,
+  ZohoPaymentReceiptPayload,
 } from '@otp/domain';
 import {
   calculatePoSettlementSummary,
+  calculateVendorSettlementStatement,
+  exportToTallyPaymentVoucher,
+  exportToZohoPaymentReceipt,
   generatePoSettlementCertificate as generatePoSettlementCertDomain,
 } from '@otp/domain';
 
@@ -773,3 +781,562 @@ export async function generatePoSettlementCertificate(
     return { ok: false, error: err?.message || 'Failed to generate settlement certificate' };
   }
 }
+
+/**
+ * Exports a payment and its allocations into statutory Tally XML payment voucher format (Phase 5C.3).
+ */
+export async function exportTallyPaymentVoucherXml(
+  paymentId: string,
+  poId?: string,
+  bankLedgerName?: string,
+): Promise<{ ok: true; xml: string } | { ok: false; error: string }> {
+  try {
+    const { data: payData, error: payErr } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('id', paymentId)
+      .maybeSingle();
+
+    if (payErr || !payData) {
+      return { ok: false, error: payErr?.message || 'Payment not found' };
+    }
+
+    const resolvedPoId = poId || payData.purchase_order_id;
+    let supplierName = 'Supplier';
+    let poNumber = resolvedPoId || 'N/A';
+
+    if (resolvedPoId) {
+      const { data: poData } = await supabase
+        .from('purchase_orders')
+        .select('id, po_number, supplier_id')
+        .eq('id', resolvedPoId)
+        .maybeSingle();
+
+      if (poData) {
+        poNumber = poData.po_number || poData.id;
+        if (poData.supplier_id) {
+          const { data: supData } = await supabase
+            .from('suppliers')
+            .select('business_name')
+            .eq('id', poData.supplier_id)
+            .maybeSingle();
+          if (supData?.business_name) supplierName = supData.business_name;
+        }
+      }
+    }
+
+    // Fetch allocations
+    const { data: allocData } = await supabase
+      .from('payment_allocations')
+      .select('id, invoice_id, allocated_amount, status')
+      .eq('payment_id', paymentId)
+      .eq('status', 'ALLOCATED');
+
+    const allocationItems: Array<{ invoiceNumber: string; allocatedAmount: number }> = [];
+    if (allocData && allocData.length > 0) {
+      const invIds = allocData.map((a: any) => a.invoice_id);
+      const { data: invData } = await supabase
+        .from('invoices')
+        .select('id, invoice_number')
+        .in('id', invIds);
+
+      const invMap = new Map((invData || []).map((i: any) => [i.id, i.invoice_number]));
+      for (const a of allocData) {
+        allocationItems.push({
+          invoiceNumber: invMap.get(a.invoice_id) || `INV-${a.invoice_id.slice(0, 8)}`,
+          allocatedAmount: Number(a.allocated_amount),
+        });
+      }
+    }
+
+    const xml = exportToTallyPaymentVoucher({
+      paymentId: payData.id,
+      paymentDate: payData.recorded_at ? payData.recorded_at.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      paymentReference: payData.reference || payData.id,
+      paymentMethod: payData.method,
+      amount: Number(payData.amount),
+      currency: payData.currency || 'INR',
+      bankLedgerName: bankLedgerName || 'Bank Account',
+      supplierName,
+      poNumber,
+      allocations: allocationItems,
+      unallocatedAmount: Number(payData.unallocated_amount ?? 0),
+    });
+
+    return { ok: true, xml };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to export Tally payment voucher' };
+  }
+}
+
+/**
+ * Exports a payment and its allocations into Zoho Books JSON receipt format (Phase 5C.3).
+ */
+export async function exportZohoPaymentReceiptJson(
+  paymentId: string,
+  poId?: string,
+  bankAccountName?: string,
+): Promise<{ ok: true; payload: ZohoPaymentReceiptPayload } | { ok: false; error: string }> {
+  try {
+    const { data: payData, error: payErr } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('id', paymentId)
+      .maybeSingle();
+
+    if (payErr || !payData) {
+      return { ok: false, error: payErr?.message || 'Payment not found' };
+    }
+
+    const resolvedPoId = poId || payData.purchase_order_id;
+    let supplierName = 'Supplier';
+    let poNumber = resolvedPoId || 'N/A';
+
+    if (resolvedPoId) {
+      const { data: poData } = await supabase
+        .from('purchase_orders')
+        .select('id, po_number, supplier_id')
+        .eq('id', resolvedPoId)
+        .maybeSingle();
+
+      if (poData) {
+        poNumber = poData.po_number || poData.id;
+        if (poData.supplier_id) {
+          const { data: supData } = await supabase
+            .from('suppliers')
+            .select('business_name')
+            .eq('id', poData.supplier_id)
+            .maybeSingle();
+          if (supData?.business_name) supplierName = supData.business_name;
+        }
+      }
+    }
+
+    // Fetch allocations
+    const { data: allocData } = await supabase
+      .from('payment_allocations')
+      .select('id, invoice_id, allocated_amount, status')
+      .eq('payment_id', paymentId)
+      .eq('status', 'ALLOCATED');
+
+    const allocationItems: Array<{ invoiceNumber: string; invoiceId: string; allocatedAmount: number }> = [];
+    if (allocData && allocData.length > 0) {
+      const invIds = allocData.map((a: any) => a.invoice_id);
+      const { data: invData } = await supabase
+        .from('invoices')
+        .select('id, invoice_number')
+        .in('id', invIds);
+
+      const invMap = new Map((invData || []).map((i: any) => [i.id, i.invoice_number]));
+      for (const a of allocData) {
+        allocationItems.push({
+          invoiceNumber: invMap.get(a.invoice_id) || `INV-${a.invoice_id.slice(0, 8)}`,
+          invoiceId: a.invoice_id,
+          allocatedAmount: Number(a.allocated_amount),
+        });
+      }
+    }
+
+    const payload = exportToZohoPaymentReceipt({
+      paymentId: payData.id,
+      paymentDate: payData.recorded_at ? payData.recorded_at.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      paymentReference: payData.reference || payData.id,
+      paymentMode: payData.method === 'CHEQUE' ? 'Check' : 'Bank Transfer',
+      amount: Number(payData.amount),
+      currency: payData.currency || 'INR',
+      bankAccountName: bankAccountName || 'Bank Account',
+      supplierName,
+      poNumber,
+      allocations: allocationItems,
+      unallocatedAmount: Number(payData.unallocated_amount ?? 0),
+    });
+
+    return { ok: true, payload };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to export Zoho payment receipt' };
+  }
+}
+
+/**
+ * Atomically reverses a payment allocation and synchronizes parent invoice & payment state (Phase 5C.3).
+ */
+export async function reversePaymentAllocation(params: {
+  allocationId: string;
+  reason: string;
+  idempotencyKey?: string;
+}): Promise<{ ok: true; allocation: PaymentAllocationRecord } | { ok: false; error: string }> {
+  const { allocationId, reason, idempotencyKey } = params;
+
+  if (!reason || reason.trim() === '') {
+    return { ok: false, error: 'Reversal reason is required' };
+  }
+
+  // 1. Attempt Atomic PostgreSQL RPC
+  if (typeof (supabase as any).rpc === 'function') {
+    const { data: rpcData, error: rpcError } = await (supabase as any).rpc(
+      'reverse_payment_allocation_atomic',
+      {
+        p_allocation_id: allocationId,
+        p_reason: reason,
+        p_idempotency_key: idempotencyKey || null,
+      },
+    );
+
+    if (!rpcError && rpcData?.ok) {
+      const allocRow = rpcData.allocation;
+      return {
+        ok: true,
+        allocation: {
+          id: allocRow.id,
+          paymentId: allocRow.payment_id,
+          invoiceId: allocRow.invoice_id,
+          allocatedAmount: Number(allocRow.allocated_amount),
+          allocatedAt: allocRow.allocated_at,
+          status: allocRow.status,
+          notes: allocRow.notes,
+        },
+      };
+    }
+
+    if (rpcError) {
+      return { ok: false, error: rpcError.message };
+    }
+  }
+
+  // 2. Direct Fallback if RPC not active in client
+  const { data: alloc, error: allocErr } = await supabase
+    .from('payment_allocations')
+    .select('*')
+    .eq('id', allocationId)
+    .maybeSingle();
+
+  if (allocErr || !alloc) {
+    return { ok: false, error: allocErr?.message || 'Allocation not found' };
+  }
+
+  if (alloc.status === 'REVERSED' || alloc.status === 'VOIDED') {
+    return { ok: false, error: `Allocation is already ${alloc.status}` };
+  }
+
+  const { error: updateErr } = await supabase
+    .from('payment_allocations')
+    .update({
+      status: 'REVERSED',
+      notes: reason ? `${alloc.notes ? alloc.notes + ' ' : ''}[REVERSED: ${reason}]` : alloc.notes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', allocationId);
+
+  if (updateErr) {
+    return { ok: false, error: updateErr.message };
+  }
+
+  return {
+    ok: true,
+    allocation: {
+      id: alloc.id,
+      paymentId: alloc.payment_id,
+      invoiceId: alloc.invoice_id,
+      allocatedAmount: Number(alloc.allocated_amount),
+      allocatedAt: alloc.allocated_at,
+      status: 'REVERSED',
+      notes: reason ? `${alloc.notes ? alloc.notes + ' ' : ''}[REVERSED: ${reason}]` : alloc.notes,
+    },
+  };
+}
+
+/**
+ * Issues a statutory Credit or Debit Note against an invoice (Phase 5C.3).
+ */
+export async function issueCreditDebitNote(params: {
+  organizationId: string;
+  invoiceId: string;
+  purchaseOrderId?: string;
+  noteType: CreditDebitNoteType;
+  amount: number;
+  taxAmount?: number;
+  reason: string;
+  noteNumber?: string;
+  idempotencyKey?: string;
+}): Promise<{ ok: true; note: CreditDebitNote } | { ok: false; error: string }> {
+  const { organizationId, invoiceId, purchaseOrderId, noteType, amount, taxAmount = 0, reason, noteNumber, idempotencyKey } = params;
+
+  if (amount <= 0) {
+    return { ok: false, error: 'Note amount must be strictly greater than 0' };
+  }
+
+  if (typeof (supabase as any).rpc === 'function') {
+    const { data: rpcData, error: rpcError } = await (supabase as any).rpc(
+      'issue_credit_debit_note_atomic',
+      {
+        p_organization_id: organizationId,
+        p_invoice_id: invoiceId,
+        p_note_type: noteType,
+        p_amount: amount,
+        p_tax_amount: taxAmount,
+        p_reason: reason,
+        p_note_number: noteNumber || null,
+        p_idempotency_key: idempotencyKey || null,
+      },
+    );
+
+    if (!rpcError && rpcData?.ok && rpcData.note) {
+      const n = rpcData.note;
+      return {
+        ok: true,
+        note: {
+          id: n.id,
+          organizationId: n.organization_id,
+          purchaseOrderId: n.purchase_order_id,
+          invoiceId: n.invoice_id,
+          noteNumber: n.note_number,
+          noteType: n.note_type,
+          amount: Number(n.amount),
+          taxAmount: Number(n.tax_amount || 0),
+          reason: n.reason,
+          status: n.status,
+          createdBy: n.created_by,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+        },
+      };
+    }
+
+    if (rpcError) {
+      return { ok: false, error: rpcError.message };
+    }
+  }
+
+  // Fallback direct insert
+  const prefix = noteType === 'DEBIT_NOTE' ? 'DN' : 'CN';
+  const genNoteNum = noteNumber || `${prefix}-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+  const { data: inserted, error: insErr } = await supabase
+    .from('credit_debit_notes')
+    .insert({
+      organization_id: organizationId,
+      invoice_id: invoiceId,
+      purchase_order_id: purchaseOrderId || null,
+      note_type: noteType,
+      amount,
+      tax_amount: taxAmount,
+      reason,
+      note_number: genNoteNum,
+      status: 'ISSUED',
+    })
+    .select('*')
+    .single();
+
+  if (insErr || !inserted) {
+    return { ok: false, error: insErr?.message || 'Failed to issue credit/debit note' };
+  }
+
+  return {
+    ok: true,
+    note: {
+      id: inserted.id,
+      organizationId: inserted.organization_id,
+      purchaseOrderId: inserted.purchase_order_id,
+      invoiceId: inserted.invoice_id,
+      noteNumber: inserted.note_number,
+      noteType: inserted.note_type,
+      amount: Number(inserted.amount),
+      taxAmount: Number(inserted.tax_amount || 0),
+      reason: inserted.reason,
+      status: inserted.status,
+      createdBy: inserted.created_by,
+      createdAt: inserted.created_at,
+      updatedAt: inserted.updated_at,
+    },
+  };
+}
+
+/**
+ * Fetches Credit / Debit notes for a specific invoice (Phase 5C.3).
+ */
+export async function fetchCreditDebitNotesByInvoice(
+  invoiceId: string,
+): Promise<{ ok: true; notes: CreditDebitNote[] } | { ok: false; error: string }> {
+  const { data, error } = await supabase
+    .from('credit_debit_notes')
+    .select('*')
+    .eq('invoice_id', invoiceId)
+    .order('created_at', { ascending: false });
+
+  if (error) return { ok: false, error: error.message };
+  const notes: CreditDebitNote[] = (data || []).map((n: any) => ({
+    id: n.id,
+    organizationId: n.organization_id,
+    purchaseOrderId: n.purchase_order_id,
+    invoiceId: n.invoice_id,
+    noteNumber: n.note_number,
+    noteType: n.note_type,
+    amount: Number(n.amount),
+    taxAmount: Number(n.tax_amount || 0),
+    reason: n.reason,
+    status: n.status,
+    createdBy: n.created_by,
+    createdAt: n.created_at,
+    updatedAt: n.updated_at,
+  }));
+  return { ok: true, notes };
+}
+
+/**
+ * Fetches Credit / Debit notes for a specific Purchase Order (Phase 5C.3).
+ */
+export async function fetchCreditDebitNotesByPo(
+  poId: string,
+): Promise<{ ok: true; notes: CreditDebitNote[] } | { ok: false; error: string }> {
+  const { data, error } = await supabase
+    .from('credit_debit_notes')
+    .select('*')
+    .eq('purchase_order_id', poId)
+    .order('created_at', { ascending: false });
+
+  if (error) return { ok: false, error: error.message };
+  const notes: CreditDebitNote[] = (data || []).map((n: any) => ({
+    id: n.id,
+    organizationId: n.organization_id,
+    purchaseOrderId: n.purchase_order_id,
+    invoiceId: n.invoice_id,
+    noteNumber: n.note_number,
+    noteType: n.note_type,
+    amount: Number(n.amount),
+    taxAmount: Number(n.tax_amount || 0),
+    reason: n.reason,
+    status: n.status,
+    createdBy: n.created_by,
+    createdAt: n.created_at,
+    updatedAt: n.updated_at,
+  }));
+  return { ok: true, notes };
+}
+
+/**
+ * Fetches Multi-PO Cumulative Vendor Settlement Statement (Phase 5C.3).
+ */
+export async function fetchVendorSettlementStatement(
+  organizationId: string,
+  supplierId: string,
+  fromDate?: string,
+  toDate?: string,
+): Promise<{ ok: true; statement: VendorSettlementStatement } | { ok: false; error: string }> {
+  try {
+    if (typeof (supabase as any).rpc === 'function') {
+      const { data: rpcData, error: rpcError } = await (supabase as any).rpc(
+        'get_vendor_settlement_statement',
+        {
+          p_organization_id: organizationId,
+          p_supplier_id: supplierId,
+          p_from_date: fromDate || null,
+          p_to_date: toDate || null,
+        },
+      );
+
+      if (!rpcError && rpcData) {
+        return { ok: true, statement: rpcData as VendorSettlementStatement };
+      }
+    }
+
+    // Client fallback aggregation
+    const [posRes, notesRes] = await Promise.all([
+      supabase
+        .from('purchase_orders')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('supplier_id', supplierId),
+      supabase
+        .from('credit_debit_notes')
+        .select('*')
+        .eq('organization_id', organizationId),
+    ]);
+
+    const pos = (posRes.data || []).map((p: any) => ({
+      id: p.id,
+      poNumber: p.po_number,
+      totalAmount: Number(p.total_amount),
+      status: p.status,
+    }));
+
+    const poIds = pos.map((p) => p.id);
+    let invoices: any[] = [];
+    let payments: any[] = [];
+    let allocations: any[] = [];
+
+    if (poIds.length > 0) {
+      const [invRes, payRes] = await Promise.all([
+        supabase.from('invoices').select('*').in('purchase_order_id', poIds),
+        supabase.from('payments').select('*').in('purchase_order_id', poIds),
+      ]);
+
+      invoices = (invRes.data || []).map((i: any) => ({
+        id: i.id,
+        purchaseOrderId: i.purchase_order_id,
+        invoiceNumber: i.invoice_number,
+        amount: Number(i.amount),
+        paidAmount: Number(i.paid_amount || 0),
+        balanceDue: Number(i.balance_due ?? i.amount),
+        status: i.status,
+      }));
+
+      payments = (payRes.data || []).map((p: any) => ({
+        id: p.id,
+        purchaseOrderId: p.purchase_order_id,
+        amount: Number(p.amount),
+        unallocatedAmount: Number(p.unallocated_amount ?? 0),
+        status: p.status,
+        reference: p.reference,
+        recordedAt: p.recorded_at,
+      }));
+
+      const invIds = invoices.map((i) => i.id);
+      if (invIds.length > 0) {
+        const { data: allocData } = await supabase
+          .from('payment_allocations')
+          .select('*')
+          .in('invoice_id', invIds);
+
+        allocations = (allocData || []).map((a: any) => ({
+          id: a.id,
+          paymentId: a.payment_id,
+          invoiceId: a.invoice_id,
+          allocatedAmount: Number(a.allocated_amount),
+          status: a.status,
+        }));
+      }
+    }
+
+    const notes = (notesRes.data || []).map((n: any) => ({
+      id: n.id,
+      organizationId: n.organization_id,
+      purchaseOrderId: n.purchase_order_id,
+      invoiceId: n.invoice_id,
+      noteNumber: n.note_number,
+      noteType: n.note_type,
+      amount: Number(n.amount),
+      taxAmount: Number(n.tax_amount || 0),
+      reason: n.reason,
+      status: n.status,
+      createdAt: n.created_at,
+      updatedAt: n.updated_at,
+    }));
+
+    const statement = calculateVendorSettlementStatement({
+      buyerOrganizationId: organizationId,
+      supplierId,
+      periodStart: fromDate || null,
+      periodEnd: toDate || null,
+      purchaseOrders: pos,
+      invoices,
+      payments,
+      allocations,
+      creditDebitNotes: notes,
+    });
+
+    return { ok: true, statement };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch vendor settlement statement' };
+  }
+}
+

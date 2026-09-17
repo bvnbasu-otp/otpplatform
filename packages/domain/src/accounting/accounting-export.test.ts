@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { exportToTallyXml, type AccountingOrderPayload } from './tally-xml-exporter';
 import { exportToZohoInvoice } from './zoho-json-exporter';
+import { exportToTallyPaymentVoucher, escapeXml, type TallyPaymentVoucherParams } from './tally-payment-voucher';
+import { exportToZohoPaymentReceipt, type ZohoPaymentReceiptParams } from './zoho-payment-receipt';
 
 describe('Accounting & ERP Exports (Tally XML & Zoho Books JSON)', () => {
   const intraStateOrder: AccountingOrderPayload = {
@@ -103,5 +105,171 @@ describe('Accounting & ERP Exports (Tally XML & Zoho Books JSON)', () => {
     expect(zoho.line_items[0]?.hsn_or_sac).toBe('995473');
     expect(zoho.cgst_total).toBe(37800);
     expect(zoho.sgst_total).toBe(37800);
+  });
+});
+
+describe('Phase 5C.3 Dual-Rail ERP Payment Voucher Exporters', () => {
+  describe('XML Escaping Helper', () => {
+    it('escapes XML special characters strictly (&, <, >, ", \')', () => {
+      expect(escapeXml('A & B < C > "D" \'E\'')).toBe('A &amp; B &lt; C &gt; &quot;D&quot; &apos;E&apos;');
+      expect(escapeXml(null)).toBe('');
+      expect(escapeXml(undefined)).toBe('');
+    });
+  });
+
+  describe('Tally Prime Payment Voucher XML Exporter', () => {
+    it('generates valid, balanced Tally XML payment voucher with multi-invoice bill-by-bill allocations', () => {
+      const voucherParams: TallyPaymentVoucherParams = {
+        voucherNumber: 'PAY-2026-0091',
+        paymentDate: '2026-09-17',
+        paymentReference: 'UTR-HDFC-99128301',
+        paymentMethod: 'NEFT',
+        amount: 250000,
+        bankLedgerName: 'HDFC Bank Operating Account',
+        supplierName: 'Apex & Sons Engineering <Pvt> "Ltd"',
+        buyerOrgName: 'Skyline Towers RWA',
+        poNumber: 'PO-2026-SKY-010',
+        allocations: [
+          { invoiceNumber: 'INV-2026-01', allocatedAmount: 150000 },
+          { invoiceNumber: 'INV-2026-02', allocatedAmount: 100000 },
+        ],
+      };
+
+      const xml = exportToTallyPaymentVoucher(voucherParams);
+
+      expect(xml).toContain('<VOUCHER VCHTYPE="Payment" ACTION="Create">');
+      expect(xml).toContain('<DATE>20260917</DATE>');
+      expect(xml).toContain('<VOUCHERNUMBER>PAY-2026-0091</VOUCHERNUMBER>');
+      // Strict XML escaping
+      expect(xml).toContain('<PARTYNAME>Apex &amp; Sons Engineering &lt;Pvt&gt; &quot;Ltd&quot;</PARTYNAME>');
+      expect(xml).toContain('<LEDGERNAME>Apex &amp; Sons Engineering &lt;Pvt&gt; &quot;Ltd&quot;</LEDGERNAME>');
+      expect(xml).toContain('<AMOUNT>-250000.00</AMOUNT>');
+      expect(xml).toContain('<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>');
+
+      // Bill allocations
+      expect(xml).toContain('<NAME>INV-2026-01</NAME>');
+      expect(xml).toContain('<BILLTYPE>Agst Ref</BILLTYPE>');
+      expect(xml).toContain('<AMOUNT>-150000.00</AMOUNT>');
+
+      expect(xml).toContain('<NAME>INV-2026-02</NAME>');
+      expect(xml).toContain('<BILLTYPE>Agst Ref</BILLTYPE>');
+      expect(xml).toContain('<AMOUNT>-100000.00</AMOUNT>');
+
+      // Credit Bank entry
+      expect(xml).toContain('<LEDGERNAME>HDFC Bank Operating Account</LEDGERNAME>');
+      expect(xml).toContain('<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>');
+      expect(xml).toContain('<AMOUNT>250000.00</AMOUNT>');
+      expect(xml).toContain('<TRANSACTIONTYPE>e-Fund Transfer</TRANSACTIONTYPE>');
+      expect(xml).toContain('<INSTRUMENTNUMBER>UTR-HDFC-99128301</INSTRUMENTNUMBER>');
+    });
+
+    it('generates Tally XML with Advance bill allocation when unallocated portion exists', () => {
+      const voucherParams: TallyPaymentVoucherParams = {
+        voucherNumber: 'PAY-ADV-001',
+        paymentDate: '2026-09-17',
+        paymentReference: 'UTR-ICICI-881920',
+        paymentMethod: 'RTGS',
+        amount: 300000,
+        bankLedgerName: 'ICICI Bank Current A/c',
+        supplierName: 'Bharat Infrastructure Corp',
+        poNumber: 'PO-2026-042',
+        allocations: [
+          { invoiceNumber: 'INV-001', allocatedAmount: 200000 },
+        ],
+        unallocatedAmount: 100000,
+      };
+
+      const xml = exportToTallyPaymentVoucher(voucherParams);
+
+      expect(xml).toContain('<NAME>INV-001</NAME>');
+      expect(xml).toContain('<BILLTYPE>Agst Ref</BILLTYPE>');
+      expect(xml).toContain('<AMOUNT>-200000.00</AMOUNT>');
+
+      expect(xml).toContain('<NAME>UTR-ICICI-881920</NAME>');
+      expect(xml).toContain('<BILLTYPE>Advance</BILLTYPE>');
+      expect(xml).toContain('<AMOUNT>-100000.00</AMOUNT>');
+    });
+
+    it('supports Cheque payment method and On-Account allocation fallback', () => {
+      const voucherParams: TallyPaymentVoucherParams = {
+        paymentDate: '2026-09-17',
+        paymentReference: 'CHQ-550192',
+        paymentMethod: 'CHEQUE',
+        amount: 50000,
+        supplierName: 'Local Maintenance Services',
+      };
+
+      const xml = exportToTallyPaymentVoucher(voucherParams);
+
+      expect(xml).toContain('<TRANSACTIONTYPE>Cheque</TRANSACTIONTYPE>');
+      expect(xml).toContain('<INSTRUMENTNUMBER>CHQ-550192</INSTRUMENTNUMBER>');
+      expect(xml).toContain('<BILLTYPE>On Account</BILLTYPE>');
+      expect(xml).toContain('<AMOUNT>-50000.00</AMOUNT>');
+    });
+  });
+
+  describe('Zoho Books Payment Receipt JSON Exporter', () => {
+    it('generates valid Zoho Books payment receipt payload with bill allocations', () => {
+      const params: ZohoPaymentReceiptParams = {
+        paymentId: 'pay-uuid-001',
+        paymentDate: '2026-09-17',
+        paymentReference: 'UTR-AXIS-992019',
+        paymentMode: 'Bank Transfer',
+        amount: 150000,
+        bankAccountName: 'Axis Bank - 9912',
+        supplierName: 'Precision Tools Pvt Ltd',
+        buyerOrgName: 'Greenwood Society',
+        poNumber: 'PO-2026-GW-003',
+        allocations: [
+          { invoiceNumber: 'INV-101', invoiceId: 'inv-uuid-1', invoiceAmount: 100000, allocatedAmount: 100000 },
+          { invoiceNumber: 'INV-102', invoiceId: 'inv-uuid-2', invoiceAmount: 80000, allocatedAmount: 50000 },
+        ],
+      };
+
+      const payload = exportToZohoPaymentReceipt(params);
+
+      expect(payload.vendor_name).toBe('Precision Tools Pvt Ltd');
+      expect(payload.customer_name).toBe('Greenwood Society');
+      expect(payload.date).toBe('2026-09-17');
+      expect(payload.reference_number).toBe('UTR-AXIS-992019');
+      expect(payload.amount).toBe(150000);
+      expect(payload.paid_through_account_name).toBe('Axis Bank - 9912');
+      expect(payload.bills).toHaveLength(2);
+      expect(payload.bills[0]).toEqual({
+        bill_number: 'INV-101',
+        bill_id: 'inv-uuid-1',
+        bill_date: undefined,
+        total_amount: 100000,
+        amount_applied: 100000,
+      });
+      expect(payload.bills[1]).toEqual({
+        bill_number: 'INV-102',
+        bill_id: 'inv-uuid-2',
+        bill_date: undefined,
+        total_amount: 80000,
+        amount_applied: 50000,
+      });
+      expect(payload.excess_amount).toBe(0);
+      expect(payload.description).toContain('PO-2026-GW-003');
+    });
+
+    it('handles advance/excess unallocated amount correctly in Zoho Books payload', () => {
+      const params: ZohoPaymentReceiptParams = {
+        paymentDate: '2026-09-17',
+        paymentReference: 'UTR-SBI-001928',
+        amount: 200000,
+        supplierName: 'Southern Steel Traders',
+        allocations: [
+          { invoiceNumber: 'INV-201', allocatedAmount: 120000 },
+        ],
+        unallocatedAmount: 80000,
+      };
+
+      const payload = exportToZohoPaymentReceipt(params);
+      expect(payload.amount).toBe(200000);
+      expect(payload.excess_amount).toBe(80000);
+      expect(payload.bills).toHaveLength(1);
+      expect(payload.bills[0]?.amount_applied).toBe(120000);
+    });
   });
 });

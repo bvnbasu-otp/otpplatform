@@ -305,3 +305,20 @@ export interface ProcurementPerformanceRecord {
   qualityRating?: number;
   recordedAt: string;
 }
+
+export interface CreditDebitNoteEntity {
+  id: string;
+  organizationId: string;
+  purchaseOrderId?: string | null;
+  invoiceId: string;
+  noteNumber: string;
+  noteType: 'DEBIT_NOTE' | 'CREDIT_NOTE';
+  amount: number;
+  taxAmount: number;
+  reason: string;
+  status: 'DRAFT' | 'ISSUED' | 'APPLIED' | 'CANCELLED';
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+

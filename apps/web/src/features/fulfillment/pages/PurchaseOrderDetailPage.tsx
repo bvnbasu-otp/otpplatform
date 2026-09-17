@@ -1,13 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import type { PurchaseOrderStatus, PoSettlementSummary, PoSettlementCertificate } from '@otp/domain';
+import type { PurchaseOrderStatus, PoSettlementSummary, PoSettlementCertificate, CreditDebitNote } from '@otp/domain';
 import {
   fetchPoInvoicingSummary,
   fetchPoLineItems,
   fetchPurchaseOrder,
   updatePurchaseOrderStatus,
 } from '../api/purchase-orders';
-import { getPoSettlementSummary, generatePoSettlementCertificate } from '../api/payments';
+import {
+  getPoSettlementSummary,
+  generatePoSettlementCertificate,
+  exportTallyPaymentVoucherXml,
+  exportZohoPaymentReceiptJson,
+  reversePaymentAllocation,
+  issueCreditDebitNote,
+  fetchCreditDebitNotesByPo,
+  fetchVendorSettlementStatement,
+  fetchPaymentsByPo,
+  type PaymentSummary,
+} from '../api/payments';
 import { createWorkOrder, fetchWorkOrderByPo, updateWorkOrderProgress } from '../api/work-orders';
 import { DeliveryInspectionPanel } from '../components/DeliveryInspectionPanel';
 import { InvoicePaymentPanel } from '../components/InvoicePaymentPanel';
@@ -274,6 +285,11 @@ export function PurchaseOrderDetailPage({
     isFullyInvoiced: boolean;
   } | null>(null);
   const [settlementSummary, setSettlementSummary] = useState<PoSettlementSummary | null>(null);
+  const [poPayments, setPoPayments] = useState<PaymentSummary[]>([]);
+  const [creditDebitNotes, setCreditDebitNotes] = useState<CreditDebitNote[]>([]);
+  const [exportingTally, setExportingTally] = useState(false);
+  const [exportingZoho, setExportingZoho] = useState(false);
+  const [downloadingVendorStatement, setDownloadingVendorStatement] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [downloadingCert, setDownloadingCert] = useState(false);
 
@@ -298,15 +314,25 @@ export function PurchaseOrderDetailPage({
       setOrder(poResult.order);
 
       try {
-        const [woResult, linesResult, summaryResult, settlementResult] = await Promise.all([
+        const [woResult, linesResult, summaryResult, settlementResult, payResult, cdnResult] = await Promise.all([
           fetchWorkOrderByPo(poResult.order.id),
           fetchPoLineItems(poResult.order.id),
           fetchPoInvoicingSummary(poResult.order.id),
           getPoSettlementSummary(poResult.order.id),
+          fetchPaymentsByPo(poResult.order.id),
+          fetchCreditDebitNotesByPo(poResult.order.id),
         ]);
 
         if (woResult.ok) {
           setWorkOrder(woResult.workOrder);
+        }
+
+        if (payResult.ok) {
+          setPoPayments(payResult.payments);
+        }
+
+        if (cdnResult.ok) {
+          setCreditDebitNotes(cdnResult.notes);
         }
 
         if (linesResult.ok && linesResult.lineItems.length > 0) {
@@ -448,6 +474,97 @@ export function PurchaseOrderDetailPage({
       setError(err instanceof Error ? err.message : 'Failed to download certificate');
     } finally {
       setDownloadingCert(false);
+    }
+  }
+
+  async function handleExportTallyPaymentVoucher(targetPaymentId?: string) {
+    if (!order) return;
+    const pid = targetPaymentId || poPayments[0]?.id;
+    if (!pid) {
+      setError('No recorded payment found to export Tally payment voucher.');
+      return;
+    }
+    setExportingTally(true);
+    try {
+      const res = await exportTallyPaymentVoucherXml(pid, order.id);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const blob = new Blob([res.xml], { type: 'application/xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Tally_Payment_Voucher_${order.poNumber || order.id}.xml`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setSuccess(`✓ Tally XML Payment Voucher exported successfully!`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to export Tally payment voucher');
+    } finally {
+      setExportingTally(false);
+    }
+  }
+
+  async function handleExportZohoPaymentReceipt(targetPaymentId?: string) {
+    if (!order) return;
+    const pid = targetPaymentId || poPayments[0]?.id;
+    if (!pid) {
+      setError('No recorded payment found to export Zoho payment receipt.');
+      return;
+    }
+    setExportingZoho(true);
+    try {
+      const res = await exportZohoPaymentReceiptJson(pid, order.id);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const jsonStr = JSON.stringify(res.payload, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Zoho_Payment_Receipt_${order.poNumber || order.id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setSuccess(`✓ Zoho Books Payment Receipt JSON exported successfully!`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to export Zoho payment receipt');
+    } finally {
+      setExportingZoho(false);
+    }
+  }
+
+  async function handleDownloadVendorStatement() {
+    const orgId = order?.organizationId || order?.buyerOrgId;
+    if (!order || !order.supplierId || !orgId) return;
+    setDownloadingVendorStatement(true);
+    try {
+      const res = await fetchVendorSettlementStatement(orgId, order.supplierId);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const jsonStr = JSON.stringify(res.statement, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Vendor_Settlement_Statement_${order.supplierId.slice(0, 8)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setSuccess(`✓ Multi-PO Vendor Settlement Statement downloaded!`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to download vendor settlement statement');
+    } finally {
+      setDownloadingVendorStatement(false);
     }
   }
 
@@ -1107,6 +1224,78 @@ export function PurchaseOrderDetailPage({
                     <span className="font-mono font-black text-blue-700 dark:text-blue-300">
                       {formatMoney(settlementSummary.unallocatedAdvanceAmount, order.currency)}
                     </span>
+                  </div>
+                )}
+
+                {/* Phase 5C.3 Dual-Rail ERP Payment Vouchers & Multi-PO Settlement Actions */}
+                <div className="border-t border-border/60 pt-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="font-bold text-foreground">ERP Payment Vouchers (Phase 5C.3):</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleExportTallyPaymentVoucher()}
+                      disabled={exportingTally || poPayments.length === 0}
+                      className="min-h-[34px] rounded-lg border bg-background hover:bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-foreground inline-flex items-center gap-1 transition disabled:opacity-50"
+                      title="Export Tally Prime XML Payment Voucher with bill-by-bill allocations"
+                      data-testid="export-tally-voucher-btn"
+                    >
+                      <span>📥</span>
+                      <span>{exportingTally ? 'Exporting…' : 'Export Tally Voucher (XML)'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void handleExportZohoPaymentReceipt()}
+                      disabled={exportingZoho || poPayments.length === 0}
+                      className="min-h-[34px] rounded-lg border bg-background hover:bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-foreground inline-flex items-center gap-1 transition disabled:opacity-50"
+                      title="Export Zoho Books JSON Payment Receipt payload"
+                      data-testid="export-zoho-receipt-btn"
+                    >
+                      <span>🧾</span>
+                      <span>{exportingZoho ? 'Exporting…' : 'Export Zoho Receipt (JSON)'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadVendorStatement()}
+                      disabled={downloadingVendorStatement}
+                      className="min-h-[34px] rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 px-2.5 py-1 text-[11px] font-bold text-primary inline-flex items-center gap-1 transition disabled:opacity-50"
+                      title="Download Multi-PO Cumulative Vendor Settlement Statement JSON"
+                      data-testid="download-vendor-statement-btn"
+                    >
+                      <span>📊</span>
+                      <span>{downloadingVendorStatement ? 'Fetching…' : 'Vendor Settlement Statement (JSON)'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Credit & Debit Notes (Phase 5C.3) */}
+                {creditDebitNotes.length > 0 && (
+                  <div className="border-t border-border/60 pt-3 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <span>📑</span>
+                        <span>Credit &amp; Debit Notes / Financial Adjustments ({creditDebitNotes.length})</span>
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {creditDebitNotes.map((cdn) => (
+                        <div key={cdn.id} className="p-2 rounded-lg border bg-muted/10 text-xs flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${cdn.noteType === 'DEBIT_NOTE' ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'}`}>
+                              {cdn.noteType === 'DEBIT_NOTE' ? 'DEBIT NOTE' : 'CREDIT NOTE'}
+                            </span>
+                            <span className="font-mono font-bold">{cdn.noteNumber}</span>
+                            <span className="text-muted-foreground text-[11px]">— {cdn.reason}</span>
+                          </div>
+                          <span className="font-mono font-bold text-foreground">
+                            {formatMoney(cdn.amount, order.currency)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

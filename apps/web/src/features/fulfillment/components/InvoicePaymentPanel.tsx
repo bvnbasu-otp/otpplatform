@@ -10,16 +10,24 @@ import {
 import {
   fetchPaymentByInvoice,
   fetchPaymentsByPo,
+  fetchInvoiceAllocations,
+  reversePaymentAllocation,
+  issueCreditDebitNote,
+  fetchCreditDebitNotesByInvoice,
+  exportTallyPaymentVoucherXml,
+  exportZohoPaymentReceiptJson,
   recordInvoicePayment,
   recordPayment,
   verifyPayment,
   allocateAdvancePayment,
   type PaymentSummary,
+  type PaymentAllocationRecord,
 } from '../api/payments';
 import { fetchWorkOrderMilestones } from '../api/work-orders';
 import {
   calculateRemainingInvoiceableAmount,
   validateInvoiceAmountAgainstPo,
+  type CreditDebitNote,
 } from '@otp/domain';
 
 export interface InvoicePaymentPanelProps {
@@ -70,6 +78,16 @@ export function InvoicePaymentPanel({
   const [busy, setBusy] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [allocations, setAllocations] = useState<PaymentAllocationRecord[]>([]);
+  const [invoiceNotes, setInvoiceNotes] = useState<CreditDebitNote[]>([]);
+  const [showReversalModal, setShowReversalModal] = useState(false);
+  const [reversalTargetAlloc, setReversalTargetAlloc] = useState<PaymentAllocationRecord | null>(null);
+  const [reversalReason, setReversalReason] = useState('');
+  const [showCreditDebitModal, setShowCreditDebitModal] = useState(false);
+  const [cdnType, setCdnType] = useState<'DEBIT_NOTE' | 'CREDIT_NOTE'>('DEBIT_NOTE');
+  const [cdnAmount, setCdnAmount] = useState('');
+  const [cdnTaxAmount, setCdnTaxAmount] = useState('0');
+  const [cdnReason, setCdnReason] = useState('');
 
   async function load() {
     const [invsRes, mRes] = await Promise.all([
@@ -84,8 +102,14 @@ export function InvoicePaymentPanel({
       if (latest) {
         const bal = latest.balanceDue ?? (latest.status === 'PAID' ? 0 : latest.amount);
         setPayAmountInput(String(bal > 0 ? bal : latest.amount));
-        const payRes = await fetchPaymentByInvoice(latest.id);
+        const [payRes, allocRes, noteRes] = await Promise.all([
+          fetchPaymentByInvoice(latest.id),
+          fetchInvoiceAllocations(latest.id),
+          fetchCreditDebitNotesByInvoice(latest.id),
+        ]);
         if (payRes.ok) setPayment(payRes.payment);
+        if (allocRes.ok) setAllocations(allocRes.allocations);
+        if (noteRes.ok) setInvoiceNotes(noteRes.notes);
 
         if (latest.purchaseOrderId) {
           const poPayRes = await fetchPaymentsByPo(latest.purchaseOrderId);
@@ -364,6 +388,119 @@ export function InvoicePaymentPanel({
     setSuccess('✓ Payment verified and milestone settlement confirmed!');
     await load();
     onUpdated?.();
+  }
+
+  async function handleConfirmReversal(e: React.FormEvent) {
+    e.preventDefault();
+    if (!reversalTargetAlloc || !reversalReason.trim()) {
+      setError('Please provide a reason for reversal');
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    const result = await reversePaymentAllocation({
+      allocationId: reversalTargetAlloc.id,
+      reason: reversalReason.trim(),
+    });
+    setBusy(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    setSuccess(`✓ Successfully reversed payment allocation of ₹${reversalTargetAlloc.allocatedAmount}`);
+    setShowReversalModal(false);
+    setReversalTargetAlloc(null);
+    setReversalReason('');
+    await load();
+    onUpdated?.();
+  }
+
+  async function handleIssueCreditDebitNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!activeInvoice) return;
+
+    const noteAmt = Number(cdnAmount);
+    if (!noteAmt || noteAmt <= 0) {
+      setError('Note amount must be strictly greater than 0');
+      return;
+    }
+
+    if (!cdnReason.trim()) {
+      setError('Reason is required when issuing a credit or debit note');
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    const result = await issueCreditDebitNote({
+      organizationId: (activeInvoice as any).organizationId || (activeInvoice as any).organization_id || '',
+      invoiceId: activeInvoice.id,
+      purchaseOrderId: activeInvoice.purchaseOrderId || undefined,
+      noteType: cdnType,
+      amount: noteAmt,
+      taxAmount: Number(cdnTaxAmount || 0),
+      reason: cdnReason.trim(),
+    });
+    setBusy(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    setSuccess(`✓ Successfully issued ${cdnType === 'DEBIT_NOTE' ? 'Debit Note' : 'Credit Note'} (${result.note.noteNumber}) for ₹${noteAmt}!`);
+    setShowCreditDebitModal(false);
+    setCdnAmount('');
+    setCdnTaxAmount('0');
+    setCdnReason('');
+    await load();
+    onUpdated?.();
+  }
+
+  async function handleExportTally(pid: string) {
+    if (!activeInvoice) return;
+    setBusy(true);
+    const res = await exportTallyPaymentVoucherXml(pid, activeInvoice.purchaseOrderId || undefined);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    const blob = new Blob([res.xml], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Tally_Payment_Voucher_${activeInvoice.invoiceNumber}.xml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setSuccess('✓ Tally XML Payment Voucher exported!');
+  }
+
+  async function handleExportZoho(pid: string) {
+    if (!activeInvoice) return;
+    setBusy(true);
+    const res = await exportZohoPaymentReceiptJson(pid, activeInvoice.purchaseOrderId || undefined);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    const jsonStr = JSON.stringify(res.payload, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Zoho_Payment_Receipt_${activeInvoice.invoiceNumber}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setSuccess('✓ Zoho Books Payment Receipt JSON exported!');
   }
 
   const effectiveAmount = activeInvoice ? activeInvoice.amount : Number(amount) || poAmount;
@@ -737,6 +874,44 @@ export function InvoicePaymentPanel({
                   </span>
                 </div>
               </div>
+
+              {/* Credit & Debit Notes / Financial Adjustments (Phase 5C.3) */}
+              <div className="rounded-xl border bg-muted/10 p-3 space-y-2 text-xs">
+                <div className="flex items-center justify-between border-b pb-1.5">
+                  <span className="font-bold text-foreground text-[11px] flex items-center gap-1.5">
+                    <span>📑</span>
+                    <span>Financial Adjustments / Credit &amp; Debit Notes</span>
+                  </span>
+                  {role === 'buyer' && activeInvoice.status !== 'REJECTED' && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCreditDebitModal(true)}
+                      className="text-[10px] font-bold text-primary hover:underline"
+                    >
+                      + Issue Adjustment Note
+                    </button>
+                  )}
+                </div>
+
+                {invoiceNotes.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground">No credit or debit notes issued for this invoice.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {invoiceNotes.map((n) => (
+                      <div key={n.id} className="p-1.5 rounded-lg border bg-card flex items-center justify-between text-[11px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`rounded-full px-1.5 py-0.2 text-[8px] font-black ${n.noteType === 'DEBIT_NOTE' ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'}`}>
+                            {n.noteType === 'DEBIT_NOTE' ? 'DEBIT' : 'CREDIT'}
+                          </span>
+                          <span className="font-mono font-bold">{n.noteNumber}</span>
+                          <span className="text-muted-foreground">— {n.reason}</span>
+                        </div>
+                        <span className="font-mono font-bold">{formatMoney(n.amount, 'INR')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Buyer Approval / Rejection Actions */}
@@ -1059,6 +1234,74 @@ export function InvoicePaymentPanel({
             </div>
           </div>
         )}
+
+        {/* Payment Allocations & Reversals Lifecycle (Phase 5C.3) */}
+        {allocations.length > 0 && (
+          <div className="rounded-xl border bg-card p-3 space-y-2 text-xs">
+            <span className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground block">
+              Payment Allocations &amp; Settlement Reversals (Phase 5C.3)
+            </span>
+            <div className="space-y-1.5">
+              {allocations.map((alloc) => (
+                <div key={alloc.id} className="p-2 rounded-lg border bg-muted/10 flex items-center justify-between text-xs">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold">{formatMoney(alloc.allocatedAmount, 'INR')}</span>
+                      <span className={`rounded-full px-1.5 py-0.2 text-[8px] font-black ${alloc.status === 'ALLOCATED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'}`}>
+                        {alloc.status}
+                      </span>
+                    </div>
+                    {alloc.notes && <p className="text-[10px] text-muted-foreground">{alloc.notes}</p>}
+                  </div>
+
+                  {role === 'buyer' && alloc.status === 'ALLOCATED' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReversalTargetAlloc(alloc);
+                        setReversalReason('');
+                        setShowReversalModal(true);
+                      }}
+                      className="min-h-[30px] rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-700 dark:text-red-300 px-2 py-1 text-[10px] font-bold transition"
+                      data-testid="reverse-allocation-btn"
+                    >
+                      ↩ Reverse Allocation
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Dual-Rail ERP Payment Voucher Export Buttons */}
+        {payment && (
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/60">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleExportTally(payment.id)}
+              className="min-h-[34px] rounded-lg border bg-background hover:bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-foreground inline-flex items-center gap-1 transition disabled:opacity-50"
+              title="Export Tally Prime XML payment voucher"
+              data-testid="invoice-export-tally-btn"
+            >
+              <span>📥</span>
+              <span>Export Tally Voucher (XML)</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleExportZoho(payment.id)}
+              className="min-h-[34px] rounded-lg border bg-background hover:bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-foreground inline-flex items-center gap-1 transition disabled:opacity-50"
+              title="Export Zoho Books JSON receipt payload"
+              data-testid="invoice-export-zoho-btn"
+            >
+              <span>🧾</span>
+              <span>Export Zoho Receipt (JSON)</span>
+            </button>
+          </div>
+        )}
       </section>
 
       {/* =========================================================================
@@ -1235,6 +1478,174 @@ export function InvoicePaymentPanel({
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Allocation Reversal Confirmation Modal (Phase 5C.3) */}
+      {showReversalModal && reversalTargetAlloc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-2.5">
+              <h3 className="text-sm font-black text-foreground flex items-center gap-1.5 text-red-600">
+                <span>↩</span>
+                <span>Reverse Payment Allocation (Phase 5C.3)</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReversalModal(false);
+                  setReversalTargetAlloc(null);
+                }}
+                className="text-muted-foreground hover:text-foreground text-sm p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-1.5 text-xs text-amber-900 dark:text-amber-200">
+              <p className="font-bold">⚠️ Warning: Financial Settlement Reversal</p>
+              <p>
+                Reversing this allocation of <span className="font-mono font-bold">{formatMoney(reversalTargetAlloc.allocatedAmount, 'INR')}</span> will restore the payment unallocated balance and increment the invoice balance due.
+              </p>
+            </div>
+
+            <form onSubmit={(e) => void handleConfirmReversal(e)} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-foreground mb-1">
+                  Reversal Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={reversalReason}
+                  onChange={(e) => setReversalReason(e.target.value)}
+                  placeholder="e.g. Disputed line item inspection, erroneous payment assignment"
+                  className="w-full rounded-xl border bg-background p-2.5 text-xs focus:ring-2 focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReversalModal(false);
+                    setReversalTargetAlloc(null);
+                  }}
+                  className="min-h-[40px] rounded-xl border px-3 py-1.5 text-xs font-bold hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={busy || !reversalReason.trim()}
+                  className="min-h-[40px] rounded-xl bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 text-xs font-black shadow-xs disabled:opacity-50"
+                  data-testid="confirm-reversal-btn"
+                >
+                  {busy ? 'Reversing…' : 'Confirm Allocation Reversal'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Credit / Debit Note Issuance Modal (Phase 5C.3) */}
+      {showCreditDebitModal && activeInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-2.5">
+              <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
+                <span>📑</span>
+                <span>Issue Financial Adjustment Note (Phase 5C.3)</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowCreditDebitModal(false)}
+                className="text-muted-foreground hover:text-foreground text-sm p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={(e) => void handleIssueCreditDebitNote(e)} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-foreground mb-1">
+                  Adjustment Type
+                </label>
+                <select
+                  value={cdnType}
+                  onChange={(e) => setCdnType(e.target.value as any)}
+                  className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[40px]"
+                >
+                  <option value="DEBIT_NOTE">DEBIT NOTE (Price Reduction / Deductions)</option>
+                  <option value="CREDIT_NOTE">CREDIT NOTE (Additional Payable / Adjustment)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-foreground mb-1">
+                    Amount (₹ INR) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={cdnAmount}
+                    onChange={(e) => setCdnAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[40px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-foreground mb-1">
+                    Tax Amount (₹ INR)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={cdnTaxAmount}
+                    onChange={(e) => setCdnTaxAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[40px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-foreground mb-1">
+                  Reason for Adjustment <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={2}
+                  value={cdnReason}
+                  onChange={(e) => setCdnReason(e.target.value)}
+                  placeholder="e.g. Material quality deficiency deduction"
+                  className="w-full rounded-xl border bg-background p-2.5 text-xs focus:ring-2 focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreditDebitModal(false)}
+                  className="min-h-[40px] rounded-xl border px-3 py-1.5 text-xs font-bold hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={busy || !cdnAmount || !cdnReason.trim()}
+                  className="min-h-[40px] rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-1.5 text-xs font-black shadow-xs disabled:opacity-50"
+                  data-testid="submit-cdn-btn"
+                >
+                  {busy ? 'Issuing…' : 'Issue Adjustment Note →'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
