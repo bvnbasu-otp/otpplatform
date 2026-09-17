@@ -1782,5 +1782,163 @@ export async function syncPoSettlementReconciliationsRpc(params: {
   }
 }
 
+// -----------------------------------------------------------------------------
+// Phase 5D: General Ledger & Double-Entry Accounting APIs & RPCs
+// -----------------------------------------------------------------------------
+
+export async function fetchLedgerAccountsApi(
+  organizationId: string,
+): Promise<{ ok: true; accounts: any[] } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('ledger_accounts')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('account_code', { ascending: true });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, accounts: data || [] };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch ledger accounts' };
+  }
+}
+
+export async function fetchAccountingPeriodsApi(
+  organizationId: string,
+): Promise<{ ok: true; periods: any[] } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('accounting_periods')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('start_date', { ascending: false });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, periods: data || [] };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch accounting periods' };
+  }
+}
+
+export async function fetchJournalEntriesApi(
+  organizationId: string,
+  periodId?: string,
+): Promise<{ ok: true; journals: any[] } | { ok: false; error: string }> {
+  try {
+    let query = supabase
+      .from('journal_entries')
+      .select('*, lines:journal_lines(*, account:ledger_accounts(account_code, account_name))')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false });
+
+    if (periodId) {
+      query = query.eq('period_id', periodId);
+    }
+
+    const { data, error } = await query;
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, journals: data || [] };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch journal entries' };
+  }
+}
+
+export async function fetchLedgerBalanceSummaryRpc(params: {
+  organizationId: string;
+  periodId?: string;
+}): Promise<{ ok: true; summary: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('get_ledger_balance_summary', {
+      p_org_id: params.organizationId,
+      p_period_id: params.periodId || null,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, summary: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch ledger balance summary' };
+  }
+}
+
+export async function postJournalEntryRpc(params: {
+  organizationId: string;
+  periodId: string;
+  entryType: string;
+  narration: string;
+  sourceEntityType?: string;
+  sourceEntityId?: string;
+  idempotencyKey?: string;
+  lines: any[];
+}): Promise<{ ok: true; result: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('post_journal_entry_atomic', {
+      p_org_id: params.organizationId,
+      p_period_id: params.periodId,
+      p_entry_type: params.entryType,
+      p_narration: params.narration,
+      p_source_entity_type: params.sourceEntityType || null,
+      p_source_entity_id: params.sourceEntityId || null,
+      p_idempotency_key: params.idempotencyKey || null,
+      p_lines: params.lines,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, result: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to post journal entry' };
+  }
+}
+
+export async function reverseJournalEntryRpc(params: {
+  organizationId: string;
+  journalId: string;
+  reason?: string;
+}): Promise<{ ok: true; result: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('reverse_journal_entry_atomic', {
+      p_org_id: params.organizationId,
+      p_journal_id: params.journalId,
+      p_reversal_reason: params.reason || 'Reversal of authorized journal entry',
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, result: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to reverse journal entry' };
+  }
+}
+
+export async function closeAccountingPeriodRpc(params: {
+  organizationId: string;
+  periodId: string;
+}): Promise<{ ok: true; result: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('close_accounting_period_atomic', {
+      p_org_id: params.organizationId,
+      p_period_id: params.periodId,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, result: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to close accounting period' };
+  }
+}
+
+export async function reopenAccountingPeriodRpc(params: {
+  organizationId: string;
+  periodId: string;
+  reason: string;
+}): Promise<{ ok: true; result: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('reopen_accounting_period_atomic', {
+      p_org_id: params.organizationId,
+      p_period_id: params.periodId,
+      p_reason: params.reason,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, result: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to reopen accounting period' };
+  }
+}
+
+
 
 

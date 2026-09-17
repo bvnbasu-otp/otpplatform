@@ -1,4 +1,5 @@
 import type {
+  AccountingPeriodEntity,
   ApprovalInstance,
   Award,
   BankReconciliationRecordEntity,
@@ -8,6 +9,8 @@ import type {
   ErpExportManifestEntity,
   Invoice,
   InvoiceLineItemEntity,
+  JournalEntryEntity,
+  LedgerAccountEntity,
   Payment,
   PaymentAllocationEntity,
   PlatformFeePolicyEntity,
@@ -31,6 +34,7 @@ import type {
   WorkOrder,
   WorkOrderMilestoneEntity,
 } from './entities';
+
 
 export interface RequirementRepository {
   findById(id: string): Promise<Requirement | null>;
@@ -243,6 +247,30 @@ export interface ErpExportManifestRepository {
   save(manifest: ErpExportManifestEntity): Promise<ErpExportManifestEntity>;
 }
 
+export interface AccountingPeriodRepository {
+  findById(id: string): Promise<AccountingPeriodEntity | null>;
+  findByOrganizationId(orgId: string): Promise<AccountingPeriodEntity[]>;
+  findByCode(orgId: string, periodCode: string): Promise<AccountingPeriodEntity | null>;
+  save(period: AccountingPeriodEntity): Promise<AccountingPeriodEntity>;
+}
+
+export interface LedgerAccountRepository {
+  findById(id: string): Promise<LedgerAccountEntity | null>;
+  findByOrganizationId(orgId: string): Promise<LedgerAccountEntity[]>;
+  findByCode(orgId: string, accountCode: string): Promise<LedgerAccountEntity | null>;
+  save(account: LedgerAccountEntity): Promise<LedgerAccountEntity>;
+  saveMany(accounts: LedgerAccountEntity[]): Promise<LedgerAccountEntity[]>;
+}
+
+export interface JournalEntryRepository {
+  findById(id: string): Promise<JournalEntryEntity | null>;
+  findByOrganizationId(orgId: string): Promise<JournalEntryEntity[]>;
+  findByPeriodId(periodId: string): Promise<JournalEntryEntity[]>;
+  findByIdempotencyKey(orgId: string, idempotencyKey: string): Promise<JournalEntryEntity | null>;
+  findBySourceEntity(sourceType: string, sourceId: string): Promise<JournalEntryEntity[]>;
+  save(journal: JournalEntryEntity): Promise<JournalEntryEntity>;
+}
+
 export interface Repositories {
   requirements: RequirementRepository;
   rfqs: RfqRepository;
@@ -273,6 +301,9 @@ export interface Repositories {
   settlementExceptions?: SettlementExceptionRepository;
   settlementExceptionEvents?: SettlementExceptionEventRepository;
   erpExportManifests?: ErpExportManifestRepository;
+  accountingPeriods?: AccountingPeriodRepository;
+  ledgerAccounts?: LedgerAccountRepository;
+  journalEntries?: JournalEntryRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

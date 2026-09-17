@@ -31,6 +31,9 @@ import type {
   TdsDeductionEntity,
   WorkOrder,
   WorkOrderMilestoneEntity,
+  AccountingPeriodEntity,
+  LedgerAccountEntity,
+  JournalEntryEntity,
 } from './entities';
 
 function id(): string {
@@ -74,7 +77,11 @@ export class InMemoryRepositories {
   settlementExceptions = new Map<string, SettlementExceptionEntity>();
   settlementExceptionEvents = new Map<string, SettlementExceptionEventEntity>();
   erpExportManifests = new Map<string, ErpExportManifestEntity>();
+  accountingPeriods = new Map<string, AccountingPeriodEntity>();
+  ledgerAccounts = new Map<string, LedgerAccountEntity>();
+  journalEntries = new Map<string, JournalEntryEntity>();
   suppliers = new Map<string, Supplier>();
+
   performance = new Map<string, ProcurementPerformanceRecord>();
 
   static create(): InMemoryRepositories {
@@ -586,6 +593,69 @@ export class InMemoryRepositories {
     };
   }
 
+  get accountingPeriodsRepo(): Repositories['accountingPeriods'] {
+    const store = this.accountingPeriods;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((p) => p.organizationId === orgId),
+      findByCode: async (orgId, periodCode) =>
+        [...store.values()].find(
+          (p) => p.organizationId === orgId && p.periodCode === periodCode,
+        ) ?? null,
+      save: async (p) => {
+        store.set(p.id, p);
+        return p;
+      },
+    };
+  }
+
+  get ledgerAccountsRepo(): Repositories['ledgerAccounts'] {
+    const store = this.ledgerAccounts;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((a) => a.organizationId === orgId),
+      findByCode: async (orgId, accountCode) =>
+        [...store.values()].find(
+          (a) => a.organizationId === orgId && a.accountCode === accountCode,
+        ) ?? null,
+      save: async (a) => {
+        store.set(a.id, a);
+        return a;
+      },
+      saveMany: async (accounts) => {
+        for (const a of accounts) {
+          store.set(a.id, a);
+        }
+        return accounts;
+      },
+    };
+  }
+
+  get journalEntriesRepo(): Repositories['journalEntries'] {
+    const store = this.journalEntries;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((j) => j.organizationId === orgId),
+      findByPeriodId: async (periodId) =>
+        [...store.values()].filter((j) => j.periodId === periodId),
+      findByIdempotencyKey: async (orgId, idempotencyKey) =>
+        [...store.values()].find(
+          (j) => j.organizationId === orgId && j.idempotencyKey === idempotencyKey,
+        ) ?? null,
+      findBySourceEntity: async (sourceType, sourceId) =>
+        [...store.values()].filter(
+          (j) => j.sourceEntityType === sourceType && j.sourceEntityId === sourceId,
+        ),
+      save: async (j) => {
+        store.set(j.id, j);
+        return j;
+      },
+    };
+  }
+
   get suppliersRepo(): Repositories['suppliers'] {
     const store = this.suppliers;
     return {
@@ -639,6 +709,9 @@ export class InMemoryRepositories {
       settlementExceptions: this.settlementExceptionsRepo,
       settlementExceptionEvents: this.settlementExceptionEventsRepo,
       erpExportManifests: this.erpExportManifestsRepo,
+      accountingPeriods: this.accountingPeriodsRepo,
+      ledgerAccounts: this.ledgerAccountsRepo,
+      journalEntries: this.journalEntriesRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

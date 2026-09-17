@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
   calculateReconciliationSummary,
+  exportToTallyJournalVoucher,
+  exportToZohoJournalEntry,
   type FinancialObservabilitySummary,
   type BankReconciliationRecord,
   type SettlementReconciliationRecord,
   type SettlementExceptionRecord,
+  type TrialBalanceSummary,
+  type LedgerAccount,
+  type AccountingPeriod,
+  type JournalEntry,
 } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
 import {
@@ -13,6 +19,14 @@ import {
   fetchSettlementExceptionsApi,
   fetchSettlementExceptionEventsApi,
   fetchErpExportManifestsApi,
+  fetchLedgerAccountsApi,
+  fetchAccountingPeriodsApi,
+  fetchJournalEntriesApi,
+  fetchLedgerBalanceSummaryRpc,
+  postJournalEntryRpc,
+  reverseJournalEntryRpc,
+  closeAccountingPeriodRpc,
+  reopenAccountingPeriodRpc,
   reconcileBankUtrRpc,
   invalidateBankReconciliationRpc,
   syncPoSettlementReconciliationsRpc,
@@ -74,7 +88,28 @@ export const FinancialControlDashboardPage: React.FC<
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   // Active sub-tab
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SETTLEMENT_RECON' | 'EXCEPTION_QUEUE' | 'BANK_RECON' | 'ERP_MANIFESTS'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'GENERAL_LEDGER' | 'SETTLEMENT_RECON' | 'EXCEPTION_QUEUE' | 'BANK_RECON' | 'ERP_MANIFESTS'>('OVERVIEW');
+
+  // Phase 5D: General Ledger & Double-Entry State
+  const [ledgerAccounts, setLedgerAccounts] = useState<LedgerAccount[]>([]);
+  const [accountingPeriods, setAccountingPeriods] = useState<AccountingPeriod[]>([]);
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [trialBalance, setTrialBalance] = useState<TrialBalanceSummary | null>(null);
+  const [selectedJournalForDetail, setSelectedJournalForDetail] = useState<JournalEntry | null>(null);
+
+  // Journal Reversal Modal
+  const [reversingJournal, setReversingJournal] = useState<JournalEntry | null>(null);
+  const [reversalReasonInput, setReversalReasonInput] = useState('');
+  const [reversalLoading, setReversalLoading] = useState(false);
+  const [reversalError, setReversalError] = useState<string | null>(null);
+
+  // Period Reopen / Close Modal
+  const [managingPeriod, setManagingPeriod] = useState<AccountingPeriod | null>(null);
+  const [periodAction, setPeriodAction] = useState<'CLOSE' | 'REOPEN' | null>(null);
+  const [reopenReasonInput, setReopenReasonInput] = useState('');
+  const [periodLoading, setPeriodLoading] = useState(false);
+  const [periodError, setPeriodError] = useState<string | null>(null);
 
   useEffect(() => {
     async function initOrg() {
@@ -115,7 +150,7 @@ export const FinancialControlDashboardPage: React.FC<
     setLoading(true);
     setErrorMsg(null);
 
-    const [sumRes, bankRes, setRecRes, excRes, manRes] = await Promise.all([
+    const [sumRes, bankRes, setRecRes, excRes, manRes, accRes, perRes, jrnRes, balRes] = await Promise.all([
       fetchFinancialObservabilitySummaryApi(targetOrgId),
       supabase
         .from('bank_reconciliation_records')
@@ -125,6 +160,10 @@ export const FinancialControlDashboardPage: React.FC<
       fetchSettlementReconciliationsApi(targetOrgId),
       fetchSettlementExceptionsApi(targetOrgId),
       fetchErpExportManifestsApi(targetOrgId),
+      fetchLedgerAccountsApi(targetOrgId),
+      fetchAccountingPeriodsApi(targetOrgId),
+      fetchJournalEntriesApi(targetOrgId, selectedPeriodId || undefined),
+      fetchLedgerBalanceSummaryRpc({ organizationId: targetOrgId, periodId: selectedPeriodId || undefined }),
     ]);
 
     setLoading(false);
@@ -132,6 +171,25 @@ export const FinancialControlDashboardPage: React.FC<
       setSummary(sumRes.summary);
     } else {
       setErrorMsg(sumRes.error);
+    }
+
+    if (accRes.ok) {
+      setLedgerAccounts(accRes.accounts);
+    }
+
+    if (perRes.ok) {
+      setAccountingPeriods(perRes.periods);
+      if (!selectedPeriodId && perRes.periods.length > 0) {
+        setSelectedPeriodId(perRes.periods[0].id);
+      }
+    }
+
+    if (jrnRes.ok) {
+      setJournalEntries(jrnRes.journals);
+    }
+
+    if (balRes.ok) {
+      setTrialBalance(balRes.summary);
     }
 
     if (bankRes.data) {
@@ -448,10 +506,68 @@ export const FinancialControlDashboardPage: React.FC<
     }
   };
 
+  const handleReverseJournal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reversingJournal || reversalReasonInput.trim().length < 5) return;
+    setReversalLoading(true);
+    setReversalError(null);
+
+    const res = await reverseJournalEntryRpc({
+      organizationId: orgId,
+      journalId: reversingJournal.id,
+      reason: reversalReasonInput,
+    });
+
+    setReversalLoading(false);
+    if (res.ok) {
+      setReversingJournal(null);
+      setReversalReasonInput('');
+      loadData(orgId);
+    } else {
+      setReversalError(res.error);
+    }
+  };
+
+  const handlePeriodAction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!managingPeriod || !periodAction) return;
+    setPeriodLoading(true);
+    setPeriodError(null);
+
+    let res: any;
+    if (periodAction === 'CLOSE') {
+      res = await closeAccountingPeriodRpc({
+        organizationId: orgId,
+        periodId: managingPeriod.id,
+      });
+    } else {
+      if (reopenReasonInput.trim().length < 5) {
+        setPeriodError('Reopen explanation of at least 5 characters is required');
+        setPeriodLoading(false);
+        return;
+      }
+      res = await reopenAccountingPeriodRpc({
+        organizationId: orgId,
+        periodId: managingPeriod.id,
+        reason: reopenReasonInput,
+      });
+    }
+
+    setPeriodLoading(false);
+    if (res.ok) {
+      setManagingPeriod(null);
+      setPeriodAction(null);
+      setReopenReasonInput('');
+      loadData(orgId);
+    } else {
+      setPeriodError(res.error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8 text-center text-sm text-muted-foreground animate-pulse">
-        Loading Financial Observability Radar &amp; Controls (Phase 5C.6)…
+        Loading Financial Observability Radar &amp; General Ledger (Phase 5D)…
       </div>
     );
   }
@@ -571,6 +687,15 @@ export const FinancialControlDashboardPage: React.FC<
           }`}
         >
           📊 Overview &amp; Aging
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('GENERAL_LEDGER')}
+          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+            activeTab === 'GENERAL_LEDGER' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          📖 General Ledger &amp; Double-Entry ({journalEntries.length})
         </button>
         <button
           type="button"
@@ -762,7 +887,214 @@ export const FinancialControlDashboardPage: React.FC<
         </div>
       )}
 
-      {/* TAB 2: SETTLEMENT RECONCILIATIONS LEDGER */}
+      {/* TAB 2: GENERAL LEDGER & DOUBLE-ENTRY JOURNALS (Phase 5D) */}
+      {activeTab === 'GENERAL_LEDGER' && (
+        <div className="space-y-6">
+          {/* Trial Balance & Period Controls Header */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border pb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <span>📖</span> Double-Entry General Ledger &amp; Trial Balance
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Auditable double-entry ledger reflection of authorized procurement events, period controls, and trial balances
+                </p>
+              </div>
+
+              {/* Accounting Period Selector & Status */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Period:</span>
+                <select
+                  value={selectedPeriodId}
+                  onChange={(e) => {
+                    setSelectedPeriodId(e.target.value);
+                    if (orgId) loadData(orgId);
+                  }}
+                  className="bg-background border border-border rounded-lg px-2.5 py-1 text-xs font-semibold text-foreground"
+                >
+                  <option value="">All Historical Periods</option>
+                  {accountingPeriods.map((p: any) => (
+                    <option key={p.id} value={p.id}>
+                      {p.period_name || p.periodName || p.period_code || p.periodCode} ({p.status})
+                    </option>
+                  ))}
+                </select>
+
+                {/* Period Close / Reopen Action */}
+                {selectedPeriodId && (() => {
+                  const currPeriod: any = accountingPeriods.find((p: any) => p.id === selectedPeriodId);
+                  if (!currPeriod) return null;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setManagingPeriod(currPeriod);
+                        setPeriodAction(currPeriod.status === 'OPEN' ? 'CLOSE' : 'REOPEN');
+                        setReopenReasonInput('');
+                        setPeriodError(null);
+                      }}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition ${
+                        currPeriod.status === 'OPEN'
+                          ? 'border-amber-500/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                          : 'border-emerald-500/40 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                      }`}
+                    >
+                      {currPeriod.status === 'OPEN' ? '🔒 Close Period' : '🔓 Reopen Period'}
+                    </button>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Trial Balance High-Level Classification Summary */}
+            {trialBalance && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs">
+                <div className="p-2.5 bg-muted/30 border border-border rounded-lg space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">Total Debits</span>
+                  <div className="text-xs font-mono font-bold text-foreground">
+                    ₹{Number(trialBalance.totalDebits || (trialBalance as any).total_debits || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+                <div className="p-2.5 bg-muted/30 border border-border rounded-lg space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">Total Credits</span>
+                  <div className="text-xs font-mono font-bold text-foreground">
+                    ₹{Number(trialBalance.totalCredits || (trialBalance as any).total_credits || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+                <div className="p-2.5 bg-muted/30 border border-border rounded-lg space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">Trial Balance</span>
+                  <div className={`text-xs font-bold ${trialBalance.isBalanced || (trialBalance as any).is_balanced ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                    {(trialBalance.isBalanced || (trialBalance as any).is_balanced) ? '✓ BALANCED (0.00)' : `⚠️ DIFF: ₹${trialBalance.difference || (trialBalance as any).difference}`}
+                  </div>
+                </div>
+                <div className="p-2.5 bg-muted/30 border border-border rounded-lg space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">Total Assets</span>
+                  <div className="text-xs font-mono font-bold text-foreground">
+                    ₹{Number(trialBalance.totalAssets || (trialBalance as any).total_assets || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+                <div className="p-2.5 bg-muted/30 border border-border rounded-lg space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">Total Liabilities</span>
+                  <div className="text-xs font-mono font-bold text-foreground">
+                    ₹{Number(trialBalance.totalLiabilities || (trialBalance as any).total_liabilities || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+                <div className="p-2.5 bg-muted/30 border border-border rounded-lg space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">Total Revenue</span>
+                  <div className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    ₹{Number(trialBalance.totalRevenue || (trialBalance as any).total_revenue || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+                <div className="p-2.5 bg-muted/30 border border-border rounded-lg space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">Total Expense</span>
+                  <div className="text-xs font-mono font-bold text-foreground">
+                    ₹{Number(trialBalance.totalExpense || (trialBalance as any).total_expense || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Journal Entries Register Table */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h4 className="text-sm font-semibold text-foreground">
+                Journal Entries Register ({journalEntries.length})
+              </h4>
+              <span className="text-xs text-muted-foreground">
+                Double-Entry Audited Vouchers
+              </span>
+            </div>
+
+            {journalEntries.length === 0 ? (
+              <div className="text-center py-8 text-xs text-muted-foreground border border-dashed rounded-lg">
+                No posted journal entries found for the selected period. Journals are generated automatically upon authorized procurement, invoice, tax, and settlement events.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-muted/50 border-b text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                    <tr>
+                      <th className="px-3 py-2">Journal #</th>
+                      <th className="px-3 py-2">Date</th>
+                      <th className="px-3 py-2">Entry Type</th>
+                      <th className="px-3 py-2">Source Ref</th>
+                      <th className="px-3 py-2 text-right">Debit Total</th>
+                      <th className="px-3 py-2 text-right">Credit Total</th>
+                      <th className="px-3 py-2 text-center">Status</th>
+                      <th className="px-3 py-2 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60 font-mono text-[11px]">
+                    {journalEntries.map((j: any) => (
+                      <tr key={j.id} className="hover:bg-muted/20 transition">
+                        <td className="px-3 py-2.5 font-bold text-primary cursor-pointer hover:underline" onClick={() => setSelectedJournalForDetail(j)}>
+                          {j.journal_number || j.journalNumber}
+                        </td>
+                        <td className="px-3 py-2.5 font-sans text-muted-foreground">
+                          {j.entry_date || j.entryDate}
+                        </td>
+                        <td className="px-3 py-2.5 font-sans">
+                          <span className="inline-block px-2 py-0.5 rounded bg-muted text-foreground text-[10px] font-semibold">
+                            {j.entry_type || j.entryType}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-muted-foreground text-[10px] max-w-[120px] truncate">
+                          {j.source_entity_type || j.sourceEntityType || '—'}: {j.source_entity_id || j.sourceEntityId || '—'}
+                        </td>
+                        <td className="px-3 py-2.5 text-right font-bold text-foreground">
+                          ₹{Number(j.total_debit || j.totalDebit || 0).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-3 py-2.5 text-right font-bold text-foreground">
+                          ₹{Number(j.total_credit || j.totalCredit || 0).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              (j.status === 'POSTED')
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                : (j.status === 'REVERSED')
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                : 'bg-muted text-muted-foreground'
+                            }`}
+                          >
+                            {j.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-right font-sans space-x-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedJournalForDetail(j)}
+                            className="px-2 py-0.5 text-[10px] text-primary hover:bg-primary/10 border border-primary/20 rounded font-semibold"
+                          >
+                            View Lines
+                          </button>
+                          {j.status === 'POSTED' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setReversingJournal(j);
+                                setReversalReasonInput('');
+                                setReversalError(null);
+                              }}
+                              className="px-2 py-0.5 text-[10px] text-destructive hover:bg-destructive/10 border border-destructive/20 rounded font-semibold"
+                            >
+                              Reverse
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: SETTLEMENT RECONCILIATIONS LEDGER */}
       {activeTab === 'SETTLEMENT_RECON' && (
         <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-border pb-3">
@@ -1412,6 +1744,227 @@ export const FinancialControlDashboardPage: React.FC<
                   className="px-4 py-1.5 bg-primary text-primary-foreground font-semibold rounded-md hover:bg-primary/90 disabled:opacity-50"
                 >
                   {recLoading ? 'Reconciling…' : 'Match & Reconcile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Journal Lines Drawer / Modal (Phase 5D) */}
+      {selectedJournalForDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-xl shadow-2xl max-w-2xl w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-2">
+              <div>
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <span>📖</span> Journal Entry #{selectedJournalForDetail.journalNumber || (selectedJournalForDetail as any).journal_number}
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {selectedJournalForDetail.entryType || (selectedJournalForDetail as any).entry_type} • {selectedJournalForDetail.entryDate || (selectedJournalForDetail as any).entry_date}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedJournalForDetail(null)}
+                className="text-muted-foreground hover:text-foreground text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3 bg-muted/30 rounded-lg text-xs space-y-1">
+              <span className="font-semibold text-muted-foreground block text-[10px] uppercase">Narration</span>
+              <p className="text-foreground">{selectedJournalForDetail.narration}</p>
+            </div>
+
+            {/* Debit & Credit Lines Table */}
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/50 border-b text-[10px] uppercase font-bold text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2">Line</th>
+                    <th className="px-3 py-2">Account</th>
+                    <th className="px-3 py-2">Description</th>
+                    <th className="px-3 py-2 text-right">Debit (₹)</th>
+                    <th className="px-3 py-2 text-right">Credit (₹)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60 font-mono text-[11px]">
+                  {(selectedJournalForDetail.lines || []).map((l: any, idx: number) => (
+                    <tr key={idx} className="hover:bg-muted/20">
+                      <td className="px-3 py-2 text-muted-foreground">{l.lineNumber || l.line_number || (idx + 1)}</td>
+                      <td className="px-3 py-2 font-sans font-semibold">
+                        {l.account?.account_name || l.accountName || l.account_code || l.accountCode || l.account_id || l.accountId}
+                      </td>
+                      <td className="px-3 py-2 font-sans text-muted-foreground text-[10px]">{l.description || '—'}</td>
+                      <td className="px-3 py-2 text-right font-bold">
+                        {Number(l.debitAmount || l.debit_amount || 0) > 0 ? `₹${Number(l.debitAmount || l.debit_amount).toLocaleString('en-IN')}` : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-right font-bold">
+                        {Number(l.creditAmount || l.credit_amount || 0) > 0 ? `₹${Number(l.creditAmount || l.credit_amount).toLocaleString('en-IN')}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-muted/40 font-mono text-xs font-bold border-t">
+                  <tr>
+                    <td colSpan={3} className="px-3 py-2 font-sans text-right">Total:</td>
+                    <td className="px-3 py-2 text-right text-foreground">
+                      ₹{Number(selectedJournalForDetail.totalDebit || (selectedJournalForDetail as any).total_debit || 0).toLocaleString('en-IN')}
+                    </td>
+                    <td className="px-3 py-2 text-right text-foreground">
+                      ₹{Number(selectedJournalForDetail.totalCredit || (selectedJournalForDetail as any).total_credit || 0).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedJournalForDetail(null)}
+                className="px-4 py-1.5 bg-primary text-primary-foreground font-semibold rounded-md text-xs hover:bg-primary/90"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Journal Reversal Modal (Phase 5D) */}
+      {reversingJournal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-5 space-y-4">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-sm font-bold text-foreground">
+                Reverse Journal Entry ({reversingJournal.journalNumber || (reversingJournal as any).journal_number})
+              </h3>
+              <button
+                type="button"
+                onClick={() => setReversingJournal(null)}
+                className="text-muted-foreground text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-700 dark:text-amber-300">
+              ⚠️ Journal reversal creates an exact mirrored double-entry record with swapped debits and credits, preserving full ledger auditability.
+            </div>
+
+            {reversalError && (
+              <div className="text-xs p-2.5 bg-destructive/10 text-destructive rounded-md border border-destructive/20 font-medium">
+                {reversalError}
+              </div>
+            )}
+
+            <form onSubmit={handleReverseJournal} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-medium text-muted-foreground mb-1">
+                  Reversal Reason (min. 5 characters)
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={reversalReasonInput}
+                  onChange={(e) => setReversalReasonInput(e.target.value)}
+                  placeholder="e.g. Authorized cancellation of erroneous commercial invoice."
+                  className="w-full bg-background border border-border rounded-md px-3 py-1.5"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReversingJournal(null)}
+                  className="px-3 py-1.5 border border-border rounded-md hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={reversalLoading}
+                  className="px-4 py-1.5 bg-destructive text-destructive-foreground font-semibold rounded-md hover:bg-destructive/90 disabled:opacity-50"
+                >
+                  {reversalLoading ? 'Reversing…' : 'Confirm Reversal'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Period Close / Reopen Modal (Phase 5D) */}
+      {managingPeriod && periodAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-5 space-y-4">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-sm font-bold text-foreground">
+                {periodAction === 'CLOSE' ? 'Close Accounting Period' : 'Reopen Accounting Period'} ({managingPeriod.periodName || (managingPeriod as any).period_name || managingPeriod.periodCode || (managingPeriod as any).period_code})
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setManagingPeriod(null);
+                  setPeriodAction(null);
+                }}
+                className="text-muted-foreground text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {periodError && (
+              <div className="text-xs p-2.5 bg-destructive/10 text-destructive rounded-md border border-destructive/20 font-medium">
+                {periodError}
+              </div>
+            )}
+
+            <form onSubmit={handlePeriodAction} className="space-y-3 text-xs">
+              {periodAction === 'CLOSE' ? (
+                <p className="text-muted-foreground">
+                  Closing this accounting period will lock all journal entries and prevent further postings without explicit Owner reopening.
+                </p>
+              ) : (
+                <div>
+                  <label className="block font-medium text-muted-foreground mb-1">
+                    Reopening Reason &amp; Audit Justification (min. 5 chars)
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={reopenReasonInput}
+                    onChange={(e) => setReopenReasonInput(e.target.value)}
+                    placeholder="e.g. Authorized reopening for post-audit statutory adjustment."
+                    className="w-full bg-background border border-border rounded-md px-3 py-1.5"
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManagingPeriod(null);
+                    setPeriodAction(null);
+                  }}
+                  className="px-3 py-1.5 border border-border rounded-md hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={periodLoading}
+                  className={`px-4 py-1.5 font-semibold rounded-md disabled:opacity-50 ${
+                    periodAction === 'CLOSE'
+                      ? 'bg-amber-600 text-white hover:bg-amber-700'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  {periodLoading ? 'Processing…' : periodAction === 'CLOSE' ? 'Confirm Close' : 'Confirm Reopen'}
                 </button>
               </div>
             </form>

@@ -38,4 +38,11 @@ export * from './accounting/zoho-json-exporter';
 export * from './accounting/tally-payment-voucher';
 export * from './accounting/zoho-payment-receipt';
 export * from './accounting/erp-manifest';
+export * from './accounting/chart-of-accounts';
+export * from './accounting/accounting-period';
+export * from './accounting/journal-entry';
+export * from './accounting/ledger-balance';
+export * from './accounting/journal-posting-rules';
+export * from './accounting/tally-journal-exporter';
+export * from './accounting/zoho-journal-exporter';
 

@@ -13,6 +13,9 @@ import type {
   RfqStatus,
   VoteChoice,
   WorkOrderStatus,
+  AccountClassification,
+  AccountSubtype,
+  JournalEntryType,
 } from '@otp/domain';
 import type { StructuredSpecs } from '../interfaces/requirement-parser-service';
 
@@ -547,6 +550,83 @@ export interface ErpExportManifestEntity {
   exportedAt: string;
   createdAt: string;
 }
+
+export interface AccountingPeriodEntity {
+  id: string;
+  organizationId: string;
+  periodCode: string;
+  periodName: string;
+  startDate: string;
+  endDate: string;
+  status: 'OPEN' | 'CLOSED' | 'LOCKED';
+  closedAt?: string | null;
+  closedBy?: string | null;
+  lockedAt?: string | null;
+  lockedBy?: string | null;
+  reopenedAt?: string | null;
+  reopenedBy?: string | null;
+  reopenReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LedgerAccountEntity {
+  id: string;
+  organizationId: string;
+  accountCode: string;
+  accountName: string;
+  classification: AccountClassification;
+  subtype: AccountSubtype;
+  currency: string;
+  isSystemAccount: boolean;
+  status: 'ACTIVE' | 'INACTIVE' | 'DEPRECATED';
+  description?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JournalLineEntity {
+  id?: string;
+  journalEntryId?: string;
+  lineNumber: number;
+  accountId: string;
+  accountCode?: string;
+  accountName?: string;
+  debitAmount: number;
+  creditAmount: number;
+  currency?: string;
+  description?: string | null;
+  supplierId?: string | null;
+  purchaseOrderId?: string | null;
+  invoiceId?: string | null;
+  paymentId?: string | null;
+  createdAt?: string;
+}
+
+export interface JournalEntryEntity {
+  id: string;
+  organizationId: string;
+  periodId: string;
+  journalNumber: string;
+  entryDate: string;
+  entryType: JournalEntryType;
+  status: 'DRAFT' | 'POSTED' | 'REVERSED';
+  narration: string;
+  sourceEntityType?: string | null;
+  sourceEntityId?: string | null;
+  idempotencyKey?: string | null;
+  reversedByJournalId?: string | null;
+  reversesJournalId?: string | null;
+  reversalReason?: string | null;
+  lines: JournalLineEntity[];
+  totalDebit: number;
+  totalCredit: number;
+  postedBy?: string | null;
+  postedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 
 

@@ -22,6 +22,7 @@ import { RFQService } from '../services/rfq-service';
 import { SupplierDiscoveryAppService } from '../services/supplier-discovery-service';
 import { SupplierPerformanceService } from '../services/supplier-performance-service';
 import { WorkOrderService } from '../services/work-order-service';
+import { AccountingService } from '../services/accounting-service';
 import { IdentityProtectedRfqService } from '../blind/blind-rfq-service';
 import { createInMemoryBlindViewPorts } from '../blind/in-memory-blind-view-ports';
 import type { BlindViewPorts } from '../interfaces/blind-view-ports';
@@ -39,6 +40,7 @@ export interface OtpServices {
   workOrders: WorkOrderService;
   invoices: InvoiceService;
   payments: PaymentService;
+  accounting: AccountingService;
   supplierPerformance: SupplierPerformanceService;
   audit: AuditAppService;
   notifications: NotificationAppService;
@@ -79,6 +81,7 @@ export function createOtpServices(
   const workOrders = new WorkOrderService(repos, audit);
   const invoices = new InvoiceService(repos, audit);
   const payments = new PaymentService(repos, audit);
+  const accounting = new AccountingService(repos, audit);
   const supplierPerformance = new SupplierPerformanceService(repos, audit);
   const blindViewPorts = blindViews ?? createInMemoryBlindViewPorts(repos);
   const blindRfq = new IdentityProtectedRfqService(repos, blindViewPorts, auditInner);
@@ -96,6 +99,7 @@ export function createOtpServices(
     workOrders,
     invoices,
     payments,
+    accounting,
     supplierPerformance,
     audit,
     notifications,

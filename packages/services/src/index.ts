@@ -38,6 +38,7 @@ export * from './services/purchase-order-service';
 export * from './services/work-order-service';
 export * from './services/invoice-service';
 export * from './services/payment-service';
+export * from './services/accounting-service';
 export * from './services/supplier-performance-service';
 export * from './services/audit-service';
 export * from './services/notification-service';
