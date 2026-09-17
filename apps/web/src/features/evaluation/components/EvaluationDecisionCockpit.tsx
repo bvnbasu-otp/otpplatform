@@ -210,6 +210,14 @@ export function EvaluationDecisionCockpit({
   const isEvaluating = rfqStatus === 'EVALUATING' || rfqStatus === 'CLOSED';
   const isQuoting = !isAwarded && !isEvaluating;
 
+  // DEF-002: Auto-rescore in background on quote revision hash change
+  const hasStaleEvaluations = useMemo(() => evaluations.some((e) => e.status === 'STALE'), [evaluations]);
+  useEffect(() => {
+    if (hasStaleEvaluations && !isRecomputing && !scoresLoading) {
+      void recompute();
+    }
+  }, [hasStaleEvaluations, isRecomputing, scoresLoading, recompute]);
+
   // Handler: Fast-Track or Close Quoting
   const handleCloseAndEvaluate = async () => {
     setBusy(true);

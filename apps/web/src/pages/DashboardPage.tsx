@@ -4,6 +4,7 @@ import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import {
   SubscriptionPaymentModal,
+  validateOrganizationSourcingAccess,
 } from '@/features/subscription';
 import { fastTrackExpressIntake } from '@/features/intake/api/fast-track-intake';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -60,15 +61,27 @@ export function DashboardPage() {
 
   const handleExpressSubmit = async (queryText?: string, e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (subscription?.isExpired && (!subscription.freeRfqCredits || subscription.freeRfqCredits <= 0)) {
-      setIsPaymentModalOpen(true);
-      return;
-    }
     const textToSubmit = (queryText ?? expressQuery).trim();
     if (!textToSubmit) return;
 
     setIsSubmittingExpress(true);
     setExpressError(null);
+
+    // DEF-001: Validate credits via atomic backend RPC calls without relying on loose client-side fallbacks
+    const targetOrgId = org?.organizationId || context.organizationId;
+    if (targetOrgId) {
+      const accessCheck = await validateOrganizationSourcingAccess(targetOrgId);
+      if (!accessCheck.hasAccess) {
+        setIsSubmittingExpress(false);
+        setExpressError(accessCheck.reason || 'Sourcing credits exhausted. Please renew subscription to create fast-track RFQs.');
+        setIsPaymentModalOpen(true);
+        return;
+      }
+    } else if (subscription?.isExpired && (!subscription.freeRfqCredits || subscription.freeRfqCredits <= 0)) {
+      setIsSubmittingExpress(false);
+      setIsPaymentModalOpen(true);
+      return;
+    }
 
     const result = await fastTrackExpressIntake(textToSubmit);
     if (!result.ok || !result.rfqId) {

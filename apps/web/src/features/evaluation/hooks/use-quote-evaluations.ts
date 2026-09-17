@@ -26,8 +26,8 @@ export function useQuoteEvaluations(rfqId: string) {
       fetchEvaluationCriteria(),
     ]);
 
-    // Automatically compute scores if not yet generated so user never has to press "Rescore quotes"
-    if (scores.ok && scores.evaluations.length === 0) {
+    // Automatically compute scores if not yet generated or if revised/stale (DEF-002)
+    if (scores.ok && (scores.evaluations.length === 0 || scores.evaluations.some((e) => e.status === 'STALE'))) {
       const recomputeRes = await recomputeEvaluations(rfqId);
       if (recomputeRes.ok && recomputeRes.scored > 0) {
         scores = await fetchQuoteEvaluations(rfqId);

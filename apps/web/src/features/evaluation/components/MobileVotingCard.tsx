@@ -226,6 +226,36 @@ export function MobileVotingCard({
         </div>
       </div>
 
+      {/* Quorum Progress Meter Bar with Real-Time Smooth Transition (DEF-006) */}
+      {summary && summary.assignedMembers > 0 && (
+        <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden" data-testid="quorum-meter-container">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ease-in-out ${
+              quorumMet ? 'bg-emerald-500' : 'bg-primary'
+            }`}
+            style={{
+              width: `${Math.min(100, Math.round((summary.membersVoted / summary.assignedMembers) * 100))}%`,
+            }}
+            data-testid="quorum-progress-meter"
+          />
+        </div>
+      )}
+
+      {/* Quorum Progress Meter Bar with Real-Time Smooth Transition (DEF-006) */}
+      {summary && summary.assignedMembers > 0 && (
+        <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden" data-testid="quorum-meter-container">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ease-in-out ${
+              quorumMet ? 'bg-emerald-500' : 'bg-primary'
+            }`}
+            style={{
+              width: `${Math.min(100, Math.round((summary.membersVoted / summary.assignedMembers) * 100))}%`,
+            }}
+            data-testid="quorum-progress-meter"
+          />
+        </div>
+      )}
+
       {/* 2. Conflict of Interest (COI) Clearance */}
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 space-y-1.5">
         <label className="flex items-start gap-2.5 cursor-pointer select-none">

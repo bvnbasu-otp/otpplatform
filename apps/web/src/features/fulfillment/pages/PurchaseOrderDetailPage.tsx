@@ -1247,8 +1247,12 @@ export function PurchaseOrderDetailPage({
                       type="button"
                       onClick={() => void handleExportTallyPaymentVoucher()}
                       disabled={exportingTally || poPayments.length === 0}
-                      className="min-h-[34px] rounded-lg border bg-background hover:bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-foreground inline-flex items-center gap-1 transition disabled:opacity-50"
-                      title="Export Tally Prime XML Payment Voucher with bill-by-bill allocations"
+                      className="min-h-[34px] rounded-lg border bg-background hover:bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-foreground inline-flex items-center gap-1 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={
+                        poPayments.length === 0
+                          ? 'Export disabled: Requires at least one recorded payment allocation/disbursement in ledger'
+                          : 'Export Tally Prime XML Payment Voucher with bill-by-bill allocations'
+                      }
                       data-testid="export-tally-voucher-btn"
                     >
                       <span>📥</span>
@@ -1259,8 +1263,12 @@ export function PurchaseOrderDetailPage({
                       type="button"
                       onClick={() => void handleExportZohoPaymentReceipt()}
                       disabled={exportingZoho || poPayments.length === 0}
-                      className="min-h-[34px] rounded-lg border bg-background hover:bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-foreground inline-flex items-center gap-1 transition disabled:opacity-50"
-                      title="Export Zoho Books JSON Payment Receipt payload"
+                      className="min-h-[34px] rounded-lg border bg-background hover:bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-foreground inline-flex items-center gap-1 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={
+                        poPayments.length === 0
+                          ? 'Export disabled: Requires at least one recorded payment allocation/disbursement in ledger'
+                          : 'Export Zoho Books JSON Payment Receipt payload'
+                      }
                       data-testid="export-zoho-receipt-btn"
                     >
                       <span>🧾</span>

@@ -117,6 +117,17 @@ export function useNotifications(options?: {
     }
   };
 
+  // DEF-009: Cap floating alerts to a maximum of 1 visible toast with an automatic 4-second unmount timer to prevent stacking
+  useEffect(() => {
+    if (!toastNotification) return;
+
+    const timer = setTimeout(() => {
+      setToastNotification(null);
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [toastNotification]);
+
   const dismissToast = () => {
     setToastNotification(null);
   };

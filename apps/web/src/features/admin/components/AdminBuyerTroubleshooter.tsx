@@ -331,6 +331,11 @@ export function AdminBuyerTroubleshooter({
     }
 
     try {
+      // DEF-004: Cache pre-switch admin context in sessionStorage so returning to /admin seamlessly restores SuperAdmin privileges
+      try {
+        sessionStorage.setItem('otp_admin_pre_switch_org', orgId);
+      } catch {}
+
       await supabase.rpc('switch_active_organization', { p_organization_id: orgId });
       await emitAdminTelemetryEvent({
         eventType: 'admin.tenant_context.switched',

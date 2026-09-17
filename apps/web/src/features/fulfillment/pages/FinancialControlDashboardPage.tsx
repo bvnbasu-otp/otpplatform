@@ -65,6 +65,8 @@ export const FinancialControlDashboardPage: React.FC<
   const [bankNameInput, setBankNameInput] = useState('HDFC Bank');
   const [recLoading, setRecLoading] = useState(false);
   const [recError, setRecError] = useState<string | null>(null);
+  const [dateDriftWarning, setDateDriftWarning] = useState<string | null>(null);
+  const [acknowledgeDateDrift, setAcknowledgeDateDrift] = useState(false);
 
   // Bank Invalidation Modal
   const [invalidatingRecord, setInvalidatingRecord] = useState<BankReconciliationRecord | null>(null);
@@ -432,9 +434,21 @@ export const FinancialControlDashboardPage: React.FC<
       setShowRecModal(false);
       setUtrInput('');
       setClearedAmountInput('');
+      setDateDriftWarning(null);
+      setAcknowledgeDateDrift(false);
       loadData(orgId);
     } else {
-      setRecError(res.error);
+      const isDateDrift =
+        res.error?.includes('DATE_DRIFT') ||
+        res.error?.includes('DATE_DRIFT_EXCEEDED') ||
+        res.error?.toLowerCase().includes('date drift');
+
+      if (isDateDrift && !acknowledgeDateDrift) {
+        setDateDriftWarning(res.error || 'Bank cleared date drift exceeds allowable 30-day window. Explicit acknowledgment required.');
+        setRecError(null);
+      } else {
+        setRecError(res.error);
+      }
     }
   };
 
@@ -536,6 +550,21 @@ export const FinancialControlDashboardPage: React.FC<
 
     let res: any;
     if (periodAction === 'CLOSE') {
+      // DEF-010: Pre-close validation check and warning if unposted DRAFT journal vouchers exist in the period being closed
+      const unpostedDrafts = journalEntries.filter(
+        (j: any) =>
+          (j.periodId === managingPeriod.id || j.period_id === managingPeriod.id) &&
+          (j.status === 'DRAFT' || j.postingStatus === 'DRAFT' || j.posting_status === 'DRAFT')
+      );
+
+      if (unpostedDrafts.length > 0) {
+        setPeriodError(
+          `Cannot close accounting period: ${unpostedDrafts.length} unposted DRAFT journal voucher(s) exist in this period. Please post or discard them before closing.`
+        );
+        setPeriodLoading(false);
+        return;
+      }
+
       res = await closeAccountingPeriodRpc({
         organizationId: orgId,
         periodId: managingPeriod.id,
@@ -588,7 +617,12 @@ export const FinancialControlDashboardPage: React.FC<
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowRecModal(true)}
+            onClick={() => {
+              setRecError(null);
+              setDateDriftWarning(null);
+              setAcknowledgeDateDrift(false);
+              setShowRecModal(true);
+            }}
             className="px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-semibold hover:bg-muted transition"
           >
             + Reconcile Bank UTR
@@ -1688,6 +1722,24 @@ export const FinancialControlDashboardPage: React.FC<
               </div>
             )}
 
+            {dateDriftWarning && (
+              <div className="text-xs p-2.5 bg-amber-500/10 text-amber-800 dark:text-amber-300 rounded-md border border-amber-500/30 space-y-2">
+                <div className="flex items-start gap-1.5 font-semibold">
+                  <span>⚠️</span>
+                  <span>{dateDriftWarning}</span>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer select-none text-foreground pt-1 border-t border-amber-500/20">
+                  <input
+                    type="checkbox"
+                    checked={acknowledgeDateDrift}
+                    onChange={(e) => setAcknowledgeDateDrift(e.target.checked)}
+                    className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
+                  />
+                  <span className="font-bold text-[11px]">Acknowledge bank cleared date drift &gt; 30 days</span>
+                </label>
+              </div>
+            )}
+
             <form onSubmit={handleReconcileUtr} className="space-y-3 text-xs">
               <div>
                 <label className="block font-medium text-muted-foreground mb-1">
@@ -1925,9 +1977,20 @@ export const FinancialControlDashboardPage: React.FC<
 
             <form onSubmit={handlePeriodAction} className="space-y-3 text-xs">
               {periodAction === 'CLOSE' ? (
-                <p className="text-muted-foreground">
-                  Closing this accounting period will lock all journal entries and prevent further postings without explicit Owner reopening.
-                </p>
+                <div className="space-y-2">
+                  <p className="text-muted-foreground">
+                    Closing this accounting period will lock all journal entries and prevent further postings without explicit Owner reopening.
+                  </p>
+                  {journalEntries.some(
+                    (j: any) =>
+                      (j.periodId === managingPeriod.id || j.period_id === managingPeriod.id) &&
+                      (j.status === 'DRAFT' || j.postingStatus === 'DRAFT' || j.posting_status === 'DRAFT')
+                  ) && (
+                    <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-md text-amber-900 dark:text-amber-300 font-semibold">
+                      ⚠️ Warning: Unposted DRAFT journal vouchers detected in this period. They must be posted or discarded before closing.
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div>
                   <label className="block font-medium text-muted-foreground mb-1">

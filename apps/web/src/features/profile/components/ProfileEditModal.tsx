@@ -41,7 +41,16 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
   const [phoneOtpBusy, setPhoneOtpBusy] = useState(false);
   const [phoneOtpError, setPhoneOtpError] = useState<string | null>(null);
   const [phoneOtpSuccess, setPhoneOtpSuccess] = useState<string | null>(null);
-  const [phoneResendTimer, setPhoneResendTimer] = useState(0);
+  const [phoneResendTimer, setPhoneResendTimer] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem('otp_phone_resend_timer');
+      if (stored) {
+        const remaining = Math.max(0, Math.ceil((parseInt(stored, 10) - Date.now()) / 1000));
+        return remaining;
+      }
+    } catch {}
+    return 0;
+  });
 
   const [newEmail, setNewEmail] = useState('');
   const [emailOtpCode, setEmailOtpCode] = useState('');
@@ -49,7 +58,16 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
   const [emailOtpBusy, setEmailOtpBusy] = useState(false);
   const [emailOtpError, setEmailOtpError] = useState<string | null>(null);
   const [emailOtpSuccess, setEmailOtpSuccess] = useState<string | null>(null);
-  const [emailResendTimer, setEmailResendTimer] = useState(0);
+  const [emailResendTimer, setEmailResendTimer] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem('otp_email_resend_timer');
+      if (stored) {
+        const remaining = Math.max(0, Math.ceil((parseInt(stored, 10) - Date.now()) / 1000));
+        return remaining;
+      }
+    } catch {}
+    return 0;
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,6 +75,10 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
     let timer: NodeJS.Timeout;
     if (phoneResendTimer > 0) {
       timer = setTimeout(() => setPhoneResendTimer((t) => t - 1), 1000);
+    } else {
+      try {
+        sessionStorage.removeItem('otp_phone_resend_timer');
+      } catch {}
     }
     return () => clearTimeout(timer);
   }, [phoneResendTimer]);
@@ -65,6 +87,10 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
     let timer: NodeJS.Timeout;
     if (emailResendTimer > 0) {
       timer = setTimeout(() => setEmailResendTimer((t) => t - 1), 1000);
+    } else {
+      try {
+        sessionStorage.removeItem('otp_email_resend_timer');
+      } catch {}
     }
     return () => clearTimeout(timer);
   }, [emailResendTimer]);
@@ -152,6 +178,9 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
 
     setPhoneOtpStep('SENT');
     setPhoneResendTimer(60);
+    try {
+      sessionStorage.setItem('otp_phone_resend_timer', String(Date.now() + 60000));
+    } catch {}
     setPhoneOtpSuccess(
       res.otpCode
         ? `Verification code sent via WhatsApp! (Code: ${res.otpCode})`
@@ -203,6 +232,9 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
 
     setEmailOtpStep('SENT');
     setEmailResendTimer(60);
+    try {
+      sessionStorage.setItem('otp_email_resend_timer', String(Date.now() + 60000));
+    } catch {}
     setEmailOtpSuccess(
       res.otpCode
         ? `Verification code sent to ${clean}! (Code: ${res.otpCode})`

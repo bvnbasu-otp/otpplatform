@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { EvaluationCriterionDef } from '@otp/domain';
 import { Badge, Button, Card } from '@/components/ui';
 import type { QuoteEvaluation } from '../types/quote-evaluation';
@@ -28,6 +29,14 @@ export function CriterionBreakdownTable({
   onRecompute,
 }: CriterionBreakdownTableProps) {
   const nameFor = new Map(criteria.map((c) => [c.code, c.name]));
+  const isStale = evaluations.some((e) => e.status === 'STALE');
+
+  // DEF-002: Automatic background score recomputation when quotes are revised and flagged as STALE
+  useEffect(() => {
+    if (isStale && onRecompute && !isRecomputing && !isLoading) {
+      onRecompute();
+    }
+  }, [isStale, onRecompute, isRecomputing, isLoading]);
 
   const action = onRecompute && (
     <Button
@@ -83,7 +92,6 @@ export function CriterionBreakdownTable({
   const columns = evaluations[0]?.criteria ?? [];
   const codes = columns.map((c) => c.code);
   const weightFor = new Map(columns.map((c) => [c.code, c.weight]));
-  const isStale = evaluations.some((e) => e.status === 'STALE');
 
   return (
     <Card

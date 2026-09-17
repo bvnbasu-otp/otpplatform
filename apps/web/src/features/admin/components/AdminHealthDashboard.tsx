@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import type { SystemHealthResponse, SystemAlertItem, ServiceActionResult } from '../types/admin';
 import { triggerProactiveMaintenanceScan, executeServiceAction, purgeTransactionalData } from '../api/admin-ops';
 
@@ -21,6 +21,15 @@ export function AdminHealthDashboard({
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [isRestarting, setIsRestarting] = useState(false);
   const [restartResult, setRestartResult] = useState<ServiceActionResult | null>(null);
+
+  // DEF-008: 5-second auto-dismissal timer for soft restart feedback banners
+  useEffect(() => {
+    if (!restartResult) return;
+    const timer = setTimeout(() => {
+      setRestartResult(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [restartResult]);
 
   const handleRestartWebserver = async () => {
     if (!window.confirm('⚡ Confirm Webserver Soft Restart & Cache Invalidation?\n\nThis will reinitialize gateway connections, clear in-memory caches, and cycle active service workers without dropping authenticated sessions.')) {

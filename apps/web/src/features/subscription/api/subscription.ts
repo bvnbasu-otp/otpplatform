@@ -119,3 +119,55 @@ export async function processSubscriptionPayment(
     return { ok: false, error: err?.message || 'Payment RPC error' };
   }
 }
+
+/**
+ * Atomic Backend RPC Validation for Sourcing Access & Fast-Track Credits (DEF-001)
+ *
+ * Validates whether an organization has active subscription access or available
+ * free RFQ sourcing credits via the atomic backend RPC get_organization_subscription.
+ */
+export async function validateOrganizationSourcingAccess(
+  organizationId: string,
+): Promise<{
+  hasAccess: boolean;
+  isExpired: boolean;
+  freeRfqCredits: number;
+  rfqCreditsUsed: number;
+  reason?: string;
+}> {
+  try {
+    const res = await fetchOrganizationSubscription(organizationId);
+    if (!res.ok) {
+      return {
+        hasAccess: false,
+        isExpired: true,
+        freeRfqCredits: 0,
+        rfqCreditsUsed: 0,
+        reason: res.error || 'Failed to validate organization subscription',
+      };
+    }
+
+    const { subscription } = res;
+    const hasRemainingCredits = (subscription.freeRfqCredits ?? 0) > (subscription.rfqCreditsUsed ?? 0);
+    const hasActivePlan = !subscription.isExpired || subscription.status === 'ACTIVE';
+    const hasAccess = hasActivePlan || hasRemainingCredits;
+
+    return {
+      hasAccess,
+      isExpired: subscription.isExpired,
+      freeRfqCredits: subscription.freeRfqCredits ?? 0,
+      rfqCreditsUsed: subscription.rfqCreditsUsed ?? 0,
+      reason: hasAccess
+        ? undefined
+        : 'Subscription expired and zero fast-track sourcing credits available. Please renew or add credits to continue.',
+    };
+  } catch (err: any) {
+    return {
+      hasAccess: false,
+      isExpired: true,
+      freeRfqCredits: 0,
+      rfqCreditsUsed: 0,
+      reason: err?.message || 'Error validating sourcing credits',
+    };
+  }
+}

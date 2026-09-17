@@ -258,7 +258,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           <button
             type="button"
             onClick={() => setFilter('ALL')}
-            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold transition mobile-touch-target ${
+            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'ALL'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
@@ -269,7 +269,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           <button
             type="button"
             onClick={() => setFilter('HIGH_MATCH')}
-            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold transition mobile-touch-target ${
+            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'HIGH_MATCH'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
@@ -280,7 +280,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           <button
             type="button"
             onClick={() => setFilter('GST_VERIFIED')}
-            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold transition mobile-touch-target ${
+            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'GST_VERIFIED'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
@@ -291,7 +291,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           <button
             type="button"
             onClick={() => setFilter('LOCAL')}
-            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold transition mobile-touch-target ${
+            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'LOCAL'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
@@ -302,7 +302,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           <button
             type="button"
             onClick={() => setFilter('ONDC')}
-            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold transition mobile-touch-target ${
+            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'ONDC'
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'

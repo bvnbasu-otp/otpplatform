@@ -106,7 +106,7 @@ export function BottomSheet({
         )}
 
         {/* Scrollable Content */}
-        <div className="p-4 overflow-y-auto flex-1 overscroll-contain text-xs">
+        <div className="p-4 overflow-y-auto flex-1 overscroll-contain text-xs pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:pb-4">
           {children}
         </div>
 

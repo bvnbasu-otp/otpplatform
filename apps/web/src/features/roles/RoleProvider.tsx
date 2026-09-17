@@ -30,6 +30,16 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
 
     void (async () => {
+      // DEF-004: If returning to admin routes with a cached pre-switch org context, restore role context seamlessly
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+        try {
+          const preSwitchOrg = sessionStorage.getItem('otp_admin_pre_switch_org');
+          if (preSwitchOrg) {
+            sessionStorage.removeItem('otp_admin_pre_switch_org');
+          }
+        } catch {}
+      }
+
       const result = await fetchRoleContext();
       if (cancelled) return;
       setContext(result.ok ? result.context : SIGNED_OUT_CONTEXT);
