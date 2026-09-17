@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import type { PurchaseOrderStatus } from '@otp/domain';
+import type { PurchaseOrderStatus, PoSettlementSummary, PoSettlementCertificate } from '@otp/domain';
 import {
   fetchPoInvoicingSummary,
   fetchPoLineItems,
   fetchPurchaseOrder,
   updatePurchaseOrderStatus,
 } from '../api/purchase-orders';
+import { getPoSettlementSummary, generatePoSettlementCertificate } from '../api/payments';
 import { createWorkOrder, fetchWorkOrderByPo, updateWorkOrderProgress } from '../api/work-orders';
 import { DeliveryInspectionPanel } from '../components/DeliveryInspectionPanel';
 import { InvoicePaymentPanel } from '../components/InvoicePaymentPanel';
@@ -272,6 +273,9 @@ export function PurchaseOrderDetailPage({
     invoiceCount: number;
     isFullyInvoiced: boolean;
   } | null>(null);
+  const [settlementSummary, setSettlementSummary] = useState<PoSettlementSummary | null>(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [downloadingCert, setDownloadingCert] = useState(false);
 
   const requestedStage = searchParams.get('stage')?.toUpperCase();
 
@@ -294,10 +298,11 @@ export function PurchaseOrderDetailPage({
       setOrder(poResult.order);
 
       try {
-        const [woResult, linesResult, summaryResult] = await Promise.all([
+        const [woResult, linesResult, summaryResult, settlementResult] = await Promise.all([
           fetchWorkOrderByPo(poResult.order.id),
           fetchPoLineItems(poResult.order.id),
           fetchPoInvoicingSummary(poResult.order.id),
+          getPoSettlementSummary(poResult.order.id),
         ]);
 
         if (woResult.ok) {
@@ -332,6 +337,10 @@ export function PurchaseOrderDetailPage({
         if (summaryResult.ok) {
           setInvoicingSummary(summaryResult.summary);
         }
+
+        if (settlementResult.ok) {
+          setSettlementSummary(settlementResult.summary);
+        }
       } catch (woErr) {
         console.warn('Non-blocking secondary fetch warning:', woErr);
       }
@@ -358,6 +367,12 @@ export function PurchaseOrderDetailPage({
   async function handlePoAction(next: PurchaseOrderStatus) {
     const cleanId = (poId || '').trim();
     if (!cleanId) return;
+
+    if (next === 'COMPLETED') {
+      setShowCompletionModal(true);
+      return;
+    }
+
     setBusy(true);
     setSuccess(null);
     try {
@@ -383,6 +398,56 @@ export function PurchaseOrderDetailPage({
       setError(msg);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleConfirmCompletion() {
+    const cleanId = (poId || '').trim();
+    if (!cleanId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await updatePurchaseOrderStatus(cleanId, 'COMPLETED');
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setSuccess('✓ Purchase Order marked COMPLETED! All invoices and financial settlements are verified.');
+      setShowCompletionModal(false);
+      await load();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to complete Purchase Order';
+      setError(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDownloadCertificate() {
+    const cleanId = (poId || '').trim();
+    if (!cleanId) return;
+    setDownloadingCert(true);
+    try {
+      const res = await generatePoSettlementCertificate(cleanId);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const jsonStr = JSON.stringify(res.certificate, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${res.certificate.certificateId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setSuccess(`✓ Settlement Certificate ${res.certificate.certificateId} downloaded!`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to download certificate');
+    } finally {
+      setDownloadingCert(false);
     }
   }
 
@@ -944,6 +1009,109 @@ export function PurchaseOrderDetailPage({
               );
             })()}
 
+            {/* PO Cumulative Financial Settlement & Reconciliation Summary Card (Phase 5C.2) */}
+            {settlementSummary && (
+              <div className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3" data-testid="po-settlement-summary-card">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                      <span>⚖️</span>
+                      <span>Cumulative Financial Reconciliation &amp; Settlement (Phase 5C.2)</span>
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Multi-invoice balance due, advance remittance tracking, and completion settlement integrity.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-black border ${
+                        settlementSummary.isFullySettled
+                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300'
+                          : settlementSummary.cumulativePaidAmount > 0
+                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300'
+                          : 'bg-muted text-muted-foreground border-border'
+                      }`}
+                    >
+                      {settlementSummary.isFullySettled
+                        ? '✓ FULLY SETTLED'
+                        : settlementSummary.cumulativePaidAmount > 0
+                        ? 'PARTIALLY SETTLED'
+                        : 'UNSETTLED'}
+                    </span>
+                    {settlementSummary.isFullySettled && (
+                      <button
+                        type="button"
+                        onClick={() => void handleDownloadCertificate()}
+                        disabled={downloadingCert}
+                        className="min-h-[36px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 text-[10px] font-bold inline-flex items-center gap-1 transition"
+                      >
+                        <span>📜</span>
+                        <span>{downloadingCert ? 'Generating…' : 'Download Certificate'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="p-3 rounded-xl border bg-muted/20 space-y-1">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground block">
+                      Authorized Contract
+                    </span>
+                    <span className="font-mono font-black text-xs sm:text-sm text-foreground">
+                      {formatMoney(settlementSummary.poAuthorizedTotal, order.currency)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block">100% Commitment</span>
+                  </div>
+
+                  <div className="p-3 rounded-xl border bg-muted/20 space-y-1">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground block">
+                      Cumulative Invoiced
+                    </span>
+                    <span className="font-mono font-black text-xs sm:text-sm text-foreground">
+                      {formatMoney(settlementSummary.cumulativeInvoicedAmount, order.currency)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      {settlementSummary.counts.invoiceCount} Valid Invoices
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl border bg-muted/20 space-y-1">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground block">
+                      Cumulative Paid
+                    </span>
+                    <span className="font-mono font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
+                      {formatMoney(settlementSummary.cumulativePaidAmount, order.currency)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      {settlementSummary.counts.paidInvoiceCount} Paid Invoices
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl border bg-muted/20 space-y-1">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground block">
+                      Invoiced Outstanding
+                    </span>
+                    <span className="font-mono font-black text-xs sm:text-sm text-primary">
+                      {formatMoney(settlementSummary.invoicedOutstandingAmount, order.currency)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block">Balance Due</span>
+                  </div>
+                </div>
+
+                {settlementSummary.unallocatedAdvanceAmount > 0 && (
+                  <div className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/60 dark:bg-blue-950/30 text-xs flex items-center justify-between gap-2">
+                    <span className="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                      <span>💡</span>
+                      <span>Unallocated Advance Balance Available:</span>
+                    </span>
+                    <span className="font-mono font-black text-blue-700 dark:text-blue-300">
+                      {formatMoney(settlementSummary.unallocatedAdvanceAmount, order.currency)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Auto Create Work Order if missing */}
             {!workOrder && (
               <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2">
@@ -1115,6 +1283,134 @@ export function PurchaseOrderDetailPage({
           </div>
         </div>
       </div>
+
+      {/* PO Completion Guard & Confirmation Dialog Modal (Phase 5C.2) */}
+      {showCompletionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b pb-2.5">
+              <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
+                <span>🏁</span>
+                <span>Complete Purchase Order &amp; Financial Settlement</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowCompletionModal(false)}
+                className="text-muted-foreground hover:text-foreground text-sm p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {settlementSummary && !settlementSummary.isFullySettled ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 text-xs text-amber-800 dark:text-amber-200 space-y-1">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>Cannot Complete Purchase Order (Settlement Incomplete)</span>
+                  </p>
+                  <p>
+                    All statutory progressive invoices must be submitted, approved, and 100% paid with zero outstanding balance before marking the contract COMPLETED.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border bg-muted/20 p-3 space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Authorized Commitment:</span>
+                    <span className="font-mono font-bold text-foreground">
+                      {formatMoney(settlementSummary.poAuthorizedTotal, order.currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Invoiced:</span>
+                    <span className="font-mono font-bold text-foreground">
+                      {formatMoney(settlementSummary.cumulativeInvoicedAmount, order.currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Settled (Paid):</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatMoney(settlementSummary.cumulativePaidAmount, order.currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1.5">
+                    <span className="font-bold text-foreground">Outstanding Invoice Balance:</span>
+                    <span className="font-mono font-black text-primary">
+                      {formatMoney(settlementSummary.invoicedOutstandingAmount, order.currency)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCompletionModal(false);
+                      setActiveTab('INVOICE');
+                    }}
+                    className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                  >
+                    Go to Invoicing &amp; Payment →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 text-xs text-emerald-800 dark:text-emerald-200 space-y-1">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <span>✓</span>
+                    <span>Reconciliation Verified (100% Settled)</span>
+                  </p>
+                  <p>
+                    All invoices have been paid in full, with zero outstanding balances. Transitioning to COMPLETED will permanently close execution and issue a cryptographically verifiable settlement certificate.
+                  </p>
+                </div>
+
+                {settlementSummary && (
+                  <div className="rounded-xl border bg-muted/20 p-3 space-y-1.5 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Contract Value:</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatMoney(settlementSummary.poAuthorizedTotal, order.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Settled Amount:</span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatMoney(settlementSummary.cumulativePaidAmount, order.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Settled Invoices:</span>
+                      <span className="font-bold text-foreground">
+                        {settlementSummary.counts.paidInvoiceCount} of {settlementSummary.counts.invoiceCount} Invoices
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCompletionModal(false)}
+                    className="min-h-[44px] rounded-xl border border-border px-4 py-2 text-xs font-bold text-muted-foreground hover:bg-muted"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void handleConfirmCompletion()}
+                    className="min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-black shadow-md"
+                  >
+                    {busy ? 'Completing…' : 'Confirm PO Completion & Close Contract'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

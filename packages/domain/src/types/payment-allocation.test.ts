@@ -8,6 +8,9 @@ import {
   calculateRemainingPayableAmount,
   validatePaymentAllocation,
   validatePaymentAllocationBatch,
+  calculatePoSettlementSummary,
+  isPurchaseOrderFullySettled,
+  generatePoSettlementCertificate,
 } from './payment-allocation';
 
 describe('Payment Allocation Pure Calculators (Phase 5C.1)', () => {
@@ -335,6 +338,139 @@ describe('Payment Allocation Pure Calculators (Phase 5C.1)', () => {
       const res = validatePaymentAllocation(5000, 5000, [], [], 5000.01);
       expect(res.valid).toBe(false);
       expect(res.exceededBy).toBe(0.01);
+    });
+  });
+
+  describe('PO Cumulative Financial Settlement Summary (Phase 5C.2)', () => {
+    const samplePo = {
+      id: 'po-1234-5678',
+      totalAmount: 100000,
+      taxableTotal: 84745.76,
+      cgstTotal: 7627.12,
+      sgstTotal: 7627.12,
+      utgstTotal: 0,
+      igstTotal: 0,
+    };
+
+    it('calculates settlement summary with zero invoices and zero payments', () => {
+      const summary = calculatePoSettlementSummary(samplePo, [], [], []);
+      expect(summary.poAuthorizedTotal).toBe(100000);
+      expect(summary.cumulativeInvoicedAmount).toBe(0);
+      expect(summary.cumulativePaidAmount).toBe(0);
+      expect(summary.invoicedOutstandingAmount).toBe(0);
+      expect(summary.uninvoicedAuthorizationBalance).toBe(100000);
+      expect(summary.unallocatedAdvanceAmount).toBe(0);
+      expect(summary.contractualExposure).toBe(100000);
+      expect(summary.settlementAmount).toBe(0);
+      expect(summary.settledAmount).toBe(0);
+      expect(summary.remainingSettlementAmount).toBe(0);
+      expect(summary.isFullySettled).toBe(false);
+      expect(summary.isFullyReconciled).toBe(true);
+      expect(summary.counts.invoiceCount).toBe(0);
+      expect(summary.counts.paidInvoiceCount).toBe(0);
+    });
+
+    it('calculates settlement summary with multiple progressive invoices and partial allocations', () => {
+      const invoices = [
+        { id: 'inv-1', amount: 40000, status: 'PAID' as const },
+        { id: 'inv-2', amount: 30000, status: 'PARTIALLY_PAID' as const },
+        { id: 'inv-3', amount: 20000, status: 'APPROVED' as const },
+        { id: 'inv-4', amount: 10000, status: 'REJECTED' as const },
+      ];
+
+      const payments = [
+        { id: 'pay-1', amount: 40000 },
+        { id: 'pay-2', amount: 20000 },
+      ];
+
+      const allocations = [
+        { paymentId: 'pay-1', invoiceId: 'inv-1', allocatedAmount: 40000, status: 'ALLOCATED' },
+        { paymentId: 'pay-2', invoiceId: 'inv-2', allocatedAmount: 15000, status: 'ALLOCATED' },
+      ];
+
+      const summary = calculatePoSettlementSummary(samplePo, invoices, payments, allocations);
+
+      // Invoiced sum ignores rejected inv-4: 40k + 30k + 20k = 90k
+      expect(summary.cumulativeInvoicedAmount).toBe(90000);
+      // Paid sum: 40k + 15k = 55k
+      expect(summary.cumulativePaidAmount).toBe(55000);
+      // Invoiced Outstanding: inv-1 (0) + inv-2 (15k) + inv-3 (20k) = 35k
+      expect(summary.invoicedOutstandingAmount).toBe(35000);
+      // Uninvoiced: 100k - 90k = 10k
+      expect(summary.uninvoicedAuthorizationBalance).toBe(10000);
+      // Unallocated advance: pay-2 has 20k - 15k = 5k
+      expect(summary.unallocatedAdvanceAmount).toBe(5000);
+      // Exposure: 100k - 55k = 45k
+      expect(summary.contractualExposure).toBe(45000);
+      expect(summary.isFullySettled).toBe(false);
+      expect(summary.isFullyReconciled).toBe(true);
+      expect(summary.counts.invoiceCount).toBe(3);
+      expect(summary.counts.paidInvoiceCount).toBe(1);
+      expect(summary.counts.partiallyPaidInvoiceCount).toBe(1);
+      expect(summary.counts.unpaidInvoiceCount).toBe(1);
+      expect(summary.counts.rejectedInvoiceCount).toBe(1);
+    });
+
+    it('calculates full settlement when all invoices paid and authorized total met', () => {
+      const invoices = [
+        { id: 'inv-1', amount: 50000, status: 'PAID' as const },
+        { id: 'inv-2', amount: 50000, status: 'PAID' as const },
+      ];
+
+      const payments = [
+        { id: 'pay-1', amount: 100000 },
+      ];
+
+      const allocations = [
+        { paymentId: 'pay-1', invoiceId: 'inv-1', allocatedAmount: 50000, status: 'ALLOCATED' },
+        { paymentId: 'pay-1', invoiceId: 'inv-2', allocatedAmount: 50000, status: 'ALLOCATED' },
+      ];
+
+      const summary = calculatePoSettlementSummary(samplePo, invoices, payments, allocations);
+
+      expect(summary.cumulativeInvoicedAmount).toBe(100000);
+      expect(summary.cumulativePaidAmount).toBe(100000);
+      expect(summary.invoicedOutstandingAmount).toBe(0);
+      expect(summary.uninvoicedAuthorizationBalance).toBe(0);
+      expect(summary.unallocatedAdvanceAmount).toBe(0);
+      expect(summary.contractualExposure).toBe(0);
+      expect(summary.isFullySettled).toBe(true);
+      expect(summary.isFullyReconciled).toBe(true);
+      expect(summary.counts.paidInvoiceCount).toBe(2);
+      expect(isPurchaseOrderFullySettled(samplePo, invoices, payments, allocations)).toBe(true);
+    });
+
+    it('generates structured settlement certificate with immutable hashes and ledgers', () => {
+      const invoices = [
+        { id: 'inv-1', invoiceNumber: 'INV-2026-001', amount: 50000, status: 'PAID' as const },
+        { id: 'inv-2', invoiceNumber: 'INV-2026-002', amount: 50000, status: 'PAID' as const },
+      ];
+
+      const payments = [
+        { id: 'pay-1', reference: 'UTR123456789', amount: 100000, status: 'RECORDED' },
+      ];
+
+      const allocations = [
+        { paymentId: 'pay-1', invoiceId: 'inv-1', allocatedAmount: 50000, status: 'ALLOCATED' },
+        { paymentId: 'pay-1', invoiceId: 'inv-2', allocatedAmount: 50000, status: 'ALLOCATED' },
+      ];
+
+      const cert = generatePoSettlementCertificate(
+        { ...samplePo, poNumber: 'PO-2026-0099' },
+        invoices,
+        payments,
+        allocations,
+        { id: 'usr-1', name: 'Buyer Admin', role: 'OWNER' },
+        { id: 'org-1', name: 'Acme Corp', gstin: '29ABCDE1234F1Z5' },
+        { id: 'sup-1', name: 'Vendor Tech', gstin: '29XYZAB5678C1Z2' },
+      );
+
+      expect(cert.certificateId).toMatch(/^SETTLE-CERT-PO123456-\d+/);
+      expect(cert.certificateHash).toMatch(/^0x[0-9a-f]+/);
+      expect(cert.summary.isFullySettled).toBe(true);
+      expect(cert.invoiceLedger).toHaveLength(2);
+      expect(cert.paymentLedger).toHaveLength(1);
+      expect(cert.settlementDeclaration).toContain('fully settled in accordance with all contractual and statutory terms');
     });
   });
 });

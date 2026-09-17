@@ -9,9 +9,11 @@ import {
 } from '../api/invoices';
 import {
   fetchPaymentByInvoice,
+  fetchPaymentsByPo,
   recordInvoicePayment,
   recordPayment,
   verifyPayment,
+  allocateAdvancePayment,
   type PaymentSummary,
 } from '../api/payments';
 import { fetchWorkOrderMilestones } from '../api/work-orders';
@@ -51,6 +53,9 @@ export function InvoicePaymentPanel({
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [activeInvoice, setActiveInvoice] = useState<InvoiceSummary | null>(null);
   const [payment, setPayment] = useState<PaymentSummary | null>(null);
+  const [poPayments, setPoPayments] = useState<PaymentSummary[]>([]);
+  const [selectedAdvancePaymentId, setSelectedAdvancePaymentId] = useState<string>('');
+  const [advanceAllocAmountInput, setAdvanceAllocAmountInput] = useState<string>('');
   const [milestones, setMilestones] = useState<MilestoneOption[]>([]);
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('');
   const [invoiceType, setInvoiceType] = useState<'PROGRESSIVE' | 'FINAL' | 'ADVANCE' | 'STANDARD'>('PROGRESSIVE');
@@ -81,6 +86,19 @@ export function InvoicePaymentPanel({
         setPayAmountInput(String(bal > 0 ? bal : latest.amount));
         const payRes = await fetchPaymentByInvoice(latest.id);
         if (payRes.ok) setPayment(payRes.payment);
+
+        if (latest.purchaseOrderId) {
+          const poPayRes = await fetchPaymentsByPo(latest.purchaseOrderId);
+          if (poPayRes.ok) {
+            setPoPayments(poPayRes.payments);
+            const firstUnalloc = poPayRes.payments.find((p) => p.unallocatedAmount > 0);
+            if (firstUnalloc) {
+              setSelectedAdvancePaymentId(firstUnalloc.id);
+              const maxAlloc = Math.min(firstUnalloc.unallocatedAmount, bal > 0 ? bal : latest.amount);
+              setAdvanceAllocAmountInput(String(maxAlloc));
+            }
+          }
+        }
       } else {
         setPayment(null);
         setPayAmountInput('');
@@ -137,6 +155,19 @@ export function InvoicePaymentPanel({
       setPayment(payRes.payment);
     } else {
       setPayment(null);
+    }
+
+    if (inv.purchaseOrderId) {
+      const poPayRes = await fetchPaymentsByPo(inv.purchaseOrderId);
+      if (poPayRes.ok) {
+        setPoPayments(poPayRes.payments);
+        const firstUnalloc = poPayRes.payments.find((p) => p.unallocatedAmount > 0);
+        if (firstUnalloc) {
+          setSelectedAdvancePaymentId(firstUnalloc.id);
+          const maxAlloc = Math.min(firstUnalloc.unallocatedAmount, bal > 0 ? bal : inv.amount);
+          setAdvanceAllocAmountInput(String(maxAlloc));
+        }
+      }
     }
   };
 
@@ -276,6 +307,46 @@ export function InvoicePaymentPanel({
     setSuccess(
       `✓ Milestone payment of ${formatMoney(payAmt, activeInvoice.currency)} recorded via ${paymentMethod}!`,
     );
+    await load();
+    onUpdated?.();
+  }
+
+  async function handleAllocateAdvance(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (!activeInvoice || !selectedAdvancePaymentId) return;
+
+    const allocAmt = Number(advanceAllocAmountInput);
+    if (!allocAmt || allocAmt <= 0) {
+      setError('Allocation amount must be strictly greater than 0.');
+      return;
+    }
+
+    const currentBalDue = activeInvoice.balanceDue ?? (activeInvoice.status === 'PAID' ? 0 : activeInvoice.amount);
+    if (allocAmt > currentBalDue) {
+      setError(`Allocation amount ₹${allocAmt} exceeds invoice balance due of ₹${currentBalDue}`);
+      return;
+    }
+
+    const selectedPay = poPayments.find((p) => p.id === selectedAdvancePaymentId);
+    if (selectedPay && allocAmt > selectedPay.unallocatedAmount) {
+      setError(`Allocation amount ₹${allocAmt} exceeds payment unallocated balance of ₹${selectedPay.unallocatedAmount}`);
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    const result = await allocateAdvancePayment(
+      selectedAdvancePaymentId,
+      activeInvoice.id,
+      allocAmt,
+      `Advance balance allocation against invoice ${activeInvoice.invoiceNumber}`,
+    );
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setSuccess(`✓ Successfully allocated ₹${allocAmt} from advance payment against ${activeInvoice.invoiceNumber}!`);
     await load();
     onUpdated?.();
   }
@@ -766,82 +837,169 @@ export function InvoicePaymentPanel({
 
         {/* State: Buyer payment entry form (when invoice approved or partially paid with balance due) */}
         {activeInvoice && (activeInvoice.status === 'APPROVED' || activeInvoice.status === 'PARTIALLY_PAID') && activeBalDue > 0 && role === 'buyer' && (
-          <form onSubmit={(e) => void handleRecordPayment(e)} className="space-y-3 pt-1">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-bold text-foreground mb-1">
-                  Settlement Method
-                </label>
-                <div className="grid grid-cols-3 gap-1">
-                  {([
-                    { id: 'UPI', label: 'UPI' },
-                    { id: 'BANK_TRANSFER', label: 'NEFT/RTGS' },
-                    { id: 'MANUAL', label: 'Direct' },
-                  ] as const).map((method) => (
-                    <button
-                      key={method.id}
-                      type="button"
-                      onClick={() => setPaymentMethod(method.id)}
-                      className={`min-h-[44px] rounded-xl px-1.5 py-1 text-[10px] font-black transition border mobile-touch-target flex items-center justify-center text-center ${
-                        paymentMethod === method.id
-                          ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                          : 'bg-card text-muted-foreground hover:bg-muted border-border'
-                      }`}
-                    >
-                      {method.label}
-                    </button>
-                  ))}
+          <div className="space-y-4 pt-1">
+            {/* Advance Allocation Option (Phase 5C.2): If unallocated advances exist for PO */}
+            {(() => {
+              const availableAdvances = poPayments.filter((p) => p.unallocatedAmount > 0);
+              if (availableAdvances.length === 0) return null;
+
+              return (
+                <div className="rounded-xl border border-blue-200 bg-blue-50/50 dark:bg-blue-950/30 p-3.5 space-y-3" data-testid="advance-allocation-card">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                      <span>💡</span>
+                      <span>Option A: Settle from Existing Unallocated Advance (Phase 5C.2)</span>
+                    </span>
+                    <span className="rounded-full bg-blue-600 text-white px-2 py-0.5 text-[9px] font-bold">
+                      {availableAdvances.length} Advance{availableAdvances.length > 1 ? 's' : ''} Available
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground">
+                    Apply existing unallocated advance remittance balance directly to this invoice without initiating a duplicate bank transfer.
+                  </p>
+
+                  <form onSubmit={(e) => void handleAllocateAdvance(e)} className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Select Advance Remittance
+                      </label>
+                      <select
+                        value={selectedAdvancePaymentId}
+                        onChange={(e) => {
+                          const pid = e.target.value;
+                          setSelectedAdvancePaymentId(pid);
+                          const p = availableAdvances.find((adv) => adv.id === pid);
+                          if (p) {
+                            const maxAlloc = Math.min(p.unallocatedAmount, activeBalDue);
+                            setAdvanceAllocAmountInput(String(maxAlloc));
+                          }
+                        }}
+                        className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                      >
+                        {availableAdvances.map((adv) => (
+                          <option key={adv.id} value={adv.id}>
+                            {adv.reference ? `${adv.reference} — ` : ''}Available: {formatMoney(adv.unallocatedAmount, adv.currency)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Allocation Amount (₹ INR) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={advanceAllocAmountInput}
+                        onChange={(e) => setAdvanceAllocAmountInput(e.target.value)}
+                        placeholder={`Max: ₹${activeBalDue}`}
+                        className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="flex items-end">
+                      <button
+                        type="submit"
+                        disabled={busy}
+                        className="w-full min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white px-4 py-2 text-xs font-black shadow-xs disabled:opacity-50 transition flex items-center justify-center gap-1.5 mobile-touch-target"
+                        data-testid="allocate-advance-button"
+                      >
+                        <span>⚡</span>
+                        <span>{busy ? 'Allocating…' : 'Allocate Advance Balance →'}</span>
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </div>
+              );
+            })()}
 
-              <div>
-                <label className="block text-[11px] font-bold text-foreground mb-1">
-                  Payment Amount (₹ INR) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={payAmountInput}
-                  onChange={(e) => setPayAmountInput(e.target.value)}
-                  placeholder={`Max: ₹${activeBalDue}`}
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
-                />
-                <span className="text-[10px] text-muted-foreground block mt-0.5">
-                  Balance Due: <strong className="text-primary">{formatMoney(activeBalDue, 'INR')}</strong>
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-foreground mb-1">
-                  UTR / Reference ID <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={reference}
-                  onChange={(e) => setReference(e.target.value)}
-                  placeholder="e.g. UTR / UPI Ref ID (12 digits)"
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
-                />
-              </div>
-            </div>
-
-            {/* Authoritative Action: [ 💳 Record Milestone Payment ] */}
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full min-h-[44px] rounded-xl bg-emerald-700 px-5 py-3 text-xs font-black text-white shadow-md hover:bg-emerald-800 active:scale-98 disabled:opacity-50 transition flex items-center justify-center gap-2 mobile-touch-target"
-              data-testid="release-milestone-payment-button"
-            >
-              <span>💳</span>
-              <span>
-                {busy
-                  ? 'Recording Settlement…'
-                  : `Record Payment (${formatMoney(Number(payAmountInput) || activeBalDue, activeInvoice.currency)}) →`}
+            {/* Direct Remittance Option */}
+            <div className="border-t pt-2 space-y-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground block">
+                {poPayments.some((p) => p.unallocatedAmount > 0) ? 'Option B: Record New Direct Remittance' : 'Record Direct Remittance'}
               </span>
-            </button>
-          </form>
+
+              <form onSubmit={(e) => void handleRecordPayment(e)} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground mb-1">
+                      Settlement Method
+                    </label>
+                    <div className="grid grid-cols-3 gap-1">
+                      {([
+                        { id: 'UPI', label: 'UPI' },
+                        { id: 'BANK_TRANSFER', label: 'NEFT/RTGS' },
+                        { id: 'MANUAL', label: 'Direct' },
+                      ] as const).map((method) => (
+                        <button
+                          key={method.id}
+                          type="button"
+                          onClick={() => setPaymentMethod(method.id)}
+                          className={`min-h-[44px] rounded-xl px-1.5 py-1 text-[10px] font-black transition border mobile-touch-target flex items-center justify-center text-center ${
+                            paymentMethod === method.id
+                              ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                              : 'bg-card text-muted-foreground hover:bg-muted border-border'
+                          }`}
+                        >
+                          {method.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground mb-1">
+                      Payment Amount (₹ INR) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={payAmountInput}
+                      onChange={(e) => setPayAmountInput(e.target.value)}
+                      placeholder={`Max: ₹${activeBalDue}`}
+                      className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                    />
+                    <span className="text-[10px] text-muted-foreground block mt-0.5">
+                      Balance Due: <strong className="text-primary">{formatMoney(activeBalDue, 'INR')}</strong>
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground mb-1">
+                      UTR / Reference ID <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={reference}
+                      onChange={(e) => setReference(e.target.value)}
+                      placeholder="e.g. UTR / UPI Ref ID (12 digits)"
+                      className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                    />
+                  </div>
+                </div>
+
+                {/* Authoritative Action: [ 💳 Record Milestone Payment ] */}
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full min-h-[44px] rounded-xl bg-emerald-700 px-5 py-3 text-xs font-black text-white shadow-md hover:bg-emerald-800 active:scale-98 disabled:opacity-50 transition flex items-center justify-center gap-2 mobile-touch-target"
+                  data-testid="release-milestone-payment-button"
+                >
+                  <span>💳</span>
+                  <span>
+                    {busy
+                      ? 'Recording Settlement…'
+                      : `Record Direct Payment (${formatMoney(Number(payAmountInput) || activeBalDue, activeInvoice.currency)}) →`}
+                  </span>
+                </button>
+              </form>
+            </div>
+          </div>
         )}
 
         {/* State: Payment is recorded, awaiting dual-signoff verification */}

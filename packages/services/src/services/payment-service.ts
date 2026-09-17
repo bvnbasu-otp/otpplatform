@@ -3,10 +3,15 @@ import {
   calculateInvoicePaidAmount,
   calculatePaymentAllocatedAmount,
   calculatePaymentUnallocatedAmount,
+  calculatePoSettlementSummary,
   deriveInvoicePaymentStatus,
+  generatePoSettlementCertificate,
+  isPurchaseOrderFullySettled,
   validatePaymentAllocation,
   type InvoicePaymentSummary,
   type PaymentAllocationSummary,
+  type PoSettlementCertificate,
+  type PoSettlementSummary,
 } from '@otp/domain';
 import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
@@ -561,5 +566,264 @@ export class PaymentService {
     );
 
     return ok(updatedAllocation);
+  }
+
+  /**
+   * Retrieves full PO cumulative settlement summary across all invoices, payments, and allocations (Phase 5C.2).
+   */
+  async getPoSettlementSummary(
+    actor: ActorContext,
+    poId: string,
+  ): Promise<Result<PoSettlementSummary, Error>> {
+    const po = await this.repos.purchaseOrders.findById(poId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    // Verify tenant access: Buyer org member, assigned supplier, or platform admin
+    if (!actor.isPlatformAdmin) {
+      const isBuyer = actor.organizationId === po.organizationId;
+      const isSupplier = actor.supplierIds?.includes(po.supplierId);
+      if (!isBuyer && !isSupplier) {
+        return err(new ValidationError('Unauthorized access to purchase order settlement'));
+      }
+    }
+
+    // Retrieve invoices for PO
+    let invoices = await this.repos.invoices.findByPurchaseOrderId(po.id);
+    if (invoices.length === 0) {
+      const wo = await this.repos.workOrders.findByPurchaseOrderId(po.id);
+      if (wo) {
+        invoices = await this.repos.invoices.findByWorkOrderId(wo.id);
+      }
+    }
+
+    // Retrieve payments for PO
+    let payments: Payment[] = [];
+    if (this.repos.payments.findByPurchaseOrderId) {
+      payments = await this.repos.payments.findByPurchaseOrderId(po.id);
+    }
+    if (payments.length === 0 && invoices.length > 0 && this.repos.payments.findByInvoiceId) {
+      const payList: Payment[] = [];
+      for (const inv of invoices) {
+        const pList = await this.repos.payments.findByInvoiceId(inv.id);
+        payList.push(...pList);
+      }
+      // Unique payments
+      const seen = new Set<string>();
+      payments = payList.filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      });
+    }
+
+    // Retrieve allocations across invoices
+    let allocations: PaymentAllocationEntity[] = [];
+    if (this.repos.paymentAllocations) {
+      for (const inv of invoices) {
+        const allocs = await this.repos.paymentAllocations.findByInvoiceId(inv.id);
+        allocations.push(...allocs);
+      }
+    }
+
+    const summary = calculatePoSettlementSummary(
+      po,
+      invoices,
+      payments,
+      allocations,
+    );
+
+    return ok(summary);
+  }
+
+  /**
+   * Allocates balance from an existing unallocated advance payment against an approved invoice (Phase 5C.2).
+   */
+  async allocateAdvancePayment(
+    actor: ActorContext,
+    params: {
+      paymentId: string;
+      invoiceId: string;
+      amount: number;
+      notes?: string | null;
+      idempotencyKey?: string | null;
+    },
+  ): Promise<Result<PaymentAllocationEntity, Error>> {
+    const { paymentId, invoiceId, amount, notes } = params;
+    if (amount <= 0) {
+      return err(new ValidationError('Allocation amount must be strictly greater than 0'));
+    }
+
+    if (!this.repos.paymentAllocations) {
+      return err(new ValidationError('Payment allocation repository is not configured'));
+    }
+
+    const payment = await this.repos.payments.findById(paymentId);
+    if (!payment) return err(new NotFoundError('Payment not found'));
+
+    const invoice = await this.repos.invoices.findById(invoiceId);
+    if (!invoice) return err(new NotFoundError('Invoice not found'));
+
+    // Resolve PO and verify buyer access
+    let poId = invoice.purchaseOrderId || payment.purchaseOrderId || null;
+    if (!poId && invoice.workOrderId) {
+      const wo = await this.repos.workOrders.findById(invoice.workOrderId);
+      if (wo) poId = wo.purchaseOrderId;
+    }
+
+    if (!poId) {
+      return err(new ValidationError('Could not resolve Purchase Order for advance allocation'));
+    }
+
+    const po = await this.repos.purchaseOrders.findById(poId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+    if (!access.ok) return access;
+
+    if (invoice.status !== 'APPROVED' && invoice.status !== 'PARTIALLY_PAID') {
+      return err(
+        new ValidationError(`Invoice status is ${invoice.status}, but must be APPROVED or PARTIALLY_PAID before allocating advance`),
+      );
+    }
+
+    // Validate available unallocated amount on payment
+    const paymentAllocs = await this.repos.paymentAllocations.findByPaymentId(payment.id);
+    const unallocated = calculatePaymentUnallocatedAmount(payment.amount, paymentAllocs);
+    if (amount > unallocated) {
+      return err(
+        new ValidationError(`Allocation amount ₹${amount} exceeds available payment unallocated balance ₹${unallocated}`),
+      );
+    }
+
+    // Validate invoice balance due
+    const invoiceAllocs = await this.repos.paymentAllocations.findByInvoiceId(invoice.id);
+    const balDue = calculateInvoiceBalanceDue(invoice.amount, invoiceAllocs);
+    if (amount > balDue) {
+      return err(
+        new ValidationError(`Allocation amount ₹${amount} exceeds invoice balance due of ₹${balDue}`),
+      );
+    }
+
+    const now = timestamp();
+    const allocation: PaymentAllocationEntity = {
+      id: createId(),
+      paymentId: payment.id,
+      invoiceId: invoice.id,
+      allocatedAmount: amount,
+      allocatedAt: now,
+      status: 'ALLOCATED',
+      notes: notes || 'Advance payment balance allocation',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const savedAllocation = await this.repos.paymentAllocations.save(allocation);
+
+    // Sync Payment unallocated amount
+    const updatedPaymentAllocs = await this.repos.paymentAllocations.findByPaymentId(payment.id);
+    const newUnallocated = calculatePaymentUnallocatedAmount(payment.amount, updatedPaymentAllocs);
+    await this.repos.payments.save({
+      ...payment,
+      unallocatedAmount: newUnallocated,
+    });
+
+    // Sync Invoice paid_amount, balance_due, and status
+    const updatedInvoiceAllocs = await this.repos.paymentAllocations.findByInvoiceId(invoice.id);
+    const newPaid = calculateInvoicePaidAmount(updatedInvoiceAllocs);
+    const newBal = calculateInvoiceBalanceDue(invoice.amount, updatedInvoiceAllocs);
+    const newStatus = deriveInvoicePaymentStatus(invoice.amount, newPaid, invoice.status);
+
+    await this.repos.invoices.save({
+      ...invoice,
+      paidAmount: newPaid,
+      balanceDue: newBal,
+      status: newStatus,
+    });
+
+    await auditLog(
+      this.audit,
+      actor,
+      'payment_allocation',
+      savedAllocation.id,
+      'advance_payment.allocated',
+      null,
+      { paymentId, invoiceId, allocatedAmount: amount, notes },
+    );
+
+    return ok(savedAllocation);
+  }
+
+  /**
+   * Generates an immutable, structured reconciliation and settlement certificate (Phase 5C.2).
+   */
+  async generatePoSettlementCertificate(
+    actor: ActorContext,
+    poId: string,
+  ): Promise<Result<PoSettlementCertificate, Error>> {
+    const po = await this.repos.purchaseOrders.findById(poId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    if (!actor.isPlatformAdmin) {
+      const isBuyer = actor.organizationId === po.organizationId;
+      const isSupplier = actor.supplierIds?.includes(po.supplierId);
+      if (!isBuyer && !isSupplier) {
+        return err(new ValidationError('Unauthorized access to purchase order settlement certificate'));
+      }
+    }
+
+    // Retrieve invoices for PO
+    let invoices = await this.repos.invoices.findByPurchaseOrderId(po.id);
+    if (invoices.length === 0) {
+      const wo = await this.repos.workOrders.findByPurchaseOrderId(po.id);
+      if (wo) {
+        invoices = await this.repos.invoices.findByWorkOrderId(wo.id);
+      }
+    }
+
+    // Retrieve payments for PO
+    let payments: Payment[] = [];
+    if (this.repos.payments.findByPurchaseOrderId) {
+      payments = await this.repos.payments.findByPurchaseOrderId(po.id);
+    }
+    if (payments.length === 0 && invoices.length > 0 && this.repos.payments.findByInvoiceId) {
+      const payList: Payment[] = [];
+      for (const inv of invoices) {
+        const pList = await this.repos.payments.findByInvoiceId(inv.id);
+        payList.push(...pList);
+      }
+      const seen = new Set<string>();
+      payments = payList.filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      });
+    }
+
+    let allocations: PaymentAllocationEntity[] = [];
+    if (this.repos.paymentAllocations) {
+      for (const inv of invoices) {
+        const allocs = await this.repos.paymentAllocations.findByInvoiceId(inv.id);
+        allocations.push(...allocs);
+      }
+    }
+
+    const supplier = po.supplierId ? await this.repos.suppliers.findById(po.supplierId) : null;
+
+    const cert = generatePoSettlementCertificate(
+      po,
+      invoices,
+      payments,
+      allocations,
+      {
+        id: actor.profileId,
+        role: actor.isPlatformAdmin ? 'PLATFORM_ADMIN' : 'ORG_MEMBER',
+      },
+      {
+        id: po.organizationId,
+      },
+      supplier ? { id: supplier.id, name: supplier.businessName, gstin: supplier.gstin } : undefined,
+    );
+
+    return ok(cert);
   }
 }

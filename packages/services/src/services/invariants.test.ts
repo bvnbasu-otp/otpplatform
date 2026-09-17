@@ -575,25 +575,6 @@ describe('Phase 3.5 End-to-End Award, Reveal & Purchase Order Invariants', () =>
     );
     expect(inProgressRes.ok).toBe(true);
 
-    // 9. Complete PO
-    const completedRes = await services.purchaseOrders.transition(
-      BUYER_MANAGER,
-      po.id,
-      'COMPLETED',
-    );
-    expect(completedRes.ok).toBe(true);
-
-    // 10. Rejects invalid transition once COMPLETED
-    const invalidAfterComplete = await services.purchaseOrders.transition(
-      BUYER_MANAGER,
-      po.id,
-      'IN_PROGRESS',
-    );
-    expect(invalidAfterComplete.ok).toBe(false);
-    if (!invalidAfterComplete.ok) {
-      expect(invalidAfterComplete.error).toBeInstanceOf(TransitionError);
-    }
-
     // =========================================================================
     // Phase 5A: Progressive Invoicing & Line Item Allocations
     // =========================================================================
@@ -686,6 +667,49 @@ describe('Phase 3.5 End-to-End Award, Reveal & Purchase Order Invariants', () =>
       expect(summaryRes.value.alreadyInvoicedAmount).toBe(10000);
       expect(summaryRes.value.remainingInvoiceableAmount).toBe(0);
       expect(summaryRes.value.isFullyInvoiced).toBe(true);
+    }
+
+    // Phase 5C.2 PO Completion Guard Invariant Test:
+    // 9. Attempting to complete PO before invoices are approved and paid should fail
+    const prematureCompleteRes = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'COMPLETED',
+    );
+    expect(prematureCompleteRes.ok).toBe(false);
+    if (!prematureCompleteRes.ok) {
+      expect(prematureCompleteRes.error.message).toContain('Purchase order cannot be marked COMPLETED');
+    }
+
+    // Approve both invoices and pay them in full
+    if (!inv1Res.ok || !inv2Res.ok) throw new Error('Invoices not submitted');
+    const inv1 = inv1Res.value;
+    const inv2 = inv2Res.value;
+    await services.invoices.approve(BUYER_MANAGER, inv1.id);
+    await services.invoices.approve(BUYER_MANAGER, inv2.id);
+
+    const pay1Res = await services.payments.recordInvoicePayment(BUYER_MANAGER, inv1.id, 2000, 'BANK_TRANSFER');
+    expect(pay1Res.ok).toBe(true);
+    const pay2Res = await services.payments.recordInvoicePayment(BUYER_MANAGER, inv2.id, 8000, 'BANK_TRANSFER');
+    expect(pay2Res.ok).toBe(true);
+
+    // 10. Complete PO successfully once settled in full
+    const completedRes = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'COMPLETED',
+    );
+    expect(completedRes.ok).toBe(true);
+
+    // 11. Rejects invalid transition once COMPLETED
+    const invalidAfterComplete = await services.purchaseOrders.transition(
+      BUYER_MANAGER,
+      po.id,
+      'IN_PROGRESS',
+    );
+    expect(invalidAfterComplete.ok).toBe(false);
+    if (!invalidAfterComplete.ok) {
+      expect(invalidAfterComplete.error).toBeInstanceOf(TransitionError);
     }
   });
 });

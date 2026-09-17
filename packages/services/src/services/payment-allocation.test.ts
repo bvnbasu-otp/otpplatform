@@ -1410,4 +1410,217 @@ describe('Phase 5C.1 Payment Allocation & Financial Red-Team Test Suite', () => 
       expect(p.amount).toBe(activeAlloc + (p.unallocatedAmount ?? 0));
     }
   });
+
+  describe('Phase 5C.2 Cumulative Settlement & Red-Team Tests', () => {
+    it('PO Settlement Summary calculation and advance payment allocation flow', async () => {
+      const { po, wo, invoice, repos } = await seedApprovedInvoice(100000);
+
+      // Record an advance payment of ₹50,000 linked to the PO (no invoice initially)
+      const payAdv = await repos.payments.save({
+        id: 'pay-adv-1',
+        purchaseOrderId: po.id,
+        invoiceId: null,
+        amount: 50000,
+        unallocatedAmount: 50000,
+        currency: 'INR',
+        method: 'BANK_TRANSFER',
+        status: 'RECORDED',
+        recordedBy: BUYER_OWNER.profileId,
+        recordedAt: new Date().toISOString(),
+      });
+
+      // 1. Check Settlement Summary before allocation
+      const summaryRes1 = await services.payments.getPoSettlementSummary(BUYER_OWNER, po.id);
+      expect(summaryRes1.ok).toBe(true);
+      if (summaryRes1.ok) {
+        expect(summaryRes1.value.poAuthorizedTotal).toBe(100000);
+        expect(summaryRes1.value.cumulativeInvoicedAmount).toBe(100000);
+        expect(summaryRes1.value.cumulativePaidAmount).toBe(0);
+        expect(summaryRes1.value.invoicedOutstandingAmount).toBe(100000);
+        expect(summaryRes1.value.unallocatedAdvanceAmount).toBe(50000);
+        expect(summaryRes1.value.isFullySettled).toBe(false);
+      }
+
+      // 2. Allocate ₹30,000 from advance to invoice-101
+      const allocRes = await services.payments.allocateAdvancePayment(BUYER_OWNER, {
+        paymentId: payAdv.id,
+        invoiceId: invoice.id,
+        amount: 30000,
+        notes: '30k advance applied to milestone 1',
+      });
+      expect(allocRes.ok).toBe(true);
+
+      // 3. Check Settlement Summary after advance allocation
+      const summaryRes2 = await services.payments.getPoSettlementSummary(BUYER_OWNER, po.id);
+      expect(summaryRes2.ok).toBe(true);
+      if (summaryRes2.ok) {
+        expect(summaryRes2.value.cumulativePaidAmount).toBe(30000);
+        expect(summaryRes2.value.invoicedOutstandingAmount).toBe(70000);
+        expect(summaryRes2.value.unallocatedAdvanceAmount).toBe(20000);
+        expect(summaryRes2.value.counts.partiallyPaidInvoiceCount).toBe(1);
+        expect(summaryRes2.value.isFullySettled).toBe(false);
+      }
+
+      // 4. Allocate remaining ₹20,000 advance
+      const allocRes2 = await services.payments.allocateAdvancePayment(BUYER_OWNER, {
+        paymentId: payAdv.id,
+        invoiceId: invoice.id,
+        amount: 20000,
+      });
+      expect(allocRes2.ok).toBe(true);
+
+      // 5. Pay the remaining ₹50,000 directly
+      const payDirect = await services.payments.recordInvoicePayment(
+        BUYER_OWNER,
+        invoice.id,
+        50000,
+        'BANK_TRANSFER',
+      );
+      expect(payDirect.ok).toBe(true);
+
+      // 6. Check Final Settlement Summary
+      const summaryResFinal = await services.payments.getPoSettlementSummary(BUYER_OWNER, po.id);
+      expect(summaryResFinal.ok).toBe(true);
+      if (summaryResFinal.ok) {
+        expect(summaryResFinal.value.cumulativePaidAmount).toBe(100000);
+        expect(summaryResFinal.value.invoicedOutstandingAmount).toBe(0);
+        expect(summaryResFinal.value.unallocatedAdvanceAmount).toBe(0);
+        expect(summaryResFinal.value.isFullySettled).toBe(true);
+      }
+
+      // 7. Verify Settlement Certificate Generation
+      const certRes = await services.payments.generatePoSettlementCertificate(BUYER_OWNER, po.id);
+      expect(certRes.ok).toBe(true);
+      if (certRes.ok) {
+        expect(certRes.value.certificateId).toContain('SETTLE-CERT-');
+        expect(certRes.value.summary.isFullySettled).toBe(true);
+        expect(certRes.value.invoiceLedger).toHaveLength(1);
+        expect(certRes.value.paymentLedger.length).toBeGreaterThanOrEqual(1);
+      }
+    });
+
+    it('Red-Team Attack 1: Attempt to transition PO to COMPLETED with unpaid invoice is blocked', async () => {
+      const { po } = await seedApprovedInvoice(50000);
+
+      const completeRes = await services.purchaseOrders.transition(BUYER_OWNER, po.id, 'COMPLETED');
+      expect(completeRes.ok).toBe(false);
+      if (!completeRes.ok) {
+        expect(completeRes.error.message).toContain('Purchase order cannot be marked COMPLETED until all invoices are PAID');
+      }
+    });
+
+    it('Red-Team Attack 2: Attempt to transition PO to COMPLETED with partially paid invoice is blocked', async () => {
+      const { po, invoice } = await seedApprovedInvoice(50000);
+
+      // Pay partially (20k of 50k)
+      const payRes = await services.payments.recordInvoicePayment(BUYER_OWNER, invoice.id, 20000, 'UPI');
+      expect(payRes.ok).toBe(true);
+
+      const completeRes = await services.purchaseOrders.transition(BUYER_OWNER, po.id, 'COMPLETED');
+      expect(completeRes.ok).toBe(false);
+      if (!completeRes.ok) {
+        expect(completeRes.error.message).toContain('Purchase order cannot be marked COMPLETED until all invoices are PAID');
+      }
+    });
+
+    it('Red-Team Attack 3: Allocate advance > payment unallocated balance is blocked', async () => {
+      const { po, invoice, repos } = await seedApprovedInvoice(50000);
+
+      const payAdv = await repos.payments.save({
+        id: 'pay-adv-test-3',
+        purchaseOrderId: po.id,
+        invoiceId: null,
+        amount: 20000,
+        unallocatedAmount: 20000,
+        currency: 'INR',
+        method: 'BANK_TRANSFER',
+        status: 'RECORDED',
+        recordedBy: BUYER_OWNER.profileId,
+        recordedAt: new Date().toISOString(),
+      });
+
+      const allocRes = await services.payments.allocateAdvancePayment(BUYER_OWNER, {
+        paymentId: payAdv.id,
+        invoiceId: invoice.id,
+        amount: 25000, // Exceeds 20000
+      });
+
+      expect(allocRes.ok).toBe(false);
+      if (!allocRes.ok) {
+        expect(allocRes.error.message).toContain('exceeds available payment unallocated balance');
+      }
+    });
+
+    it('Red-Team Attack 4: Allocate advance > invoice balance due is blocked', async () => {
+      const { po, invoice, repos } = await seedApprovedInvoice(10000);
+
+      const payAdv = await repos.payments.save({
+        id: 'pay-adv-test-4',
+        purchaseOrderId: po.id,
+        invoiceId: null,
+        amount: 50000,
+        unallocatedAmount: 50000,
+        currency: 'INR',
+        method: 'BANK_TRANSFER',
+        status: 'RECORDED',
+        recordedBy: BUYER_OWNER.profileId,
+        recordedAt: new Date().toISOString(),
+      });
+
+      const allocRes = await services.payments.allocateAdvancePayment(BUYER_OWNER, {
+        paymentId: payAdv.id,
+        invoiceId: invoice.id,
+        amount: 15000, // Exceeds invoice balance 10000
+      });
+
+      expect(allocRes.ok).toBe(false);
+      if (!allocRes.ok) {
+        expect(allocRes.error.message).toContain('exceeds invoice balance due');
+      }
+    });
+
+    it('Red-Team Attack 6: Cross-tenant advance allocation is blocked', async () => {
+      const { invoice, repos } = await seedApprovedInvoice(50000);
+
+      const payAdvOtherOrg = await repos.payments.save({
+        id: 'pay-adv-other-org',
+        purchaseOrderId: 'po-other',
+        invoiceId: null,
+        amount: 50000,
+        unallocatedAmount: 50000,
+        currency: 'INR',
+        method: 'BANK_TRANSFER',
+        status: 'RECORDED',
+        recordedBy: OTHER_ORG_USER.profileId,
+        recordedAt: new Date().toISOString(),
+      });
+
+      // User from other org attempting to allocate to our invoice
+      const allocRes = await services.payments.allocateAdvancePayment(OTHER_ORG_USER, {
+        paymentId: payAdvOtherOrg.id,
+        invoiceId: invoice.id,
+        amount: 10000,
+      });
+
+      expect(allocRes.ok).toBe(false);
+      if (!allocRes.ok) {
+        expect(allocRes.error).toBeInstanceOf(ForbiddenError);
+      }
+    });
+
+    it('Attack 7: Valid full settlement allows PO completion successfully', async () => {
+      const { po, invoice } = await seedApprovedInvoice(50000);
+
+      // Pay full invoice
+      const payRes = await services.payments.recordInvoicePayment(BUYER_OWNER, invoice.id, 50000, 'BANK_TRANSFER');
+      expect(payRes.ok).toBe(true);
+
+      // Transition to COMPLETED succeeds
+      const completeRes = await services.purchaseOrders.transition(BUYER_OWNER, po.id, 'COMPLETED');
+      expect(completeRes.ok).toBe(true);
+      if (completeRes.ok) {
+        expect(completeRes.value.status).toBe('COMPLETED');
+      }
+    });
+  });
 });

@@ -18,6 +18,7 @@ vi.mock('@/lib/supabase', () => ({
 describe('verifyPayment controlled progressive settlement (Phase 5C.1)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete (supabase as any).rpc;
   });
 
   it('keeps PO and Work Order IN_PROGRESS when milestone payment is verified but other invoices remain unpaid', async () => {
@@ -345,6 +346,97 @@ describe('verifyPayment controlled progressive settlement (Phase 5C.1)', () => {
     if (replayRes.ok) {
       expect(replayRes.paymentId).toBe('pay-existing-1');
       expect(replayRes.allocationId).toBe('alloc-existing-1');
+    }
+  });
+
+  it('Phase 5C.2: getPoSettlementSummary client & RPC workflow', async () => {
+    const { getPoSettlementSummary } = await import('./payments');
+
+    const mockPo = {
+      id: 'po-set-1',
+      total_amount: 100000,
+      taxable_total: 84745.76,
+      cgst_total: 7627.12,
+      sgst_total: 7627.12,
+    };
+
+    const mockInvoices = [
+      { id: 'inv-set-1', amount: 50000, paid_amount: 50000, balance_due: 0, status: 'PAID' },
+      { id: 'inv-set-2', amount: 50000, paid_amount: 25000, balance_due: 25000, status: 'PARTIALLY_PAID' },
+    ];
+
+    const mockPayments = [
+      { id: 'pay-set-1', amount: 75000, unallocated_amount: 0 },
+    ];
+
+    const mockAllocations = [
+      { id: 'alloc-1', payment_id: 'pay-set-1', invoice_id: 'inv-set-1', allocated_amount: 50000, status: 'ALLOCATED' },
+      { id: 'alloc-2', payment_id: 'pay-set-1', invoice_id: 'inv-set-2', allocated_amount: 25000, status: 'ALLOCATED' },
+    ];
+
+    (supabase.from as any).mockImplementation((table: string) => {
+      if (table === 'purchase_orders') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({ data: mockPo, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === 'invoices') {
+        return {
+          select: () => ({
+            or: () => Promise.resolve({ data: mockInvoices, error: null }),
+          }),
+        };
+      }
+      if (table === 'payments') {
+        return {
+          select: () => ({
+            eq: () => Promise.resolve({ data: mockPayments, error: null }),
+          }),
+        };
+      }
+      if (table === 'payment_allocations') {
+        return {
+          select: () => ({
+            in: () => Promise.resolve({ data: mockAllocations, error: null }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const res = await getPoSettlementSummary('po-set-1');
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.summary.poAuthorizedTotal).toBe(100000);
+      expect(res.summary.cumulativeInvoicedAmount).toBe(100000);
+      expect(res.summary.cumulativePaidAmount).toBe(75000);
+      expect(res.summary.invoicedOutstandingAmount).toBe(25000);
+      expect(res.summary.isFullySettled).toBe(false);
+      expect(res.summary.counts.invoiceCount).toBe(2);
+      expect(res.summary.counts.paidInvoiceCount).toBe(1);
+      expect(res.summary.counts.partiallyPaidInvoiceCount).toBe(1);
+    }
+  });
+
+  it('Phase 5C.2: allocateAdvancePayment client & atomic RPC workflow', async () => {
+    const { allocateAdvancePayment } = await import('./payments');
+
+    (supabase as any).rpc = vi.fn().mockResolvedValue({
+      data: {
+        ok: true,
+        allocation_id: 'alloc-adv-99',
+      },
+      error: null,
+    });
+
+    const res = await allocateAdvancePayment('pay-adv-1', 'inv-1', 25000, 'Advance allocation test');
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.allocationId).toBe('alloc-adv-99');
     }
   });
 });

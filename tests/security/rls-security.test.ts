@@ -342,4 +342,16 @@ describe('RLS security — static guarantees', () => {
     expect(sql170).toContain('search_path = public, private, pg_temp');
     expect(sql170).toContain('idempotent_replay');
   });
+
+  it('migration 00171 defines PO settlement summary RPC, PO completion guard, and advance allocation RPC', () => {
+    const sql171 = readMigration('00171_phase5c2_cumulative_reconciliation_and_po_settlement.sql');
+
+    expect(sql171).toContain('validate_invoice_allocation_integrity');
+    expect(sql171).not.toContain('+ 0.05');
+    expect(sql171).toContain('get_po_settlement_summary');
+    expect(sql171).toContain('validate_po_status_transition');
+    expect(sql171).toContain('trg_validate_po_status_transition');
+    expect(sql171).toContain('allocate_advance_payment_atomic');
+    expect(sql171).toContain('PO-5C2-NOT-SETTLED');
+  });
 });

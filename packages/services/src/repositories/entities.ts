@@ -287,6 +287,7 @@ export interface Supplier {
   source: string;
   status: string;
   categories: string[];
+  gstin?: string;
   capabilities?: Record<string, unknown>;
   ratingAvg?: number;
   serviceArea?: Record<string, unknown>;

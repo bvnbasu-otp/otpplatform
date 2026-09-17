@@ -1,6 +1,7 @@
 import {
   buildTaxSnapshot,
   calculateOrderTaxBreakdown,
+  calculatePoSettlementSummary,
   type CalculatedLineItemTax,
   canTransitionPurchaseOrder,
   determinePlaceOfSupply,
@@ -204,6 +205,51 @@ export class PurchaseOrderService {
         'MANAGER',
       ]);
       if (!access.ok) return access;
+    }
+
+    // Completion Guard (Phase 5C.2): Verify purchase order is fully settled before transition to COMPLETED
+    if (toStatus === 'COMPLETED') {
+      let invoices = await this.repos.invoices.findByPurchaseOrderId(po.id);
+      if (invoices.length === 0) {
+        const wo = await this.repos.workOrders.findByPurchaseOrderId(po.id);
+        if (wo) {
+          invoices = await this.repos.invoices.findByWorkOrderId(wo.id);
+        }
+      }
+
+      let payments = this.repos.payments.findByPurchaseOrderId
+        ? await this.repos.payments.findByPurchaseOrderId(po.id)
+        : [];
+      if (payments.length === 0 && invoices.length > 0 && this.repos.payments.findByInvoiceId) {
+        const payList = [];
+        for (const inv of invoices) {
+          const pList = await this.repos.payments.findByInvoiceId(inv.id);
+          payList.push(...pList);
+        }
+        const seen = new Set<string>();
+        payments = payList.filter((p) => {
+          if (seen.has(p.id)) return false;
+          seen.add(p.id);
+          return true;
+        });
+      }
+
+      let allocations = [];
+      if (this.repos.paymentAllocations) {
+        for (const inv of invoices) {
+          const allocs = await this.repos.paymentAllocations.findByInvoiceId(inv.id);
+          allocations.push(...allocs);
+        }
+      }
+
+      const settlement = calculatePoSettlementSummary(po, invoices, payments, allocations);
+      if (!settlement.isFullySettled) {
+        return err(
+          new ValidationError(
+            `Purchase order cannot be marked COMPLETED until all invoices are PAID and financial obligations are settled (Invoiced: ₹${settlement.cumulativeInvoicedAmount}, Paid: ₹${settlement.cumulativePaidAmount}, Outstanding: ₹${settlement.invoicedOutstandingAmount})`,
+          ),
+        );
+      }
     }
 
     const before = { status: po.status };
