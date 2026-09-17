@@ -123,23 +123,7 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
   }
 
   if ($dbReady) {
-    $sqlReconcileMigrations = @"
-DO `$\$
-BEGIN
-  IF EXISTS (SELECT 1 FROM public.otp_schema_migrations WHERE version LIKE '%00175%') AND to_regclass('public.erp_export_manifests') IS NULL THEN
-    DELETE FROM public.otp_schema_migrations WHERE version LIKE '%00175%';
-  END IF;
-  IF EXISTS (SELECT 1 FROM public.otp_schema_migrations WHERE version LIKE '%00174%') AND to_regclass('public.settlement_exceptions') IS NULL THEN
-    DELETE FROM public.otp_schema_migrations WHERE version LIKE '%00174%' OR version LIKE '%00175%';
-  END IF;
-  IF EXISTS (SELECT 1 FROM public.otp_schema_migrations WHERE version LIKE '%00173%') AND to_regclass('public.tds_deductions') IS NULL THEN
-    DELETE FROM public.otp_schema_migrations WHERE version LIKE '%00173%';
-  END IF;
-  IF EXISTS (SELECT 1 FROM public.otp_schema_migrations WHERE version LIKE '%00172%') AND to_regclass('public.credit_debit_notes') IS NULL THEN
-    DELETE FROM public.otp_schema_migrations WHERE version LIKE '%00172%';
-  END IF;
-END `$\$;
-"@
+    $sqlReconcileMigrations = "DELETE FROM public.otp_schema_migrations WHERE (version LIKE '%00174%' OR version LIKE '%00175%') AND to_regclass('public.settlement_exceptions') IS NULL; DELETE FROM public.otp_schema_migrations WHERE version LIKE '%00175%' AND to_regclass('public.erp_export_manifests') IS NULL; DELETE FROM public.otp_schema_migrations WHERE version LIKE '%00173%' AND to_regclass('public.tds_deductions') IS NULL; DELETE FROM public.otp_schema_migrations WHERE version LIKE '%00172%' AND to_regclass('public.credit_debit_notes') IS NULL;"
     & docker exec otp-prod-db psql -U postgres -d postgres -c $sqlReconcileMigrations 2>&1 | Out-Null
 
     $appliedMigrations = & docker exec otp-prod-db psql -U postgres -d postgres -t -c "SELECT version FROM public.otp_schema_migrations;" 2>&1
