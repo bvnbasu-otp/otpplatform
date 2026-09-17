@@ -206,18 +206,54 @@ export async function recordInvoicePayment(
       };
     }
 
-    // If RPC failed due to a database exception (not just missing function in mock)
-    if (rpcErr && !rpcErr.message.includes('function public.record_invoice_payment_atomic') && !rpcErr.message.includes('could not find function')) {
-      return { ok: false, error: rpcErr.message };
+    if (rpcErr) {
+      // In production environments, FAIL CLOSED immediately if the RPC fails or is missing.
+      // NEVER fall back to multi-step non-atomic writes in production.
+      const isTestEnv =
+        typeof process !== 'undefined' &&
+        (process.env?.NODE_ENV === 'test' || process.env?.VITEST === 'true');
+
+      if (!isTestEnv) {
+        return {
+          ok: false,
+          error: `Production atomic payment RPC failed (FAIL-CLOSED): ${rpcErr.message || 'Database RPC unavailable'}`,
+        };
+      }
+
+      // If in test environment and error is NOT missing function, fail directly
+      if (!rpcErr.message.includes('function public.record_invoice_payment_atomic') && !rpcErr.message.includes('could not find function')) {
+        return { ok: false, error: rpcErr.message };
+      }
     }
   } catch (rpcException: any) {
-    // If it's a known postgres exception, return error directly
+    const isTestEnv =
+      typeof process !== 'undefined' &&
+      (process.env?.NODE_ENV === 'test' || process.env?.VITEST === 'true');
+
+    if (!isTestEnv) {
+      return {
+        ok: false,
+        error: `Production atomic payment execution error: ${rpcException?.message || 'Unexpected RPC failure (FAIL-CLOSED)'}`,
+      };
+    }
+
+    // In test environment: if it's a known postgres exception, return error directly
     if (rpcException?.message && !rpcException.message.includes('not found') && !rpcException.message.includes('is not a function')) {
       return { ok: false, error: rpcException.message };
     }
   }
 
-  // 2. Fallback Path (for mock clients or when RPC is unavailable): Application Transaction with hard rollback
+  // 2. Test-Only Mock Fallback Path: Only executed in test/offline environments with mock database adapters
+  const isTestEnv =
+    typeof process !== 'undefined' &&
+    (process.env?.NODE_ENV === 'test' || process.env?.VITEST === 'true');
+
+  if (!isTestEnv) {
+    return {
+      ok: false,
+      error: 'Non-atomic payment fallback is strictly disabled in production (FAIL-CLOSED).',
+    };
+  }
   const now = new Date().toISOString();
 
   // Resolve Purchase Order ID and validate Invoice state

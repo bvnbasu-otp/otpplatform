@@ -324,14 +324,22 @@ describe('RLS security — static guarantees', () => {
     expect(caseBlock).toContain("ELSE 'DIRECT'");
   });
 
-  it('migration 00169 defines protect_payment_financial_fields trigger and payments RLS policies', () => {
-    const sql = readMigration('00169_phase5c1_payment_allocations_and_partial_settlement.sql');
-    expect(sql).toContain('protect_payment_financial_fields');
-    expect(sql).toContain('payment_allocations_modify');
-    expect(sql).toContain('payments_update');
-    expect(sql).toContain('payments_insert');
-    expect(sql).toContain('validate_payment_allocation_integrity');
-    expect(sql).toContain('record_invoice_payment_atomic');
-    expect(sql).not.toContain('+ 0.05');
+  it('migration 00169 and 00170 define financial security triggers, RLS policies, and idempotency guarantees', () => {
+    const sql169 = readMigration('00169_phase5c1_payment_allocations_and_partial_settlement.sql');
+    const sql170 = readMigration('00170_phase5c1_h2_idempotency_and_atomic_rpc.sql');
+    
+    expect(sql169).toContain('protect_payment_financial_fields');
+    expect(sql169).toContain('payment_allocations_modify');
+    expect(sql169).toContain('payments_update');
+    expect(sql169).toContain('payments_insert');
+    expect(sql169).toContain('validate_payment_allocation_integrity');
+    expect(sql169).toContain('record_invoice_payment_atomic');
+    expect(sql169).not.toContain('+ 0.05');
+
+    expect(sql170).toContain('idx_payments_gateway_event_id_unique');
+    expect(sql170).toContain('record_invoice_payment_atomic');
+    expect(sql170).toContain('SECURITY DEFINER');
+    expect(sql170).toContain('search_path = public, private, pg_temp');
+    expect(sql170).toContain('idempotent_replay');
   });
 });

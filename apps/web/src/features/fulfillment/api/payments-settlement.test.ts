@@ -297,4 +297,54 @@ describe('verifyPayment controlled progressive settlement (Phase 5C.1)', () => {
     expect(allocationAttempted).toBe(true);
     expect(mockDelete).toHaveBeenCalled(); // Payment deletion rollback called
   });
+
+  it('H2-FINAL-02: Production environment fails closed when atomic RPC fails (zero non-atomic writes)', async () => {
+    const { recordInvoicePayment } = await import('./payments');
+
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalVitest = process.env.VITEST;
+
+    try {
+      // Temporarily simulate production environment
+      (process.env as any).NODE_ENV = 'production';
+      delete (process.env as any).VITEST;
+
+      (supabase as any).rpc = vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Database RPC connection timeout' },
+      });
+
+      const prodRes = await recordInvoicePayment('inv-prod-1', 5000, 'UPI', 'UTR-PROD-1');
+      expect(prodRes.ok).toBe(false);
+      if (!prodRes.ok) {
+        expect(prodRes.error).toContain('FAIL-CLOSED');
+      }
+    } finally {
+      (process.env as any).NODE_ENV = originalNodeEnv;
+      if (originalVitest !== undefined) {
+        (process.env as any).VITEST = originalVitest;
+      }
+    }
+  });
+
+  it('H2-FINAL-01: Handles idempotent replay cleanly from atomic RPC', async () => {
+    const { recordInvoicePayment } = await import('./payments');
+
+    (supabase as any).rpc = vi.fn().mockResolvedValue({
+      data: {
+        ok: true,
+        idempotent_replay: true,
+        payment_id: 'pay-existing-1',
+        allocation_id: 'alloc-existing-1',
+      },
+      error: null,
+    });
+
+    const replayRes = await recordInvoicePayment('inv-1', 5000, 'UPI', 'UTR-REPLAY', 'INR', 'po-1', 'IDEMP-KEY-999');
+    expect(replayRes.ok).toBe(true);
+    if (replayRes.ok) {
+      expect(replayRes.paymentId).toBe('pay-existing-1');
+      expect(replayRes.allocationId).toBe('alloc-existing-1');
+    }
+  });
 });
