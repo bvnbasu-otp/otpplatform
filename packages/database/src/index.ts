@@ -10,6 +10,22 @@ export type { RepositoryContext } from './context';
 export { createSupabaseClient } from './client/supabase-client';
 export type { TypedSupabaseClient } from './client/supabase-client';
 
+export {
+  resolveDatabaseConnectionTopology,
+  validateConnectionTopology,
+  parsePostgresUri,
+  buildPostgresUri,
+  ConnectionPoolConcurrencySimulator,
+} from './client/connection-pool';
+export type {
+  DatabaseConnectionConfig,
+  ConnectionTopologyOptions,
+  ConnectionTopologyRole,
+  ConnectionPoolMode,
+  SimulatedConnection,
+  ConcurrencySimulationReport,
+} from './client/connection-pool';
+
 export type { Database } from './generated/supabase';
 
 export { mapIdentityProtectedQuoteRow, identityProtectedQuoteToRecord, mapBlindQuoteRow, blindQuoteToRecord } from './mappers/blind-quote-mapper';

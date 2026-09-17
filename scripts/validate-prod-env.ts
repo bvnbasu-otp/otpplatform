@@ -184,11 +184,26 @@ export const ENVIRONMENT_RULES: VariableRule[] = [
     requiredInProd: false,
     isSecret: true,
     clientSafe: false,
-    description: 'PostgreSQL direct or PgBouncer pooled connection string',
+    description: 'PostgreSQL direct (5432) or PgBouncer pooled (6543) connection string',
     validate: (val) => {
       if (!val) return null;
       if (!val.startsWith('postgresql://') && !val.startsWith('postgres://')) {
         return 'DATABASE_URL must start with postgresql:// or postgres://';
+      }
+      return null;
+    },
+  },
+  {
+    name: 'DATABASE_POOLER_URL',
+    category: 'Database & Pooling',
+    requiredInProd: false,
+    isSecret: true,
+    clientSafe: false,
+    description: 'PgBouncer transaction-mode pooled connection string (port 6543)',
+    validate: (val) => {
+      if (!val) return null;
+      if (!val.startsWith('postgresql://') && !val.startsWith('postgres://')) {
+        return 'DATABASE_POOLER_URL must start with postgresql:// or postgres://';
       }
       return null;
     },
