@@ -38,6 +38,8 @@ export interface InvoiceSummary {
   invoiceNumber: string;
   invoiceType?: string;
   amount: number;
+  paidAmount?: number;
+  balanceDue?: number;
   currency: string;
   status: InvoiceStatus;
   submittedAt: string | null;
@@ -62,6 +64,8 @@ interface InvoiceRow {
   invoice_number: string;
   invoice_type?: string;
   amount: number;
+  paid_amount?: number | null;
+  balance_due?: number | null;
   currency: string;
   status: InvoiceStatus;
   submitted_at: string | null;
@@ -108,6 +112,8 @@ function mapInvoice(row: InvoiceRow): InvoiceSummary {
     invoiceNumber: row.invoice_number,
     invoiceType: row.invoice_type || 'PROGRESSIVE',
     amount: Number(row.amount),
+    paidAmount: row.paid_amount != null ? Number(row.paid_amount) : undefined,
+    balanceDue: row.balance_due != null ? Number(row.balance_due) : undefined,
     currency: row.currency,
     status: row.status,
     submittedAt: row.submitted_at,
@@ -154,6 +160,8 @@ const INVOICE_SELECT_QUERY = `
   invoice_number,
   invoice_type,
   amount,
+  paid_amount,
+  balance_due,
   currency,
   status,
   submitted_at,

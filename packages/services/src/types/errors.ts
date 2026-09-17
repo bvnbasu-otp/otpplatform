@@ -15,6 +15,13 @@ export class ForbiddenError extends ServiceError {
   }
 }
 
+export class NotFoundError extends ServiceError {
+  constructor(message = 'Not found') {
+    super('NOT_FOUND', message);
+    this.name = 'NotFoundError';
+  }
+}
+
 export class TransitionError extends ServiceError {
   constructor(from: string, to: string, entity = 'entity') {
     super('INVALID_TRANSITION', `Cannot transition ${entity} from ${from} to ${to}`);

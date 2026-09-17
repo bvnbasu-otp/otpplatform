@@ -533,10 +533,11 @@ export function PurchaseOrderDetailPage({
     ) {
       return 'SETTLED';
     }
-    // 6. Invoiced: Invoice submitted or approved, or payment recorded, or delivery accepted
+    // 6. Invoiced: Invoice submitted or approved, partially paid, or payment recorded, or delivery accepted
     if (
       order.invoiceStatus === 'SUBMITTED' ||
       order.invoiceStatus === 'APPROVED' ||
+      order.invoiceStatus === 'PARTIALLY_PAID' ||
       order.paymentStatus === 'RECORDED' ||
       (workOrder?.progressPercent === 100 && workOrder.buyerAcceptedAt)
     ) {

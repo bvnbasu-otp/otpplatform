@@ -56,6 +56,7 @@ export function InvoicePaymentPanel({
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [hsnCode, setHsnCode] = useState('995411');
   const [amount, setAmount] = useState('');
+  const [payAmountInput, setPayAmountInput] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'BANK_TRANSFER' | 'MANUAL' | 'OTHER'>('UPI');
   const [reference, setReference] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -75,10 +76,13 @@ export function InvoicePaymentPanel({
       const latest = invsRes.invoices[invsRes.invoices.length - 1] || null;
       setActiveInvoice(latest);
       if (latest) {
+        const bal = latest.balanceDue ?? (latest.status === 'PAID' ? 0 : latest.amount);
+        setPayAmountInput(String(bal > 0 ? bal : latest.amount));
         const payRes = await fetchPaymentByInvoice(latest.id);
         if (payRes.ok) setPayment(payRes.payment);
       } else {
         setPayment(null);
+        setPayAmountInput('');
       }
     } else {
       setError(invsRes.error);
@@ -120,6 +124,18 @@ export function InvoicePaymentPanel({
     if (target) {
       const targetRemaining = Math.max(0, target.allocatedAmount - target.invoicedAmount);
       setAmount(String(targetRemaining > 0 ? targetRemaining : target.allocatedAmount));
+    }
+  };
+
+  const handleSelectInvoice = async (inv: InvoiceSummary) => {
+    setActiveInvoice(inv);
+    const bal = inv.balanceDue ?? (inv.status === 'PAID' ? 0 : inv.amount);
+    setPayAmountInput(String(bal > 0 ? bal : inv.amount));
+    const payRes = await fetchPaymentByInvoice(inv.id);
+    if (payRes.ok) {
+      setPayment(payRes.payment);
+    } else {
+      setPayment(null);
     }
   };
 
@@ -230,11 +246,24 @@ export function InvoicePaymentPanel({
       setError('Please provide a UPI Transaction UTR or Bank Transfer Reference ID.');
       return;
     }
+
+    const payAmt = Number(payAmountInput);
+    if (!payAmt || payAmt <= 0) {
+      setError('Payment amount must be strictly greater than 0.');
+      return;
+    }
+
+    const currentBalDue = activeInvoice.balanceDue ?? (activeInvoice.status === 'PAID' ? 0 : activeInvoice.amount);
+    if (payAmt > currentBalDue + 0.05) {
+      setError(`Payment amount ₹${payAmt} exceeds invoice balance due of ₹${currentBalDue}`);
+      return;
+    }
+
     setBusy(true);
     setError(null);
     const result = await recordPayment(
       activeInvoice.id,
-      activeInvoice.amount,
+      payAmt,
       paymentMethod,
       reference.trim(),
     );
@@ -244,7 +273,7 @@ export function InvoicePaymentPanel({
       return;
     }
     setSuccess(
-      `✓ Milestone payment of ${formatMoney(activeInvoice.amount, activeInvoice.currency)} recorded via ${paymentMethod}!`,
+      `✓ Milestone payment of ${formatMoney(payAmt, activeInvoice.currency)} recorded via ${paymentMethod}!`,
     );
     await load();
     onUpdated?.();
@@ -266,6 +295,10 @@ export function InvoicePaymentPanel({
   }
 
   const effectiveAmount = activeInvoice ? activeInvoice.amount : Number(amount) || poAmount;
+  const activeBalDue = activeInvoice?.balanceDue ?? (activeInvoice?.status === 'PAID' ? 0 : activeInvoice?.amount ?? 0);
+  const activePaidAmt = activeInvoice?.paidAmount ?? (activeInvoice?.status === 'PAID' ? activeInvoice.amount : 0);
+  const payableAmount = activeBalDue > 0 ? activeBalDue : effectiveAmount;
+
   const baseAmount = activeInvoice?.taxableTotal ?? Math.round(effectiveAmount / 1.18);
   const cgstAmount = activeInvoice?.cgstTotal ?? (activeInvoice?.igstTotal ? 0 : Math.round((effectiveAmount - baseAmount) / 2));
   const sgstAmount = activeInvoice?.sgstTotal ?? (activeInvoice?.igstTotal || activeInvoice?.utgstTotal ? 0 : Math.round((effectiveAmount - baseAmount) / 2));
@@ -273,18 +306,57 @@ export function InvoicePaymentPanel({
   const igstAmount = activeInvoice?.igstTotal ?? 0;
   const totalGst = cgstAmount + sgstAmount + utgstAmount + igstAmount || (effectiveAmount - baseAmount);
 
+  // Sanitized dynamic virtual settlement handle
+  const virtualAccountCode = `OTP-SETTLE-${workOrderId.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+
+  function getStatusBadge(status: string) {
+    if (status === 'PAID') {
+      return (
+        <span className="rounded-full px-2.5 py-0.5 text-[9px] font-black border bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300">
+          ✓ PAID (100%)
+        </span>
+      );
+    }
+    if (status === 'PARTIALLY_PAID') {
+      return (
+        <span className="rounded-full px-2.5 py-0.5 text-[9px] font-black border bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border-amber-300">
+          ⚡ PARTIALLY PAID
+        </span>
+      );
+    }
+    if (status === 'APPROVED') {
+      return (
+        <span className="rounded-full px-2.5 py-0.5 text-[9px] font-black border bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300">
+          APPROVED
+        </span>
+      );
+    }
+    if (status === 'SUBMITTED') {
+      return (
+        <span className="rounded-full px-2.5 py-0.5 text-[9px] font-black border bg-slate-100 dark:bg-slate-850 text-slate-800 dark:text-slate-300 border-slate-300">
+          SUBMITTED
+        </span>
+      );
+    }
+    return (
+      <span className="rounded-full px-2.5 py-0.5 text-[9px] font-black border bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border-red-300">
+        {status}
+      </span>
+    );
+  }
+
   return (
     <div className="space-y-4" data-testid="invoice-payment-panel">
       {/* =========================================================================
-          PROGRESSIVE INVOICING & REMAINING INVOICEABLE AMOUNT BAR (PHASE 5A)
+          PROGRESSIVE INVOICING & REMAINING INVOICEABLE AMOUNT BAR (PHASE 5A/5C)
           ========================================================================= */}
-      <section className="rounded-2xl border bg-card p-4 shadow-2xs space-y-3">
+      <section className="rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm">📊</span>
               <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
-                Progressive Invoicing Ledger (Phase 5A &amp; 5B)
+                Progressive Invoicing &amp; Settlement Ledger (Phase 5C.1)
               </h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -292,7 +364,7 @@ export function InvoicePaymentPanel({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span
               className={`rounded-full px-2.5 py-0.5 text-[10px] font-black border ${
                 invoicingCalc.isFullyInvoiced
@@ -337,7 +409,7 @@ export function InvoicePaymentPanel({
           </div>
         </div>
 
-        {/* Invoices List Table */}
+        {/* Invoices List Table with Partial Payment Status & Balance Due */}
         {invoices.length > 0 && (
           <div className="rounded-xl border overflow-hidden pt-1">
             <div className="overflow-x-auto">
@@ -345,71 +417,74 @@ export function InvoicePaymentPanel({
                 <thead className="bg-muted/50 border-b text-[10px] uppercase font-bold text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2">Invoice #</th>
-                    <th className="px-3 py-2">Type / Scope</th>
-                    <th className="px-3 py-2 text-right">Amount (₹)</th>
+                    <th className="px-3 py-2">Type / Milestone</th>
+                    <th className="px-3 py-2 text-right">Total (₹)</th>
+                    <th className="px-3 py-2 text-right">Paid (₹)</th>
+                    <th className="px-3 py-2 text-right">Balance (₹)</th>
                     <th className="px-3 py-2 text-center">Status</th>
                     <th className="px-3 py-2 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
-                  {invoices.map((inv) => (
-                    <tr
-                      key={inv.id}
-                      onClick={() => setActiveInvoice(inv)}
-                      className={`cursor-pointer transition ${
-                        activeInvoice?.id === inv.id ? 'bg-primary/5 font-semibold' : 'hover:bg-muted/20'
-                      }`}
-                    >
-                      <td className="px-3 py-2 font-mono">{inv.invoiceNumber}</td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {inv.invoiceType} {inv.milestoneId ? '· Milestone Linked' : ''}
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono font-bold text-foreground">
-                        {formatMoney(inv.amount, inv.currency)}
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${
-                            inv.status === 'APPROVED' || inv.status === 'PAID'
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                              : inv.status === 'SUBMITTED'
-                              ? 'bg-blue-100 text-blue-800 border-blue-300'
-                              : 'bg-red-100 text-red-800 border-red-300'
-                          }`}
-                        >
-                          {inv.status}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        {role === 'buyer' && inv.status === 'SUBMITTED' && (
-                          <div className="inline-flex gap-1">
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void handleApprove(inv.id);
-                              }}
-                              className="px-2 py-1 rounded-md bg-emerald-600 text-white text-[10px] font-bold hover:bg-emerald-700"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void handleReject(inv.id);
-                              }}
-                              className="px-2 py-1 rounded-md bg-red-100 text-red-800 text-[10px] font-bold hover:bg-red-200"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {invoices.map((inv) => {
+                    const invPaid = inv.paidAmount ?? (inv.status === 'PAID' ? inv.amount : 0);
+                    const invBal = inv.balanceDue ?? (inv.status === 'PAID' ? 0 : inv.amount);
+
+                    return (
+                      <tr
+                        key={inv.id}
+                        onClick={() => void handleSelectInvoice(inv)}
+                        className={`cursor-pointer transition ${
+                          activeInvoice?.id === inv.id ? 'bg-primary/5 font-semibold' : 'hover:bg-muted/20'
+                        }`}
+                      >
+                        <td className="px-3 py-2 font-mono">{inv.invoiceNumber}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {inv.invoiceType} {inv.milestoneId ? '· Linked' : ''}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono font-bold text-foreground">
+                          {formatMoney(inv.amount, inv.currency)}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono text-emerald-700 dark:text-emerald-400">
+                          {formatMoney(invPaid, inv.currency)}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono text-foreground font-semibold">
+                          {formatMoney(invBal, inv.currency)}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          {getStatusBadge(inv.status)}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {role === 'buyer' && inv.status === 'SUBMITTED' && (
+                            <div className="inline-flex gap-1">
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleApprove(inv.id);
+                                }}
+                                className="px-2 py-1 rounded-md bg-emerald-600 text-white text-[10px] font-bold hover:bg-emerald-700"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleReject(inv.id);
+                                }}
+                                className="px-2 py-1 rounded-md bg-red-100 text-red-800 text-[10px] font-bold hover:bg-red-200"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -420,8 +495,8 @@ export function InvoicePaymentPanel({
       {/* =========================================================================
           SCREEN 12: ACTIVE INVOICE DETAIL & STATUTORY TAX BREAKDOWN
           ========================================================================= */}
-      <section className="rounded-2xl border bg-card p-4 shadow-2xs space-y-3.5">
-        <div className="flex items-center justify-between border-b pb-2.5">
+      <section className="rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm">🧾</span>
@@ -433,19 +508,7 @@ export function InvoicePaymentPanel({
               Itemization summary, statutory GST tax splitting, and frozen tax snapshot.
             </p>
           </div>
-          {activeInvoice && (
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-[10px] font-black border ${
-                activeInvoice.status === 'APPROVED' || activeInvoice.status === 'PAID'
-                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300'
-                  : activeInvoice.status === 'SUBMITTED'
-                  ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300'
-                  : 'bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border-red-300'
-              }`}
-            >
-              {activeInvoice.status}
-            </span>
-          )}
+          {activeInvoice && getStatusBadge(activeInvoice.status)}
         </div>
 
         {error && (
@@ -483,9 +546,8 @@ export function InvoicePaymentPanel({
         {/* State: Active Invoice Detail */}
         {activeInvoice && (
           <div className="space-y-3">
-            {/* Detailed Itemization & Statutory Tax Breakdown */}
             <div className="rounded-xl border bg-muted/10 p-3 space-y-2 text-xs">
-              <div className="grid grid-cols-2 gap-2 pb-2 border-b">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pb-2 border-b">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-muted-foreground block">
                     Invoice Reference
@@ -500,9 +562,17 @@ export function InvoicePaymentPanel({
                     ✓ State {activeInvoice.placeOfSupplyStateCode || '29'} · ITC Eligible
                   </span>
                 </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                    Payment Progress
+                  </span>
+                  <span className="font-mono font-bold text-foreground">
+                    Paid: {formatMoney(activePaidAmt, activeInvoice.currency)} / Bal: {formatMoney(activeBalDue, activeInvoice.currency)}
+                  </span>
+                </div>
               </div>
 
-              {/* Line Items Table if present */}
+              {/* Line Items Table */}
               {activeInvoice.lineItems && activeInvoice.lineItems.length > 0 && (
                 <div className="rounded-lg border bg-card overflow-hidden my-2">
                   <table className="w-full text-left text-[11px]">
@@ -580,6 +650,20 @@ export function InvoicePaymentPanel({
                     {formatMoney(activeInvoice.amount, activeInvoice.currency)}
                   </span>
                 </div>
+
+                <div className="flex justify-between text-muted-foreground text-xs">
+                  <span>Cumulative Paid Amount:</span>
+                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                    {formatMoney(activePaidAmt, activeInvoice.currency)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-xs font-black text-foreground border-t pt-1">
+                  <span>Outstanding Balance Due:</span>
+                  <span className="font-mono text-primary font-bold">
+                    {formatMoney(activeBalDue, activeInvoice.currency)}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -612,19 +696,19 @@ export function InvoicePaymentPanel({
       </section>
 
       {/* =========================================================================
-          SCREEN 13: ESCROW & PAYMENT EXECUTION SECTION
+          SCREEN 13: ESCROW & PAYMENT EXECUTION SECTION (PHASE 5C.1)
           ========================================================================= */}
-      <section className="rounded-2xl border bg-card p-4 shadow-2xs space-y-3.5">
-        <div className="flex items-center justify-between border-b pb-2.5">
+      <section className="rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm">💳</span>
               <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
-                Screen 13: Escrow &amp; Payment Execution
+                Screen 13: Payment Execution &amp; Settlement
               </h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Bank NEFT/RTGS settlement, Instant UPI QR, and Escrow Milestone release.
+              Direct Bank Transfer (NEFT/RTGS), Instant UPI QR, and Partial/Milestone Remittance.
             </p>
           </div>
           {payment && (
@@ -640,11 +724,11 @@ export function InvoicePaymentPanel({
           )}
         </div>
 
-        {/* Clean Payment Card: Bank Details & UPI QR */}
+        {/* Clean Neutral Settlement Card */}
         <div className="rounded-xl border bg-muted/15 p-3.5 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-              Authorized Settlement Target
+              Authorized Settlement Destination
             </span>
             <button
               type="button"
@@ -659,45 +743,45 @@ export function InvoicePaymentPanel({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
             <div className="p-2.5 rounded-lg border bg-card space-y-1">
               <span className="text-[9px] uppercase font-bold text-muted-foreground block">
-                Beneficiary Virtual Escrow Account
+                Beneficiary Virtual Settlement Account
               </span>
-              <p className="font-mono font-bold text-foreground">OTP-ESCROW-002984</p>
+              <p className="font-mono font-bold text-foreground">{virtualAccountCode}</p>
               <p className="text-[10px] text-muted-foreground">
-                IFSC: <span className="font-mono text-foreground">HDFC0000001</span> (HDFC Bank Ltd)
+                IFSC: <span className="font-mono text-foreground">HDFC0000001</span> (HDFC Settlement Node)
               </p>
             </div>
 
             <div className="p-2.5 rounded-lg border bg-card space-y-1">
               <span className="text-[9px] uppercase font-bold text-muted-foreground block">
-                Instant UPI VPA Handle
+                Instant UPI Settlement Handle
               </span>
-              <p className="font-mono font-bold text-foreground">otp.escrow@hdfcbank</p>
+              <p className="font-mono font-bold text-foreground">otp.settle@hdfcbank</p>
               <p className="text-[10px] text-muted-foreground">
-                Merchant: <span className="font-semibold text-foreground">Open Trade Platform Escrow</span>
+                Merchant: <span className="font-semibold text-foreground">Open Trade Platform Node</span>
               </p>
             </div>
           </div>
         </div>
 
-        {/* State: Buyer payment entry form (when invoice approved) */}
-        {activeInvoice && activeInvoice.status === 'APPROVED' && !payment && role === 'buyer' && (
+        {/* State: Buyer payment entry form (when invoice approved or partially paid with balance due) */}
+        {activeInvoice && (activeInvoice.status === 'APPROVED' || activeInvoice.status === 'PARTIALLY_PAID') && activeBalDue > 0 && role === 'buyer' && (
           <form onSubmit={(e) => void handleRecordPayment(e)} className="space-y-3 pt-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div>
                 <label className="block text-[11px] font-bold text-foreground mb-1">
                   Settlement Method
                 </label>
-                <div className="grid grid-cols-1 xs:grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-3 gap-1">
                   {([
                     { id: 'UPI', label: 'UPI' },
-                    { id: 'BANK_TRANSFER', label: 'NEFT / RTGS' },
-                    { id: 'MANUAL', label: 'Direct Transfer' },
+                    { id: 'BANK_TRANSFER', label: 'NEFT/RTGS' },
+                    { id: 'MANUAL', label: 'Direct' },
                   ] as const).map((method) => (
                     <button
                       key={method.id}
                       type="button"
                       onClick={() => setPaymentMethod(method.id)}
-                      className={`min-h-[44px] rounded-xl px-2 py-1 text-[11px] font-black transition border mobile-touch-target flex items-center justify-center text-center ${
+                      className={`min-h-[44px] rounded-xl px-1.5 py-1 text-[10px] font-black transition border mobile-touch-target flex items-center justify-center text-center ${
                         paymentMethod === method.id
                           ? 'bg-primary text-primary-foreground border-primary shadow-xs'
                           : 'bg-card text-muted-foreground hover:bg-muted border-border'
@@ -711,7 +795,25 @@ export function InvoicePaymentPanel({
 
               <div>
                 <label className="block text-[11px] font-bold text-foreground mb-1">
-                  Bank UTR / Transaction Reference <span className="text-red-500">*</span>
+                  Payment Amount (₹ INR) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={payAmountInput}
+                  onChange={(e) => setPayAmountInput(e.target.value)}
+                  placeholder={`Max: ₹${activeBalDue}`}
+                  className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                />
+                <span className="text-[10px] text-muted-foreground block mt-0.5">
+                  Balance Due: <strong className="text-primary">{formatMoney(activeBalDue, 'INR')}</strong>
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-foreground mb-1">
+                  UTR / Reference ID <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -724,7 +826,7 @@ export function InvoicePaymentPanel({
               </div>
             </div>
 
-            {/* Authoritative Action: [ 💳 Release Milestone Payment ] */}
+            {/* Authoritative Action: [ 💳 Record Milestone Payment ] */}
             <button
               type="submit"
               disabled={busy}
@@ -734,17 +836,17 @@ export function InvoicePaymentPanel({
               <span>💳</span>
               <span>
                 {busy
-                  ? 'Releasing Settlement…'
-                  : `Release Milestone Payment (${formatMoney(activeInvoice.amount, activeInvoice.currency)}) →`}
+                  ? 'Recording Settlement…'
+                  : `Record Payment (${formatMoney(Number(payAmountInput) || activeBalDue, activeInvoice.currency)}) →`}
               </span>
             </button>
           </form>
         )}
 
-        {/* State: Payment is recorded, awaiting final verification */}
+        {/* State: Payment is recorded, awaiting dual-signoff verification */}
         {payment && payment.status === 'RECORDED' && (
           <div className="rounded-xl border border-blue-200 bg-blue-50/70 dark:bg-blue-950/40 p-3.5 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-extrabold text-xs text-blue-950 dark:text-blue-200">
                 Payment Recorded — Awaiting Dual-Signoff Verification
               </span>
@@ -753,7 +855,7 @@ export function InvoicePaymentPanel({
               </span>
             </div>
             <p className="text-[11px] text-blue-800 dark:text-blue-300">
-              Amount of {formatMoney(payment.amount, payment.currency)} transmitted via {payment.method}. Click below to confirm bank ledger match and mark complete.
+              Amount of {formatMoney(payment.amount, payment.currency)} transmitted via {payment.method}. Click below to confirm bank ledger match and verify settlement.
             </p>
 
             {role === 'buyer' && (
@@ -771,29 +873,29 @@ export function InvoicePaymentPanel({
         )}
 
         {/* State: Payment is verified and settled */}
-        {payment && payment.status === 'VERIFIED' && (
+        {activeInvoice && activeInvoice.status === 'PAID' && (
           <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/40 p-4 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-xl">🏁</span>
                 <span className="font-black text-xs text-emerald-950 dark:text-emerald-200">
-                  Payment Remitted &amp; Cryptographically Verified
+                  Invoice Settled &amp; Paid (100%)
                 </span>
               </div>
               <span className="rounded-full bg-emerald-600 text-white px-2.5 py-0.5 text-[10px] font-black">
-                100% SETTLED
+                PAID
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
               <div>
-                <span className="text-muted-foreground block">Verified Amount</span>
+                <span className="text-muted-foreground block">Settled Amount</span>
                 <span className="font-mono font-bold text-foreground">
-                  {formatMoney(payment.amount, payment.currency)}
+                  {formatMoney(activeInvoice.amount, activeInvoice.currency)}
                 </span>
               </div>
               <div>
-                <span className="text-muted-foreground block">Bank Reference</span>
-                <span className="font-mono font-bold text-foreground">{payment.reference}</span>
+                <span className="text-muted-foreground block">Remaining Balance</span>
+                <span className="font-mono font-bold text-foreground">₹0.00</span>
               </div>
             </div>
           </div>
@@ -821,7 +923,6 @@ export function InvoicePaymentPanel({
             </div>
 
             <form onSubmit={(e) => void handleSubmitInvoice(e)} className="space-y-3.5">
-              {/* Milestone Allocation Picker */}
               <div>
                 <label className="block text-[11px] font-bold text-foreground mb-1">
                   Target Milestone Allocation
@@ -952,7 +1053,7 @@ export function InvoicePaymentPanel({
         </div>
       )}
 
-      {/* UPI QR Modal */}
+      {/* Dynamic Neutral UPI QR Modal */}
       {showQrModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="w-full max-w-sm rounded-2xl bg-card border border-border p-5 shadow-2xl text-center space-y-4">
@@ -960,14 +1061,14 @@ export function InvoicePaymentPanel({
             <div className="bg-white p-4 rounded-xl border inline-block">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                  `upi://pay?pa=otp.escrow@hdfcbank&pn=OpenTradePlatform&am=${effectiveAmount}&cu=INR`,
+                  `upi://pay?pa=otp.settle@hdfcbank&pn=OTP+Settlement&am=${payableAmount}&cu=INR`,
                 )}`}
                 alt="UPI QR Code"
                 className="w-44 h-44 mx-auto"
               />
             </div>
-            <p className="font-mono text-xs font-bold text-foreground">otp.escrow@hdfcbank</p>
-            <p className="font-mono text-sm font-black text-primary">{formatMoney(effectiveAmount, 'INR')}</p>
+            <p className="font-mono text-xs font-bold text-foreground">otp.settle@hdfcbank</p>
+            <p className="font-mono text-sm font-black text-primary">{formatMoney(payableAmount, 'INR')}</p>
             <button
               type="button"
               onClick={() => setShowQrModal(false)}

@@ -7,6 +7,7 @@ import type {
   Invoice,
   InvoiceLineItemEntity,
   Payment,
+  PaymentAllocationEntity,
   ProcurementPerformanceRecord,
   PurchaseOrder,
   PurchaseOrderLineItemEntity,
@@ -48,6 +49,7 @@ export class InMemoryRepositories {
   invoices = new Map<string, Invoice>();
   invoiceLineItems = new Map<string, InvoiceLineItemEntity>();
   payments = new Map<string, Payment>();
+  paymentAllocations = new Map<string, PaymentAllocationEntity>();
   suppliers = new Map<string, Supplier>();
   performance = new Map<string, ProcurementPerformanceRecord>();
 
@@ -263,9 +265,33 @@ export class InMemoryRepositories {
   get paymentsRepo(): Repositories['payments'] {
     const store = this.payments;
     return {
+      findById: async (id) => store.get(id) ?? null,
+      findByInvoiceId: async (invId) =>
+        [...store.values()].filter((p) => p.invoiceId === invId),
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((p) => p.purchaseOrderId === poId),
       save: async (p) => {
         store.set(p.id, p);
         return p;
+      },
+    };
+  }
+
+  get paymentAllocationsRepo(): Repositories['paymentAllocations'] {
+    const store = this.paymentAllocations;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByPaymentId: async (payId) =>
+        [...store.values()].filter((a) => a.paymentId === payId),
+      findByInvoiceId: async (invId) =>
+        [...store.values()].filter((a) => a.invoiceId === invId),
+      save: async (a) => {
+        store.set(a.id, a);
+        return a;
+      },
+      saveMany: async (allocations) => {
+        for (const a of allocations) store.set(a.id, a);
+        return allocations;
       },
     };
   }
@@ -310,6 +336,7 @@ export class InMemoryRepositories {
       invoices: this.invoicesRepo,
       invoiceLineItems: this.invoiceLineItemsRepo,
       payments: this.paymentsRepo,
+      paymentAllocations: this.paymentAllocationsRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

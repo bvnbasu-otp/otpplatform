@@ -103,12 +103,22 @@ export type WorkOrderStatus =
 export const InvoiceStatus = {
   SUBMITTED: 'SUBMITTED',
   APPROVED: 'APPROVED',
+  PARTIALLY_PAID: 'PARTIALLY_PAID',
   REJECTED: 'REJECTED',
   PAID: 'PAID',
 } as const;
 
 export type InvoiceStatus =
   (typeof InvoiceStatus)[keyof typeof InvoiceStatus];
+
+export const PaymentAllocationStatus = {
+  ALLOCATED: 'ALLOCATED',
+  VOIDED: 'VOIDED',
+  REVERSED: 'REVERSED',
+} as const;
+
+export type PaymentAllocationStatus =
+  (typeof PaymentAllocationStatus)[keyof typeof PaymentAllocationStatus];
 
 export const InvoiceType = {
   PROGRESSIVE: 'PROGRESSIVE',

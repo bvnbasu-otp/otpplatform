@@ -6,6 +6,7 @@ import type {
   Invoice,
   InvoiceLineItemEntity,
   Payment,
+  PaymentAllocationEntity,
   ProcurementPerformanceRecord,
   PurchaseOrder,
   PurchaseOrderLineItemEntity,
@@ -107,7 +108,18 @@ export interface InvoiceRepository {
 }
 
 export interface PaymentRepository {
+  findById(id: string): Promise<Payment | null>;
+  findByInvoiceId?(invoiceId: string): Promise<Payment[]>;
+  findByPurchaseOrderId?(poId: string): Promise<Payment[]>;
   save(payment: Payment): Promise<Payment>;
+}
+
+export interface PaymentAllocationRepository {
+  findById(id: string): Promise<PaymentAllocationEntity | null>;
+  findByPaymentId(paymentId: string): Promise<PaymentAllocationEntity[]>;
+  findByInvoiceId(invoiceId: string): Promise<PaymentAllocationEntity[]>;
+  save(allocation: PaymentAllocationEntity): Promise<PaymentAllocationEntity>;
+  saveMany(allocations: PaymentAllocationEntity[]): Promise<PaymentAllocationEntity[]>;
 }
 
 export interface SupplierRepository {
@@ -136,6 +148,7 @@ export interface Repositories {
   invoices: InvoiceRepository;
   invoiceLineItems?: InvoiceLineItemRepository;
   payments: PaymentRepository;
+  paymentAllocations?: PaymentAllocationRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

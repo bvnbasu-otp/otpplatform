@@ -153,6 +153,8 @@ export interface ProgressiveInvoiceRecord {
   invoiceNumber: string;
   invoiceType: string;
   amount: number;
+  paidAmount?: number;
+  balanceDue?: number;
   currency: string;
   status: string;
   submittedAt: string | null;

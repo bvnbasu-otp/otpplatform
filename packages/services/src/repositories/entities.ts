@@ -244,6 +244,8 @@ export interface Invoice {
   currency: string;
   status: InvoiceStatus;
   submittedAt: string;
+  paidAmount?: number;
+  balanceDue?: number;
   placeOfSupplyStateCode?: string;
   placeOfSupplyBasis?: string;
   taxSnapshot?: Record<string, unknown> | null;
@@ -256,13 +258,27 @@ export interface Invoice {
 
 export interface Payment {
   id: string;
-  invoiceId: string;
+  invoiceId?: string | null;
+  purchaseOrderId?: string | null;
   amount: number;
+  unallocatedAmount?: number;
   currency: string;
   method: string;
   status: PaymentStatus;
   recordedBy: string;
   recordedAt: string;
+}
+
+export interface PaymentAllocationEntity {
+  id: string;
+  paymentId: string;
+  invoiceId: string;
+  allocatedAmount: number;
+  allocatedAt: string;
+  status: 'ALLOCATED' | 'VOIDED' | 'REVERSED';
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Supplier {
