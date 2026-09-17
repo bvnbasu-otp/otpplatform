@@ -271,5 +271,55 @@ describe('Phase 5C.3 Dual-Rail ERP Payment Voucher Exporters', () => {
       expect(payload.bills).toHaveLength(1);
       expect(payload.bills[0]?.amount_applied).toBe(120000);
     });
+
+    it('generates Tally XML with TDS withholding maintaining exact debit and credit balance (RED-20)', () => {
+      const voucherParams: TallyPaymentVoucherParams = {
+        voucherNumber: 'PAY-TDS-001',
+        paymentDate: '2026-09-17',
+        paymentReference: 'UTR-HDFC-882200',
+        paymentMethod: 'NEFT',
+        amount: 98000, // Net paid
+        tdsAmount: 2000, // 2% TDS on ₹1,00,000 gross
+        tdsSection: '194C',
+        supplierName: 'Delta Works Pvt Ltd',
+        bankLedgerName: 'HDFC Current A/c',
+        allocations: [{ invoiceNumber: 'INV-2026-99', allocatedAmount: 98000 }],
+      };
+
+      const xml = exportToTallyPaymentVoucher(voucherParams);
+
+      // Supplier debited with Gross amount (-100000.00)
+      expect(xml).toContain('<PARTYNAME>Delta Works Pvt Ltd</PARTYNAME>');
+      expect(xml).toContain('<AMOUNT>-100000.00</AMOUNT>');
+      expect(xml).toContain('<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>');
+
+      // Bank credited with Net amount (98000.00)
+      expect(xml).toContain('<LEDGERNAME>HDFC Current A/c</LEDGERNAME>');
+      expect(xml).toContain('<AMOUNT>98000.00</AMOUNT>');
+
+      // TDS Payable credited with TDS amount (2000.00)
+      expect(xml).toContain('<LEDGERNAME>TDS Payable Sec 194C</LEDGERNAME>');
+      expect(xml).toContain('<AMOUNT>2000.00</AMOUNT>');
+      expect(xml).toContain('<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>');
+    });
+
+    it('includes TDS fields in Zoho Books payment receipt payload', () => {
+      const params: ZohoPaymentReceiptParams = {
+        paymentDate: '2026-09-17',
+        paymentReference: 'UTR-AXIS-991122',
+        amount: 98000,
+        tdsAmount: 2000,
+        tdsSection: '194C',
+        supplierName: 'Delta Works Pvt Ltd',
+        allocations: [{ invoiceNumber: 'INV-2026-99', allocatedAmount: 98000 }],
+      };
+
+      const payload = exportToZohoPaymentReceipt(params);
+      expect(payload.amount).toBe(98000);
+      expect(payload.tds_amount).toBe(2000);
+      expect(payload.tds_section).toBe('194C');
+      expect(payload.tds_tax_account).toBe('TDS Payable');
+      expect(payload.description).toContain('TDS Withheld: ₹2000.00');
+    });
   });
 });

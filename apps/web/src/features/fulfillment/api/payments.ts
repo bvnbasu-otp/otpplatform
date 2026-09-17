@@ -11,13 +11,33 @@ import type {
   CreditDebitNoteStatus,
   VendorSettlementStatement,
   ZohoPaymentReceiptPayload,
+  TdsSection,
+  TdsLawVersion,
+  Form16ACertificate,
+  Form16AGeneratorParams,
+  PoChangeOrder,
+  PoChangeOrderItem,
+  ChangeOrderStatus,
+  ChangeOrderType,
+  BankReconciliationRecord,
+  BankReconciliationStatus,
+  BankRemittanceAdvice,
+  FinancialObservabilitySummary,
+  FinancialAuditPack,
 } from '@otp/domain';
 import {
   calculatePoSettlementSummary,
   calculateVendorSettlementStatement,
+  calculateFinancialObservabilitySummary,
+  calculateTds,
+  calculateChangeOrderTotals,
   exportToTallyPaymentVoucher,
   exportToZohoPaymentReceipt,
+  generateFinancialAuditPackCsv,
+  generateFinancialAuditPackJson,
+  generateForm16ACertificate,
   generatePoSettlementCertificate as generatePoSettlementCertDomain,
+  reconcileBankRemittance,
 } from '@otp/domain';
 
 export interface PaymentSummary {
@@ -1339,4 +1359,228 @@ export async function fetchVendorSettlementStatement(
     return { ok: false, error: err?.message || 'Failed to fetch vendor settlement statement' };
   }
 }
+
+// ===========================================================================
+// Phase 5C.4 — Statutory TDS, Change Orders, Bank Reconciliation & Observability API
+// ===========================================================================
+
+export interface TdsDeductionRecord {
+  id: string;
+  organizationId: string;
+  supplierId: string;
+  purchaseOrderId?: string | null;
+  invoiceId: string;
+  lawVersion: string;
+  section: string;
+  taxableAmount: number;
+  tdsRate: number;
+  tdsAmount: number;
+  status: 'PENDING' | 'DEDUCTED' | 'DEPOSITED' | 'CERTIFIED' | 'VOIDED';
+  deducteePan?: string | null;
+  panStatus: string;
+  isLowerDeduction: boolean;
+  financialYear: string;
+  assessmentYear: string;
+  createdAt: string;
+}
+
+export async function fetchTdsDeductionsByInvoice(invoiceId: string): Promise<
+  { ok: true; deductions: TdsDeductionRecord[] } | { ok: false; error: string }
+> {
+  const { data, error } = await supabase
+    .from('tds_deductions')
+    .select('*')
+    .eq('invoice_id', invoiceId)
+    .order('created_at', { ascending: false });
+
+  if (error) return { ok: false, error: error.message };
+  return {
+    ok: true,
+    deductions: (data || []).map((t: any) => ({
+      id: t.id,
+      organizationId: t.organization_id,
+      supplierId: t.supplier_id,
+      purchaseOrderId: t.purchase_order_id,
+      invoiceId: t.invoice_id,
+      lawVersion: t.law_version,
+      section: t.section,
+      taxableAmount: Number(t.taxable_amount),
+      tdsRate: Number(t.tds_rate),
+      tdsAmount: Number(t.tds_amount),
+      status: t.status,
+      deducteePan: t.deductee_pan,
+      panStatus: t.pan_status,
+      isLowerDeduction: Boolean(t.is_lower_deduction),
+      financialYear: t.financial_year,
+      assessmentYear: t.assessment_year,
+      createdAt: t.created_at,
+    })),
+  };
+}
+
+export async function applyTdsWithholdingRpc(params: {
+  organizationId: string;
+  invoiceId: string;
+  section: string;
+  taxableAmount: number;
+  tdsRate: number;
+  deducteePan?: string | null;
+  panStatus?: string;
+  isLowerDeduction?: boolean;
+  lowerDeductionCert?: string | null;
+}): Promise<{ ok: true; deductionId: string } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('apply_tds_withholding_atomic', {
+      p_organization_id: params.organizationId,
+      p_invoice_id: params.invoiceId,
+      p_section: params.section,
+      p_taxable_amount: params.taxableAmount,
+      p_tds_rate: params.tdsRate,
+      p_deductee_pan: params.deducteePan || null,
+      p_pan_status: params.panStatus || 'VALID',
+      p_is_lower_deduction: Boolean(params.isLowerDeduction),
+      p_lower_deduction_cert: params.lowerDeductionCert || null,
+    });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, deductionId: data?.tds_deduction_id || data?.id };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to apply TDS withholding' };
+  }
+}
+
+export async function fetchPoChangeOrdersApi(poId: string): Promise<
+  { ok: true; changeOrders: PoChangeOrder[] } | { ok: false; error: string }
+> {
+  const { data, error } = await supabase
+    .from('po_change_orders')
+    .select('*, po_change_order_items(*)')
+    .eq('purchase_order_id', poId)
+    .order('sequence', { ascending: true });
+
+  if (error) return { ok: false, error: error.message };
+  return {
+    ok: true,
+    changeOrders: (data || []).map((co: any) => ({
+      id: co.id,
+      organizationId: co.organization_id,
+      purchaseOrderId: co.purchase_order_id,
+      changeOrderNumber: co.change_order_number,
+      sequence: co.sequence,
+      title: co.title,
+      reason: co.reason,
+      status: co.status,
+      changeType: co.change_type,
+      netAmountDelta: Number(co.net_amount_delta),
+      taxAmountDelta: Number(co.tax_amount_delta),
+      totalDelta: Number(co.total_delta),
+      previousPoTotal: Number(co.previous_po_total),
+      revisedPoTotal: Number(co.revised_po_total),
+      items: (co.po_change_order_items || []).map((item: any) => ({
+        id: item.id,
+        changeOrderId: item.change_order_id,
+        poLineItemId: item.po_line_item_id,
+        itemIndex: item.item_index,
+        description: item.description,
+        hsnSacCode: item.hsn_sac_code,
+        quantityDelta: Number(item.quantity_delta),
+        unit: item.unit,
+        unitPrice: Number(item.unit_price),
+        amountDelta: Number(item.amount_delta),
+        taxAmountDelta: Number(item.tax_amount_delta),
+        totalDelta: Number(item.total_delta),
+        notes: item.notes,
+      })),
+      requestedBy: co.requested_by,
+      requestedAt: co.requested_at,
+      approvedBy: co.approved_by,
+      approvedAt: co.approved_at,
+      committedBy: co.committed_by,
+      committedAt: co.committed_at,
+      rejectionReason: co.rejection_reason,
+      createdAt: co.created_at,
+      updatedAt: co.updated_at,
+    })),
+  };
+}
+
+export async function commitPoChangeOrderRpc(
+  changeOrderId: string,
+  organizationId: string,
+): Promise<{ ok: true; changeOrder: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('commit_po_change_order_atomic', {
+      p_change_order_id: changeOrderId,
+      p_organization_id: organizationId,
+    });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, changeOrder: data?.change_order };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to commit PO change order' };
+  }
+}
+
+export async function reconcileBankUtrRpc(params: {
+  organizationId: string;
+  utrNumber: string;
+  clearedAmount: number;
+  clearedDate: string;
+  bankName?: string;
+  bankReference?: string;
+  paymentId?: string;
+}): Promise<{ ok: true; record: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('reconcile_bank_utr_atomic', {
+      p_organization_id: params.organizationId,
+      p_utr_number: params.utrNumber,
+      p_cleared_amount: params.clearedAmount,
+      p_cleared_date: params.clearedDate,
+      p_bank_name: params.bankName || null,
+      p_bank_reference: params.bankReference || null,
+      p_payment_id: params.paymentId || null,
+    });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, record: data?.reconciliation };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to reconcile bank UTR' };
+  }
+}
+
+export async function fetchFinancialObservabilitySummaryApi(
+  organizationId: string,
+): Promise<{ ok: true; summary: FinancialObservabilitySummary } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('get_financial_observability_summary', {
+      p_organization_id: organizationId,
+    });
+
+    if (error) return { ok: false, error: error.message };
+    return {
+      ok: true,
+      summary: {
+        organizationId: data.organization_id,
+        totalPoAuthorized: Number(data.total_po_authorized || 0),
+        openPoCount: Number(data.open_po_count || 0),
+        completedPoCount: Number(data.completed_po_count || 0),
+        totalInvoiced: Number(data.total_invoiced || 0),
+        totalPaid: Number(data.total_paid || 0),
+        totalTdsWithheld: Number(data.total_tds_withheld || 0),
+        totalTdsDeposited: Number(data.total_tds_deposited || 0),
+        totalDebitNotes: Number(data.total_debit_notes || 0),
+        totalCreditNotes: Number(data.total_credit_notes || 0),
+        totalOutstandingObligations: Number(data.total_outstanding_obligations || 0),
+        totalUnallocatedAdvances: Number(data.total_unallocated_advances || 0),
+        totalUtrCleared: Number(data.total_utr_cleared || 0),
+        reconciliationDiscrepancyCount: Number(data.reconciliation_discrepancy_count || 0),
+        reconciliationDiscrepancyAmount: Number(data.reconciliation_discrepancy_amount || 0),
+        generatedAt: data.generated_at || new Date().toISOString(),
+      },
+    };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch financial observability summary' };
+  }
+}
+
 

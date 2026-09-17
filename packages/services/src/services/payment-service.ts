@@ -1,34 +1,56 @@
 import {
+  calculateFinancialObservabilitySummary,
   calculateInvoiceBalanceDue,
   calculateInvoicePaidAmount,
   calculatePaymentAllocatedAmount,
   calculatePaymentUnallocatedAmount,
   calculatePoSettlementSummary,
+  calculateReconciliationSummary,
+  calculateTds,
+  calculateTdsNetPayable,
   calculateVendorSettlementStatement,
+  canVoidTdsDeduction,
   deriveInvoicePaymentStatus,
   exportToTallyPaymentVoucher,
   exportToZohoPaymentReceipt,
+  generateFinancialAuditPackCsv,
+  generateFinancialAuditPackJson,
+  generateForm16ACertificate,
   generatePoSettlementCertificate,
   isPurchaseOrderFullySettled,
+  lookupTdsRate,
+  normalizeUtr,
+  reconcileBankRemittance,
+  validatePan,
   validatePaymentAllocation,
+  type BankReconciliationRecord,
+  type BankRemittanceAdvice,
   type CreditDebitNote,
   type CreditDebitNoteStatus,
   type CreditDebitNoteType,
+  type FinancialAuditPack,
+  type FinancialObservabilitySummary,
+  type Form16ACertificate,
+  type Form16AGeneratorParams,
   type InvoicePaymentSummary,
   type PaymentAllocationSummary,
   type PoSettlementCertificate,
   type PoSettlementSummary,
+  type TdsLawVersion,
+  type TdsSection,
   type VendorSettlementStatement,
   type ZohoPaymentReceiptPayload,
 } from '@otp/domain';
 import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
 import type {
+  BankReconciliationRecordEntity,
   CreditDebitNoteEntity,
   Invoice,
   Payment,
   PaymentAllocationEntity,
   PurchaseOrder,
+  TdsDeductionEntity,
 } from '../repositories/entities';
 import type { ActorContext } from '../types/actor-context';
 import { ForbiddenError, NotFoundError, ValidationError } from '../types/errors';
@@ -1369,5 +1391,504 @@ export class PaymentService {
     });
 
     return ok(payload);
+  }
+
+  /**
+   * Applies statutory TDS withholding against an approved invoice (Phase 5C.4).
+   */
+  async applyTdsWithholding(
+    actor: ActorContext,
+    invoiceId: string,
+    section: TdsSection,
+    options?: {
+      customRate?: number;
+      deducteePan?: string;
+      isNonFiler206AB?: boolean;
+      isLowerDeduction?: boolean;
+      lowerDeductionRate?: number;
+      lowerDeductionCert?: string;
+      lawVersion?: TdsLawVersion;
+      date?: string | Date;
+      cumulativeFYAmount?: number;
+    },
+  ): Promise<Result<TdsDeductionEntity, Error>> {
+    const invoice = await this.repos.invoices.findById(invoiceId);
+    if (!invoice) return err(new NotFoundError('Invoice not found'));
+
+    if (invoice.status !== 'APPROVED' && invoice.status !== 'PARTIALLY_PAID' && invoice.status !== 'PAID') {
+      return err(
+        new ValidationError(`Cannot apply TDS to invoice with status ${invoice.status} (TDS-5C4-INVALID-STATUS)`),
+      );
+    }
+
+    let poId: string | null = invoice.purchaseOrderId || null;
+    let orgId: string = (invoice as any).organizationId || '';
+    if (!poId && invoice.workOrderId) {
+      const wo = await this.repos.workOrders.findById(invoice.workOrderId);
+      if (wo) poId = wo.purchaseOrderId || null;
+    }
+    if (!orgId && poId) {
+      const po = await this.repos.purchaseOrders.findById(poId);
+      if (po) orgId = po.organizationId;
+    }
+
+    // Access control: Buyer OWNER or MANAGER or Platform Admin (RED-17)
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER']);
+      if (!access.ok) {
+        return err(
+          new ForbiddenError('Unauthorized: Only Buyer OWNER or MANAGER can apply statutory TDS (RED-17/TDS-5C4-UNAUTHORIZED)'),
+        );
+      }
+    }
+
+    // Check duplicate TDS on same invoice and section
+    if (this.repos.tdsDeductions) {
+      const existing = await this.repos.tdsDeductions.findByInvoiceId(invoiceId);
+      const duplicate = existing.find(
+        (t) => t.section === section && t.status !== 'VOIDED',
+      );
+      if (duplicate) {
+        return err(
+          new ValidationError(
+            `Statutory TDS under Section ${section} has already been deducted for this invoice (RED-16/TDS-5C4-DUPLICATE)`,
+          ),
+        );
+      }
+    }
+
+    // Deductee PAN: from options or supplier
+    let deducteePan = options?.deducteePan;
+    if (!deducteePan && invoice.supplierId) {
+      const supplier = await this.repos.suppliers.findById(invoice.supplierId);
+      if (supplier?.gstin) {
+        deducteePan = supplier.gstin.slice(2, 12);
+      }
+    }
+
+    const tdsResult = calculateTds({
+      invoiceAmount: invoice.amount,
+      section,
+      deducteePan,
+      isNonFiler206AB: options?.isNonFiler206AB,
+      hasLowerDeductionCert: options?.isLowerDeduction,
+      lowerDeductionRate: options?.lowerDeductionRate,
+      lawVersion: options?.lawVersion,
+      date: options?.date,
+      cumulativeFYAmount: options?.cumulativeFYAmount,
+      customTdsRate: options?.customRate,
+    });
+
+    // Invariant: TDS cannot exceed gross invoice amount (RED-03/RED-08)
+    if (tdsResult.statutoryTdsAmount > invoice.amount) {
+      return err(
+        new ValidationError(
+          `Statutory TDS amount ₹${tdsResult.statutoryTdsAmount} exceeds gross invoice amount ₹${invoice.amount} (RED-03/RED-08)`,
+        ),
+      );
+    }
+
+    const now = timestamp();
+    const deduction: TdsDeductionEntity = {
+      id: createId(),
+      organizationId: orgId,
+      supplierId: invoice.supplierId,
+      purchaseOrderId: poId,
+      invoiceId: invoice.id,
+      lawVersion: tdsResult.lawVersion,
+      section: tdsResult.section,
+      taxableAmount: tdsResult.taxableAmount,
+      tdsRate: tdsResult.tdsRate,
+      tdsAmount: tdsResult.statutoryTdsAmount,
+      status: 'DEDUCTED',
+      deducteePan: tdsResult.pan,
+      panStatus: tdsResult.panStatus,
+      isLowerDeduction: options?.isLowerDeduction || false,
+      lowerDeductionCertNumber: options?.lowerDeductionCert || null,
+      financialYear: tdsResult.financialYear,
+      assessmentYear: tdsResult.assessmentYear,
+      createdBy: actor.profileId || null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (this.repos.tdsDeductions) {
+      await this.repos.tdsDeductions.save(deduction);
+    }
+
+    await auditLog(
+      this.audit,
+      actor,
+      'TDS_DEDUCTED',
+      'TDS_DEDUCTION',
+      deduction.id,
+      {
+        invoiceId: invoice.id,
+        purchaseOrderId: poId,
+        section,
+        tdsRate: tdsResult.tdsRate,
+        tdsAmount: tdsResult.statutoryTdsAmount,
+        pan: tdsResult.pan,
+      },
+    );
+
+    return ok(deduction);
+  }
+
+  /**
+   * Voids an undeposited TDS deduction record (Phase 5C.4).
+   * Deposited TDS cannot be voided / reversed (RED-07).
+   */
+  async voidTdsWithholding(
+    actor: ActorContext,
+    tdsDeductionId: string,
+    reason?: string,
+  ): Promise<Result<TdsDeductionEntity, Error>> {
+    if (!this.repos.tdsDeductions) {
+      return err(new NotFoundError('TDS deduction repository not configured'));
+    }
+
+    const deduction = await this.repos.tdsDeductions.findById(tdsDeductionId);
+    if (!deduction) return err(new NotFoundError('TDS deduction record not found'));
+
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, deduction.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    const voidCheck = canVoidTdsDeduction(deduction.status as any);
+    if (!voidCheck.canVoid) {
+      return err(
+        new ValidationError(voidCheck.reason || 'Cannot void this TDS deduction record (RED-07/REV-5C4-TDS-ALREADY-DEPOSITED)'),
+      );
+    }
+
+    deduction.status = 'VOIDED';
+    deduction.updatedAt = timestamp();
+
+    await this.repos.tdsDeductions.save(deduction);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'TDS_VOIDED',
+      'TDS_DEDUCTION',
+      deduction.id,
+      {
+        reason,
+        previousStatus: deduction.status,
+      },
+    );
+
+    return ok(deduction);
+  }
+
+  /**
+   * Generates Form 16A TDS Certificate data (Phase 5C.4).
+   */
+  async generateTdsCertificateData(
+    actor: ActorContext,
+    params: Form16AGeneratorParams,
+  ): Promise<Result<Form16ACertificate, Error>> {
+    const cert = generateForm16ACertificate(params);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'TDS_CERTIFICATE_ISSUED',
+      'TDS_CERTIFICATE',
+      cert.certificateNumber,
+      {
+        financialYear: cert.financialYear,
+        deducteePan: cert.deducteePan,
+        totalTdsDeposited: cert.totalTdsDeposited,
+      },
+    );
+
+    return ok(cert);
+  }
+
+  /**
+   * Reconciles a bank remittance advice against buyer payment records (Phase 5C.4).
+   */
+  async reconcileBankUtr(
+    actor: ActorContext,
+    orgId: string,
+    advice: BankRemittanceAdvice,
+    paymentId?: string,
+  ): Promise<Result<BankReconciliationRecordEntity, Error>> {
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    const cleanUtr = normalizeUtr(advice.utrNumber);
+
+    // 1. Check duplicate UTR in repo (RED-11)
+    let existingRecords: BankReconciliationRecordEntity[] = [];
+    if (this.repos.bankReconciliations) {
+      existingRecords = await this.repos.bankReconciliations.findByOrganizationId(orgId);
+      const isDuplicate = existingRecords.some(
+        (r) => normalizeUtr(r.utrNumber) === cleanUtr,
+      );
+      if (isDuplicate) {
+        return err(
+          new ValidationError(
+            `Duplicate UTR reconciliation: ${cleanUtr} has already been recorded (RED-11/REC-5C4-DUPLICATE-UTR)`,
+          ),
+        );
+      }
+    }
+
+    // 2. Lookup payment
+    let buyerPayment: Payment | null = null;
+    if (paymentId) {
+      buyerPayment = await this.repos.payments.findById(paymentId);
+    } else {
+      const allPayments = this.repos.payments.findByOrganizationId
+        ? await this.repos.payments.findByOrganizationId(orgId)
+        : [];
+      buyerPayment =
+        allPayments.find(
+          (p) =>
+            normalizeUtr(p.reference || (p as any).paymentReference || '') ===
+            cleanUtr,
+        ) ?? null;
+    }
+
+    const recResult = reconcileBankRemittance({
+      organizationId: orgId,
+      buyerPayment: buyerPayment
+        ? {
+            id: buyerPayment.id,
+            amount: buyerPayment.amount,
+            recordedAt: buyerPayment.recordedAt,
+            reference: buyerPayment.reference,
+          }
+        : null,
+      bankAdvice: advice,
+      reconciledBy: actor.profileId || null,
+    });
+
+    const now = timestamp();
+    const entity: BankReconciliationRecordEntity = {
+      id: createId(),
+      organizationId: orgId,
+      paymentId: recResult.paymentId || null,
+      utrNumber: recResult.utrNumber,
+      bankReference: recResult.bankReference,
+      bankName: recResult.bankName,
+      buyerRecordedAmount: recResult.buyerRecordedAmount,
+      bankClearedAmount: recResult.bankClearedAmount,
+      amountDifference: recResult.amountDifference,
+      buyerRecordedDate: recResult.buyerRecordedDate,
+      bankClearedDate: recResult.bankClearedDate,
+      dateDriftDays: recResult.dateDriftDays,
+      status: recResult.status,
+      discrepancyType: recResult.discrepancyType,
+      discrepancyDetails: recResult.discrepancyDetails,
+      resolutionNotes: recResult.resolutionNotes,
+      reconciledBy: actor.profileId || null,
+      reconciledAt: recResult.reconciledAt,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (this.repos.bankReconciliations) {
+      await this.repos.bankReconciliations.save(entity);
+    }
+
+    await auditLog(
+      this.audit,
+      actor,
+      'BANK_UTR_RECONCILED',
+      'BANK_RECONCILIATION',
+      entity.id,
+      {
+        utrNumber: entity.utrNumber,
+        status: entity.status,
+        discrepancyType: entity.discrepancyType,
+        bankClearedAmount: entity.bankClearedAmount,
+      },
+    );
+
+    return ok(entity);
+  }
+
+  /**
+   * Retrieves canonical Financial Observability Summary for an organization (Phase 5C.4).
+   */
+  async getFinancialObservabilitySummary(
+    actor: ActorContext,
+    orgId: string,
+  ): Promise<Result<FinancialObservabilitySummary, Error>> {
+    // RED-09: Cross-tenant access authorization check
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER', 'BUYER', 'APPROVER', 'COMMITTEE_MEMBER']);
+      if (!access.ok) {
+        return err(
+          new ForbiddenError('Unauthorized: Access denied to financial observability metrics for this organization (RED-09/OBS-5C4-UNAUTHORIZED)'),
+        );
+      }
+    }
+
+    const pos = this.repos.purchaseOrders.findByOrganizationId
+      ? await this.repos.purchaseOrders.findByOrganizationId(orgId)
+      : [];
+
+    const allInvoices = this.repos.invoices.findByOrganizationId
+      ? await this.repos.invoices.findByOrganizationId(orgId)
+      : [];
+
+    const allPayments = this.repos.payments.findByOrganizationId
+      ? await this.repos.payments.findByOrganizationId(orgId)
+      : [];
+
+    const allAllocs: PaymentAllocationEntity[] = [];
+    if (this.repos.paymentAllocations) {
+      for (const inv of allInvoices) {
+        const invAllocs = await this.repos.paymentAllocations.findByInvoiceId(inv.id);
+        allAllocs.push(...invAllocs);
+      }
+    }
+
+    const tdsRecords = this.repos.tdsDeductions
+      ? await this.repos.tdsDeductions.findByOrganizationId(orgId)
+      : [];
+
+    const notes = this.repos.creditDebitNotes
+      ? await this.repos.creditDebitNotes.findByOrganizationId(orgId)
+      : [];
+
+    const bankRecs = this.repos.bankReconciliations
+      ? await this.repos.bankReconciliations.findByOrganizationId(orgId)
+      : [];
+
+    const summary = calculateFinancialObservabilitySummary({
+      organizationId: orgId,
+      purchaseOrders: pos.map((p) => ({ id: p.id, totalAmount: p.totalAmount, status: p.status })),
+      invoices: allInvoices.map((i) => ({ id: i.id, amount: i.amount, status: i.status })),
+      payments: allPayments.map((p) => ({ id: p.id, amount: p.amount, unallocatedAmount: p.unallocatedAmount, status: p.status })),
+      allocations: allAllocs.map((a) => ({ paymentId: a.paymentId, invoiceId: a.invoiceId, allocatedAmount: a.allocatedAmount, status: a.status })),
+      tdsDeductions: tdsRecords.map((t) => ({ invoiceId: t.invoiceId, tdsAmount: t.tdsAmount, status: t.status })),
+      creditDebitNotes: notes.map((n) => ({ invoiceId: n.invoiceId, noteType: n.noteType, amount: n.amount, status: n.status })),
+      bankReconciliations: bankRecs.map((b) => ({ bankClearedAmount: b.bankClearedAmount, amountDifference: b.amountDifference, status: b.status })),
+    });
+
+    return ok(summary);
+  }
+
+  /**
+   * Generates comprehensive Financial Audit Pack (JSON / CSV) for tenant compliance export (Phase 5C.4).
+   */
+  async generateFinancialAuditPack(
+    actor: ActorContext,
+    orgId: string,
+    format: 'JSON' | 'CSV' = 'JSON',
+  ): Promise<Result<string, Error>> {
+    // RED-18: Cross-tenant access protection
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER']);
+      if (!access.ok) {
+        return err(
+          new ForbiddenError('Unauthorized: Access denied to generate financial audit pack (RED-18/AUDIT-5C4-UNAUTHORIZED)'),
+        );
+      }
+    }
+
+    const summaryRes = await this.getFinancialObservabilitySummary(actor, orgId);
+    if (!summaryRes.ok) return summaryRes;
+
+    const pos = this.repos.purchaseOrders.findByOrganizationId
+      ? await this.repos.purchaseOrders.findByOrganizationId(orgId)
+      : [];
+
+    const invoices = this.repos.invoices.findByOrganizationId
+      ? await this.repos.invoices.findByOrganizationId(orgId)
+      : [];
+
+    const tdsRecords = this.repos.tdsDeductions
+      ? await this.repos.tdsDeductions.findByOrganizationId(orgId)
+      : [];
+
+    const payments = this.repos.payments.findByOrganizationId
+      ? await this.repos.payments.findByOrganizationId(orgId)
+      : [];
+
+    const bankRecs = this.repos.bankReconciliations
+      ? await this.repos.bankReconciliations.findByOrganizationId(orgId)
+      : [];
+
+    const pack: FinancialAuditPack = {
+      metadata: {
+        exportId: `AUDIT-${orgId.slice(0, 8)}-${Date.now()}`,
+        organizationId: orgId,
+        generatedAt: new Date().toISOString(),
+        environment: 'PRODUCTION',
+        schemaVersion: '5C.4',
+      },
+      summary: summaryRes.value,
+      purchaseOrders: pos.map((p) => ({
+        id: p.id,
+        poNumber: p.poNumber,
+        supplierId: p.supplierId,
+        totalAmount: p.totalAmount,
+        status: p.status,
+        createdAt: p.createdAt,
+      })),
+      invoices: invoices.map((i) => ({
+        id: i.id,
+        invoiceNumber: i.invoiceNumber,
+        purchaseOrderId: i.purchaseOrderId,
+        amount: i.amount,
+        paidAmount: i.paidAmount,
+        status: i.status,
+        createdAt: i.submittedAt,
+      })),
+      tdsDeductions: tdsRecords.map((t) => ({
+        id: t.id,
+        invoiceId: t.invoiceId,
+        section: t.section,
+        taxableAmount: t.taxableAmount,
+        tdsRate: t.tdsRate,
+        tdsAmount: t.tdsAmount,
+        status: t.status,
+        pan: t.deducteePan,
+      })),
+      payments: payments.map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        unallocatedAmount: p.unallocatedAmount,
+        reference: p.reference || (p as any).paymentReference,
+        method: p.method,
+        recordedAt: p.recordedAt,
+      })),
+      bankReconciliations: bankRecs.map((b) => ({
+        id: b.id,
+        utrNumber: b.utrNumber,
+        bankClearedAmount: b.bankClearedAmount,
+        status: b.status,
+        discrepancyType: b.discrepancyType,
+      })),
+    };
+
+    const output =
+      format === 'CSV'
+        ? generateFinancialAuditPackCsv(pack)
+        : generateFinancialAuditPackJson(pack);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'FINANCIAL_AUDIT_PACK_EXPORTED',
+      'AUDIT_PACK',
+      pack.metadata.exportId,
+      {
+        format,
+        organizationId: orgId,
+      },
+    );
+
+    return ok(output);
   }
 }

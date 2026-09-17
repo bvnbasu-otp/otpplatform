@@ -267,6 +267,7 @@ export interface Payment {
   status: PaymentStatus;
   recordedBy: string;
   recordedAt: string;
+  reference?: string | null;
 }
 
 export interface PaymentAllocationEntity {
@@ -321,4 +322,101 @@ export interface CreditDebitNoteEntity {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TdsDeductionEntity {
+  id: string;
+  organizationId: string;
+  supplierId: string;
+  purchaseOrderId?: string | null;
+  invoiceId: string;
+  paymentId?: string | null;
+  lawVersion: string;
+  section: string;
+  taxableAmount: number;
+  tdsRate: number;
+  tdsAmount: number;
+  status: 'PENDING' | 'DEDUCTED' | 'DEPOSITED' | 'CERTIFIED' | 'VOIDED';
+  deducteePan?: string | null;
+  panStatus: 'VALID' | 'INVALID' | 'ABSENT' | 'NON_FILER_206AB';
+  isLowerDeduction: boolean;
+  lowerDeductionCertNumber?: string | null;
+  challanBsrCode?: string | null;
+  challanNumber?: string | null;
+  challanDate?: string | null;
+  certificateNumber?: string | null;
+  financialYear: string;
+  assessmentYear: string;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PoChangeOrderItemEntity {
+  id: string;
+  changeOrderId: string;
+  poLineItemId?: string | null;
+  itemIndex: number;
+  description: string;
+  hsnSacCode?: string | null;
+  quantityDelta: number;
+  unit: string;
+  unitPrice: number;
+  amountDelta: number;
+  taxAmountDelta: number;
+  totalDelta: number;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PoChangeOrderEntity {
+  id: string;
+  organizationId: string;
+  purchaseOrderId: string;
+  changeOrderNumber: string;
+  sequence: number;
+  title: string;
+  reason: string;
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'COMMITTED' | 'REJECTED';
+  changeType: 'SCOPE_EXPANSION' | 'SCOPE_REDUCTION' | 'SPECIFICATION_CHANGE' | 'RATE_ADJUSTMENT' | 'ADMINISTRATIVE';
+  netAmountDelta: number;
+  taxAmountDelta: number;
+  totalDelta: number;
+  previousPoTotal: number;
+  revisedPoTotal: number;
+  requestedBy: string;
+  requestedAt: string;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+  committedBy?: string | null;
+  committedAt?: string | null;
+  rejectionReason?: string | null;
+  items?: PoChangeOrderItemEntity[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BankReconciliationRecordEntity {
+  id: string;
+  organizationId: string;
+  paymentId?: string | null;
+  utrNumber: string;
+  bankReference?: string | null;
+  bankName?: string | null;
+  buyerRecordedAmount: number;
+  bankClearedAmount: number;
+  amountDifference: number;
+  buyerRecordedDate?: string | null;
+  bankClearedDate: string;
+  dateDriftDays: number;
+  status: 'UNRECONCILED' | 'MATCHED' | 'DISCREPANCY' | 'RESOLVED' | 'RECONCILED';
+  discrepancyType: 'AMOUNT_MISMATCH' | 'DATE_DRIFT' | 'UNKNOWN_UTR' | 'DUPLICATE_UTR' | 'BENEFICIARY_MISMATCH' | 'NONE';
+  discrepancyDetails?: string | null;
+  resolutionNotes?: string | null;
+  reconciledBy?: string | null;
+  reconciledAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 

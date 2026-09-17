@@ -1,9 +1,12 @@
 export { PurchaseOrdersPage } from './pages/PurchaseOrdersPage';
 export { PurchaseOrderDetailPage } from './pages/PurchaseOrderDetailPage';
 export { SupplierWorkOrderPage } from './pages/SupplierWorkOrderPage';
+export { FinancialControlDashboardPage } from './pages/FinancialControlDashboardPage';
 export { PurchaseOrderList } from './components/PurchaseOrderList';
 export { SupplierMilestoneStepper } from './components/SupplierMilestoneStepper';
 export { DeliveryInspectionPanel } from './components/DeliveryInspectionPanel';
 export { InvoicePaymentPanel } from './components/InvoicePaymentPanel';
+export { TdsWithholdingPanel } from './components/TdsWithholdingPanel';
+export { ChangeOrderModal } from './components/ChangeOrderModal';
 export { StatusBadge, PoActionButtons } from './components/FulfillmentStatus';
 export { formatMoney } from './types/fulfillment';

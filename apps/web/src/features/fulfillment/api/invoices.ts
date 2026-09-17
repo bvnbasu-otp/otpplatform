@@ -42,6 +42,7 @@ export interface InvoiceSummary {
   balanceDue?: number;
   currency: string;
   status: InvoiceStatus;
+  organizationId?: string | null;
   submittedAt: string | null;
   approvedAt: string | null;
   lineItems?: InvoiceLineItemSummary[];
@@ -102,7 +103,7 @@ interface InvoiceRow {
   }> | null;
 }
 
-function mapInvoice(row: InvoiceRow): InvoiceSummary {
+function mapInvoice(row: InvoiceRow & { organization_id?: string | null }): InvoiceSummary {
   return {
     id: row.id,
     purchaseOrderId: row.purchase_order_id,
@@ -116,6 +117,7 @@ function mapInvoice(row: InvoiceRow): InvoiceSummary {
     balanceDue: row.balance_due != null ? Number(row.balance_due) : undefined,
     currency: row.currency,
     status: row.status,
+    organizationId: (row as any).organization_id || null,
     submittedAt: row.submitted_at,
     approvedAt: row.approved_at,
     placeOfSupplyStateCode: row.place_of_supply_state_code,

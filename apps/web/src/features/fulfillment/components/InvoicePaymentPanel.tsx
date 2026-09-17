@@ -14,6 +14,7 @@ import {
   reversePaymentAllocation,
   issueCreditDebitNote,
   fetchCreditDebitNotesByInvoice,
+  fetchTdsDeductionsByInvoice,
   exportTallyPaymentVoucherXml,
   exportZohoPaymentReceiptJson,
   recordInvoicePayment,
@@ -22,8 +23,10 @@ import {
   allocateAdvancePayment,
   type PaymentSummary,
   type PaymentAllocationRecord,
+  type TdsDeductionRecord,
 } from '../api/payments';
 import { fetchWorkOrderMilestones } from '../api/work-orders';
+import { TdsWithholdingPanel } from './TdsWithholdingPanel';
 import {
   calculateRemainingInvoiceableAmount,
   validateInvoiceAmountAgainstPo,
@@ -80,6 +83,7 @@ export function InvoicePaymentPanel({
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [allocations, setAllocations] = useState<PaymentAllocationRecord[]>([]);
   const [invoiceNotes, setInvoiceNotes] = useState<CreditDebitNote[]>([]);
+  const [tdsDeductions, setTdsDeductions] = useState<TdsDeductionRecord[]>([]);
   const [showReversalModal, setShowReversalModal] = useState(false);
   const [reversalTargetAlloc, setReversalTargetAlloc] = useState<PaymentAllocationRecord | null>(null);
   const [reversalReason, setReversalReason] = useState('');
@@ -102,14 +106,16 @@ export function InvoicePaymentPanel({
       if (latest) {
         const bal = latest.balanceDue ?? (latest.status === 'PAID' ? 0 : latest.amount);
         setPayAmountInput(String(bal > 0 ? bal : latest.amount));
-        const [payRes, allocRes, noteRes] = await Promise.all([
+        const [payRes, allocRes, noteRes, tdsRes] = await Promise.all([
           fetchPaymentByInvoice(latest.id),
           fetchInvoiceAllocations(latest.id),
           fetchCreditDebitNotesByInvoice(latest.id),
+          fetchTdsDeductionsByInvoice(latest.id),
         ]);
         if (payRes.ok) setPayment(payRes.payment);
         if (allocRes.ok) setAllocations(allocRes.allocations);
         if (noteRes.ok) setInvoiceNotes(noteRes.notes);
+        if (tdsRes.ok) setTdsDeductions(tdsRes.deductions);
 
         if (latest.purchaseOrderId) {
           const poPayRes = await fetchPaymentsByPo(latest.purchaseOrderId);
@@ -936,6 +942,22 @@ export function InvoicePaymentPanel({
                 >
                   Reject / Request Edit
                 </button>
+              </div>
+            )}
+
+            {/* Statutory TDS & Form 16A Withholding Panel (Phase 5C.4) */}
+            {(activeInvoice.status === 'APPROVED' || activeInvoice.status === 'PARTIALLY_PAID' || activeInvoice.status === 'PAID') && (
+              <div className="pt-2">
+                <TdsWithholdingPanel
+                  organizationId={activeInvoice.organizationId || ''}
+                  invoiceId={activeInvoice.id}
+                  invoiceNumber={activeInvoice.invoiceNumber}
+                  invoiceAmount={activeInvoice.amount}
+                  supplierName="Assigned Supplier"
+                  existingDeductions={tdsDeductions}
+                  isBuyerUser={role === 'buyer'}
+                  onDeductionApplied={() => void load()}
+                />
               </div>
             )}
           </div>

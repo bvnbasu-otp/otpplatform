@@ -2,6 +2,7 @@ import type { Repositories } from './interfaces';
 import type {
   ApprovalInstance,
   Award,
+  BankReconciliationRecordEntity,
   CoiDeclaration,
   CommitteeVote,
   CreditDebitNoteEntity,
@@ -9,6 +10,8 @@ import type {
   InvoiceLineItemEntity,
   Payment,
   PaymentAllocationEntity,
+  PoChangeOrderEntity,
+  PoChangeOrderItemEntity,
   ProcurementPerformanceRecord,
   PurchaseOrder,
   PurchaseOrderLineItemEntity,
@@ -18,6 +21,7 @@ import type {
   Rfq,
   RfqInvitation,
   Supplier,
+  TdsDeductionEntity,
   WorkOrder,
   WorkOrderMilestoneEntity,
 } from './entities';
@@ -52,6 +56,10 @@ export class InMemoryRepositories {
   payments = new Map<string, Payment>();
   paymentAllocations = new Map<string, PaymentAllocationEntity>();
   creditDebitNotes = new Map<string, CreditDebitNoteEntity>();
+  tdsDeductions = new Map<string, TdsDeductionEntity>();
+  poChangeOrders = new Map<string, PoChangeOrderEntity>();
+  poChangeOrderItems = new Map<string, PoChangeOrderItemEntity>();
+  bankReconciliations = new Map<string, BankReconciliationRecordEntity>();
   suppliers = new Map<string, Supplier>();
   performance = new Map<string, ProcurementPerformanceRecord>();
 
@@ -256,12 +264,19 @@ export class InMemoryRepositories {
 
   get invoicesRepo(): Repositories['invoices'] {
     const store = this.invoices;
+    const poStore = this.purchaseOrders;
     return {
       findById: async (id) => store.get(id) ?? null,
       findByWorkOrderId: async (woId) =>
         [...store.values()].filter((i) => i.workOrderId === woId),
       findByPurchaseOrderId: async (poId) =>
         [...store.values()].filter((i) => i.purchaseOrderId === poId),
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((i) => {
+          if (!i.purchaseOrderId) return false;
+          const po = poStore.get(i.purchaseOrderId);
+          return po?.organizationId === orgId;
+        }),
       save: async (i) => {
         store.set(i.id, i);
         return i;
@@ -271,12 +286,29 @@ export class InMemoryRepositories {
 
   get paymentsRepo(): Repositories['payments'] {
     const store = this.payments;
+    const poStore = this.purchaseOrders;
+    const invStore = this.invoices;
     return {
       findById: async (id) => store.get(id) ?? null,
       findByInvoiceId: async (invId) =>
         [...store.values()].filter((p) => p.invoiceId === invId),
       findByPurchaseOrderId: async (poId) =>
         [...store.values()].filter((p) => p.purchaseOrderId === poId),
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((p) => {
+          if (p.purchaseOrderId) {
+            const po = poStore.get(p.purchaseOrderId);
+            if (po?.organizationId === orgId) return true;
+          }
+          if (p.invoiceId) {
+            const inv = invStore.get(p.invoiceId);
+            if (inv?.purchaseOrderId) {
+              const po = poStore.get(inv.purchaseOrderId);
+              if (po?.organizationId === orgId) return true;
+            }
+          }
+          return false;
+        }),
       save: async (p) => {
         store.set(p.id, p);
         return p;
@@ -324,6 +356,94 @@ export class InMemoryRepositories {
     };
   }
 
+  get tdsDeductionsRepo(): Repositories['tdsDeductions'] {
+    const store = this.tdsDeductions;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByInvoiceId: async (invId) =>
+        [...store.values()].filter((t) => t.invoiceId === invId),
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((t) => t.purchaseOrderId === poId),
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((t) => t.organizationId === orgId),
+      findBySupplierId: async (supId) =>
+        [...store.values()].filter((t) => t.supplierId === supId),
+      save: async (t) => {
+        store.set(t.id, t);
+        return t;
+      },
+      saveMany: async (deductions) => {
+        for (const t of deductions) store.set(t.id, t);
+        return deductions;
+      },
+    };
+  }
+
+  get poChangeOrdersRepo(): Repositories['poChangeOrders'] {
+    const store = this.poChangeOrders;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((co) => co.purchaseOrderId === poId),
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((co) => co.organizationId === orgId),
+      save: async (co) => {
+        store.set(co.id, co);
+        return co;
+      },
+      saveMany: async (cos) => {
+        for (const co of cos) store.set(co.id, co);
+        return cos;
+      },
+    };
+  }
+
+  get poChangeOrderItemsRepo(): Repositories['poChangeOrderItems'] {
+    const store = this.poChangeOrderItems;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByChangeOrderId: async (coId) =>
+        [...store.values()].filter((item) => item.changeOrderId === coId),
+      save: async (item) => {
+        store.set(item.id, item);
+        return item;
+      },
+      saveMany: async (items) => {
+        for (const item of items) store.set(item.id, item);
+        return items;
+      },
+    };
+  }
+
+  get bankReconciliationsRepo(): Repositories['bankReconciliations'] {
+    const store = this.bankReconciliations;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByUtrNumber: async (orgId, utr) => {
+        const cleanUtr = utr.trim().toUpperCase().replace(/[\s-_]/g, '');
+        return (
+          [...store.values()].find(
+            (r) =>
+              r.organizationId === orgId &&
+              r.utrNumber.trim().toUpperCase().replace(/[\s-_]/g, '') === cleanUtr,
+          ) ?? null
+        );
+      },
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((r) => r.organizationId === orgId),
+      findByPaymentId: async (payId) =>
+        [...store.values()].filter((r) => r.paymentId === payId),
+      save: async (r) => {
+        store.set(r.id, r);
+        return r;
+      },
+      saveMany: async (records) => {
+        for (const r of records) store.set(r.id, r);
+        return records;
+      },
+    };
+  }
+
   get suppliersRepo(): Repositories['suppliers'] {
     const store = this.suppliers;
     return {
@@ -366,6 +486,10 @@ export class InMemoryRepositories {
       payments: this.paymentsRepo,
       paymentAllocations: this.paymentAllocationsRepo,
       creditDebitNotes: this.creditDebitNotesRepo,
+      tdsDeductions: this.tdsDeductionsRepo,
+      poChangeOrders: this.poChangeOrdersRepo,
+      poChangeOrderItems: this.poChangeOrderItemsRepo,
+      bankReconciliations: this.bankReconciliationsRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

@@ -1,17 +1,27 @@
 import {
   buildTaxSnapshot,
+  calculateAuthorizedPoCommitment,
+  calculateChangeOrderTotals,
   calculateOrderTaxBreakdown,
   calculatePoSettlementSummary,
-  type CalculatedLineItemTax,
+  canTransitionChangeOrder,
   canTransitionPurchaseOrder,
   determinePlaceOfSupply,
+  validateChangeOrderCommitment,
+  type CalculatedLineItemTax,
+  type ChangeOrderStatus,
+  type ChangeOrderType,
   type PurchaseOrderStatus,
 } from '@otp/domain';
 import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
-import type { PurchaseOrder } from '../repositories/entities';
+import type {
+  PoChangeOrderEntity,
+  PoChangeOrderItemEntity,
+  PurchaseOrder,
+} from '../repositories/entities';
 import type { ActorContext } from '../types/actor-context';
-import { ValidationError } from '../types/errors';
+import { ForbiddenError, NotFoundError, ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
 import {
   auditLog,
@@ -274,5 +284,376 @@ export class PurchaseOrderService {
     );
 
     return ok(saved);
+  }
+
+  /**
+   * Creates a formal PO Change Order / Variation request (Phase 5C.4).
+   */
+  async createPoChangeOrder(
+    actor: ActorContext,
+    poId: string,
+    params: {
+      title: string;
+      reason: string;
+      changeType?: ChangeOrderType;
+      items: Array<{
+        poLineItemId?: string | null;
+        description: string;
+        quantityDelta?: number;
+        unit?: string;
+        unitPrice?: number;
+        amountDelta?: number;
+        taxAmountDelta?: number;
+        totalDelta?: number;
+        hsnSacCode?: string | null;
+        notes?: string | null;
+      }>;
+      status?: 'DRAFT' | 'SUBMITTED';
+    },
+  ): Promise<Result<PoChangeOrderEntity, Error>> {
+    const po = await this.repos.purchaseOrders.findById(poId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    if (po.status === 'COMPLETED' || po.status === 'CANCELLED') {
+      return err(
+        new ValidationError(`Cannot create change order for PO in status ${po.status}`),
+      );
+    }
+
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) {
+        return err(
+          new ForbiddenError('Unauthorized: Only Buyer OWNER or MANAGER can create PO change orders'),
+        );
+      }
+    }
+
+    const totals = calculateChangeOrderTotals(params.items);
+
+    const existingCos = this.repos.poChangeOrders
+      ? await this.repos.poChangeOrders.findByPurchaseOrderId(po.id)
+      : [];
+
+    const sequence = existingCos.length + 1;
+    const poNumPrefix = po.poNumber || po.id.slice(0, 8);
+    const changeOrderNumber = `CO-${poNumPrefix}-${sequence.toString().padStart(2, '0')}`;
+
+    const now = timestamp();
+    const changeOrderId = createId();
+
+    const lineItems: PoChangeOrderItemEntity[] = params.items.map((item, idx) => {
+      const itemAmountDelta =
+        item.amountDelta !== undefined
+          ? item.amountDelta
+          : (item.quantityDelta ?? 0) * (item.unitPrice ?? 0);
+      const itemTaxAmountDelta = item.taxAmountDelta ?? 0;
+      const itemTotalDelta =
+        item.totalDelta !== undefined
+          ? item.totalDelta
+          : itemAmountDelta + itemTaxAmountDelta;
+
+      return {
+        id: createId(),
+        changeOrderId,
+        poLineItemId: item.poLineItemId || null,
+        itemIndex: idx + 1,
+        description: item.description,
+        hsnSacCode: item.hsnSacCode || null,
+        quantityDelta: item.quantityDelta ?? 0,
+        unit: item.unit || 'lot',
+        unitPrice: item.unitPrice ?? 0,
+        amountDelta: Math.round(itemAmountDelta * 100) / 100,
+        taxAmountDelta: Math.round(itemTaxAmountDelta * 100) / 100,
+        totalDelta: Math.round(itemTotalDelta * 100) / 100,
+        notes: item.notes || null,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+
+    const changeOrder: PoChangeOrderEntity = {
+      id: changeOrderId,
+      organizationId: po.organizationId,
+      purchaseOrderId: po.id,
+      changeOrderNumber,
+      sequence,
+      title: params.title,
+      reason: params.reason,
+      status: params.status || 'DRAFT',
+      changeType: params.changeType || 'SCOPE_EXPANSION',
+      netAmountDelta: totals.netAmountDelta,
+      taxAmountDelta: totals.taxAmountDelta,
+      totalDelta: totals.totalDelta,
+      previousPoTotal: po.totalAmount,
+      revisedPoTotal: Math.round((po.totalAmount + totals.totalDelta) * 100) / 100,
+      requestedBy: actor.profileId || 'system',
+      requestedAt: now,
+      items: lineItems,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (this.repos.poChangeOrders) {
+      await this.repos.poChangeOrders.save(changeOrder);
+    }
+    if (this.repos.poChangeOrderItems) {
+      await this.repos.poChangeOrderItems.saveMany(lineItems);
+    }
+
+    await auditLog(
+      this.audit,
+      actor,
+      'PO_CHANGE_ORDER_CREATED',
+      'PO_CHANGE_ORDER',
+      changeOrder.id,
+      {
+        purchaseOrderId: po.id,
+        changeOrderNumber,
+        totalDelta: totals.totalDelta,
+        status: changeOrder.status,
+      },
+    );
+
+    return ok(changeOrder);
+  }
+
+  /**
+   * Approves a submitted PO Change Order (Phase 5C.4).
+   * Suppliers cannot approve change orders (RED-01).
+   */
+  async approvePoChangeOrder(
+    actor: ActorContext,
+    changeOrderId: string,
+  ): Promise<Result<PoChangeOrderEntity, Error>> {
+    if (!this.repos.poChangeOrders) {
+      return err(new NotFoundError('PO change orders repository not found'));
+    }
+
+    const co = await this.repos.poChangeOrders.findById(changeOrderId);
+    if (!co) return err(new NotFoundError('Change order not found'));
+
+    // RED-01: Supplier cannot approve change orders
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, co.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) {
+        return err(
+          new ForbiddenError('Unauthorized: Only Buyer OWNER or MANAGER can approve PO change orders (RED-01/CO-5C4-UNAUTHORIZED)'),
+        );
+      }
+    }
+
+    if (!canTransitionChangeOrder(co.status, 'APPROVED')) {
+      return err(
+        new ValidationError(`Cannot approve change order from current status ${co.status}`),
+      );
+    }
+
+    co.status = 'APPROVED';
+    co.approvedBy = actor.profileId || null;
+    co.approvedAt = timestamp();
+    co.updatedAt = timestamp();
+
+    await this.repos.poChangeOrders.save(co);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'PO_CHANGE_ORDER_APPROVED',
+      'PO_CHANGE_ORDER',
+      co.id,
+      {
+        purchaseOrderId: co.purchaseOrderId,
+        changeOrderNumber: co.changeOrderNumber,
+      },
+    );
+
+    return ok(co);
+  }
+
+  /**
+   * Commits an approved PO Change Order atomically into the active PO commitment (Phase 5C.4).
+   * Enforces negative change order guard (RED-02) and synchronization (RED-13).
+   */
+  async commitPoChangeOrder(
+    actor: ActorContext,
+    changeOrderId: string,
+  ): Promise<Result<{ changeOrder: PoChangeOrderEntity; purchaseOrder: PurchaseOrder }, Error>> {
+    if (!this.repos.poChangeOrders) {
+      return err(new NotFoundError('PO change orders repository not found'));
+    }
+
+    const co = await this.repos.poChangeOrders.findById(changeOrderId);
+    if (!co) return err(new NotFoundError('Change order not found'));
+
+    // RED-01: Supplier cannot commit change orders
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, co.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) {
+        return err(
+          new ForbiddenError('Unauthorized: Only Buyer OWNER or MANAGER can commit PO change orders (RED-01/CO-5C4-UNAUTHORIZED)'),
+        );
+      }
+    }
+
+    // RED-14: Committed change order cannot be re-committed or mutated
+    if (co.status === 'COMMITTED') {
+      return err(
+        new ValidationError('Change order is already COMMITTED (RED-14/CO-5C4-ALREADY-COMMITTED)'),
+      );
+    }
+
+    if (!canTransitionChangeOrder(co.status, 'COMMITTED')) {
+      return err(
+        new ValidationError(`Cannot commit change order from current status ${co.status}`),
+      );
+    }
+
+    const po = await this.repos.purchaseOrders.findById(co.purchaseOrderId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    if (po.status === 'COMPLETED' || po.status === 'CANCELLED') {
+      return err(
+        new ValidationError(`Cannot commit change order against PO in status ${po.status}`),
+      );
+    }
+
+    // 1. Fetch existing committed change orders on this PO (excluding this one)
+    const allCos = await this.repos.poChangeOrders.findByPurchaseOrderId(po.id);
+    const existingCommitted = allCos.filter(
+      (c) => c.status === 'COMMITTED' && c.id !== co.id,
+    );
+
+    // 2. Fetch active invoiced amount on this PO
+    const invoices = this.repos.invoices.findByPurchaseOrderId
+      ? await this.repos.invoices.findByPurchaseOrderId(po.id)
+      : [];
+    const activeInvoiced = invoices
+      .filter((i) => (i.status as string) !== 'REJECTED' && (i.status as string) !== 'CANCELLED')
+      .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+
+    // 3. Validate commitment and negative change order floor (RED-02)
+    // Note: po.totalAmount in our repo store may already include previous committed change orders.
+    // calculateAuthorizedPoCommitment uses original + sum(committed).
+    // If po was initially created at original amount, previous total is po.totalAmount.
+    const validation = validateChangeOrderCommitment({
+      originalPoTotal: po.totalAmount,
+      existingCommittedChangeOrders: existingCommitted,
+      changeOrderToCommit: { totalDelta: co.totalDelta },
+      cumulativeInvoicedAmount: activeInvoiced,
+    });
+
+    if (!validation.isValid) {
+      return err(
+        new ValidationError(
+          validation.error || 'Negative change order rejection: Revised PO commitment cannot be less than cumulative invoiced amount (RED-02/REV-5C4-CO-BELOW-INVOICED)',
+        ),
+      );
+    }
+
+    const now = timestamp();
+    co.previousPoTotal = po.totalAmount;
+    co.revisedPoTotal = validation.revisedAuthorizedTotal;
+    co.status = 'COMMITTED';
+    co.committedBy = actor.profileId || null;
+    co.committedAt = now;
+    co.updatedAt = now;
+
+    await this.repos.poChangeOrders.save(co);
+
+    // RED-13: Synchronize PO commitment ceiling
+    po.totalAmount = validation.revisedAuthorizedTotal;
+    po.updatedAt = now;
+    await this.repos.purchaseOrders.save(po);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'PO_CHANGE_ORDER_COMMITTED',
+      'PO_CHANGE_ORDER',
+      co.id,
+      {
+        purchaseOrderId: po.id,
+        changeOrderNumber: co.changeOrderNumber,
+        previousPoTotal: co.previousPoTotal,
+        revisedPoTotal: co.revisedPoTotal,
+        totalDelta: co.totalDelta,
+        cumulativeInvoiced: activeInvoiced,
+      },
+    );
+
+    return ok({ changeOrder: co, purchaseOrder: po });
+  }
+
+  /**
+   * Rejects a PO Change Order (Phase 5C.4).
+   */
+  async rejectPoChangeOrder(
+    actor: ActorContext,
+    changeOrderId: string,
+    reason?: string,
+  ): Promise<Result<PoChangeOrderEntity, Error>> {
+    if (!this.repos.poChangeOrders) {
+      return err(new NotFoundError('PO change orders repository not found'));
+    }
+
+    const co = await this.repos.poChangeOrders.findById(changeOrderId);
+    if (!co) return err(new NotFoundError('Change order not found'));
+
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, co.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    if (!canTransitionChangeOrder(co.status, 'REJECTED')) {
+      return err(
+        new ValidationError(`Cannot reject change order from current status ${co.status}`),
+      );
+    }
+
+    co.status = 'REJECTED';
+    co.rejectionReason = reason || null;
+    co.updatedAt = timestamp();
+
+    await this.repos.poChangeOrders.save(co);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'PO_CHANGE_ORDER_REJECTED',
+      'PO_CHANGE_ORDER',
+      co.id,
+      {
+        reason,
+        changeOrderNumber: co.changeOrderNumber,
+      },
+    );
+
+    return ok(co);
+  }
+
+  /**
+   * Lists all change orders for a PO.
+   */
+  async getPoChangeOrders(
+    actor: ActorContext,
+    poId: string,
+  ): Promise<Result<PoChangeOrderEntity[], Error>> {
+    const po = await this.repos.purchaseOrders.findById(poId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    if (!actor.isPlatformAdmin) {
+      const isBuyer = actor.organizationId === po.organizationId;
+      const isSupplier = actor.supplierIds?.includes(po.supplierId);
+      if (!isBuyer && !isSupplier) {
+        return err(new ForbiddenError('Unauthorized: Access denied to PO change orders'));
+      }
+    }
+
+    const cos = this.repos.poChangeOrders
+      ? await this.repos.poChangeOrders.findByPurchaseOrderId(poId)
+      : [];
+
+    return ok(cos);
   }
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import type { PurchaseOrderStatus, PoSettlementSummary, PoSettlementCertificate, CreditDebitNote } from '@otp/domain';
+import type { PurchaseOrderStatus, PoSettlementSummary, PoSettlementCertificate, CreditDebitNote, PoChangeOrder } from '@otp/domain';
 import {
   fetchPoInvoicingSummary,
   fetchPoLineItems,
@@ -17,6 +17,7 @@ import {
   fetchCreditDebitNotesByPo,
   fetchVendorSettlementStatement,
   fetchPaymentsByPo,
+  fetchPoChangeOrdersApi,
   type PaymentSummary,
 } from '../api/payments';
 import { createWorkOrder, fetchWorkOrderByPo, updateWorkOrderProgress } from '../api/work-orders';
@@ -24,6 +25,7 @@ import { DeliveryInspectionPanel } from '../components/DeliveryInspectionPanel';
 import { InvoicePaymentPanel } from '../components/InvoicePaymentPanel';
 import { SupplierMilestoneStepper } from '../components/SupplierMilestoneStepper';
 import { PoActionButtons, StatusBadge } from '../components/FulfillmentStatus';
+import { ChangeOrderModal } from '../components/ChangeOrderModal';
 import { ProcurementStageNavigator, type CoreProcurementState } from '@/features/lifecycle';
 import { formatMoney, type PurchaseOrderSummary, type WorkOrderSummary } from '../types/fulfillment';
 
@@ -287,6 +289,8 @@ export function PurchaseOrderDetailPage({
   const [settlementSummary, setSettlementSummary] = useState<PoSettlementSummary | null>(null);
   const [poPayments, setPoPayments] = useState<PaymentSummary[]>([]);
   const [creditDebitNotes, setCreditDebitNotes] = useState<CreditDebitNote[]>([]);
+  const [changeOrders, setChangeOrders] = useState<PoChangeOrder[]>([]);
+  const [showChangeOrderModal, setShowChangeOrderModal] = useState(false);
   const [exportingTally, setExportingTally] = useState(false);
   const [exportingZoho, setExportingZoho] = useState(false);
   const [downloadingVendorStatement, setDownloadingVendorStatement] = useState(false);
@@ -314,13 +318,14 @@ export function PurchaseOrderDetailPage({
       setOrder(poResult.order);
 
       try {
-        const [woResult, linesResult, summaryResult, settlementResult, payResult, cdnResult] = await Promise.all([
+        const [woResult, linesResult, summaryResult, settlementResult, payResult, cdnResult, coResult] = await Promise.all([
           fetchWorkOrderByPo(poResult.order.id),
           fetchPoLineItems(poResult.order.id),
           fetchPoInvoicingSummary(poResult.order.id),
           getPoSettlementSummary(poResult.order.id),
           fetchPaymentsByPo(poResult.order.id),
           fetchCreditDebitNotesByPo(poResult.order.id),
+          fetchPoChangeOrdersApi(poResult.order.id),
         ]);
 
         if (woResult.ok) {
@@ -333,6 +338,10 @@ export function PurchaseOrderDetailPage({
 
         if (cdnResult.ok) {
           setCreditDebitNotes(cdnResult.notes);
+        }
+
+        if (coResult.ok) {
+          setChangeOrders(coResult.changeOrders);
         }
 
         if (linesResult.ok && linesResult.lineItems.length > 0) {
@@ -1298,6 +1307,55 @@ export function PurchaseOrderDetailPage({
                     </div>
                   </div>
                 )}
+
+                {/* PO Change Orders / Variations (Phase 5C.4) */}
+                <div className="border-t border-border/60 pt-3 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <span>📋</span>
+                      <span>Contract Variations &amp; Change Orders ({changeOrders.length})</span>
+                    </span>
+                    {role === 'buyer' && (
+                      <button
+                        type="button"
+                        onClick={() => setShowChangeOrderModal(true)}
+                        className="px-2.5 py-1 bg-primary text-primary-foreground rounded text-[11px] font-bold hover:bg-primary/90 transition"
+                      >
+                        + Request Variation
+                      </button>
+                    )}
+                  </div>
+
+                  {changeOrders.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      No change orders recorded. Original contract scope remains unmodified.
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {changeOrders.map((co) => (
+                        <div key={co.id} className="p-2.5 rounded-lg border bg-muted/10 text-xs flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-foreground">{co.changeOrderNumber}</span>
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${co.status === 'COMMITTED' ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}`}>
+                                {co.status}
+                              </span>
+                              <span className="text-muted-foreground font-medium">{co.title}</span>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {co.reason} | Revised PO Total: {formatMoney(co.revisedPoTotal, order.currency)}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className={`font-mono font-bold ${co.totalDelta >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                              {co.totalDelta >= 0 ? '+' : ''}{formatMoney(co.totalDelta, order.currency)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1600,6 +1658,19 @@ export function PurchaseOrderDetailPage({
           </div>
         </div>
       )}
+
+      {/* PO Change Order Modal (Phase 5C.4) */}
+      <ChangeOrderModal
+        isOpen={showChangeOrderModal}
+        onClose={() => setShowChangeOrderModal(false)}
+        purchaseOrderId={order.id}
+        poNumber={order.poNumber}
+        currentPoTotal={order.totalAmount}
+        cumulativeInvoicedAmount={invoicingSummary?.alreadyInvoicedAmount || 0}
+        organizationId={order.organizationId || ''}
+        isBuyerUser={role === 'buyer'}
+        onSuccess={() => void load()}
+      />
     </div>
   );
 }

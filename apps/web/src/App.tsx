@@ -10,6 +10,7 @@ import { SupplierRfqPage } from '@/features/supplier/pages/SupplierRfqPage';
 import { SupplierQuoteSubmitPage } from '@/features/supplier/pages/SupplierQuoteSubmitPage';
 import { SupplierCapabilitiesPage } from '@/features/supplier/pages/SupplierCapabilitiesPage';
 import {
+  FinancialControlDashboardPage,
   PurchaseOrderDetailPage,
   PurchaseOrdersPage,
   SupplierWorkOrderPage,
@@ -415,6 +416,22 @@ export function App() {
             <Route path="/orders" element={<Navigate to="/purchase-orders" replace />} />
             <Route path="/reports" element={<Navigate to="/purchase-orders?view=reports" replace />} />
             <Route path="/ledger" element={<Navigate to="/purchase-orders?view=orders" replace />} />
+            <Route
+              path="/financial-controls"
+              element={
+                <ProtectedRoute allowedRoles={['BUYER', 'ADMIN']}>
+                  <FinancialControlDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reconciliation"
+              element={
+                <ProtectedRoute allowedRoles={['BUYER', 'ADMIN']}>
+                  <FinancialControlDashboardPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/work-orders/:woId" element={<SupplierWoRoute />} />
             <Route path="/work-orders" element={<Navigate to="/supplier/purchase-orders" replace />} />
             <Route path="/supplier/orders" element={<Navigate to="/supplier/purchase-orders" replace />} />
