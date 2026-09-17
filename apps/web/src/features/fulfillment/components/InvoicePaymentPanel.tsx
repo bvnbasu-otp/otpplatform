@@ -9,6 +9,7 @@ import {
 } from '../api/invoices';
 import {
   fetchPaymentByInvoice,
+  recordInvoicePayment,
   recordPayment,
   verifyPayment,
   type PaymentSummary,
@@ -254,14 +255,14 @@ export function InvoicePaymentPanel({
     }
 
     const currentBalDue = activeInvoice.balanceDue ?? (activeInvoice.status === 'PAID' ? 0 : activeInvoice.amount);
-    if (payAmt > currentBalDue + 0.05) {
+    if (payAmt > currentBalDue) {
       setError(`Payment amount ₹${payAmt} exceeds invoice balance due of ₹${currentBalDue}`);
       return;
     }
 
     setBusy(true);
     setError(null);
-    const result = await recordPayment(
+    const result = await recordInvoicePayment(
       activeInvoice.id,
       payAmt,
       paymentMethod,

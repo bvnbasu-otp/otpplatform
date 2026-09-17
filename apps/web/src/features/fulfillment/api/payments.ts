@@ -109,42 +109,118 @@ export async function fetchInvoiceAllocations(invoiceId: string): Promise<
   };
 }
 
+/**
+ * Records a payment against a Purchase Order or Invoice.
+ * In Phase 5C.1 (Mode A), this creates the authoritative Payment entity (unallocated if no direct invoice).
+ */
 export async function recordPayment(
+  amount: number,
+  method: PaymentMethod,
+  reference: string,
+  purchaseOrderId: string,
+  currency = 'INR',
+  invoiceId?: string | null,
+): Promise<{ ok: true; paymentId: string } | { ok: false; error: string }> {
+  const profile = await fetchCurrentProfile();
+  if (!profile) return { ok: false, error: 'Not authenticated' };
+
+  if (amount <= 0) {
+    return { ok: false, error: 'Payment amount must be strictly greater than 0' };
+  }
+
+  const now = new Date().toISOString();
+
+  const { data: payData, error: payErr } = await supabase
+    .from('payments')
+    .insert({
+      invoice_id: invoiceId || null,
+      purchase_order_id: purchaseOrderId,
+      amount,
+      unallocated_amount: amount,
+      currency,
+      method,
+      status: 'RECORDED',
+      reference,
+      recorded_by: profile.profileId,
+      recorded_at: now,
+    })
+    .select('id')
+    .single();
+
+  if (payErr) return { ok: false, error: payErr.message };
+  return { ok: true, paymentId: payData.id };
+}
+
+/**
+ * Convenience workflow executing atomic payment creation and initial allocation.
+ *
+ * CRITICAL ATOMIC GUARANTEE (H1-P0-01 / Mode B):
+ * - Attempts to allocate payment directly to the specified invoice.
+ * - If allocation validation or DB insertion fails, any created payment is rolled back (deleted)
+ *   and a hard failure is returned. NEVER leaves orphan payments or inconsistent balances.
+ */
+export async function recordInvoicePayment(
   invoiceId: string,
   amount: number,
   method: PaymentMethod,
   reference: string,
   currency = 'INR',
   purchaseOrderId?: string | null,
-): Promise<{ ok: true; paymentId: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; paymentId: string; allocationId: string } | { ok: false; error: string }> {
   const profile = await fetchCurrentProfile();
   if (!profile) return { ok: false, error: 'Not authenticated' };
 
+  if (amount <= 0) {
+    return { ok: false, error: 'Payment amount must be strictly greater than 0' };
+  }
+
   const now = new Date().toISOString();
 
-  // If purchaseOrderId not provided, attempt to resolve from invoice
+  // 1. Resolve Purchase Order ID and validate Invoice state
   let poId = purchaseOrderId;
-  if (!poId) {
-    const { data: inv } = await supabase
-      .from('invoices')
-      .select('purchase_order_id, work_order_id')
-      .eq('id', invoiceId)
-      .maybeSingle();
+  const { data: inv, error: invErr } = await supabase
+    .from('invoices')
+    .select('id, amount, status, paid_amount, balance_due, purchase_order_id, work_order_id')
+    .eq('id', invoiceId)
+    .maybeSingle();
 
-    if (inv) {
-      if (inv.purchase_order_id) {
-        poId = inv.purchase_order_id;
-      } else if (inv.work_order_id) {
-        const { data: wo } = await supabase
-          .from('work_orders')
-          .select('purchase_order_id')
-          .eq('id', inv.work_order_id)
-          .maybeSingle();
-        poId = wo?.purchase_order_id;
-      }
+  if (invErr || !inv) {
+    return { ok: false, error: invErr?.message ?? 'Invoice not found' };
+  }
+
+  if (inv.status !== 'APPROVED' && inv.status !== 'PARTIALLY_PAID') {
+    return { ok: false, error: 'Invoice must be APPROVED or PARTIALLY_PAID before payment' };
+  }
+
+  const currentBalDue = inv.balance_due !== undefined && inv.balance_due !== null
+    ? Number(inv.balance_due)
+    : (inv.status === 'PAID' ? 0 : Number(inv.amount) - Number(inv.paid_amount || 0));
+
+  if (amount > currentBalDue) {
+    return {
+      ok: false,
+      error: `Payment amount ₹${amount} exceeds invoice balance due of ₹${currentBalDue}`,
+    };
+  }
+
+  if (!poId) {
+    if (inv.purchase_order_id) {
+      poId = inv.purchase_order_id;
+    } else if (inv.work_order_id) {
+      const { data: wo } = await supabase
+        .from('work_orders')
+        .select('purchase_order_id')
+        .eq('id', inv.work_order_id)
+        .maybeSingle();
+      poId = wo?.purchase_order_id;
     }
   }
 
+  if (!poId) {
+    return { ok: false, error: 'Associated purchase order could not be resolved' };
+  }
+
+  // 2. Insert Payment record
   const { data: payData, error: payErr } = await supabase
     .from('payments')
     .insert({
@@ -162,10 +238,12 @@ export async function recordPayment(
     .select('id')
     .single();
 
-  if (payErr) return { ok: false, error: payErr.message };
+  if (payErr || !payData) {
+    return { ok: false, error: payErr?.message ?? 'Failed to record payment' };
+  }
 
-  // Create payment allocation entry
-  const { error: allocErr } = await supabase
+  // 3. Atomically Create Payment Allocation
+  const { data: allocData, error: allocErr } = await supabase
     .from('payment_allocations')
     .insert({
       payment_id: payData.id,
@@ -174,13 +252,20 @@ export async function recordPayment(
       allocated_at: now,
       status: 'ALLOCATED',
       notes: `Direct invoice remittance via ${method}`,
-    });
+    })
+    .select('id')
+    .single();
 
-  if (allocErr) {
-    console.warn('Non-blocking payment allocation creation warning:', allocErr);
+  if (allocErr || !allocData) {
+    // HARD ROLLBACK: Delete payment so no orphan or unallocated ghost payment remains
+    await supabase.from('payments').delete().eq('id', payData.id);
+    return {
+      ok: false,
+      error: allocErr?.message ?? 'Payment allocation failed; payment rolled back.',
+    };
   }
 
-  return { ok: true, paymentId: payData.id };
+  return { ok: true, paymentId: payData.id, allocationId: allocData.id };
 }
 
 export async function recordPaymentAllocation(
@@ -290,8 +375,8 @@ export async function verifyPayment(paymentId: string): Promise<
       const totalPaid = poInvoices.reduce((sum, i) => sum + Number(i.paid_amount || (i.status === 'PAID' ? i.amount : 0)), 0);
       const totalPoAmount = Number(po.total_amount);
 
-      // Controlled completion condition
-      if (allInvoicesPaid && totalPaid >= totalPoAmount - 0.05) {
+      // Controlled completion condition: exact ceiling invariant
+      if (allInvoicesPaid && totalPaid >= totalPoAmount) {
         isFullySettled = true;
 
         // Complete Work Order

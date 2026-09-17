@@ -118,8 +118,8 @@ describe('Payment Allocation Pure Calculators (Phase 5C.1)', () => {
       expect(deriveInvoicePaymentStatus(10000, 10000)).toBe('PAID');
     });
 
-    it('returns PAID when paidAmount is within tolerance of invoiceAmount', () => {
-      expect(deriveInvoicePaymentStatus(10000, 9999.96, 'APPROVED', 0.05)).toBe('PAID');
+    it('returns PARTIALLY_PAID when paidAmount is less than invoice total', () => {
+      expect(deriveInvoicePaymentStatus(10000, 9999.96, 'APPROVED')).toBe('PARTIALLY_PAID');
     });
 
     it('returns PARTIALLY_PAID when paidAmount is greater than 0 but less than invoice total', () => {
@@ -229,14 +229,26 @@ describe('Payment Allocation Pure Calculators (Phase 5C.1)', () => {
       expect(res.error).toContain('exceeds invoice balance due');
     });
 
-    it('allows allocation within tolerance boundary (0.05)', () => {
+    it('rejects allocation exceeding exact ceiling boundary (RED-H1-03/04/05)', () => {
       const res = validatePaymentAllocation(
         10000,
         10000,
         [{ allocatedAmount: 5000, status: 'ALLOCATED' }],
         [{ allocatedAmount: 5000, status: 'ALLOCATED' }],
-        5000.04,
-        0.05,
+        5000.01,
+      );
+
+      expect(res.valid).toBe(false);
+      expect(res.error).toContain('exceeds available payment balance');
+    });
+
+    it('accepts exact ceiling allocation (RED-H1-02)', () => {
+      const res = validatePaymentAllocation(
+        10000,
+        10000,
+        [{ allocatedAmount: 5000, status: 'ALLOCATED' }],
+        [{ allocatedAmount: 5000, status: 'ALLOCATED' }],
+        5000.00,
       );
 
       expect(res.valid).toBe(true);

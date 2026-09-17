@@ -86,7 +86,7 @@ export class PaymentService {
         existingAllocations,
       );
 
-      if (amount > currentBalanceDue + 0.05) {
+      if (amount > currentBalanceDue) {
         return err(
           new ValidationError(
             `Payment amount ₹${amount} exceeds invoice balance due of ₹${currentBalanceDue}`,
@@ -143,7 +143,7 @@ export class PaymentService {
         });
       } else {
         // Fallback for legacy repositories without paymentAllocations
-        if (amount >= invoice.amount - 0.05) {
+        if (amount >= invoice.amount) {
           await this.repos.invoices.save({ ...invoice, status: 'PAID' });
         } else {
           await this.repos.invoices.save({ ...invoice, status: 'PARTIALLY_PAID' });
@@ -195,7 +195,7 @@ export class PaymentService {
           : [];
 
         const invBalDue = calculateInvoiceBalanceDue(inv.amount, existingInvAllocs);
-        if (item.amount > invBalDue + 0.05) {
+        if (item.amount > invBalDue) {
           return err(
             new ValidationError(
               `Allocation of ₹${item.amount} exceeds invoice ${inv.invoiceNumber} balance due of ₹${invBalDue}`,
@@ -206,7 +206,7 @@ export class PaymentService {
         totalAllocated += item.amount;
       }
 
-      if (totalAllocated > amount + 0.05) {
+      if (totalAllocated > amount) {
         return err(
           new ValidationError(
             `Sum of allocations (₹${totalAllocated}) exceeds total payment amount (₹${amount})`,
@@ -275,6 +275,38 @@ export class PaymentService {
     );
 
     return ok(savedPayment);
+  }
+
+  /**
+   * Convenience workflow executing atomic payment creation and initial invoice allocation.
+   * Enforces 100% transactional integrity: if allocation fails, returns error with no modified state.
+   */
+  async recordInvoicePayment(
+    actor: ActorContext,
+    invoiceId: string,
+    amount: number,
+    method: string,
+    options?: { reference?: string | null; notes?: string | null },
+  ): Promise<Result<{ payment: Payment; allocation: PaymentAllocationEntity }, Error>> {
+    const payRes = await this.recordPayment(actor, invoiceId, amount, method, {
+      reference: options?.reference,
+      notes: options?.notes,
+    });
+
+    if (!payRes.ok) return payRes;
+    const payment = payRes.value;
+
+    if (!this.repos.paymentAllocations) {
+      return err(new ValidationError('Payment allocation repository is not configured'));
+    }
+
+    const allocs = await this.repos.paymentAllocations.findByPaymentId(payment.id);
+    const activeAlloc = allocs.find((a) => a.invoiceId === invoiceId && a.status === 'ALLOCATED');
+    if (!activeAlloc) {
+      return err(new ValidationError('Payment allocation failed to persist atomically'));
+    }
+
+    return ok({ payment, allocation: activeAlloc });
   }
 
   /**

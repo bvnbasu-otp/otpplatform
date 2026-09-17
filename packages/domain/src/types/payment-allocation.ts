@@ -104,7 +104,7 @@ export function deriveInvoicePaymentStatus(
   invoiceAmount: number,
   paidAmount: number,
   currentStatus: InvoiceStatus = 'APPROVED',
-  tolerance = 0.05,
+  tolerance = 0,
 ): InvoiceStatus {
   if (paidAmount >= invoiceAmount - tolerance) {
     return 'PAID';
@@ -144,7 +144,7 @@ export function calculateRemainingPayableAmount(
   const roundedInvoiced = Math.round(totalInvoiced * 100) / 100;
   const roundedPaid = Math.round(totalPaid * 100) / 100;
   const totalBalanceDue = Math.max(0, Math.round((roundedInvoiced - roundedPaid) * 100) / 100);
-  const isFullySettled = totalBalanceDue <= 0.01 && roundedInvoiced > 0;
+  const isFullySettled = totalBalanceDue <= 0 && roundedInvoiced > 0;
 
   return {
     totalInvoiced: roundedInvoiced,
@@ -166,7 +166,7 @@ export function validatePaymentAllocation(
   existingPaymentAllocations: Array<{ allocatedAmount: number; status?: string }>,
   existingInvoiceAllocations: Array<{ allocatedAmount: number; status?: string }>,
   newAllocationAmount: number,
-  tolerance = 0.05,
+  tolerance = 0,
 ): {
   valid: boolean;
   paymentRemaining: number;
@@ -231,7 +231,7 @@ export function validatePaymentAllocationBatch(
     existingInvoiceAllocations?: Array<{ allocatedAmount: number; status?: string }>;
     allocationAmount: number;
   }>,
-  tolerance = 0.05,
+  tolerance = 0,
 ): {
   valid: boolean;
   totalAllocated: number;

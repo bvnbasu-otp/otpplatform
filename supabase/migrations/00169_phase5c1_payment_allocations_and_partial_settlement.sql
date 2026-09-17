@@ -118,7 +118,7 @@ BEGIN
       RAISE EXCEPTION 'Associated Invoice not found (PAY-5C-02)';
     END IF;
 
-    -- 1. Validate payment cumulative allocation limit (Tolerance ₹0.05)
+    -- 1. Validate payment cumulative allocation limit (Exact Ceiling: sum(allocated_amount) <= payment.amount)
     SELECT COALESCE(SUM(allocated_amount), 0.00)
     INTO v_pay_allocated
     FROM public.payment_allocations
@@ -126,12 +126,12 @@ BEGIN
       AND id <> COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)
       AND status = 'ALLOCATED';
 
-    IF (v_pay_allocated + NEW.allocated_amount) > (v_pay_amount + 0.05) THEN
+    IF (v_pay_allocated + NEW.allocated_amount) > v_pay_amount THEN
       RAISE EXCEPTION 'Payment allocation violation: Cumulative allocated amount (₹%) exceeds total payment amount (₹%) (PAY-5C-OVERALLOC)',
         (v_pay_allocated + NEW.allocated_amount), v_pay_amount;
     END IF;
 
-    -- 2. Validate invoice cumulative allocation limit (Tolerance ₹0.05)
+    -- 2. Validate invoice cumulative allocation limit (Exact Ceiling: sum(allocated_amount) <= invoice.amount)
     SELECT COALESCE(SUM(allocated_amount), 0.00)
     INTO v_inv_allocated
     FROM public.payment_allocations
@@ -139,7 +139,7 @@ BEGIN
       AND id <> COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)
       AND status = 'ALLOCATED';
 
-    IF (v_inv_allocated + NEW.allocated_amount) > (v_inv_amount + 0.05) THEN
+    IF (v_inv_allocated + NEW.allocated_amount) > v_inv_amount THEN
       RAISE EXCEPTION 'Invoice allocation violation: Cumulative allocated amount (₹%) exceeds invoice total amount (₹%) (PAY-5C-INVOICE-OVERALLOC)',
         (v_inv_allocated + NEW.allocated_amount), v_inv_amount;
     END IF;
@@ -186,7 +186,7 @@ BEGIN
 
       v_bal_due := GREATEST(0.00, v_inv.amount - v_paid_amt);
 
-      IF v_paid_amt >= (v_inv.amount - 0.05) THEN
+      IF v_paid_amt >= v_inv.amount THEN
         v_new_status := 'PAID';
       ELSIF v_paid_amt > 0.00 THEN
         v_new_status := 'PARTIALLY_PAID';
@@ -321,7 +321,7 @@ BEGIN
     SET paid_amount = v_paid,
         balance_due = GREATEST(0.00, v_inv.amount - v_paid),
         status = CASE
-          WHEN v_paid >= (v_inv.amount - 0.05) THEN 'PAID'::public.invoice_status
+          WHEN v_paid >= v_inv.amount THEN 'PAID'::public.invoice_status
           WHEN v_paid > 0.00 THEN 'PARTIALLY_PAID'::public.invoice_status
           WHEN v_inv.status IN ('PAID'::public.invoice_status, 'PARTIALLY_PAID'::public.invoice_status) THEN 'APPROVED'::public.invoice_status
           ELSE v_inv.status
@@ -340,6 +340,21 @@ BEGIN
     SET unallocated_amount = GREATEST(0.00, v_pay.amount - v_paid)
     WHERE id = v_pay.id;
   END LOOP;
+
+  -- 6. Historical Backfill Reconciliation Verification Assertion (H1-P1-04)
+  -- Invariant: For every payment, payment.amount = active_allocated + unallocated
+  IF EXISTS (
+    SELECT 1 FROM (
+      SELECT p.id, p.amount, p.unallocated_amount,
+             COALESCE(SUM(pa.allocated_amount) FILTER (WHERE pa.status = 'ALLOCATED'), 0.00) AS total_allocated
+      FROM public.payments p
+      LEFT JOIN public.payment_allocations pa ON pa.payment_id = p.id
+      GROUP BY p.id, p.amount, p.unallocated_amount
+    ) recon
+    WHERE recon.amount <> (recon.total_allocated + recon.unallocated_amount)
+  ) THEN
+    RAISE EXCEPTION 'Backfill reconciliation assertion failed: payment amount mismatch detected (H1-P1-04)';
+  END IF;
 END $$;
 
 -- ---------------------------------------------------------------------------
@@ -393,7 +408,77 @@ CREATE POLICY payment_allocations_modify ON public.payment_allocations
       WHERE i.id = payment_allocations.invoice_id
         AND private.get_org_role(po.organization_id) IN ('OWNER', 'MANAGER')
     )
+  )
+  WITH CHECK (
+    private.is_platform_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.invoices i
+      JOIN public.purchase_orders po ON po.id = i.purchase_order_id
+      WHERE i.id = payment_allocations.invoice_id
+        AND private.get_org_role(po.organization_id) IN ('OWNER', 'MANAGER')
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.invoices i
+      JOIN public.work_orders wo ON wo.id = i.work_order_id
+      JOIN public.purchase_orders po ON po.id = wo.purchase_order_id
+      WHERE i.id = payment_allocations.invoice_id
+        AND private.get_org_role(po.organization_id) IN ('OWNER', 'MANAGER')
+    )
   );
+
+-- Financial Field Immutability Trigger on public.payments:
+-- Disallows direct client updates to authoritative financial columns (amount, purchase_order_id,
+-- invoice_id, unallocated_amount, currency, recorded_by, etc.) by non-platform-admins.
+CREATE OR REPLACE FUNCTION public.protect_payment_financial_fields()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, private
+AS $$
+BEGIN
+  -- Service role and platform admin bypass
+  IF current_user = 'service_role' OR private.is_platform_admin() THEN
+    RETURN NEW;
+  END IF;
+
+  -- Protect immutable financial attributes
+  IF NEW.amount <> OLD.amount THEN
+    RAISE EXCEPTION 'Direct modification of payment amount is forbidden (PAY-SEC-AMOUNT)';
+  END IF;
+
+  IF NEW.purchase_order_id IS DISTINCT FROM OLD.purchase_order_id THEN
+    RAISE EXCEPTION 'Direct modification of payment purchase_order_id is forbidden (PAY-SEC-PO)';
+  END IF;
+
+  IF NEW.invoice_id IS DISTINCT FROM OLD.invoice_id THEN
+    RAISE EXCEPTION 'Direct modification of payment invoice_id is forbidden (PAY-SEC-INV)';
+  END IF;
+
+  IF NEW.unallocated_amount <> OLD.unallocated_amount THEN
+    RAISE EXCEPTION 'Direct modification of payment unallocated_amount is forbidden; must be calculated via allocations (PAY-SEC-UNALLOC)';
+  END IF;
+
+  IF NEW.currency <> OLD.currency THEN
+    RAISE EXCEPTION 'Direct modification of payment currency is forbidden (PAY-SEC-CURRENCY)';
+  END IF;
+
+  IF NEW.recorded_by <> OLD.recorded_by THEN
+    RAISE EXCEPTION 'Direct modification of payment recorded_by is forbidden (PAY-SEC-RECORDED-BY)';
+  END IF;
+
+  IF NEW.gateway_event_id IS DISTINCT FROM OLD.gateway_event_id THEN
+    RAISE EXCEPTION 'Direct modification of payment gateway_event_id is forbidden (PAY-SEC-GW-EVENT)';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_payment_financial_fields ON public.payments;
+CREATE TRIGGER trg_protect_payment_financial_fields
+  BEFORE UPDATE ON public.payments
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_payment_financial_fields();
 
 -- Update public.payments RLS Policies
 DROP POLICY IF EXISTS payments_select ON public.payments;

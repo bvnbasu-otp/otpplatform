@@ -323,4 +323,14 @@ describe('RLS security — static guarantees', () => {
 
     expect(caseBlock).toContain("ELSE 'DIRECT'");
   });
+
+  it('migration 00169 defines protect_payment_financial_fields trigger and payments RLS policies', () => {
+    const sql = readMigration('00169_phase5c1_payment_allocations_and_partial_settlement.sql');
+    expect(sql).toContain('protect_payment_financial_fields');
+    expect(sql).toContain('payment_allocations_modify');
+    expect(sql).toContain('payments_update');
+    expect(sql).toContain('payments_insert');
+    expect(sql).toContain('validate_payment_allocation_integrity');
+    expect(sql).not.toContain('+ 0.05');
+  });
 });

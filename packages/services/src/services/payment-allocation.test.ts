@@ -515,4 +515,421 @@ describe('Phase 5C.1 Payment Allocation & Financial Red-Team Test Suite', () => 
     );
     expect(supRes.ok).toBe(false);
   });
+
+  // =========================================================================
+  // RED-H1-01: Atomic Failure (Mode B: invoice payment allocation fails -> rollback)
+  // =========================================================================
+  it('RED-H1-01: Atomic Failure (Payment creation fails atomically when allocation exceeds limit, no payment created)', async () => {
+    const { invoice, repos } = await seedApprovedInvoice(10000);
+
+    // Initial payments count for PO
+    const initialPayments = await repos.payments.findByPurchaseOrderId!(invoice.purchaseOrderId!);
+    const initialAllocs = await repos.paymentAllocations!.findByInvoiceId(invoice.id);
+
+    // Attempt to record invoice payment of ₹12,000 against ₹10,000 balance
+    const failedRes = await services.payments.recordInvoicePayment(
+      BUYER_MANAGER,
+      invoice.id,
+      12000,
+      'BANK_TRANSFER',
+    );
+
+    expect(failedRes.ok).toBe(false);
+
+    // Invariant: No payment created, no allocation created, invoice remains unchanged
+    const finalPayments = await repos.payments.findByPurchaseOrderId!(invoice.purchaseOrderId!);
+    const finalAllocs = await repos.paymentAllocations!.findByInvoiceId(invoice.id);
+    const unchangedInv = await repos.invoices.findById(invoice.id);
+
+    expect(finalPayments.length).toBe(initialPayments.length);
+    expect(finalAllocs.length).toBe(initialAllocs.length);
+    expect(unchangedInv?.status).toBe('APPROVED');
+    expect(unchangedInv?.paidAmount).toBe(0);
+    expect(unchangedInv?.balanceDue).toBe(10000);
+  });
+
+  // =========================================================================
+  // RED-H1-02: Exact Ceiling (Payment ₹5,000.00, Allocation ₹5,000.00 -> PASS)
+  // =========================================================================
+  it('RED-H1-02: Exact Ceiling (Payment ₹5,000.00, Allocation ₹5,000.00 -> PASS)', async () => {
+    const { invoice, repos } = await seedApprovedInvoice(5000);
+
+    const exactRes = await services.payments.recordInvoicePayment(
+      BUYER_MANAGER,
+      invoice.id,
+      5000.00,
+      'BANK_TRANSFER',
+    );
+
+    expect(exactRes.ok).toBe(true);
+    const updatedInv = await repos.invoices.findById(invoice.id);
+    expect(updatedInv?.status).toBe('PAID');
+    expect(updatedInv?.paidAmount).toBe(5000.00);
+    expect(updatedInv?.balanceDue).toBe(0);
+  });
+
+  // =========================================================================
+  // RED-H1-03: One Paise Over (Payment ₹5,000.00, Allocation ₹5,000.01 -> REJECT)
+  // =========================================================================
+  it('RED-H1-03: One Paise Over (Payment ₹5,000.00, Allocation ₹5,000.01 -> REJECT)', async () => {
+    const { invoice } = await seedApprovedInvoice(5000);
+
+    const over1pRes = await services.payments.recordInvoicePayment(
+      BUYER_MANAGER,
+      invoice.id,
+      5000.01,
+      'BANK_TRANSFER',
+    );
+
+    expect(over1pRes.ok).toBe(false);
+    if (!over1pRes.ok) {
+      expect(over1pRes.error.message).toContain('exceeds invoice balance due');
+    }
+  });
+
+  // =========================================================================
+  // RED-H1-04: Four Paise Over (Payment ₹5,000.00, Allocation ₹5,000.04 -> REJECT)
+  // =========================================================================
+  it('RED-H1-04: Four Paise Over (Payment ₹5,000.00, Allocation ₹5,000.04 -> REJECT)', async () => {
+    const { invoice } = await seedApprovedInvoice(5000);
+
+    const over4pRes = await services.payments.recordInvoicePayment(
+      BUYER_MANAGER,
+      invoice.id,
+      5000.04,
+      'BANK_TRANSFER',
+    );
+
+    expect(over4pRes.ok).toBe(false);
+    if (!over4pRes.ok) {
+      expect(over4pRes.error.message).toContain('exceeds invoice balance due');
+    }
+  });
+
+  // =========================================================================
+  // RED-H1-05: Five Paise Over (Payment ₹5,000.00, Allocation ₹5,000.05 -> REJECT)
+  // =========================================================================
+  it('RED-H1-05: Five Paise Over (Payment ₹5,000.00, Allocation ₹5,000.05 -> REJECT)', async () => {
+    const { invoice } = await seedApprovedInvoice(5000);
+
+    const over5pRes = await services.payments.recordInvoicePayment(
+      BUYER_MANAGER,
+      invoice.id,
+      5000.05,
+      'BANK_TRANSFER',
+    );
+
+    expect(over5pRes.ok).toBe(false);
+    if (!over5pRes.ok) {
+      expect(over5pRes.error.message).toContain('exceeds invoice balance due');
+    }
+  });
+
+  // =========================================================================
+  // RED-H1-06: Split Exact (₹10,000 payment split 3333.33 + 3333.33 + 3333.34)
+  // =========================================================================
+  it('RED-H1-06: Split Exact (₹10,000 payment split into 3,333.33 + 3,333.33 + 3,333.34 -> ₹10,000 allocated, ₹0 unallocated)', async () => {
+    const { po, repos } = await seedApprovedInvoice(10000);
+
+    const inv1 = await repos.invoices.save({
+      id: 'inv-h1-1',
+      purchaseOrderId: po.id,
+      workOrderId: 'wo-101',
+      supplierId: 'sup-a',
+      invoiceNumber: 'INV-H1-1',
+      amount: 3333.33,
+      paidAmount: 0,
+      balanceDue: 3333.33,
+      currency: 'INR',
+      status: 'APPROVED',
+      submittedAt: new Date().toISOString(),
+    });
+
+    const inv2 = await repos.invoices.save({
+      id: 'inv-h1-2',
+      purchaseOrderId: po.id,
+      workOrderId: 'wo-101',
+      supplierId: 'sup-a',
+      invoiceNumber: 'INV-H1-2',
+      amount: 3333.33,
+      paidAmount: 0,
+      balanceDue: 3333.33,
+      currency: 'INR',
+      status: 'APPROVED',
+      submittedAt: new Date().toISOString(),
+    });
+
+    const inv3 = await repos.invoices.save({
+      id: 'inv-h1-3',
+      purchaseOrderId: po.id,
+      workOrderId: 'wo-101',
+      supplierId: 'sup-a',
+      invoiceNumber: 'INV-H1-3',
+      amount: 3333.34,
+      paidAmount: 0,
+      balanceDue: 3333.34,
+      currency: 'INR',
+      status: 'APPROVED',
+      submittedAt: new Date().toISOString(),
+    });
+
+    const splitRes = await services.payments.recordPayment(
+      BUYER_MANAGER,
+      null,
+      10000,
+      'BANK_TRANSFER',
+      {
+        purchaseOrderId: po.id,
+        allocations: [
+          { invoiceId: inv1.id, amount: 3333.33 },
+          { invoiceId: inv2.id, amount: 3333.33 },
+          { invoiceId: inv3.id, amount: 3333.34 },
+        ],
+      },
+    );
+
+    expect(splitRes.ok).toBe(true);
+    if (!splitRes.ok) throw splitRes.error;
+    expect(splitRes.value.unallocatedAmount).toBe(0);
+
+    const u1 = await repos.invoices.findById(inv1.id);
+    const u2 = await repos.invoices.findById(inv2.id);
+    const u3 = await repos.invoices.findById(inv3.id);
+
+    expect(u1?.status).toBe('PAID');
+    expect(u2?.status).toBe('PAID');
+    expect(u3?.status).toBe('PAID');
+  });
+
+  // =========================================================================
+  // RED-H1-07: Unauthorized Financial Mutation
+  // =========================================================================
+  it('RED-H1-07: Unauthorized Financial Mutation (Attempt to modify financial fields as normal buyer, supplier, external user -> REJECT)', async () => {
+    const { invoice } = await seedApprovedInvoice(10000);
+
+    // Buyer member cannot record payment
+    const memberRes = await services.payments.recordPayment(
+      BUYER_MEMBER,
+      invoice.id,
+      1000,
+      'UPI',
+    );
+    expect(memberRes.ok).toBe(false);
+    if (!memberRes.ok) {
+      expect(memberRes.error).toBeInstanceOf(ForbiddenError);
+    }
+
+    // Supplier cannot record payment
+    const supRes = await services.payments.recordPayment(
+      SUPPLIER_A,
+      invoice.id,
+      1000,
+      'UPI',
+    );
+    expect(supRes.ok).toBe(false);
+    if (!supRes.ok) {
+      expect(supRes.error).toBeInstanceOf(ForbiddenError);
+    }
+  });
+
+  // =========================================================================
+  // RED-H1-08: Partial Payment Does Not Close Procurement
+  // =========================================================================
+  it('RED-H1-08: Partial Payment Does Not Close Procurement (PO ₹100k, Inv A ₹40k, Inv B ₹60k, Pay A ₹40k -> Inv A PAID, Inv B UNPAID, PO NOT closed)', async () => {
+    const { po, repos } = await seedApprovedInvoice(100000);
+
+    const invA = await repos.invoices.save({
+      id: 'inv-h1-8a',
+      purchaseOrderId: po.id,
+      workOrderId: 'wo-101',
+      supplierId: 'sup-a',
+      invoiceNumber: 'INV-H1-8A',
+      amount: 40000,
+      paidAmount: 0,
+      balanceDue: 40000,
+      currency: 'INR',
+      status: 'APPROVED',
+      submittedAt: new Date().toISOString(),
+    });
+
+    const invB = await repos.invoices.save({
+      id: 'inv-h1-8b',
+      purchaseOrderId: po.id,
+      workOrderId: 'wo-101',
+      supplierId: 'sup-a',
+      invoiceNumber: 'INV-H1-8B',
+      amount: 60000,
+      paidAmount: 0,
+      balanceDue: 60000,
+      currency: 'INR',
+      status: 'APPROVED',
+      submittedAt: new Date().toISOString(),
+    });
+
+    // Pay Inv A fully
+    const payARes = await services.payments.recordInvoicePayment(
+      BUYER_MANAGER,
+      invA.id,
+      40000,
+      'BANK_TRANSFER',
+    );
+    expect(payARes.ok).toBe(true);
+
+    const updatedA = await repos.invoices.findById(invA.id);
+    const updatedB = await repos.invoices.findById(invB.id);
+    const currentPo = await repos.purchaseOrders.findById(po.id);
+
+    expect(updatedA?.status).toBe('PAID');
+    expect(updatedB?.status).toBe('APPROVED');
+    expect(currentPo?.status).toBe('IN_PROGRESS');
+  });
+
+  // =========================================================================
+  // RED-H1-09: Unallocated Advance
+  // =========================================================================
+  it('RED-H1-09: Unallocated Advance (Payment ₹20,000, Allocation ₹10,000 -> Allocated ₹10,000, Unallocated ₹10,000)', async () => {
+    const { po, invoice } = await seedApprovedInvoice(10000);
+
+    const advRes = await services.payments.recordPayment(
+      BUYER_MANAGER,
+      null,
+      20000,
+      'BANK_TRANSFER',
+      {
+        purchaseOrderId: po.id,
+        allocations: [{ invoiceId: invoice.id, amount: 10000 }],
+      },
+    );
+
+    expect(advRes.ok).toBe(true);
+    if (!advRes.ok) throw advRes.error;
+    expect(advRes.value.unallocatedAmount).toBe(10000);
+
+    const summary = await services.payments.getPaymentAllocationSummary(
+      BUYER_MANAGER,
+      advRes.value.id,
+    );
+    expect(summary.ok).toBe(true);
+    if (summary.ok) {
+      expect(summary.value.allocatedAmount).toBe(10000);
+      expect(summary.value.unallocatedAmount).toBe(10000);
+    }
+  });
+
+  // =========================================================================
+  // RED-H1-10: Allocation Replay
+  // =========================================================================
+  it('RED-H1-10: Allocation Replay (Same allocation request repeated -> No duplicate financial over-allocation)', async () => {
+    const { invoice } = await seedApprovedInvoice(10000);
+
+    // Record payment of ₹10,000 Mode A (unallocated)
+    const payRes = await services.payments.recordPayment(
+      BUYER_MANAGER,
+      null,
+      10000,
+      'BANK_TRANSFER',
+      { purchaseOrderId: invoice.purchaseOrderId },
+    );
+    expect(payRes.ok).toBe(true);
+    if (!payRes.ok) throw payRes.error;
+
+    // First allocation of ₹6,000 (leaves ₹4,000 remaining on payment and balance on invoice)
+    const alloc1 = await services.payments.recordPaymentAllocation(
+      BUYER_MANAGER,
+      payRes.value.id,
+      invoice.id,
+      6000,
+    );
+    expect(alloc1.ok).toBe(true);
+
+    // Replay/Duplicate allocation of ₹6,000 exceeds available payment balance (₹4,000) and invoice balance (₹4,000) -> must fail
+    const replayAlloc = await services.payments.recordPaymentAllocation(
+      BUYER_MANAGER,
+      payRes.value.id,
+      invoice.id,
+      6000,
+    );
+    expect(replayAlloc.ok).toBe(false);
+    if (!replayAlloc.ok) {
+      expect(replayAlloc.error.message).toContain('exceeds');
+    }
+  });
+
+  // =========================================================================
+  // H1-P1-04: Backfill Reconciliation Verification Test
+  // =========================================================================
+  it('H1-P1-04: Backfill Reconciliation Verification (preserves payment.amount = active_allocated + unallocated)', async () => {
+    const { repos } = await seedApprovedInvoice(10000);
+
+    // Simulate historical dataset with 3 payments:
+    // 1. Fully allocated payment
+    const p1 = await repos.payments.save({
+      id: 'pay-hist-1',
+      invoiceId: 'inv-101',
+      purchaseOrderId: 'po-101',
+      amount: 6000,
+      unallocatedAmount: 0,
+      currency: 'INR',
+      method: 'UPI',
+      status: 'RECORDED',
+      recordedBy: 'buyer-mgr-1',
+      recordedAt: new Date().toISOString(),
+    });
+    await repos.paymentAllocations!.save({
+      id: 'alloc-hist-1',
+      paymentId: p1.id,
+      invoiceId: 'inv-101',
+      allocatedAmount: 6000,
+      allocatedAt: new Date().toISOString(),
+      status: 'ALLOCATED',
+    });
+
+    // 2. Partially allocated payment
+    const p2 = await repos.payments.save({
+      id: 'pay-hist-2',
+      invoiceId: null,
+      purchaseOrderId: 'po-101',
+      amount: 10000,
+      unallocatedAmount: 6000,
+      currency: 'INR',
+      method: 'BANK_TRANSFER',
+      status: 'RECORDED',
+      recordedBy: 'buyer-mgr-1',
+      recordedAt: new Date().toISOString(),
+    });
+    await repos.paymentAllocations!.save({
+      id: 'alloc-hist-2',
+      paymentId: p2.id,
+      invoiceId: 'inv-101',
+      allocatedAmount: 4000,
+      allocatedAt: new Date().toISOString(),
+      status: 'ALLOCATED',
+    });
+
+    // 3. Fully unallocated payment (Advance)
+    const p3 = await repos.payments.save({
+      id: 'pay-hist-3',
+      invoiceId: null,
+      purchaseOrderId: 'po-101',
+      amount: 15000,
+      unallocatedAmount: 15000,
+      currency: 'INR',
+      method: 'BANK_TRANSFER',
+      status: 'RECORDED',
+      recordedBy: 'buyer-mgr-1',
+      recordedAt: new Date().toISOString(),
+    });
+
+    // Reconciliation check across all payments
+    const allPayments = await repos.payments.findByPurchaseOrderId!('po-101');
+    for (const pay of allPayments) {
+      const allocs = await repos.paymentAllocations!.findByPaymentId(pay.id);
+      const activeAllocated = allocs
+        .filter((a) => a.status === 'ALLOCATED')
+        .reduce((sum, a) => sum + a.allocatedAmount, 0);
+
+      // Invariant: payment.amount == active_allocated + unallocated
+      expect(pay.amount).toBe(Math.round((activeAllocated + (pay.unallocatedAmount ?? 0)) * 100) / 100);
+    }
+  });
 });
