@@ -5,6 +5,7 @@ import type {
   CoiDeclaration,
   CommitteeVote,
   CreditDebitNoteEntity,
+  ErpExportManifestEntity,
   Invoice,
   InvoiceLineItemEntity,
   Payment,
@@ -23,6 +24,7 @@ import type {
   Rfq,
   RfqInvitation,
   SettlementExceptionEntity,
+  SettlementExceptionEventEntity,
   SettlementReconciliationEntity,
   Supplier,
   TdsDeductionEntity,
@@ -227,6 +229,20 @@ export interface SettlementExceptionRepository {
   save(exc: SettlementExceptionEntity): Promise<SettlementExceptionEntity>;
 }
 
+export interface SettlementExceptionEventRepository {
+  findById(id: string): Promise<SettlementExceptionEventEntity | null>;
+  findByExceptionId(exceptionId: string): Promise<SettlementExceptionEventEntity[]>;
+  save(event: SettlementExceptionEventEntity): Promise<SettlementExceptionEventEntity>;
+}
+
+export interface ErpExportManifestRepository {
+  findById(id: string): Promise<ErpExportManifestEntity | null>;
+  findByOrganizationId(orgId: string): Promise<ErpExportManifestEntity[]>;
+  findByBatchReference(orgId: string, batchRef: string): Promise<ErpExportManifestEntity[]>;
+  findByPurchaseOrderId(poId: string): Promise<ErpExportManifestEntity[]>;
+  save(manifest: ErpExportManifestEntity): Promise<ErpExportManifestEntity>;
+}
+
 export interface Repositories {
   requirements: RequirementRepository;
   rfqs: RfqRepository;
@@ -255,6 +271,8 @@ export interface Repositories {
   platformFeeTransactions?: PlatformFeeTransactionRepository;
   settlementReconciliations?: SettlementReconciliationRepository;
   settlementExceptions?: SettlementExceptionRepository;
+  settlementExceptionEvents?: SettlementExceptionEventRepository;
+  erpExportManifests?: ErpExportManifestRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

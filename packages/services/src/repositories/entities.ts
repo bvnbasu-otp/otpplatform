@@ -278,6 +278,8 @@ export interface PaymentAllocationEntity {
   allocatedAmount: number;
   allocatedAt: string;
   status: 'ALLOCATED' | 'VOIDED' | 'REVERSED';
+  idempotencyKey?: string | null;
+  allocatedBy?: string | null;
   notes?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -411,7 +413,7 @@ export interface BankReconciliationRecordEntity {
   bankClearedDate: string;
   dateDriftDays: number;
   status: 'UNRECONCILED' | 'MATCHED' | 'DISCREPANCY' | 'RESOLVED' | 'RECONCILED';
-  discrepancyType: 'AMOUNT_MISMATCH' | 'DATE_DRIFT' | 'UNKNOWN_UTR' | 'DUPLICATE_UTR' | 'BENEFICIARY_MISMATCH' | 'NONE';
+  discrepancyType: 'AMOUNT_MISMATCH' | 'DATE_DRIFT' | 'UNKNOWN_UTR' | 'DUPLICATE_UTR' | 'BENEFICIARY_MISMATCH' | 'MANUALLY_INVALIDATED' | 'NONE';
   discrepancyDetails?: string | null;
   resolutionNotes?: string | null;
   reconciledBy?: string | null;
@@ -498,6 +500,17 @@ export interface SettlementReconciliationEntity {
   updatedAt: string;
 }
 
+export interface SettlementExceptionEventEntity {
+  id: string;
+  exceptionId: string;
+  eventType: 'CREATED' | 'ASSIGNED' | 'INVESTIGATION_NOTE' | 'STATUS_CHANGE' | 'RESOLVED' | 'REOPENED';
+  fromStatus?: 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | null;
+  toStatus?: 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | null;
+  notes?: string | null;
+  actorId?: string | null;
+  createdAt: string;
+}
+
 export interface SettlementExceptionEntity {
   id: string;
   organizationId: string;
@@ -514,8 +527,26 @@ export interface SettlementExceptionEntity {
   assignedTo?: string | null;
   resolvedBy?: string | null;
   resolvedAt?: string | null;
+  events?: SettlementExceptionEventEntity[];
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ErpExportManifestEntity {
+  id: string;
+  organizationId: string;
+  exportType: 'TALLY_PAYMENT_VOUCHER' | 'ZOHO_PAYMENT_RECEIPT' | 'FINANCIAL_AUDIT_PACK_CSV' | 'FINANCIAL_AUDIT_PACK_JSON';
+  batchReference: string;
+  exportVersion: number;
+  purchaseOrderId?: string | null;
+  paymentId?: string | null;
+  recordCount: number;
+  totalAmount: number;
+  payloadChecksumSha256: string;
+  exportedBy?: string | null;
+  exportedAt: string;
+  createdAt: string;
+}
+
 
 

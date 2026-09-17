@@ -1,4 +1,5 @@
 import {
+  calculateAgingBuckets,
   calculateFinancialObservabilitySummary,
   calculateInvoiceBalanceDue,
   calculateInvoicePaidAmount,
@@ -14,7 +15,9 @@ import {
   canResolveSettlementException,
   canTransitionFeeTransaction,
   canVoidTdsDeduction,
+  computePayloadChecksum,
   deriveInvoicePaymentStatus,
+  evaluateDuplicateExport,
   evaluateSettlementReconciliation,
   exportToTallyPaymentVoucher,
   exportToZohoPaymentReceipt,
@@ -33,6 +36,8 @@ import {
   type CreditDebitNote,
   type CreditDebitNoteStatus,
   type CreditDebitNoteType,
+  type ErpExportManifest,
+  type ErpExportType,
   type FinancialAuditPack,
   type FinancialObservabilitySummary,
   type Form16ACertificate,
@@ -46,6 +51,8 @@ import {
   type PoSettlementCertificate,
   type PoSettlementSummary,
   type SettlementDiscrepancyType,
+  type SettlementExceptionEvent,
+  type SettlementExceptionEventType,
   type SettlementExceptionRecord,
   type SettlementExceptionSeverity,
   type SettlementExceptionStatus,
@@ -61,6 +68,7 @@ import type { Repositories } from '../repositories/interfaces';
 import type {
   BankReconciliationRecordEntity,
   CreditDebitNoteEntity,
+  ErpExportManifestEntity,
   Invoice,
   Payment,
   PaymentAllocationEntity,
@@ -69,6 +77,7 @@ import type {
   PoFeeSnapshotEntity,
   PurchaseOrder,
   SettlementExceptionEntity,
+  SettlementExceptionEventEntity,
   SettlementReconciliationEntity,
   TdsDeductionEntity,
 } from '../repositories/entities';
@@ -93,6 +102,7 @@ export interface RecordPaymentOptions {
 export class PaymentService {
   private activeReversals = new Set<string>();
   private activeFeeDeductions = new Map<string, Promise<Result<PlatformFeeTransactionEntity, Error>>>();
+  private activeAllocations = new Map<string, Promise<Result<PaymentAllocationEntity, Error>>>();
 
   constructor(
     private readonly repos: Repositories,
@@ -307,6 +317,7 @@ export class PaymentService {
           allocatedAmount: item.amount,
           allocatedAt: now,
           status: 'ALLOCATED',
+          allocatedBy: actor.profileId || null,
           notes: item.notes || options?.notes || null,
           createdAt: now,
           updatedAt: now,
@@ -383,6 +394,47 @@ export class PaymentService {
     invoiceId: string,
     allocatedAmount: number,
     notes?: string | null,
+    idempotencyKey?: string | null,
+  ): Promise<Result<PaymentAllocationEntity, Error>> {
+    if (idempotencyKey) {
+      const lockKey = `${paymentId}:${idempotencyKey}`;
+      const inFlight = this.activeAllocations.get(lockKey);
+      if (inFlight) {
+        return inFlight;
+      }
+      const promise = this._recordPaymentAllocationInternal(
+        actor,
+        paymentId,
+        invoiceId,
+        allocatedAmount,
+        notes,
+        idempotencyKey,
+      );
+      this.activeAllocations.set(lockKey, promise);
+      try {
+        return await promise;
+      } finally {
+        this.activeAllocations.delete(lockKey);
+      }
+    }
+
+    return this._recordPaymentAllocationInternal(
+      actor,
+      paymentId,
+      invoiceId,
+      allocatedAmount,
+      notes,
+      idempotencyKey,
+    );
+  }
+
+  private async _recordPaymentAllocationInternal(
+    actor: ActorContext,
+    paymentId: string,
+    invoiceId: string,
+    allocatedAmount: number,
+    notes?: string | null,
+    idempotencyKey?: string | null,
   ): Promise<Result<PaymentAllocationEntity, Error>> {
     if (allocatedAmount <= 0) {
       return err(new ValidationError('Allocation amount must be strictly positive'));
@@ -390,6 +442,17 @@ export class PaymentService {
 
     if (!this.repos.paymentAllocations) {
       return err(new ValidationError('Payment allocation repository is not configured'));
+    }
+
+    // GAP-5C6-02: Idempotency check
+    if (idempotencyKey) {
+      const existingPaymentAllocs = await this.repos.paymentAllocations.findByPaymentId(paymentId);
+      const existingKeyMatch = existingPaymentAllocs.find(
+        (a) => a.idempotencyKey === idempotencyKey && a.status === 'ALLOCATED',
+      );
+      if (existingKeyMatch) {
+        return ok(existingKeyMatch);
+      }
     }
 
     const payment = await this.repos.payments.findById(paymentId);
@@ -437,6 +500,8 @@ export class PaymentService {
       allocatedAmount,
       allocatedAt: now,
       status: 'ALLOCATED',
+      idempotencyKey: idempotencyKey || null,
+      allocatedBy: actor.profileId || null,
       notes: notes || null,
       createdAt: now,
       updatedAt: now,
@@ -1007,6 +1072,38 @@ export class PaymentService {
         balanceDue: newBal,
         status: newStatus,
       });
+
+      // GAP-5C6-03: Platform Fee Synchronization During Allocation Reversal
+      if (this.repos.platformFeeTransactions) {
+        const feeTxs = await this.repos.platformFeeTransactions.findByOrganizationId(orgId || po?.organizationId || '');
+        const matchingFees = feeTxs.filter(
+          (tx) => tx.paymentAllocationId === allocation.id && (tx.status === 'APPLIED' || tx.status === 'SETTLED'),
+        );
+
+        for (const feeTx of matchingFees) {
+          const updatedFeeTx: PlatformFeeTransactionEntity = {
+            ...feeTx,
+            status: 'REVERSED',
+            voidedAt: now,
+            updatedAt: now,
+            notes: `${feeTx.notes || ''} [AUTO_REVERSED on allocation reversal ${allocation.id}]`.trim(),
+          };
+          await this.repos.platformFeeTransactions.save(updatedFeeTx);
+
+          await auditLog(
+            this.audit,
+            actor,
+            'PLATFORM_FEE_REVERSED',
+            'PLATFORM_FEE_TRANSACTION',
+            feeTx.id,
+            {
+              paymentAllocationId: allocation.id,
+              reversedAmount: feeTx.feeAmount,
+              reason: `Cascading reversal from allocation ${allocation.id}: ${reason}`,
+            },
+          );
+        }
+      }
 
       await auditLog(
         this.audit,
@@ -1800,15 +1897,30 @@ export class PaymentService {
     const summary = calculateFinancialObservabilitySummary({
       organizationId: orgId,
       purchaseOrders: pos.map((p) => ({ id: p.id, totalAmount: p.totalAmount, status: p.status })),
-      invoices: allInvoices.map((i) => ({ id: i.id, amount: i.amount, status: i.status })),
-      payments: allPayments.map((p) => ({ id: p.id, amount: p.amount, unallocatedAmount: p.unallocatedAmount, status: p.status })),
+      invoices: allInvoices.map((i) => ({
+        id: i.id,
+        amount: i.amount,
+        paidAmount: i.paidAmount,
+        status: i.status,
+        createdAt: (i as any).createdAt || i.submittedAt,
+        submittedAt: i.submittedAt,
+        dueDate: (i as any).dueDate,
+      })),
+      payments: allPayments.map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        unallocatedAmount: p.unallocatedAmount,
+        status: p.status,
+        createdAt: (p as any).createdAt || p.recordedAt,
+        recordedAt: p.recordedAt,
+      })),
       allocations: allAllocs.map((a) => ({ paymentId: a.paymentId, invoiceId: a.invoiceId, allocatedAmount: a.allocatedAmount, status: a.status })),
       tdsDeductions: tdsRecords.map((t) => ({ invoiceId: t.invoiceId, tdsAmount: t.tdsAmount, status: t.status })),
       creditDebitNotes: notes.map((n) => ({ invoiceId: n.invoiceId, noteType: n.noteType, amount: n.amount, status: n.status })),
       bankReconciliations: bankRecs.map((b) => ({ bankClearedAmount: b.bankClearedAmount, amountDifference: b.amountDifference, status: b.status })),
       platformFeeTransactions: feeTxs.map((f) => ({ grossAmount: f.grossAmount, feeAmount: f.feeAmount, status: f.status })),
       settlementReconciliations: settlementRecs.map((s) => ({ status: s.status, discrepancyType: s.discrepancyType, varianceAmount: s.varianceAmount })),
-      settlementExceptions: settlementExcs.map((e) => ({ status: e.status, amountInDispute: e.amountInDispute })),
+      settlementExceptions: settlementExcs.map((e) => ({ status: e.status, amountInDispute: e.amountInDispute, createdAt: e.createdAt })),
     });
 
     return ok(summary);
@@ -2280,6 +2392,20 @@ export class PaymentService {
         updatedAt: now,
       };
       savedExc = await this.repos.settlementExceptions.save(excEntity);
+
+      // GAP-5C6-05: Record Initial CREATED Exception Event Timeline
+      if (this.repos.settlementExceptionEvents) {
+        await this.repos.settlementExceptionEvents.save({
+          id: createId(),
+          exceptionId: savedExc.id,
+          eventType: 'CREATED',
+          fromStatus: null,
+          toStatus: 'OPEN',
+          notes: evalRes.discrepancyDetails,
+          actorId: actor.profileId || null,
+          createdAt: now,
+        });
+      }
     }
 
     await auditLog(
@@ -2331,6 +2457,7 @@ export class PaymentService {
     }
 
     const now = timestamp();
+    const prevStatus = exc.status;
     exc.status = 'RESOLVED';
     exc.resolutionNotes = resolutionNotes.trim();
     exc.resolvedBy = actor.profileId || null;
@@ -2338,6 +2465,20 @@ export class PaymentService {
     exc.updatedAt = now;
 
     const saved = await this.repos.settlementExceptions.save(exc);
+
+    // GAP-5C6-05: Record RESOLVED Exception Event Timeline
+    if (this.repos.settlementExceptionEvents) {
+      await this.repos.settlementExceptionEvents.save({
+        id: createId(),
+        exceptionId: saved.id,
+        eventType: 'RESOLVED',
+        fromStatus: prevStatus,
+        toStatus: 'RESOLVED',
+        notes: resolutionNotes.trim(),
+        actorId: actor.profileId || null,
+        createdAt: now,
+      });
+    }
 
     // Also update corresponding reconciliation record
     if (this.repos.settlementReconciliations) {
@@ -2420,5 +2561,313 @@ export class PaymentService {
       ? await this.repos.platformFeeTransactions.findByOrganizationId(orgId)
       : [];
     return ok(list);
+  }
+
+  /**
+   * GAP-5C6-01: Records an ERP export manifest and verifies duplicate export attempts.
+   */
+  async recordErpExportManifest(
+    actor: ActorContext,
+    params: {
+      organizationId: string;
+      exportType: ErpExportType;
+      batchReference: string;
+      purchaseOrderId?: string | null;
+      paymentId?: string | null;
+      recordCount: number;
+      totalAmount: number;
+      payload: string | Record<string, unknown>;
+    },
+  ): Promise<Result<{ manifest: ErpExportManifestEntity; isDuplicate: boolean }, Error>> {
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, params.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    if (!params.batchReference || params.batchReference.trim() === '') {
+      return err(new ValidationError('Batch reference is required for ERP export manifest'));
+    }
+
+    if (!this.repos.erpExportManifests) {
+      return err(new Error('ERP export manifests repository not available'));
+    }
+
+    const checksum = computePayloadChecksum(params.payload);
+    const existingManifests = await this.repos.erpExportManifests.findByBatchReference(
+      params.organizationId,
+      params.batchReference,
+    );
+
+    const dupEval = evaluateDuplicateExport(
+      existingManifests.map((m) => ({
+        id: m.id,
+        organizationId: m.organizationId,
+        exportType: m.exportType as ErpExportType,
+        batchReference: m.batchReference,
+        exportVersion: m.exportVersion,
+        purchaseOrderId: m.purchaseOrderId,
+        paymentId: m.paymentId,
+        recordCount: m.recordCount,
+        totalAmount: m.totalAmount,
+        payloadChecksumSha256: m.payloadChecksumSha256,
+        exportedBy: m.exportedBy,
+        exportedAt: m.exportedAt,
+        createdAt: m.createdAt,
+      })),
+      params.exportType,
+      params.batchReference,
+      checksum,
+    );
+
+    const now = timestamp();
+    const manifestEntity: ErpExportManifestEntity = {
+      id: createId(),
+      organizationId: params.organizationId,
+      exportType: params.exportType,
+      batchReference: params.batchReference,
+      exportVersion: dupEval.nextVersion,
+      purchaseOrderId: params.purchaseOrderId || null,
+      paymentId: params.paymentId || null,
+      recordCount: params.recordCount,
+      totalAmount: Math.round(Number(params.totalAmount || 0) * 100) / 100,
+      payloadChecksumSha256: checksum,
+      exportedBy: actor.profileId || null,
+      exportedAt: now,
+      createdAt: now,
+    };
+
+    const saved = await this.repos.erpExportManifests.save(manifestEntity);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'ERP_EXPORT_RECORDED',
+      'ERP_EXPORT_MANIFEST',
+      saved.id,
+      {
+        exportType: saved.exportType,
+        batchReference: saved.batchReference,
+        exportVersion: saved.exportVersion,
+        isDuplicate: dupEval.isDuplicate,
+        checksum: saved.payloadChecksumSha256,
+      },
+    );
+
+    return ok({ manifest: saved, isDuplicate: dupEval.isDuplicate });
+  }
+
+  /**
+   * GAP-5C6-01: Retrieves ERP export manifests for an organization.
+   */
+  async getErpExportManifests(
+    actor: ActorContext,
+    orgId: string,
+  ): Promise<Result<ErpExportManifestEntity[], Error>> {
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER', 'BUYER', 'APPROVER', 'COMMITTEE_MEMBER']);
+      if (!access.ok) return access;
+    }
+
+    const list = this.repos.erpExportManifests
+      ? await this.repos.erpExportManifests.findByOrganizationId(orgId)
+      : [];
+    return ok(list);
+  }
+
+  /**
+   * GAP-5C6-05: Appends an investigation note or status update event to a settlement exception timeline.
+   */
+  async addSettlementExceptionEvent(
+    actor: ActorContext,
+    params: {
+      exceptionId: string;
+      eventType: SettlementExceptionEventType;
+      notes: string;
+      toStatus?: SettlementExceptionStatus;
+    },
+  ): Promise<Result<SettlementExceptionEventEntity, Error>> {
+    if (!this.repos.settlementExceptions) {
+      return err(new Error('Settlement exceptions repository not available'));
+    }
+
+    const exc = await this.repos.settlementExceptions.findById(params.exceptionId);
+    if (!exc) return err(new NotFoundError('Settlement exception not found'));
+
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, exc.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    if (!params.notes || params.notes.trim().length === 0) {
+      return err(new ValidationError('Event notes cannot be empty'));
+    }
+
+    const now = timestamp();
+    const fromStatus = exc.status;
+    let toStatus = params.toStatus || fromStatus;
+
+    if (params.toStatus && params.toStatus !== fromStatus) {
+      exc.status = params.toStatus;
+      exc.updatedAt = now;
+      await this.repos.settlementExceptions.save(exc);
+    }
+
+    if (!this.repos.settlementExceptionEvents) {
+      return err(new Error('Settlement exception events repository not available'));
+    }
+
+    const eventEntity: SettlementExceptionEventEntity = {
+      id: createId(),
+      exceptionId: exc.id,
+      eventType: params.eventType,
+      fromStatus,
+      toStatus,
+      notes: params.notes.trim(),
+      actorId: actor.profileId || null,
+      createdAt: now,
+    };
+
+    const saved = await this.repos.settlementExceptionEvents.save(eventEntity);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'SETTLEMENT_EXCEPTION_EVENT_LOGGED',
+      'SETTLEMENT_EXCEPTION_EVENT',
+      saved.id,
+      {
+        exceptionId: exc.id,
+        eventType: params.eventType,
+        notes: params.notes,
+      },
+    );
+
+    return ok(saved);
+  }
+
+  /**
+   * GAP-5C6-05: Retrieves event timeline for a settlement exception.
+   */
+  async getSettlementExceptionEvents(
+    actor: ActorContext,
+    exceptionId: string,
+  ): Promise<Result<SettlementExceptionEventEntity[], Error>> {
+    if (!this.repos.settlementExceptions) {
+      return err(new Error('Settlement exceptions repository not available'));
+    }
+
+    const exc = await this.repos.settlementExceptions.findById(exceptionId);
+    if (!exc) return err(new NotFoundError('Settlement exception not found'));
+
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, exc.organizationId, ['OWNER', 'MANAGER', 'BUYER', 'APPROVER', 'COMMITTEE_MEMBER']);
+      if (!access.ok) return access;
+    }
+
+    const events = this.repos.settlementExceptionEvents
+      ? await this.repos.settlementExceptionEvents.findByExceptionId(exceptionId)
+      : [];
+    return ok(events);
+  }
+
+  /**
+   * GAP-5C6-06: Invalidates / charges back a bank reconciliation record.
+   */
+  async invalidateBankReconciliation(
+    actor: ActorContext,
+    reconciliationId: string,
+    reason: string,
+  ): Promise<Result<BankReconciliationRecordEntity, Error>> {
+    if (!this.repos.bankReconciliations) {
+      return err(new Error('Bank reconciliations repository not available'));
+    }
+
+    const rec = await this.repos.bankReconciliations.findById(reconciliationId);
+    if (!rec) return err(new NotFoundError('Bank reconciliation record not found'));
+
+    // Authorization check: Buyer OWNER or MANAGER or Platform Admin
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, rec.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    if (!reason || reason.trim().length < 5) {
+      return err(new ValidationError('Invalidation reason must be at least 5 characters'));
+    }
+
+    const now = timestamp();
+    const updated: BankReconciliationRecordEntity = {
+      ...rec,
+      status: 'DISCREPANCY',
+      discrepancyType: 'MANUALLY_INVALIDATED',
+      discrepancyDetails: `Reconciliation invalidated: ${reason.trim()}`,
+      resolutionNotes: `Invalidated by ${actor.profileId || 'user'}: ${reason.trim()}`,
+      updatedAt: now,
+    };
+
+    const saved = await this.repos.bankReconciliations.save(updated);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'BANK_RECONCILIATION_INVALIDATED',
+      'BANK_RECONCILIATION',
+      saved.id,
+      {
+        reconciliationId: saved.id,
+        utrNumber: saved.utrNumber,
+        reason: reason.trim(),
+      },
+    );
+
+    return ok(saved);
+  }
+
+  /**
+   * GAP-5C6-08: Synchronizes PO-level settlement reconciliations across all associated invoices.
+   */
+  async syncPoSettlementReconciliations(
+    actor: ActorContext,
+    purchaseOrderId: string,
+  ): Promise<Result<{ syncedCount: number; reconciliations: SettlementReconciliationEntity[] }, Error>> {
+    const po = await this.repos.purchaseOrders.findById(purchaseOrderId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    const invoices = this.repos.invoices.findByPurchaseOrderId
+      ? await this.repos.invoices.findByPurchaseOrderId(purchaseOrderId)
+      : [];
+
+    const activeInvoices = invoices.filter((inv) => (inv.status as string) !== 'REJECTED' && (inv.status as string) !== 'CANCELLED');
+    const syncedReconciliations: SettlementReconciliationEntity[] = [];
+
+    for (const inv of activeInvoices) {
+      const reconRes = await this.executeSettlementReconciliation(actor, {
+        organizationId: po.organizationId,
+        invoiceId: inv.id,
+      });
+
+      if (reconRes.ok) {
+        syncedReconciliations.push(reconRes.value.reconciliation);
+      }
+    }
+
+    await auditLog(
+      this.audit,
+      actor,
+      'PO_SETTLEMENT_RECONCILIATIONS_SYNCHRONIZED',
+      'PURCHASE_ORDER',
+      po.id,
+      {
+        purchaseOrderId: po.id,
+        syncedInvoiceCount: syncedReconciliations.length,
+      },
+    );
+
+    return ok({ syncedCount: syncedReconciliations.length, reconciliations: syncedReconciliations });
   }
 }

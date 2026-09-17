@@ -56,6 +56,25 @@ export interface SettlementReconciliationRecord {
   updatedAt: string;
 }
 
+export type SettlementExceptionEventType =
+  | 'CREATED'
+  | 'ASSIGNED'
+  | 'INVESTIGATION_NOTE'
+  | 'STATUS_CHANGE'
+  | 'RESOLVED'
+  | 'REOPENED';
+
+export interface SettlementExceptionEvent {
+  id: string;
+  exceptionId: string;
+  eventType: SettlementExceptionEventType;
+  fromStatus?: SettlementExceptionStatus | null;
+  toStatus?: SettlementExceptionStatus | null;
+  notes?: string | null;
+  actorId?: string | null;
+  createdAt: string;
+}
+
 export interface SettlementExceptionRecord {
   id: string;
   organizationId: string;
@@ -72,6 +91,7 @@ export interface SettlementExceptionRecord {
   assignedTo?: string | null;
   resolvedBy?: string | null;
   resolvedAt?: string | null;
+  events?: SettlementExceptionEvent[];
   createdAt: string;
   updatedAt: string;
 }

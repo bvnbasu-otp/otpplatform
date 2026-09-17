@@ -11,6 +11,7 @@ export type DiscrepancyType =
   | 'UNKNOWN_UTR'
   | 'DUPLICATE_UTR'
   | 'BENEFICIARY_MISMATCH'
+  | 'MANUALLY_INVALIDATED'
   | 'NONE';
 
 export interface BankRemittanceAdvice {

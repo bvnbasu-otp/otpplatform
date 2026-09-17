@@ -11,8 +11,11 @@ import {
   fetchFinancialObservabilitySummaryApi,
   fetchSettlementReconciliationsApi,
   fetchSettlementExceptionsApi,
+  fetchSettlementExceptionEventsApi,
+  fetchErpExportManifestsApi,
   reconcileBankUtrRpc,
-  executeSettlementReconciliationRpc,
+  invalidateBankReconciliationRpc,
+  syncPoSettlementReconciliationsRpc,
   resolveSettlementExceptionRpc,
 } from '../api/payments';
 
@@ -36,6 +39,7 @@ export const FinancialControlDashboardPage: React.FC<
   const [exceptions, setExceptions] = useState<SettlementExceptionRecord[]>(
     [],
   );
+  const [manifests, setManifests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [exporting, setExporting] = useState<'JSON' | 'CSV' | null>(null);
@@ -48,14 +52,29 @@ export const FinancialControlDashboardPage: React.FC<
   const [recLoading, setRecLoading] = useState(false);
   const [recError, setRecError] = useState<string | null>(null);
 
+  // Bank Invalidation Modal
+  const [invalidatingRecord, setInvalidatingRecord] = useState<BankReconciliationRecord | null>(null);
+  const [invalidationReasonInput, setInvalidationReasonInput] = useState('');
+  const [invalidationLoading, setInvalidationLoading] = useState(false);
+  const [invalidationError, setInvalidationError] = useState<string | null>(null);
+
   // Exception resolution modal
   const [resolvingException, setResolvingException] = useState<SettlementExceptionRecord | null>(null);
   const [resolutionNotesInput, setResolutionNotesInput] = useState('');
   const [resolvingLoading, setResolvingLoading] = useState(false);
   const [resolutionError, setResolutionError] = useState<string | null>(null);
 
+  // Exception Timeline Drawer
+  const [selectedExceptionForTimeline, setSelectedExceptionForTimeline] = useState<SettlementExceptionRecord | null>(null);
+  const [exceptionEvents, setExceptionEvents] = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+
+  // PO Batch Sync Modal / Input
+  const [syncingPoId, setSyncingPoId] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
   // Active sub-tab
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SETTLEMENT_RECON' | 'EXCEPTION_QUEUE' | 'BANK_RECON'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SETTLEMENT_RECON' | 'EXCEPTION_QUEUE' | 'BANK_RECON' | 'ERP_MANIFESTS'>('OVERVIEW');
 
   useEffect(() => {
     async function initOrg() {
@@ -96,7 +115,7 @@ export const FinancialControlDashboardPage: React.FC<
     setLoading(true);
     setErrorMsg(null);
 
-    const [sumRes, bankRes, setRecRes, excRes] = await Promise.all([
+    const [sumRes, bankRes, setRecRes, excRes, manRes] = await Promise.all([
       fetchFinancialObservabilitySummaryApi(targetOrgId),
       supabase
         .from('bank_reconciliation_records')
@@ -105,6 +124,7 @@ export const FinancialControlDashboardPage: React.FC<
         .order('bank_cleared_date', { ascending: false }),
       fetchSettlementReconciliationsApi(targetOrgId),
       fetchSettlementExceptionsApi(targetOrgId),
+      fetchErpExportManifestsApi(targetOrgId),
     ]);
 
     setLoading(false);
@@ -194,6 +214,10 @@ export const FinancialControlDashboardPage: React.FC<
         })),
       );
     }
+
+    if (manRes.ok) {
+      setManifests(manRes.manifests);
+    }
   }
 
   const handleExportAuditPack = async (format: 'JSON' | 'CSV') => {
@@ -219,7 +243,7 @@ export const FinancialControlDashboardPage: React.FC<
           organizationId: orgId,
           generatedAt: new Date().toISOString(),
           environment: 'PRODUCTION',
-          schemaVersion: '5C.5',
+          schemaVersion: '5C.6',
         },
         summary: summaryRes.ok ? summaryRes.summary : (summary as any),
         purchaseOrders: (posRes.data || []).map((p: any) => ({
@@ -356,6 +380,27 @@ export const FinancialControlDashboardPage: React.FC<
     }
   };
 
+  const handleInvalidateBankRec = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!invalidatingRecord || invalidationReasonInput.trim().length < 5) return;
+    setInvalidationLoading(true);
+    setInvalidationError(null);
+
+    const res = await invalidateBankReconciliationRpc({
+      reconciliationId: invalidatingRecord.id,
+      reason: invalidationReasonInput,
+    });
+
+    setInvalidationLoading(false);
+    if (res.ok) {
+      setInvalidatingRecord(null);
+      setInvalidationReasonInput('');
+      loadData(orgId);
+    } else {
+      setInvalidationError(res.error);
+    }
+  };
+
   const handleResolveException = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resolvingException || resolutionNotesInput.trim().length < 5) return;
@@ -377,12 +422,36 @@ export const FinancialControlDashboardPage: React.FC<
     }
   };
 
-  const recSummary = calculateReconciliationSummary(bankRecords);
+  const handleViewExceptionTimeline = async (exc: SettlementExceptionRecord) => {
+    setSelectedExceptionForTimeline(exc);
+    setEventsLoading(true);
+    const res = await fetchSettlementExceptionEventsApi(exc.id);
+    setEventsLoading(false);
+    if (res.ok) {
+      setExceptionEvents(res.events);
+    } else {
+      setExceptionEvents([]);
+    }
+  };
+
+  const handleSyncPoSettlement = async (poId: string) => {
+    setSyncingPoId(poId);
+    setSyncMessage(null);
+    const res = await syncPoSettlementReconciliationsRpc({ purchaseOrderId: poId });
+    setSyncingPoId(null);
+    if (res.ok) {
+      setSyncMessage(`Successfully synchronized settlement reconciliations for PO ${poId.slice(0, 8)}`);
+      loadData(orgId);
+      setTimeout(() => setSyncMessage(null), 4000);
+    } else {
+      setErrorMsg(res.error);
+    }
+  };
 
   if (loading) {
     return (
       <div className="p-8 text-center text-sm text-muted-foreground animate-pulse">
-        Loading Financial Observability Radar &amp; Controls…
+        Loading Financial Observability Radar &amp; Controls (Phase 5C.6)…
       </div>
     );
   }
@@ -396,7 +465,7 @@ export const FinancialControlDashboardPage: React.FC<
             <span>🛡️</span> Financial Observability &amp; Statutory Reconciliation Radar
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Real-time procurement commitment tracking, supplier platform fees &amp; settlement execution controls (Phase 5C.5)
+            Real-time procurement commitment tracking, duplicate export guard &amp; settlement execution controls (Phase 5C.6)
           </p>
         </div>
 
@@ -430,6 +499,12 @@ export const FinancialControlDashboardPage: React.FC<
       {errorMsg && (
         <div className="p-3 bg-destructive/10 text-destructive rounded-lg border border-destructive/20 text-xs font-medium">
           {errorMsg}
+        </div>
+      )}
+
+      {syncMessage && (
+        <div className="p-3 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-lg border border-emerald-300 text-xs font-medium">
+          ✓ {syncMessage}
         </div>
       )}
 
@@ -487,7 +562,7 @@ export const FinancialControlDashboardPage: React.FC<
       )}
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border">
+      <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border flex-wrap">
         <button
           type="button"
           onClick={() => setActiveTab('OVERVIEW')}
@@ -495,7 +570,7 @@ export const FinancialControlDashboardPage: React.FC<
             activeTab === 'OVERVIEW' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          📊 Overview Radar
+          📊 Overview &amp; Aging
         </button>
         <button
           type="button"
@@ -524,9 +599,18 @@ export const FinancialControlDashboardPage: React.FC<
         >
           🏦 Bank Remittance Advice ({bankRecords.length})
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('ERP_MANIFESTS')}
+          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+            activeTab === 'ERP_MANIFESTS' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          📑 ERP Export Registry ({manifests.length})
+        </button>
       </div>
 
-      {/* TAB 1: OVERVIEW */}
+      {/* TAB 1: OVERVIEW & FINANCIAL AGING */}
       {activeTab === 'OVERVIEW' && summary && (
         <div className="space-y-6">
           <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
@@ -560,6 +644,121 @@ export const FinancialControlDashboardPage: React.FC<
               </div>
             </div>
           </div>
+
+          {/* GAP-5C6-04: Financial Aging Observability Matrix */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <span>⏱️</span> Financial Aging Observability Matrix (Phase 5C.6)
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Temporal risk stratification across unpaid invoices, unallocated advances, and disputed exceptions
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Unpaid Invoices Aging */}
+              <div className="border border-border/80 rounded-lg p-3.5 space-y-3 bg-muted/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground">Unpaid Invoices</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                    Total: ₹{(
+                      (summary.financial_aging?.unpaid_invoices_aging.bucket_0_7d || 0) +
+                      (summary.financial_aging?.unpaid_invoices_aging.bucket_8_15d || 0) +
+                      (summary.financial_aging?.unpaid_invoices_aging.bucket_16_30d || 0) +
+                      (summary.financial_aging?.unpaid_invoices_aging.bucket_over_30d || 0)
+                    ).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-xs font-mono">
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">0 - 7 Days (Current)</span>
+                    <span className="font-semibold text-emerald-600">₹{(summary.financial_aging?.unpaid_invoices_aging.bucket_0_7d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">8 - 15 Days</span>
+                    <span className="font-semibold text-foreground">₹{(summary.financial_aging?.unpaid_invoices_aging.bucket_8_15d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">16 - 30 Days</span>
+                    <span className="font-semibold text-amber-600">₹{(summary.financial_aging?.unpaid_invoices_aging.bucket_16_30d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">&gt; 30 Days (Critical)</span>
+                    <span className="font-semibold text-destructive font-bold">₹{(summary.financial_aging?.unpaid_invoices_aging.bucket_over_30d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stuck Advances Aging */}
+              <div className="border border-border/80 rounded-lg p-3.5 space-y-3 bg-muted/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground">Stuck Advance Floats</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                    Total: ₹{(
+                      (summary.financial_aging?.stuck_advances_aging.bucket_0_7d || 0) +
+                      (summary.financial_aging?.stuck_advances_aging.bucket_8_15d || 0) +
+                      (summary.financial_aging?.stuck_advances_aging.bucket_16_30d || 0) +
+                      (summary.financial_aging?.stuck_advances_aging.bucket_over_30d || 0)
+                    ).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-xs font-mono">
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">0 - 7 Days</span>
+                    <span className="font-semibold text-emerald-600">₹{(summary.financial_aging?.stuck_advances_aging.bucket_0_7d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">8 - 15 Days</span>
+                    <span className="font-semibold text-foreground">₹{(summary.financial_aging?.stuck_advances_aging.bucket_8_15d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">16 - 30 Days</span>
+                    <span className="font-semibold text-amber-600">₹{(summary.financial_aging?.stuck_advances_aging.bucket_16_30d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">&gt; 30 Days (Stuck)</span>
+                    <span className="font-semibold text-destructive font-bold">₹{(summary.financial_aging?.stuck_advances_aging.bucket_over_30d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Unresolved Exceptions Aging */}
+              <div className="border border-border/80 rounded-lg p-3.5 space-y-3 bg-muted/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground">Unresolved Discrepancies</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                    Total: ₹{(
+                      (summary.financial_aging?.unresolved_exceptions_aging.bucket_0_7d || 0) +
+                      (summary.financial_aging?.unresolved_exceptions_aging.bucket_8_15d || 0) +
+                      (summary.financial_aging?.unresolved_exceptions_aging.bucket_16_30d || 0) +
+                      (summary.financial_aging?.unresolved_exceptions_aging.bucket_over_30d || 0)
+                    ).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-xs font-mono">
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">0 - 7 Days</span>
+                    <span className="font-semibold text-emerald-600">₹{(summary.financial_aging?.unresolved_exceptions_aging.bucket_0_7d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">8 - 15 Days</span>
+                    <span className="font-semibold text-foreground">₹{(summary.financial_aging?.unresolved_exceptions_aging.bucket_8_15d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">16 - 30 Days</span>
+                    <span className="font-semibold text-amber-600">₹{(summary.financial_aging?.unresolved_exceptions_aging.bucket_16_30d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between p-1.5 bg-background rounded">
+                    <span className="text-muted-foreground font-sans">&gt; 30 Days (Escalated)</span>
+                    <span className="font-semibold text-destructive font-bold">₹{(summary.financial_aging?.unresolved_exceptions_aging.bucket_over_30d || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -569,7 +768,7 @@ export const FinancialControlDashboardPage: React.FC<
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                Settlement Reconciliation Read Model (Phase 5C.5)
+                Settlement Reconciliation Read Model (Phase 5C.6)
               </h3>
               <p className="text-xs text-muted-foreground">
                 Authoritative conservation ledger tracking Invoice Gross, TDS, Platform Fee, and Supplier Net Settlement
@@ -594,6 +793,7 @@ export const FinancialControlDashboardPage: React.FC<
                     <th className="px-3 py-2 text-right">Paid Amount</th>
                     <th className="px-3 py-2 text-center">Status</th>
                     <th className="px-3 py-2">Discrepancy</th>
+                    <th className="px-3 py-2 text-right">Sync PO</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60 font-mono text-[11px]">
@@ -638,6 +838,16 @@ export const FinancialControlDashboardPage: React.FC<
                           <span className="text-emerald-600">Matched ✓</span>
                         )}
                       </td>
+                      <td className="px-3 py-2.5 text-right font-sans">
+                        <button
+                          type="button"
+                          onClick={() => handleSyncPoSettlement(rec.purchaseOrderId)}
+                          disabled={syncingPoId === rec.purchaseOrderId}
+                          className="px-2 py-0.5 border border-border text-[10px] font-semibold rounded hover:bg-muted disabled:opacity-50"
+                        >
+                          {syncingPoId === rec.purchaseOrderId ? 'Syncing…' : '🔄 Sync PO'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -653,10 +863,10 @@ export const FinancialControlDashboardPage: React.FC<
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                Financial Exception Queue (Phase 5C.5)
+                Financial Exception Queue (Phase 5C.6)
               </h3>
               <p className="text-xs text-muted-foreground">
-                Immutable audit queue of settlement discrepancies requiring authorized buyer review and resolution
+                Immutable audit queue of settlement discrepancies with multi-stage event forensics
               </p>
             </div>
           </div>
@@ -714,8 +924,15 @@ export const FinancialControlDashboardPage: React.FC<
                           {exc.status}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-right">
-                        {exc.status !== 'RESOLVED' ? (
+                      <td className="px-3 py-2.5 text-right space-x-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleViewExceptionTimeline(exc)}
+                          className="px-2 py-1 border border-border rounded text-[11px] font-semibold hover:bg-muted"
+                        >
+                          📜 Timeline
+                        </button>
+                        {exc.status !== 'RESOLVED' && (
                           <button
                             type="button"
                             onClick={() => {
@@ -727,8 +944,6 @@ export const FinancialControlDashboardPage: React.FC<
                           >
                             Resolve
                           </button>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground">Resolved ✓</span>
                         )}
                       </td>
                     </tr>
@@ -769,6 +984,7 @@ export const FinancialControlDashboardPage: React.FC<
                     <th className="px-3 py-2 text-right">Cleared Amount</th>
                     <th className="px-3 py-2 text-center">Status</th>
                     <th className="px-3 py-2">Discrepancy Details</th>
+                    <th className="px-3 py-2 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60 font-mono text-[11px]">
@@ -792,7 +1008,96 @@ export const FinancialControlDashboardPage: React.FC<
                         </span>
                       </td>
                       <td className="px-3 py-2.5 font-sans text-muted-foreground text-[10px]">
-                        {r.discrepancyDetails || 'Fully cleared'}
+                        {r.discrepancyType === 'MANUALLY_INVALIDATED' ? (
+                          <span className="text-amber-600 font-bold">⚠️ INVALIDATED: {r.resolutionNotes || r.discrepancyDetails}</span>
+                        ) : (
+                          r.discrepancyDetails || 'Fully cleared'
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-sans">
+                        {r.status === 'MATCHED' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInvalidatingRecord(r);
+                              setInvalidationReasonInput('');
+                              setInvalidationError(null);
+                            }}
+                            className="px-2 py-1 text-[10px] text-destructive hover:bg-destructive/10 border border-destructive/20 rounded font-semibold"
+                          >
+                            Invalidate / Chargeback
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 5: ERP EXPORT REGISTRY (GAP-5C6-01) */}
+      {activeTab === 'ERP_MANIFESTS' && (
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <span>📑</span> ERP Export Manifest Registry &amp; Deduplication Audit
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Authoritative register of statutory exports with cryptographic SHA-256 payload integrity guarantees
+              </p>
+            </div>
+          </div>
+
+          {manifests.length === 0 ? (
+            <div className="text-center py-8 text-xs text-muted-foreground border border-dashed rounded-lg">
+              No statutory ERP export manifests generated yet. Manifests are recorded upon Tally, Zoho, or Audit Pack exports.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/50 border-b text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                  <tr>
+                    <th className="px-3 py-2">Export Type</th>
+                    <th className="px-3 py-2">Batch Reference</th>
+                    <th className="px-3 py-2 text-center">Version</th>
+                    <th className="px-3 py-2 text-right">Records</th>
+                    <th className="px-3 py-2 text-right">Total Amount</th>
+                    <th className="px-3 py-2">SHA-256 Checksum</th>
+                    <th className="px-3 py-2">Exported At</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60 font-mono text-[11px]">
+                  {manifests.map((m) => (
+                    <tr key={m.id} className="hover:bg-muted/20 transition">
+                      <td className="px-3 py-2.5 font-bold font-sans">
+                        <span className="inline-block px-2 py-0.5 rounded bg-muted text-foreground text-[10px]">
+                          {m.export_type}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 font-semibold text-foreground">
+                        {m.batch_reference}
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          m.export_version > 1 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-muted'
+                        }`}>
+                          v{m.export_version}
+                          {m.export_version > 1 && ' (Re-export)'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">{m.record_count}</td>
+                      <td className="px-3 py-2.5 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                        ₹{Number(m.total_amount).toLocaleString('en-IN')}
+                      </td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-[10px] max-w-[140px] truncate">
+                        {m.payload_checksum_sha256}
+                      </td>
+                      <td className="px-3 py-2.5 font-sans text-muted-foreground text-[10px]">
+                        {new Date(m.exported_at).toLocaleString('en-IN')}
                       </td>
                     </tr>
                   ))}
@@ -869,6 +1174,161 @@ export const FinancialControlDashboardPage: React.FC<
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bank Reconciliation Invalidate Modal (GAP-5C6-06) */}
+      {invalidatingRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-5 space-y-4">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-sm font-bold text-destructive flex items-center gap-1.5">
+                <span>⚠️</span> Invalidate Bank Reconciliation / Chargeback
+              </h3>
+              <button
+                type="button"
+                onClick={() => setInvalidatingRecord(null)}
+                className="text-muted-foreground text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-2.5 bg-destructive/10 rounded text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Bank UTR:</span>
+                <span className="font-mono font-bold text-foreground">{invalidatingRecord.utrNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Cleared Amount:</span>
+                <span className="font-mono font-bold text-foreground">₹{invalidatingRecord.bankClearedAmount.toLocaleString('en-IN')}</span>
+              </div>
+              <p className="text-[11px] text-destructive font-medium pt-1">
+                Invalidating this record will transition it to DISCREPANCY with MANUALLY_INVALIDATED type and clear matched payment linkage.
+              </p>
+            </div>
+
+            {invalidationError && (
+              <div className="text-xs p-2.5 bg-destructive/10 text-destructive rounded-md border border-destructive/20 font-medium">
+                {invalidationError}
+              </div>
+            )}
+
+            <form onSubmit={handleInvalidateBankRec} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-medium text-muted-foreground mb-1">
+                  Invalidation / Chargeback Audit Reason (min. 5 chars)
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={invalidationReasonInput}
+                  onChange={(e) => setInvalidationReasonInput(e.target.value)}
+                  placeholder="e.g. Bank chargeback issued by vendor or UTR mistakenly applied to incorrect PO."
+                  className="w-full bg-background border border-border rounded-md px-3 py-1.5"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setInvalidatingRecord(null)}
+                  className="px-3 py-1.5 border border-border rounded-md hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={invalidationLoading || invalidationReasonInput.trim().length < 5}
+                  className="px-4 py-1.5 bg-destructive text-destructive-foreground font-semibold rounded-md hover:bg-destructive/90 disabled:opacity-50"
+                >
+                  {invalidationLoading ? 'Invalidating…' : 'Confirm Invalidation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Exception Event Timeline Drawer (GAP-5C6-05) */}
+      {selectedExceptionForTimeline && (
+        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50 backdrop-blur-xs">
+          <div className="bg-card border-l border-border h-full max-w-md w-full p-6 space-y-4 overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <span>📜</span> Investigation Timeline
+                </h3>
+                <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
+                  Exception: {selectedExceptionForTimeline.id.slice(0, 8)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedExceptionForTimeline(null)}
+                className="text-muted-foreground hover:text-foreground font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3 bg-muted/40 rounded-lg space-y-1 text-xs">
+              <div className="flex justify-between font-mono">
+                <span className="text-muted-foreground font-sans">Type:</span>
+                <span className="font-bold">{selectedExceptionForTimeline.exceptionType}</span>
+              </div>
+              <div className="flex justify-between font-mono">
+                <span className="text-muted-foreground font-sans">Disputed:</span>
+                <span className="font-bold text-destructive">₹{selectedExceptionForTimeline.amountInDispute.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between font-mono">
+                <span className="text-muted-foreground font-sans">Status:</span>
+                <span className="font-bold">{selectedExceptionForTimeline.status}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Event History ({exceptionEvents.length})
+              </h4>
+
+              {eventsLoading ? (
+                <div className="text-center py-6 text-xs text-muted-foreground animate-pulse">
+                  Loading investigation event logs…
+                </div>
+              ) : exceptionEvents.length === 0 ? (
+                <div className="text-center py-6 text-xs text-muted-foreground border border-dashed rounded-lg">
+                  No historical event milestones recorded.
+                </div>
+              ) : (
+                <div className="relative border-l-2 border-border/80 ml-3 space-y-4 text-xs">
+                  {exceptionEvents.map((ev) => (
+                    <div key={ev.id} className="relative pl-4 space-y-1">
+                      <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-primary" />
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-foreground text-[11px]">
+                          {ev.event_type}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(ev.created_at).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      {ev.from_status && ev.to_status && (
+                        <div className="text-[10px] font-mono text-muted-foreground">
+                          {ev.from_status} → {ev.to_status}
+                        </div>
+                      )}
+                      {ev.notes && (
+                        <p className="text-[11px] bg-muted/30 p-2 rounded text-foreground">
+                          {ev.notes}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -951,7 +1411,7 @@ export const FinancialControlDashboardPage: React.FC<
                   disabled={recLoading}
                   className="px-4 py-1.5 bg-primary text-primary-foreground font-semibold rounded-md hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {recLoading ? 'Reconciling…' : 'Reconcile UTR'}
+                  {recLoading ? 'Reconciling…' : 'Match & Reconcile'}
                 </button>
               </div>
             </form>
@@ -961,3 +1421,4 @@ export const FinancialControlDashboardPage: React.FC<
     </div>
   );
 };
+export default FinancialControlDashboardPage;

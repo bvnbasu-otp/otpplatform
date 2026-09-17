@@ -37,3 +37,5 @@ export * from './accounting/tally-xml-exporter';
 export * from './accounting/zoho-json-exporter';
 export * from './accounting/tally-payment-voucher';
 export * from './accounting/zoho-payment-receipt';
+export * from './accounting/erp-manifest';
+

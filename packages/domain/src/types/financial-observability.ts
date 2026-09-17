@@ -1,6 +1,19 @@
 import type { BankReconciliationRecord } from './bank-reconciliation';
 import type { PoChangeOrder } from './change-order';
 
+export interface FinancialAgingBuckets {
+  bucket_0_7d: number;
+  bucket_8_15d: number;
+  bucket_16_30d: number;
+  bucket_over_30d: number;
+}
+
+export interface FinancialAgingSummary {
+  unpaid_invoices_aging: FinancialAgingBuckets;
+  stuck_advances_aging: FinancialAgingBuckets;
+  unresolved_exceptions_aging: FinancialAgingBuckets;
+}
+
 export interface FinancialObservabilitySummary {
   organizationId: string;
   totalPoAuthorized: number;
@@ -24,6 +37,8 @@ export interface FinancialObservabilitySummary {
   settlementMismatchCount: number;
   openExceptionCount: number;
   resolvedExceptionCount: number;
+  // Phase 5C.6 Extensions: Financial Aging
+  financial_aging?: FinancialAgingSummary;
   generatedAt: string;
 }
 
@@ -42,13 +57,19 @@ export interface ObservabilityCalculationParams {
   invoices: Array<{
     id: string;
     amount: number;
+    paidAmount?: number;
     status: string;
+    createdAt?: string;
+    submittedAt?: string;
+    dueDate?: string;
   }>;
   payments: Array<{
     id: string;
     amount: number;
     unallocatedAmount?: number;
     status?: string;
+    createdAt?: string;
+    recordedAt?: string;
   }>;
   allocations: Array<{
     paymentId: string;
@@ -86,7 +107,46 @@ export interface ObservabilityCalculationParams {
   settlementExceptions?: Array<{
     status: string;
     amountInDispute: number;
+    createdAt?: string;
   }>;
+  asOfDate?: string | Date;
+}
+
+/**
+ * Calculates financial aging buckets for a list of items with timestamp and amount.
+ */
+export function calculateAgingBuckets(
+  items: Array<{ amount: number; date?: string | Date | null }>,
+  asOfDate: string | Date = new Date(),
+): FinancialAgingBuckets {
+  const asOf = new Date(asOfDate).getTime();
+  const buckets: FinancialAgingBuckets = {
+    bucket_0_7d: 0,
+    bucket_8_15d: 0,
+    bucket_16_30d: 0,
+    bucket_over_30d: 0,
+  };
+
+  for (const item of items) {
+    const amt = Number(item.amount || 0);
+    if (amt <= 0) continue;
+
+    const itemDate = item.date ? new Date(item.date).getTime() : asOf;
+    const diffMs = Math.max(0, asOf - itemDate);
+    const ageDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (ageDays <= 7) {
+      buckets.bucket_0_7d = Math.round((buckets.bucket_0_7d + amt) * 100) / 100;
+    } else if (ageDays <= 15) {
+      buckets.bucket_8_15d = Math.round((buckets.bucket_8_15d + amt) * 100) / 100;
+    } else if (ageDays <= 30) {
+      buckets.bucket_16_30d = Math.round((buckets.bucket_16_30d + amt) * 100) / 100;
+    } else {
+      buckets.bucket_over_30d = Math.round((buckets.bucket_over_30d + amt) * 100) / 100;
+    }
+  }
+
+  return buckets;
 }
 
 /**
@@ -222,6 +282,34 @@ export function calculateFinancialObservabilitySummary(
     }
   }
 
+  // 11. Phase 5C.6: Financial Aging Metrics
+  const unpaidInvoices = params.invoices
+    .filter((inv) => inv.status !== 'REJECTED' && inv.status !== 'CANCELLED' && inv.status !== 'PAID')
+    .map((inv) => ({
+      amount: Math.max(0, Number(inv.amount || 0) - Number(inv.paidAmount || 0)),
+      date: inv.dueDate || inv.submittedAt || inv.createdAt,
+    }));
+
+  const stuckAdvances = params.payments
+    .filter((p) => p.status !== 'FAILED' && p.status !== 'REVERSED' && p.status !== 'VOIDED')
+    .map((p) => ({
+      amount: Number(p.unallocatedAmount || 0),
+      date: p.recordedAt || p.createdAt,
+    }));
+
+  const unresolvedExceptions = (params.settlementExceptions || [])
+    .filter((e) => e.status === 'OPEN' || e.status === 'INVESTIGATING')
+    .map((e) => ({
+      amount: Number(e.amountInDispute || 0),
+      date: e.createdAt,
+    }));
+
+  const financial_aging: FinancialAgingSummary = {
+    unpaid_invoices_aging: calculateAgingBuckets(unpaidInvoices, params.asOfDate),
+    stuck_advances_aging: calculateAgingBuckets(stuckAdvances, params.asOfDate),
+    unresolved_exceptions_aging: calculateAgingBuckets(unresolvedExceptions, params.asOfDate),
+  };
+
   return {
     organizationId: params.organizationId,
     totalPoAuthorized: Math.round(totalPoAuthorized * 100) / 100,
@@ -245,6 +333,7 @@ export function calculateFinancialObservabilitySummary(
     settlementMismatchCount,
     openExceptionCount,
     resolvedExceptionCount,
+    financial_aging,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -467,6 +556,17 @@ export function generateFinancialAuditPackCsv(pack: FinancialAuditPack): string 
     lines.push(
       `"${r.id}","${r.utrNumber}",${r.bankClearedAmount},"${r.status}","${r.discrepancyType || 'NONE'}"`,
     );
+  }
+  lines.push('');
+
+  // Financial Aging Breakdown (Phase 5C.6)
+  if (pack.summary.financial_aging) {
+    const fa = pack.summary.financial_aging;
+    lines.push('--- FINANCIAL AGING BREAKDOWN ---');
+    lines.push('Category,0-7 Days (INR),8-15 Days (INR),16-30 Days (INR),>30 Days (INR)');
+    lines.push(`Unpaid Invoices,${fa.unpaid_invoices_aging.bucket_0_7d},${fa.unpaid_invoices_aging.bucket_8_15d},${fa.unpaid_invoices_aging.bucket_16_30d},${fa.unpaid_invoices_aging.bucket_over_30d}`);
+    lines.push(`Stuck Advances,${fa.stuck_advances_aging.bucket_0_7d},${fa.stuck_advances_aging.bucket_8_15d},${fa.stuck_advances_aging.bucket_16_30d},${fa.stuck_advances_aging.bucket_over_30d}`);
+    lines.push(`Unresolved Exceptions,${fa.unresolved_exceptions_aging.bucket_0_7d},${fa.unresolved_exceptions_aging.bucket_8_15d},${fa.unresolved_exceptions_aging.bucket_16_30d},${fa.unresolved_exceptions_aging.bucket_over_30d}`);
   }
 
   return lines.join('\n');

@@ -1718,4 +1718,69 @@ export async function fetchSettlementExceptionsApi(
   }
 }
 
+export async function fetchSettlementExceptionEventsApi(
+  exceptionId: string,
+): Promise<{ ok: true; events: any[] } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('settlement_exception_events')
+      .select('*')
+      .eq('exception_id', exceptionId)
+      .order('created_at', { ascending: true });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, events: data || [] };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch settlement exception events' };
+  }
+}
+
+export async function fetchErpExportManifestsApi(
+  organizationId: string,
+): Promise<{ ok: true; manifests: any[] } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('erp_export_manifests')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('exported_at', { ascending: false });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, manifests: data || [] };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch ERP export manifests' };
+  }
+}
+
+export async function invalidateBankReconciliationRpc(params: {
+  reconciliationId: string;
+  reason: string;
+}): Promise<{ ok: true; result: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('invalidate_bank_reconciliation_atomic', {
+      p_reconciliation_id: params.reconciliationId,
+      p_reason: params.reason,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, result: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to invalidate bank reconciliation' };
+  }
+}
+
+export async function syncPoSettlementReconciliationsRpc(params: {
+  purchaseOrderId: string;
+}): Promise<{ ok: true; result: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('sync_po_settlement_reconciliations_atomic', {
+      p_po_id: params.purchaseOrderId,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, result: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to sync PO settlement reconciliations' };
+  }
+}
+
+
 

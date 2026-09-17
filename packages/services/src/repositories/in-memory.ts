@@ -6,6 +6,7 @@ import type {
   CoiDeclaration,
   CommitteeVote,
   CreditDebitNoteEntity,
+  ErpExportManifestEntity,
   Invoice,
   InvoiceLineItemEntity,
   Payment,
@@ -24,6 +25,7 @@ import type {
   Rfq,
   RfqInvitation,
   SettlementExceptionEntity,
+  SettlementExceptionEventEntity,
   SettlementReconciliationEntity,
   Supplier,
   TdsDeductionEntity,
@@ -70,6 +72,8 @@ export class InMemoryRepositories {
   platformFeeTransactions = new Map<string, PlatformFeeTransactionEntity>();
   settlementReconciliations = new Map<string, SettlementReconciliationEntity>();
   settlementExceptions = new Map<string, SettlementExceptionEntity>();
+  settlementExceptionEvents = new Map<string, SettlementExceptionEventEntity>();
+  erpExportManifests = new Map<string, ErpExportManifestEntity>();
   suppliers = new Map<string, Supplier>();
   performance = new Map<string, ProcurementPerformanceRecord>();
 
@@ -550,6 +554,38 @@ export class InMemoryRepositories {
     };
   }
 
+  get settlementExceptionEventsRepo(): Repositories['settlementExceptionEvents'] {
+    const store = this.settlementExceptionEvents;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByExceptionId: async (excId) =>
+        [...store.values()].filter((evt) => evt.exceptionId === excId),
+      save: async (evt) => {
+        store.set(evt.id, evt);
+        return evt;
+      },
+    };
+  }
+
+  get erpExportManifestsRepo(): Repositories['erpExportManifests'] {
+    const store = this.erpExportManifests;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((m) => m.organizationId === orgId),
+      findByBatchReference: async (orgId, batchRef) =>
+        [...store.values()].filter(
+          (m) => m.organizationId === orgId && m.batchReference === batchRef,
+        ),
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((m) => m.purchaseOrderId === poId),
+      save: async (m) => {
+        store.set(m.id, m);
+        return m;
+      },
+    };
+  }
+
   get suppliersRepo(): Repositories['suppliers'] {
     const store = this.suppliers;
     return {
@@ -601,6 +637,8 @@ export class InMemoryRepositories {
       platformFeeTransactions: this.platformFeeTransactionsRepo,
       settlementReconciliations: this.settlementReconciliationsRepo,
       settlementExceptions: this.settlementExceptionsRepo,
+      settlementExceptionEvents: this.settlementExceptionEventsRepo,
+      erpExportManifests: this.erpExportManifestsRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };
