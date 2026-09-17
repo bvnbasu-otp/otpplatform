@@ -331,6 +331,7 @@ describe('RLS security — static guarantees', () => {
     expect(sql).toContain('payments_update');
     expect(sql).toContain('payments_insert');
     expect(sql).toContain('validate_payment_allocation_integrity');
+    expect(sql).toContain('record_invoice_payment_atomic');
     expect(sql).not.toContain('+ 0.05');
   });
 });

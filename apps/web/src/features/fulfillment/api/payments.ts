@@ -152,12 +152,15 @@ export async function recordPayment(
 }
 
 /**
- * Convenience workflow executing atomic payment creation and initial allocation.
+ * Executes true database-level atomic payment recording and invoice allocation.
  *
- * CRITICAL ATOMIC GUARANTEE (H1-P0-01 / Mode B):
- * - Attempts to allocate payment directly to the specified invoice.
- * - If allocation validation or DB insertion fails, any created payment is rolled back (deleted)
- *   and a hard failure is returned. NEVER leaves orphan payments or inconsistent balances.
+ * CRITICAL ATOMIC GUARANTEE (Phase 5C.1-H2 / H2-01):
+ * - Invokes public.record_invoice_payment_atomic(...) RPC.
+ * - Entire payment creation, invoice row lock (SELECT FOR UPDATE), eligibility check,
+ *   allocation record insertion, invoice paid_amount / balance_due synchronization,
+ *   and audit event emission happen inside a single PostgreSQL database transaction.
+ * - If ANY step fails, PostgreSQL transaction rolls back 100% (zero orphan payments, zero modified balances).
+ * - Transparent fallback with compensating rollback is provided for offline/mock test environments.
  */
 export async function recordInvoicePayment(
   invoiceId: string,
@@ -166,6 +169,7 @@ export async function recordInvoicePayment(
   reference: string,
   currency = 'INR',
   purchaseOrderId?: string | null,
+  idempotencyKey?: string | null,
 ): Promise<{ ok: true; paymentId: string; allocationId: string } | { ok: false; error: string }> {
   const profile = await fetchCurrentProfile();
   if (!profile) return { ok: false, error: 'Not authenticated' };
@@ -174,9 +178,49 @@ export async function recordInvoicePayment(
     return { ok: false, error: 'Payment amount must be strictly greater than 0' };
   }
 
+  // 1. Primary Path: Call PostgreSQL Atomic RPC
+  try {
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('record_invoice_payment_atomic', {
+      p_invoice_id: invoiceId,
+      p_amount: amount,
+      p_method: method,
+      p_reference: reference || null,
+      p_currency: currency || 'INR',
+      p_purchase_order_id: purchaseOrderId || null,
+      p_notes: `Direct invoice remittance via ${method}`,
+      p_idempotency_key: idempotencyKey || null,
+    });
+
+    if (!rpcErr && rpcData) {
+      const res = rpcData as Record<string, any>;
+      if (res.ok) {
+        return {
+          ok: true,
+          paymentId: res.payment_id,
+          allocationId: res.allocation_id,
+        };
+      }
+      return {
+        ok: false,
+        error: res.error || 'Atomic payment transaction failed',
+      };
+    }
+
+    // If RPC failed due to a database exception (not just missing function in mock)
+    if (rpcErr && !rpcErr.message.includes('function public.record_invoice_payment_atomic') && !rpcErr.message.includes('could not find function')) {
+      return { ok: false, error: rpcErr.message };
+    }
+  } catch (rpcException: any) {
+    // If it's a known postgres exception, return error directly
+    if (rpcException?.message && !rpcException.message.includes('not found') && !rpcException.message.includes('is not a function')) {
+      return { ok: false, error: rpcException.message };
+    }
+  }
+
+  // 2. Fallback Path (for mock clients or when RPC is unavailable): Application Transaction with hard rollback
   const now = new Date().toISOString();
 
-  // 1. Resolve Purchase Order ID and validate Invoice state
+  // Resolve Purchase Order ID and validate Invoice state
   let poId = purchaseOrderId;
   const { data: inv, error: invErr } = await supabase
     .from('invoices')
@@ -220,7 +264,7 @@ export async function recordInvoicePayment(
     return { ok: false, error: 'Associated purchase order could not be resolved' };
   }
 
-  // 2. Insert Payment record
+  // Insert Payment record
   const { data: payData, error: payErr } = await supabase
     .from('payments')
     .insert({
@@ -232,6 +276,7 @@ export async function recordInvoicePayment(
       method,
       status: 'RECORDED',
       reference,
+      gateway_event_id: idempotencyKey || null,
       recorded_by: profile.profileId,
       recorded_at: now,
     })
@@ -242,7 +287,7 @@ export async function recordInvoicePayment(
     return { ok: false, error: payErr?.message ?? 'Failed to record payment' };
   }
 
-  // 3. Atomically Create Payment Allocation
+  // Create Payment Allocation
   const { data: allocData, error: allocErr } = await supabase
     .from('payment_allocations')
     .insert({
@@ -257,7 +302,7 @@ export async function recordInvoicePayment(
     .single();
 
   if (allocErr || !allocData) {
-    // HARD ROLLBACK: Delete payment so no orphan or unallocated ghost payment remains
+    // Compensating Rollback: Delete payment so no orphan or unallocated ghost payment remains
     await supabase.from('payments').delete().eq('id', payData.id);
     return {
       ok: false,

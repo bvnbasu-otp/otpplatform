@@ -99,6 +99,7 @@ export function calculateInvoiceBalanceDue(
 
 /**
  * Derives the canonical invoice status based on paid amount and invoice total.
+ * Authoritative financial state uses exact NUMERIC(14,2) precision with 0 tolerance.
  */
 export function deriveInvoicePaymentStatus(
   invoiceAmount: number,

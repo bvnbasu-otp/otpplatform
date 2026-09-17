@@ -208,10 +208,32 @@ describe('verifyPayment controlled progressive settlement (Phase 5C.1)', () => {
     }
   });
 
-  it('RED-H1-01 (API): recordInvoicePayment atomically creates payment & allocation, and rolls back if allocation fails', async () => {
+  it('RED-H2-01 (API): recordInvoicePayment invokes atomic RPC and falls back to atomic application transaction', async () => {
     const { recordInvoicePayment } = await import('./payments');
 
-    // 1. Successful invoice payment
+    // 1. Successful RPC invocation
+    (supabase as any).rpc = vi.fn().mockResolvedValue({
+      data: {
+        ok: true,
+        payment_id: 'pay-atomic-rpc-1',
+        allocation_id: 'alloc-atomic-rpc-1',
+      },
+      error: null,
+    });
+
+    const rpcRes = await recordInvoicePayment('inv-rpc-1', 5000, 'UPI', 'UTR-RPC-1');
+    expect(rpcRes.ok).toBe(true);
+    if (rpcRes.ok) {
+      expect(rpcRes.paymentId).toBe('pay-atomic-rpc-1');
+      expect(rpcRes.allocationId).toBe('alloc-atomic-rpc-1');
+    }
+
+    // 2. Fallback transaction rollback when allocation fails in mock mode
+    (supabase as any).rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: 'function public.record_invoice_payment_atomic does not exist' },
+    });
+
     const mockInvoice = {
       id: 'inv-atomic-1',
       amount: 5000,

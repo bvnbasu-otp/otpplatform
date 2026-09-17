@@ -443,7 +443,7 @@ export class PaymentService {
 
     const paidAmount = calculateInvoicePaidAmount(allocs);
     const balanceDue = calculateInvoiceBalanceDue(invoice.amount, allocs);
-    const isFullyPaid = balanceDue <= 0.01 && invoice.amount > 0;
+    const isFullyPaid = balanceDue === 0 && paidAmount >= invoice.amount && invoice.amount > 0;
     const isPartiallyPaid = paidAmount > 0 && !isFullyPaid;
 
     return ok({
@@ -474,7 +474,7 @@ export class PaymentService {
 
     const allocatedAmount = calculatePaymentAllocatedAmount(allocs);
     const unallocatedAmount = calculatePaymentUnallocatedAmount(payment.amount, allocs);
-    const isFullyAllocated = unallocatedAmount <= 0.01;
+    const isFullyAllocated = unallocatedAmount === 0 && allocatedAmount >= payment.amount;
 
     return ok({
       paymentId,

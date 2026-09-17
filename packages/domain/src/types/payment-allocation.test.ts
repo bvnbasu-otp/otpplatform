@@ -321,4 +321,20 @@ describe('Payment Allocation Pure Calculators (Phase 5C.1)', () => {
       expect(res.errors.some((e) => e.includes('exceed payment amount'))).toBe(true);
     });
   });
+
+  describe('Exact Financial State & Conservation Equations (H2-RED-02/03 & H2-07/08)', () => {
+    it('₹5,000.00 against ₹5,000.00 -> status PAID', () => {
+      expect(deriveInvoicePaymentStatus(5000.0, 5000.0)).toBe('PAID');
+    });
+
+    it('₹4,999.99 against ₹5,000.00 -> status PARTIALLY_PAID (0 tolerance)', () => {
+      expect(deriveInvoicePaymentStatus(5000.0, 4999.99)).toBe('PARTIALLY_PAID');
+    });
+
+    it('₹5,000.01 against ₹5,000.00 -> REJECT (0 tolerance)', () => {
+      const res = validatePaymentAllocation(5000, 5000, [], [], 5000.01);
+      expect(res.valid).toBe(false);
+      expect(res.exceededBy).toBe(0.01);
+    });
+  });
 });
