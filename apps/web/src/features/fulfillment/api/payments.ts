@@ -1575,11 +1575,146 @@ export async function fetchFinancialObservabilitySummaryApi(
         totalUtrCleared: Number(data.total_utr_cleared || 0),
         reconciliationDiscrepancyCount: Number(data.reconciliation_discrepancy_count || 0),
         reconciliationDiscrepancyAmount: Number(data.reconciliation_discrepancy_amount || 0),
+        totalPlatformFeeCalculated: Number(data.total_platform_fee_calculated || 0),
+        totalPlatformFeeSettled: Number(data.total_platform_fee_settled || 0),
+        settlementReconciliationCount: Number(data.settlement_reconciliation_count || 0),
+        settlementMismatchCount: Number(data.settlement_mismatch_count || 0),
+        openExceptionCount: Number(data.open_exception_count || 0),
+        resolvedExceptionCount: Number(data.resolved_exception_count || 0),
         generatedAt: data.generated_at || new Date().toISOString(),
       },
     };
   } catch (err: any) {
     return { ok: false, error: err?.message || 'Failed to fetch financial observability summary' };
+  }
+}
+
+export async function acknowledgePoPlatformFeeRpc(params: {
+  purchaseOrderId: string;
+  policyId?: string;
+}): Promise<{ ok: true; snapshot: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('acknowledge_po_platform_fee_atomic', {
+      p_purchase_order_id: params.purchaseOrderId,
+      p_policy_id: params.policyId || null,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, snapshot: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to acknowledge platform fee' };
+  }
+}
+
+export async function applyPlatformFeeDeductionRpc(params: {
+  organizationId: string;
+  purchaseOrderId: string;
+  invoiceId: string;
+  paymentId?: string;
+  paymentAllocationId?: string;
+  grossAmount?: number;
+}): Promise<{ ok: true; transaction: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('apply_platform_fee_deduction_atomic', {
+      p_organization_id: params.organizationId,
+      p_purchase_order_id: params.purchaseOrderId,
+      p_invoice_id: params.invoiceId,
+      p_payment_id: params.paymentId || null,
+      p_payment_allocation_id: params.paymentAllocationId || null,
+      p_gross_amount: params.grossAmount || null,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, transaction: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to apply platform fee deduction' };
+  }
+}
+
+export async function executeSettlementReconciliationRpc(params: {
+  organizationId: string;
+  invoiceId: string;
+  paymentId?: string;
+  utrNumber?: string;
+  utrAmount?: number;
+}): Promise<{ ok: true; reconciliation: any; exception: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('execute_settlement_reconciliation_atomic', {
+      p_organization_id: params.organizationId,
+      p_invoice_id: params.invoiceId,
+      p_payment_id: params.paymentId || null,
+      p_utr_number: params.utrNumber || null,
+      p_utr_amount: params.utrAmount || null,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, reconciliation: data?.reconciliation, exception: data?.exception_id ? { id: data.exception_id } : null };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to execute settlement reconciliation' };
+  }
+}
+
+export async function resolveSettlementExceptionRpc(params: {
+  exceptionId: string;
+  resolutionNotes: string;
+}): Promise<{ ok: true; result: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('resolve_settlement_exception_atomic', {
+      p_exception_id: params.exceptionId,
+      p_resolution_notes: params.resolutionNotes,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, result: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to resolve settlement exception' };
+  }
+}
+
+export async function fetchPoFeeSnapshotApi(
+  poId: string,
+): Promise<{ ok: true; snapshot: any } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('po_fee_snapshots')
+      .select('*')
+      .eq('purchase_order_id', poId)
+      .maybeSingle();
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, snapshot: data };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch PO fee snapshot' };
+  }
+}
+
+export async function fetchSettlementReconciliationsApi(
+  organizationId: string,
+): Promise<{ ok: true; reconciliations: any[] } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('settlement_reconciliations')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, reconciliations: data || [] };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch settlement reconciliations' };
+  }
+}
+
+export async function fetchSettlementExceptionsApi(
+  organizationId: string,
+): Promise<{ ok: true; exceptions: any[] } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('settlement_exceptions')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, exceptions: data || [] };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Failed to fetch settlement exceptions' };
   }
 }
 

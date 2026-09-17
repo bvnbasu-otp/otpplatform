@@ -4,13 +4,18 @@ import {
   calculateInvoicePaidAmount,
   calculatePaymentAllocatedAmount,
   calculatePaymentUnallocatedAmount,
+  calculatePlatformFee,
   calculatePoSettlementSummary,
   calculateReconciliationSummary,
+  calculateSettlementConservation,
   calculateTds,
   calculateTdsNetPayable,
   calculateVendorSettlementStatement,
+  canResolveSettlementException,
+  canTransitionFeeTransaction,
   canVoidTdsDeduction,
   deriveInvoicePaymentStatus,
+  evaluateSettlementReconciliation,
   exportToTallyPaymentVoucher,
   exportToZohoPaymentReceipt,
   generateFinancialAuditPackCsv,
@@ -34,8 +39,18 @@ import {
   type Form16AGeneratorParams,
   type InvoicePaymentSummary,
   type PaymentAllocationSummary,
+  type PlatformFeePolicy,
+  type PlatformFeeTransaction,
+  type PlatformFeeTransactionStatus,
+  type PoFeeSnapshot,
   type PoSettlementCertificate,
   type PoSettlementSummary,
+  type SettlementDiscrepancyType,
+  type SettlementExceptionRecord,
+  type SettlementExceptionSeverity,
+  type SettlementExceptionStatus,
+  type SettlementReconciliationRecord,
+  type SettlementReconciliationStatus,
   type TdsLawVersion,
   type TdsSection,
   type VendorSettlementStatement,
@@ -49,7 +64,12 @@ import type {
   Invoice,
   Payment,
   PaymentAllocationEntity,
+  PlatformFeePolicyEntity,
+  PlatformFeeTransactionEntity,
+  PoFeeSnapshotEntity,
   PurchaseOrder,
+  SettlementExceptionEntity,
+  SettlementReconciliationEntity,
   TdsDeductionEntity,
 } from '../repositories/entities';
 import type { ActorContext } from '../types/actor-context';
@@ -72,6 +92,7 @@ export interface RecordPaymentOptions {
 
 export class PaymentService {
   private activeReversals = new Set<string>();
+  private activeFeeDeductions = new Map<string, Promise<Result<PlatformFeeTransactionEntity, Error>>>();
 
   constructor(
     private readonly repos: Repositories,
@@ -1764,6 +1785,18 @@ export class PaymentService {
       ? await this.repos.bankReconciliations.findByOrganizationId(orgId)
       : [];
 
+    const feeTxs = this.repos.platformFeeTransactions
+      ? await this.repos.platformFeeTransactions.findByOrganizationId(orgId)
+      : [];
+
+    const settlementRecs = this.repos.settlementReconciliations
+      ? await this.repos.settlementReconciliations.findByOrganizationId(orgId)
+      : [];
+
+    const settlementExcs = this.repos.settlementExceptions
+      ? await this.repos.settlementExceptions.findByOrganizationId(orgId)
+      : [];
+
     const summary = calculateFinancialObservabilitySummary({
       organizationId: orgId,
       purchaseOrders: pos.map((p) => ({ id: p.id, totalAmount: p.totalAmount, status: p.status })),
@@ -1773,25 +1806,28 @@ export class PaymentService {
       tdsDeductions: tdsRecords.map((t) => ({ invoiceId: t.invoiceId, tdsAmount: t.tdsAmount, status: t.status })),
       creditDebitNotes: notes.map((n) => ({ invoiceId: n.invoiceId, noteType: n.noteType, amount: n.amount, status: n.status })),
       bankReconciliations: bankRecs.map((b) => ({ bankClearedAmount: b.bankClearedAmount, amountDifference: b.amountDifference, status: b.status })),
+      platformFeeTransactions: feeTxs.map((f) => ({ grossAmount: f.grossAmount, feeAmount: f.feeAmount, status: f.status })),
+      settlementReconciliations: settlementRecs.map((s) => ({ status: s.status, discrepancyType: s.discrepancyType, varianceAmount: s.varianceAmount })),
+      settlementExceptions: settlementExcs.map((e) => ({ status: e.status, amountInDispute: e.amountInDispute })),
     });
 
     return ok(summary);
   }
 
   /**
-   * Generates comprehensive Financial Audit Pack (JSON / CSV) for tenant compliance export (Phase 5C.4).
+   * Generates comprehensive Financial Audit Pack (JSON / CSV) for tenant compliance export (Phase 5C.4 & 5C.5).
    */
   async generateFinancialAuditPack(
     actor: ActorContext,
     orgId: string,
     format: 'JSON' | 'CSV' = 'JSON',
   ): Promise<Result<string, Error>> {
-    // RED-18: Cross-tenant access protection
+    // RED-18 / RED-22: Cross-tenant access protection
     if (!actor.isPlatformAdmin) {
       const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER']);
       if (!access.ok) {
         return err(
-          new ForbiddenError('Unauthorized: Access denied to generate financial audit pack (RED-18/AUDIT-5C4-UNAUTHORIZED)'),
+          new ForbiddenError('Unauthorized: Access denied to generate financial audit pack (RED-18/AUDIT-5C4-UNAUTHORIZED) (RED-22/AUDIT-5C5-UNAUTHORIZED)'),
         );
       }
     }
@@ -1819,13 +1855,25 @@ export class PaymentService {
       ? await this.repos.bankReconciliations.findByOrganizationId(orgId)
       : [];
 
+    const feeTxs = this.repos.platformFeeTransactions
+      ? await this.repos.platformFeeTransactions.findByOrganizationId(orgId)
+      : [];
+
+    const settlementRecs = this.repos.settlementReconciliations
+      ? await this.repos.settlementReconciliations.findByOrganizationId(orgId)
+      : [];
+
+    const settlementExcs = this.repos.settlementExceptions
+      ? await this.repos.settlementExceptions.findByOrganizationId(orgId)
+      : [];
+
     const pack: FinancialAuditPack = {
       metadata: {
         exportId: `AUDIT-${orgId.slice(0, 8)}-${Date.now()}`,
         organizationId: orgId,
         generatedAt: new Date().toISOString(),
         environment: 'PRODUCTION',
-        schemaVersion: '5C.4',
+        schemaVersion: '5C.5',
       },
       summary: summaryRes.value,
       purchaseOrders: pos.map((p) => ({
@@ -1854,6 +1902,42 @@ export class PaymentService {
         tdsAmount: t.tdsAmount,
         status: t.status,
         pan: t.deducteePan,
+      })),
+      platformFeeTransactions: feeTxs.map((f) => ({
+        id: f.id,
+        purchaseOrderId: f.purchaseOrderId,
+        invoiceId: f.invoiceId,
+        paymentId: f.paymentId,
+        feeRate: f.feeRate,
+        grossAmount: f.grossAmount,
+        feeAmount: f.feeAmount,
+        netSettlementAmount: f.netSettlementAmount,
+        status: f.status,
+        settledAt: f.settledAt,
+      })),
+      settlementReconciliations: settlementRecs.map((s) => ({
+        id: s.id,
+        purchaseOrderId: s.purchaseOrderId,
+        invoiceId: s.invoiceId,
+        invoiceGrossAmount: s.invoiceGrossAmount,
+        paidAllocatedAmount: s.paidAllocatedAmount,
+        platformFeeAmount: s.platformFeeAmount,
+        supplierNetSettlementAmount: s.supplierNetSettlementAmount,
+        utrNumber: s.utrNumber,
+        status: s.status,
+        discrepancyType: s.discrepancyType,
+      })),
+      settlementExceptions: settlementExcs.map((e) => ({
+        id: e.id,
+        reconciliationId: e.reconciliationId,
+        exceptionType: e.exceptionType,
+        severity: e.severity,
+        status: e.status,
+        amountInDispute: e.amountInDispute,
+        reason: e.reason,
+        resolutionNotes: e.resolutionNotes,
+        resolvedBy: e.resolvedBy,
+        resolvedAt: e.resolvedAt,
       })),
       payments: payments.map((p) => ({
         id: p.id,
@@ -1890,5 +1974,451 @@ export class PaymentService {
     );
 
     return ok(output);
+  }
+
+  /**
+   * Applies Platform Fee Deduction against an invoice settlement (Phase 5C.5).
+   */
+  async applyPlatformFeeDeduction(
+    actor: ActorContext,
+    params: {
+      organizationId: string;
+      purchaseOrderId: string;
+      invoiceId?: string | null;
+      paymentId?: string | null;
+      paymentAllocationId?: string | null;
+      grossAmount?: number;
+    },
+  ): Promise<Result<PlatformFeeTransactionEntity, Error>> {
+    const lockKey = `${params.purchaseOrderId}:${params.paymentAllocationId || params.invoiceId || 'direct'}`;
+    if (this.activeFeeDeductions.has(lockKey)) {
+      return this.activeFeeDeductions.get(lockKey)!;
+    }
+
+    const execPromise = this._applyPlatformFeeDeductionInternal(actor, params);
+    this.activeFeeDeductions.set(lockKey, execPromise);
+    try {
+      return await execPromise;
+    } finally {
+      this.activeFeeDeductions.delete(lockKey);
+    }
+  }
+
+  private async _applyPlatformFeeDeductionInternal(
+    actor: ActorContext,
+    params: {
+      organizationId: string;
+      purchaseOrderId: string;
+      invoiceId?: string | null;
+      paymentId?: string | null;
+      paymentAllocationId?: string | null;
+      grossAmount?: number;
+    },
+  ): Promise<Result<PlatformFeeTransactionEntity, Error>> {
+    // 1. Authorization check: Buyer OWNER or MANAGER only (RED-09)
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, params.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    // 2. Validate PO and Cross-tenant isolation (RED-08)
+    const po = await this.repos.purchaseOrders.findById(params.purchaseOrderId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+    if (po.organizationId !== params.organizationId) {
+      return err(new ForbiddenError('Cross-tenant violation: PO does not belong to organization (RED-08)'));
+    }
+
+    // 3. Check PO Fee Snapshot and Supplier Acknowledgement (RED-06)
+    if (!this.repos.poFeeSnapshots) {
+      return err(new Error('PO fee snapshots repository not available'));
+    }
+
+    const snapshot = await this.repos.poFeeSnapshots.findByPurchaseOrderId(params.purchaseOrderId);
+    if (!snapshot || !snapshot.isAcknowledged) {
+      return err(
+        new ValidationError('Cannot apply platform fee: Supplier has not acknowledged the platform fee policy snapshot (RED-06: UNACKNOWLEDGED_FEE_SNAPSHOT)'),
+      );
+    }
+
+    // 4. Validate Invoice status (RED-10)
+    let invoiceAmount = po.totalAmount;
+    if (params.invoiceId) {
+      const invoice = await this.repos.invoices.findById(params.invoiceId);
+      if (!invoice) return err(new NotFoundError('Invoice not found'));
+      if ((invoice.status as string) === 'REJECTED' || (invoice.status as string) === 'CANCELLED') {
+        return err(
+          new ValidationError(`Cannot apply platform fee to ${invoice.status} invoice (RED-10: INVALID_INVOICE_STATUS)`),
+        );
+      }
+      invoiceAmount = invoice.amount;
+    }
+
+    // 5. Validate Payment status (RED-10)
+    if (params.paymentId) {
+      const payment = await this.repos.payments.findById(params.paymentId);
+      if (!payment) return err(new NotFoundError('Payment not found'));
+      if ((payment.status as string) === 'FAILED' || (payment.status as string) === 'REVERSED' || (payment.status as string) === 'VOIDED') {
+        return err(
+          new ValidationError(`Cannot apply platform fee to ${payment.status} payment (RED-10: INVALID_PAYMENT_STATUS)`),
+        );
+      }
+    }
+
+    // 6. Idempotency Guard (RED-01, RED-12)
+    if (!this.repos.platformFeeTransactions) {
+      return err(new Error('Platform fee transactions repository not available'));
+    }
+
+    if (params.paymentAllocationId) {
+      const existingTxs = await this.repos.platformFeeTransactions.findByPurchaseOrderId(params.purchaseOrderId);
+      const duplicate = existingTxs.find(
+        (tx) => tx.paymentAllocationId === params.paymentAllocationId && tx.status !== 'VOIDED' && tx.status !== 'REVERSED',
+      );
+      if (duplicate) {
+        return ok(duplicate);
+      }
+    }
+
+    // 7. Calculate Deterministic Platform Fee using Snapshot Rate (RED-03, RED-04, RED-07, RED-25)
+    const gross = Math.round(Number(params.grossAmount || invoiceAmount) * 100) / 100;
+    if (gross <= 0) {
+      return err(new ValidationError('Gross settlement amount must be greater than zero'));
+    }
+
+    const calc = calculatePlatformFee({ grossAmount: gross, rate: snapshot.rate });
+
+    const now = timestamp();
+    const feeEntity: PlatformFeeTransactionEntity = {
+      id: createId(),
+      organizationId: params.organizationId,
+      supplierId: po.supplierId,
+      purchaseOrderId: po.id,
+      invoiceId: params.invoiceId || null,
+      paymentId: params.paymentId || null,
+      paymentAllocationId: params.paymentAllocationId || null,
+      policyId: snapshot.policyId,
+      policyVersion: snapshot.policyVersion,
+      grossAmount: gross,
+      feeRate: snapshot.rate,
+      feeAmount: calc.feeAmount,
+      netSettlementAmount: calc.netSettlementAmount,
+      status: 'SETTLED',
+      notes: 'Platform fee deduction settled',
+      settledAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const saved = await this.repos.platformFeeTransactions.save(feeEntity);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'PLATFORM_FEE_DEDUCTION_APPLIED',
+      'PLATFORM_FEE_TRANSACTION',
+      saved.id,
+      {
+        purchaseOrderId: po.id,
+        invoiceId: params.invoiceId,
+        grossAmount: gross,
+        feeRate: snapshot.rate,
+        feeAmount: calc.feeAmount,
+        netSettlementAmount: calc.netSettlementAmount,
+      },
+    );
+
+    return ok(saved);
+  }
+
+  /**
+   * Executes authoritative settlement reconciliation & discrepancy detection (Phase 5C.5).
+   */
+  async executeSettlementReconciliation(
+    actor: ActorContext,
+    params: {
+      organizationId: string;
+      invoiceId: string;
+      paymentId?: string | null;
+      utrNumber?: string | null;
+      utrAmount?: number | null;
+    },
+  ): Promise<
+    Result<{ reconciliation: SettlementReconciliationEntity; exception: SettlementExceptionEntity | null }, Error>
+  > {
+    // 1. Authorization check: Buyer OWNER or MANAGER (RED-09)
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, params.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    const invoice = await this.repos.invoices.findById(params.invoiceId);
+    if (!invoice) return err(new NotFoundError('Invoice not found'));
+    if (invoice.organizationId && invoice.organizationId !== params.organizationId) {
+      return err(new ForbiddenError('Cross-tenant violation: Invoice does not belong to organization (RED-08)'));
+    }
+
+    const wo = await this.repos.workOrders.findById(invoice.workOrderId);
+    const poId = invoice.purchaseOrderId || wo?.purchaseOrderId;
+    if (!poId) return err(new ValidationError('Invoice must be linked to a purchase order'));
+
+    const po = await this.repos.purchaseOrders.findById(poId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    if (po.organizationId !== params.organizationId) {
+      return err(new ForbiddenError('Cross-tenant violation: PO does not belong to organization (RED-08)'));
+    }
+
+    // 2. Fetch TDS deductions
+    let tdsTotal = 0;
+    if (this.repos.tdsDeductions) {
+      const tdsList = await this.repos.tdsDeductions.findByInvoiceId(invoice.id);
+      for (const t of tdsList) {
+        if (t.status !== 'VOIDED') tdsTotal += t.tdsAmount;
+      }
+    }
+
+    // 3. Fetch Platform Fees
+    let feeTotal = 0;
+    if (this.repos.platformFeeTransactions) {
+      const feeList = await this.repos.platformFeeTransactions.findByInvoiceId(invoice.id);
+      for (const f of feeList) {
+        if (f.status !== 'VOIDED' && f.status !== 'REVERSED') feeTotal += f.feeAmount;
+      }
+    }
+
+    // 4. Fetch Paid Allocations
+    let paidTotal = 0;
+    if (this.repos.paymentAllocations) {
+      const allocList = await this.repos.paymentAllocations.findByInvoiceId(invoice.id);
+      for (const a of allocList) {
+        if (a.status === 'ALLOCATED') paidTotal += a.allocatedAmount;
+      }
+    }
+
+    // 5. Fetch Credit/Debit Notes
+    let debitTotal = 0;
+    let creditTotal = 0;
+    if (this.repos.creditDebitNotes) {
+      const notes = await this.repos.creditDebitNotes.findByInvoiceId(invoice.id);
+      for (const n of notes) {
+        if (n.status !== 'CANCELLED' && n.status !== 'DRAFT') {
+          if (n.noteType === 'DEBIT_NOTE') debitTotal += n.amount;
+          if (n.noteType === 'CREDIT_NOTE') creditTotal += n.amount;
+        }
+      }
+    }
+
+    // 6. Gather existing UTRs in org for duplicate detection (RED-16)
+    const existingUtrs: string[] = [];
+    if (this.repos.settlementReconciliations) {
+      const allRecs = await this.repos.settlementReconciliations.findByOrganizationId(params.organizationId);
+      for (const r of allRecs) {
+        if (r.utrNumber && r.invoiceId !== invoice.id) existingUtrs.push(r.utrNumber);
+      }
+    }
+
+    // 7. Evaluate Reconciliation Domain Invariants
+    const evalRes = evaluateSettlementReconciliation({
+      invoiceGrossAmount: invoice.amount,
+      debitAdjustments: debitTotal,
+      creditAdjustments: creditTotal,
+      tdsAmount: tdsTotal,
+      platformFeeAmount: feeTotal,
+      paidAllocatedAmount: paidTotal,
+      utrNumber: params.utrNumber,
+      utrClearedAmount: params.utrAmount,
+      existingUtrsInOrg: existingUtrs,
+    });
+
+    const now = timestamp();
+    if (!this.repos.settlementReconciliations) {
+      return err(new Error('Settlement reconciliations repository not available'));
+    }
+
+    const recEntity: SettlementReconciliationEntity = {
+      id: createId(),
+      organizationId: params.organizationId,
+      supplierId: po.supplierId,
+      purchaseOrderId: po.id,
+      invoiceId: invoice.id,
+      paymentId: params.paymentId || null,
+      invoiceGrossAmount: evalRes.invoiceGrossAmount,
+      adjustedGrossAmount: evalRes.adjustedGrossAmount,
+      tdsAmount: evalRes.tdsAmount,
+      platformFeeAmount: evalRes.platformFeeAmount,
+      paidAllocatedAmount: evalRes.paidAllocatedAmount,
+      supplierNetSettlementAmount: evalRes.supplierNetSettlementAmount,
+      utrNumber: params.utrNumber || null,
+      utrClearedAmount: evalRes.utrClearedAmount,
+      varianceAmount: evalRes.varianceAmount,
+      status: evalRes.status,
+      discrepancyType: evalRes.discrepancyType,
+      discrepancyDetails: evalRes.discrepancyDetails,
+      reconciledAt: evalRes.status === 'MATCHED' ? now : null,
+      reconciledBy: actor.profileId || null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const savedRec = await this.repos.settlementReconciliations.save(recEntity);
+
+    let savedExc: SettlementExceptionEntity | null = null;
+    if (evalRes.requiresException && this.repos.settlementExceptions) {
+      const excEntity: SettlementExceptionEntity = {
+        id: createId(),
+        organizationId: params.organizationId,
+        reconciliationId: savedRec.id,
+        purchaseOrderId: po.id,
+        invoiceId: invoice.id,
+        paymentId: params.paymentId || null,
+        exceptionType: evalRes.discrepancyType,
+        severity: evalRes.exceptionSeverity,
+        status: 'OPEN',
+        amountInDispute: evalRes.varianceAmount,
+        reason: evalRes.discrepancyDetails,
+        createdAt: now,
+        updatedAt: now,
+      };
+      savedExc = await this.repos.settlementExceptions.save(excEntity);
+    }
+
+    await auditLog(
+      this.audit,
+      actor,
+      'SETTLEMENT_RECONCILIATION_EXECUTED',
+      'SETTLEMENT_RECONCILIATION',
+      savedRec.id,
+      {
+        invoiceId: invoice.id,
+        status: evalRes.status,
+        discrepancyType: evalRes.discrepancyType,
+        varianceAmount: evalRes.varianceAmount,
+        exceptionId: savedExc?.id || null,
+      },
+    );
+
+    return ok({ reconciliation: savedRec, exception: savedExc });
+  }
+
+  /**
+   * Resolves a financial exception from the queue (Phase 5C.5).
+   */
+  async resolveSettlementException(
+    actor: ActorContext,
+    exceptionId: string,
+    resolutionNotes: string,
+  ): Promise<Result<SettlementExceptionEntity, Error>> {
+    if (!this.repos.settlementExceptions) {
+      return err(new Error('Settlement exceptions repository not available'));
+    }
+
+    const exc = await this.repos.settlementExceptions.findById(exceptionId);
+    if (!exc) return err(new NotFoundError('Settlement exception not found'));
+
+    // RED-21: Only Buyer OWNER or MANAGER can resolve exceptions
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, exc.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) {
+        return err(
+          new ForbiddenError('Unauthorized: Only Buyer OWNER or MANAGER can resolve settlement exceptions (RED-21: UNAUTHORIZED_EXCEPTION_RESOLUTION)'),
+        );
+      }
+    }
+
+    const check = canResolveSettlementException(exc, resolutionNotes);
+    if (!check.allowed) {
+      return err(new ValidationError(check.reason || 'Cannot resolve exception'));
+    }
+
+    const now = timestamp();
+    exc.status = 'RESOLVED';
+    exc.resolutionNotes = resolutionNotes.trim();
+    exc.resolvedBy = actor.profileId || null;
+    exc.resolvedAt = now;
+    exc.updatedAt = now;
+
+    const saved = await this.repos.settlementExceptions.save(exc);
+
+    // Also update corresponding reconciliation record
+    if (this.repos.settlementReconciliations) {
+      const rec = await this.repos.settlementReconciliations.findById(exc.reconciliationId);
+      if (rec) {
+        rec.status = 'RESOLVED';
+        rec.notes = `Exception resolved: ${resolutionNotes.trim()}`;
+        rec.reconciledAt = now;
+        rec.reconciledBy = actor.profileId || null;
+        rec.updatedAt = now;
+        await this.repos.settlementReconciliations.save(rec);
+      }
+    }
+
+    await auditLog(
+      this.audit,
+      actor,
+      'SETTLEMENT_EXCEPTION_RESOLVED',
+      'SETTLEMENT_EXCEPTION',
+      saved.id,
+      {
+        reconciliationId: exc.reconciliationId,
+        resolutionNotes,
+        resolvedBy: actor.profileId,
+      },
+    );
+
+    return ok(saved);
+  }
+
+  /**
+   * Lists settlement reconciliations for an organization.
+   */
+  async getSettlementReconciliations(
+    actor: ActorContext,
+    orgId: string,
+  ): Promise<Result<SettlementReconciliationEntity[], Error>> {
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER', 'BUYER', 'APPROVER', 'COMMITTEE_MEMBER']);
+      if (!access.ok) return access;
+    }
+
+    const list = this.repos.settlementReconciliations
+      ? await this.repos.settlementReconciliations.findByOrganizationId(orgId)
+      : [];
+    return ok(list);
+  }
+
+  /**
+   * Lists settlement exceptions for an organization.
+   */
+  async getSettlementExceptions(
+    actor: ActorContext,
+    orgId: string,
+  ): Promise<Result<SettlementExceptionEntity[], Error>> {
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER', 'BUYER', 'APPROVER', 'COMMITTEE_MEMBER']);
+      if (!access.ok) return access;
+    }
+
+    const list = this.repos.settlementExceptions
+      ? await this.repos.settlementExceptions.findByOrganizationId(orgId)
+      : [];
+    return ok(list);
+  }
+
+  /**
+   * Lists platform fee transactions for an organization.
+   */
+  async getPlatformFeeTransactions(
+    actor: ActorContext,
+    orgId: string,
+  ): Promise<Result<PlatformFeeTransactionEntity[], Error>> {
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER', 'BUYER', 'APPROVER', 'COMMITTEE_MEMBER']);
+      if (!access.ok) return access;
+    }
+
+    const list = this.repos.platformFeeTransactions
+      ? await this.repos.platformFeeTransactions.findByOrganizationId(orgId)
+      : [];
+    return ok(list);
   }
 }

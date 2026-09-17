@@ -234,6 +234,7 @@ export interface InvoiceLineItemEntity {
 
 export interface Invoice {
   id: string;
+  organizationId?: string;
   purchaseOrderId?: string;
   workOrderId: string;
   milestoneId?: string | null;
@@ -415,6 +416,104 @@ export interface BankReconciliationRecordEntity {
   resolutionNotes?: string | null;
   reconciledBy?: string | null;
   reconciledAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformFeePolicyEntity {
+  id: string;
+  policyVersion: number;
+  feeType: 'PERCENTAGE' | 'FLAT' | 'TIERED';
+  rate: number;
+  minFeeAmount?: number | null;
+  maxFeeAmount?: number | null;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  status: 'ACTIVE' | 'SUPERSEDED' | 'DEPRECATED';
+  description?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PoFeeSnapshotEntity {
+  id: string;
+  purchaseOrderId: string;
+  policyId: string;
+  policyVersion: number;
+  feeType: 'PERCENTAGE' | 'FLAT' | 'TIERED';
+  rate: number;
+  estimatedFeeAmount: number;
+  isAcknowledged: boolean;
+  acknowledgedBy?: string | null;
+  acknowledgedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformFeeTransactionEntity {
+  id: string;
+  organizationId: string;
+  supplierId: string;
+  purchaseOrderId: string;
+  invoiceId?: string | null;
+  paymentId?: string | null;
+  paymentAllocationId?: string | null;
+  policyId: string;
+  policyVersion: number;
+  grossAmount: number;
+  feeRate: number;
+  feeAmount: number;
+  netSettlementAmount: number;
+  status: 'CALCULATED' | 'DISCLOSED' | 'ACKNOWLEDGED' | 'APPLIED' | 'SETTLED' | 'VOIDED' | 'REVERSED' | 'DISPUTED';
+  notes?: string | null;
+  settledAt?: string | null;
+  voidedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SettlementReconciliationEntity {
+  id: string;
+  organizationId: string;
+  supplierId: string;
+  purchaseOrderId: string;
+  invoiceId: string;
+  paymentId?: string | null;
+  invoiceGrossAmount: number;
+  adjustedGrossAmount: number;
+  tdsAmount: number;
+  platformFeeAmount: number;
+  paidAllocatedAmount: number;
+  supplierNetSettlementAmount: number;
+  utrNumber?: string | null;
+  utrClearedAmount?: number | null;
+  varianceAmount: number;
+  status: 'UNRECONCILED' | 'MATCHED' | 'PARTIAL' | 'MISMATCH' | 'DISPUTED' | 'RESOLVED';
+  discrepancyType: 'NONE' | 'PAYMENT_AMOUNT_MISMATCH' | 'UTR_AMOUNT_MISMATCH' | 'TDS_MISMATCH' | 'FEE_MISMATCH' | 'ALLOCATION_MISMATCH' | 'DUPLICATE_UTR' | 'MISSING_UTR' | 'EXCESS_ALLOCATION' | 'UNDER_ALLOCATION' | 'UNKNOWN';
+  discrepancyDetails?: string | null;
+  notes?: string | null;
+  reconciledAt?: string | null;
+  reconciledBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SettlementExceptionEntity {
+  id: string;
+  organizationId: string;
+  reconciliationId: string;
+  purchaseOrderId?: string | null;
+  invoiceId?: string | null;
+  paymentId?: string | null;
+  exceptionType: 'NONE' | 'PAYMENT_AMOUNT_MISMATCH' | 'UTR_AMOUNT_MISMATCH' | 'TDS_MISMATCH' | 'FEE_MISMATCH' | 'ALLOCATION_MISMATCH' | 'DUPLICATE_UTR' | 'MISSING_UTR' | 'EXCESS_ALLOCATION' | 'UNDER_ALLOCATION' | 'UNKNOWN';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  status: 'OPEN' | 'INVESTIGATING' | 'RESOLVED';
+  amountInDispute: number;
+  reason: string;
+  resolutionNotes?: string | null;
+  assignedTo?: string | null;
+  resolvedBy?: string | null;
+  resolvedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

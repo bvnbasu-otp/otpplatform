@@ -1,8 +1,8 @@
 /**
- * Tally Prime XML Payment Voucher Generator (Phase 5C.3 & 5C.4)
- * Formats recorded payments, multi-invoice allocations, and statutory TDS withholdings
- * into statutory Tally XML schema with balanced supplier debit, bank credit, TDS credit,
- * bill-by-bill references, and exact paise balancing.
+ * Tally Prime XML Payment Voucher Generator (Phase 5C.3, 5C.4 & 5C.5)
+ * Formats recorded payments, multi-invoice allocations, statutory TDS withholdings,
+ * and OTP platform fees into statutory Tally XML schema with balanced supplier debit,
+ * bank credit, TDS credit, platform fee credit, bill-by-bill references, and exact paise balancing.
  */
 
 export function escapeXml(str: string | null | undefined): string {
@@ -33,6 +33,8 @@ export interface TallyPaymentVoucherParams {
   tdsAmount?: number; // Statutory TDS withheld
   tdsSection?: string; // e.g. "194C", "194Q", "194J"
   tdsLedgerName?: string; // e.g. "TDS Payable - Sec 194C"
+  platformFeeAmount?: number; // Platform fee deducted at settlement
+  platformFeeLedgerName?: string; // e.g. "OTP Platform Fee Deduction" / "Platform Fee Expense"
   currency?: string;
   bankLedgerName?: string; // e.g. "HDFC Bank Account", "Bank Account", "Petty Cash"
   supplierName: string;
@@ -59,6 +61,9 @@ export function exportToTallyPaymentVoucher(
   const tdsLedgerEsc = escapeXml(
     params.tdsLedgerName || `TDS Payable${tdsSection}`,
   );
+  const feeLedgerEsc = escapeXml(
+    params.platformFeeLedgerName || 'OTP Platform Fee Deduction',
+  );
   const poTag = params.poNumber ? ` for PO ${escapeXml(params.poNumber)}` : '';
   const refTag = params.paymentReference
     ? ` (Ref: ${escapeXml(params.paymentReference)})`
@@ -69,12 +74,14 @@ export function exportToTallyPaymentVoucher(
 
   const netPaidAmount = Math.round(Number(params.amount || 0) * 100) / 100;
   const tdsWithheld = Math.round(Number(params.tdsAmount || 0) * 100) / 100;
+  const platformFee = Math.round(Number(params.platformFeeAmount || 0) * 100) / 100;
   const grossSupplierDebit =
-    Math.round((netPaidAmount + tdsWithheld) * 100) / 100;
+    Math.round((netPaidAmount + tdsWithheld + platformFee) * 100) / 100;
 
   const formattedNetPaid = netPaidAmount.toFixed(2);
   const formattedGrossDebit = grossSupplierDebit.toFixed(2);
   const formattedTds = tdsWithheld.toFixed(2);
+  const formattedFee = platformFee.toFixed(2);
 
   // Bill-by-bill allocations for Supplier Ledger (Debit)
   const billAllocationsXml: string[] = [];
@@ -155,6 +162,18 @@ export function exportToTallyPaymentVoucher(
         ]
       : [];
 
+  // Platform Fee Ledger entry XML if Platform Fee is deducted
+  const feeLedgerEntryXml: string[] =
+    platformFee > 0
+      ? [
+          `            <ALLLEDGERENTRIES.LIST>`,
+          `              <LEDGERNAME>${feeLedgerEsc}</LEDGERNAME>`,
+          `              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>`,
+          `              <AMOUNT>${formattedFee}</AMOUNT>`,
+          `            </ALLLEDGERENTRIES.LIST>`,
+        ]
+      : [];
+
   return [
     `<ENVELOPE>`,
     `  <HEADER>`,
@@ -191,6 +210,7 @@ export function exportToTallyPaymentVoucher(
     `              </BANKALLOCATIONS.LIST>`,
     `            </ALLLEDGERENTRIES.LIST>`,
     ...tdsLedgerEntryXml,
+    ...feeLedgerEntryXml,
     `          </VOUCHER>`,
     `        </TALLYMESSAGE>`,
     `      </REQUESTDATA>`,

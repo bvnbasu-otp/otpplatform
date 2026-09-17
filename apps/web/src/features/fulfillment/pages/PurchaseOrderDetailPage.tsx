@@ -910,6 +910,7 @@ export function PurchaseOrderDetailPage({
             role={role}
             onAction={(n) => void handlePoAction(n)}
             disabled={busy}
+            poTotalAmount={order.totalAmount}
           />
         </div>
       </div>

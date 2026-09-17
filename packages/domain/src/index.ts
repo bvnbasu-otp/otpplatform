@@ -31,6 +31,8 @@ export * from './types/vendor-settlement';
 export * from './types/change-order';
 export * from './types/bank-reconciliation';
 export * from './types/financial-observability';
+export * from './types/platform-fee';
+export * from './types/settlement-reconciliation';
 export * from './accounting/tally-xml-exporter';
 export * from './accounting/zoho-json-exporter';
 export * from './accounting/tally-payment-voucher';

@@ -17,6 +17,13 @@ export interface FinancialObservabilitySummary {
   reconciliationDiscrepancyAmount: number;
   openPoCount: number;
   completedPoCount: number;
+  // Phase 5C.5 Extensions
+  totalPlatformFeeCalculated: number;
+  totalPlatformFeeSettled: number;
+  settlementReconciliationCount: number;
+  settlementMismatchCount: number;
+  openExceptionCount: number;
+  resolvedExceptionCount: number;
   generatedAt: string;
 }
 
@@ -64,6 +71,21 @@ export interface ObservabilityCalculationParams {
     bankClearedAmount: number;
     amountDifference: number;
     status: string;
+  }>;
+  // Phase 5C.5 Inputs
+  platformFeeTransactions?: Array<{
+    grossAmount: number;
+    feeAmount: number;
+    status: string;
+  }>;
+  settlementReconciliations?: Array<{
+    status: string;
+    discrepancyType?: string;
+    varianceAmount?: number;
+  }>;
+  settlementExceptions?: Array<{
+    status: string;
+    amountInDispute: number;
   }>;
 }
 
@@ -162,6 +184,44 @@ export function calculateFinancialObservabilitySummary(
     }
   }
 
+  // 9. Phase 5C.5: Platform Fees Metrics
+  let totalPlatformFeeCalculated = 0;
+  let totalPlatformFeeSettled = 0;
+  if (params.platformFeeTransactions) {
+    for (const tx of params.platformFeeTransactions) {
+      if (tx.status !== 'VOIDED' && tx.status !== 'REVERSED') {
+        totalPlatformFeeCalculated += Number(tx.feeAmount || 0);
+        if (tx.status === 'SETTLED') {
+          totalPlatformFeeSettled += Number(tx.feeAmount || 0);
+        }
+      }
+    }
+  }
+
+  // 10. Phase 5C.5: Settlement Reconciliation & Exceptions Metrics
+  let settlementReconciliationCount = 0;
+  let settlementMismatchCount = 0;
+  if (params.settlementReconciliations) {
+    settlementReconciliationCount = params.settlementReconciliations.length;
+    for (const sRec of params.settlementReconciliations) {
+      if (sRec.status === 'MISMATCH' || sRec.status === 'DISPUTED') {
+        settlementMismatchCount++;
+      }
+    }
+  }
+
+  let openExceptionCount = 0;
+  let resolvedExceptionCount = 0;
+  if (params.settlementExceptions) {
+    for (const exc of params.settlementExceptions) {
+      if (exc.status === 'OPEN' || exc.status === 'INVESTIGATING') {
+        openExceptionCount++;
+      } else if (exc.status === 'RESOLVED') {
+        resolvedExceptionCount++;
+      }
+    }
+  }
+
   return {
     organizationId: params.organizationId,
     totalPoAuthorized: Math.round(totalPoAuthorized * 100) / 100,
@@ -179,6 +239,12 @@ export function calculateFinancialObservabilitySummary(
     reconciliationDiscrepancyAmount: Math.round(discrepancyAmount * 100) / 100,
     openPoCount,
     completedPoCount,
+    totalPlatformFeeCalculated: Math.round(totalPlatformFeeCalculated * 100) / 100,
+    totalPlatformFeeSettled: Math.round(totalPlatformFeeSettled * 100) / 100,
+    settlementReconciliationCount,
+    settlementMismatchCount,
+    openExceptionCount,
+    resolvedExceptionCount,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -234,6 +300,51 @@ export interface FinancialAuditPack {
     status: string;
     discrepancyType?: string;
   }>;
+  // Phase 5C.5 Audit Pack Elements
+  platformFeePolicies?: Array<{
+    id: string;
+    policyVersion: number;
+    feeType: string;
+    rate: number;
+    status: string;
+    effectiveFrom?: string;
+  }>;
+  platformFeeTransactions?: Array<{
+    id: string;
+    purchaseOrderId: string;
+    invoiceId?: string | null;
+    paymentId?: string | null;
+    feeRate: number;
+    grossAmount: number;
+    feeAmount: number;
+    netSettlementAmount: number;
+    status: string;
+    settledAt?: string | null;
+  }>;
+  settlementReconciliations?: Array<{
+    id: string;
+    purchaseOrderId: string;
+    invoiceId: string;
+    invoiceGrossAmount: number;
+    paidAllocatedAmount: number;
+    platformFeeAmount: number;
+    supplierNetSettlementAmount: number;
+    utrNumber?: string | null;
+    status: string;
+    discrepancyType: string;
+  }>;
+  settlementExceptions?: Array<{
+    id: string;
+    reconciliationId: string;
+    exceptionType: string;
+    severity: string;
+    status: string;
+    amountInDispute: number;
+    reason: string;
+    resolutionNotes?: string | null;
+    resolvedBy?: string | null;
+    resolvedAt?: string | null;
+  }>;
 }
 
 /**
@@ -268,6 +379,9 @@ export function generateFinancialAuditPackCsv(pack: FinancialAuditPack): string 
   lines.push(`Total Outstanding Obligations,${pack.summary.totalOutstandingObligations},-`);
   lines.push(`Total Unallocated Advances,${pack.summary.totalUnallocatedAdvances},-`);
   lines.push(`Total Bank UTR Cleared,${pack.summary.totalUtrCleared},Discrepancies: ${pack.summary.reconciliationDiscrepancyCount} (₹${pack.summary.reconciliationDiscrepancyAmount})`);
+  lines.push(`Total Platform Fees Calculated,${pack.summary.totalPlatformFeeCalculated || 0},Settled: ₹${pack.summary.totalPlatformFeeSettled || 0}`);
+  lines.push(`Settlement Reconciliations,${pack.summary.settlementReconciliationCount || 0},Mismatches: ${pack.summary.settlementMismatchCount || 0}`);
+  lines.push(`Settlement Exceptions,${pack.summary.openExceptionCount || 0} Open,Resolved: ${pack.summary.resolvedExceptionCount || 0}`);
   lines.push('');
 
   // Purchase Orders
@@ -299,6 +413,42 @@ export function generateFinancialAuditPackCsv(pack: FinancialAuditPack): string 
     );
   }
   lines.push('');
+
+  // Platform Fee Transactions (Phase 5C.5)
+  if (pack.platformFeeTransactions && pack.platformFeeTransactions.length > 0) {
+    lines.push('--- OTP PLATFORM FEE TRANSACTIONS ---');
+    lines.push('Transaction ID,PO ID,Invoice ID,Fee Rate (%),Gross Amount,Fee Amount,Net Settlement Amount,Status,Settled At');
+    for (const fee of pack.platformFeeTransactions) {
+      lines.push(
+        `"${fee.id}","${fee.purchaseOrderId}","${fee.invoiceId || ''}",${fee.feeRate},${fee.grossAmount},${fee.feeAmount},${fee.netSettlementAmount},"${fee.status}","${fee.settledAt || ''}"`,
+      );
+    }
+    lines.push('');
+  }
+
+  // Settlement Reconciliations (Phase 5C.5)
+  if (pack.settlementReconciliations && pack.settlementReconciliations.length > 0) {
+    lines.push('--- SETTLEMENT RECONCILIATIONS ---');
+    lines.push('Reconciliation ID,PO ID,Invoice ID,Gross Amount,Paid Amount,Platform Fee,Supplier Net Settlement,UTR Number,Status,Discrepancy Type');
+    for (const rec of pack.settlementReconciliations) {
+      lines.push(
+        `"${rec.id}","${rec.purchaseOrderId}","${rec.invoiceId}",${rec.invoiceGrossAmount},${rec.paidAllocatedAmount},${rec.platformFeeAmount},${rec.supplierNetSettlementAmount},"${rec.utrNumber || ''}","${rec.status}","${rec.discrepancyType}"`,
+      );
+    }
+    lines.push('');
+  }
+
+  // Settlement Exceptions (Phase 5C.5)
+  if (pack.settlementExceptions && pack.settlementExceptions.length > 0) {
+    lines.push('--- FINANCIAL EXCEPTION QUEUE ---');
+    lines.push('Exception ID,Reconciliation ID,Exception Type,Severity,Status,Disputed Amount,Reason,Resolution Notes,Resolved By,Resolved At');
+    for (const exc of pack.settlementExceptions) {
+      lines.push(
+        `"${exc.id}","${exc.reconciliationId}","${exc.exceptionType}","${exc.severity}","${exc.status}",${exc.amountInDispute},"${(exc.reason || '').replace(/"/g, '""')}","${(exc.resolutionNotes || '').replace(/"/g, '""')}","${exc.resolvedBy || ''}","${exc.resolvedAt || ''}"`,
+      );
+    }
+    lines.push('');
+  }
 
   // Payments
   lines.push('--- PAYMENTS & ADVANCES ---');

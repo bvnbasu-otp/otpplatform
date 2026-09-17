@@ -6,8 +6,8 @@ import {
   type FinancialAuditPack,
 } from './financial-observability';
 
-describe('Phase 5C.4 — Financial Observability & Audit Pack Engine', () => {
-  it('calculates comprehensive financial metrics with mathematical consistency', () => {
+describe('Phase 5C.5 — Financial Observability & Audit Pack Engine', () => {
+  it('calculates comprehensive financial metrics with mathematical consistency including fees and settlement reconciliations', () => {
     const summary = calculateFinancialObservabilitySummary({
       organizationId: 'org-enterprise-1',
       purchaseOrders: [
@@ -38,6 +38,19 @@ describe('Phase 5C.4 — Financial Observability & Audit Pack Engine', () => {
         { bankClearedAmount: 60000, amountDifference: 0, status: 'MATCHED' },
         { bankClearedAmount: 45000, amountDifference: 5000, status: 'DISCREPANCY' },
       ],
+      platformFeeTransactions: [
+        { grossAmount: 100000, feeAmount: 500, status: 'SETTLED' },
+        { grossAmount: 50000, feeAmount: 250, status: 'ACKNOWLEDGED' },
+        { grossAmount: 30000, feeAmount: 150, status: 'VOIDED' }, // Voided ignored
+      ],
+      settlementReconciliations: [
+        { status: 'MATCHED', discrepancyType: 'NONE', varianceAmount: 0 },
+        { status: 'MISMATCH', discrepancyType: 'UTR_AMOUNT_MISMATCH', varianceAmount: 500 },
+      ],
+      settlementExceptions: [
+        { status: 'OPEN', amountInDispute: 500 },
+        { status: 'RESOLVED', amountInDispute: 1000 },
+      ],
     });
 
     expect(summary.totalPoAuthorized).toBe(200000);
@@ -54,16 +67,24 @@ describe('Phase 5C.4 — Financial Observability & Audit Pack Engine', () => {
     expect(summary.reconciliationDiscrepancyAmount).toBe(5000);
     expect(summary.openPoCount).toBe(1);
     expect(summary.completedPoCount).toBe(1);
+
+    // Phase 5C.5 metrics
+    expect(summary.totalPlatformFeeCalculated).toBe(750); // 500 + 250 (ignoring voided)
+    expect(summary.totalPlatformFeeSettled).toBe(500);
+    expect(summary.settlementReconciliationCount).toBe(2);
+    expect(summary.settlementMismatchCount).toBe(1);
+    expect(summary.openExceptionCount).toBe(1);
+    expect(summary.resolvedExceptionCount).toBe(1);
   });
 
-  it('generates structured JSON and CSV audit pack deliverables', () => {
+  it('generates structured JSON and CSV audit pack deliverables with Phase 5C.5 sections', () => {
     const pack: FinancialAuditPack = {
       metadata: {
         exportId: 'AUDIT-20260917-001',
         organizationId: 'org-enterprise-1',
         generatedAt: '2026-09-17T15:00:00Z',
         environment: 'PRODUCTION',
-        schemaVersion: '5C.4',
+        schemaVersion: '5C.5',
       },
       summary: {
         organizationId: 'org-enterprise-1',
@@ -81,6 +102,12 @@ describe('Phase 5C.4 — Financial Observability & Audit Pack Engine', () => {
         reconciliationDiscrepancyAmount: 5000,
         openPoCount: 1,
         completedPoCount: 1,
+        totalPlatformFeeCalculated: 750,
+        totalPlatformFeeSettled: 500,
+        settlementReconciliationCount: 2,
+        settlementMismatchCount: 1,
+        openExceptionCount: 1,
+        resolvedExceptionCount: 1,
         generatedAt: '2026-09-17T15:00:00Z',
       },
       purchaseOrders: [
@@ -91,6 +118,15 @@ describe('Phase 5C.4 — Financial Observability & Audit Pack Engine', () => {
       ],
       tdsDeductions: [
         { id: 'tds-1', invoiceId: 'inv-1', section: '194C', taxableAmount: 100000, tdsRate: 2, tdsAmount: 2000, status: 'DEDUCTED', pan: 'AABCS1429B' },
+      ],
+      platformFeeTransactions: [
+        { id: 'fee-1', purchaseOrderId: 'po-1', invoiceId: 'inv-1', feeRate: 0.5, grossAmount: 100000, feeAmount: 500, netSettlementAmount: 99500, status: 'SETTLED' },
+      ],
+      settlementReconciliations: [
+        { id: 'rec-5c5-1', purchaseOrderId: 'po-1', invoiceId: 'inv-1', invoiceGrossAmount: 100000, paidAllocatedAmount: 97500, platformFeeAmount: 500, supplierNetSettlementAmount: 97500, utrNumber: 'HDFC99881122', status: 'MATCHED', discrepancyType: 'NONE' },
+      ],
+      settlementExceptions: [
+        { id: 'exc-5c5-1', reconciliationId: 'rec-5c5-1', exceptionType: 'NONE', severity: 'LOW', status: 'RESOLVED', amountInDispute: 0, reason: 'Reconciliation verified', resolutionNotes: 'Matched against bank record', resolvedBy: 'mgr-1' },
       ],
       payments: [
         { id: 'p1', amount: 60000, unallocatedAmount: 20000, reference: 'HDFC99881122', method: 'BANK_TRANSFER' },
@@ -103,10 +139,15 @@ describe('Phase 5C.4 — Financial Observability & Audit Pack Engine', () => {
     const json = generateFinancialAuditPackJson(pack);
     expect(json).toContain('AUDIT-20260917-001');
     expect(json).toContain('org-enterprise-1');
+    expect(json).toContain('fee-1');
 
     const csv = generateFinancialAuditPackCsv(pack);
     expect(csv).toContain('OTP CANONICAL FINANCIAL AUDIT PACK');
     expect(csv).toContain('Total Statutory TDS Withheld,3000');
+    expect(csv).toContain('Total Platform Fees Calculated,750');
+    expect(csv).toContain('--- OTP PLATFORM FEE TRANSACTIONS ---');
+    expect(csv).toContain('--- SETTLEMENT RECONCILIATIONS ---');
+    expect(csv).toContain('--- FINANCIAL EXCEPTION QUEUE ---');
     expect(csv).toContain('PO-1001');
     expect(csv).toContain('INV-2026-001');
     expect(csv).toContain('HDFC99881122');

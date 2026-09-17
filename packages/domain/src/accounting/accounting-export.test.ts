@@ -321,5 +321,61 @@ describe('Phase 5C.3 Dual-Rail ERP Payment Voucher Exporters', () => {
       expect(payload.tds_tax_account).toBe('TDS Payable');
       expect(payload.description).toContain('TDS Withheld: ₹2000.00');
     });
+
+    it('generates Tally XML with platform fee and TDS maintaining exact debit and credit balance (Phase 5C.5)', () => {
+      const voucherParams: TallyPaymentVoucherParams = {
+        voucherNumber: 'PAY-5C5-001',
+        paymentDate: '2026-09-17',
+        paymentReference: 'UTR-HDFC-995511',
+        paymentMethod: 'NEFT',
+        amount: 292500, // Net paid through bank
+        tdsAmount: 6000, // 2% TDS on ₹3,00,000
+        tdsSection: '194C',
+        platformFeeAmount: 1500, // 0.5% Platform Fee
+        supplierName: 'Apex Precision Engineering Ltd',
+        bankLedgerName: 'HDFC Current A/c',
+        allocations: [{ invoiceNumber: 'INV-2026-5C5', allocatedAmount: 292500 }],
+      };
+
+      const xml = exportToTallyPaymentVoucher(voucherParams);
+
+      // Supplier debited with Gross amount (292500 + 6000 + 1500 = 300000.00)
+      expect(xml).toContain('<PARTYNAME>Apex Precision Engineering Ltd</PARTYNAME>');
+      expect(xml).toContain('<AMOUNT>-300000.00</AMOUNT>');
+      expect(xml).toContain('<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>');
+
+      // Bank credited with Net amount (292500.00)
+      expect(xml).toContain('<LEDGERNAME>HDFC Current A/c</LEDGERNAME>');
+      expect(xml).toContain('<AMOUNT>292500.00</AMOUNT>');
+
+      // TDS credited with TDS amount (6000.00)
+      expect(xml).toContain('<LEDGERNAME>TDS Payable Sec 194C</LEDGERNAME>');
+      expect(xml).toContain('<AMOUNT>6000.00</AMOUNT>');
+
+      // Platform Fee credited with Fee amount (1500.00)
+      expect(xml).toContain('<LEDGERNAME>OTP Platform Fee Deduction</LEDGERNAME>');
+      expect(xml).toContain('<AMOUNT>1500.00</AMOUNT>');
+      expect(xml).toContain('<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>');
+    });
+
+    it('includes platform fee in Zoho Books payment receipt payload (Phase 5C.5)', () => {
+      const params: ZohoPaymentReceiptParams = {
+        paymentDate: '2026-09-17',
+        paymentReference: 'UTR-AXIS-883311',
+        amount: 292500,
+        tdsAmount: 6000,
+        tdsSection: '194C',
+        platformFeeAmount: 1500,
+        supplierName: 'Apex Precision Engineering Ltd',
+        allocations: [{ invoiceNumber: 'INV-2026-5C5', allocatedAmount: 292500 }],
+      };
+
+      const payload = exportToZohoPaymentReceipt(params);
+      expect(payload.amount).toBe(292500);
+      expect(payload.tds_amount).toBe(6000);
+      expect(payload.platform_fee_amount).toBe(1500);
+      expect(payload.platform_fee_account).toBe('OTP Platform Fee Deduction');
+      expect(payload.description).toContain('Platform Fee: ₹1500.00');
+    });
   });
 });

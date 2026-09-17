@@ -10,8 +10,11 @@ import type {
   InvoiceLineItemEntity,
   Payment,
   PaymentAllocationEntity,
+  PlatformFeePolicyEntity,
+  PlatformFeeTransactionEntity,
   PoChangeOrderEntity,
   PoChangeOrderItemEntity,
+  PoFeeSnapshotEntity,
   ProcurementPerformanceRecord,
   PurchaseOrder,
   PurchaseOrderLineItemEntity,
@@ -20,6 +23,8 @@ import type {
   Requirement,
   Rfq,
   RfqInvitation,
+  SettlementExceptionEntity,
+  SettlementReconciliationEntity,
   Supplier,
   TdsDeductionEntity,
   WorkOrder,
@@ -60,11 +65,32 @@ export class InMemoryRepositories {
   poChangeOrders = new Map<string, PoChangeOrderEntity>();
   poChangeOrderItems = new Map<string, PoChangeOrderItemEntity>();
   bankReconciliations = new Map<string, BankReconciliationRecordEntity>();
+  platformFeePolicies = new Map<string, PlatformFeePolicyEntity>();
+  poFeeSnapshots = new Map<string, PoFeeSnapshotEntity>();
+  platformFeeTransactions = new Map<string, PlatformFeeTransactionEntity>();
+  settlementReconciliations = new Map<string, SettlementReconciliationEntity>();
+  settlementExceptions = new Map<string, SettlementExceptionEntity>();
   suppliers = new Map<string, Supplier>();
   performance = new Map<string, ProcurementPerformanceRecord>();
 
   static create(): InMemoryRepositories {
-    return new InMemoryRepositories();
+    const mem = new InMemoryRepositories();
+    // Seed default commercial platform fee policy version 1 (0.50% rate)
+    mem.platformFeePolicies.set('pol-default-v1', {
+      id: 'pol-default-v1',
+      policyVersion: 1,
+      feeType: 'PERCENTAGE',
+      rate: 0.50,
+      minFeeAmount: null,
+      maxFeeAmount: null,
+      effectiveFrom: new Date(2026, 0, 1).toISOString(),
+      effectiveTo: null,
+      status: 'ACTIVE',
+      description: 'Standard OTP Platform Fee at Settlement (0.50%)',
+      createdAt: new Date(2026, 0, 1).toISOString(),
+      updatedAt: new Date(2026, 0, 1).toISOString(),
+    });
+    return mem;
   }
 
   get poLineItemsRepo(): Repositories['poLineItems'] {
@@ -444,6 +470,86 @@ export class InMemoryRepositories {
     };
   }
 
+  get platformFeePoliciesRepo(): Repositories['platformFeePolicies'] {
+    const store = this.platformFeePolicies;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findActivePolicy: async () =>
+        [...store.values()]
+          .filter((p) => p.status === 'ACTIVE')
+          .sort((a, b) => b.policyVersion - a.policyVersion)[0] ?? null,
+      findAll: async () => [...store.values()],
+      save: async (policy) => {
+        store.set(policy.id, policy);
+        return policy;
+      },
+    };
+  }
+
+  get poFeeSnapshotsRepo(): Repositories['poFeeSnapshots'] {
+    const store = this.poFeeSnapshots;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].find((s) => s.purchaseOrderId === poId) ?? null,
+      save: async (snapshot) => {
+        store.set(snapshot.id, snapshot);
+        return snapshot;
+      },
+    };
+  }
+
+  get platformFeeTransactionsRepo(): Repositories['platformFeeTransactions'] {
+    const store = this.platformFeeTransactions;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((tx) => tx.purchaseOrderId === poId),
+      findByInvoiceId: async (invoiceId) =>
+        [...store.values()].filter((tx) => tx.invoiceId === invoiceId),
+      findByPaymentId: async (paymentId) =>
+        [...store.values()].filter((tx) => tx.paymentId === paymentId),
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((tx) => tx.organizationId === orgId),
+      save: async (tx) => {
+        store.set(tx.id, tx);
+        return tx;
+      },
+    };
+  }
+
+  get settlementReconciliationsRepo(): Repositories['settlementReconciliations'] {
+    const store = this.settlementReconciliations;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByInvoiceId: async (invoiceId) =>
+        [...store.values()].find((rec) => rec.invoiceId === invoiceId) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((rec) => rec.organizationId === orgId),
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((rec) => rec.purchaseOrderId === poId),
+      save: async (rec) => {
+        store.set(rec.id, rec);
+        return rec;
+      },
+    };
+  }
+
+  get settlementExceptionsRepo(): Repositories['settlementExceptions'] {
+    const store = this.settlementExceptions;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByReconciliationId: async (recId) =>
+        [...store.values()].filter((exc) => exc.reconciliationId === recId),
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((exc) => exc.organizationId === orgId),
+      save: async (exc) => {
+        store.set(exc.id, exc);
+        return exc;
+      },
+    };
+  }
+
   get suppliersRepo(): Repositories['suppliers'] {
     const store = this.suppliers;
     return {
@@ -490,6 +596,11 @@ export class InMemoryRepositories {
       poChangeOrders: this.poChangeOrdersRepo,
       poChangeOrderItems: this.poChangeOrderItemsRepo,
       bankReconciliations: this.bankReconciliationsRepo,
+      platformFeePolicies: this.platformFeePoliciesRepo,
+      poFeeSnapshots: this.poFeeSnapshotsRepo,
+      platformFeeTransactions: this.platformFeeTransactionsRepo,
+      settlementReconciliations: this.settlementReconciliationsRepo,
+      settlementExceptions: this.settlementExceptionsRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

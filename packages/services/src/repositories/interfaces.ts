@@ -9,8 +9,11 @@ import type {
   InvoiceLineItemEntity,
   Payment,
   PaymentAllocationEntity,
+  PlatformFeePolicyEntity,
+  PlatformFeeTransactionEntity,
   PoChangeOrderEntity,
   PoChangeOrderItemEntity,
+  PoFeeSnapshotEntity,
   ProcurementPerformanceRecord,
   PurchaseOrder,
   PurchaseOrderLineItemEntity,
@@ -19,6 +22,8 @@ import type {
   Requirement,
   Rfq,
   RfqInvitation,
+  SettlementExceptionEntity,
+  SettlementReconciliationEntity,
   Supplier,
   TdsDeductionEntity,
   WorkOrder,
@@ -185,6 +190,43 @@ export interface BankReconciliationRepository {
   saveMany?(records: BankReconciliationRecordEntity[]): Promise<BankReconciliationRecordEntity[]>;
 }
 
+export interface PlatformFeePolicyRepository {
+  findById(id: string): Promise<PlatformFeePolicyEntity | null>;
+  findActivePolicy(): Promise<PlatformFeePolicyEntity | null>;
+  findAll(): Promise<PlatformFeePolicyEntity[]>;
+  save(policy: PlatformFeePolicyEntity): Promise<PlatformFeePolicyEntity>;
+}
+
+export interface PoFeeSnapshotRepository {
+  findById(id: string): Promise<PoFeeSnapshotEntity | null>;
+  findByPurchaseOrderId(poId: string): Promise<PoFeeSnapshotEntity | null>;
+  save(snapshot: PoFeeSnapshotEntity): Promise<PoFeeSnapshotEntity>;
+}
+
+export interface PlatformFeeTransactionRepository {
+  findById(id: string): Promise<PlatformFeeTransactionEntity | null>;
+  findByPurchaseOrderId(poId: string): Promise<PlatformFeeTransactionEntity[]>;
+  findByInvoiceId(invoiceId: string): Promise<PlatformFeeTransactionEntity[]>;
+  findByPaymentId(paymentId: string): Promise<PlatformFeeTransactionEntity[]>;
+  findByOrganizationId(orgId: string): Promise<PlatformFeeTransactionEntity[]>;
+  save(tx: PlatformFeeTransactionEntity): Promise<PlatformFeeTransactionEntity>;
+}
+
+export interface SettlementReconciliationRepository {
+  findById(id: string): Promise<SettlementReconciliationEntity | null>;
+  findByInvoiceId(invoiceId: string): Promise<SettlementReconciliationEntity | null>;
+  findByOrganizationId(orgId: string): Promise<SettlementReconciliationEntity[]>;
+  findByPurchaseOrderId(poId: string): Promise<SettlementReconciliationEntity[]>;
+  save(rec: SettlementReconciliationEntity): Promise<SettlementReconciliationEntity>;
+}
+
+export interface SettlementExceptionRepository {
+  findById(id: string): Promise<SettlementExceptionEntity | null>;
+  findByReconciliationId(recId: string): Promise<SettlementExceptionEntity[]>;
+  findByOrganizationId(orgId: string): Promise<SettlementExceptionEntity[]>;
+  save(exc: SettlementExceptionEntity): Promise<SettlementExceptionEntity>;
+}
+
 export interface Repositories {
   requirements: RequirementRepository;
   rfqs: RfqRepository;
@@ -208,6 +250,11 @@ export interface Repositories {
   poChangeOrders?: PoChangeOrderRepository;
   poChangeOrderItems?: PoChangeOrderItemRepository;
   bankReconciliations?: BankReconciliationRepository;
+  platformFeePolicies?: PlatformFeePolicyRepository;
+  poFeeSnapshots?: PoFeeSnapshotRepository;
+  platformFeeTransactions?: PlatformFeeTransactionRepository;
+  settlementReconciliations?: SettlementReconciliationRepository;
+  settlementExceptions?: SettlementExceptionRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

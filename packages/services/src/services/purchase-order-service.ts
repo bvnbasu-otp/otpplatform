@@ -3,6 +3,7 @@ import {
   calculateAuthorizedPoCommitment,
   calculateChangeOrderTotals,
   calculateOrderTaxBreakdown,
+  calculatePlatformFee,
   calculatePoSettlementSummary,
   canTransitionChangeOrder,
   canTransitionPurchaseOrder,
@@ -16,8 +17,10 @@ import {
 import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
 import type {
+  PlatformFeePolicyEntity,
   PoChangeOrderEntity,
   PoChangeOrderItemEntity,
+  PoFeeSnapshotEntity,
   PurchaseOrder,
 } from '../repositories/entities';
 import type { ActorContext } from '../types/actor-context';
@@ -273,6 +276,42 @@ export class PurchaseOrderService {
     };
 
     const saved = await this.repos.purchaseOrders.save(updated);
+
+    // Phase 5C.5: Automatically snapshot platform fee policy on PO acceptance if not already snapshotted
+    if (toStatus === 'ACCEPTED' && this.repos.poFeeSnapshots) {
+      const existingSnap = await this.repos.poFeeSnapshots.findByPurchaseOrderId(saved.id);
+      if (!existingSnap) {
+        const activePolicy = this.repos.platformFeePolicies
+          ? await this.repos.platformFeePolicies.findActivePolicy()
+          : null;
+        const rate = activePolicy?.rate ?? 0.50;
+        const policyId = activePolicy?.id ?? 'pol-default-v1';
+        const policyVer = activePolicy?.policyVersion ?? 1;
+        const feeCalc = calculatePlatformFee({ grossAmount: saved.totalAmount, rate });
+
+        await this.repos.poFeeSnapshots.save({
+          id: createId(),
+          purchaseOrderId: saved.id,
+          policyId,
+          policyVersion: policyVer,
+          feeType: 'PERCENTAGE',
+          rate,
+          estimatedFeeAmount: feeCalc.feeAmount,
+          isAcknowledged: true,
+          acknowledgedBy: actor.profileId || null,
+          acknowledgedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        });
+      } else if (!existingSnap.isAcknowledged) {
+        existingSnap.isAcknowledged = true;
+        existingSnap.acknowledgedBy = actor.profileId || null;
+        existingSnap.acknowledgedAt = now;
+        existingSnap.updatedAt = now;
+        await this.repos.poFeeSnapshots.save(existingSnap);
+      }
+    }
+
     await auditLog(
       this.audit,
       actor,
@@ -655,5 +694,181 @@ export class PurchaseOrderService {
       : [];
 
     return ok(cos);
+  }
+
+  /**
+   * Supplier acknowledges platform fee snapshot on PO acceptance (Phase 5C.5).
+   */
+  async acknowledgePoPlatformFee(
+    actor: ActorContext,
+    poId: string,
+    policyId?: string,
+  ): Promise<Result<PoFeeSnapshotEntity, Error>> {
+    const po = await this.repos.purchaseOrders.findById(poId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    if (!actor.isPlatformAdmin) {
+      const supAccess = requireSupplierAccess(actor, po.supplierId);
+      if (!supAccess.ok) return supAccess;
+    }
+
+    if (po.status !== 'ISSUED' && po.status !== 'ACCEPTED') {
+      return err(
+        new ValidationError(`Cannot acknowledge fee for PO in status ${po.status}`),
+      );
+    }
+
+    if (!this.repos.poFeeSnapshots) {
+      return err(new Error('PO fee snapshots repository not available'));
+    }
+
+    const existingSnap = await this.repos.poFeeSnapshots.findByPurchaseOrderId(poId);
+    if (existingSnap && existingSnap.isAcknowledged) {
+      return ok(existingSnap);
+    }
+
+    let policy: PlatformFeePolicyEntity | null = null;
+    if (policyId && this.repos.platformFeePolicies) {
+      policy = await this.repos.platformFeePolicies.findById(policyId);
+    } else if (this.repos.platformFeePolicies) {
+      policy = await this.repos.platformFeePolicies.findActivePolicy();
+    }
+
+    const rate = policy?.rate ?? 0.50;
+    const resolvedPolicyId = policy?.id ?? 'pol-default-v1';
+    const policyVersion = policy?.policyVersion ?? 1;
+    const feeType = policy?.feeType ?? 'PERCENTAGE';
+    const feeCalc = calculatePlatformFee({ grossAmount: po.totalAmount, rate });
+
+    const now = timestamp();
+    const snapshot: PoFeeSnapshotEntity = {
+      id: existingSnap?.id || createId(),
+      purchaseOrderId: po.id,
+      policyId: resolvedPolicyId,
+      policyVersion,
+      feeType,
+      rate,
+      estimatedFeeAmount: feeCalc.feeAmount,
+      isAcknowledged: true,
+      acknowledgedBy: actor.profileId || null,
+      acknowledgedAt: now,
+      createdAt: existingSnap?.createdAt || now,
+      updatedAt: now,
+    };
+
+    const saved = await this.repos.poFeeSnapshots.save(snapshot);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'PO_PLATFORM_FEE_ACKNOWLEDGED',
+      'PO_FEE_SNAPSHOT',
+      saved.id,
+      {
+        purchaseOrderId: po.id,
+        rate,
+        policyVersion,
+        estimatedFeeAmount: feeCalc.feeAmount,
+      },
+    );
+
+    return ok(saved);
+  }
+
+  /**
+   * Retrieves PO Platform Fee Snapshot.
+   */
+  async getPoFeeSnapshot(
+    actor: ActorContext,
+    poId: string,
+  ): Promise<Result<PoFeeSnapshotEntity | null, Error>> {
+    const po = await this.repos.purchaseOrders.findById(poId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    if (!actor.isPlatformAdmin) {
+      const isBuyer = actor.organizationId === po.organizationId;
+      const isSupplier = actor.supplierIds?.includes(po.supplierId);
+      if (!isBuyer && !isSupplier) {
+        return err(new ForbiddenError('Unauthorized: Access denied to PO fee snapshot'));
+      }
+    }
+
+    if (!this.repos.poFeeSnapshots) {
+      return ok(null);
+    }
+
+    const snapshot = await this.repos.poFeeSnapshots.findByPurchaseOrderId(poId);
+    return ok(snapshot);
+  }
+
+  /**
+   * Creates or updates a global Platform Fee Policy (Platform Admin only).
+   */
+  async createPlatformFeePolicy(
+    actor: ActorContext,
+    params: {
+      rate: number;
+      feeType?: 'PERCENTAGE' | 'FLAT' | 'TIERED';
+      minFeeAmount?: number | null;
+      maxFeeAmount?: number | null;
+      description?: string | null;
+    },
+  ): Promise<Result<PlatformFeePolicyEntity, Error>> {
+    if (!actor.isPlatformAdmin) {
+      return err(new ForbiddenError('Unauthorized: Only Platform Admin can manage fee policies'));
+    }
+
+    if (params.rate < 0 || params.rate > 100) {
+      return err(new ValidationError('Platform fee rate must be between 0% and 100%'));
+    }
+
+    if (!this.repos.platformFeePolicies) {
+      return err(new Error('Platform fee policy repository not available'));
+    }
+
+    const all = await this.repos.platformFeePolicies.findAll();
+    const maxVer = all.reduce((max, p) => Math.max(max, p.policyVersion), 0);
+    const newVersion = maxVer + 1;
+
+    const now = timestamp();
+    // Supersede older active policies
+    for (const p of all) {
+      if (p.status === 'ACTIVE') {
+        p.status = 'SUPERSEDED';
+        p.effectiveTo = now;
+        p.updatedAt = now;
+        await this.repos.platformFeePolicies.save(p);
+      }
+    }
+
+    const newPolicy: PlatformFeePolicyEntity = {
+      id: createId(),
+      policyVersion: newVersion,
+      feeType: params.feeType || 'PERCENTAGE',
+      rate: params.rate,
+      minFeeAmount: params.minFeeAmount ?? null,
+      maxFeeAmount: params.maxFeeAmount ?? null,
+      effectiveFrom: now,
+      effectiveTo: null,
+      status: 'ACTIVE',
+      description: params.description ?? `Platform fee policy version ${newVersion}`,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const saved = await this.repos.platformFeePolicies.save(newPolicy);
+    await auditLog(
+      this.audit,
+      actor,
+      'PLATFORM_FEE_POLICY_CREATED',
+      'PLATFORM_FEE_POLICY',
+      saved.id,
+      {
+        policyVersion: newVersion,
+        rate: params.rate,
+      },
+    );
+
+    return ok(saved);
   }
 }

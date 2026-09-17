@@ -1,7 +1,7 @@
 /**
- * Zoho Books Payment Receipt / Vendor Payment Export Generator (Phase 5C.3 & 5C.4)
- * Formats recorded payments, UTRs, invoice allocations, and statutory TDS withholdings
- * into Zoho Books JSON payload.
+ * Zoho Books Payment Receipt / Vendor Payment Export Generator (Phase 5C.3, 5C.4 & 5C.5)
+ * Formats recorded payments, UTRs, invoice allocations, statutory TDS withholdings,
+ * and OTP platform fees into Zoho Books JSON payload.
  */
 
 export interface ZohoPaymentAllocationItem {
@@ -23,6 +23,8 @@ export interface ZohoPaymentReceiptParams {
   tdsAmount?: number; // Statutory TDS withheld
   tdsSection?: string; // e.g. "194C"
   tdsTaxAccountName?: string; // e.g. "TDS Payable"
+  platformFeeAmount?: number; // Platform fee deducted
+  platformFeeAccountName?: string; // e.g. "OTP Platform Fee Expense" / "Platform Fee Deduction"
   currency?: string;
   bankAccountName?: string; // e.g. "Petty Cash", "HDFC Bank", "Undeposited Funds"
   supplierName: string;
@@ -52,6 +54,8 @@ export interface ZohoPaymentReceiptPayload {
   tds_amount?: number;
   tds_section?: string;
   tds_tax_account?: string;
+  platform_fee_amount?: number;
+  platform_fee_account?: string;
   bills: ZohoPaymentBillAllocation[];
   excess_amount: number;
   description: string;
@@ -64,6 +68,10 @@ export function exportToZohoPaymentReceipt(
   const tdsAmount = params.tdsAmount
     ? Math.round(Number(params.tdsAmount) * 100) / 100
     : undefined;
+  const platformFeeAmount = params.platformFeeAmount
+    ? Math.round(Number(params.platformFeeAmount) * 100) / 100
+    : undefined;
+
   let sumAllocated = 0;
 
   const bills: ZohoPaymentBillAllocation[] = (params.allocations || []).map(
@@ -89,7 +97,10 @@ export function exportToZohoPaymentReceipt(
   const poRef = params.poNumber ? ` for PO ${params.poNumber}` : '';
   const refNum = params.paymentReference || '';
   const tdsInfo = tdsAmount ? ` (TDS Withheld: ₹${tdsAmount.toFixed(2)})` : '';
-  const defaultDesc = `Settlement payment of ₹${totalAmount.toFixed(2)} to ${params.supplierName}${poRef}${refNum ? ` (Ref: ${refNum})` : ''}${tdsInfo}`;
+  const feeInfo = platformFeeAmount
+    ? ` (Platform Fee: ₹${platformFeeAmount.toFixed(2)})`
+    : '';
+  const defaultDesc = `Settlement payment of ₹${totalAmount.toFixed(2)} to ${params.supplierName}${poRef}${refNum ? ` (Ref: ${refNum})` : ''}${tdsInfo}${feeInfo}`;
 
   return {
     vendor_name: params.supplierName,
@@ -102,6 +113,10 @@ export function exportToZohoPaymentReceipt(
     tds_amount: tdsAmount,
     tds_section: params.tdsSection,
     tds_tax_account: params.tdsTaxAccountName || (tdsAmount ? 'TDS Payable' : undefined),
+    platform_fee_amount: platformFeeAmount,
+    platform_fee_account:
+      params.platformFeeAccountName ||
+      (platformFeeAmount ? 'OTP Platform Fee Deduction' : undefined),
     bills,
     excess_amount: excessAmount,
     description: params.description || defaultDesc,
