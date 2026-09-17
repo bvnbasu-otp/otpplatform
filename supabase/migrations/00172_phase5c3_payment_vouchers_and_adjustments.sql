@@ -30,6 +30,36 @@
 BEGIN;
 
 -- ---------------------------------------------------------------------------
+-- 0. Helper Functions: Organization and Supplier Membership Sets
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION private.get_user_org_ids()
+RETURNS SETOF uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT om.organization_id
+  FROM organization_members om
+  WHERE om.profile_id = private.get_profile_id();
+$$;
+
+CREATE OR REPLACE FUNCTION private.get_user_supplier_ids()
+RETURNS SETOF uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT su.supplier_id
+  FROM supplier_users su
+  WHERE su.profile_id = private.get_profile_id();
+$$;
+
+GRANT EXECUTE ON FUNCTION private.get_user_org_ids() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION private.get_user_supplier_ids() TO authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
 -- 1. Create public.credit_debit_notes Table
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.credit_debit_notes (

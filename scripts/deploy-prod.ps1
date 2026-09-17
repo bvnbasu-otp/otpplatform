@@ -144,7 +144,7 @@ foreach ($file in $migrationFiles) {
   $version = $file.Name
   if ($appliedList -notcontains $version) {
     Write-Host "  Applying new migration: $version..." -ForegroundColor DarkCyan
-    Get-Content $file.FullName -Raw | & docker exec -i otp-prod-db psql -U postgres -d postgres -q
+    Get-Content $file.FullName -Raw | & docker exec -i otp-prod-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q
     if ($LASTEXITCODE -ne 0) {
       Write-Host "[ERROR] Migration $version failed! Aborting deployment." -ForegroundColor Red
       exit 1
