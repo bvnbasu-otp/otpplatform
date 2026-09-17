@@ -390,7 +390,7 @@ BEGIN
   END IF;
 
   IF (v_pay.unallocated_amount + v_alloc.allocated_amount) > v_pay.amount THEN
-    RAISE EXCEPTION 'Reversal invariant violation: resulting unallocated amount exceeds payment total (REV-5C3-INVALID-PAYMENT-UNALLOC)',
+    RAISE EXCEPTION 'Reversal invariant violation: resulting unallocated amount (₹%) exceeds payment total (₹%) (REV-5C3-INVALID-PAYMENT-UNALLOC)',
       (v_pay.unallocated_amount + v_alloc.allocated_amount), v_pay.amount;
   END IF;
 
