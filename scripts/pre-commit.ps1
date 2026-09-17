@@ -16,9 +16,59 @@ Write-Host "`n================================================================="
 Write-Host "  OTP PLATFORM - LOCAL PRE-COMMIT VERIFICATION GATE" -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
 
+function Get-NodeExecutable {
+  $candidates = @(
+    (Get-Command node.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+    (Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+    "$env:LOCALAPPDATA\Programs\cursor\resources\app\resources\helpers\node.exe",
+    "$env:LOCALAPPDATA\Programs\node\node.exe",
+    "$env:LOCALAPPDATA\Programs\nodejs\node.exe",
+    "C:\Program Files\nodejs\node.exe",
+    "C:\Program Files (x86)\nodejs\node.exe",
+    "$env:APPDATA\npm\node.exe",
+    "$env:APPDATA\nvm\current\node.exe",
+    "$env:USERPROFILE\scoop\shims\node.exe",
+    "$env:USERPROFILE\.volta\bin\node.exe",
+    "$env:ProgramData\chocolatey\bin\node.exe"
+  )
+  foreach ($candidate in $candidates) {
+    if ($candidate -and (Test-Path $candidate)) {
+      return $candidate
+    }
+  }
+  return $null
+}
+
+function Invoke-Task {
+  param([string]$TaskName, [string[]]$TaskArgs = @())
+  if (Get-Command pnpm.cmd -ErrorAction SilentlyContinue) {
+    & pnpm.cmd $TaskName @TaskArgs
+  } elseif (Get-Command pnpm -ErrorAction SilentlyContinue) {
+    & pnpm $TaskName @TaskArgs
+  } elseif (Get-Command npx.cmd -ErrorAction SilentlyContinue) {
+    & npx.cmd pnpm $TaskName @TaskArgs
+  } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
+    & npx pnpm $TaskName @TaskArgs
+  } else {
+    $node = Get-NodeExecutable
+    if (-not $node) {
+      throw "Node.js executable could not be resolved. Please ensure Node.js is installed."
+    }
+    if ($TaskName -eq "test:vocab") {
+      & $node "node_modules/tsx/dist/cli.mjs" scripts/verify-vocabulary.ts @TaskArgs
+    } elseif ($TaskName -eq "test:policy") {
+      & $node "node_modules/tsx/dist/cli.mjs" scripts/verify-test-coverage-policy.ts @TaskArgs
+    } elseif ($TaskName -eq "test:unit") {
+      & $node "node_modules/vitest/vitest.mjs" run --config packages/domain/vitest.config.ts @TaskArgs
+    } else {
+      throw "Unknown task: $TaskName"
+    }
+  }
+}
+
 # 1. Vocabulary Scan
 Write-Host "`n[1/3] Scanning for canonical procurement vocabulary compliance..." -ForegroundColor Yellow
-& pnpm.cmd test:vocab
+Invoke-Task "test:vocab"
 if ($LASTEXITCODE -ne 0) {
   Write-Host "[FAIL] Vocabulary policy violated. Commit rejected." -ForegroundColor Red
   exit 1
@@ -26,7 +76,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # 2. Coverage Policy
 Write-Host "`n[2/3] Auditing test coverage expansion policy & coverage append rule..." -ForegroundColor Yellow
-& pnpm.cmd test:policy --strict
+Invoke-Task "test:policy" @("--strict")
 if ($LASTEXITCODE -ne 0) {
   Write-Host "[FAIL] Coverage policy violated. Commit rejected." -ForegroundColor Red
   exit 1
@@ -34,7 +84,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # 3. Fast Unit Tests
 Write-Host "`n[3/3] Running fast unit test battery..." -ForegroundColor Yellow
-& pnpm.cmd test:unit
+Invoke-Task "test:unit"
 if ($LASTEXITCODE -ne 0) {
   Write-Host "[FAIL] Unit tests failed. Commit rejected." -ForegroundColor Red
   exit 1

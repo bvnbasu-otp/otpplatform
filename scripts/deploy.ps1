@@ -56,7 +56,18 @@ function Invoke-Pnpm {
     & npx pnpm @Arguments
   } else {
     $nodeCandidates = @(
-      "C:\Users\bloganat\AppData\Local\Programs\cursor\resources\app\resources\helpers\node.exe"
+      (Get-Command node.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+      (Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+      "$env:LOCALAPPDATA\Programs\cursor\resources\app\resources\helpers\node.exe",
+      "$env:LOCALAPPDATA\Programs\node\node.exe",
+      "$env:LOCALAPPDATA\Programs\nodejs\node.exe",
+      "C:\Program Files\nodejs\node.exe",
+      "C:\Program Files (x86)\nodejs\node.exe",
+      "$env:APPDATA\npm\node.exe",
+      "$env:APPDATA\nvm\current\node.exe",
+      "$env:USERPROFILE\scoop\shims\node.exe",
+      "$env:USERPROFILE\.volta\bin\node.exe",
+      "$env:ProgramData\chocolatey\bin\node.exe"
     )
     $foundNode = $null
     foreach ($candidate in $nodeCandidates) {
