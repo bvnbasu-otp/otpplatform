@@ -38,6 +38,15 @@ export interface PurchaseOrderSummary {
   isSettled?: boolean;
   invoiceStatus?: string;
   paymentStatus?: string;
+  // Phase 5B Statutory GST Metadata & Tax Totals
+  placeOfSupplyStateCode?: string | null;
+  placeOfSupplyBasis?: string | null;
+  taxSnapshot?: Record<string, unknown> | null;
+  taxableTotal?: number;
+  cgstTotal?: number;
+  sgstTotal?: number;
+  utgstTotal?: number;
+  igstTotal?: number;
 }
 
 export interface WorkOrderSummary {
@@ -84,6 +93,15 @@ export interface PoLineItemRecord {
   gstRate: number;
   gstAmount: number;
   totalAmount: number;
+  hsnCode?: string | null;
+  cgstRate?: number;
+  cgstAmount?: number;
+  sgstRate?: number;
+  sgstAmount?: number;
+  utgstRate?: number;
+  utgstAmount?: number;
+  igstRate?: number;
+  igstAmount?: number;
 }
 
 export interface WorkOrderMilestoneRecord {
@@ -115,6 +133,15 @@ export interface InvoiceLineItemRecord {
   taxableAmount: number;
   gstAmount: number;
   totalAmount: number;
+  hsnCode?: string | null;
+  cgstRate?: number;
+  cgstAmount?: number;
+  sgstRate?: number;
+  sgstAmount?: number;
+  utgstRate?: number;
+  utgstAmount?: number;
+  igstRate?: number;
+  igstAmount?: number;
 }
 
 export interface ProgressiveInvoiceRecord {
@@ -131,6 +158,14 @@ export interface ProgressiveInvoiceRecord {
   submittedAt: string | null;
   approvedAt?: string | null;
   lineItems?: InvoiceLineItemRecord[];
+  placeOfSupplyStateCode?: string | null;
+  placeOfSupplyBasis?: string | null;
+  taxSnapshot?: Record<string, unknown> | null;
+  taxableTotal?: number;
+  cgstTotal?: number;
+  sgstTotal?: number;
+  utgstTotal?: number;
+  igstTotal?: number;
 }
 
 export function formatMoney(amount: number | null | undefined, currency: string = 'INR'): string {

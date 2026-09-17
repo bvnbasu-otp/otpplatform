@@ -137,6 +137,14 @@ export interface PurchaseOrder {
   status: PurchaseOrderStatus;
   totalAmount: number;
   currency: string;
+  placeOfSupplyStateCode?: string;
+  placeOfSupplyBasis?: string;
+  taxSnapshot?: Record<string, unknown> | null;
+  taxableTotal?: number;
+  cgstTotal?: number;
+  sgstTotal?: number;
+  utgstTotal?: number;
+  igstTotal?: number;
   issuedAt?: string;
   acknowledgedAt?: string;
   createdAt: string;
@@ -167,6 +175,15 @@ export interface PurchaseOrderLineItemEntity {
   gstRate: number;
   gstAmount: number;
   totalAmount: number;
+  hsnCode?: string | null;
+  cgstRate?: number;
+  cgstAmount?: number;
+  sgstRate?: number;
+  sgstAmount?: number;
+  utgstRate?: number;
+  utgstAmount?: number;
+  igstRate?: number;
+  igstAmount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -202,6 +219,15 @@ export interface InvoiceLineItemEntity {
   taxableAmount: number;
   gstAmount: number;
   totalAmount: number;
+  hsnCode?: string | null;
+  cgstRate?: number;
+  cgstAmount?: number;
+  sgstRate?: number;
+  sgstAmount?: number;
+  utgstRate?: number;
+  utgstAmount?: number;
+  igstRate?: number;
+  igstAmount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -218,6 +244,14 @@ export interface Invoice {
   currency: string;
   status: InvoiceStatus;
   submittedAt: string;
+  placeOfSupplyStateCode?: string;
+  placeOfSupplyBasis?: string;
+  taxSnapshot?: Record<string, unknown> | null;
+  taxableTotal?: number;
+  cgstTotal?: number;
+  sgstTotal?: number;
+  utgstTotal?: number;
+  igstTotal?: number;
 }
 
 export interface Payment {

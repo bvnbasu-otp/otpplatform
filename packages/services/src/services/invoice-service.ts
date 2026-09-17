@@ -1,5 +1,9 @@
 import {
+  buildTaxSnapshot,
+  calculateOrderTaxBreakdown,
   calculateRemainingInvoiceableAmount,
+  type CalculatedLineItemTax,
+  determinePlaceOfSupply,
   validateInvoiceAmountAgainstPo,
   type InvoiceStatus,
   type InvoiceType,
@@ -26,6 +30,15 @@ export interface SubmitInvoiceLineItemInput {
   taxableAmount: number;
   gstAmount: number;
   totalAmount: number;
+  hsnCode?: string | null;
+  cgstRate?: number;
+  cgstAmount?: number;
+  sgstRate?: number;
+  sgstAmount?: number;
+  utgstRate?: number;
+  utgstAmount?: number;
+  igstRate?: number;
+  igstAmount?: number;
 }
 
 export interface SubmitProgressiveInvoiceInput {
@@ -45,7 +58,7 @@ export class InvoiceService {
   ) {}
 
   /**
-   * Submit an invoice (supports progressive milestones, PO line item links, and over-invoicing checks).
+   * Submit an invoice with statutory GST tax splitting, progressive milestone checks, and frozen tax snapshot.
    */
   async submit(
     actor: ActorContext,
@@ -101,6 +114,46 @@ export class InvoiceService {
 
     const now = timestamp();
     const invoiceId = createId();
+
+    // 3. Determine Statutory Place of Supply & Tax Breakdown
+    const pos = determinePlaceOfSupply({
+      supplierStateCode: '29',
+      recipientStateCode: po.placeOfSupplyStateCode || '29',
+      supplyType: 'PRODUCT_GOODS',
+    });
+
+    const baseTaxable = Math.round((amount / 1.18) * 100) / 100;
+    const rawItems = lineItems && lineItems.length > 0
+      ? lineItems.map((li) => ({
+          itemIndex: li.lineIndex,
+          description: li.description,
+          hsnSacCode: li.hsnCode || '995411',
+          quantity: li.quantity,
+          unitPrice: li.unitPrice,
+          gstRate: 18.0,
+        }))
+      : [
+          {
+            itemIndex: 1,
+            description: `Progressive Milestone Deliverables (${invoiceType})`,
+            hsnSacCode: '995411',
+            quantity: 1,
+            unitPrice: baseTaxable,
+            gstRate: 18.0,
+          },
+        ];
+
+    const taxBreakdown = calculateOrderTaxBreakdown(rawItems, pos);
+
+    const taxSnapshot = buildTaxSnapshot({
+      supplierStateCode: '29',
+      buyerStateCode: po.placeOfSupplyStateCode || '29',
+      supplyType: 'PRODUCT_GOODS',
+      pos,
+      taxBreakdown,
+      capturedAt: now,
+    });
+
     const invoice: Invoice = {
       id: invoiceId,
       purchaseOrderId: po.id,
@@ -113,31 +166,48 @@ export class InvoiceService {
       currency,
       status: 'SUBMITTED',
       submittedAt: now,
+      placeOfSupplyStateCode: pos.placeOfSupplyStateCode,
+      placeOfSupplyBasis: pos.placeOfSupplyBasis,
+      taxableTotal: taxBreakdown.taxableTotal,
+      cgstTotal: taxBreakdown.cgstTotal,
+      sgstTotal: taxBreakdown.sgstTotal,
+      utgstTotal: taxBreakdown.utgstTotal,
+      igstTotal: taxBreakdown.igstTotal,
+      taxSnapshot: taxSnapshot as unknown as Record<string, unknown>,
     };
 
     const saved = await this.repos.invoices.save(invoice);
 
-    // 3. Save line items if provided
-    if (lineItems && lineItems.length > 0 && this.repos.invoiceLineItems) {
-      const lineEntities: InvoiceLineItemEntity[] = lineItems.map((li) => ({
+    // 4. Save normalized line items with statutory GST splitting
+    if (this.repos.invoiceLineItems) {
+      const lineEntities: InvoiceLineItemEntity[] = taxBreakdown.lineItems.map((li: CalculatedLineItemTax) => ({
         id: createId(),
         invoiceId: saved.id,
-        poLineItemId: li.poLineItemId || null,
-        milestoneId: li.milestoneId || milestoneId || null,
-        lineIndex: li.lineIndex,
+        poLineItemId: null,
+        milestoneId: milestoneId || null,
+        lineIndex: li.itemIndex,
         description: li.description,
         quantity: li.quantity,
         unitPrice: li.unitPrice,
         taxableAmount: li.taxableAmount,
-        gstAmount: li.gstAmount,
+        gstAmount: li.totalTax,
         totalAmount: li.totalAmount,
+        hsnCode: li.hsnSacCode || null,
+        cgstRate: li.cgstRate,
+        cgstAmount: li.cgstAmount,
+        sgstRate: li.sgstRate,
+        sgstAmount: li.sgstAmount,
+        utgstRate: li.utgstRate,
+        utgstAmount: li.utgstAmount,
+        igstRate: li.igstRate,
+        igstAmount: li.igstAmount,
         createdAt: now,
         updatedAt: now,
       }));
       await this.repos.invoiceLineItems.saveMany(lineEntities);
     }
 
-    // 4. Update milestone status and invoicedAmount if linked
+    // 5. Update milestone status and invoicedAmount if linked
     if (milestoneId && this.repos.workOrderMilestones) {
       const milestone = await this.repos.workOrderMilestones.findById(milestoneId);
       if (milestone) {
@@ -164,6 +234,7 @@ export class InvoiceService {
         milestoneId: saved.milestoneId,
         invoiceType: saved.invoiceType,
         purchaseOrderId: saved.purchaseOrderId,
+        posState: pos.placeOfSupplyStateCode,
       },
     );
 

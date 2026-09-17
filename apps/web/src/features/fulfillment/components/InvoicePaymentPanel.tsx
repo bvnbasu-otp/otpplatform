@@ -54,6 +54,7 @@ export function InvoicePaymentPanel({
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('');
   const [invoiceType, setInvoiceType] = useState<'PROGRESSIVE' | 'FINAL' | 'ADVANCE' | 'STANDARD'>('PROGRESSIVE');
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [hsnCode, setHsnCode] = useState('995411');
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'BANK_TRANSFER' | 'MANUAL' | 'OTHER'>('UPI');
   const [reference, setReference] = useState('');
@@ -168,6 +169,7 @@ export function InvoicePaymentPanel({
         {
           lineIndex: 1,
           description: lineDescription,
+          hsnCode: hsnCode.trim() || '995411',
           quantity: 1,
           unitPrice: lineBase,
           taxableAmount: lineBase,
@@ -184,7 +186,7 @@ export function InvoicePaymentPanel({
       return;
     }
 
-    setSuccess('✓ Official GST Progressive Invoice submitted successfully!');
+    setSuccess('✓ Official Statutory GST Progressive Invoice submitted successfully!');
     setInvoiceNumber('');
     setAmount('');
     setSelectedMilestoneId('');
@@ -264,8 +266,12 @@ export function InvoicePaymentPanel({
   }
 
   const effectiveAmount = activeInvoice ? activeInvoice.amount : Number(amount) || poAmount;
-  const baseAmount = Math.round(effectiveAmount / 1.18);
-  const gstAmount = effectiveAmount - baseAmount;
+  const baseAmount = activeInvoice?.taxableTotal ?? Math.round(effectiveAmount / 1.18);
+  const cgstAmount = activeInvoice?.cgstTotal ?? (activeInvoice?.igstTotal ? 0 : Math.round((effectiveAmount - baseAmount) / 2));
+  const sgstAmount = activeInvoice?.sgstTotal ?? (activeInvoice?.igstTotal || activeInvoice?.utgstTotal ? 0 : Math.round((effectiveAmount - baseAmount) / 2));
+  const utgstAmount = activeInvoice?.utgstTotal ?? 0;
+  const igstAmount = activeInvoice?.igstTotal ?? 0;
+  const totalGst = cgstAmount + sgstAmount + utgstAmount + igstAmount || (effectiveAmount - baseAmount);
 
   return (
     <div className="space-y-4" data-testid="invoice-payment-panel">
@@ -278,7 +284,7 @@ export function InvoicePaymentPanel({
             <div className="flex items-center gap-2">
               <span className="text-sm">📊</span>
               <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
-                Progressive Invoicing Ledger (Phase 5A)
+                Progressive Invoicing Ledger (Phase 5A &amp; 5B)
               </h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -412,7 +418,7 @@ export function InvoicePaymentPanel({
       </section>
 
       {/* =========================================================================
-          SCREEN 12: ACTIVE INVOICE DETAIL & TAX BREAKDOWN
+          SCREEN 12: ACTIVE INVOICE DETAIL & STATUTORY TAX BREAKDOWN
           ========================================================================= */}
       <section className="rounded-2xl border bg-card p-4 shadow-2xs space-y-3.5">
         <div className="flex items-center justify-between border-b pb-2.5">
@@ -420,11 +426,11 @@ export function InvoicePaymentPanel({
             <div className="flex items-center gap-2">
               <span className="text-sm">🧾</span>
               <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
-                Screen 12: Official GST Tax Invoice
+                Screen 12: Statutory GST Tax Invoice (Phase 5B)
               </h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Itemization summary, GST tax breakdown, and progressive milestone traceability.
+              Itemization summary, statutory GST tax splitting, and frozen tax snapshot.
             </p>
           </div>
           {activeInvoice && (
@@ -477,7 +483,7 @@ export function InvoicePaymentPanel({
         {/* State: Active Invoice Detail */}
         {activeInvoice && (
           <div className="space-y-3">
-            {/* Detailed Itemization & Tax Breakdown */}
+            {/* Detailed Itemization & Statutory Tax Breakdown */}
             <div className="rounded-xl border bg-muted/10 p-3 space-y-2 text-xs">
               <div className="grid grid-cols-2 gap-2 pb-2 border-b">
                 <div>
@@ -488,23 +494,86 @@ export function InvoicePaymentPanel({
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                    Compliance Status
+                    Place of Supply (POS)
                   </span>
                   <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                    ✓ Valid E-Invoice / ITC Eligible
+                    ✓ State {activeInvoice.placeOfSupplyStateCode || '29'} · ITC Eligible
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-1 text-[11px]">
+              {/* Line Items Table if present */}
+              {activeInvoice.lineItems && activeInvoice.lineItems.length > 0 && (
+                <div className="rounded-lg border bg-card overflow-hidden my-2">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-muted/60 border-b text-[9px] uppercase font-bold text-muted-foreground">
+                      <tr>
+                        <th className="px-2.5 py-1.5">Scope &amp; Description</th>
+                        <th className="px-2 py-1.5 text-center">HSN/SAC</th>
+                        <th className="px-2 py-1.5 text-right">Taxable</th>
+                        <th className="px-2 py-1.5 text-right">GST Split</th>
+                        <th className="px-2.5 py-1.5 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50">
+                      {activeInvoice.lineItems.map((li) => (
+                        <tr key={li.id}>
+                          <td className="px-2.5 py-1.5">{li.description}</td>
+                          <td className="px-2 py-1.5 text-center font-mono text-[10px]">{li.hsnCode || '995411'}</td>
+                          <td className="px-2 py-1.5 text-right font-mono">{formatMoney(li.taxableAmount, 'INR')}</td>
+                          <td className="px-2 py-1.5 text-right font-mono">
+                            {li.igstAmount && li.igstAmount > 0 ? (
+                              <span>+{formatMoney(li.igstAmount, 'INR')} (IGST)</span>
+                            ) : li.utgstAmount && li.utgstAmount > 0 ? (
+                              <span>+{formatMoney(li.gstAmount, 'INR')} (CGST+UTGST)</span>
+                            ) : (
+                              <span>+{formatMoney(li.gstAmount, 'INR')} (CGST+SGST)</span>
+                            )}
+                          </td>
+                          <td className="px-2.5 py-1.5 text-right font-mono font-bold">{formatMoney(li.totalAmount, 'INR')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="space-y-1 text-[11px] pt-1">
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Taxable Base Value (82%):</span>
+                  <span>Taxable Base Value (excl. GST):</span>
                   <span className="font-mono font-semibold text-foreground">{formatMoney(baseAmount, 'INR')}</span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Applicable GST (18%):</span>
-                  <span className="font-mono font-semibold text-foreground">{formatMoney(gstAmount, 'INR')}</span>
+
+                {igstAmount > 0 ? (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Integrated GST (18% IGST):</span>
+                    <span className="font-mono font-semibold text-foreground">+{formatMoney(igstAmount, 'INR')}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Central GST (9% CGST):</span>
+                      <span className="font-mono font-semibold text-foreground">+{formatMoney(cgstAmount, 'INR')}</span>
+                    </div>
+                    {utgstAmount > 0 ? (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Union Territory GST (9% UTGST):</span>
+                        <span className="font-mono font-semibold text-foreground">+{formatMoney(utgstAmount, 'INR')}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>State GST (9% SGST):</span>
+                        <span className="font-mono font-semibold text-foreground">+{formatMoney(sgstAmount, 'INR')}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <div className="flex justify-between text-muted-foreground border-t pt-1">
+                  <span>Total Statutory GST (18%):</span>
+                  <span className="font-mono font-semibold text-foreground">+{formatMoney(totalGst, 'INR')}</span>
                 </div>
+
                 <div className="flex justify-between border-t pt-1 font-extrabold text-foreground text-xs">
                   <span>Gross Invoice Total:</span>
                   <span className="font-mono text-primary font-black">
@@ -740,7 +809,7 @@ export function InvoicePaymentPanel({
             <div className="flex items-center justify-between border-b pb-2.5">
               <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
                 <span>📤</span>
-                <span>Submit Progressive GST Invoice (Phase 5A)</span>
+                <span>Submit Statutory GST Progressive Invoice (Phase 5B)</span>
               </h3>
               <button
                 type="button"
@@ -804,34 +873,53 @@ export function InvoicePaymentPanel({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-foreground mb-1">
-                  Invoice Amount (₹ INR) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder={`Max Remaining: ₹${invoicingCalc.remainingInvoiceableAmount}`}
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
-                />
-                <span className="text-[10px] text-muted-foreground block mt-1">
-                  Authorized Remaining Budget: <strong className="text-primary">{formatMoney(invoicingCalc.remainingInvoiceableAmount, 'INR')}</strong>
-                </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-foreground mb-1">
+                    HSN / SAC Code <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={hsnCode}
+                    onChange={(e) => setHsnCode(e.target.value)}
+                    placeholder="e.g. 995473 or 8413"
+                    className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                  />
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    SAC 995473 (Painting/Const) · HSN 8413 (Pumps)
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-foreground mb-1">
+                    Gross Invoice Amount (₹ INR) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder={`Max Remaining: ₹${invoicingCalc.remainingInvoiceableAmount}`}
+                    className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
+                  />
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    Remaining: <strong className="text-primary">{formatMoney(invoicingCalc.remainingInvoiceableAmount, 'INR')}</strong>
+                  </span>
+                </div>
               </div>
 
               {/* Live Statutory Preview */}
               {Number(amount) > 0 && (
                 <div className="rounded-xl border bg-muted/20 p-3 text-xs space-y-1">
                   <div className="flex justify-between text-muted-foreground text-[11px]">
-                    <span>Taxable Base Value (82%):</span>
+                    <span>Taxable Base Value (excl. GST):</span>
                     <span className="font-mono font-semibold text-foreground">
                       {formatMoney(Math.round(Number(amount) / 1.18), 'INR')}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground text-[11px]">
-                    <span>GST (18% IGST / CGST+SGST):</span>
+                    <span>Statutory GST (18% IGST / CGST+SGST):</span>
                     <span className="font-mono font-semibold text-foreground">
                       {formatMoney(Number(amount) - Math.round(Number(amount) / 1.18), 'INR')}
                     </span>

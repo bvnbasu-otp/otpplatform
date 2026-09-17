@@ -30,12 +30,21 @@ interface PoLineItem {
   id: string;
   name: string;
   description: string;
+  hsnCode?: string | null;
   quantity: number;
   unit: string;
   rate: number;
   amount: number;
   gstRate: number;
   gstAmount: number;
+  cgstRate?: number;
+  cgstAmount?: number;
+  sgstRate?: number;
+  sgstAmount?: number;
+  utgstRate?: number;
+  utgstAmount?: number;
+  igstRate?: number;
+  igstAmount?: number;
   total: number;
 }
 
@@ -52,36 +61,51 @@ function derivePoLineItems(totalAmount: number, title?: string): PoLineItem[] {
         id: 'li-1',
         name: 'Premium Exterior Emulsion & Silicone Primer',
         description: 'Weather-proof anti-fungal exterior paint (Asian Paints / Berger Apex Ultima or equivalent)',
+        hsnCode: '3209',
         quantity: 1,
         unit: 'Lot',
         rate: item1,
         amount: item1,
         gstRate: 18,
         gstAmount: Math.round(item1 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item1 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item1 * 0.09),
         total: Math.round(item1 * 1.18),
       },
       {
         id: 'li-2',
         name: 'Surface Preparation, Pressure Wash & Crack Filling',
         description: 'High-pressure water jet wash, polymer-modified mortar crack sealing, and surface sanding',
+        hsnCode: '995473',
         quantity: 1,
         unit: 'Job',
         rate: item2,
         amount: item2,
         gstRate: 18,
         gstAmount: Math.round(item2 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item2 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item2 * 0.09),
         total: Math.round(item2 * 1.18),
       },
       {
         id: 'li-3',
         name: 'Double-Scaffolding, Safety Harnesses & Quality Sign-off',
         description: 'Heavy-duty pipe scaffolding installation, worker PPE insurance & 3-year warranty certificate',
+        hsnCode: '995473',
         quantity: 1,
         unit: 'Job',
         rate: item3,
         amount: item3,
         gstRate: 18,
         gstAmount: Math.round(item3 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item3 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item3 * 0.09),
         total: Math.round(item3 * 1.18),
       },
     ];
@@ -97,48 +121,68 @@ function derivePoLineItems(totalAmount: number, title?: string): PoLineItem[] {
         id: 'li-1',
         name: 'Class-H Dual Coated Copper Winding Wire',
         description: 'High-temperature dual coated enamelled copper winding wire (EC Grade 99.9%)',
+        hsnCode: '8501',
         quantity: 1,
         unit: 'Set',
         rate: item1,
         amount: item1,
         gstRate: 18,
         gstAmount: Math.round(item1 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item1 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item1 * 0.09),
         total: Math.round(item1 * 1.18),
       },
       {
         id: 'li-2',
         name: 'Slot Insulation & Nomex Phase Barriers',
         description: 'Class H slot liners, nomex wedges, and high-dielectric polyester phase insulation',
+        hsnCode: '8501',
         quantity: 1,
         unit: 'Set',
         rate: item2,
         amount: item2,
         gstRate: 18,
         gstAmount: Math.round(item2 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item2 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item2 * 0.09),
         total: Math.round(item2 * 1.18),
       },
       {
         id: 'li-3',
         name: 'High-Speed Sealed Bearings & Dynamic Balancing',
         description: 'Precision C3 deep groove ball bearings with dynamic rotor balancing (< 0.5 mm/s)',
+        hsnCode: '8413',
         quantity: 1,
         unit: 'Set',
         rate: item3,
         amount: item3,
         gstRate: 18,
         gstAmount: Math.round(item3 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item3 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item3 * 0.09),
         total: Math.round(item3 * 1.18),
       },
       {
         id: 'li-4',
         name: 'Vacuum Varnish Impregnation & Testing',
         description: 'Solventless resin vacuum impregnation, oven baking, and insulation megger testing',
+        hsnCode: '998719',
         quantity: 1,
         unit: 'Job',
         rate: item4,
         amount: item4,
         gstRate: 18,
         gstAmount: Math.round(item4 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item4 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item4 * 0.09),
         total: Math.round(item4 * 1.18),
       },
     ];
@@ -152,36 +196,51 @@ function derivePoLineItems(totalAmount: number, title?: string): PoLineItem[] {
       id: 'li-1',
       name: 'Primary Procurement Goods / Core Scope of Work',
       description: 'Execution of core deliverables in full compliance with PO and RFQ technical specifications',
+      hsnCode: '995411',
       quantity: 1,
       unit: 'Unit',
       rate: item1,
       amount: item1,
       gstRate: 18,
       gstAmount: Math.round(item1 * 0.18),
+      cgstRate: 9,
+      cgstAmount: Math.round(item1 * 0.09),
+      sgstRate: 9,
+      sgstAmount: Math.round(item1 * 0.09),
       total: Math.round(item1 * 1.18),
     },
     {
       id: 'li-2',
       name: 'High-Grade Consumables, Hardware & Components',
       description: 'OEM-grade parts, specialized accessories, and protective installation materials',
+      hsnCode: '995461',
       quantity: 1,
       unit: 'Set',
       rate: item2,
       amount: item2,
       gstRate: 18,
       gstAmount: Math.round(item2 * 0.18),
+      cgstRate: 9,
+      cgstAmount: Math.round(item2 * 0.09),
+      sgstRate: 9,
+      sgstAmount: Math.round(item2 * 0.09),
       total: Math.round(item2 * 1.18),
     },
     {
       id: 'li-3',
       name: 'Quality Assurance, Calibration & Commissioning',
       description: 'Pre-dispatch inspection, benchmark validation test certificate, and transit logistics',
+      hsnCode: '998719',
       quantity: 1,
       unit: 'Job',
       rate: item3,
       amount: item3,
       gstRate: 18,
       gstAmount: Math.round(item3 * 0.18),
+      cgstRate: 9,
+      cgstAmount: Math.round(item3 * 0.09),
+      sgstRate: 9,
+      sgstAmount: Math.round(item3 * 0.09),
       total: Math.round(item3 * 1.18),
     },
   ];
@@ -250,12 +309,21 @@ export function PurchaseOrderDetailPage({
             id: String(li.id),
             name: String(li.description || 'Deliverable Item'),
             description: String(li.description || ''),
+            hsnCode: li.hsn_code || null,
             quantity: Number(li.quantity || 1),
             unit: String(li.unit || 'units'),
             rate: Number(li.unit_price || 0),
             amount: Number(li.taxable_amount || 0),
             gstRate: Number(li.gst_rate || 18),
             gstAmount: Number(li.gst_amount || 0),
+            cgstRate: li.cgst_rate != null ? Number(li.cgst_rate) : undefined,
+            cgstAmount: li.cgst_amount != null ? Number(li.cgst_amount) : undefined,
+            sgstRate: li.sgst_rate != null ? Number(li.sgst_rate) : undefined,
+            sgstAmount: li.sgst_amount != null ? Number(li.sgst_amount) : undefined,
+            utgstRate: li.utgst_rate != null ? Number(li.utgst_rate) : undefined,
+            utgstAmount: li.utgst_amount != null ? Number(li.utgst_amount) : undefined,
+            igstRate: li.igst_rate != null ? Number(li.igst_rate) : undefined,
+            igstAmount: li.igst_amount != null ? Number(li.igst_amount) : undefined,
             total: Number(li.total_amount || 0),
           }));
           setDbLineItems(mapped);
@@ -731,24 +799,40 @@ export function PurchaseOrderDetailPage({
             {/* Commercial Contract Line Items & BoQ Itemization */}
             {(() => {
               const lineItems = dbLineItems.length > 0 ? dbLineItems : derivePoLineItems(order.totalAmount, order.rfqTitle);
-              const taxableBase = Math.round(order.totalAmount / 1.18);
-              const gstTotal = order.totalAmount - taxableBase;
+              const taxableBase = order.taxableTotal != null && order.taxableTotal > 0
+                ? order.taxableTotal
+                : Math.round(order.totalAmount / 1.18);
+              const cgstTotal = order.cgstTotal != null && order.cgstTotal > 0
+                ? order.cgstTotal
+                : (lineItems.reduce((s, i) => s + (i.cgstAmount || 0), 0) || Math.round((order.totalAmount - taxableBase) / 2));
+              const sgstTotal = order.sgstTotal != null && order.sgstTotal > 0
+                ? order.sgstTotal
+                : (lineItems.reduce((s, i) => s + (i.sgstAmount || 0), 0) || Math.round((order.totalAmount - taxableBase) / 2));
+              const utgstTotal = order.utgstTotal != null ? order.utgstTotal : lineItems.reduce((s, i) => s + (i.utgstAmount || 0), 0);
+              const igstTotal = order.igstTotal != null ? order.igstTotal : lineItems.reduce((s, i) => s + (i.igstAmount || 0), 0);
+              const totalGst = cgstTotal + sgstTotal + utgstTotal + igstTotal || (order.totalAmount - taxableBase);
+              const posState = order.placeOfSupplyStateCode || '29';
 
               return (
                 <div className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3" data-testid="po-line-items">
-                  <div className="flex items-center justify-between border-b pb-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
                     <div>
                       <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <span>📦</span>
-                        <span>Commercial Contract Scope &amp; Line Items</span>
+                        <span>Commercial Contract Scope &amp; Line Items (Phase 5B)</span>
                       </h3>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Itemized Bill of Quantities (BoQ) with statutory GST breakdown.
+                        Itemized Bill of Quantities (BoQ) with statutory GST splitting and Place of Supply resolution.
                       </p>
                     </div>
-                    <span className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[10px] font-bold border border-primary/20">
-                      {lineItems.length} Line Items
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 text-[10px] font-bold border border-emerald-300">
+                        POS: State {posState}
+                      </span>
+                      <span className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[10px] font-bold border border-primary/20">
+                        {lineItems.length} Line Items
+                      </span>
+                    </div>
                   </div>
 
                   <div className="rounded-xl border overflow-hidden">
@@ -757,41 +841,58 @@ export function PurchaseOrderDetailPage({
                         <thead className="bg-muted/50 border-b text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                           <tr>
                             <th className="px-3 py-2">Item Description &amp; Technical Scope</th>
+                            <th className="px-2 py-2 text-center">HSN/SAC</th>
                             <th className="px-2 py-2 text-center">Qty</th>
                             <th className="px-2 py-2 text-right">Unit Rate</th>
-                            <th className="px-3 py-2 text-right">Taxable Amt</th>
-                            <th className="px-3 py-2 text-right">GST (18%)</th>
+                            <th className="px-3 py-2 text-right">Taxable Base</th>
+                            <th className="px-3 py-2 text-right">Statutory GST</th>
                             <th className="px-3 py-2 text-right">Total (₹)</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/60">
-                          {lineItems.map((item, idx) => (
-                            <tr key={item.id} className="hover:bg-muted/20 transition">
-                              <td className="px-3 py-2 min-w-[160px]">
-                                <div className="font-bold text-foreground leading-tight">
-                                  #{idx + 1}. {item.name}
-                                </div>
-                                <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-                                  {item.description}
-                                </div>
-                              </td>
-                              <td className="px-2 py-2 text-center text-muted-foreground whitespace-nowrap font-medium text-[11px]">
-                                {item.quantity} {item.unit}
-                              </td>
-                              <td className="px-2 py-2 text-right font-mono text-[11px] text-muted-foreground whitespace-nowrap">
-                                {formatMoney(item.rate, order.currency)}
-                              </td>
-                              <td className="px-3 py-2 text-right font-mono text-[11px] text-muted-foreground whitespace-nowrap">
-                                {formatMoney(item.amount, order.currency)}
-                              </td>
-                              <td className="px-3 py-2 text-right font-mono text-[11px] text-muted-foreground whitespace-nowrap">
-                                +{formatMoney(item.gstAmount, order.currency)}
-                              </td>
-                              <td className="px-3 py-2 text-right font-mono font-bold text-[11px] text-foreground whitespace-nowrap">
-                                {formatMoney(item.total, order.currency)}
-                              </td>
-                            </tr>
-                          ))}
+                          {lineItems.map((item, idx) => {
+                            const isInter = (item.igstAmount || 0) > 0;
+                            const isUt = (item.utgstAmount || 0) > 0;
+
+                            return (
+                              <tr key={item.id} className="hover:bg-muted/20 transition">
+                                <td className="px-3 py-2 min-w-[160px]">
+                                  <div className="font-bold text-foreground leading-tight">
+                                    #{idx + 1}. {item.name}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                                    {item.description}
+                                  </div>
+                                </td>
+                                <td className="px-2 py-2 text-center font-mono text-[10px] text-muted-foreground whitespace-nowrap">
+                                  <span className="bg-muted px-1.5 py-0.5 rounded border">
+                                    {item.hsnCode || '995411'}
+                                  </span>
+                                </td>
+                                <td className="px-2 py-2 text-center text-muted-foreground whitespace-nowrap font-medium text-[11px]">
+                                  {item.quantity} {item.unit}
+                                </td>
+                                <td className="px-2 py-2 text-right font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                                  {formatMoney(item.rate, order.currency)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                                  {formatMoney(item.amount, order.currency)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                                  {isInter ? (
+                                    <span title="Inter-State IGST">+{formatMoney(item.igstAmount, order.currency)} (18% IGST)</span>
+                                  ) : isUt ? (
+                                    <span title="Intra-UT CGST + UTGST">+{formatMoney(item.gstAmount, order.currency)} (9% CGST + 9% UTGST)</span>
+                                  ) : (
+                                    <span title="Intra-State CGST + SGST">+{formatMoney(item.gstAmount, order.currency)} (9% CGST + 9% SGST)</span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2 text-right font-mono font-bold text-[11px] text-foreground whitespace-nowrap">
+                                  {formatMoney(item.total, order.currency)}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -802,9 +903,35 @@ export function PurchaseOrderDetailPage({
                         <span>Taxable Base Value (excl. GST):</span>
                         <span className="font-mono font-semibold text-foreground">{formatMoney(taxableBase, order.currency)}</span>
                       </div>
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>Goods &amp; Services Tax (18% IGST / CGST+SGST):</span>
-                        <span className="font-mono font-semibold text-foreground">+{formatMoney(gstTotal, order.currency)}</span>
+
+                      {igstTotal > 0 ? (
+                        <div className="flex items-center justify-between text-muted-foreground">
+                          <span>Integrated GST (18% IGST):</span>
+                          <span className="font-mono font-semibold text-foreground">+{formatMoney(igstTotal, order.currency)}</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>Central GST (9% CGST):</span>
+                            <span className="font-mono font-semibold text-foreground">+{formatMoney(cgstTotal, order.currency)}</span>
+                          </div>
+                          {utgstTotal > 0 ? (
+                            <div className="flex items-center justify-between text-muted-foreground">
+                              <span>Union Territory GST (9% UTGST):</span>
+                              <span className="font-mono font-semibold text-foreground">+{formatMoney(utgstTotal, order.currency)}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between text-muted-foreground">
+                              <span>State GST (9% SGST):</span>
+                              <span className="font-mono font-semibold text-foreground">+{formatMoney(sgstTotal, order.currency)}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      <div className="flex items-center justify-between text-muted-foreground border-t pt-1">
+                        <span>Total Statutory GST:</span>
+                        <span className="font-mono font-semibold text-foreground">+{formatMoney(totalGst, order.currency)}</span>
                       </div>
                       <div className="flex items-center justify-between pt-1.5 border-t border-border/80 font-black text-sm text-foreground">
                         <span>Gross Purchase Order Commitment:</span>

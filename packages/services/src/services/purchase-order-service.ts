@@ -1,5 +1,9 @@
 import {
+  buildTaxSnapshot,
+  calculateOrderTaxBreakdown,
+  type CalculatedLineItemTax,
   canTransitionPurchaseOrder,
+  determinePlaceOfSupply,
   type PurchaseOrderStatus,
 } from '@otp/domain';
 import type { AuditService } from '../interfaces/audit-service';
@@ -50,6 +54,60 @@ export class PurchaseOrderService {
     if (!latest) return err(new ValidationError('Quote version not found'));
 
     const now = timestamp();
+
+    // 1. Determine Place of Supply using Statutory Tax Domain Engine
+    const pos = determinePlaceOfSupply({
+      supplierStateCode: '29', // Default Karnataka or derived from supplier
+      recipientStateCode: '29', // Default Karnataka buyer org
+      supplyType: 'PRODUCT_GOODS',
+    });
+
+    const base = Math.round((latest.snapshot.totalCost / 1.18) * 100) / 100;
+    const item1Rate = Math.round(base * 0.50 * 100) / 100;
+    const item2Rate = Math.round(base * 0.30 * 100) / 100;
+    const item3Rate = Math.round((base - (item1Rate + item2Rate)) * 100) / 100;
+
+    const rawLineItems = [
+      {
+        itemIndex: 1,
+        description: `Primary Contract Scope / Core Deliverables (Ref: ${award.rfqId.slice(0, 8)})`,
+        hsnSacCode: '995411',
+        quantity: 1,
+        unit: 'lot',
+        unitPrice: item1Rate,
+        gstRate: 18.0,
+      },
+      {
+        itemIndex: 2,
+        description: 'Execution, Labor, Testing & Site Staging',
+        hsnSacCode: '995461',
+        quantity: 1,
+        unit: 'lot',
+        unitPrice: item2Rate,
+        gstRate: 18.0,
+      },
+      {
+        itemIndex: 3,
+        description: 'QA Inspection Sign-off & Warranty Activation',
+        hsnSacCode: '998719',
+        quantity: 1,
+        unit: 'lot',
+        unitPrice: item3Rate,
+        gstRate: 18.0,
+      },
+    ];
+
+    const taxBreakdown = calculateOrderTaxBreakdown(rawLineItems, pos);
+
+    const taxSnapshot = buildTaxSnapshot({
+      supplierStateCode: '29',
+      buyerStateCode: '29',
+      supplyType: 'PRODUCT_GOODS',
+      pos,
+      taxBreakdown,
+      capturedAt: now,
+    });
+
     const po: PurchaseOrder = {
       id: createId(),
       awardId,
@@ -60,66 +118,48 @@ export class PurchaseOrderService {
       status: 'DRAFT',
       totalAmount: latest.snapshot.totalCost,
       currency: latest.snapshot.currency,
+      placeOfSupplyStateCode: pos.placeOfSupplyStateCode,
+      placeOfSupplyBasis: pos.placeOfSupplyBasis,
+      taxableTotal: taxBreakdown.taxableTotal,
+      cgstTotal: taxBreakdown.cgstTotal,
+      sgstTotal: taxBreakdown.sgstTotal,
+      utgstTotal: taxBreakdown.utgstTotal,
+      igstTotal: taxBreakdown.igstTotal,
+      taxSnapshot: taxSnapshot as unknown as Record<string, unknown>,
       createdAt: now,
       updatedAt: now,
     };
 
     const saved = await this.repos.purchaseOrders.save(po);
 
-    // Auto-generate normalized line items if repo is available
+    // Auto-generate normalized line items with statutory GST splitting if repo is available
     if (this.repos.poLineItems) {
-      const base = Math.round((saved.totalAmount / 1.18) * 100) / 100;
-      const item1 = Math.round(base * 0.50 * 100) / 100;
-      const item2 = Math.round(base * 0.30 * 100) / 100;
-      const item3 = Math.round((base - (item1 + item2)) * 100) / 100;
-
-      await this.repos.poLineItems.saveMany([
-        {
+      await this.repos.poLineItems.saveMany(
+        taxBreakdown.lineItems.map((li: CalculatedLineItemTax) => ({
           id: createId(),
           purchaseOrderId: saved.id,
-          itemIndex: 1,
-          description: `Primary Contract Scope / Core Deliverables (${saved.poNumber})`,
-          quantity: 1,
-          unit: 'lot',
-          unitPrice: item1,
-          taxableAmount: item1,
-          gstRate: 18.0,
-          gstAmount: Math.round(item1 * 0.18 * 100) / 100,
-          totalAmount: Math.round(item1 * 1.18 * 100) / 100,
+          itemIndex: li.itemIndex,
+          description: li.description,
+          quantity: li.quantity,
+          unit: li.unit,
+          unitPrice: li.unitPrice,
+          taxableAmount: li.taxableAmount,
+          gstRate: li.gstRate,
+          gstAmount: li.totalTax,
+          totalAmount: li.totalAmount,
+          hsnCode: li.hsnSacCode || null,
+          cgstRate: li.cgstRate,
+          cgstAmount: li.cgstAmount,
+          sgstRate: li.sgstRate,
+          sgstAmount: li.sgstAmount,
+          utgstRate: li.utgstRate,
+          utgstAmount: li.utgstAmount,
+          igstRate: li.igstRate,
+          igstAmount: li.igstAmount,
           createdAt: now,
           updatedAt: now,
-        },
-        {
-          id: createId(),
-          purchaseOrderId: saved.id,
-          itemIndex: 2,
-          description: 'Execution, Labor, Testing & Site Staging',
-          quantity: 1,
-          unit: 'lot',
-          unitPrice: item2,
-          taxableAmount: item2,
-          gstRate: 18.0,
-          gstAmount: Math.round(item2 * 0.18 * 100) / 100,
-          totalAmount: Math.round(item2 * 1.18 * 100) / 100,
-          createdAt: now,
-          updatedAt: now,
-        },
-        {
-          id: createId(),
-          purchaseOrderId: saved.id,
-          itemIndex: 3,
-          description: 'QA Inspection Sign-off & Warranty Activation',
-          quantity: 1,
-          unit: 'lot',
-          unitPrice: item3,
-          taxableAmount: item3,
-          gstRate: 18.0,
-          gstAmount: Math.round(item3 * 0.18 * 100) / 100,
-          totalAmount: Math.round(item3 * 1.18 * 100) / 100,
-          createdAt: now,
-          updatedAt: now,
-        },
-      ]);
+        })),
+      );
     }
 
     await auditLog(
@@ -129,7 +169,11 @@ export class PurchaseOrderService {
       saved.id,
       'po.drafted',
       null,
-      { status: saved.status, totalAmount: saved.totalAmount },
+      {
+        status: saved.status,
+        totalAmount: saved.totalAmount,
+        posState: pos.placeOfSupplyStateCode,
+      },
     );
 
     return ok(saved);

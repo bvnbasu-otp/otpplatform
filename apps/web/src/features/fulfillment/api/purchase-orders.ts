@@ -14,6 +14,14 @@ interface PoRow {
   issued_at: string | null;
   acknowledged_at: string | null;
   created_at: string;
+  place_of_supply_state_code?: string | null;
+  place_of_supply_basis?: string | null;
+  tax_snapshot?: Record<string, unknown> | null;
+  taxable_total?: number | null;
+  cgst_total?: number | null;
+  sgst_total?: number | null;
+  utgst_total?: number | null;
+  igst_total?: number | null;
   organizations?: {
     id?: string;
     name?: string;
@@ -209,6 +217,15 @@ function mapPo(row: PoRow): PurchaseOrderSummary {
     isSettled,
     invoiceStatus: inv?.status,
     paymentStatus: pay?.status,
+    // Statutory GST & Tax Attributes (Phase 5B)
+    placeOfSupplyStateCode: row.place_of_supply_state_code,
+    placeOfSupplyBasis: row.place_of_supply_basis,
+    taxSnapshot: row.tax_snapshot,
+    taxableTotal: row.taxable_total != null ? Number(row.taxable_total) : undefined,
+    cgstTotal: row.cgst_total != null ? Number(row.cgst_total) : undefined,
+    sgstTotal: row.sgst_total != null ? Number(row.sgst_total) : undefined,
+    utgstTotal: row.utgst_total != null ? Number(row.utgst_total) : undefined,
+    igstTotal: row.igst_total != null ? Number(row.igst_total) : undefined,
   };
 }
 
@@ -226,6 +243,14 @@ export async function fetchPurchaseOrders(): Promise<
       supplier_id,
       rfq_id,
       organization_id,
+      place_of_supply_state_code,
+      place_of_supply_basis,
+      tax_snapshot,
+      taxable_total,
+      cgst_total,
+      sgst_total,
+      utgst_total,
+      igst_total,
       issued_at,
       acknowledged_at,
       created_at,
@@ -325,6 +350,14 @@ export async function fetchPurchaseOrder(poId: string): Promise<
       supplier_id,
       rfq_id,
       organization_id,
+      place_of_supply_state_code,
+      place_of_supply_basis,
+      tax_snapshot,
+      taxable_total,
+      cgst_total,
+      sgst_total,
+      utgst_total,
+      igst_total,
       issued_at,
       acknowledged_at,
       created_at,

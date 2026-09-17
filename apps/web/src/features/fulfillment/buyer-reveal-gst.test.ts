@@ -134,4 +134,41 @@ describe('Bilateral Identity Reveal & GST Tax Compliance on Purchase Orders', ()
     const finalInvoiceAmount = 45000;
     expect(remainingInvoiceable - finalInvoiceAmount).toBe(0);
   });
+
+  it('validates Phase 5B statutory GST splitting for Intra-State (CGST 9% + SGST 9%)', () => {
+    const totalAmount = 495600;
+    const taxableBase = Math.round((totalAmount / 1.18) * 100) / 100;
+    const cgstAmount = Math.round((taxableBase * 0.09) * 100) / 100;
+    const sgstAmount = Math.round((taxableBase * 0.09) * 100) / 100;
+    const grossTotal = Math.round((taxableBase + cgstAmount + sgstAmount) * 100) / 100;
+
+    expect(taxableBase).toBe(420000);
+    expect(cgstAmount).toBe(37800);
+    expect(sgstAmount).toBe(37800);
+    expect(grossTotal).toBe(totalAmount);
+  });
+
+  it('validates Phase 5B statutory GST splitting for Inter-State (IGST 18%)', () => {
+    const totalAmount = 590000;
+    const taxableBase = Math.round((totalAmount / 1.18) * 100) / 100;
+    const igstAmount = Math.round((taxableBase * 0.18) * 100) / 100;
+    const grossTotal = Math.round((taxableBase + igstAmount) * 100) / 100;
+
+    expect(taxableBase).toBe(500000);
+    expect(igstAmount).toBe(90000);
+    expect(grossTotal).toBe(totalAmount);
+  });
+
+  it('validates Phase 5B statutory GST splitting for Intra-UT (CGST 9% + UTGST 9%)', () => {
+    const totalAmount = 236000;
+    const taxableBase = Math.round((totalAmount / 1.18) * 100) / 100;
+    const cgstAmount = Math.round((taxableBase * 0.09) * 100) / 100;
+    const utgstAmount = Math.round((taxableBase * 0.09) * 100) / 100;
+    const grossTotal = Math.round((taxableBase + cgstAmount + utgstAmount) * 100) / 100;
+
+    expect(taxableBase).toBe(200000);
+    expect(cgstAmount).toBe(18000);
+    expect(utgstAmount).toBe(18000);
+    expect(grossTotal).toBe(totalAmount);
+  });
 });

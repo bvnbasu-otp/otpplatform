@@ -25,5 +25,6 @@ export * from './gst/types';
 export * from './gst/gstin-validator';
 export * from './gst/gstin-lookup';
 export * from './types/progressive-invoicing';
+export * from './tax';
 export * from './accounting/tally-xml-exporter';
 export * from './accounting/zoho-json-exporter';

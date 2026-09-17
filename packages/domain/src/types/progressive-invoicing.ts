@@ -1,7 +1,8 @@
 import type { InvoiceType, MilestoneStatus } from '../enums/procurement';
+import type { TaxSnapshot } from '../tax/tax-snapshot';
 
 /**
- * Normalized Purchase Order Line Item
+ * Normalized Purchase Order Line Item (Phase 5A + Phase 5B Tax Splitting)
  */
 export interface PurchaseOrderLineItem {
   id: string;
@@ -15,6 +16,16 @@ export interface PurchaseOrderLineItem {
   gstRate: number;
   gstAmount: number;
   totalAmount: number;
+  // Phase 5B Statutory Tax Columns
+  hsnCode?: string | null;
+  cgstRate?: number;
+  cgstAmount?: number;
+  sgstRate?: number;
+  sgstAmount?: number;
+  utgstRate?: number;
+  utgstAmount?: number;
+  igstRate?: number;
+  igstAmount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -42,7 +53,7 @@ export interface MilestoneAllocation {
 }
 
 /**
- * Normalized Invoice Line Item
+ * Normalized Invoice Line Item (Phase 5A + Phase 5B Tax Splitting)
  */
 export interface InvoiceLineItem {
   id: string;
@@ -56,12 +67,22 @@ export interface InvoiceLineItem {
   taxableAmount: number;
   gstAmount: number;
   totalAmount: number;
+  // Phase 5B Statutory Tax Columns
+  hsnCode?: string | null;
+  cgstRate?: number;
+  cgstAmount?: number;
+  sgstRate?: number;
+  sgstAmount?: number;
+  utgstRate?: number;
+  utgstAmount?: number;
+  igstRate?: number;
+  igstAmount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
 
 /**
- * Progressive Invoice Overview
+ * Progressive Invoice Overview (Phase 5A + Phase 5B Tax Snapshots)
  */
 export interface ProgressiveInvoice {
   id: string;
@@ -78,6 +99,15 @@ export interface ProgressiveInvoice {
   submittedAt: string;
   approvedAt?: string | null;
   lineItems?: InvoiceLineItem[];
+  // Phase 5B Statutory GST Metadata & Immutable Tax Snapshot
+  placeOfSupplyStateCode?: string | null;
+  placeOfSupplyBasis?: string | null;
+  taxSnapshot?: TaxSnapshot | null;
+  taxableTotal?: number;
+  cgstTotal?: number;
+  sgstTotal?: number;
+  utgstTotal?: number;
+  igstTotal?: number;
 }
 
 /**
