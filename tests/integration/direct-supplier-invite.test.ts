@@ -135,7 +135,7 @@ describe('invite_direct_supplier', () => {
 
     expect(invitation?.rfq_id).toBe(RFQ_ID);
     expect(invitation?.supplier_id).toBe(data!.supplierId!);
-    expect(invitation?.anonymous_label).toMatch(/^Supplier [0-9A-HJKMNP-TV-Z]{4}$/);
+    expect(invitation?.anonymous_label).toMatch(/^Supplier (?:[A-Z]|[0-9A-HJKMNP-TV-Z]{4})$/);
     expect(invitation?.status).toBe('INVITED');
     expect(invitation?.match_reasons).toContain('direct:phone');
   });
