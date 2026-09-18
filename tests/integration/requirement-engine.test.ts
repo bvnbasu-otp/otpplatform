@@ -831,6 +831,9 @@ describe('weighted voting', () => {
     });
     expect(e1).toBeNull();
 
+    // Ensure distinct millisecond timestamp for sequential revision ordering
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     const { data: second, error: e2 } = await client.rpc('cast_committee_vote', {
       p_rfq_id: DEMO.rfqs.motor,
       p_recommended_quote_id: quotes![1].id,
