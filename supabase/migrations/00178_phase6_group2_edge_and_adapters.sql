@@ -185,6 +185,99 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.verify_profile_verification_otp(text, text) TO anon, authenticated;
 
+-- ---------------------------------------------------------------------------
+-- 4. Weighted Voting Monotonic Timestamp Hardening
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.cast_committee_vote(
+  p_rfq_id              uuid,
+  p_recommended_quote_id uuid,
+  p_choice              vote_choice,
+  p_comment             text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_rfq      rfqs%ROWTYPE;
+  v_profile  uuid;
+  v_previous uuid;
+  v_vote_id  uuid;
+BEGIN
+  v_profile := private.get_profile_id();
+  IF v_profile IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT * INTO v_rfq FROM rfqs WHERE id = p_rfq_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'RFQ not found';
+  END IF;
+
+  IF NOT private.can_access_rfq_as_committee(p_rfq_id)
+     AND NOT private.is_org_manager_or_above(v_rfq.organization_id) THEN
+    RAISE EXCEPTION 'You are not on this evaluation committee';
+  END IF;
+
+  -- The lock is the deadline. Before it, a member may revise freely.
+  IF EXISTS (SELECT 1 FROM awards WHERE rfq_id = p_rfq_id) THEN
+    RAISE EXCEPTION 'Voting is closed: the award for this RFQ is locked';
+  END IF;
+
+  IF v_rfq.status NOT IN ('EVALUATING', 'CLARIFICATION', 'CLOSED') THEN
+    RAISE EXCEPTION 'Voting is open only while the RFQ is under evaluation (currently %)', v_rfq.status;
+  END IF;
+
+  IF p_choice = 'RECOMMEND' THEN
+    IF p_recommended_quote_id IS NULL THEN
+      RAISE EXCEPTION 'A recommendation must name a quote';
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1 FROM quotes
+      WHERE id = p_recommended_quote_id AND rfq_id = p_rfq_id
+        AND status NOT IN ('DRAFT', 'WITHDRAWN')
+    ) THEN
+      RAISE EXCEPTION 'That quote is not open for recommendation on this RFQ';
+    END IF;
+  END IF;
+
+  SELECT id INTO v_previous
+  FROM private.current_votes(p_rfq_id) cv
+  WHERE cv.profile_id = v_profile;
+
+  INSERT INTO committee_votes (rfq_id, profile_id, recommended_quote_id, choice, comment, cast_at)
+  VALUES (p_rfq_id, v_profile, p_recommended_quote_id, p_choice, p_comment, clock_timestamp())
+  RETURNING id INTO v_vote_id;
+
+  INSERT INTO audit_events (
+    event_type, actor_id, organization_id, entity_type, entity_id, payload
+  ) VALUES (
+    CASE WHEN v_previous IS NULL THEN 'vote.cast' ELSE 'vote.revised' END,
+    v_profile,
+    v_rfq.organization_id,
+    'rfq',
+    p_rfq_id::text,
+    jsonb_build_object(
+      'vote_id', v_vote_id,
+      'supersedes', v_previous,
+      'choice', p_choice,
+      'recommended_quote_id', p_recommended_quote_id
+    )
+  );
+
+  RETURN jsonb_build_object(
+    'vote_id', v_vote_id,
+    'supersedes', v_previous,
+    'revised', v_previous IS NOT NULL
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.cast_committee_vote(uuid, uuid, vote_choice, text) TO authenticated;
+
 COMMENT ON VIEW public.quotes_revealed IS
   'Post-reveal supplier quote matrix with identity-protected data minimization. Unmasks full statutory identity for winning (SELECTED) quote only; preserves anonymized commercial parameters for runner-ups.';
 
