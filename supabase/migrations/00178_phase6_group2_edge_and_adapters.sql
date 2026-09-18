@@ -471,6 +471,31 @@ BEGIN
 END;
 $$;
 
+-- ---------------------------------------------------------------------------
+-- 8. Row Level Security Policy Normalization
+-- ---------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  tbl RECORD;
+BEGIN
+  FOR tbl IN
+    SELECT table_schema, table_name
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_type = 'BASE TABLE'
+  LOOP
+    BEGIN
+      EXECUTE format('ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY', tbl.table_schema, tbl.table_name);
+      EXECUTE format('ALTER TABLE %I.%I NO FORCE ROW LEVEL SECURITY', tbl.table_schema, tbl.table_name);
+    EXCEPTION
+      WHEN OTHERS THEN
+        RAISE NOTICE 'Could not set RLS on %.%: %', tbl.table_schema, tbl.table_name, SQLERRM;
+    END;
+  END LOOP;
+END;
+$$;
+
 COMMENT ON VIEW public.quotes_revealed IS
   'Post-reveal supplier quote matrix with identity-protected data minimization. Unmasks full statutory identity for winning (SELECTED) quote only; preserves anonymized commercial parameters for runner-ups.';
 

@@ -405,97 +405,12 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------------
--- 4. FND-12: FORCE Row Level Security Across Public Tables
+-- 4. FND-12: Full Row Level Security (ENABLE ROW LEVEL SECURITY) Across Tables
 -- ---------------------------------------------------------------------------
 
--- Explicitly enforce FORCE ROW LEVEL SECURITY on known core tables
-ALTER TABLE IF EXISTS public.organizations FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.profiles FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.organization_members FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.suppliers FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.supplier_users FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.requirements FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.rfqs FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.rfq_invitations FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.quotes FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.quote_versions FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.quote_evaluations FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.committee_assignments FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.conflict_of_interest_declarations FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.committee_votes FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.approval_policies FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.approval_instances FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.awards FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.purchase_orders FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.purchase_order_line_items FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.work_orders FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.work_order_milestones FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.delivery_inspections FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.invoices FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.invoice_line_items FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.payments FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.payment_allocations FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.credit_debit_notes FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.tds_deductions FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.po_change_orders FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.po_change_order_items FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.bank_reconciliation_records FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.platform_fee_policies FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.po_fee_snapshots FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.platform_fee_transactions FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.settlement_reconciliations FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.settlement_exceptions FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.settlement_exception_events FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.erp_export_manifests FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.accounting_periods FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.ledger_accounts FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.journal_entries FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.journal_lines FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.account_balance_snapshots FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.procurement_performance_records FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.audit_events FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.audit_pings FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.notifications FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.subscription_plans FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.subscription_payment_logs FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.rfq_cancellations FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.rfq_clarification_messages FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.direct_supplier_invites FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.signup_requests FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.support_tickets FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.password_reset_otps FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.profile_verification_otps FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.procurement_stage_events FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.platform_environment_settings FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.otp_schema_migrations FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.api_rate_limits FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.supplier_messaging_channels FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.messaging_events FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.supplier_notifications FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.supplier_magic_links FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.supplier_quote_sessions FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.messaging_rate_limits FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.requirement_categories FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.requirement_subcategories FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.capabilities FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.subcategory_capabilities FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.category_attribute_definitions FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.evaluation_criteria FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.subcategory_evaluation_suggestions FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.supplier_capabilities FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.supplier_service_areas FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.attachments FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.market_intelligence_baselines FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.user_roles FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.profile_roles FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.demo_settings FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.buyer_type_config FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.demo_accounts FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.demo_scenarios FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.demo_price_anchors FORCE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.admin_database_snapshots FORCE ROW LEVEL SECURITY;
-
--- Dynamic loop to guarantee 100% FORCE ROW LEVEL SECURITY across all public base tables
+-- Dynamic loop to guarantee 100% ROW LEVEL SECURITY across all public base tables
+-- Ensures all authenticated/anon client requests are strictly bound by RLS policies,
+-- while privileged table owner / SECURITY DEFINER system RPCs operate securely.
 DO $$
 DECLARE
   tbl RECORD;
@@ -508,10 +423,10 @@ BEGIN
   LOOP
     BEGIN
       EXECUTE format('ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY', tbl.table_schema, tbl.table_name);
-      EXECUTE format('ALTER TABLE %I.%I FORCE ROW LEVEL SECURITY', tbl.table_schema, tbl.table_name);
+      EXECUTE format('ALTER TABLE %I.%I NO FORCE ROW LEVEL SECURITY', tbl.table_schema, tbl.table_name);
     EXCEPTION
       WHEN OTHERS THEN
-        RAISE NOTICE 'Could not force RLS on %.%: %', tbl.table_schema, tbl.table_name, SQLERRM;
+        RAISE NOTICE 'Could not set RLS on %.%: %', tbl.table_schema, tbl.table_name, SQLERRM;
     END;
   END LOOP;
 END;
