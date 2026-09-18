@@ -41,7 +41,21 @@ function Get-NodeExecutable {
 
 function Invoke-Task {
   param([string]$TaskName, [string[]]$TaskArgs = @())
-  if (Get-Command pnpm.cmd -ErrorAction SilentlyContinue) {
+  $node = Get-NodeExecutable
+  $TsxEntry = "node_modules/tsx/dist/cli.mjs"
+  $VitestEntry = "node_modules/vitest/vitest.mjs"
+
+  if ($node -and (Test-Path $TsxEntry) -and (Test-Path $VitestEntry)) {
+    if ($TaskName -eq "test:vocab") {
+      & $node $TsxEntry scripts/verify-vocabulary.ts @TaskArgs
+    } elseif ($TaskName -eq "test:policy") {
+      & $node $TsxEntry scripts/verify-test-coverage-policy.ts @TaskArgs
+    } elseif ($TaskName -eq "test:unit") {
+      & $node $VitestEntry run --config packages/domain/vitest.config.ts @TaskArgs
+    } else {
+      throw "Unknown task: $TaskName"
+    }
+  } elseif (Get-Command pnpm.cmd -ErrorAction SilentlyContinue) {
     & pnpm.cmd $TaskName @TaskArgs
   } elseif (Get-Command pnpm -ErrorAction SilentlyContinue) {
     & pnpm $TaskName @TaskArgs
@@ -50,19 +64,7 @@ function Invoke-Task {
   } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
     & npx pnpm $TaskName @TaskArgs
   } else {
-    $node = Get-NodeExecutable
-    if (-not $node) {
-      throw "Node.js executable could not be resolved. Please ensure Node.js is installed."
-    }
-    if ($TaskName -eq "test:vocab") {
-      & $node "node_modules/tsx/dist/cli.mjs" scripts/verify-vocabulary.ts @TaskArgs
-    } elseif ($TaskName -eq "test:policy") {
-      & $node "node_modules/tsx/dist/cli.mjs" scripts/verify-test-coverage-policy.ts @TaskArgs
-    } elseif ($TaskName -eq "test:unit") {
-      & $node "node_modules/vitest/vitest.mjs" run --config packages/domain/vitest.config.ts @TaskArgs
-    } else {
-      throw "Unknown task: $TaskName"
-    }
+    throw "Node.js executable could not be resolved. Please ensure Node.js is installed."
   }
 }
 
