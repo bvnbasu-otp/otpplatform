@@ -174,8 +174,9 @@ DECLARE
 BEGIN
   -- Sync all affected invoices
   FOR v_inv_id IN
-    SELECT DISTINCT unnest(ARRAY[NEW.invoice_id, OLD.invoice_id])
-    WHERE unnest IS NOT NULL
+    SELECT DISTINCT item
+    FROM unnest(ARRAY[NEW.invoice_id, OLD.invoice_id]) AS item
+    WHERE item IS NOT NULL
   LOOP
     SELECT id, amount, status INTO v_inv FROM public.invoices WHERE id = v_inv_id;
     IF FOUND THEN
@@ -209,8 +210,9 @@ BEGIN
 
   -- Sync all affected payments
   FOR v_pay_id IN
-    SELECT DISTINCT unnest(ARRAY[NEW.payment_id, OLD.payment_id])
-    WHERE unnest IS NOT NULL
+    SELECT DISTINCT item
+    FROM unnest(ARRAY[NEW.payment_id, OLD.payment_id]) AS item
+    WHERE item IS NOT NULL
   LOOP
     SELECT amount INTO v_pay_amt FROM public.payments WHERE id = v_pay_id;
     IF FOUND THEN

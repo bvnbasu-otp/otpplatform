@@ -391,6 +391,86 @@ BEGIN
 END;
 $$;
 
+-- ---------------------------------------------------------------------------
+-- 7. Payment Allocations Sync Function Fix
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.sync_invoice_payment_state()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_inv_id uuid;
+  v_pay_id uuid;
+  v_inv RECORD;
+  v_paid_amt numeric(14, 2);
+  v_bal_due numeric(14, 2);
+  v_new_status public.invoice_status;
+  v_pay_amt numeric(14, 2);
+  v_tot_allocated numeric(14, 2);
+BEGIN
+  -- Sync all affected invoices
+  FOR v_inv_id IN
+    SELECT DISTINCT item
+    FROM unnest(ARRAY[NEW.invoice_id, OLD.invoice_id]) AS item
+    WHERE item IS NOT NULL
+  LOOP
+    SELECT id, amount, status INTO v_inv FROM public.invoices WHERE id = v_inv_id;
+    IF FOUND THEN
+      SELECT COALESCE(SUM(allocated_amount), 0.00)
+      INTO v_paid_amt
+      FROM public.payment_allocations
+      WHERE invoice_id = v_inv_id AND status = 'ALLOCATED';
+
+      v_bal_due := GREATEST(0.00, v_inv.amount - v_paid_amt);
+
+      IF v_paid_amt >= v_inv.amount THEN
+        v_new_status := 'PAID';
+      ELSIF v_paid_amt > 0.00 THEN
+        v_new_status := 'PARTIALLY_PAID';
+      ELSE
+        IF v_inv.status IN ('PAID', 'PARTIALLY_PAID') THEN
+          v_new_status := 'APPROVED';
+        ELSE
+          v_new_status := v_inv.status;
+        END IF;
+      END IF;
+
+      UPDATE public.invoices
+      SET paid_amount = v_paid_amt,
+          balance_due = v_bal_due,
+          status = v_new_status,
+          updated_at = now()
+      WHERE id = v_inv_id;
+    END IF;
+  END LOOP;
+
+  -- Sync all affected payments
+  FOR v_pay_id IN
+    SELECT DISTINCT item
+    FROM unnest(ARRAY[NEW.payment_id, OLD.payment_id]) AS item
+    WHERE item IS NOT NULL
+  LOOP
+    SELECT amount INTO v_pay_amt FROM public.payments WHERE id = v_pay_id;
+    IF FOUND THEN
+      SELECT COALESCE(SUM(allocated_amount), 0.00)
+      INTO v_tot_allocated
+      FROM public.payment_allocations
+      WHERE payment_id = v_pay_id AND status = 'ALLOCATED';
+
+      UPDATE public.payments
+      SET unallocated_amount = GREATEST(0.00, v_pay_amt - v_tot_allocated),
+          updated_at = now()
+      WHERE id = v_pay_id;
+    END IF;
+  END LOOP;
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$$;
+
 COMMENT ON VIEW public.quotes_revealed IS
   'Post-reveal supplier quote matrix with identity-protected data minimization. Unmasks full statutory identity for winning (SELECTED) quote only; preserves anonymized commercial parameters for runner-ups.';
 
