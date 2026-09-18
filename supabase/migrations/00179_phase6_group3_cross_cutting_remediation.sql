@@ -230,6 +230,7 @@ AS $$
 DECLARE
   v_id uuid := p_id;
   v_admin_id uuid := private.get_profile_id();
+  v_announcements jsonb;
   v_rec record;
 BEGIN
   IF NOT private.is_platform_admin() THEN
