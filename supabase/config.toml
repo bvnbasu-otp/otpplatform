@@ -30,7 +30,18 @@ max_client_conn = 100
 # docs/DEPLOYMENT.md.
 [db.seed]
 enabled = true
-sql_paths = ["./seed.sql", "./seed_pilots_horizontals.sql", "./seed_market_intelligence.sql", "./seed_procurement_policies.sql", "./seed_taxonomy_alignment.sql", "./seed_demo_environment.sql", "./seed_demo_messaging.sql", "./seed_demo_roles.sql", "./seed_demo_test_accounts.sql", "./seed_master_role_accounts.sql"]
+sql_paths = [
+  "./seeds/04_test_fixtures/golden_path_borewell.sql",
+  "./seeds/04_test_fixtures/pilots_horizontals.sql",
+  "./seeds/01_reference_data/market_intelligence.sql",
+  "./seeds/01_reference_data/procurement_policies.sql",
+  "./seeds/04_test_fixtures/taxonomy_alignment.sql",
+  "./seeds/03_ecosystem_sunrise_45/environment.sql",
+  "./seeds/03_ecosystem_sunrise_45/messaging.sql",
+  "./seeds/03_ecosystem_sunrise_45/roles.sql",
+  "./seeds/03_ecosystem_sunrise_45/test_accounts.sql",
+  "./seeds/03_ecosystem_sunrise_45/master_role_accounts.sql"
+]
 
 [studio]
 enabled = false

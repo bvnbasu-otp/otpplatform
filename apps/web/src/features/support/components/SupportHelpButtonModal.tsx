@@ -14,7 +14,7 @@ export interface SupportHelpButtonModalProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const ROUTED_ADMIN_EMAIL = 'bvnbasu@gmail.com';
+const ROUTED_ADMIN_EMAIL = import.meta.env.VITE_SUPPORT_ADMIN_EMAIL || 'support@on-the-process.com';
 
 export function SupportHelpButtonModal({
   className = '',

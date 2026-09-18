@@ -132,8 +132,8 @@ INSERT INTO requirements (
   'QUOTING',
   '10 HP Borewell Motor Winding',
   'Community borewell motor failed. Need rewinding for 10 HP submersible pump at Block C pump house.',
-  'ec3df820-fa07-40e1-bd63-f9b6809e6913',
-  '09dd1151-7e72-4bf1-a6e3-57a09fc72700',
+  (SELECT category_id FROM requirement_subcategories WHERE code = 'motor_rewinding'),
+  (SELECT id FROM requirement_subcategories WHERE code = 'motor_rewinding'),
   'REPAIR_MAINTENANCE',
   '{
     "requirementType": "SERVICE",

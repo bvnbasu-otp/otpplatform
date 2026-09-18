@@ -104,7 +104,7 @@ export function LegalPage() {
               <p className="mt-2">
                 Procurement records are retained for 7 years as required by Indian
                 accounting and tax regulations. Users may request data export or account
-                deletion by contacting bvnbasu@gmail.com. Audit trails
+                deletion by contacting privacy@on-the-process.com. Audit trails
                 and legal compliance records are retained per statutory requirements.
               </p>
             </div>
@@ -129,7 +129,7 @@ export function LegalPage() {
                 <li>Right to withdraw consent at any time</li>
               </ul>
               <p className="mt-2">
-                To exercise these rights, contact: bvnbasu@gmail.com
+                To exercise these rights, contact: privacy@on-the-process.com
               </p>
             </div>
 
@@ -305,8 +305,8 @@ export function LegalPage() {
             <div>
               <h2 className="text-lg font-semibold text-navy">Contact & Legal Notices</h2>
               <p className="mt-2">
-                For legal inquiries: bvnbasu@gmail.com<br />
-                For support: bvnbasu@gmail.com<br />
+                For legal inquiries: legal@on-the-process.com<br />
+                For support: support@on-the-process.com<br />
                 Address: [Insert Registered Business Address]
               </p>
             </div>

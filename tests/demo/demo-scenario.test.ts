@@ -20,7 +20,13 @@ function assertBlindPayloadSafe(payload: Record<string, unknown>): void {
 const root = resolve(__dirname, '../..');
 
 function readSeed(name: string): string {
-  const path = resolve(root, 'supabase', name);
+  let path = resolve(root, 'supabase', name);
+  if (!existsSync(path)) {
+    const seedPath = resolve(root, 'supabase/seeds', name);
+    if (existsSync(seedPath)) {
+      path = seedPath;
+    }
+  }
   expect(existsSync(path), `${name} should exist`).toBe(true);
   return readFileSync(path, 'utf8');
 }

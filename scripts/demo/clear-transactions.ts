@@ -4,6 +4,9 @@
  * while preserving all User Accounts, Organizations, Suppliers, Capabilities, and Taxonomy.
  */
 import { createClient } from '@supabase/supabase-js';
+import { assertSafeEnvironment } from './env-guard';
+
+assertSafeEnvironment('clear-transactions');
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE_KEY =

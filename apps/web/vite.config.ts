@@ -40,7 +40,15 @@ export default defineConfig({
   // dependency of the app. Marking it external keeps Rollup from failing when
   // it isn't installed; the dynamic import in `main.tsx` catches the runtime
   // failure and the console-only telemetry stays in place.
-  optimizeDeps: { exclude: ['@sentry/browser'] },
+  esbuild: {
+    target: 'es2022',
+  },
+  optimizeDeps: {
+    exclude: ['@sentry/browser'],
+    esbuildOptions: {
+      target: 'es2022',
+    },
+  },
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 1500,

@@ -1,33 +1,46 @@
 import { execSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertSafeEnvironment } from './env-guard';
+
+assertSafeEnvironment('reset-demo');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '../..');
 
-console.log('\n🔄 Resetting OTP demo to walkthrough-ready state...\n');
+const mode = (process.argv[2] ?? 'ready') as 'ready' | 'complete';
+console.log(`\n🔄 Resetting OTP demo to ${mode} state...\n`);
 
 const start = Date.now();
 
 try {
-  execSync('npx tsx scripts/demo/seed-demo.ts ready', {
+  execSync(`pnpm exec tsx scripts/demo/seed-demo.ts ${mode}`, {
     cwd: root,
     stdio: 'inherit',
     env: { ...process.env, DEMO_MODE: 'true' },
   });
 } catch {
-  console.log('\n⚠️  Incremental seed failed — falling back to supabase db reset...\n');
+  console.log('\n⚠️  Direct tsx failed — trying npx tsx...\n');
   try {
-    execSync('supabase db reset --yes', {
+    execSync(`npx tsx scripts/demo/seed-demo.ts ${mode}`, {
       cwd: root,
       stdio: 'inherit',
-      env: process.env,
+      env: { ...process.env, DEMO_MODE: 'true' },
     });
   } catch {
-    console.error(
-      '\n❌ Reset failed. Start Supabase: pnpm db:start\n',
-    );
-    process.exit(1);
+    console.log('\n⚠️  Incremental seed failed — falling back to supabase db reset...\n');
+    try {
+      execSync('supabase db reset --yes', {
+        cwd: root,
+        stdio: 'inherit',
+        env: process.env,
+      });
+    } catch {
+      console.error(
+        '\n❌ Reset failed. Start Supabase: pnpm db:start\n',
+      );
+      process.exit(1);
+    }
   }
 }
 

@@ -125,7 +125,7 @@ services:
       KONG_DNS_ORDER: LAST,A,CNAME
       KONG_PLUGINS: request-transformer,cors
     volumes:
-      - C:/Users/Dhiya/.otp-config/kong.yml:/etc/kong/kong.yml:ro
+      - ./supabase/kong.yml:/etc/kong/kong.yml:ro
 
   # ---------------------------------------------------------------------------
   # WhatsApp Gateway (WAHA - Paired & Self-Contained)

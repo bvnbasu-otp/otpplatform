@@ -1,15 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { DEMO } from '../../scripts/demo/constants';
 
 const root = resolve(__dirname, '../..');
 
+const completeSqlPath = existsSync(resolve(root, 'supabase/seed_demo_complete.sql'))
+  ? resolve(root, 'supabase/seed_demo_complete.sql')
+  : resolve(root, 'supabase/seeds/02_demo_durga_rainbow/complete.sql');
+
 describe('E2E demo walkthrough — seed completeness', () => {
-  const completeSql = readFileSync(
-    resolve(root, 'supabase/seed_demo_complete.sql'),
-    'utf8',
-  );
+  const completeSql = readFileSync(completeSqlPath, 'utf8');
 
   it('complete seed includes full golden-path entities', () => {
     expect(completeSql).toContain(DEMO.awardId);

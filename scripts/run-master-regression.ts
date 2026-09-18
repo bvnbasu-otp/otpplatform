@@ -96,8 +96,14 @@ function runStep(name: string, category: string, command: string, testCount: num
   } catch (err: any) {
     const durationMs = Date.now() - start;
     console.log(`\x1b[31mFAILED\x1b[0m (${durationMs}ms)`);
-    console.error(err.stdout || err.stderr || err.message);
-    summary.push({ name, category, passed: 0, failed: testCount, durationMs, details: err.message });
+    const output = err.stdout || err.stderr || err.message;
+    console.error(output);
+    const cleanOutput = (output || '').replace(/\x1b\[[0-9;]*m/g, '');
+    const vitestPassed = cleanOutput.match(/Tests\s+.*?(\d+)\s+passed/i);
+    const vitestFailed = cleanOutput.match(/Tests\s+.*?(\d+)\s+failed/i);
+    const actualPassed = vitestPassed ? parseInt(vitestPassed[1], 10) : 0;
+    const actualFailed = vitestFailed ? parseInt(vitestFailed[1], 10) : testCount;
+    summary.push({ name, category, passed: actualPassed, failed: actualFailed, durationMs, details: err.message });
   }
 }
 
@@ -284,7 +290,7 @@ async function main() {
     'Live Database Integration & RLS Security Suite',
     'INTEGRATION',
     'pnpm test:db',
-    396
+    408
   );
 
   // 8. Live Demo Scenario & E2E Walkthrough

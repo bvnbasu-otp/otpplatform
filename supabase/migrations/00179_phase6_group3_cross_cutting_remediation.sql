@@ -525,6 +525,110 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_founder_executive_metrics() TO authenticated, service_role;
 
+-- ---------------------------------------------------------------------------
+-- 5. Hardened Platform Admin Identity & Service Role Authorization
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION private.is_platform_admin()
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_jwt_claims jsonb;
+  v_jwt_email text;
+  v_jwt_role text;
+BEGIN
+  -- 1. Service role check via auth context (PostgREST)
+  BEGIN
+    v_jwt_role := nullif(current_setting('request.jwt.claim.role', true), '');
+    IF v_jwt_role = 'service_role' THEN
+      RETURN true;
+    END IF;
+    v_jwt_claims := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
+    IF v_jwt_claims ->> 'role' = 'service_role' THEN
+      RETURN true;
+    END IF;
+    v_jwt_email := lower(v_jwt_claims ->> 'email');
+  EXCEPTION WHEN OTHERS THEN
+    v_jwt_claims := NULL;
+    v_jwt_email := NULL;
+  END;
+
+  -- 2. Direct psql / DB superuser session where no HTTP/JWT session exists (session_user)
+  IF v_uid IS NULL AND v_jwt_role IS NULL AND session_user IN ('postgres', 'supabase_admin') THEN
+    RETURN true;
+  END IF;
+
+  -- 3. JWT email claim check
+  IF v_jwt_email IS NOT NULL AND v_jwt_email IN (
+    'admin@otp.test',
+    'bvnbasu@gmail.com',
+    'ops@otp.test',
+    'superadmin@otp.test',
+    'admin@otp.ai',
+    'ops@otp.ai',
+    'admin@procureos.test'
+  ) THEN
+    RETURN true;
+  END IF;
+
+  IF v_uid IS NULL THEN
+    RETURN false;
+  END IF;
+
+  -- 4. Check profiles table is_platform_admin flag
+  IF EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE (auth_user_id = v_uid OR id = v_uid)
+      AND is_platform_admin = true
+  ) THEN
+    RETURN true;
+  END IF;
+
+  -- 5. Check auth.users table email whitelist
+  IF EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE id = v_uid
+      AND lower(email) IN (
+        'admin@otp.test',
+        'bvnbasu@gmail.com',
+        'ops@otp.test',
+        'superadmin@otp.test',
+        'admin@otp.ai',
+        'ops@otp.ai',
+        'admin@procureos.test'
+      )
+  ) THEN
+    RETURN true;
+  END IF;
+
+  -- 6. Check profiles table email whitelist
+  IF EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE (auth_user_id = v_uid OR id = v_uid)
+      AND lower(email) IN (
+        'admin@otp.test',
+        'bvnbasu@gmail.com',
+        'ops@otp.test',
+        'superadmin@otp.test',
+        'admin@otp.ai',
+        'ops@otp.ai',
+        'admin@procureos.test'
+      )
+  ) THEN
+    RETURN true;
+  END IF;
+
+  RETURN false;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION private.is_platform_admin() TO authenticated, service_role, anon;
+
 -- Seed default initial announcements
 INSERT INTO public.announcements (
   id, title, message, category, severity, audience, status, publish_at

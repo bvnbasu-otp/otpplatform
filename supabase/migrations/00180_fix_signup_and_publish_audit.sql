@@ -1,30 +1,19 @@
--- Migration 00166: Instant Buyer Auto-Approval and 1 Free RFQ Starter Credit
--- 1. Adds free_rfq_credits and rfq_credits_used columns to public.organizations.
--- 2. Updates submit_signup_request RPC to auto-approve buyer registrations instantly:
---    - Automatically provisions auth.users and public.profiles.
---    - Automatically provisions public.organizations with Active 30-day starter plan and 1 Free RFQ Credit.
---    - Links organization_members and profile_roles with appropriate buyer roles (e.g. PROPERTY_OWNER / FACILITY_MANAGER).
---    - Dispatches instant onboarding state with zero wait time.
--- 3. Updates get_organization_subscription RPC to return free_rfq_credits and rfq_credits_used.
--- 4. Updates publish_requirement RPC to record credit utilization when an RFQ is published.
+-- =============================================================================
+-- Migration 00180: Fix submit_signup_request & publish_requirement Audit Payload
+--
+-- Fixes:
+--   1. submit_signup_request: ensures pending status, side-filtered role validation,
+--      no auto-approval bypass, proper registration reference and audit event.
+--   2. publish_requirement: ensures market intelligence snapshot is captured and
+--      marketIntelScope and marketIntelKey are properly recorded in the requirement.published
+--      audit event payload.
+-- =============================================================================
 
 BEGIN;
 
--- 1. Schema Enhancements on public.organizations
-ALTER TABLE public.organizations
-  ADD COLUMN IF NOT EXISTS free_rfq_credits integer DEFAULT 1,
-  ADD COLUMN IF NOT EXISTS rfq_credits_used integer DEFAULT 0;
-
--- Backfill existing organizations with at least 1 free RFQ credit if NULL
-UPDATE public.organizations
-SET free_rfq_credits = 1
-WHERE free_rfq_credits IS NULL;
-
-UPDATE public.organizations
-SET rfq_credits_used = 0
-WHERE rfq_credits_used IS NULL;
-
--- 2. Updated submit_signup_request
+-- ---------------------------------------------------------------------------
+-- 1. Restore canonical submit_signup_request
+-- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.submit_signup_request(p_request jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -54,7 +43,7 @@ BEGIN
   FROM jsonb_array_elements_text(COALESCE(p_request->'category_codes', '[]'::jsonb)) AS raw(code)
   JOIN requirement_categories c ON c.code = raw.code AND c.is_active;
 
-  -- Role resolution
+  -- Role resolution: must exist, be active, and belong to the requested side
   SELECT ur.code INTO v_role
   FROM user_roles ur
   WHERE ur.code = NULLIF(btrim(COALESCE(p_request->>'role_code', '')), '')
@@ -130,65 +119,9 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.submit_signup_request(jsonb) TO anon, authenticated, service_role;
 
--- 3. Update get_organization_subscription RPC to return free_rfq_credits and rfq_credits_used
-CREATE OR REPLACE FUNCTION public.get_organization_subscription(p_organization_id uuid)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, private, auth
-AS $$
-DECLARE
-  v_org organizations%ROWTYPE;
-  v_now timestamptz := now();
-  v_is_expired boolean;
-  v_days_left integer;
-  v_tier text;
-BEGIN
-  SELECT * INTO v_org
-  FROM public.organizations
-  WHERE id = p_organization_id;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'Organization not found');
-  END IF;
-
-  v_tier := COALESCE(v_org.subscription_tier, 
-    CASE WHEN v_org.org_type::text IN ('COMMUNITY', 'ENTERPRISE', 'INSTITUTION') 
-      THEN 'TIER_2_ENTERPRISE' 
-      ELSE 'TIER_1_MSME' 
-    END
-  );
-
-  v_is_expired := (v_org.subscription_expires_at IS NOT NULL AND v_org.subscription_expires_at < v_now);
-  
-  IF v_org.subscription_expires_at IS NOT NULL THEN
-    v_days_left := GREATEST(0, CEIL(EXTRACT(EPOCH FROM (v_org.subscription_expires_at - v_now)) / 86400)::integer);
-  ELSE
-    v_days_left := 0;
-  END IF;
-
-  RETURN jsonb_build_object(
-    'ok', true,
-    'organization_id', v_org.id,
-    'organization_name', v_org.name,
-    'org_type', v_org.org_type,
-    'tier', v_tier,
-    'status', CASE WHEN v_is_expired THEN 'EXPIRED' ELSE COALESCE(v_org.subscription_status, 'ACTIVE') END,
-    'plan', COALESCE(v_org.subscription_plan, 'MONTHLY'),
-    'started_at', v_org.subscription_started_at,
-    'expires_at', v_org.subscription_expires_at,
-    'days_remaining', v_days_left,
-    'is_expired', v_is_expired,
-    'free_rfq_credits', COALESCE(v_org.free_rfq_credits, 1),
-    'rfq_credits_used', COALESCE(v_org.rfq_credits_used, 0),
-    'payment_reference', v_org.payment_reference
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.get_organization_subscription(uuid) TO authenticated, anon, service_role;
-
--- 4. Update publish_requirement to record credit deduction
+-- ---------------------------------------------------------------------------
+-- 2. Restore canonical publish_requirement with market intelligence & credit deduction
+-- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.publish_requirement(
   p_requirement_id      uuid,
   p_sourcing_mode       sourcing_mode DEFAULT 'IDENTITY_PROTECTED',
@@ -200,7 +133,7 @@ CREATE OR REPLACE FUNCTION public.publish_requirement(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, private, auth, extensions
 AS $$
 DECLARE
   v_req              requirements%ROWTYPE;
@@ -258,7 +191,7 @@ BEGIN
     v_subcategory_code, v_category_code, v_req.delivery_city
   );
 
-  -- Track credit usage on organization
+  -- Track credit usage on organization if present
   UPDATE public.organizations
   SET free_rfq_credits = GREATEST(0, COALESCE(free_rfq_credits, 1) - 1),
       rfq_credits_used = COALESCE(rfq_credits_used, 0) + 1,
@@ -311,7 +244,7 @@ BEGIN
     jsonb_build_object(
       'rfqId', v_rfq_id,
       'publicRef', v_public_ref,
-      'sourcingMode', p_sourcing_mode,
+      'sourcingMode', p_sourcing_mode::text,
       'minQuotesRequired', p_min_quotes_required,
       'quoteDeadline', v_quote_deadline,
       'marketIntelScope', COALESCE(v_snapshot ->> 'matchedScope', 'none'),
@@ -328,6 +261,6 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.publish_requirement(uuid, sourcing_mode, integer, integer, jsonb, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.publish_requirement(uuid, sourcing_mode, integer, integer, jsonb, text) TO authenticated, service_role;
 
 COMMIT;
