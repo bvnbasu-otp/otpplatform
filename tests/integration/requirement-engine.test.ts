@@ -1186,11 +1186,14 @@ describe('demo environment', () => {
   it('generates bids inside the ranges they were drawn from', async () => {
     const service = createServiceClient();
 
-    const { data } = await service.from('quote_versions').select('snapshot');
+    const { data } = await service
+      .from('quote_versions')
+      .select('snapshot')
+      .eq('notes', 'Simulated demo quote');
 
-    const simulated = data!
+    const simulated = (data ?? [])
       .map((v) => v.snapshot as Record<string, number | boolean | null>)
-      .filter((s) => s && s.simulated === true && s.basePrice != null);
+      .filter((s) => s && s.simulated === true);
 
     expect(simulated.length).toBeGreaterThan(0);
 

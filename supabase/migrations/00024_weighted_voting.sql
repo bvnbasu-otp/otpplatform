@@ -113,8 +113,8 @@ BEGIN
   FROM private.current_votes(p_rfq_id) cv
   WHERE cv.profile_id = v_profile;
 
-  INSERT INTO committee_votes (rfq_id, profile_id, recommended_quote_id, choice, comment)
-  VALUES (p_rfq_id, v_profile, p_recommended_quote_id, p_choice, p_comment)
+  INSERT INTO committee_votes (rfq_id, profile_id, recommended_quote_id, choice, comment, cast_at)
+  VALUES (p_rfq_id, v_profile, p_recommended_quote_id, p_choice, p_comment, clock_timestamp())
   RETURNING id INTO v_vote_id;
 
   INSERT INTO audit_events (
