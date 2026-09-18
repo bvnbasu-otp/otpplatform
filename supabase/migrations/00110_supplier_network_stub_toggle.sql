@@ -334,8 +334,16 @@ DECLARE
 BEGIN
   IF NOT private.supplier_network_stub_enabled() THEN RETURN NEW; END IF;
 
+  -- Skip if the work order or PO is already completed or seeded in final state
+  IF NEW.status = 'COMPLETED' THEN RETURN NEW; END IF;
+
   SELECT * INTO v_po FROM purchase_orders WHERE id = NEW.purchase_order_id;
-  IF NOT FOUND THEN RETURN NEW; END IF;
+  IF NOT FOUND OR v_po.status IN ('COMPLETED', 'CANCELLED') THEN RETURN NEW; END IF;
+
+  -- Prevent duplicate invoice generation if an invoice already exists for this WO / PO
+  IF EXISTS (SELECT 1 FROM public.invoices WHERE work_order_id = NEW.id OR purchase_order_id = v_po.id) THEN
+    RETURN NEW;
+  END IF;
 
   -- The supplier accepts the PO immediately: nobody real is waiting to click it.
   UPDATE purchase_orders

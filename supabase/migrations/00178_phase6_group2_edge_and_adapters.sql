@@ -189,6 +189,19 @@ GRANT EXECUTE ON FUNCTION public.verify_profile_verification_otp(text, text) TO 
 -- 4. Weighted Voting Monotonic Timestamp Hardening
 -- ---------------------------------------------------------------------------
 
+CREATE OR REPLACE FUNCTION private.current_votes(p_rfq_id uuid)
+RETURNS SETOF committee_votes
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT DISTINCT ON (cv.profile_id) cv.*
+  FROM committee_votes cv
+  WHERE cv.rfq_id = p_rfq_id
+  ORDER BY cv.profile_id, cv.cast_at DESC, cv.id DESC;
+$$;
+
 CREATE OR REPLACE FUNCTION public.cast_committee_vote(
   p_rfq_id              uuid,
   p_recommended_quote_id uuid,
@@ -321,6 +334,62 @@ WHERE cv.profile_id = private.get_profile_id()
   );
 
 GRANT SELECT ON my_committee_vote TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 6. Stubbed Pilot Fulfillment Guard Against Duplicate Invoice Generation
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION private.simulate_pilot_supplier_fulfillment()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_po purchase_orders%ROWTYPE;
+  v_now timestamptz := now();
+  v_invoice_number text;
+BEGIN
+  IF NOT private.supplier_network_stub_enabled() THEN RETURN NEW; END IF;
+
+  -- Skip if the work order or PO is already completed or seeded in final state
+  IF NEW.status = 'COMPLETED' THEN RETURN NEW; END IF;
+
+  SELECT * INTO v_po FROM purchase_orders WHERE id = NEW.purchase_order_id;
+  IF NOT FOUND OR v_po.status IN ('COMPLETED', 'CANCELLED') THEN RETURN NEW; END IF;
+
+  -- Prevent duplicate invoice generation if an invoice already exists for this WO / PO
+  IF EXISTS (SELECT 1 FROM public.invoices WHERE work_order_id = NEW.id OR purchase_order_id = v_po.id) THEN
+    RETURN NEW;
+  END IF;
+
+  -- The supplier accepts the PO immediately: nobody real is waiting to click it.
+  UPDATE purchase_orders
+  SET status = 'ACCEPTED', acknowledged_at = COALESCE(acknowledged_at, v_now), updated_at = v_now
+  WHERE id = v_po.id AND status = 'ISSUED';
+
+  -- The supplier finishes the work immediately.
+  UPDATE work_orders
+  SET status = 'COMPLETED',
+      progress_percent = 100,
+      actual_start = COALESCE(actual_start, v_now),
+      completed_at = COALESCE(completed_at, v_now),
+      updated_at = v_now
+  WHERE id = NEW.id;
+
+  -- The supplier raises the invoice for the buyer to actually approve and pay.
+  v_invoice_number := 'INV-' || to_char(v_now, 'YYYYMMDD')
+    || '-' || upper(substr(encode(extensions.gen_random_bytes(4), 'hex'), 1, 8));
+
+  INSERT INTO invoices (
+    work_order_id, supplier_id, invoice_number, amount, currency, status, submitted_at
+  ) VALUES (
+    NEW.id, NEW.supplier_id, v_invoice_number, v_po.total_amount, v_po.currency, 'SUBMITTED', v_now
+  );
+
+  RETURN NEW;
+END;
+$$;
 
 COMMENT ON VIEW public.quotes_revealed IS
   'Post-reveal supplier quote matrix with identity-protected data minimization. Unmasks full statutory identity for winning (SELECTED) quote only; preserves anonymized commercial parameters for runner-ups.';
