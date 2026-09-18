@@ -34,6 +34,7 @@ export type SupplierUserRole =
 
 /** Platform-level admin flag lives on profile; this is the logical role name. */
 export const PlatformRole = {
+  FOUNDER: 'FOUNDER',
   PLATFORM_ADMIN: 'PLATFORM_ADMIN',
   USER: 'USER',
 } as const;
@@ -42,6 +43,7 @@ export type PlatformRole = (typeof PlatformRole)[keyof typeof PlatformRole];
 
 /** Logical role for supplier portal users (separate from org membership). */
 export const UserRole = {
+  FOUNDER: 'FOUNDER',
   OWNER: 'OWNER',
   MANAGER: 'MANAGER',
   BUYER: 'BUYER',

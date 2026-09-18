@@ -2,13 +2,13 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { useRoleContext } from '@/features/roles/hooks/use-role-context';
-import { isSuperAdminEmail } from './user-role';
+import { isSuperAdminEmail, isFounderEmail } from './user-role';
 import { RoleOnboardingPage } from '@/features/roles/pages/RoleOnboardingPage';
 import { supabase } from '@/lib/supabase';
 
 import type { RoleContext } from '@/features/roles/api/roles';
 
-export type AllowedRole = 'ADMIN' | 'BUYER' | 'SUPPLIER';
+export type AllowedRole = 'FOUNDER' | 'ADMIN' | 'BUYER' | 'SUPPLIER';
 
 export interface ProtectedRouteProps {
   children?: ReactNode;
@@ -57,8 +57,11 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
   }
 
   const userEmail = input.user?.email || input.context?.email;
+  const isFounder = Boolean(
+    input.context?.isFounder || isFounderEmail(userEmail)
+  );
   const isPlatformAdmin = Boolean(
-    input.context?.isPlatformAdmin || isSuperAdminEmail(userEmail)
+    isFounder || input.context?.isPlatformAdmin || isSuperAdminEmail(userEmail)
   );
 
   // 2. Blocked account hold check
@@ -94,11 +97,25 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
       input.context?.side || input.context?.activeRole?.side
     )?.toUpperCase() as 'BUYER' | 'SUPPLIER' | undefined;
 
+    const allowsFounder = input.allowedRoles.includes('FOUNDER');
     const allowsAdmin = input.allowedRoles.includes('ADMIN');
     const allowsBuyer = input.allowedRoles.includes('BUYER');
     const allowsSupplier = input.allowedRoles.includes('SUPPLIER');
 
+    // Founder isolation: if route only allows FOUNDER, operations admin is NOT permitted
+    if (allowsFounder && !allowsAdmin && !allowsBuyer && !allowsSupplier) {
+      if (!isFounder) {
+        return {
+          action: 'REDIRECT',
+          target: input.unauthorizedRedirect || '/dashboard',
+          clearState: true,
+        };
+      }
+      return { action: 'ALLOW' };
+    }
+
     const hasAllowedRole =
+      (allowsFounder && isFounder) ||
       (allowsAdmin && isPlatformAdmin) ||
       (allowsBuyer && (userSide === 'BUYER' || isPlatformAdmin)) ||
       (allowsSupplier && (userSide === 'SUPPLIER' || isPlatformAdmin)) ||

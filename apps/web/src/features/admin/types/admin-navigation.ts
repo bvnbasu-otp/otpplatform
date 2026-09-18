@@ -11,6 +11,7 @@ export type AdminTab =
   | 'BACKUPS'
   | 'LOGS'
   | 'NOTIFICATIONS'
+  | 'ANNOUNCEMENTS'
   | 'USERS'
   | 'ORGS_SUPPLIERS'
   | 'APPROVALS';
@@ -226,6 +227,15 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
         description: 'Multi-channel notification engine, broadcast alerts & emergency platform banners',
         categoryKey: 'LOGS_ALERTS',
         badge: (c) => (c.notificationsCount > 0 ? `${c.notificationsCount} Alerts` : 'Alerts'),
+      },
+      {
+        key: 'ANNOUNCEMENTS',
+        title: 'Platform Broadcasts & Announcements',
+        shortTitle: 'Announcements',
+        icon: '📢',
+        description: 'Publish and manage scheduled platform announcements, release notes and broadcast banners',
+        categoryKey: 'LOGS_ALERTS',
+        badge: () => 'Broadcast',
       },
     ],
   },

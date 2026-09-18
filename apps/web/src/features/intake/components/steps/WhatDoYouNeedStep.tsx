@@ -15,6 +15,7 @@ export interface WhatDoYouNeedStepProps {
   taxonomy: TaxonomySnapshot;
   parsed: ParsedRequirement | null;
   isBusy: boolean;
+  onClearDraft?: () => void;
   onParse: (text: string) => Promise<ParsedRequirement>;
   onSubmit: (payload: {
     title: string;
@@ -281,18 +282,41 @@ export function WhatDoYouNeedStep({
           <p className="text-[11px] text-muted-foreground">
             Include item name, quantity, timeline, and city for instant extraction.
           </p>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={isParsing || text.trim().length < 5}
-            busy={isParsing}
-            busyLabel="Analyzing with AI…"
-            onClick={() => void runParser(text.trim())}
-            className="min-h-[40px] px-3.5"
-          >
-            ⚡ Re-Extract with AI
-          </Button>
+          <div className="flex items-center gap-2">
+            {(text.trim().length > 0 || title.trim().length > 0) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setText('');
+                  setTitle('');
+                  setCategoryId(null);
+                  setSubcategoryId('');
+                  setMode(null);
+                  setQuantity(null);
+                  setUnit('');
+                  setError(null);
+                  onClearDraft?.();
+                }}
+                className="min-h-[40px] px-3 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+              >
+                🗑️ Clear Input
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isParsing || text.trim().length < 5}
+              busy={isParsing}
+              busyLabel="Analyzing with AI…"
+              onClick={() => void runParser(text.trim())}
+              className="min-h-[40px] px-3.5"
+            >
+              ⚡ Re-Extract with AI
+            </Button>
+          </div>
         </div>
 
         {/* AI Auto-Extracted Parameters Banner */}

@@ -1,20 +1,35 @@
 import { supabase } from '@/lib/supabase';
 
-export type PortalRole = 'admin' | 'buyer' | 'supplier' | 'unknown';
+export type PortalRole = 'founder' | 'admin' | 'buyer' | 'supplier' | 'unknown';
 
 export interface UserProfile {
   profileId: string;
   email: string;
   fullName: string | null;
+  isFounder?: boolean;
   isPlatformAdmin?: boolean;
   activeOrganizationId?: string | null;
 }
 
-export const SUPERADMIN_EMAILS = [
+export const FOUNDER_EMAILS = [
   'bvnbasu@gmail.com',
+  'founder@otp.test',
+];
+
+export const OPERATIONS_EMAILS = [
   'admin@otp.test',
   'ops@otp.test',
 ];
+
+export const SUPERADMIN_EMAILS = [
+  ...FOUNDER_EMAILS,
+  ...OPERATIONS_EMAILS,
+];
+
+export function isFounderEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return FOUNDER_EMAILS.includes(email.trim().toLowerCase());
+}
 
 export function isSuperAdminEmail(email?: string | null): boolean {
   if (!email) return false;
@@ -28,7 +43,7 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, full_name, is_platform_admin, active_organization_id')
+    .select('id, email, full_name, is_founder, is_platform_admin, active_organization_id')
     .or(`auth_user_id.eq.${authUser.id},id.eq.${authUser.id}`)
     .maybeSingle();
 
@@ -36,12 +51,16 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
     if (authUser.email) {
       const { data: fallbackData } = await supabase
         .from('profiles')
-        .select('id, email, full_name, is_platform_admin, active_organization_id')
+        .select('id, email, full_name, is_founder, is_platform_admin, active_organization_id')
         .eq('email', authUser.email)
         .maybeSingle();
       if (fallbackData) {
+        const isFounder = Boolean(
+          fallbackData.is_founder || isFounderEmail(fallbackData.email) || isFounderEmail(authUser.email)
+        );
         const isAdmin = Boolean(
-          fallbackData.is_platform_admin ||
+          isFounder ||
+            fallbackData.is_platform_admin ||
             isSuperAdminEmail(fallbackData.email) ||
             isSuperAdminEmail(authUser.email)
         );
@@ -49,6 +68,7 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
           profileId: fallbackData.id,
           email: fallbackData.email,
           fullName: fallbackData.full_name,
+          isFounder,
           isPlatformAdmin: isAdmin,
           activeOrganizationId: (fallbackData.active_organization_id as string | null) ?? null,
         };
@@ -57,8 +77,12 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
     return null;
   }
 
+  const isFounder = Boolean(
+    data.is_founder || isFounderEmail(data.email) || isFounderEmail(authUser.email)
+  );
   const isAdmin = Boolean(
-    data.is_platform_admin ||
+    isFounder ||
+      data.is_platform_admin ||
       isSuperAdminEmail(data.email) ||
       isSuperAdminEmail(authUser.email)
   );
@@ -67,6 +91,7 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
     profileId: data.id,
     email: data.email,
     fullName: data.full_name,
+    isFounder,
     isPlatformAdmin: isAdmin,
     activeOrganizationId: (data.active_organization_id as string | null) ?? null,
   };
@@ -76,7 +101,9 @@ export async function resolvePortalRole(
   profileId: string,
   isPlatformAdmin?: boolean,
   email?: string | null,
+  isFounder?: boolean,
 ): Promise<PortalRole> {
+  if (isFounder || isFounderEmail(email)) return 'founder';
   if (isPlatformAdmin || isSuperAdminEmail(email)) return 'admin';
 
   try {

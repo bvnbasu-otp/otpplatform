@@ -19,6 +19,8 @@ export function RfqPublishConfirmationModal({
   requirementTitle,
   isBusy,
 }: RfqPublishConfirmationModalProps) {
+  const [isAcknowledged, setIsAcknowledged] = useState(false);
+
   if (!isOpen) return null;
 
   return (
@@ -81,6 +83,21 @@ export function RfqPublishConfirmationModal({
               </span>
             </div>
           </div>
+
+          {/* Explicit High-Stakes Confirmation Checkbox */}
+          <div className="pt-2">
+            <label className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isAcknowledged}
+                onChange={(e) => setIsAcknowledged(e.target.checked)}
+                className="mt-0.5 rounded border-primary/40 text-primary focus:ring-primary h-4 w-4 shrink-0"
+              />
+              <span className="text-[11px] font-medium leading-relaxed text-foreground">
+                I confirm the specifications, delivery location, and timelines are verified for competitive sealed quoting.
+              </span>
+            </label>
+          </div>
         </div>
 
         <div className="flex gap-2 pt-2">
@@ -94,7 +111,7 @@ export function RfqPublishConfirmationModal({
           </button>
           <button
             type="button"
-            disabled={isBusy}
+            disabled={isBusy || !isAcknowledged}
             onClick={() => void onConfirm()}
             className="min-h-[48px] flex-1 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-50 transition flex items-center justify-center gap-1.5 mobile-touch-target"
             data-testid="confirm-publish-button"

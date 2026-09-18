@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from './cn';
+import { resolveCanonicalStatus, CanonicalStatusKey } from '@otp/domain';
 
 export type BadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
@@ -13,20 +14,43 @@ const TONES: Record<BadgeTone, string> = {
 
 export interface BadgeProps {
   tone?: BadgeTone;
+  statusKey?: CanonicalStatusKey | string;
+  icon?: ReactNode;
   className?: string;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
-export function Badge({ tone = 'neutral', className, children }: BadgeProps) {
+export function Badge({ tone, statusKey, icon, className, children }: BadgeProps) {
+  if (statusKey) {
+    const canonical = resolveCanonicalStatus(statusKey);
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border',
+          canonical.badgeClass,
+          className,
+        )}
+      >
+        <span aria-hidden="true" className="text-xs select-none">
+          {icon ?? canonical.icon}
+        </span>
+        <span>{children ?? canonical.label}</span>
+      </span>
+    );
+  }
+
+  const effectiveTone = tone || 'neutral';
+
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-        TONES[tone],
+        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+        TONES[effectiveTone],
         className,
       )}
     >
-      {children}
+      {icon && <span aria-hidden="true" className="text-xs select-none">{icon}</span>}
+      <span>{children}</span>
     </span>
   );
 }

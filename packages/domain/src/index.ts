@@ -3,6 +3,8 @@ export * from './enums/linear-pipeline';
 export * from './enums/governance';
 export * from './enums/notifications';
 export * from './enums/roles';
+export * from './enums/announcements';
+export * from './enums/status-badges';
 export * from './enums/supplier';
 export * from './enums/supplier-network';
 export * from './enums/requirement-mode';

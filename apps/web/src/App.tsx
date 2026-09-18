@@ -40,6 +40,8 @@ import { ProfilePage } from '@/features/profile';
 import { HomePage } from '@/pages/HomePage';
 import { MaintenancePage } from '@/pages/MaintenancePage';
 import { MobileShowcasePage } from '@/pages/MobileShowcasePage';
+import { FounderDashboardPage } from '@/features/founder/pages/FounderDashboardPage';
+import { AnnouncementBanner } from '@/features/announcements/components/AnnouncementBanner';
 import { getPilotByRfqId } from '@/lib/pilots';
 import {
   MaintenanceProvider,
@@ -235,6 +237,7 @@ export function App() {
                 <MaintenanceProvider>
                   <RestoredSessionBanner />
                   <MaintenanceBanner />
+                  <AnnouncementBanner />
                   <MaintenanceGlobalGuard>
                     <Routes>
           {/*
@@ -450,6 +453,22 @@ export function App() {
               element={
                 <ProtectedRoute requireAdmin>
                   <AdminDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/founder"
+              element={
+                <ProtectedRoute allowedRoles={['FOUNDER']}>
+                  <FounderDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ceo"
+              element={
+                <ProtectedRoute allowedRoles={['FOUNDER']}>
+                  <Navigate to="/founder" replace />
                 </ProtectedRoute>
               }
             />

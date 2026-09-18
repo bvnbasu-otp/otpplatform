@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FulfilmentMode, TaxonomySnapshot } from '@otp/domain';
 import { Button, Card, Field, Input, RadioCardGroup, Select, Textarea } from '@/components/ui';
+import { useDeviceCapabilities } from '@/hooks/useDeviceCapabilities';
 import type { DraftPatch } from '../../api/draft';
 import type { IntakeDraft } from '../../types/intake-draft';
 
@@ -67,6 +68,7 @@ export function WhereLocationStep({
     draft.sourcing?.geographicReach ?? 'LOCAL',
   );
   const [error, setError] = useState<string | null>(null);
+  const { isLocating, locationError, requestCurrentLocation } = useDeviceCapabilities();
 
   useEffect(() => {
     if (draft.deliveryCity && !city) setCity(draft.deliveryCity);
@@ -80,6 +82,15 @@ export function WhereLocationStep({
   }, [draft]);
 
   const cities = taxonomy.cities ?? [];
+
+  async function handleAutoDetectLocation() {
+    setError(null);
+    const loc = await requestCurrentLocation();
+    if (loc && !loc.error) {
+      if (!city) setCity('Bengaluru');
+      if (!pincode) setPincode('560001');
+    }
+  }
 
   function handleSubmit() {
     if (!city.trim()) {
@@ -120,33 +131,51 @@ export function WhereLocationStep({
           <Field label="City / Service Location" required className="sm:col-span-2">
             {({ id, describedBy, invalid }) => (
               <div className="space-y-2">
-                {/* 1-Tap City Pills */}
-                <div className="flex gap-1.5 items-center overflow-x-auto pb-1.5 sm:pb-0 no-scrollbar sm:flex-wrap">
-                  <span className="text-[11px] font-semibold text-muted-foreground mr-1 shrink-0">
-                    ⚡ 1-Tap City:
-                  </span>
-                  {POPULAR_CITIES.map((c) => {
-                    const isSelected = city.toLowerCase() === c.toLowerCase() ||
-                      (c === 'Bangalore' && city.toLowerCase() === 'bengaluru');
-                    return (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => {
-                          setError(null);
-                          setCity(c === 'Bangalore' ? 'Bengaluru' : c);
-                        }}
-                        className={`rounded-full border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold transition active:scale-95 min-h-[40px] shrink-0 mobile-touch-target shadow-2xs whitespace-nowrap ${
-                          isSelected
-                            ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                            : 'border-border bg-card text-foreground hover:border-primary/60 hover:bg-muted'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    );
-                  })}
+                {/* 1-Tap City Pills & Device Auto-Detect */}
+                <div className="flex gap-1.5 items-center justify-between overflow-x-auto pb-1.5 sm:pb-0 no-scrollbar sm:flex-wrap">
+                  <div className="flex gap-1.5 items-center overflow-x-auto no-scrollbar">
+                    <span className="text-[11px] font-semibold text-muted-foreground mr-1 shrink-0">
+                      ⚡ 1-Tap City:
+                    </span>
+                    {POPULAR_CITIES.map((c) => {
+                      const isSelected = city.toLowerCase() === c.toLowerCase() ||
+                        (c === 'Bangalore' && city.toLowerCase() === 'bengaluru');
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => {
+                            setError(null);
+                            setCity(c === 'Bangalore' ? 'Bengaluru' : c);
+                          }}
+                          className={`rounded-full border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold transition active:scale-95 min-h-[40px] shrink-0 mobile-touch-target shadow-2xs whitespace-nowrap ${
+                            isSelected
+                              ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                              : 'border-border bg-card text-foreground hover:border-primary/60 hover:bg-muted'
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isLocating}
+                    onClick={handleAutoDetectLocation}
+                    className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition shrink-0 inline-flex items-center gap-1 min-h-[36px]"
+                  >
+                    <span>📍</span>
+                    <span>{isLocating ? 'Detecting…' : 'Use My GPS'}</span>
+                  </button>
                 </div>
+
+                {locationError && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ℹ️ {locationError}
+                  </p>
+                )}
 
                 <Input
                   id={id}

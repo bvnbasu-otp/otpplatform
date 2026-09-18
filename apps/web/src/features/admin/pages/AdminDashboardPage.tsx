@@ -20,6 +20,7 @@ import { AdminBackupRestorePanel } from '../components/AdminBackupRestorePanel';
 import { AdminBuyerTroubleshooter } from '../components/AdminBuyerTroubleshooter';
 import { AdminSellerTroubleshooter } from '../components/AdminSellerTroubleshooter';
 import { AdminQueryTerminal } from '../components/AdminQueryTerminal';
+import { AdminAnnouncementsPanel } from '../components/AdminAnnouncementsPanel';
 import { NotificationsPage } from '@/features/notifications';
 import type {
   SystemHealthResponse,
@@ -739,6 +740,10 @@ export function AdminDashboardPage() {
                 isPlatformInDemoMode={isPlatformInDemoMode}
                 onRefreshTelemetry={refreshAllData}
               />
+            )}
+
+            {activeTab === 'ANNOUNCEMENTS' && (
+              <AdminAnnouncementsPanel />
             )}
           </main>
         </div>

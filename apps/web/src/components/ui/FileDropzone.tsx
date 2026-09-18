@@ -8,6 +8,9 @@ export interface FileDropzoneProps {
   multiple?: boolean;
   maxSizeMb?: number;
   disabled?: boolean;
+  captureMode?: 'user' | 'environment';
+  hasFiles?: boolean;
+  onClear?: () => void;
   onFilesSelected: (files: File[]) => void;
   className?: string;
 }
@@ -17,21 +20,24 @@ function tooLarge(file: File, maxSizeMb: number): boolean {
 }
 
 /**
- * Picks files by drop or by browse. It hands the files to the caller and keeps
- * no upload state of its own, because who may upload what is a question for the
- * feature, not for a control.
+ * Picks files by drop or browse, with optional direct camera capture support
+ * and explicit clear affordance.
  */
 export function FileDropzone({
   label = 'Drop files here',
-  hint = 'Drawings, photos, or a scan of a handwritten note',
+  hint = 'Drawings, photos, BoQ spreadsheets, or scans',
   accept,
   multiple = true,
   maxSizeMb = 10,
   disabled,
+  captureMode,
+  hasFiles,
+  onClear,
   onFilesSelected,
   className,
 }: FileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [rejected, setRejected] = useState<string[]>([]);
 
@@ -67,19 +73,58 @@ export function FileDropzone({
       >
         <p className="text-sm font-medium">{label}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => inputRef.current?.click()}
-          className="mt-2 rounded-md border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
-        >
-          Browse files
-        </button>
+
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => inputRef.current?.click()}
+            className="rounded-md border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50 inline-flex items-center gap-1"
+          >
+            📁 Browse files
+          </button>
+
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => cameraInputRef.current?.click()}
+            className="rounded-md border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50 inline-flex items-center gap-1"
+          >
+            📷 Take Photo
+          </button>
+
+          {hasFiles && onClear && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onClear}
+              className="rounded-md border border-rose-300 bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 text-xs font-medium text-rose-700 dark:text-rose-300 hover:bg-rose-100 disabled:opacity-50 inline-flex items-center gap-1"
+            >
+              🗑️ Clear Files
+            </button>
+          )}
+        </div>
+
+        {/* Standard File Picker */}
         <input
           ref={inputRef}
           type="file"
           accept={accept}
           multiple={multiple}
+          disabled={disabled}
+          onChange={(e) => {
+            accept_(e.target.files);
+            e.target.value = '';
+          }}
+          className="sr-only"
+        />
+
+        {/* Dedicated Camera Capture Picker */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture={captureMode || 'environment'}
           disabled={disabled}
           onChange={(e) => {
             accept_(e.target.files);
