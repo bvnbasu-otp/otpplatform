@@ -249,7 +249,22 @@ BEGIN
   WHERE cv.profile_id = v_profile;
 
   INSERT INTO committee_votes (rfq_id, profile_id, recommended_quote_id, choice, comment, cast_at)
-  VALUES (p_rfq_id, v_profile, p_recommended_quote_id, p_choice, p_comment, clock_timestamp())
+  VALUES (
+    p_rfq_id,
+    v_profile,
+    p_recommended_quote_id,
+    p_choice,
+    p_comment,
+    GREATEST(
+      clock_timestamp(),
+      COALESCE(
+        (SELECT max(cv.cast_at) + interval '10 milliseconds'
+         FROM committee_votes cv
+         WHERE cv.rfq_id = p_rfq_id AND cv.profile_id = v_profile),
+        clock_timestamp()
+      )
+    )
+  )
   RETURNING id INTO v_vote_id;
 
   INSERT INTO audit_events (
@@ -277,6 +292,35 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.cast_committee_vote(uuid, uuid, vote_choice, text) TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 5. Member's own current vote view
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE VIEW my_committee_vote
+WITH (security_barrier = true) AS
+SELECT
+  cv.id AS vote_id,
+  cv.rfq_id,
+  cv.recommended_quote_id,
+  ri.anonymous_label AS recommended_alias,
+  cv.choice,
+  cv.comment,
+  cv.voting_power,
+  cv.buyer_type,
+  cv.cast_at
+FROM committee_votes cv
+LEFT JOIN quotes q ON q.id = cv.recommended_quote_id
+LEFT JOIN rfq_invitations ri ON ri.id = q.invitation_id
+WHERE cv.profile_id = private.get_profile_id()
+  AND cv.id = (
+    SELECT c2.id FROM committee_votes c2
+    WHERE c2.rfq_id = cv.rfq_id AND c2.profile_id = cv.profile_id
+    ORDER BY c2.cast_at DESC, c2.id DESC
+    LIMIT 1
+  );
+
+GRANT SELECT ON my_committee_vote TO authenticated;
 
 COMMENT ON VIEW public.quotes_revealed IS
   'Post-reveal supplier quote matrix with identity-protected data minimization. Unmasks full statutory identity for winning (SELECTED) quote only; preserves anonymized commercial parameters for runner-ups.';

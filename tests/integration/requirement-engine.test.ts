@@ -816,7 +816,11 @@ describe('weighted voting', () => {
       .from('quotes')
       .select('id')
       .eq('rfq_id', DEMO.rfqs.motor)
+      .not('status', 'in', '("DRAFT","WITHDRAWN")')
       .order('id');
+
+    expect(quotes).toBeDefined();
+    expect(quotes!.length).toBeGreaterThanOrEqual(2);
 
     const before = await service
       .from('committee_votes')
@@ -829,7 +833,7 @@ describe('weighted voting', () => {
       p_choice: 'RECOMMEND',
       p_comment: 'first thoughts',
     });
-    expect(e1).toBeNull();
+    expect(e1?.message ?? null).toBeNull();
 
     // Ensure distinct millisecond timestamp for sequential revision ordering
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -840,7 +844,7 @@ describe('weighted voting', () => {
       p_choice: 'RECOMMEND',
       p_comment: 'changed my mind',
     });
-    expect(e2).toBeNull();
+    expect(e2?.message ?? null).toBeNull();
 
     expect((second as { revised: boolean }).revised).toBe(true);
     expect((second as { supersedes: string }).supersedes).toBe(

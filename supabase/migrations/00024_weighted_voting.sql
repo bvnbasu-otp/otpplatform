@@ -114,7 +114,22 @@ BEGIN
   WHERE cv.profile_id = v_profile;
 
   INSERT INTO committee_votes (rfq_id, profile_id, recommended_quote_id, choice, comment, cast_at)
-  VALUES (p_rfq_id, v_profile, p_recommended_quote_id, p_choice, p_comment, clock_timestamp())
+  VALUES (
+    p_rfq_id,
+    v_profile,
+    p_recommended_quote_id,
+    p_choice,
+    p_comment,
+    GREATEST(
+      clock_timestamp(),
+      COALESCE(
+        (SELECT max(cv.cast_at) + interval '10 milliseconds'
+         FROM committee_votes cv
+         WHERE cv.rfq_id = p_rfq_id AND cv.profile_id = v_profile),
+        clock_timestamp()
+      )
+    )
+  )
   RETURNING id INTO v_vote_id;
 
   INSERT INTO audit_events (
