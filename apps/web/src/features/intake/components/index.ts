@@ -4,6 +4,8 @@ export { VoiceRequirementDictation } from './VoiceRequirementDictation';
 export type { VoiceRequirementDictationProps } from './VoiceRequirementDictation';
 export { VoiceTextRequirementIntakeModal } from './VoiceTextRequirementIntakeModal';
 export type { VoiceTextRequirementIntakeModalProps } from './VoiceTextRequirementIntakeModal';
+export { TemplatesAndExamplesModal, CANONICAL_TEMPLATES, CANONICAL_EXAMPLES } from './TemplatesAndExamplesModal';
+export type { TemplatesAndExamplesModalProps, ProcurementTemplate, ProcurementExample } from './TemplatesAndExamplesModal';
 
 // 6 Progressive Conversational Intake Steps
 export { WhatDoYouNeedStep } from './steps/WhatDoYouNeedStep';

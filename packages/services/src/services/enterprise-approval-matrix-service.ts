@@ -130,6 +130,10 @@ export class EnterpriseApprovalMatrixService {
     const rfq = await this.repos.rfqs.findById(params.rfqId);
     if (!rfq) throw new NotFoundError(`RFQ ${params.rfqId} not found`);
 
+    if (!actor.isPlatformAdmin && actor.organizationId !== rfq.organizationId) {
+      throw new ForbiddenError(`Actor organization ${actor.organizationId} does not match RFQ organization ${rfq.organizationId}`);
+    }
+
     const existingPolicy = await this.repos.organizationApprovalPolicies?.findByOrganizationId(rfq.organizationId);
     const policy: OrganizationApprovalPolicy = existingPolicy
       ? {
