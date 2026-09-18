@@ -26,6 +26,9 @@ import { AccountingService } from '../services/accounting-service';
 import { OmnichannelNotificationService } from '../services/omnichannel-notification-service';
 import { MilestoneInspectionService } from '../services/milestone-inspection-service';
 import { DisputeResolutionService } from '../services/dispute-resolution-service';
+import { VendorMasterIntelligenceService } from '../services/vendor-master-intelligence-service';
+import { EnterpriseApprovalMatrixService } from '../services/enterprise-approval-matrix-service';
+import { ProcurementContractOperationsService } from '../services/procurement-contract-operations-service';
 import { IdentityProtectedRfqService } from '../blind/blind-rfq-service';
 import { createInMemoryBlindViewPorts } from '../blind/in-memory-blind-view-ports';
 import type { BlindViewPorts } from '../interfaces/blind-view-ports';
@@ -50,6 +53,9 @@ export interface OtpServices {
   omnichannelNotifications: OmnichannelNotificationService;
   milestoneInspections: MilestoneInspectionService;
   disputeResolution: DisputeResolutionService;
+  vendorIntelligence: VendorMasterIntelligenceService;
+  enterpriseApprovalMatrix: EnterpriseApprovalMatrixService;
+  contractOperations: ProcurementContractOperationsService;
   supplierReveal: SupplierRevealServiceImpl;
   approvalPolicy: DefaultApprovalPolicyService;
 }
@@ -92,6 +98,9 @@ export function createOtpServices(
   const omnichannelNotifications = new OmnichannelNotificationService(repos, audit);
   const milestoneInspections = new MilestoneInspectionService(repos, audit);
   const disputeResolution = new DisputeResolutionService(repos, audit);
+  const vendorIntelligence = new VendorMasterIntelligenceService(repos, audit);
+  const enterpriseApprovalMatrix = new EnterpriseApprovalMatrixService(repos, audit);
+  const contractOperations = new ProcurementContractOperationsService(repos, audit);
   const blindViewPorts = blindViews ?? createInMemoryBlindViewPorts(repos);
   const blindRfq = new IdentityProtectedRfqService(repos, blindViewPorts, auditInner);
 
@@ -115,10 +124,10 @@ export function createOtpServices(
     omnichannelNotifications,
     milestoneInspections,
     disputeResolution,
+    vendorIntelligence,
+    enterpriseApprovalMatrix,
+    contractOperations,
     supplierReveal,
     approvalPolicy,
   };
 }
-
-export type { InMemoryAuditService } from '../audit/in-memory-audit-service';
-export type { InAppNotificationService } from '../notification/in-app-notification-service';

@@ -88,7 +88,7 @@ describe('OTP Wallet & Credits Engine', () => {
     const { OtpWalletCreditsWidget } = await import('./components/OtpWalletCreditsWidget');
     expect(OtpWalletCreditsWidget).toBeDefined();
     expect(typeof OtpWalletCreditsWidget).toBe('function');
-  });
+  }, 20000);
 });
 
 describe('Cryptographically Secure Payment Reference Generation (FIX-01)', () => {

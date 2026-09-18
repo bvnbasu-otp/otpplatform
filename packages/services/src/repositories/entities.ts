@@ -852,6 +852,117 @@ export interface DisputeEntity {
   updatedAt: string;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 6.6 Entities: VMI Scorecards, Multi-Tier Approvals & Contracts
+// ---------------------------------------------------------------------------
+
+export interface SupplierScorecardEntity {
+  id: string;
+  supplierId: string;
+  organizationId?: string | null;
+  overallScore: number;
+  performanceTier: 'PLATINUM' | 'GOLD' | 'SILVER' | 'BRONZE' | 'PROBATIONARY';
+  qualityScore: number;
+  deliveryScore: number;
+  slaDisputeScore: number;
+  commercialScore: number;
+  qualityWeight: number;
+  deliveryWeight: number;
+  slaDisputeWeight: number;
+  commercialWeight: number;
+  totalOrdersCompleted: number;
+  averageCloseoutRating: number;
+  milestonePassRate: number;
+  reworkFrequencyPercent: number;
+  onTimeDeliveryPercent: number;
+  totalDisputesCount: number;
+  criticalDisputesCount: number;
+  disputeResolutionAdherence: number;
+  quoteVariancePercent: number;
+  changeOrderFrequencyPercent: number;
+  isIdentityMasked: boolean;
+  version: number;
+  lastCalculatedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScorecardDimensionHistoryEntity {
+  id: string;
+  supplierId: string;
+  scorecardId: string;
+  overallScore: number;
+  performanceTier: string;
+  dimensionsSnapshot: Record<string, unknown>;
+  metricsSnapshot: Record<string, unknown>;
+  calculationTrigger: string;
+  calculatedBy?: string | null;
+  createdAt: string;
+}
+
+export interface OrganizationApprovalPolicyEntity {
+  id: string;
+  organizationId: string;
+  policyName: string;
+  isActive: boolean;
+  tiers: Array<{
+    tierLevel: string;
+    tierName: string;
+    minAmount: number;
+    maxAmount: number | null;
+    requiredApproverRoles: string[];
+    minApproversRequired: number;
+  }>;
+  preventSelfApproval: boolean;
+  requireDualSignoffAbove?: number | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RfqApprovalStageEntity {
+  id: string;
+  rfqId: string;
+  organizationId: string;
+  tierLevel: 'TIER_1_MANAGER' | 'TIER_2_DEPT_HEAD' | 'TIER_3_EXECUTIVE';
+  stageOrder: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'BYPASSED_SUPERSEDED';
+  thresholdMinAmount: number;
+  thresholdMaxAmount?: number | null;
+  procurementAmount: number;
+  approverProfileId?: string | null;
+  approverRole?: string | null;
+  approverComments?: string | null;
+  digitalSignatureHash?: string | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProcurementContractEntity {
+  id: string;
+  contractNumber: string;
+  rfqId: string;
+  purchaseOrderId?: string | null;
+  organizationId: string;
+  supplierId: string;
+  quoteId: string;
+  status: 'DRAFT' | 'PENDING_BUYER_SIGNATURE' | 'PENDING_SUPPLIER_SIGNATURE' | 'ACTIVE' | 'TERMINATED' | 'FULFILLED';
+  terms: Record<string, unknown>;
+  contractBodyMarkdown: string;
+  documentHash: string;
+  buyerSignedBy?: string | null;
+  buyerSignedAt?: string | null;
+  buyerSignatureHash?: string | null;
+  supplierSignedBy?: string | null;
+  supplierSignedAt?: string | null;
+  supplierSignatureHash?: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 
 

@@ -46,6 +46,11 @@ import type {
   DisputeEntity,
   DisputeEvidenceEntity,
   DisputeEventEntity,
+  SupplierScorecardEntity,
+  ScorecardDimensionHistoryEntity,
+  OrganizationApprovalPolicyEntity,
+  RfqApprovalStageEntity,
+  ProcurementContractEntity,
 } from './entities';
 
 function id(): string {
@@ -104,6 +109,11 @@ export class InMemoryRepositories {
   disputes = new Map<string, DisputeEntity>();
   disputeEvidence = new Map<string, DisputeEvidenceEntity>();
   disputeEvents = new Map<string, DisputeEventEntity>();
+  supplierScorecards = new Map<string, SupplierScorecardEntity>();
+  scorecardDimensionHistory = new Map<string, ScorecardDimensionHistoryEntity>();
+  organizationApprovalPolicies = new Map<string, OrganizationApprovalPolicyEntity>();
+  rfqApprovalStages = new Map<string, RfqApprovalStageEntity>();
+  procurementContracts = new Map<string, ProcurementContractEntity>();
   suppliers = new Map<string, Supplier>();
 
   performance = new Map<string, ProcurementPerformanceRecord>();
@@ -936,6 +946,86 @@ export class InMemoryRepositories {
     };
   }
 
+  get supplierScorecardsRepo(): NonNullable<Repositories['supplierScorecards']> {
+    const store = this.supplierScorecards;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findBySupplierId: async (supplierId) =>
+        [...store.values()].find((s) => s.supplierId === supplierId) ?? null,
+      findAll: async () => [...store.values()],
+      save: async (scorecard) => {
+        store.set(scorecard.id, scorecard);
+        return scorecard;
+      },
+    };
+  }
+
+  get scorecardDimensionHistoryRepo(): NonNullable<Repositories['scorecardDimensionHistory']> {
+    const store = this.scorecardDimensionHistory;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findBySupplierId: async (supplierId) =>
+        [...store.values()].filter((h) => h.supplierId === supplierId),
+      findByScorecardId: async (scorecardId) =>
+        [...store.values()].filter((h) => h.scorecardId === scorecardId),
+      save: async (history) => {
+        store.set(history.id, history);
+        return history;
+      },
+    };
+  }
+
+  get organizationApprovalPoliciesRepo(): NonNullable<Repositories['organizationApprovalPolicies']> {
+    const store = this.organizationApprovalPolicies;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].find((p) => p.organizationId === orgId) ?? null,
+      save: async (policy) => {
+        store.set(policy.id, policy);
+        return policy;
+      },
+    };
+  }
+
+  get rfqApprovalStagesRepo(): NonNullable<Repositories['rfqApprovalStages']> {
+    const store = this.rfqApprovalStages;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByRfqId: async (rfqId) =>
+        [...store.values()]
+          .filter((s) => s.rfqId === rfqId)
+          .sort((a, b) => a.stageOrder - b.stageOrder),
+      save: async (stage) => {
+        store.set(stage.id, stage);
+        return stage;
+      },
+      saveMany: async (stages) => {
+        stages.forEach((s) => store.set(s.id, s));
+        return stages;
+      },
+    };
+  }
+
+  get procurementContractsRepo(): NonNullable<Repositories['procurementContracts']> {
+    const store = this.procurementContracts;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByContractNumber: async (num) =>
+        [...store.values()].find((c) => c.contractNumber === num) ?? null,
+      findByRfqId: async (rfqId) =>
+        [...store.values()].find((c) => c.rfqId === rfqId) ?? null,
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].find((c) => c.purchaseOrderId === poId) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((c) => c.organizationId === orgId),
+      save: async (contract) => {
+        store.set(contract.id, contract);
+        return contract;
+      },
+    };
+  }
+
   get suppliersRepo(): Repositories['suppliers'] {
     const store = this.suppliers;
     return {
@@ -1004,6 +1094,11 @@ export class InMemoryRepositories {
       disputes: this.disputesRepo,
       disputeEvidence: this.disputeEvidenceRepo,
       disputeEvents: this.disputeEventsRepo,
+      supplierScorecards: this.supplierScorecardsRepo,
+      scorecardDimensionHistory: this.scorecardDimensionHistoryRepo,
+      organizationApprovalPolicies: this.organizationApprovalPoliciesRepo,
+      rfqApprovalStages: this.rfqApprovalStagesRepo,
+      procurementContracts: this.procurementContractsRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

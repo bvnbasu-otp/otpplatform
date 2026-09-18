@@ -45,6 +45,11 @@ import type {
   DisputeEntity,
   DisputeEvidenceEntity,
   DisputeEventEntity,
+  SupplierScorecardEntity,
+  ScorecardDimensionHistoryEntity,
+  OrganizationApprovalPolicyEntity,
+  RfqApprovalStageEntity,
+  ProcurementContractEntity,
 } from './entities';
 
 
@@ -368,6 +373,42 @@ export interface DisputeEventRepository {
   save(event: DisputeEventEntity): Promise<DisputeEventEntity>;
 }
 
+export interface SupplierScorecardRepository {
+  findById(id: string): Promise<SupplierScorecardEntity | null>;
+  findBySupplierId(supplierId: string): Promise<SupplierScorecardEntity | null>;
+  findAll(): Promise<SupplierScorecardEntity[]>;
+  save(scorecard: SupplierScorecardEntity): Promise<SupplierScorecardEntity>;
+}
+
+export interface ScorecardDimensionHistoryRepository {
+  findById(id: string): Promise<ScorecardDimensionHistoryEntity | null>;
+  findBySupplierId(supplierId: string): Promise<ScorecardDimensionHistoryEntity[]>;
+  findByScorecardId(scorecardId: string): Promise<ScorecardDimensionHistoryEntity[]>;
+  save(history: ScorecardDimensionHistoryEntity): Promise<ScorecardDimensionHistoryEntity>;
+}
+
+export interface OrganizationApprovalPolicyRepository {
+  findById(id: string): Promise<OrganizationApprovalPolicyEntity | null>;
+  findByOrganizationId(organizationId: string): Promise<OrganizationApprovalPolicyEntity | null>;
+  save(policy: OrganizationApprovalPolicyEntity): Promise<OrganizationApprovalPolicyEntity>;
+}
+
+export interface RfqApprovalStageRepository {
+  findById(id: string): Promise<RfqApprovalStageEntity | null>;
+  findByRfqId(rfqId: string): Promise<RfqApprovalStageEntity[]>;
+  save(stage: RfqApprovalStageEntity): Promise<RfqApprovalStageEntity>;
+  saveMany(stages: RfqApprovalStageEntity[]): Promise<RfqApprovalStageEntity[]>;
+}
+
+export interface ProcurementContractRepository {
+  findById(id: string): Promise<ProcurementContractEntity | null>;
+  findByContractNumber(contractNumber: string): Promise<ProcurementContractEntity | null>;
+  findByRfqId(rfqId: string): Promise<ProcurementContractEntity | null>;
+  findByPurchaseOrderId(poId: string): Promise<ProcurementContractEntity | null>;
+  findByOrganizationId(organizationId: string): Promise<ProcurementContractEntity[]>;
+  save(contract: ProcurementContractEntity): Promise<ProcurementContractEntity>;
+}
+
 export interface Repositories {
   requirements: RequirementRepository;
   rfqs: RfqRepository;
@@ -413,6 +454,11 @@ export interface Repositories {
   disputes?: DisputeRepository;
   disputeEvidence?: DisputeEvidenceRepository;
   disputeEvents?: DisputeEventRepository;
+  supplierScorecards?: SupplierScorecardRepository;
+  scorecardDimensionHistory?: ScorecardDimensionHistoryRepository;
+  organizationApprovalPolicies?: OrganizationApprovalPolicyRepository;
+  rfqApprovalStages?: RfqApprovalStageRepository;
+  procurementContracts?: ProcurementContractRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }
