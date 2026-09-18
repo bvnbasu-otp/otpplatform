@@ -108,7 +108,7 @@ GRANT EXECUTE ON FUNCTION private.is_platform_admin() TO authenticated, service_
 UPDATE public.profiles
 SET is_platform_admin = true,
     status = 'ACTIVE',
-    active_role_code = 'SUPER_ADMIN',
+    active_role_code = NULL,
     blocked_at = NULL,
     blocked_reason = NULL,
     blocked_by = NULL,

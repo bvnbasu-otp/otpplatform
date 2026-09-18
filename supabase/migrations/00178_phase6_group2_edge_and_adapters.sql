@@ -189,19 +189,6 @@ GRANT EXECUTE ON FUNCTION public.verify_profile_verification_otp(text, text) TO 
 -- 4. Weighted Voting Monotonic Timestamp Hardening
 -- ---------------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION private.current_votes(p_rfq_id uuid)
-RETURNS SETOF committee_votes
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-  SELECT DISTINCT ON (cv.profile_id) cv.*
-  FROM committee_votes cv
-  WHERE cv.rfq_id = p_rfq_id
-  ORDER BY cv.profile_id, cv.cast_at DESC, cv.id DESC;
-$$;
-
 CREATE OR REPLACE FUNCTION public.cast_committee_vote(
   p_rfq_id              uuid,
   p_recommended_quote_id uuid,
