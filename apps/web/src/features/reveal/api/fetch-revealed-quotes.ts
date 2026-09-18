@@ -11,6 +11,7 @@ export interface RevealedQuoteRow {
   totalCost: number;
   deliveryDays: number | null;
   warrantyMonths: number | null;
+  isDeliveryDaysEstimated?: boolean;
 }
 
 interface RevealedDbRow {

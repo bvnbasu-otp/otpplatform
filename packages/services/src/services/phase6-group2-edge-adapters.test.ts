@@ -14,7 +14,7 @@ import {
   type RawQuoteMetrics,
   type ScoringWeights,
 } from '@otp/domain';
-import { isAllowedOrigin, getCorsHeaders } from '../../../../supabase/functions/_shared/cors';
+import { isAllowedOrigin, getCorsHeaders } from '../security/cors-policy';
 
 describe('Phase 6.2 Group 2: Edge Functions, Adapters, Public-Key Caching & Identity-Protected Minimization', () => {
   // ===========================================================================
@@ -464,8 +464,8 @@ describe('Phase 6.2 Group 2: Edge Functions, Adapters, Public-Key Caching & Iden
         },
       ];
       const scores = computeSmartScores(quotes, { commercial: 50, speed: 20, warranty: 15, quality: 15 });
-      expect(scores[0].isDeliveryDaysEstimated).toBe(true);
-      expect(scores[0].slaConfidencePenalty).toBeDefined();
+      expect(scores[0]!.isDeliveryDaysEstimated).toBe(true);
+      expect(scores[0]!.slaConfidencePenalty).toBeDefined();
     });
   });
 

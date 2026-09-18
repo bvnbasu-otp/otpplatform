@@ -61,4 +61,6 @@ export * from './ondc/client/ondc-gateway-client';
 export * from './ondc/receiver/ondc-bap-receiver';
 export * from './ondc/ondc-network-service';
 export * from './gst/gst-verification-service';
+export * from './security/cors-policy';
+
 

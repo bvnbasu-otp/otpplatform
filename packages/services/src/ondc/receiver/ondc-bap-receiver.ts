@@ -206,12 +206,12 @@ export class OndcBapReceiver {
     // Check if fulfillment or item details provide concrete delivery duration
     const fulfillments = message?.order?.fulfillments;
     if (fulfillments && Array.isArray(fulfillments) && fulfillments[0]) {
-      const f = fulfillments[0];
+      const f = fulfillments[0] as Record<string, any>;
       const tat = f['@ondc/org/tat'] || f.tat || f.time?.duration;
       if (tat) {
         // e.g. "P3D" or "PT72H" or "3 days" or number
         const match = String(tat).match(/(\d+)/);
-        if (match) {
+        if (match && match[1]) {
           deliveryDays = parseInt(match[1], 10);
           isDeliveryDaysEstimated = false;
         }
