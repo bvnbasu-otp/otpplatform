@@ -39,6 +39,7 @@ export interface RoleContext {
   signedIn: boolean;
   profileId: string | null;
   side: PortalSide | null;
+  isFounder?: boolean;
   isPlatformAdmin: boolean;
   /** The mandatory gate: this account has a side but no role yet. */
   needsOnboarding: boolean;

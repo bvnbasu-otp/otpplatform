@@ -1,5 +1,4 @@
 import { useAnnouncements } from '../hooks/useAnnouncements';
-import { Badge } from '@/components/ui';
 
 const SEVERITY_STYLES = {
   CRITICAL: 'bg-red-600 text-white border-red-700',
@@ -24,6 +23,7 @@ export function AnnouncementBanner() {
 
   // Show highest priority announcement on top
   const active = announcements[0];
+  if (!active) return null;
 
   return (
     <div

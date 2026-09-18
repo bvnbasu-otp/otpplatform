@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isFounderEmail, isSuperAdminEmail, resolvePortalRole } from '../user-role';
+import { isFounderEmail, isSuperAdminEmail } from '../user-role';
 import { evaluateRouteAccess } from '../ProtectedRoute';
 
 describe('Founder vs Operations Red-Team Security & Isolation', () => {
@@ -29,7 +29,9 @@ describe('Founder vs Operations Red-Team Security & Isolation', () => {
     });
 
     expect(opsResult.action).toBe('REDIRECT');
-    expect(opsResult.target).toBe('/dashboard');
+    if (opsResult.action === 'REDIRECT') {
+      expect(opsResult.target).toBe('/dashboard');
+    }
 
     // 2. Founder accessing Founder route -> ALLOW
     const founderResult = evaluateRouteAccess({

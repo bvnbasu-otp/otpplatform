@@ -78,6 +78,7 @@ export function WhatDoYouNeedStep({
   taxonomy,
   parsed: initialParsed,
   isBusy,
+  onClearDraft,
   onParse,
   onSubmit,
 }: WhatDoYouNeedStepProps) {
@@ -291,9 +292,9 @@ export function WhatDoYouNeedStep({
                 onClick={() => {
                   setText('');
                   setTitle('');
-                  setCategoryId(null);
+                  setCategoryId('');
                   setSubcategoryId('');
-                  setMode(null);
+                  setMode('');
                   setQuantity(null);
                   setUnit('');
                   setError(null);
