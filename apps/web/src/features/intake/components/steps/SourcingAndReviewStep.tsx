@@ -191,7 +191,7 @@ export function SourcingAndReviewStep({
                 className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1 text-xs font-semibold text-foreground shadow-2xs"
               >
                 <span>{criterionName.get(code) ?? code}:</span>
-                <strong className="text-primary">{Math.round(weight * 100)}%</strong>
+                <strong className="text-primary">{Math.round(weight > 1 ? weight : weight * 100)}%</strong>
               </span>
             ))}
           </div>

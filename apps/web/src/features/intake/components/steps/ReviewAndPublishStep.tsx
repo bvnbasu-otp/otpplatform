@@ -670,7 +670,7 @@ export function ReviewAndPublishStep({
                   className="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-3 py-1 text-xs font-semibold text-foreground shadow-2xs"
                 >
                   <span>{criterionName.get(code) ?? code}:</span>
-                  <strong className="text-primary">{Math.round(weight * 100)}%</strong>
+                  <strong className="text-primary">{Math.round(weight > 1 ? weight : weight * 100)}%</strong>
                 </span>
               ))}
             </div>
@@ -692,8 +692,24 @@ export function ReviewAndPublishStep({
       </Card>
 
       {(validationError || error) && (
-        <div className="rounded-xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-200 font-semibold">
-          ⚠️ {validationError || error}
+        <div className="rounded-xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-200 font-semibold space-y-2">
+          <div className="flex items-center gap-1.5">
+            <span>⚠️</span>
+            <span>{validationError || error}</span>
+          </div>
+          {(error?.toLowerCase().includes('authenticated') || error?.toLowerCase().includes('not logged in')) && (
+            <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-rose-200 dark:border-rose-900/80">
+              <span className="text-[11px] font-normal text-rose-800 dark:text-rose-300">
+                Your requirement draft is safely saved in local storage. Sign in as a Buyer to publish and start sourcing.
+              </span>
+              <a
+                href={`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+                className="inline-flex items-center gap-1 shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white shadow hover:opacity-90 transition"
+              >
+                🔑 Sign In to Start Sourcing →
+              </a>
+            </div>
+          )}
         </div>
       )}
 
