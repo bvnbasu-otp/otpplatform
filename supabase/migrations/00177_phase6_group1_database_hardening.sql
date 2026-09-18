@@ -375,9 +375,47 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, private, auth, extensions
 AS $$
-  SELECT COALESCE(
-    (SELECT id FROM public.profiles WHERE auth_user_id = auth.uid() LIMIT 1),
-    (SELECT id FROM public.profiles WHERE id = auth.uid() LIMIT 1)
+  SELECT id FROM profiles WHERE user_id = auth.uid();
+$$;
+
+CREATE OR REPLACE FUNCTION private.is_org_member(p_org_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private, auth, extensions
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM organization_members
+    WHERE organization_id = p_org_id
+      AND profile_id = private.get_profile_id()
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION private.get_org_role(p_org_id uuid)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private, auth, extensions
+AS $$
+  SELECT role FROM organization_members
+  WHERE organization_id = p_org_id
+    AND profile_id = private.get_profile_id()
+  LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION private.is_platform_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private, auth, extensions
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = private.get_profile_id()
+      AND role = 'SUPER_ADMIN'
   );
 $$;
 
