@@ -15,6 +15,8 @@ export interface IdentityProtectedQuote {
   totalCost: number;
   deliveryDays: number;
   warrantyMonths: number;
+  isDeliveryDaysEstimated?: boolean;
+  isWarrantyEstimated?: boolean;
   evaluationScore: number | null;
   /**
    * Reliability signals, banded.

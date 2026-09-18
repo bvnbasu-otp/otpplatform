@@ -17,6 +17,8 @@ export interface RawQuoteMetrics {
   ratingAvg: number; // 0.0 - 5.0
   onTimePercent: number; // 0 - 100
   isGstVerified: boolean;
+  isDeliveryDaysEstimated?: boolean;
+  isWarrantyEstimated?: boolean;
 }
 
 export interface ScoringWeights {
@@ -34,6 +36,9 @@ export interface ScoredQuoteOutcome {
   qualityScore: number;
   gstBonus: number;
   compositeScore: number;
+  isDeliveryDaysEstimated?: boolean;
+  isWarrantyEstimated?: boolean;
+  slaConfidencePenalty?: number;
 }
 
 export function computeSmartScores(
@@ -54,8 +59,23 @@ export function computeSmartScores(
 
   return quotes.map((q) => {
     const commercialScore = q.totalCost > 0 ? (minPrice / q.totalCost) * 100 : 100;
-    const speedScore = q.deliveryDays > 0 ? (minDays / q.deliveryDays) * 100 : 100;
-    const warrantyScore = (q.warrantyMonths / maxWarranty) * 100;
+    
+    // Estimated delivery/warranty SLAs receive a minor transparency discount or adjustment
+    // to prevent unconfirmed default estimates from unfairly outranking confirmed SLAs
+    let speedScore = q.deliveryDays > 0 ? (minDays / q.deliveryDays) * 100 : 100;
+    let warrantyScore = (q.warrantyMonths / maxWarranty) * 100;
+
+    let slaConfidencePenalty = 0;
+    if (q.isDeliveryDaysEstimated) {
+      // Apply 5% damping on speed confidence for estimated fallback SLA
+      speedScore = speedScore * 0.95;
+      slaConfidencePenalty += 2;
+    }
+    if (q.isWarrantyEstimated) {
+      warrantyScore = warrantyScore * 0.95;
+      slaConfidencePenalty += 1;
+    }
+
     const qualityScore = ((q.ratingAvg / 5.0) * 0.5 + (q.onTimePercent / 100) * 0.5) * 100;
     const gstBonus = q.isGstVerified ? 5 : 0;
 
@@ -65,7 +85,7 @@ export function computeSmartScores(
       warrantyScore * wWarr +
       qualityScore * wQual;
 
-    const compositeScore = Math.min(100, Math.round((baseWeighted + gstBonus) * 10) / 10);
+    const compositeScore = Math.min(100, Math.round((baseWeighted + gstBonus - slaConfidencePenalty) * 10) / 10);
 
     return {
       quoteId: q.quoteId,
@@ -75,6 +95,9 @@ export function computeSmartScores(
       qualityScore: Math.round(qualityScore * 10) / 10,
       gstBonus,
       compositeScore,
+      isDeliveryDaysEstimated: q.isDeliveryDaysEstimated ?? false,
+      isWarrantyEstimated: q.isWarrantyEstimated ?? false,
+      slaConfidencePenalty,
     };
   });
 }

@@ -1,20 +1,21 @@
-import { corsHeaders, errorResponse, jsonResponse } from '../_shared/cors.ts';
+import { getCorsHeaders, errorResponse, jsonResponse } from '../_shared/cors.ts';
 import { createUserClient, rfqIdFromUrl } from '../_shared/auth.ts';
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   if (req.method !== 'GET') {
-    return errorResponse('Method not allowed', 405);
+    return errorResponse('Method not allowed', 405, origin);
   }
 
   try {
     const url = new URL(req.url);
     const rfqId = rfqIdFromUrl(url) ?? url.searchParams.get('rfq_id');
     if (!rfqId) {
-      return errorResponse('rfq_id required', 400);
+      return errorResponse('rfq_id required', 400, origin);
     }
 
     const client = createUserClient(req);
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (rfq?.reveal_status !== 'REVEALED') {
-      return errorResponse('Supplier identity not yet revealed', 403);
+      return errorResponse('Supplier identity not yet revealed', 403, origin);
     }
 
     const { data, error } = await client
@@ -34,12 +35,12 @@ Deno.serve(async (req) => {
       .eq('rfq_id', rfqId);
 
     if (error) {
-      return errorResponse(error.message, 403);
+      return errorResponse(error.message, 403, origin);
     }
 
-    return jsonResponse({ quotes: data ?? [] });
+    return jsonResponse({ quotes: data ?? [] }, 200, origin);
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error';
-    return errorResponse(message, 401);
+    return errorResponse(message, 401, origin);
   }
 });

@@ -26,6 +26,16 @@ const GATEWAY_URLS: Record<OndcEnvironment, string> = {
   PRODUCTION: 'https://prod.gateway.ondc.org',
 };
 
+export type OndcErrorCode = 'TIMEOUT' | 'HTTP_STATUS' | 'NETWORK_ERROR' | 'INVALID_RESPONSE';
+
+export interface OndcClientResponse {
+  ok: boolean;
+  ack?: OndcAck;
+  error?: string;
+  errorCode?: OndcErrorCode;
+  statusCode?: number;
+}
+
 export class OndcGatewayClient {
   private readonly config: OndcClientConfig;
   private readonly gatewayUrl: string;
@@ -71,7 +81,7 @@ export class OndcGatewayClient {
   async search(params: {
     context: OndcContext;
     intent: OndcSearchIntent;
-  }): Promise<{ ok: boolean; ack?: OndcAck; error?: string }> {
+  }): Promise<OndcClientResponse> {
     const payload: OndcPayload<{ intent: OndcSearchIntent }> = {
       context: params.context,
       message: { intent: params.intent },
@@ -87,7 +97,7 @@ export class OndcGatewayClient {
     bppUri: string;
     context: OndcContext;
     order: OndcOrder;
-  }): Promise<{ ok: boolean; ack?: OndcAck; error?: string }> {
+  }): Promise<OndcClientResponse> {
     const payload: OndcPayload<{ order: OndcOrder }> = {
       context: params.context,
       message: { order: params.order },
@@ -103,7 +113,7 @@ export class OndcGatewayClient {
     bppUri: string;
     context: OndcContext;
     order: OndcOrder;
-  }): Promise<{ ok: boolean; ack?: OndcAck; error?: string }> {
+  }): Promise<OndcClientResponse> {
     const payload: OndcPayload<{ order: OndcOrder }> = {
       context: params.context,
       message: { order: params.order },
@@ -119,7 +129,7 @@ export class OndcGatewayClient {
     bppUri: string;
     context: OndcContext;
     order: OndcOrder;
-  }): Promise<{ ok: boolean; ack?: OndcAck; error?: string }> {
+  }): Promise<OndcClientResponse> {
     const payload: OndcPayload<{ order: OndcOrder }> = {
       context: params.context,
       message: { order: params.order },
@@ -135,7 +145,7 @@ export class OndcGatewayClient {
     bppUri: string;
     context: OndcContext;
     orderId: string;
-  }): Promise<{ ok: boolean; ack?: OndcAck; error?: string }> {
+  }): Promise<OndcClientResponse> {
     const payload: OndcPayload<{ order_id: string }> = {
       context: params.context,
       message: { order_id: params.orderId },
@@ -150,7 +160,8 @@ export class OndcGatewayClient {
   private async postSignedRequest(
     url: string,
     payload: object,
-  ): Promise<{ ok: boolean; ack?: OndcAck; error?: string }> {
+  ): Promise<OndcClientResponse> {
+    const timeoutMs = this.config.timeoutMs || 8000;
     try {
       const payloadStr = JSON.stringify(payload);
       const authHeader = createOndcAuthHeader({
@@ -160,6 +171,8 @@ export class OndcGatewayClient {
         privateKeyPem: this.config.signingPrivateKeyPem,
       });
 
+      const signal = AbortSignal.timeout(timeoutMs);
+
       const res = await fetch(url, {
         method: 'POST',
         headers: {
@@ -168,18 +181,41 @@ export class OndcGatewayClient {
           Authorization: authHeader,
         },
         body: payloadStr,
+        signal,
       });
 
       if (!res.ok) {
-        const errorText = await res.text();
-        return { ok: false, error: `HTTP ${res.status}: ${errorText}` };
+        const errorText = await res.text().catch(() => '');
+        return {
+          ok: false,
+          errorCode: 'HTTP_STATUS',
+          statusCode: res.status,
+          error: `HTTP ${res.status}: ${errorText}`,
+        };
       }
 
       const ack = (await res.json()) as OndcAck;
       const isAck = ack?.message?.ack?.status === 'ACK';
-      return { ok: isAck, ack, error: isAck ? undefined : ack?.error?.message };
+      return {
+        ok: isAck,
+        ack,
+        statusCode: res.status,
+        errorCode: isAck ? undefined : 'INVALID_RESPONSE',
+        error: isAck ? undefined : ack?.error?.message,
+      };
     } catch (err: any) {
-      return { ok: false, error: err?.message || 'Network dispatch failed' };
+      if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+        return {
+          ok: false,
+          errorCode: 'TIMEOUT',
+          error: `ONDC dispatch timed out after ${timeoutMs}ms`,
+        };
+      }
+      return {
+        ok: false,
+        errorCode: 'NETWORK_ERROR',
+        error: err?.message || 'Network dispatch failed',
+      };
     }
   }
 }

@@ -4,8 +4,8 @@ import { buildDecisionReceipt, type DecisionReceipt, type ReceiptSupplier } from
 interface RevealedRow {
   quote_id: string;
   anonymous_label: string;
-  supplier_id: string;
-  business_name: string;
+  supplier_id: string | null;
+  business_name: string | null;
   total_cost: number | null;
   evaluation_score: number | null;
   supplier_rating: number | null;
@@ -24,12 +24,13 @@ async function fetchPriorOrderCounts(
   rfqId: string,
   supplierIds: string[],
 ): Promise<Record<string, number>> {
-  if (supplierIds.length === 0) return {};
+  const validIds = supplierIds.filter(Boolean);
+  if (validIds.length === 0) return {};
 
   const { data, error } = await supabase
     .from('purchase_orders')
     .select('supplier_id')
-    .in('supplier_id', supplierIds)
+    .in('supplier_id', validIds)
     .neq('rfq_id', rfqId);
 
   if (error || !data) return {};
@@ -56,18 +57,18 @@ export async function fetchDecisionReceipt(
   const rows = (data ?? []) as RevealedRow[];
   const priorOrders = await fetchPriorOrderCounts(
     rfqId,
-    rows.map((r) => r.supplier_id),
+    rows.map((r) => r.supplier_id).filter((id): id is string => Boolean(id)),
   );
 
   const suppliers: ReceiptSupplier[] = rows.map((row) => ({
     quoteId: row.quote_id,
     anonymousLabel: row.anonymous_label,
-    supplierId: row.supplier_id,
-    businessName: row.business_name,
+    supplierId: row.supplier_id ?? null,
+    businessName: row.business_name ?? null,
     totalCost: Number(row.total_cost ?? 0),
     evaluationScore: row.evaluation_score === null ? null : Number(row.evaluation_score),
     rating: row.supplier_rating === null ? null : Number(row.supplier_rating),
-    priorOrders: priorOrders[row.supplier_id] ?? 0,
+    priorOrders: row.supplier_id ? (priorOrders[row.supplier_id] ?? 0) : 0,
   }));
 
   return { ok: true, receipt: buildDecisionReceipt(suppliers, winningQuoteId) };

@@ -11,8 +11,8 @@
 export interface ReceiptSupplier {
   quoteId: string;
   anonymousLabel: string;
-  supplierId: string;
-  businessName: string;
+  supplierId: string | null;
+  businessName: string | null;
   totalCost: number;
   evaluationScore: number | null;
   /** Platform-wide average rating, hidden until reveal. */

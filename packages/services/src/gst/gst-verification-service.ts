@@ -129,12 +129,13 @@ export class MockGstVerificationAdapter implements GstVerificationPort {
 }
 
 /**
- * Live GSTN verification adapter via API Gateway.
+ * Live GSTN verification adapter via API Gateway with timeout & resilience.
  */
 export class LiveGstVerificationAdapter implements GstVerificationPort {
   constructor(
     private readonly apiUrl: string,
     private readonly apiKey: string,
+    private readonly timeoutMs: number = 5000,
   ) {}
 
   async verifyGstin(rawGstin: string): Promise<GstVerificationResult> {
@@ -150,11 +151,13 @@ export class LiveGstVerificationAdapter implements GstVerificationPort {
 
     try {
       const gstin = rawGstin.trim().toUpperCase();
+      const signal = AbortSignal.timeout(this.timeoutMs);
       const res = await fetch(`${this.apiUrl}/taxpayer/${gstin}`, {
         headers: {
           'x-api-key': this.apiKey,
           Accept: 'application/json',
         },
+        signal,
       });
 
       if (!res.ok) {
@@ -184,6 +187,14 @@ export class LiveGstVerificationAdapter implements GstVerificationPort {
         },
       };
     } catch (err: any) {
+      if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+        return {
+          verified: false,
+          verifiedAt: new Date().toISOString(),
+          source: 'LIVE_GSTN',
+          error: `GST verification timed out after ${this.timeoutMs}ms`,
+        };
+      }
       return {
         verified: false,
         verifiedAt: new Date().toISOString(),

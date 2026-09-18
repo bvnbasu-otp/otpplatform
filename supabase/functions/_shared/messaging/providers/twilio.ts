@@ -80,6 +80,7 @@ export class TwilioMessagingProvider implements MessagingProvider {
     });
 
     try {
+      const signal = AbortSignal.timeout(5000);
       const response = await this.#fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${this.#config.accountSid}/Messages.json`,
         {
@@ -89,6 +90,7 @@ export class TwilioMessagingProvider implements MessagingProvider {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body,
+          signal,
         },
       );
 
@@ -110,14 +112,15 @@ export class TwilioMessagingProvider implements MessagingProvider {
         externalMessageId: payload?.sid ?? null,
         status: TWILIO_STATUS[String(payload?.status)] === 'SENT' ? 'SENT' : 'QUEUED',
       };
-    } catch (error) {
+    } catch (error: any) {
       // A send failure must never abort the surrounding operation: nine
       // suppliers reachable out of ten is nine bids, not zero.
+      const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
       return {
         provider: this.id,
         externalMessageId: null,
         status: 'FAILED',
-        failureReason: error instanceof Error ? error.message : 'Twilio request failed',
+        failureReason: isTimeout ? 'Twilio messaging request timed out after 5000ms' : (error instanceof Error ? error.message : 'Twilio request failed'),
       };
     }
   }

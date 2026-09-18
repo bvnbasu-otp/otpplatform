@@ -6,8 +6,8 @@ export type QuotesRevealedRow =
   Database['public']['Views']['quotes_revealed']['Row'];
 
 export function mapRevealedQuoteRow(row: QuotesRevealedRow): RevealedQuote {
-  if (!row.quote_id || !row.supplier_id) {
-    throw new Error('quotes_revealed row missing quote_id or supplier_id');
+  if (!row.quote_id) {
+    throw new Error('quotes_revealed row missing quote_id');
   }
 
   const address =
@@ -27,14 +27,14 @@ export function mapRevealedQuoteRow(row: QuotesRevealedRow): RevealedQuote {
     deliveryDays: row.delivery_days ?? 0,
     warrantyMonths: row.warranty_months ?? 0,
     evaluationScore: row.evaluation_score ?? null,
-    supplierRatingAvg: null,
+    supplierRatingAvg: row.supplier_rating != null ? Number(row.supplier_rating) : null,
     pastPerformanceScore: null,
     submittedAt: row.submitted_at ?? null,
-    supplierId: row.supplier_id,
-    businessName: row.business_name ?? 'Unknown',
+    supplierId: row.supplier_id ?? null,
+    businessName: row.business_name ?? null,
     phone: row.phone ?? null,
     email: row.email ?? null,
     address,
-    source: row.source ?? 'OTHER',
+    source: row.source ?? null,
   };
 }

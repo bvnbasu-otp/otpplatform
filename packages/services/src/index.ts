@@ -56,6 +56,7 @@ export * from './interfaces/manager-invitation';
 
 export * from './ondc/types/ondc-beckn';
 export * from './ondc/crypto/ondc-auth-crypto';
+export * from './ondc/crypto/ondc-key-cache';
 export * from './ondc/client/ondc-gateway-client';
 export * from './ondc/receiver/ondc-bap-receiver';
 export * from './ondc/ondc-network-service';

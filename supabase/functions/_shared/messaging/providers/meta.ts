@@ -63,6 +63,7 @@ export class MetaWhatsAppProvider implements MessagingProvider {
     const version = this.#config.graphVersion ?? 'v20.0';
 
     try {
+      const signal = AbortSignal.timeout(5000);
       const response = await this.#fetch(
         `https://graph.facebook.com/${version}/${this.#config.phoneNumberId}/messages`,
         {
@@ -79,6 +80,7 @@ export class MetaWhatsAppProvider implements MessagingProvider {
             type: 'text',
             text: { preview_url: true, body: message.body },
           }),
+          signal,
         },
       );
 
@@ -100,12 +102,13 @@ export class MetaWhatsAppProvider implements MessagingProvider {
         externalMessageId: payload?.messages?.[0]?.id ?? null,
         status: 'SENT',
       };
-    } catch (error) {
+    } catch (error: any) {
+      const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
       return {
         provider: this.id,
         externalMessageId: null,
         status: 'FAILED',
-        failureReason: error instanceof Error ? error.message : 'Meta request failed',
+        failureReason: isTimeout ? 'Meta WhatsApp request timed out after 5000ms' : (error instanceof Error ? error.message : 'Meta request failed'),
       };
     }
   }

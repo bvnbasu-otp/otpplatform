@@ -3,8 +3,8 @@ import { supabase } from '@/lib/supabase';
 export interface RevealedQuoteRow {
   quoteId: string;
   anonymousLabel: string;
-  supplierId: string;
-  businessName: string;
+  supplierId: string | null;
+  businessName: string | null;
   phone: string | null;
   email: string | null;
   status: string;
@@ -16,8 +16,8 @@ export interface RevealedQuoteRow {
 interface RevealedDbRow {
   quote_id: string;
   anonymous_label: string;
-  supplier_id: string;
-  business_name: string;
+  supplier_id: string | null;
+  business_name: string | null;
   phone: string | null;
   email: string | null;
   status: string;
@@ -30,10 +30,10 @@ function mapRow(row: RevealedDbRow): RevealedQuoteRow {
   return {
     quoteId: row.quote_id,
     anonymousLabel: row.anonymous_label,
-    supplierId: row.supplier_id,
-    businessName: row.business_name,
-    phone: row.phone,
-    email: row.email,
+    supplierId: row.supplier_id ?? null,
+    businessName: row.business_name ?? null,
+    phone: row.phone ?? null,
+    email: row.email ?? null,
     status: row.status,
     totalCost: Number(row.total_cost ?? 0),
     deliveryDays: row.delivery_days,

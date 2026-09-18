@@ -6,6 +6,7 @@ import type {
   OndcProvider,
 } from '../types/ondc-beckn';
 import { verifyOndcAuthHeader } from '../crypto/ondc-auth-crypto';
+import { OndcPublicKeyCache } from '../crypto/ondc-key-cache';
 
 export interface NormalizedOndcSupplierCandidate {
   network: 'ONDC';
@@ -30,19 +31,24 @@ export interface NormalizedOndcBlindQuote {
   totalAmount: number;
   deliveryDays: number;
   warrantyMonths?: number;
+  isDeliveryDaysEstimated?: boolean;
+  isWarrantyEstimated?: boolean;
   rawQuote: any;
 }
 
 export interface OndcReceiverOptions {
   lookupPublicKeyFn?: (keyId: string) => Promise<string | null>;
+  keyCache?: OndcPublicKeyCache;
   skipSignatureVerification?: boolean;
 }
 
 export class OndcBapReceiver {
   private readonly options: OndcReceiverOptions;
+  private readonly keyCache?: OndcPublicKeyCache;
 
   constructor(options: OndcReceiverOptions = {}) {
     this.options = options;
+    this.keyCache = options.keyCache ?? (options.lookupPublicKeyFn ? new OndcPublicKeyCache({ fetchFn: options.lookupPublicKeyFn }) : undefined);
   }
 
   /**
@@ -90,7 +96,7 @@ export class OndcBapReceiver {
       return { valid: false, error: 'Missing Authorization header' };
     }
 
-    if (!this.options.lookupPublicKeyFn) {
+    if (!this.keyCache && !this.options.lookupPublicKeyFn) {
       // In development or staging without lookup function, accept structure
       return { valid: true };
     }
@@ -101,7 +107,13 @@ export class OndcBapReceiver {
       return { valid: false, error: 'Invalid keyId in Authorization header' };
     }
 
-    const publicKeyPem = await this.options.lookupPublicKeyFn(keyId);
+    let publicKeyPem: string | null = null;
+    if (this.keyCache) {
+      publicKeyPem = await this.keyCache.getOrFetch(keyId);
+    } else if (this.options.lookupPublicKeyFn) {
+      publicKeyPem = await this.options.lookupPublicKeyFn(keyId);
+    }
+
     if (!publicKeyPem) {
       return { valid: false, error: `Public key not found for keyId: ${keyId}` };
     }
@@ -186,6 +198,26 @@ export class OndcBapReceiver {
       }
     }
 
+    let deliveryDays = 3;
+    let isDeliveryDaysEstimated = true;
+    let warrantyMonths = 12;
+    let isWarrantyEstimated = true;
+
+    // Check if fulfillment or item details provide concrete delivery duration
+    const fulfillments = message?.order?.fulfillments;
+    if (fulfillments && Array.isArray(fulfillments) && fulfillments[0]) {
+      const f = fulfillments[0];
+      const tat = f['@ondc/org/tat'] || f.tat || f.time?.duration;
+      if (tat) {
+        // e.g. "P3D" or "PT72H" or "3 days" or number
+        const match = String(tat).match(/(\d+)/);
+        if (match) {
+          deliveryDays = parseInt(match[1], 10);
+          isDeliveryDaysEstimated = false;
+        }
+      }
+    }
+
     return {
       transactionId: context.transaction_id,
       quote: {
@@ -196,8 +228,10 @@ export class OndcBapReceiver {
         taxAmount,
         transportCost,
         totalAmount,
-        deliveryDays: 3, // Default SLA or parsed from fulfillment
-        warrantyMonths: 12,
+        deliveryDays,
+        warrantyMonths,
+        isDeliveryDaysEstimated,
+        isWarrantyEstimated,
         rawQuote: quote,
       },
     };

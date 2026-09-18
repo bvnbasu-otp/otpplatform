@@ -330,9 +330,9 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                   Legal Entity:
                 </span>
                 <strong className="text-foreground text-sm block truncate">
-                  {winningQuote.businessName}
+                  {winningQuote.businessName || 'Verified Supplier'}
                 </strong>
-                <span className="text-[10px] text-muted-foreground">Supplier ID: {winningQuote.supplierId.slice(0, 8)}</span>
+                <span className="text-[10px] text-muted-foreground">Supplier ID: {winningQuote.supplierId ? winningQuote.supplierId.slice(0, 8) : 'Revealed'}</span>
               </div>
 
               <div>
@@ -356,6 +356,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                 </strong>
                 <span className="text-[10px] text-muted-foreground">
                   TAT: {winningQuote.deliveryDays ? `${winningQuote.deliveryDays} Days` : 'Standard'}
+                  {winningQuote.isDeliveryDaysEstimated ? ' (Estimated)' : ''}
                 </span>
               </div>
             </div>

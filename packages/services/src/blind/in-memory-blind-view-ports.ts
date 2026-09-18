@@ -77,6 +77,8 @@ export function createInMemoryBlindViewPorts(
         const supplier = await repos.suppliers.findById(quote.supplierId);
         if (!latest || !supplier) continue;
 
+        const isWinner = quote.status === 'SELECTED';
+
         revealed.push({
           quoteId: quote.id,
           anonymousLabel: labelByInvitation.get(quote.invitationId) ?? 'Unknown',
@@ -89,15 +91,15 @@ export function createInMemoryBlindViewPorts(
           deliveryDays: latest.snapshot.deliveryDays,
           warrantyMonths: latest.snapshot.warrantyMonths,
           evaluationScore: quote.evaluationScore ?? null,
-          supplierRatingAvg: supplier.ratingAvg ?? null,
+          supplierRatingAvg: isWinner ? supplier.ratingAvg ?? null : null,
           pastPerformanceScore: null,
           submittedAt: quote.submittedAt ?? null,
-          supplierId: quote.supplierId,
-          businessName: supplier.businessName,
+          supplierId: isWinner ? quote.supplierId : null,
+          businessName: isWinner ? supplier.businessName : null,
           phone: null,
           email: null,
           address: null,
-          source: supplier.source,
+          source: isWinner ? supplier.source : null,
         });
       }
       return revealed;
