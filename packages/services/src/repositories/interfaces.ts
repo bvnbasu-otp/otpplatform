@@ -37,6 +37,14 @@ import type {
   WalletTransactionEntity,
   WorkOrder,
   WorkOrderMilestoneEntity,
+  NotificationTemplateEntity,
+  NotificationPreferencesEntity,
+  NotificationDispatchQueueEntity,
+  WorkOrderInspectionEntity,
+  WorkOrderInspectionItemEntity,
+  DisputeEntity,
+  DisputeEvidenceEntity,
+  DisputeEventEntity,
 } from './entities';
 
 
@@ -303,6 +311,63 @@ export interface BuyerRewardPolicyRepository {
   save(policy: BuyerRewardPolicyEntity): Promise<BuyerRewardPolicyEntity>;
 }
 
+export interface NotificationTemplateRepository {
+  findById(id: string): Promise<NotificationTemplateEntity | null>;
+  findByCode(code: string): Promise<NotificationTemplateEntity | null>;
+  findAll(): Promise<NotificationTemplateEntity[]>;
+  save(template: NotificationTemplateEntity): Promise<NotificationTemplateEntity>;
+}
+
+export interface NotificationPreferencesRepository {
+  findById(id: string): Promise<NotificationPreferencesEntity | null>;
+  findByUserAndOrg(userId: string, orgId?: string | null): Promise<NotificationPreferencesEntity | null>;
+  findByUserId(userId: string): Promise<NotificationPreferencesEntity[]>;
+  save(prefs: NotificationPreferencesEntity): Promise<NotificationPreferencesEntity>;
+}
+
+export interface NotificationDispatchQueueRepository {
+  findById(id: string): Promise<NotificationDispatchQueueEntity | null>;
+  findByIdempotencyKey(key: string): Promise<NotificationDispatchQueueEntity | null>;
+  findPending(): Promise<NotificationDispatchQueueEntity[]>;
+  findByRecipient(recipientUserId: string): Promise<NotificationDispatchQueueEntity[]>;
+  save(item: NotificationDispatchQueueEntity): Promise<NotificationDispatchQueueEntity>;
+}
+
+export interface WorkOrderInspectionRepository {
+  findById(id: string): Promise<WorkOrderInspectionEntity | null>;
+  findByWorkOrderId(workOrderId: string): Promise<WorkOrderInspectionEntity[]>;
+  findByMilestoneId(milestoneId: string): Promise<WorkOrderInspectionEntity[]>;
+  save(inspection: WorkOrderInspectionEntity): Promise<WorkOrderInspectionEntity>;
+}
+
+export interface WorkOrderInspectionItemRepository {
+  findById(id: string): Promise<WorkOrderInspectionItemEntity | null>;
+  findByInspectionId(inspectionId: string): Promise<WorkOrderInspectionItemEntity[]>;
+  save(item: WorkOrderInspectionItemEntity): Promise<WorkOrderInspectionItemEntity>;
+  saveMany(items: WorkOrderInspectionItemEntity[]): Promise<WorkOrderInspectionItemEntity[]>;
+}
+
+export interface DisputeRepository {
+  findById(id: string): Promise<DisputeEntity | null>;
+  findByDisputeNumber(disputeNumber: string): Promise<DisputeEntity | null>;
+  findByOrganizationId(organizationId: string): Promise<DisputeEntity[]>;
+  findByEntity(entityType: string, entityId: string): Promise<DisputeEntity[]>;
+  findAll(): Promise<DisputeEntity[]>;
+  save(dispute: DisputeEntity): Promise<DisputeEntity>;
+}
+
+export interface DisputeEvidenceRepository {
+  findById(id: string): Promise<DisputeEvidenceEntity | null>;
+  findByDisputeId(disputeId: string): Promise<DisputeEvidenceEntity[]>;
+  save(evidence: DisputeEvidenceEntity): Promise<DisputeEvidenceEntity>;
+}
+
+export interface DisputeEventRepository {
+  findById(id: string): Promise<DisputeEventEntity | null>;
+  findByDisputeId(disputeId: string): Promise<DisputeEventEntity[]>;
+  save(event: DisputeEventEntity): Promise<DisputeEventEntity>;
+}
+
 export interface Repositories {
   requirements: RequirementRepository;
   rfqs: RfqRepository;
@@ -340,6 +405,14 @@ export interface Repositories {
   walletTransactions?: WalletTransactionRepository;
   buyerRewardAllocations?: BuyerRewardAllocationRepository;
   buyerRewardPolicies?: BuyerRewardPolicyRepository;
+  notificationTemplates?: NotificationTemplateRepository;
+  notificationPreferences?: NotificationPreferencesRepository;
+  notificationQueue?: NotificationDispatchQueueRepository;
+  workOrderInspections?: WorkOrderInspectionRepository;
+  workOrderInspectionItems?: WorkOrderInspectionItemRepository;
+  disputes?: DisputeRepository;
+  disputeEvidence?: DisputeEvidenceRepository;
+  disputeEvents?: DisputeEventRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

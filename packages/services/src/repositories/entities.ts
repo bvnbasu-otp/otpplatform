@@ -19,6 +19,19 @@ import type {
   WalletStatus,
   WalletTransactionType,
   BuyerRewardAllocationStatus,
+  NotificationChannel,
+  NotificationCategory,
+  NotificationDispatchStatus,
+  InspectionType,
+  InspectionStatus,
+  InspectionItemCategory,
+  InspectionItemStatus,
+  InspectionEvidenceMetadata,
+  DisputeEntityType,
+  DisputeCategory,
+  DisputeSeverity,
+  DisputeResolutionCategory,
+  DisputeEventType,
 } from '@otp/domain';
 import type { StructuredSpecs } from '../interfaces/requirement-parser-service';
 
@@ -685,6 +698,160 @@ export interface BuyerRewardPolicyEntity {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---------------------------------------------------------------------------
+// Phase 6.5 Entities: Communications, Milestone Inspections & Disputes
+// ---------------------------------------------------------------------------
+
+export interface NotificationTemplateEntity {
+  id: string;
+  templateCode: string;
+  version: number;
+  channel: NotificationChannel;
+  category: NotificationCategory;
+  lifecycleStages: string[];
+  subjectTemplate?: string | null;
+  bodyTemplate: string;
+  variablesSchema: Record<string, unknown>;
+  isActive: boolean;
+  requiresIdentityRedaction: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationPreferencesEntity {
+  id: string;
+  userId: string;
+  organizationId?: string | null;
+  channelPreferences: Record<NotificationChannel, boolean>;
+  categoryOptOuts: NotificationCategory[];
+  phoneNumber?: string | null;
+  email?: string | null;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationDispatchQueueEntity {
+  id: string;
+  organizationId?: string | null;
+  recipientUserId?: string | null;
+  recipientAddress: string;
+  channel: NotificationChannel;
+  category: NotificationCategory;
+  templateCode: string;
+  templateVersion: number;
+  payload: Record<string, unknown>;
+  redactedPayload: Record<string, unknown>;
+  isIdentityMasked: boolean;
+  status: NotificationDispatchStatus;
+  retryCount: number;
+  maxRetries: number;
+  nextRetryAt: string;
+  errorLog: Array<{ timestamp: string; error: string; attempt: number }>;
+  providerMessageId?: string | null;
+  providerResponse?: Record<string, unknown> | null;
+  idempotencyKey?: string | null;
+  deliveryConfirmedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkOrderInspectionItemEntity {
+  id: string;
+  inspectionId: string;
+  itemCode: string;
+  category: InspectionItemCategory;
+  description: string;
+  status: InspectionItemStatus;
+  score?: number | null;
+  evidenceUrls: string[];
+  evidenceMetadata: InspectionEvidenceMetadata[];
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface WorkOrderInspectionEntity {
+  id: string;
+  workOrderId: string;
+  milestoneId: string;
+  organizationId: string;
+  inspectorId: string;
+  inspectionType: InspectionType;
+  status: InspectionStatus;
+  checklistTemplateCode: string;
+  overallScore?: number | null;
+  passed: boolean;
+  digitalSignoffHash?: string | null;
+  reworkReason?: string | null;
+  reworkCount: number;
+  evidenceVersion: number;
+  notes?: string | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  items?: WorkOrderInspectionItemEntity[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DisputeEvidenceEntity {
+  id: string;
+  disputeId: string;
+  uploadedBy: string;
+  fileName: string;
+  fileUrl: string;
+  fileSizeBytes: number;
+  mimeType: string;
+  sha256Hash: string;
+  description?: string | null;
+  isImmutable: boolean;
+  createdAt: string;
+}
+
+export interface DisputeEventEntity {
+  id: string;
+  disputeId: string;
+  eventType: DisputeEventType;
+  actorId: string;
+  actorRole: string;
+  previousStatus?: string | null;
+  newStatus?: string | null;
+  previousEscalationLevel?: number | null;
+  newEscalationLevel?: number | null;
+  notes?: string | null;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface DisputeEntity {
+  id: string;
+  disputeNumber: string;
+  organizationId: string;
+  counterpartyOrganizationId?: string | null;
+  entityType: DisputeEntityType;
+  entityId: string;
+  category: DisputeCategory;
+  severity: DisputeSeverity;
+  status: 'OPEN' | 'UNDER_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'CLOSED' | 'WITHDRAWN';
+  escalationLevel: number;
+  disputedAmount: number;
+  currency: string;
+  title: string;
+  description: string;
+  slaDeadline: string;
+  openedBy: string;
+  assignedTo?: string | null;
+  resolvedBy?: string | null;
+  resolutionSummary?: string | null;
+  resolutionCategory?: DisputeResolutionCategory | null;
+  resolvedAt?: string | null;
+  evidence?: DisputeEvidenceEntity[];
+  events?: DisputeEventEntity[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 
 

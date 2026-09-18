@@ -1,6 +1,8 @@
 export const NotificationChannel = {
-  IN_APP: 'IN_APP',
+  WHATSAPP: 'WHATSAPP',
+  SMS: 'SMS',
   EMAIL: 'EMAIL',
+  IN_APP: 'IN_APP',
 } as const;
 
 export type NotificationChannel =

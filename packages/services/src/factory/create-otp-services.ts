@@ -23,6 +23,9 @@ import { SupplierDiscoveryAppService } from '../services/supplier-discovery-serv
 import { SupplierPerformanceService } from '../services/supplier-performance-service';
 import { WorkOrderService } from '../services/work-order-service';
 import { AccountingService } from '../services/accounting-service';
+import { OmnichannelNotificationService } from '../services/omnichannel-notification-service';
+import { MilestoneInspectionService } from '../services/milestone-inspection-service';
+import { DisputeResolutionService } from '../services/dispute-resolution-service';
 import { IdentityProtectedRfqService } from '../blind/blind-rfq-service';
 import { createInMemoryBlindViewPorts } from '../blind/in-memory-blind-view-ports';
 import type { BlindViewPorts } from '../interfaces/blind-view-ports';
@@ -44,6 +47,9 @@ export interface OtpServices {
   supplierPerformance: SupplierPerformanceService;
   audit: AuditAppService;
   notifications: NotificationAppService;
+  omnichannelNotifications: OmnichannelNotificationService;
+  milestoneInspections: MilestoneInspectionService;
+  disputeResolution: DisputeResolutionService;
   supplierReveal: SupplierRevealServiceImpl;
   approvalPolicy: DefaultApprovalPolicyService;
 }
@@ -83,6 +89,9 @@ export function createOtpServices(
   const payments = new PaymentService(repos, audit);
   const accounting = new AccountingService(repos, audit);
   const supplierPerformance = new SupplierPerformanceService(repos, audit);
+  const omnichannelNotifications = new OmnichannelNotificationService(repos, audit);
+  const milestoneInspections = new MilestoneInspectionService(repos, audit);
+  const disputeResolution = new DisputeResolutionService(repos, audit);
   const blindViewPorts = blindViews ?? createInMemoryBlindViewPorts(repos);
   const blindRfq = new IdentityProtectedRfqService(repos, blindViewPorts, auditInner);
 
@@ -103,6 +112,9 @@ export function createOtpServices(
     supplierPerformance,
     audit,
     notifications,
+    omnichannelNotifications,
+    milestoneInspections,
+    disputeResolution,
     supplierReveal,
     approvalPolicy,
   };

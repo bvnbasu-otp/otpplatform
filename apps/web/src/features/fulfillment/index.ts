@@ -8,5 +8,7 @@ export { DeliveryInspectionPanel } from './components/DeliveryInspectionPanel';
 export { InvoicePaymentPanel } from './components/InvoicePaymentPanel';
 export { TdsWithholdingPanel } from './components/TdsWithholdingPanel';
 export { ChangeOrderModal } from './components/ChangeOrderModal';
+export { MilestoneInspectionChecklist } from './components/MilestoneInspectionChecklist';
+export { DisputeResolutionDrawer } from './components/DisputeResolutionDrawer';
 export { StatusBadge, PoActionButtons } from './components/FulfillmentStatus';
 export { formatMoney } from './types/fulfillment';

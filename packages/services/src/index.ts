@@ -42,6 +42,9 @@ export * from './services/accounting-service';
 export * from './services/supplier-performance-service';
 export * from './services/audit-service';
 export * from './services/notification-service';
+export * from './services/omnichannel-notification-service';
+export * from './services/milestone-inspection-service';
+export * from './services/dispute-resolution-service';
 export * from './services/service-helpers';
 
 export * from './factory/create-otp-services';

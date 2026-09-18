@@ -38,6 +38,14 @@ import type {
   WalletTransactionEntity,
   BuyerRewardAllocationEntity,
   BuyerRewardPolicyEntity,
+  NotificationTemplateEntity,
+  NotificationPreferencesEntity,
+  NotificationDispatchQueueEntity,
+  WorkOrderInspectionEntity,
+  WorkOrderInspectionItemEntity,
+  DisputeEntity,
+  DisputeEvidenceEntity,
+  DisputeEventEntity,
 } from './entities';
 
 function id(): string {
@@ -88,6 +96,14 @@ export class InMemoryRepositories {
   walletTransactions = new Map<string, WalletTransactionEntity>();
   buyerRewardAllocations = new Map<string, BuyerRewardAllocationEntity>();
   buyerRewardPolicies = new Map<string, BuyerRewardPolicyEntity>();
+  notificationTemplates = new Map<string, NotificationTemplateEntity>();
+  notificationPreferences = new Map<string, NotificationPreferencesEntity>();
+  notificationQueue = new Map<string, NotificationDispatchQueueEntity>();
+  workOrderInspections = new Map<string, WorkOrderInspectionEntity>();
+  workOrderInspectionItems = new Map<string, WorkOrderInspectionItemEntity>();
+  disputes = new Map<string, DisputeEntity>();
+  disputeEvidence = new Map<string, DisputeEvidenceEntity>();
+  disputeEvents = new Map<string, DisputeEventEntity>();
   suppliers = new Map<string, Supplier>();
 
   performance = new Map<string, ProcurementPerformanceRecord>();
@@ -122,6 +138,53 @@ export class InMemoryRepositories {
       effectiveTo: null,
       status: 'ACTIVE',
       description: 'Standard OTP Buyer Sourcing Reward Policy (20% of Platform Fee)',
+      createdAt: new Date(2026, 0, 1).toISOString(),
+      updatedAt: new Date(2026, 0, 1).toISOString(),
+    });
+
+    // Seed default Phase 6.5 notification templates
+    mem.notificationTemplates.set('tmpl-rfq-invite-wa', {
+      id: 'tmpl-rfq-invite-wa',
+      templateCode: 'RFQ_INVITATION_WHATSAPP',
+      version: 1,
+      channel: 'WHATSAPP',
+      category: 'RFQ_INVITATION',
+      lifecycleStages: ['RFQ', 'INVITED'],
+      bodyTemplate: 'You have been invited to quote for RFQ {{rfq_title}} (Ref: {{rfq_id}}). Quote deadline: {{deadline}}.',
+      variablesSchema: { rfq_title: 'string', rfq_id: 'string', deadline: 'string' },
+      isActive: true,
+      requiresIdentityRedaction: true,
+      createdAt: new Date(2026, 0, 1).toISOString(),
+      updatedAt: new Date(2026, 0, 1).toISOString(),
+    });
+
+    mem.notificationTemplates.set('tmpl-quote-submit-wa', {
+      id: 'tmpl-quote-submit-wa',
+      templateCode: 'QUOTE_SUBMISSION_WHATSAPP',
+      version: 1,
+      channel: 'WHATSAPP',
+      category: 'QUOTE_SUBMITTED',
+      lifecycleStages: ['EVALUATION'],
+      bodyTemplate: 'Quotation received for RFQ {{rfq_title}} from {{supplier_pseudonym}}. Total: INR {{amount}}.',
+      variablesSchema: { rfq_title: 'string', supplier_pseudonym: 'string', amount: 'number' },
+      isActive: true,
+      requiresIdentityRedaction: true,
+      createdAt: new Date(2026, 0, 1).toISOString(),
+      updatedAt: new Date(2026, 0, 1).toISOString(),
+    });
+
+    mem.notificationTemplates.set('tmpl-dispute-open-email', {
+      id: 'tmpl-dispute-open-email',
+      templateCode: 'DISPUTE_OPENED_EMAIL',
+      version: 1,
+      channel: 'EMAIL',
+      category: 'DISPUTE_OPENED',
+      lifecycleStages: ['DISPUTE'],
+      subjectTemplate: '[DISPUTE] {{dispute_number}} opened for {{entity_type}} {{entity_id}}',
+      bodyTemplate: 'Dispute {{dispute_number}} has been opened with severity {{severity}}. SLA deadline is {{sla_deadline}}.',
+      variablesSchema: { dispute_number: 'string', entity_type: 'string', entity_id: 'string', severity: 'string', sla_deadline: 'string' },
+      isActive: true,
+      requiresIdentityRedaction: false,
       createdAt: new Date(2026, 0, 1).toISOString(),
       updatedAt: new Date(2026, 0, 1).toISOString(),
     });
@@ -745,6 +808,134 @@ export class InMemoryRepositories {
     };
   }
 
+  get notificationTemplatesRepo(): NonNullable<Repositories['notificationTemplates']> {
+    const store = this.notificationTemplates;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByCode: async (code) =>
+        [...store.values()].find((t) => t.templateCode === code) ?? null,
+      findAll: async () => [...store.values()],
+      save: async (template) => {
+        store.set(template.id, template);
+        return template;
+      },
+    };
+  }
+
+  get notificationPreferencesRepo(): NonNullable<Repositories['notificationPreferences']> {
+    const store = this.notificationPreferences;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByUserAndOrg: async (userId, orgId) =>
+        [...store.values()].find(
+          (p) => p.userId === userId && (orgId ? p.organizationId === orgId : true),
+        ) ?? null,
+      findByUserId: async (userId) =>
+        [...store.values()].filter((p) => p.userId === userId),
+      save: async (prefs) => {
+        store.set(prefs.id, prefs);
+        return prefs;
+      },
+    };
+  }
+
+  get notificationQueueRepo(): NonNullable<Repositories['notificationQueue']> {
+    const store = this.notificationQueue;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByIdempotencyKey: async (key) =>
+        [...store.values()].find((i) => i.idempotencyKey === key) ?? null,
+      findPending: async () =>
+        [...store.values()].filter((i) => i.status === 'PENDING'),
+      findByRecipient: async (recipientUserId) =>
+        [...store.values()].filter((i) => i.recipientUserId === recipientUserId),
+      save: async (item) => {
+        store.set(item.id, item);
+        return item;
+      },
+    };
+  }
+
+  get workOrderInspectionsRepo(): NonNullable<Repositories['workOrderInspections']> {
+    const store = this.workOrderInspections;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByWorkOrderId: async (workOrderId) =>
+        [...store.values()].filter((i) => i.workOrderId === workOrderId),
+      findByMilestoneId: async (milestoneId) =>
+        [...store.values()].filter((i) => i.milestoneId === milestoneId),
+      save: async (insp) => {
+        store.set(insp.id, insp);
+        return insp;
+      },
+    };
+  }
+
+  get workOrderInspectionItemsRepo(): NonNullable<Repositories['workOrderInspectionItems']> {
+    const store = this.workOrderInspectionItems;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByInspectionId: async (inspectionId) =>
+        [...store.values()].filter((item) => item.inspectionId === inspectionId),
+      save: async (item) => {
+        store.set(item.id, item);
+        return item;
+      },
+      saveMany: async (items) => {
+        for (const item of items) store.set(item.id, item);
+        return items;
+      },
+    };
+  }
+
+  get disputesRepo(): NonNullable<Repositories['disputes']> {
+    const store = this.disputes;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByDisputeNumber: async (disputeNumber) =>
+        [...store.values()].find((d) => d.disputeNumber === disputeNumber) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter(
+          (d) => d.organizationId === orgId || d.counterpartyOrganizationId === orgId,
+        ),
+      findByEntity: async (entityType, entityId) =>
+        [...store.values()].filter(
+          (d) => d.entityType === entityType && d.entityId === entityId,
+        ),
+      findAll: async () => [...store.values()],
+      save: async (dispute) => {
+        store.set(dispute.id, dispute);
+        return dispute;
+      },
+    };
+  }
+
+  get disputeEvidenceRepo(): NonNullable<Repositories['disputeEvidence']> {
+    const store = this.disputeEvidence;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByDisputeId: async (disputeId) =>
+        [...store.values()].filter((e) => e.disputeId === disputeId),
+      save: async (evidence) => {
+        store.set(evidence.id, evidence);
+        return evidence;
+      },
+    };
+  }
+
+  get disputeEventsRepo(): NonNullable<Repositories['disputeEvents']> {
+    const store = this.disputeEvents;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByDisputeId: async (disputeId) =>
+        [...store.values()].filter((e) => e.disputeId === disputeId),
+      save: async (event) => {
+        store.set(event.id, event);
+        return event;
+      },
+    };
+  }
+
   get suppliersRepo(): Repositories['suppliers'] {
     const store = this.suppliers;
     return {
@@ -805,6 +996,14 @@ export class InMemoryRepositories {
       walletTransactions: this.walletTransactionsRepo,
       buyerRewardAllocations: this.buyerRewardAllocationsRepo,
       buyerRewardPolicies: this.buyerRewardPoliciesRepo,
+      notificationTemplates: this.notificationTemplatesRepo,
+      notificationPreferences: this.notificationPreferencesRepo,
+      notificationQueue: this.notificationQueueRepo,
+      workOrderInspections: this.workOrderInspectionsRepo,
+      workOrderInspectionItems: this.workOrderInspectionItemsRepo,
+      disputes: this.disputesRepo,
+      disputeEvidence: this.disputeEvidenceRepo,
+      disputeEvents: this.disputeEventsRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

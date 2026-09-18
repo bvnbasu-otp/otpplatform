@@ -187,9 +187,12 @@ export type EvaluationStatus =
 // importers.
 
 export const DisputeStatus = {
-  NONE: 'NONE',
   OPEN: 'OPEN',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  ESCALATED: 'ESCALATED',
   RESOLVED: 'RESOLVED',
+  CLOSED: 'CLOSED',
+  WITHDRAWN: 'WITHDRAWN',
 } as const;
 
 export type DisputeStatus =
