@@ -44,8 +44,61 @@ Write-Host "Live URL   : $SiteUrl" -ForegroundColor DarkGray
 $nowStr = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
 Write-Host "Timestamp  : $nowStr" -ForegroundColor DarkGray
 
+function Get-NodeExecutable {
+  $candidates = @(
+    (Get-Command node.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+    (Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+    "$env:LOCALAPPDATA\Programs\cursor\resources\app\resources\helpers\node.exe",
+    "C:\Users\bloganat\AppData\Local\Programs\cursor\resources\app\resources\helpers\node.exe",
+    "$env:LOCALAPPDATA\Programs\node\node.exe",
+    "$env:LOCALAPPDATA\Programs\nodejs\node.exe",
+    "C:\Program Files\nodejs\node.exe",
+    "C:\Program Files (x86)\nodejs\node.exe",
+    "$env:APPDATA\npm\node.exe",
+    "$env:APPDATA\nvm\current\node.exe",
+    "$env:USERPROFILE\scoop\shims\node.exe",
+    "$env:USERPROFILE\.volta\bin\node.exe",
+    "$env:ProgramData\chocolatey\bin\node.exe"
+  )
+  foreach ($c in $candidates) {
+    if ($c -and (Test-Path $c)) {
+      return $c
+    }
+  }
+  return $null
+}
+
 function Invoke-Pnpm {
   param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
+  $node = Get-NodeExecutable
+  $TsxEntry = Join-Path $WorkspaceRoot "node_modules\tsx\dist\cli.mjs"
+  $ViteEntry = Join-Path $WorkspaceRoot "node_modules\vite\bin\vite.js"
+  $VitestEntry = Join-Path $WorkspaceRoot "node_modules\vitest\vitest.mjs"
+  $PnpmCjs = "C:\Users\bloganat\AppData\Local\Programs\cursor\resources\app\resources\helpers\pnpm.cjs"
+
+  if ($node) {
+    if ($Arguments[0] -eq "gate:verify" -and (Test-Path $TsxEntry)) {
+      $gateScript = Join-Path $WorkspaceRoot "scripts\verify-staging-gate.ts"
+      & $node $TsxEntry $gateScript $Arguments[1..($Arguments.Length-1)]
+      return
+    } elseif ($Arguments[0] -eq "--filter" -and $Arguments[1] -eq "@otp/web" -and $Arguments[2] -eq "build" -and (Test-Path $ViteEntry)) {
+      $viteConfig = Join-Path $WorkspaceRoot "apps\web\vite.config.ts"
+      $webDir = Join-Path $WorkspaceRoot "apps\web"
+      & $node $ViteEntry build $webDir --config $viteConfig
+      return
+    } elseif ($Arguments[0] -eq "tsx" -and (Test-Path $TsxEntry)) {
+      & $node $TsxEntry $Arguments[1..($Arguments.Length-1)]
+      return
+    } elseif ($Arguments[0] -eq "test:smoke" -and (Test-Path $TsxEntry)) {
+      $smokeScript = Join-Path $WorkspaceRoot "scripts\test-live-smoke.ts"
+      & $node $TsxEntry $smokeScript
+      return
+    } elseif (Test-Path $PnpmCjs) {
+      & $node $PnpmCjs @Arguments
+      return
+    }
+  }
+
   if (Get-Command pnpm.cmd -ErrorAction SilentlyContinue) {
     & pnpm.cmd @Arguments
   } elseif (Get-Command pnpm -ErrorAction SilentlyContinue) {
@@ -55,42 +108,6 @@ function Invoke-Pnpm {
   } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
     & npx pnpm @Arguments
   } else {
-    $nodeCandidates = @(
-      (Get-Command node.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
-      (Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
-      "$env:LOCALAPPDATA\Programs\cursor\resources\app\resources\helpers\node.exe",
-      "$env:LOCALAPPDATA\Programs\node\node.exe",
-      "$env:LOCALAPPDATA\Programs\nodejs\node.exe",
-      "C:\Program Files\nodejs\node.exe",
-      "C:\Program Files (x86)\nodejs\node.exe",
-      "$env:APPDATA\npm\node.exe",
-      "$env:APPDATA\nvm\current\node.exe",
-      "$env:USERPROFILE\scoop\shims\node.exe",
-      "$env:USERPROFILE\.volta\bin\node.exe",
-      "$env:ProgramData\chocolatey\bin\node.exe"
-    )
-    $foundNode = $null
-    foreach ($candidate in $nodeCandidates) {
-      if (Test-Path $candidate) {
-        $foundNode = $candidate
-        break
-      }
-    }
-    if ($foundNode) {
-      if ($Arguments[0] -eq "gate:verify") {
-        & $foundNode ./node_modules/tsx/dist/cli.mjs scripts/verify-staging-gate.ts $Arguments[1..($Arguments.Length-1)]
-        return
-      } elseif ($Arguments[0] -eq "--filter" -and $Arguments[1] -eq "@otp/web" -and $Arguments[2] -eq "build") {
-        & $foundNode ./node_modules/vite/bin/vite.js build apps/web --config apps/web/vite.config.ts
-        return
-      } elseif ($Arguments[0] -eq "tsx") {
-        & $foundNode ./node_modules/tsx/dist/cli.mjs $Arguments[1..($Arguments.Length-1)]
-        return
-      } elseif ($Arguments[0] -eq "test:smoke") {
-        & $foundNode ./node_modules/tsx/dist/cli.mjs scripts/test-live-smoke.ts
-        return
-      }
-    }
     throw "pnpm is not found in PATH. Please install pnpm (npm install -g pnpm) or ensure Node.js is in PATH."
   }
 }
