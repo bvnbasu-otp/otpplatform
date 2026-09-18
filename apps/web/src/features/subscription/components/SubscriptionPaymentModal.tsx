@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   SUBSCRIPTION_TIERS,
   computeSubscriptionFee,
@@ -7,7 +7,11 @@ import {
   type BillingCycle,
   type SubscriptionTierId,
 } from '../types';
-import { processSubscriptionPayment } from '../api/subscription';
+import {
+  applyWalletCreditsToSubscription,
+  fetchOrganizationWallet,
+  processSubscriptionPayment,
+} from '../api/subscription';
 
 interface SubscriptionPaymentModalProps {
   isOpen: boolean;
@@ -39,6 +43,34 @@ export function SubscriptionPaymentModal({
   const [successExpiresAt, setSuccessExpiresAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Wallet credits state
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [applyCredits, setApplyCredits] = useState<boolean>(true);
+  const [isLoadingWallet, setIsLoadingWallet] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isOpen || !organizationId) return;
+
+    let isMounted = true;
+    setIsLoadingWallet(true);
+
+    fetchOrganizationWallet(organizationId)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.ok) {
+          setWalletBalance(res.wallet.balanceCredits);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoadingWallet(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, organizationId]);
+
   if (!isOpen) return null;
 
   const plan = SUBSCRIPTION_TIERS[selectedTier];
@@ -46,8 +78,10 @@ export function SubscriptionPaymentModal({
   const dummyUpiId = 'pay@otp';
   const paymentRef = useMemo(() => generateSubscriptionPaymentRef(), [isOpen]);
 
-  // Standard Indian UPI Intent string
-  const upiIntentUri = `upi://pay?pa=${dummyUpiId}&pn=OTP%20Platform&am=${fee.amount}&cu=INR&tn=Prepaid%20Subscription%20${selectedCycle}%20${selectedTier}`;
+  // Wallet discount calculations
+  const creditsToApply = applyCredits ? Math.min(fee.amount, walletBalance) : 0;
+  const cashPayable = Math.max(0, fee.amount - creditsToApply);
+  const isFullyCoveredByWallet = creditsToApply >= fee.amount;
 
   const handleCopyUpi = () => {
     navigator.clipboard.writeText(dummyUpiId);
@@ -59,26 +93,58 @@ export function SubscriptionPaymentModal({
     setIsVerifying(true);
     setError(null);
 
-    // Realistic verification delay
-    await new Promise((resolve) => setTimeout(resolve, 1400));
+    try {
+      let finalExpiresAt: string | null = null;
 
-    const result = await processSubscriptionPayment({
-      organizationId,
-      tierId: selectedTier,
-      cycle: selectedCycle,
-      amount: fee.amount,
-      paymentRef,
-      upiId: dummyUpiId,
-    });
+      // 1. If applying wallet credits
+      if (creditsToApply > 0) {
+        const walletResult = await applyWalletCreditsToSubscription({
+          organizationId,
+          tierId: selectedTier,
+          cycle: selectedCycle,
+          creditsToApply,
+          idempotencyKey: `SUB-WALLET-${paymentRef}`,
+        });
 
-    setIsVerifying(false);
+        if (!walletResult.ok) {
+          setIsVerifying(false);
+          setError(walletResult.error || 'Failed to apply wallet credits');
+          return;
+        }
 
-    if (result.ok) {
+        finalExpiresAt = walletResult.newExpiresAt || null;
+      }
+
+      // 2. If remaining cash payable exists
+      if (cashPayable > 0) {
+        // Realistic verification delay for UPI
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const paymentResult = await processSubscriptionPayment({
+          organizationId,
+          tierId: selectedTier,
+          cycle: selectedCycle,
+          amount: cashPayable,
+          paymentRef,
+          upiId: dummyUpiId,
+        });
+
+        if (!paymentResult.ok) {
+          setIsVerifying(false);
+          setError(paymentResult.error || 'UPI Payment processing failed');
+          return;
+        }
+
+        finalExpiresAt = paymentResult.newExpiresAt;
+      }
+
+      setIsVerifying(false);
       setIsSuccess(true);
-      setSuccessExpiresAt(result.newExpiresAt);
-      if (onSuccess) onSuccess(result.newExpiresAt);
-    } else {
-      setError(result.error);
+      setSuccessExpiresAt(finalExpiresAt);
+      if (onSuccess && finalExpiresAt) onSuccess(finalExpiresAt);
+    } catch (err: any) {
+      setIsVerifying(false);
+      setError(err?.message || 'Payment simulation error');
     }
   };
 
@@ -98,7 +164,7 @@ export function SubscriptionPaymentModal({
               {isSuccess ? 'Payment Verified & Plan Activated!' : 'Recharge / Renew Platform Plan'}
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Buyer Org: <strong className="text-foreground">{organizationName}</strong> · Standard UPI Payment
+              Buyer Org: <strong className="text-foreground">{organizationName}</strong> · Standard UPI &amp; Wallet Redemption
             </p>
           </div>
           <button
@@ -129,9 +195,15 @@ export function SubscriptionPaymentModal({
                 <span className="text-muted-foreground">Plan:</span>
                 <span className="font-bold text-foreground">{plan.name} ({selectedCycle})</span>
               </div>
+              {creditsToApply > 0 && (
+                <div className="flex justify-between text-amber-700 dark:text-amber-400">
+                  <span>Wallet Credits Redeemed:</span>
+                  <span className="font-bold">₹{creditsToApply.toLocaleString('en-IN')}</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Amount Paid:</span>
-                <span className="font-bold text-emerald-700 dark:text-emerald-300">₹{fee.amount.toLocaleString('en-IN')}</span>
+                <span className="text-muted-foreground">Amount Paid via UPI:</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-300">₹{cashPayable.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Txn Reference:</span>
@@ -148,7 +220,7 @@ export function SubscriptionPaymentModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 text-sm shadow-md transition"
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 text-sm shadow-md transition cursor-pointer"
             >
               Back to Dashboard
             </button>
@@ -224,69 +296,118 @@ export function SubscriptionPaymentModal({
               </div>
             </div>
 
-            {/* Step 2: UPI & QR Code Display */}
-            <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-5">
-              {/* Dynamic QR Code Box */}
-              <div className="shrink-0 bg-white p-3 rounded-xl border shadow-sm flex flex-col items-center">
-                {/* Clean SVG QR Pattern Representation */}
-                <svg viewBox="0 0 100 100" className="w-32 h-32 text-slate-900" aria-label="Dummy UPI QR Code">
-                  <rect width="100" height="100" fill="white" />
-                  {/* Top-Left Position Square */}
-                  <rect x="5" y="5" width="30" height="30" fill="#0f172a" rx="4" />
-                  <rect x="10" y="10" width="20" height="20" fill="white" rx="2" />
-                  <rect x="15" y="15" width="10" height="10" fill="#0f172a" rx="1" />
-                  {/* Top-Right Position Square */}
-                  <rect x="65" y="5" width="30" height="30" fill="#0f172a" rx="4" />
-                  <rect x="70" y="10" width="20" height="20" fill="white" rx="2" />
-                  <rect x="75" y="15" width="10" height="10" fill="#0f172a" rx="1" />
-                  {/* Bottom-Left Position Square */}
-                  <rect x="5" y="65" width="30" height="30" fill="#0f172a" rx="4" />
-                  <rect x="10" y="70" width="20" height="20" fill="white" rx="2" />
-                  <rect x="15" y="75" width="10" height="10" fill="#0f172a" rx="1" />
-                  {/* Dense Dummy QR Data Modules */}
-                  <rect x="40" y="10" width="5" height="15" fill="#0f172a" />
-                  <rect x="50" y="5" width="10" height="5" fill="#0f172a" />
-                  <rect x="40" y="30" width="20" height="5" fill="#0f172a" />
-                  <rect x="10" y="40" width="15" height="5" fill="#0f172a" />
-                  <rect x="30" y="40" width="15" height="15" fill="#0f172a" />
-                  <rect x="50" y="40" width="10" height="10" fill="#0f172a" />
-                  <rect x="65" y="40" width="15" height="5" fill="#0f172a" />
-                  <rect x="85" y="40" width="10" height="15" fill="#0f172a" />
-                  <rect x="40" y="60" width="15" height="10" fill="#0f172a" />
-                  <rect x="60" y="55" width="10" height="20" fill="#0f172a" />
-                  <rect x="75" y="65" width="20" height="10" fill="#0f172a" />
-                  <rect x="40" y="75" width="15" height="15" fill="#0f172a" />
-                  <rect x="60" y="80" width="15" height="10" fill="#0f172a" />
-                  <rect x="80" y="80" width="15" height="15" fill="#0f172a" />
-                </svg>
-                <span className="text-[10px] font-bold text-slate-600 mt-1">Scan with Any UPI App</span>
+            {/* Wallet Credits Redemption Section */}
+            {walletBalance > 0 && (
+              <div
+                data-testid="subscription-wallet-redemption-card"
+                className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3.5 space-y-2 text-xs"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🎁</span>
+                    <span className="font-bold text-foreground">
+                      OTP Wallet Credits Available: ₹{walletBalance.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-1.5 cursor-pointer font-bold text-amber-800 dark:text-amber-300">
+                    <input
+                      type="checkbox"
+                      checked={applyCredits}
+                      onChange={(e) => setApplyCredits(e.target.checked)}
+                      className="rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span>Apply Credits</span>
+                  </label>
+                </div>
+                {applyCredits && (
+                  <div className="flex justify-between items-center pt-1 border-t border-amber-500/20 text-muted-foreground">
+                    <span>Discount applied: <strong className="text-foreground">₹{creditsToApply.toLocaleString('en-IN')}</strong></span>
+                    <span>Remaining cash payable: <strong className="text-foreground">₹{cashPayable.toLocaleString('en-IN')}</strong></span>
+                  </div>
+                )}
               </div>
+            )}
 
-              {/* UPI ID & Instructions */}
-              <div className="space-y-2 text-left flex-1 min-w-0">
-                <div className="text-xs text-muted-foreground">Scan or Pay to Dummy UPI ID:</div>
-                <div className="flex items-center gap-2">
-                  <code className="rounded-lg bg-background border px-3 py-1.5 font-mono text-sm font-bold text-foreground select-all">
-                    {dummyUpiId}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={handleCopyUpi}
-                    className="rounded-lg border bg-background hover:bg-muted px-2.5 py-1.5 text-xs font-semibold transition text-foreground"
-                  >
-                    {copiedUpi ? '✓ Copied' : 'Copy'}
-                  </button>
+            {/* Step 2: Payment Display (UPI QR or Full Wallet Coverage) */}
+            {isFullyCoveredByWallet ? (
+              <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/10 p-5 text-center space-y-2">
+                <span className="text-3xl">🎉</span>
+                <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                  100% Covered by OTP Wallet Credits!
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Your available wallet balance (₹{walletBalance.toLocaleString('en-IN')}) completely covers the subscription fee of ₹{fee.amount.toLocaleString('en-IN')}. No external UPI payment required.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-5">
+                {/* Dynamic QR Code Box */}
+                <div className="shrink-0 bg-white p-3 rounded-xl border shadow-sm flex flex-col items-center">
+                  <svg viewBox="0 0 100 100" className="w-32 h-32 text-slate-900" aria-label="Dummy UPI QR Code">
+                    <rect width="100" height="100" fill="white" />
+                    <rect x="5" y="5" width="30" height="30" fill="#0f172a" rx="4" />
+                    <rect x="10" y="10" width="20" height="20" fill="white" rx="2" />
+                    <rect x="15" y="15" width="10" height="10" fill="#0f172a" rx="1" />
+                    <rect x="65" y="5" width="30" height="30" fill="#0f172a" rx="4" />
+                    <rect x="70" y="10" width="20" height="20" fill="white" rx="2" />
+                    <rect x="75" y="15" width="10" height="10" fill="#0f172a" rx="1" />
+                    <rect x="5" y="65" width="30" height="30" fill="#0f172a" rx="4" />
+                    <rect x="10" y="70" width="20" height="20" fill="white" rx="2" />
+                    <rect x="15" y="75" width="10" height="10" fill="#0f172a" rx="1" />
+                    <rect x="40" y="10" width="5" height="15" fill="#0f172a" />
+                    <rect x="50" y="5" width="10" height="5" fill="#0f172a" />
+                    <rect x="40" y="30" width="20" height="5" fill="#0f172a" />
+                    <rect x="10" y="40" width="15" height="5" fill="#0f172a" />
+                    <rect x="30" y="40" width="15" height="15" fill="#0f172a" />
+                    <rect x="50" y="40" width="10" height="10" fill="#0f172a" />
+                    <rect x="65" y="40" width="15" height="5" fill="#0f172a" />
+                    <rect x="85" y="40" width="10" height="15" fill="#0f172a" />
+                    <rect x="40" y="60" width="15" height="10" fill="#0f172a" />
+                    <rect x="60" y="55" width="10" height="20" fill="#0f172a" />
+                    <rect x="75" y="65" width="20" height="10" fill="#0f172a" />
+                    <rect x="40" y="75" width="15" height="15" fill="#0f172a" />
+                    <rect x="60" y="80" width="15" height="10" fill="#0f172a" />
+                    <rect x="80" y="80" width="15" height="15" fill="#0f172a" />
+                  </svg>
+                  <span className="text-[10px] font-bold text-slate-600 mt-1">Scan with Any UPI App</span>
                 </div>
 
-                <div className="text-xs text-muted-foreground space-y-1 pt-1">
-                  <div>Amount Payable: <strong className="text-foreground text-sm font-black">₹{fee.amount.toLocaleString('en-IN')}</strong></div>
-                  <div>Duration: <strong className="text-foreground">{fee.durationDays} Days ({selectedCycle})</strong></div>
-                  <div className="text-[11px] text-muted-foreground italic">
-                    Supported apps: GPay, PhonePe, Paytm, BHIM, Cred, Amazon Pay
+                {/* UPI ID & Instructions */}
+                <div className="space-y-2 text-left flex-1 min-w-0">
+                  <div className="text-xs text-muted-foreground">Scan or Pay to Dummy UPI ID:</div>
+                  <div className="flex items-center gap-2">
+                    <code className="rounded-lg bg-background border px-3 py-1.5 font-mono text-sm font-bold text-foreground select-all">
+                      {dummyUpiId}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={handleCopyUpi}
+                      className="rounded-lg border bg-background hover:bg-muted px-2.5 py-1.5 text-xs font-semibold transition text-foreground"
+                    >
+                      {copiedUpi ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground space-y-1 pt-1">
+                    <div>
+                      Cash Payable via UPI:{' '}
+                      <strong className="text-foreground text-sm font-black">
+                        ₹{cashPayable.toLocaleString('en-IN')}
+                      </strong>
+                      {creditsToApply > 0 && (
+                        <span className="text-[11px] text-amber-600 dark:text-amber-400 font-normal">
+                          {' '}(after ₹{creditsToApply} wallet credit)
+                        </span>
+                      )}
+                    </div>
+                    <div>Duration: <strong className="text-foreground">{fee.durationDays} Days ({selectedCycle})</strong></div>
+                    <div className="text-[11px] text-muted-foreground italic">
+                      Supported apps: GPay, PhonePe, Paytm, BHIM, Cred, Amazon Pay
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {error && (
               <p className="text-xs font-bold text-red-600 rounded-lg bg-red-50 p-2.5 border border-red-200">
@@ -297,7 +418,7 @@ export function SubscriptionPaymentModal({
             {/* Step 3: Simulation & Action Trigger */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
               <div className="text-xs text-muted-foreground text-center sm:text-left">
-                Test Simulation Mode · Instant Activation
+                {isFullyCoveredByWallet ? 'Wallet Direct Activation' : 'Test Simulation Mode · Instant Activation'}
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -305,7 +426,7 @@ export function SubscriptionPaymentModal({
                   type="button"
                   onClick={onClose}
                   disabled={isVerifying}
-                  className="w-1/2 sm:w-auto rounded-xl border px-4 py-2.5 text-xs font-bold text-muted-foreground hover:bg-muted transition"
+                  className="w-1/2 sm:w-auto rounded-xl border px-4 py-2.5 text-xs font-bold text-muted-foreground hover:bg-muted transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -314,17 +435,22 @@ export function SubscriptionPaymentModal({
                   type="button"
                   onClick={handleSimulatePayment}
                   disabled={isVerifying}
-                  className="w-1/2 sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-1/2 sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isVerifying ? (
                     <>
                       <span className="animate-spin text-sm">⏳</span>
-                      <span>Verifying UPI Txn…</span>
+                      <span>Processing Activation…</span>
+                    </>
+                  ) : isFullyCoveredByWallet ? (
+                    <>
+                      <span>⚡</span>
+                      <span>Activate with ₹{creditsToApply} Credits</span>
                     </>
                   ) : (
                     <>
                       <span>⚡</span>
-                      <span>Simulate &amp; Verify Payment (₹{fee.amount})</span>
+                      <span>Simulate &amp; Verify Payment (₹{cashPayable})</span>
                     </>
                   )}
                 </button>

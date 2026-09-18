@@ -131,5 +131,24 @@ describe('Cryptographically Secure Payment Reference Generation (FIX-01)', () =>
       (crypto as any).randomUUID = originalRandomUuid;
     }
   });
+
+  it('exports wallet API methods and components for Phase 6.4', async () => {
+    const {
+      fetchOrganizationWallet,
+      fetchWalletTransactions,
+      applyWalletCreditsToSubscription,
+    } = await import('./api/subscription');
+
+    expect(fetchOrganizationWallet).toBeDefined();
+    expect(typeof fetchOrganizationWallet).toBe('function');
+    expect(fetchWalletTransactions).toBeDefined();
+    expect(typeof fetchWalletTransactions).toBe('function');
+    expect(applyWalletCreditsToSubscription).toBeDefined();
+    expect(typeof applyWalletCreditsToSubscription).toBe('function');
+
+    const { SubscriptionPaymentModal } = await import('./components/SubscriptionPaymentModal');
+    expect(SubscriptionPaymentModal).toBeDefined();
+    expect(typeof SubscriptionPaymentModal).toBe('function');
+  });
 });
 

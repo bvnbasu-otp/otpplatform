@@ -142,3 +142,47 @@ export function generateSubscriptionPaymentRef(): string {
   const entropy = Math.abs(Date.now() ^ 0xa5a5a5a5).toString(16).padStart(8, '0').toUpperCase().slice(-8);
   return `UPI-TXN-${timestamp}-${entropy}`;
 }
+
+export interface OrganizationWalletData {
+  walletId: string;
+  organizationId: string;
+  balanceCredits: number;
+  status: 'ACTIVE' | 'FROZEN' | 'SUSPENDED';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface WalletTransactionData {
+  id: string;
+  organizationId: string;
+  walletId: string;
+  txType: 'REWARD_CREDIT' | 'SUBSCRIPTION_REDEMPTION' | 'REVERSAL' | 'ADJUSTMENT' | 'EXPIRY';
+  amount: number;
+  openingBalance: number;
+  closingBalance: number;
+  sourceEntityType?: string;
+  sourceEntityId?: string;
+  idempotencyKey?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface ApplyWalletCreditsParams {
+  organizationId: string;
+  tierId: SubscriptionTierId;
+  cycle: BillingCycle;
+  creditsToApply: number;
+  idempotencyKey?: string;
+}
+
+export interface ApplyWalletCreditsResult {
+  ok: boolean;
+  creditsApplied?: number;
+  openingBalance?: number;
+  remainingBalance?: number;
+  newExpiresAt?: string;
+  transactionId?: string;
+  message?: string;
+  error?: string;
+}
+

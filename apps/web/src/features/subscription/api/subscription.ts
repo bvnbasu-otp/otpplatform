@@ -1,8 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import type {
+  ApplyWalletCreditsParams,
+  ApplyWalletCreditsResult,
   BillingCycle,
   OrganizationSubscription,
+  OrganizationWalletData,
   SubscriptionTierId,
+  WalletTransactionData,
 } from '../types';
 import { resolveTierForOrgType } from '../types';
 
@@ -169,5 +173,182 @@ export async function validateOrganizationSourcingAccess(
       rfqCreditsUsed: 0,
       reason: err?.message || 'Error validating sourcing credits',
     };
+  }
+}
+
+/**
+ * Fetches organization wallet balance and status.
+ */
+export async function fetchOrganizationWallet(
+  organizationId: string,
+): Promise<{ ok: true; wallet: OrganizationWalletData } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('get_organization_wallet', {
+      p_organization_id: organizationId,
+    });
+
+    if (error) {
+      // Fallback to direct query
+      const { data: walletData, error: walletError } = await supabase
+        .from('organization_wallets')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .maybeSingle();
+
+      if (walletError || !walletData) {
+        return {
+          ok: true,
+          wallet: {
+            walletId: 'default',
+            organizationId,
+            balanceCredits: 0,
+            status: 'ACTIVE',
+          },
+        };
+      }
+
+      return {
+        ok: true,
+        wallet: {
+          walletId: walletData.id,
+          organizationId: walletData.organization_id,
+          balanceCredits: Number(walletData.balance_credits ?? 0),
+          status: walletData.status,
+          createdAt: walletData.created_at,
+          updatedAt: walletData.updated_at,
+        },
+      };
+    }
+
+    const payload = data as Record<string, any>;
+    if (!payload || !payload.ok) {
+      return { ok: false, error: payload?.error || 'Failed to retrieve wallet' };
+    }
+
+    return {
+      ok: true,
+      wallet: {
+        walletId: payload.wallet_id,
+        organizationId: payload.organization_id,
+        balanceCredits: Number(payload.balance_credits ?? 0),
+        status: payload.status,
+        createdAt: payload.created_at,
+        updatedAt: payload.updated_at,
+      },
+    };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Network error fetching wallet' };
+  }
+}
+
+/**
+ * Fetches paginated ledger transactions for organization wallet.
+ */
+export async function fetchWalletTransactions(
+  organizationId: string,
+  limit: number = 50,
+  offset: number = 0,
+): Promise<{ ok: true; transactions: WalletTransactionData[] } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('get_wallet_transactions', {
+      p_organization_id: organizationId,
+      p_limit: limit,
+      p_offset: offset,
+    });
+
+    if (error) {
+      const { data: txData, error: txError } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (txError || !txData) {
+        return { ok: true, transactions: [] };
+      }
+
+      return {
+        ok: true,
+        transactions: txData.map((t: any) => ({
+          id: t.id,
+          organizationId: t.organization_id,
+          walletId: t.wallet_id,
+          txType: t.tx_type,
+          amount: Number(t.amount ?? 0),
+          openingBalance: Number(t.opening_balance ?? 0),
+          closingBalance: Number(t.closing_balance ?? 0),
+          sourceEntityType: t.source_entity_type,
+          sourceEntityId: t.source_entity_id,
+          idempotencyKey: t.idempotency_key,
+          notes: t.notes,
+          createdAt: t.created_at,
+        })),
+      };
+    }
+
+    const payload = data as Record<string, any>;
+    if (!payload || !payload.ok) {
+      return { ok: false, error: payload?.error || 'Failed to retrieve transactions' };
+    }
+
+    const list = Array.isArray(payload.transactions) ? payload.transactions : [];
+    return {
+      ok: true,
+      transactions: list.map((t: any) => ({
+        id: t.id,
+        organizationId: t.organization_id,
+        walletId: t.wallet_id,
+        txType: t.tx_type,
+        amount: Number(t.amount ?? 0),
+        openingBalance: Number(t.opening_balance ?? 0),
+        closingBalance: Number(t.closing_balance ?? 0),
+        sourceEntityType: t.source_entity_type,
+        sourceEntityId: t.source_entity_id,
+        idempotencyKey: t.idempotency_key,
+        notes: t.notes,
+        createdAt: t.created_at,
+      })),
+    };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Network error fetching transactions' };
+  }
+}
+
+/**
+ * Applies wallet credits toward subscription renewal/activation.
+ */
+export async function applyWalletCreditsToSubscription(
+  params: ApplyWalletCreditsParams,
+): Promise<ApplyWalletCreditsResult> {
+  try {
+    const { data, error } = await supabase.rpc('apply_wallet_credits_to_subscription_atomic', {
+      p_org_id: params.organizationId,
+      p_tier: params.tierId,
+      p_cycle: params.cycle,
+      p_credits_to_apply: params.creditsToApply,
+      p_idempotency_key: params.idempotencyKey || null,
+    });
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    const res = data as Record<string, any>;
+    if (!res || !res.ok) {
+      return { ok: false, error: res?.error || 'Failed to apply wallet credits' };
+    }
+
+    return {
+      ok: true,
+      creditsApplied: res.credits_applied,
+      openingBalance: res.opening_balance,
+      remainingBalance: res.remaining_balance,
+      newExpiresAt: res.new_expires_at,
+      transactionId: res.transaction_id,
+      message: res.message || 'Subscription renewed using OTP Wallet Credits',
+    };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Wallet redemption RPC error' };
   }
 }

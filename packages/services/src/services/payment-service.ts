@@ -1,5 +1,6 @@
 import {
   calculateAgingBuckets,
+  calculateBuyerReward,
   calculateFinancialObservabilitySummary,
   calculateInvoiceBalanceDue,
   calculateInvoicePaidAmount,
@@ -9,11 +10,14 @@ import {
   calculatePoSettlementSummary,
   calculateReconciliationSummary,
   calculateSettlementConservation,
+  calculateSubscriptionDiscount,
   calculateTds,
   calculateTdsNetPayable,
   calculateVendorSettlementStatement,
+  calculateWalletBalanceAfterRedemption,
   canResolveSettlementException,
   canTransitionFeeTransaction,
+  canTransitionRewardAllocation,
   canVoidTdsDeduction,
   computePayloadChecksum,
   deriveInvoicePaymentStatus,
@@ -29,10 +33,17 @@ import {
   lookupTdsRate,
   normalizeUtr,
   reconcileBankRemittance,
+  validateCommercialConservation,
+  validateCommercialMonetaryClass,
   validatePan,
   validatePaymentAllocation,
   type BankReconciliationRecord,
   type BankRemittanceAdvice,
+  type BuyerRewardAllocation,
+  type BuyerRewardAllocationStatus,
+  type BuyerRewardCalculationParams,
+  type BuyerRewardCalculationResult,
+  type BuyerRewardPolicy,
   type CreditDebitNote,
   type CreditDebitNoteStatus,
   type CreditDebitNoteType,
@@ -43,6 +54,7 @@ import {
   type Form16ACertificate,
   type Form16AGeneratorParams,
   type InvoicePaymentSummary,
+  type OrganizationWallet,
   type PaymentAllocationSummary,
   type PlatformFeePolicy,
   type PlatformFeeTransaction,
@@ -61,15 +73,21 @@ import {
   type TdsLawVersion,
   type TdsSection,
   type VendorSettlementStatement,
+  type WalletStatus,
+  type WalletTransaction,
+  type WalletTransactionType,
   type ZohoPaymentReceiptPayload,
 } from '@otp/domain';
 import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
 import type {
   BankReconciliationRecordEntity,
+  BuyerRewardAllocationEntity,
+  BuyerRewardPolicyEntity,
   CreditDebitNoteEntity,
   ErpExportManifestEntity,
   Invoice,
+  OrganizationWalletEntity,
   Payment,
   PaymentAllocationEntity,
   PlatformFeePolicyEntity,
@@ -80,6 +98,7 @@ import type {
   SettlementExceptionEventEntity,
   SettlementReconciliationEntity,
   TdsDeductionEntity,
+  WalletTransactionEntity,
 } from '../repositories/entities';
 import type { ActorContext } from '../types/actor-context';
 import { ForbiddenError, NotFoundError, ValidationError } from '../types/errors';
@@ -2223,6 +2242,20 @@ export class PaymentService {
 
     const saved = await this.repos.platformFeeTransactions.save(feeEntity);
 
+    // Auto-credit buyer sourcing reward if wallet/reward repositories are available (Phase 6.4)
+    if (this.repos.buyerRewardAllocations && this.repos.organizationWallets) {
+      try {
+        await this.creditBuyerSettlementReward(actor, {
+          organizationId: params.organizationId,
+          platformFeeTxId: saved.id,
+          procurementBaseAmount: gross,
+          feeRate: snapshot.rate,
+        });
+      } catch {
+        // Safe execution: reward error does not block fee settlement recording
+      }
+    }
+
     await auditLog(
       this.audit,
       actor,
@@ -2869,5 +2902,502 @@ export class PaymentService {
     );
 
     return ok({ syncedCount: syncedReconciliations.length, reconciliations: syncedReconciliations });
+  }
+
+  /**
+   * Credits Buyer Sourcing Reward to Buyer Organization Wallet upon Settlement Execution (Phase 6.4).
+   */
+  async creditBuyerSettlementReward(
+    actor: ActorContext,
+    params: {
+      organizationId: string;
+      platformFeeTxId: string;
+      settlementId?: string | null;
+      procurementBaseAmount?: number;
+      feeRate?: number;
+      rewardShareRate?: number;
+      idempotencyKey?: string | null;
+    },
+  ): Promise<
+    Result<
+      {
+        allocation: BuyerRewardAllocationEntity;
+        wallet: OrganizationWalletEntity;
+        transaction: WalletTransactionEntity;
+        replayed?: boolean;
+      },
+      Error
+    >
+  > {
+    // 1. Authorization check: Buyer Org OWNER/MANAGER or Platform Admin
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, params.organizationId, ['OWNER', 'MANAGER', 'BUYER']);
+      if (!access.ok) return access;
+    }
+
+    if (!this.repos.organizationWallets || !this.repos.walletTransactions || !this.repos.buyerRewardAllocations) {
+      return err(new Error('Wallet and reward repositories are not initialized'));
+    }
+
+    // 2. Idempotency Check
+    if (params.idempotencyKey) {
+      const existingTx = await this.repos.walletTransactions.findByIdempotencyKey(params.idempotencyKey);
+      if (existingTx) {
+        const wallet = (await this.repos.organizationWallets.findByOrganizationId(params.organizationId))!;
+        const alloc = (await this.repos.buyerRewardAllocations.findByPlatformFeeTxId(params.platformFeeTxId))!;
+        return ok({
+          allocation: alloc,
+          wallet,
+          transaction: existingTx,
+          replayed: true,
+        });
+      }
+    }
+
+    // 3. Prevent duplicate reward allocation for same platform fee transaction
+    const existingAlloc = await this.repos.buyerRewardAllocations.findByPlatformFeeTxId(params.platformFeeTxId);
+    if (existingAlloc && existingAlloc.status === 'CREDITED') {
+      const wallet = (await this.repos.organizationWallets.findByOrganizationId(params.organizationId))!;
+      const txs = await this.repos.walletTransactions.findByOrganizationId(params.organizationId);
+      const matchedTx =
+        txs.find((t) => t.sourceEntityId === existingAlloc.id) ||
+        txs[0] ||
+        (await this.repos.walletTransactions.save({
+          id: createId(),
+          organizationId: params.organizationId,
+          walletId: wallet.id,
+          txType: 'REWARD_CREDIT',
+          amount: existingAlloc.rewardAmount,
+          openingBalance: wallet.balanceCredits,
+          closingBalance: wallet.balanceCredits,
+          sourceEntityType: 'BUYER_REWARD_ALLOCATION',
+          sourceEntityId: existingAlloc.id,
+          createdAt: timestamp(),
+        }));
+
+      return ok({
+        allocation: existingAlloc,
+        wallet,
+        transaction: matchedTx,
+        replayed: true,
+      });
+    }
+
+    // 4. Resolve Platform Fee Transaction details
+    let baseAmount = params.procurementBaseAmount || 0;
+    let feeRate = params.feeRate || 0.50;
+    let poId: string | null = null;
+    let invId: string | null = null;
+
+    if (this.repos.platformFeeTransactions) {
+      const feeTx = await this.repos.platformFeeTransactions.findById(params.platformFeeTxId);
+      if (feeTx) {
+        if (feeTx.organizationId !== params.organizationId) {
+          return err(new ForbiddenError('Cross-tenant violation: Platform fee transaction does not belong to organization'));
+        }
+        if (baseAmount <= 0) baseAmount = feeTx.grossAmount;
+        if (!params.feeRate) feeRate = feeTx.feeRate;
+        poId = feeTx.purchaseOrderId;
+        invId = feeTx.invoiceId || null;
+      }
+    }
+
+    // Resolve reward share rate from active policy if not provided
+    let rewardShareRate = params.rewardShareRate;
+    if (rewardShareRate === undefined && this.repos.buyerRewardPolicies) {
+      const activePol = await this.repos.buyerRewardPolicies.findActivePolicy();
+      if (activePol) {
+        rewardShareRate = activePol.rewardShareRate;
+      }
+    }
+    if (rewardShareRate === undefined) {
+      rewardShareRate = 20.00; // Default 20% of fee
+    }
+
+    if (baseAmount <= 0) {
+      return err(new ValidationError('Procurement base amount must be greater than zero'));
+    }
+
+    // 5. Deterministic Reward Calculation via @otp/domain
+    let calcResult: BuyerRewardCalculationResult;
+    try {
+      calcResult = calculateBuyerReward({
+        procurementBaseAmount: baseAmount,
+        platformFeeRate: feeRate,
+        rewardShareRate,
+      });
+    } catch (e: any) {
+      return err(new ValidationError(e.message));
+    }
+
+    // 6. Get or initialize Organization Wallet
+    let wallet = await this.repos.organizationWallets.findByOrganizationId(params.organizationId);
+    const now = timestamp();
+    if (!wallet) {
+      wallet = await this.repos.organizationWallets.save({
+        id: createId(),
+        organizationId: params.organizationId,
+        balanceCredits: 0.00,
+        status: 'ACTIVE',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    if (wallet.status !== 'ACTIVE') {
+      return err(new ValidationError(`Cannot credit rewards: Wallet status is ${wallet.status}`));
+    }
+
+    const openingBalance = wallet.balanceCredits;
+    const closingBalance = Math.round((openingBalance + calcResult.rewardAmount) * 100) / 100;
+
+    // 7. Update Wallet
+    wallet.balanceCredits = closingBalance;
+    wallet.updatedAt = now;
+    await this.repos.organizationWallets.save(wallet);
+
+    // 8. Create Buyer Reward Allocation Record
+    const allocEntity: BuyerRewardAllocationEntity = {
+      id: existingAlloc?.id || createId(),
+      organizationId: params.organizationId,
+      purchaseOrderId: poId,
+      invoiceId: invId,
+      platformFeeTxId: params.platformFeeTxId,
+      settlementId: params.settlementId || null,
+      procurementBaseAmount: baseAmount,
+      feeRate: calcResult.platformFeeRate,
+      feeAmount: calcResult.platformFeeAmount,
+      rewardShareRate: calcResult.rewardShareRate,
+      rewardAmount: calcResult.rewardAmount,
+      status: 'CREDITED',
+      createdAt: existingAlloc?.createdAt || now,
+      updatedAt: now,
+    };
+    const savedAlloc = await this.repos.buyerRewardAllocations.save(allocEntity);
+
+    // 9. Append to Immutable Wallet Transaction Ledger
+    const txEntity: WalletTransactionEntity = {
+      id: createId(),
+      organizationId: params.organizationId,
+      walletId: wallet.id,
+      txType: 'REWARD_CREDIT',
+      amount: calcResult.rewardAmount,
+      openingBalance,
+      closingBalance,
+      sourceEntityType: 'BUYER_REWARD_ALLOCATION',
+      sourceEntityId: savedAlloc.id,
+      idempotencyKey: params.idempotencyKey || null,
+      notes: `Buyer sourcing reward earned for settlement on PO ${poId || 'N/A'}`,
+      createdAt: now,
+    };
+    const savedTx = await this.repos.walletTransactions.save(txEntity);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'BUYER_REWARD_CREDITED',
+      'ORGANIZATION_WALLET',
+      wallet.id,
+      {
+        organizationId: params.organizationId,
+        platformFeeTxId: params.platformFeeTxId,
+        rewardAmount: calcResult.rewardAmount,
+        openingBalance,
+        closingBalance,
+        transactionId: savedTx.id,
+        allocationId: savedAlloc.id,
+      },
+    );
+
+    return ok({
+      allocation: savedAlloc,
+      wallet,
+      transaction: savedTx,
+    });
+  }
+
+  /**
+   * Redeems Buyer Wallet Credits toward Subscription Renewal or Plan Upgrade (Phase 6.4).
+   */
+  async applyWalletCreditsToSubscription(
+    actor: ActorContext,
+    params: {
+      organizationId: string;
+      tier: string;
+      cycle: string;
+      creditsToApply: number;
+      idempotencyKey?: string | null;
+    },
+  ): Promise<
+    Result<
+      {
+        wallet: OrganizationWalletEntity;
+        transaction: WalletTransactionEntity;
+        creditsApplied: number;
+        remainingBalance: number;
+        replayed?: boolean;
+      },
+      Error
+    >
+  > {
+    // 1. Authorization check: Buyer OWNER/MANAGER or Platform Admin
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, params.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    if (!this.repos.organizationWallets || !this.repos.walletTransactions) {
+      return err(new Error('Wallet repositories are not initialized'));
+    }
+
+    // 2. Idempotency Check
+    if (params.idempotencyKey) {
+      const existingTx = await this.repos.walletTransactions.findByIdempotencyKey(params.idempotencyKey);
+      if (existingTx) {
+        const wallet = (await this.repos.organizationWallets.findByOrganizationId(params.organizationId))!;
+        return ok({
+          wallet,
+          transaction: existingTx,
+          creditsApplied: existingTx.amount,
+          remainingBalance: existingTx.closingBalance,
+          replayed: true,
+        });
+      }
+    }
+
+    // 3. Validate credit amount
+    const creditsToApply = Math.round(Number(params.creditsToApply || 0) * 100) / 100;
+    if (creditsToApply <= 0) {
+      return err(new ValidationError('Credits to apply must be greater than zero'));
+    }
+
+    // 4. Lock and validate Wallet Balance
+    let wallet = await this.repos.organizationWallets.findByOrganizationId(params.organizationId);
+    if (!wallet) {
+      return err(new NotFoundError('Organization wallet not found'));
+    }
+
+    if (wallet.status !== 'ACTIVE') {
+      return err(new ValidationError(`Cannot redeem credits: Wallet status is ${wallet.status}`));
+    }
+
+    const validation = calculateWalletBalanceAfterRedemption(wallet.balanceCredits, creditsToApply);
+    if (!validation.isValid) {
+      return err(new ValidationError(validation.error || 'Insufficient wallet balance'));
+    }
+
+    const openingBalance = wallet.balanceCredits;
+    const closingBalance = validation.remainingBalance;
+    const now = timestamp();
+
+    // 5. Debit Wallet
+    wallet.balanceCredits = closingBalance;
+    wallet.updatedAt = now;
+    await this.repos.organizationWallets.save(wallet);
+
+    // 6. Append to Transaction Ledger
+    const txEntity: WalletTransactionEntity = {
+      id: createId(),
+      organizationId: params.organizationId,
+      walletId: wallet.id,
+      txType: 'SUBSCRIPTION_REDEMPTION',
+      amount: creditsToApply,
+      openingBalance,
+      closingBalance,
+      sourceEntityType: 'SUBSCRIPTION_PAYMENT',
+      sourceEntityId: params.organizationId,
+      idempotencyKey: params.idempotencyKey || null,
+      notes: `Redeemed ₹${creditsToApply} OTP Wallet Credits for ${params.tier} ${params.cycle} subscription`,
+      createdAt: now,
+    };
+    const savedTx = await this.repos.walletTransactions.save(txEntity);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'SUBSCRIPTION_WALLET_REDEEMED',
+      'ORGANIZATION_WALLET',
+      wallet.id,
+      {
+        organizationId: params.organizationId,
+        tier: params.tier,
+        cycle: params.cycle,
+        creditsApplied: creditsToApply,
+        openingBalance,
+        closingBalance,
+        transactionId: savedTx.id,
+      },
+    );
+
+    return ok({
+      wallet,
+      transaction: savedTx,
+      creditsApplied: creditsToApply,
+      remainingBalance: closingBalance,
+    });
+  }
+
+  /**
+   * Reverses a Buyer Reward Credit (e.g. upon settlement reversal/voiding) (Phase 6.4).
+   */
+  async reverseBuyerRewardCredit(
+    actor: ActorContext,
+    params: {
+      organizationId: string;
+      platformFeeTxId: string;
+      reason?: string;
+      idempotencyKey?: string | null;
+    },
+  ): Promise<
+    Result<
+      {
+        allocation: BuyerRewardAllocationEntity;
+        wallet: OrganizationWalletEntity;
+        transaction: WalletTransactionEntity;
+      },
+      Error
+    >
+  > {
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, params.organizationId, ['OWNER', 'MANAGER']);
+      if (!access.ok) return access;
+    }
+
+    if (!this.repos.organizationWallets || !this.repos.walletTransactions || !this.repos.buyerRewardAllocations) {
+      return err(new Error('Wallet and reward repositories are not initialized'));
+    }
+
+    const alloc = await this.repos.buyerRewardAllocations.findByPlatformFeeTxId(params.platformFeeTxId);
+    if (!alloc) {
+      return err(new NotFoundError('Buyer reward allocation not found'));
+    }
+
+    if (alloc.status === 'REVERSED') {
+      const wallet = (await this.repos.organizationWallets.findByOrganizationId(params.organizationId))!;
+      const txs = await this.repos.walletTransactions.findByOrganizationId(params.organizationId);
+      const revTx =
+        txs.find((t) => t.txType === 'REVERSAL' && t.sourceEntityId === alloc.id) ||
+        txs[0] ||
+        (await this.repos.walletTransactions.save({
+          id: createId(),
+          organizationId: params.organizationId,
+          walletId: wallet.id,
+          txType: 'REVERSAL',
+          amount: alloc.rewardAmount,
+          openingBalance: wallet.balanceCredits,
+          closingBalance: wallet.balanceCredits,
+          sourceEntityType: 'BUYER_REWARD_ALLOCATION',
+          sourceEntityId: alloc.id,
+          createdAt: timestamp(),
+        }));
+      return ok({ allocation: alloc, wallet, transaction: revTx });
+    }
+
+    let wallet = await this.repos.organizationWallets.findByOrganizationId(params.organizationId);
+    if (!wallet) {
+      return err(new NotFoundError('Organization wallet not found'));
+    }
+
+    const openingBalance = wallet.balanceCredits;
+    const closingBalance = Math.max(0, Math.round((openingBalance - alloc.rewardAmount) * 100) / 100);
+    const now = timestamp();
+
+    wallet.balanceCredits = closingBalance;
+    wallet.updatedAt = now;
+    await this.repos.organizationWallets.save(wallet);
+
+    alloc.status = 'REVERSED';
+    alloc.updatedAt = now;
+    const savedAlloc = await this.repos.buyerRewardAllocations.save(alloc);
+
+    const txEntity: WalletTransactionEntity = {
+      id: createId(),
+      organizationId: params.organizationId,
+      walletId: wallet.id,
+      txType: 'REVERSAL',
+      amount: alloc.rewardAmount,
+      openingBalance,
+      closingBalance,
+      sourceEntityType: 'BUYER_REWARD_ALLOCATION',
+      sourceEntityId: savedAlloc.id,
+      idempotencyKey: params.idempotencyKey || null,
+      notes: params.reason || 'Buyer reward reversed due to settlement adjustment',
+      createdAt: now,
+    };
+    const savedTx = await this.repos.walletTransactions.save(txEntity);
+
+    await auditLog(
+      this.audit,
+      actor,
+      'BUYER_REWARD_REVERSED',
+      'ORGANIZATION_WALLET',
+      wallet.id,
+      {
+        organizationId: params.organizationId,
+        platformFeeTxId: params.platformFeeTxId,
+        rewardAmount: alloc.rewardAmount,
+        openingBalance,
+        closingBalance,
+        reason: params.reason,
+      },
+    );
+
+    return ok({
+      allocation: savedAlloc,
+      wallet,
+      transaction: savedTx,
+    });
+  }
+
+  /**
+   * Retrieves current Organization Wallet state.
+   */
+  async getOrganizationWallet(
+    actor: ActorContext,
+    organizationId: string,
+  ): Promise<Result<OrganizationWalletEntity, Error>> {
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, organizationId, ['OWNER', 'MANAGER', 'BUYER']);
+      if (!access.ok) return access;
+    }
+
+    if (!this.repos.organizationWallets) {
+      return err(new Error('Organization wallet repository not initialized'));
+    }
+
+    let wallet = await this.repos.organizationWallets.findByOrganizationId(organizationId);
+    if (!wallet) {
+      const now = timestamp();
+      wallet = await this.repos.organizationWallets.save({
+        id: createId(),
+        organizationId,
+        balanceCredits: 0.00,
+        status: 'ACTIVE',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return ok(wallet);
+  }
+
+  /**
+   * Retrieves paginated/sorted Wallet Transactions for an organization.
+   */
+  async getWalletTransactions(
+    actor: ActorContext,
+    organizationId: string,
+  ): Promise<Result<WalletTransactionEntity[], Error>> {
+    if (!actor.isPlatformAdmin) {
+      const access = requireOrgAccess(actor, organizationId, ['OWNER', 'MANAGER', 'BUYER']);
+      if (!access.ok) return access;
+    }
+
+    if (!this.repos.walletTransactions) {
+      return err(new Error('Wallet transactions repository not initialized'));
+    }
+
+    const txs = await this.repos.walletTransactions.findByOrganizationId(organizationId);
+    return ok(txs);
   }
 }

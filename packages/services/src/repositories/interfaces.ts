@@ -3,6 +3,8 @@ import type {
   ApprovalInstance,
   Award,
   BankReconciliationRecordEntity,
+  BuyerRewardAllocationEntity,
+  BuyerRewardPolicyEntity,
   CoiDeclaration,
   CommitteeVote,
   CreditDebitNoteEntity,
@@ -11,6 +13,7 @@ import type {
   InvoiceLineItemEntity,
   JournalEntryEntity,
   LedgerAccountEntity,
+  OrganizationWalletEntity,
   Payment,
   PaymentAllocationEntity,
   PlatformFeePolicyEntity,
@@ -31,6 +34,7 @@ import type {
   SettlementReconciliationEntity,
   Supplier,
   TdsDeductionEntity,
+  WalletTransactionEntity,
   WorkOrder,
   WorkOrderMilestoneEntity,
 } from './entities';
@@ -271,6 +275,34 @@ export interface JournalEntryRepository {
   save(journal: JournalEntryEntity): Promise<JournalEntryEntity>;
 }
 
+export interface OrganizationWalletRepository {
+  findById(id: string): Promise<OrganizationWalletEntity | null>;
+  findByOrganizationId(organizationId: string): Promise<OrganizationWalletEntity | null>;
+  save(wallet: OrganizationWalletEntity): Promise<OrganizationWalletEntity>;
+}
+
+export interface WalletTransactionRepository {
+  findById(id: string): Promise<WalletTransactionEntity | null>;
+  findByOrganizationId(organizationId: string): Promise<WalletTransactionEntity[]>;
+  findByWalletId(walletId: string): Promise<WalletTransactionEntity[]>;
+  findByIdempotencyKey(key: string): Promise<WalletTransactionEntity | null>;
+  save(tx: WalletTransactionEntity): Promise<WalletTransactionEntity>;
+}
+
+export interface BuyerRewardAllocationRepository {
+  findById(id: string): Promise<BuyerRewardAllocationEntity | null>;
+  findByOrganizationId(organizationId: string): Promise<BuyerRewardAllocationEntity[]>;
+  findByPlatformFeeTxId(feeTxId: string): Promise<BuyerRewardAllocationEntity | null>;
+  findByPurchaseOrderId(poId: string): Promise<BuyerRewardAllocationEntity[]>;
+  save(alloc: BuyerRewardAllocationEntity): Promise<BuyerRewardAllocationEntity>;
+}
+
+export interface BuyerRewardPolicyRepository {
+  findById(id: string): Promise<BuyerRewardPolicyEntity | null>;
+  findActivePolicy(): Promise<BuyerRewardPolicyEntity | null>;
+  save(policy: BuyerRewardPolicyEntity): Promise<BuyerRewardPolicyEntity>;
+}
+
 export interface Repositories {
   requirements: RequirementRepository;
   rfqs: RfqRepository;
@@ -304,6 +336,10 @@ export interface Repositories {
   accountingPeriods?: AccountingPeriodRepository;
   ledgerAccounts?: LedgerAccountRepository;
   journalEntries?: JournalEntryRepository;
+  organizationWallets?: OrganizationWalletRepository;
+  walletTransactions?: WalletTransactionRepository;
+  buyerRewardAllocations?: BuyerRewardAllocationRepository;
+  buyerRewardPolicies?: BuyerRewardPolicyRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

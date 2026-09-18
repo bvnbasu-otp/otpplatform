@@ -16,6 +16,9 @@ import type {
   AccountClassification,
   AccountSubtype,
   JournalEntryType,
+  WalletStatus,
+  WalletTransactionType,
+  BuyerRewardAllocationStatus,
 } from '@otp/domain';
 import type { StructuredSpecs } from '../interfaces/requirement-parser-service';
 
@@ -626,6 +629,63 @@ export interface JournalEntryEntity {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface OrganizationWalletEntity {
+  id: string;
+  organizationId: string;
+  balanceCredits: number;
+  status: WalletStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WalletTransactionEntity {
+  id: string;
+  organizationId: string;
+  walletId: string;
+  txType: WalletTransactionType;
+  amount: number;
+  openingBalance: number;
+  closingBalance: number;
+  sourceEntityType: string;
+  sourceEntityId?: string | null;
+  idempotencyKey?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface BuyerRewardAllocationEntity {
+  id: string;
+  organizationId: string;
+  purchaseOrderId?: string | null;
+  invoiceId?: string | null;
+  platformFeeTxId: string;
+  settlementId?: string | null;
+  procurementBaseAmount: number;
+  feeRate: number;
+  feeAmount: number;
+  rewardShareRate: number;
+  rewardAmount: number;
+  status: BuyerRewardAllocationStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BuyerRewardPolicyEntity {
+  id: string;
+  policyVersion: number;
+  feeRate: number;
+  rewardShareRate: number;
+  minRewardAmount?: number | null;
+  maxRewardAmount?: number | null;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  status: 'ACTIVE' | 'SUPERSEDED' | 'DEPRECATED';
+  description?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 
 

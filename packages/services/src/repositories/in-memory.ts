@@ -34,6 +34,10 @@ import type {
   AccountingPeriodEntity,
   LedgerAccountEntity,
   JournalEntryEntity,
+  OrganizationWalletEntity,
+  WalletTransactionEntity,
+  BuyerRewardAllocationEntity,
+  BuyerRewardPolicyEntity,
 } from './entities';
 
 function id(): string {
@@ -80,6 +84,10 @@ export class InMemoryRepositories {
   accountingPeriods = new Map<string, AccountingPeriodEntity>();
   ledgerAccounts = new Map<string, LedgerAccountEntity>();
   journalEntries = new Map<string, JournalEntryEntity>();
+  organizationWallets = new Map<string, OrganizationWalletEntity>();
+  walletTransactions = new Map<string, WalletTransactionEntity>();
+  buyerRewardAllocations = new Map<string, BuyerRewardAllocationEntity>();
+  buyerRewardPolicies = new Map<string, BuyerRewardPolicyEntity>();
   suppliers = new Map<string, Supplier>();
 
   performance = new Map<string, ProcurementPerformanceRecord>();
@@ -101,6 +109,23 @@ export class InMemoryRepositories {
       createdAt: new Date(2026, 0, 1).toISOString(),
       updatedAt: new Date(2026, 0, 1).toISOString(),
     });
+
+    // Seed default buyer reward policy version 1 (20.00% reward share)
+    mem.buyerRewardPolicies.set('rew-pol-default-v1', {
+      id: 'rew-pol-default-v1',
+      policyVersion: 1,
+      feeRate: 0.50,
+      rewardShareRate: 20.00,
+      minRewardAmount: null,
+      maxRewardAmount: null,
+      effectiveFrom: new Date(2026, 0, 1).toISOString(),
+      effectiveTo: null,
+      status: 'ACTIVE',
+      description: 'Standard OTP Buyer Sourcing Reward Policy (20% of Platform Fee)',
+      createdAt: new Date(2026, 0, 1).toISOString(),
+      updatedAt: new Date(2026, 0, 1).toISOString(),
+    });
+
     return mem;
   }
 
@@ -656,6 +681,70 @@ export class InMemoryRepositories {
     };
   }
 
+  get organizationWalletsRepo(): Repositories['organizationWallets'] {
+    const store = this.organizationWallets;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (organizationId) =>
+        [...store.values()].find((w) => w.organizationId === organizationId) ?? null,
+      save: async (wallet) => {
+        store.set(wallet.id, wallet);
+        return wallet;
+      },
+    };
+  }
+
+  get walletTransactionsRepo(): Repositories['walletTransactions'] {
+    const store = this.walletTransactions;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (organizationId) =>
+        [...store.values()]
+          .filter((t) => t.organizationId === organizationId)
+          .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1)),
+      findByWalletId: async (walletId) =>
+        [...store.values()]
+          .filter((t) => t.walletId === walletId)
+          .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1)),
+      findByIdempotencyKey: async (key) =>
+        [...store.values()].find((t) => t.idempotencyKey === key) ?? null,
+      save: async (tx) => {
+        store.set(tx.id, tx);
+        return tx;
+      },
+    };
+  }
+
+  get buyerRewardAllocationsRepo(): Repositories['buyerRewardAllocations'] {
+    const store = this.buyerRewardAllocations;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (organizationId) =>
+        [...store.values()].filter((a) => a.organizationId === organizationId),
+      findByPlatformFeeTxId: async (feeTxId) =>
+        [...store.values()].find((a) => a.platformFeeTxId === feeTxId) ?? null,
+      findByPurchaseOrderId: async (poId) =>
+        [...store.values()].filter((a) => a.purchaseOrderId === poId),
+      save: async (alloc) => {
+        store.set(alloc.id, alloc);
+        return alloc;
+      },
+    };
+  }
+
+  get buyerRewardPoliciesRepo(): Repositories['buyerRewardPolicies'] {
+    const store = this.buyerRewardPolicies;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findActivePolicy: async () =>
+        [...store.values()].find((p) => p.status === 'ACTIVE') ?? null,
+      save: async (policy) => {
+        store.set(policy.id, policy);
+        return policy;
+      },
+    };
+  }
+
   get suppliersRepo(): Repositories['suppliers'] {
     const store = this.suppliers;
     return {
@@ -712,6 +801,10 @@ export class InMemoryRepositories {
       accountingPeriods: this.accountingPeriodsRepo,
       ledgerAccounts: this.ledgerAccountsRepo,
       journalEntries: this.journalEntriesRepo,
+      organizationWallets: this.organizationWalletsRepo,
+      walletTransactions: this.walletTransactionsRepo,
+      buyerRewardAllocations: this.buyerRewardAllocationsRepo,
+      buyerRewardPolicies: this.buyerRewardPoliciesRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

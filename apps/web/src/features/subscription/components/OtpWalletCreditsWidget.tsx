@@ -1,22 +1,66 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchOrganizationWallet } from '../api/subscription';
 
 export interface OtpWalletCreditsWidgetProps {
+  organizationId?: string;
   balanceCredits?: number;
-  onApplyRenewal?: () => void;
+  onApplyRenewal?: (balance: number) => void;
   className?: string;
 }
 
 export function OtpWalletCreditsWidget({
-  balanceCredits = 450,
+  organizationId,
+  balanceCredits: initialCredits,
   onApplyRenewal,
   className = '',
 }: OtpWalletCreditsWidgetProps) {
+  const [balance, setBalance] = useState<number>(initialCredits ?? 0);
+  const [isLoading, setIsLoading] = useState<boolean>(Boolean(organizationId && initialCredits === undefined));
+  const [error, setError] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
+
+  useEffect(() => {
+    if (initialCredits !== undefined) {
+      setBalance(initialCredits);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!organizationId) {
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoading(true);
+    setError(null);
+
+    fetchOrganizationWallet(organizationId)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.ok) {
+          setBalance(res.wallet.balanceCredits);
+        } else {
+          setError(res.error);
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err?.message || 'Failed to load wallet');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [organizationId, initialCredits]);
 
   const handleApply = () => {
     setApplied(true);
     if (onApplyRenewal) {
-      onApplyRenewal();
+      onApplyRenewal(balance);
     }
   };
 
@@ -35,13 +79,28 @@ export function OtpWalletCreditsWidget({
               <h4 className="font-extrabold text-foreground text-xs sm:text-sm">
                 OTP Wallet &amp; Credits
               </h4>
-              <span className="rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.2 text-[10px] font-black">
-                ₹{balanceCredits} Credits Active
-              </span>
+              {isLoading ? (
+                <span className="rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.2 text-[10px] font-medium animate-pulse">
+                  Loading balance...
+                </span>
+              ) : (
+                <span
+                  data-testid="wallet-balance-badge"
+                  className="rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.2 text-[10px] font-black"
+                >
+                  ₹{balance.toLocaleString('en-IN')} Credits Active
+                </span>
+              )}
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Complete transactions on OTP to earn OTP Wallet Credits toward subscription renewals and RFQ top-ups.
-            </p>
+            {error ? (
+              <p className="text-[11px] text-destructive leading-relaxed">
+                Wallet error: {error}
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Complete transactions on OTP to earn sourcing rewards into your OTP Wallet toward subscription renewals and RFQ top-ups.
+              </p>
+            )}
           </div>
         </div>
 
@@ -49,11 +108,22 @@ export function OtpWalletCreditsWidget({
           <button
             type="button"
             onClick={handleApply}
+            disabled={isLoading || balance <= 0}
             data-testid="apply-wallet-credits-btn"
-            className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-2 text-xs shadow-xs transition active:scale-98 flex items-center gap-1.5 cursor-pointer"
+            className={`rounded-xl font-bold px-3.5 py-2 text-xs shadow-xs transition active:scale-98 flex items-center gap-1.5 cursor-pointer ${
+              balance > 0
+                ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                : 'bg-muted text-muted-foreground opacity-60 cursor-not-allowed'
+            }`}
           >
             <span>⚡</span>
-            <span>{applied ? 'Credits Applied ✓' : 'Apply to Subscription Renewal'}</span>
+            <span>
+              {applied
+                ? 'Credits Applied ✓'
+                : balance > 0
+                ? 'Apply to Subscription Renewal'
+                : '0 Credits Available'}
+            </span>
           </button>
         </div>
       </div>
