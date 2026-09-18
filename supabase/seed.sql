@@ -534,7 +534,7 @@ INSERT INTO purchase_orders (
   'a0000000-0000-4000-8000-000000000001',
   'd0000000-0000-4000-8000-000000000002',
   'PO-GV-2026-0001',
-  'ISSUED',
+  'COMPLETED',
   9204.00,
   'INR',
   now() - interval '12 hours',
@@ -543,14 +543,20 @@ INSERT INTO purchase_orders (
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO work_orders (
-  id, purchase_order_id, supplier_id, status, title, progress_percent, created_at, updated_at
+  id, purchase_order_id, supplier_id, status, title, progress_percent,
+  actual_start, completed_at, buyer_accepted_at, inspection_notes,
+  created_at, updated_at
 ) VALUES (
   'd9000001-0000-4000-8000-000000000001',
   'c8000001-0000-4000-8000-000000000001',
   'd0000000-0000-4000-8000-000000000002',
-  'NOT_STARTED',
+  'COMPLETED',
   '10 HP Borewell Motor Winding — Site Work',
-  0,
+  100,
+  now() - interval '8 hours',
+  now() - interval '2 hours',
+  now() - interval '90 minutes',
+  'Motor winding tested on site — vibration within spec.',
   now(),
   now()
 ) ON CONFLICT (id) DO NOTHING;
@@ -559,47 +565,50 @@ INSERT INTO work_orders (
 UPDATE requirements SET status = 'COMPLETED', closed_at = now() - interval '6 hours', updated_at = now()
 WHERE id = 'a2000001-0000-4000-8000-000000000002';
 
-UPDATE purchase_orders SET status = 'COMPLETED', updated_at = now()
-WHERE id = 'c8000001-0000-4000-8000-000000000001';
-
-UPDATE work_orders SET
-  status = 'COMPLETED',
-  progress_percent = 100,
-  actual_start = now() - interval '8 hours',
-  completed_at = now() - interval '2 hours',
-  buyer_accepted_at = now() - interval '90 minutes',
-  inspection_notes = 'Motor winding tested on site — vibration within spec.',
-  updated_at = now()
-WHERE id = 'd9000001-0000-4000-8000-000000000001';
-
 INSERT INTO invoices (
-  id, work_order_id, supplier_id, invoice_number, amount, currency, status, submitted_at, approved_at
+  id, work_order_id, purchase_order_id, supplier_id, invoice_number, amount, currency, status,
+  paid_amount, balance_due, submitted_at, approved_at
 ) VALUES (
   'e0000001-0000-4000-8000-000000000001',
   'd9000001-0000-4000-8000-000000000001',
+  'c8000001-0000-4000-8000-000000000001',
   'd0000000-0000-4000-8000-000000000002',
   'GV-INV-2026-0042',
   9204.00,
   'INR',
   'PAID',
+  9204.00,
+  0.00,
   now() - interval '3 hours',
   now() - interval '2 hours'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO payments (
-  id, invoice_id, amount, currency, method, status, reference, recorded_by, recorded_at, verified_at
+  id, invoice_id, purchase_order_id, amount, currency, method, status,
+  unallocated_amount, reference, recorded_by, recorded_at, verified_at
 ) VALUES (
   'e0000002-0000-4000-8000-000000000001',
   'e0000001-0000-4000-8000-000000000001',
+  'c8000001-0000-4000-8000-000000000001',
   9204.00,
   'INR',
   'UPI',
   'VERIFIED',
+  0.00,
   'UPI/GV9204182736',
   'b0000000-0000-4000-8000-000000000001',
   now() - interval '2 hours',
   now() - interval '2 hours'
 ) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO payment_allocations (
+  payment_id, invoice_id, allocated_amount, status
+) VALUES (
+  'e0000002-0000-4000-8000-000000000001',
+  'e0000001-0000-4000-8000-000000000001',
+  9204.00,
+  'ALLOCATED'
+) ON CONFLICT DO NOTHING;
 
 INSERT INTO procurement_performance_records (
   id, supplier_id, rfq_id, organization_id,
