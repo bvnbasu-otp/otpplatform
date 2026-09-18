@@ -11,7 +11,7 @@ The OTP Platform is deployed with a decoupled architecture utilizing containeriz
 - **Public URL**: `https://otpplatform-theta.vercel.app`
 - **Internal Web Server**: Vite 6 PWA listening on `0.0.0.0:3000` (serving `apps/web/dist`)
 - **Staging / Pre-Production Gateway**: Port `54321` (Kong) / Port `54322` (Staging Postgres)
-- **Production Database**: Port `5432` (`otp-prod-db`, Supabase Postgres 15)
+- **Production Database**: Port `5432` (`otp-prod-db`, Supabase Postgres 15 with 183 migrations)
 
 ### 1.1 Sole Authoritative Production Codebase Policy
 - **Primary Canonical Workspace**: `G:\My Drive\otp`
@@ -25,7 +25,7 @@ The OTP Platform is deployed with a decoupled architecture utilizing containeriz
 > [!IMPORTANT]
 > **Permanent Retention Guarantee**: Whenever any changes, bug fixes, enhancements, security patches, new features, or daily/weekly maintenance are deployed, the **Production Database, Buyer/Supplier Orders, and User/Organization details are permanently retained**.
 
-To guarantee data preservation across all operational cycles, Migration `00125_production_preservation_and_staging_gate.sql` established three hardware-grade database locks:
+To guarantee data preservation across all operational cycles, Migrations `00125` and `00177` established hardware-grade database locks:
 
 1. **Environment Classification & Destructive Operation Locking (`public.platform_environment_settings`)**:
    - `otp-prod-db` is permanently tagged with `environment = 'PRODUCTION'`, `is_production = true`, and `lock_destructive_ops = true`.
@@ -38,7 +38,7 @@ To guarantee data preservation across all operational cycles, Migration `00125_p
 3. **Automated Production Integrity Assertion (`assert_production_data_integrity`)**:
    - A dedicated verification RPC audits production health before and after deployments.
    - Verifies supplier directory integrity (at least 15 verified domain suppliers).
-   - Verifies buyer/seller order retention and organization integrity.
+   - Verifies buyer/seller order retention, wallet balance records, and organization integrity.
    - Asserts SuperAdmin purity: confirms that platform administrators (`bvnbasu@gmail.com`, `admin@otp.test`) hold 0 buyer/supplier organization memberships.
 
 ---
@@ -48,28 +48,27 @@ To guarantee data preservation across all operational cycles, Migration `00125_p
 > [!CAUTION]
 > **Strict Promotion Gate**: Under no circumstances is code promoted to production without passing the Staging Verification Gate. If any test case fails in developer, tester, pre-prod, staging, or demo environments, **the production website continues running on the old code flow uninterrupted**.
 
-Before any production deployment or maintenance action, the full 12-layer verification battery is executed via:
+Before any production deployment or maintenance action, the full verification battery is executed via:
 ```powershell
 Set-Location "G:\My Drive\otp"
 pnpm gate:verify
 ```
 
-### Staging Gate 12-Layer Battery:
+### Staging Gate Verification Battery:
 1. **POLICY**: Canonical Procurement Vocabulary Scanner (`bid`, `bidder`, `bidding`, `blind` = 0 violations).
-2. **DOMAIN**: Business logic, GST validation, and weight calculations (`@otp/domain`).
-3. **SERVICES**: Discovery engines and external network adapters (`@otp/services`).
-4. **DATABASE**: Entity mappers and data serialization (`@otp/database`).
-5. **UNIT**: Messaging core and client-side routing invariants.
-6. **WEB**: React components, accessibility, governance, and state machine tests (`@otp/web` - 207 tests).
-7. **INTEGRATION**: Live PostgREST RLS security, role separation, and cryptographic hashing (396 tests).
-8. **DEMO_E2E**: End-to-end multi-role buyer/seller walkthrough scenarios (12 tests).
-9. **POSTGRES**: Database engine security benchmarks and RPC assertions (25 tests).
-10. **SMOKE**: Live operational checks against running microservices and auth container (10 tests).
-11. **LIVE_FLOWS**: Real-time end-to-end multi-actor procurement simulations (4 scenarios).
-12. **BUILD**: Clean production TypeScript compilation and asset packaging.
+2. **DOMAIN**: Business logic, GST validation, VMI scorecards, Approval Matrix, Contract Gate, Wallets & Rewards (`@otp/domain` - 297 tests).
+3. **SERVICES**: Discovery engines, communications queue, and external network adapters (`@otp/services` - 331 tests).
+4. **DATABASE**: Entity mappers, ledger persistence, and data serialization (`@otp/database` - 1 test).
+5. **WEB**: React components, multimodal intake, device capabilities, and state machine tests (`@otp/web` - 726 tests).
+6. **INTEGRATION**: Live PostgREST RLS security, role separation, and cryptographic hashing.
+7. **DEMO_E2E**: End-to-end multi-role buyer/seller walkthrough scenarios.
+8. **POSTGRES**: Database engine security benchmarks and RPC assertions.
+9. **SMOKE**: Live operational checks against running microservices and auth container.
+10. **LIVE_FLOWS**: Real-time end-to-end multi-actor procurement simulations.
+11. **BUILD**: Clean production TypeScript compilation (`pnpm typecheck`) and asset packaging.
 
 **Staging Gate Certificate**:
-When all 828 tests pass (100%), the runner generates a digitally signed JSON certificate at:
+When all tests pass (100% green across 1,355 Vitest tests), the runner generates a digitally signed JSON certificate at:
 `G:\My Drive\otp\backups\staging-gate-cert.json`
 The production deployment pipeline validates this certificate timestamp before proceeding.
 
@@ -90,30 +89,9 @@ The production deployment pipeline (`scripts/deploy-prod.ps1`) orchestrates an a
 .\scripts\deploy-prod.ps1 -SkipGate
 ```
 
-### Pipeline Execution Lifecycle:
-
-```mermaid
-flowchart TD
-    A[Start deploy-prod.ps1] --> B{Run Staging Gate pnpm gate:verify}
-    B -- Any Test Fails --> C[ABORT DEPLOYMENT]
-    C --> C1[Old Code Flow Retained on Live Site]
-    C --> C2[Alert Dispatched: Staging Gate Failed]
-    B -- 100% Green 828 Tests --> D[Phase 2: Mandatory DB Snapshot backup-prod-db.ps1]
-    D --> E[Phase 3: Tracked Migrations via otp_schema_migrations]
-    E --> F[Phase 4: Staged Web Build to apps/web/releases/release_timestamp]
-    F --> G[Phase 5: Atomic Release Swap dist_prev <- dist <- new_release]
-    G --> H{Phase 6: Post-Deploy Smoke Battery pnpm test:smoke}
-    H -- All Smoke Checks Pass --> I[DEPLOYMENT SUCCESS]
-    I --> I1[Dispatch Success Alert Email + WhatsApp]
-    H -- Smoke Fails --> J[AUTO-ROLLBACK TRIGGERED]
-    J --> J1[Swap dist <- dist_prev]
-    J --> J2[Live Site Restored to Old Code]
-    J --> J3[Dispatch Emergency Rollback Alert]
-```
-
 ### Key Safety Guarantees:
 - **Mandatory Pre-Deployment Physical Snapshot**: PostgreSQL binary dump created in `backups/` before any SQL is executed.
-- **Tracked Incremental Migrations**: Schema migrations are tracked in `public.otp_schema_migrations`. Only unapplied migrations are executed. Destructive `DROP TABLE` or `TRUNCATE` operations are strictly rejected.
+- **Tracked Incremental Migrations**: Schema migrations are tracked in `public.otp_schema_migrations` (183 migrations). Only unapplied migrations are executed. Destructive `DROP TABLE` or `TRUNCATE` operations are strictly rejected.
 - **Isolated Staging Directory**: The new web build compiles into a timestamped directory (`apps/web/releases/release_<timestamp>`), preventing partial or corrupted builds from touching the live site.
 - **Atomic Release Promotion**: The live `apps/web/dist` is swapped in milliseconds. The previous working build is kept as `apps/web/dist_prev`.
 - **Automated Post-Deployment Smoke & Auto-Rollback**: If post-deployment smoke tests fail, `dist` is immediately replaced with `dist_prev`, returning users to the last known working release.
@@ -183,15 +161,3 @@ The frontend web application is hosted on Vercel's global edge network:
 - **Output Directory**: `apps/web/dist`
 - **Automatic SSL/TLS**: Managed automatically by Vercel with zero-configuration global HTTPS.
 - **Continuous Deployment**: Every push to `main` triggers a live atomic build and deployment on Vercel.
-
----
-
-## 7. Production Environment Configuration
-
-All microservices source runtime variables from `.env`:
-- `VITE_SUPABASE_URL=http://127.0.0.1:54321` (Kong Gateway routing to microservices)
-- `VITE_SUPABASE_ANON_KEY=` (PostgREST JWT public key)
-- `SUPABASE_SERVICE_ROLE_KEY=` (Administrative backend key for elevated RPC execution)
-- `MESSAGING_PROVIDER=waha` (Routes all notices to WhatsApp)
-- `WAHA_BASE_URL=http://127.0.0.1:3008` (WAHA API)
-- `ADMIN_EMAIL=bvnbasu@gmail.com` (SuperAdmin notification recipient)

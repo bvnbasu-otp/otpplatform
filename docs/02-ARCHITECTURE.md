@@ -8,6 +8,9 @@
 │  ┌────────────────────────┐   ┌────────────────────────┐   ┌─────────────────────────┐  │
 │  │   Buyer Portal (PWA)   │   │  Supplier Portal (PWA) │   │ Super Admin Console     │  │
 │  │   React 19 + Vite 6    │   │  React 19 + Vite 6     │   │ Cross-Tenant Ops        │  │
+│  │  - Multimodal Intake   │   │  - Quoting Desk        │   │  - SQL Query Terminal   │  │
+│  │  - 15-Step Linear Nav  │   │  - Milestone Progress  │   │  - Lifecycle Diagnostics│  │
+│  │  - VMI Comparison Room │   │  - Invoice Upload      │   │  - 1,355 Test Runner    │  │
 │  └───────────┬────────────┘   └───────────┬────────────┘   └────────────┬────────────┘  │
 └──────────────┼────────────────────────────┼─────────────────────────────┼───────────────┘
                │                            │                             │
@@ -47,18 +50,23 @@
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                         POSTGRESQL 15 DATABASE (Port 5432)                              │
 │  Container: otp-prod-db                                                                 │
-│  - 160 Applied Production Migrations (00001 to 00160)                                   │
+│  - 183 Applied Production Migrations (00001 to 00183)                                   │
 │  - Row Level Security (RLS) on all core tables                                          │
 │  - Security Definer Functions (private_security schema, SuperAdmin Immutability Triggers)│
-│  - Cryptographic Anonymous Masking Views (quotes_identity_protected, rfqs_supplier_masked)│
+│  - Cryptographic Masking Views (quotes_identity_protected, rfqs_supplier_masked)        │
 │  - Sliding-Window Rate Limiting Engine & Materialized Composite Analytics Indexes        │
+│  - Double-Entry Financial Accounting Ledger & Organization Wallets Schema               │
+│  - Vendor Master Intelligence (VMI) Scorecards & Tiering Models                         │
+│  - Multi-Tier Enterprise Approval Matrix & Anti-Bypass Triggers                         │
+│  - Tamper-Evident Contract Registries (SHA-256 Hashes & Bilateral Digital Signatures)   │
+│  - Progressive Milestone Inspections & 4-Tier Dispute Escalation Hierarchy              │
 └───────────────────────────────────────┬─────────────────────────────────────────────────┘
                                         │
 ┌───────────────────────────────────────┴─────────────────────────────────────────────────┐
 │                         EXTERNAL GATEWAYS & ADAPTERS                                    │
 │  ┌──────────────────────────────────────────┐  ┌─────────────────────────────────────┐  │
 │  │  WhatsApp Gateway (WAHA Paired Container)│  │ Universal SMTP Relay Engine         │  │
-│  │  Container: otp_whatsapp_gateway         │  │ Host: AWS SES / SendGrid / Mailpit  │  │
+│  │  Container: otp_whatsapp_gateway         │  │ Host: Gmail SMTP TLS / SendGrid / SES│ │
 │  │  Port: 3008 (Session: Baskar Loganathan) │  │ Auto-switch dev/prod environments   │  │
 │  │  Status: WORKING (Zero per-msg cost)     │  │ RFC 2822 Multipart MIME payload     │  │
 │  └──────────────────────────────────────────┘  └─────────────────────────────────────┘  │
@@ -67,6 +75,11 @@
 │  │  Razorpay / Stripe HMAC-SHA256 Signatures│  │ Tally Prime XML Balanced Vouchers   │  │
 │  │  Idempotent DB Settlement RPC            │  │ Zoho Books JSON Invoice Payloads    │  │
 │  └──────────────────────────────────────────┘  └─────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────┐  ┌─────────────────────────────────────┐  │
+│  │  Device & Hardware Adapters              │  │ ONDC Beckn Protocol Adapter         │  │
+│  │  Camera / Mic Hardware Track Teardown    │  │ BAP Network Discovery & Quote Ingest │ │
+│  │  Geolocation Fallback & Web Share API    │  │ Ed25519 Request Signing             │  │
+│  └──────────────────────────────────────────┘  └─────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,11 +87,11 @@
 
 ## 2. Production Container Stack (`docker-compose.prod.yml`)
 
-The entire OTP production backend runs via 6 consolidated, orchestrated Docker containers:
+The OTP production backend runs via 6 consolidated, orchestrated Docker containers:
 
 | Service Name | Container Name | Base Image / Build | Port | Memory / CPU | Responsibility |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **db** | `otp-prod-db` | `supabase/postgres:15.1.1.130` | `127.0.0.1:5432` | 2GB / 2 cores | Primary database, RLS policies, migrations, cryptographic RPCs. |
+| **db** | `otp-prod-db` | `supabase/postgres:15.1.1.130` | `127.0.0.1:5432` | 2GB / 2 cores | Primary database, RLS policies, 183 migrations, ledger schemas, cryptographic RPCs. |
 | **auth** | `otp-prod-auth` | `supabase/gotrue:v2.158.1` | Internal `9999` | 512MB / 1 core | User identity, JWT generation, password hashing, email OTP. |
 | **rest** | `otp-prod-rest` | `postgrest/postgrest:v12.2.0` | Internal `3000` | 512MB / 1 core | High-performance RESTful API over PostgreSQL tables & RPCs. |
 | **realtime** | `otp-prod-realtime` | `supabase/realtime:v2.30.23` | Internal `4000` | 512MB / 1 core | WebSocket streaming for live quote arrival, chat, and vote tallies. |
@@ -107,7 +120,7 @@ Unlike legacy SaaS procurement platforms requiring thousands of dollars monthly 
 
 ---
 
-## 5. Frontend Route Security & Centralized RBAC Guard Architecture
+## 4. Frontend Route Security & Centralized RBAC Guard Architecture
 
 The frontend routing system in `apps/web/src/App.tsx` enforces a 3-tier perimeter guard using the centralized `<ProtectedRoute>` component (`apps/web/src/features/auth/ProtectedRoute.tsx`):
 
@@ -126,6 +139,7 @@ The frontend routing system in `apps/web/src/App.tsx` enforces a 3-tier perimete
 3. **Tier 3: Strict Role-Based Access Control (RBAC)**
    - **SuperAdmin Console (`/admin` and all sub-routes)**: Enforces `<ProtectedRoute requireAdmin>` requiring verified platform administrator privileges. Unauthorized attempts immediately purge sensitive diagnostic caches (`clearSensitiveClientState`) and redirect to login.
    - **Purchase Orders & Work Orders (`/purchase-orders`, `/purchase-orders/:poId`, `/supplier/purchase-orders`, `/supplier/work-orders/:woId`)**: Enforces `<ProtectedRoute allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}>`.
+   - **Contract Gate & Approvals (`/rfq/:rfqId/contract`, `/rfq/:rfqId/approval`)**: Restricts access based on enterprise approval matrix roles and signing authority.
 
 4. **Edge Function Runtime Standard**
    - Deno Edge Functions in `supabase/functions/` (e.g. `payment-webhook/index.ts`) utilize ESM execution guards (`if (import.meta.main)`) to ensure testing and CI importing do not inadvertently bind network listening sockets.

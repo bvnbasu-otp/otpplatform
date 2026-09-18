@@ -8,9 +8,11 @@ The OTP Platform is designed to operate in two distinct modes controlled by the 
 | :--- | :--- | :--- |
 | **Authentication** | Demo Account Switcher with 1-click login buttons | GoTrue JWT Authentication via Email OTP / Password |
 | **Supplier Network** | 16 Verified Domain Suppliers with automated quote generation | Real registered Indian suppliers with live WhatsApp notices |
-| **Data Scope** | Synthetic RFQs and sample societies | Real commercial organizations and binding purchase orders |
+| **Data Scope** | Synthetic RFQs, sample societies, and demo wallets | Real commercial organizations, binding contracts, and actual wallets |
 | **Super Administrator** | Evaluates demo scenario states and resets data | Real Superadmin (**Baskar Loganathan**, `bvnbasu@gmail.com`) |
 | **WhatsApp Messaging** | Mock responses or paired test gateway | Live WAHA Webhook dispatch to vendor mobile phones |
+| **Linear Engine** | 15-Step Linear Monotonic Procurement Engine | 15-Step Linear Monotonic Procurement Engine |
+| **Financial Ledger** | Simulated double-entry ledger & demo wallet credits | Real double-entry ledger, 0.50% fee, 0.10% buyer reward |
 
 ---
 

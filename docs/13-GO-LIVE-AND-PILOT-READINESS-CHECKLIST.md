@@ -8,11 +8,11 @@
 
 ## 1. Executive Summary & Readiness Verdict
 
-The **Open Trade & Procurement (OTP) Platform** has undergone comprehensive architectural, security, state-machine, operational, and multi-tenant evaluations. 
+The **Open Trade & Procurement (OTP) Platform** has undergone comprehensive architectural, security, state-machine, operational, and multi-tenant evaluations under the Series-6 production baseline. 
 
-- **Overall Readiness Verdict**: **9.6 / 10** — 🟢 **APPROVED FOR CONTROLLED PILOT (10 Buyers, 30 Suppliers)**.
-- **Scope**: Covers technical prerequisites, 160 applied PostgreSQL migrations, strict RLS security, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 8-state lifecycle operations suite, support ticket routing to `bvnbasu@gmail.com`, payment webhook verification, atomic award locking, and ERP export integration.
-- **Verification Confidence**: **631 automated tests passing (100% pass rate)** across 12 regression layers, zero TypeScript build errors, Playwright cross-browser E2E verification, and zero runtime console crashes across mobile and desktop viewports.
+- **Overall Readiness Verdict**: **9.8 / 10** — 🟢 **APPROVED FOR CONTROLLED PILOT (10 Buyers, 30 Suppliers)**.
+- **Scope**: Covers technical prerequisites, 183 applied PostgreSQL migrations, strict RLS security, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 15-step linear monotonic procurement engine, support ticket routing to `bvnbasu@gmail.com`, payment webhook verification, atomic award locking, Step 11 Contract Gate, Vendor Master Intelligence (VMI), and Double-Entry Financial Accounting.
+- **Verification Confidence**: **1,355 automated tests passing (100% pass rate) across 139 test files**, zero TypeScript build errors, and zero runtime console crashes across mobile and desktop viewports.
 
 ```mermaid
 graph TD
@@ -39,9 +39,9 @@ Before opening the platform to friendly trial users or general production traffi
 - [x] **Universal Navigation**: OTP Logo consistently routes to `/` with session-retaining dashboard access chips for authenticated users.
 
 ### 2.3 Row-Level Security (RLS) & Role Purity
-- [x] **34 Core Tables Protected**: RLS enabled and strictly enforced on all public tables in PostgreSQL (`organizations`, `rfqs`, `quotes`, `committee_votes`, `audit_events`, `notifications`, `support_tickets`, etc.).
+- [x] **All Public Tables Protected**: RLS enabled and strictly enforced on all tables in PostgreSQL (`organizations`, `rfqs`, `quotes`, `committee_votes`, `contract_agreements`, `organization_wallets`, `disputes`, `audit_events`, `notifications`, `support_tickets`, etc.).
 - [x] **SuperAdmin Role Isolation**: Migration `00123` ensures primary SuperAdmin account (`bvnbasu@gmail.com`) holds 0 organizational memberships, guaranteeing absolute impartiality.
-- [x] **Admin RPC Gatekeeping**: All administrative and troubleshooting procedures (`00139`, `00140`) enforce `private.is_platform_admin()`.
+- [x] **Admin RPC Gatekeeping**: All administrative and troubleshooting procedures (`00139`, `00140`, `00170`, `00183`) enforce `private.is_platform_admin()`.
 - [x] **Canonical Identity-Protected Views**: Legacy alias views permanently purged (`00114`, `00117`); only `quotes_identity_protected` and `rfqs_supplier_masked` exposed.
 - [x] **Centralized Route Guards & Cache Sanitization**: Client `<ProtectedRoute>` enforces session auth, blocked user hold, onboarding verification, and role boundaries, with automatic cache sanitization (`clearSensitiveClientState()`) and deep-link redirect preservation.
 
@@ -64,7 +64,7 @@ flowchart LR
 - **Toggle Location**: Managed via `public.admin_toggle_supplier_network_stub(p_enabled boolean)` or Super Admin Console (`/admin?tab=actions`).
 - **Friendly Pilot Mode (`stub = true`)**:
   - Automatically simulates realistic, compliant commercial quotations across the 16 seeded domain suppliers (Furniture, Solar, CCTV, Water RO, Gas Reticulation).
-  - Allows buyer committees to experience the complete 4-step governance workflow (RFQ creation, technical evaluation, weighted voting, and commercial commitment) without waiting days for vendor responses.
+  - Allows buyer committees to experience the complete 15-step governance workflow without waiting days for vendor responses.
 - **Live Production Mode (`stub = false`)**:
   - Halts simulated quotes.
   - Automatically routes RFQ invitations to real registered suppliers via live WhatsApp (WAHA) and Gmail SMTP notifications.
@@ -114,16 +114,6 @@ flowchart TD
     ONDC_Gateway --> SellerApp2["Seller Network Participant 2"]
 ```
 
-### 5.1 Current ONDC Baseline in Platform
-- [x] The database enum `public.supplier_source` natively supports `'ONDC'`, `'DIRECT'`, `'BNI'`, and `'PLATFORM'`.
-- [x] Core domain supplier models include fields for ONDC provider IDs, network tags, and city PIN-code routing.
-- [x] Real-time admin telemetry dashboard includes the ONDC Gateway status monitor (`/admin?tab=health`).
-
-### 5.2 Phased Integration Roadmap
-- **Phase 4.1 (Friendly Trials / Current)**: Utilize direct supplier onboarding and the 16 seeded domain suppliers with verified Indian GSTIN numbers.
-- **Phase 4.2 (ONDC Discovery Adapter)**: Implement the Beckn protocol `/search` client to query ONDC registry endpoints for suppliers matching HSN/SAC codes and geographical serviceability.
-- **Phase 4.3 (Federated Quotation Sourcing)**: Implement Beckn `/on_search`, `/select`, and `/init` webhooks to ingest external ONDC supplier quotes directly into OTP's identity-protected evaluation matrix.
-
 ---
 
 ## 6. Phase 5: Friendly Pilot Execution & Operations Protocol
@@ -131,24 +121,23 @@ flowchart TD
 Follow this sequence when executing initial friendly trials with pilot institutions:
 
 1. **Step 1: Benchmark Organization Provisioning**:
-   - Onboard the trial buyer (e.g., `Greenview Heights RWA (Pilot Benchmark)` or similar institution).
+   - Onboard the trial buyer (`Greenview Heights RWA (Pilot Benchmark)` or similar institution).
    - Assign procurement managers, committee presidents, and voting members with clear role-based access.
-2. **Step 2: Trial RFQ Sourcing (with Supplier Stub Active)**:
-   - Create requirements in 2 benchmark categories (e.g. *Centralized Commercial RO Plant 2000 LPH* and *Rooftop Solar EPC 25kW*).
-   - Verify that all 4 seeded supplier proposals arrive with cryptographic pseudonyms (e.g. `Supplier T74M`) and sanitized attachments.
-3. **Step 3: Multi-Factor Committee Evaluation**:
+2. **Step 2: Multimodal Requirement Intake**:
+   - Create requirements in benchmark categories using Voice, Text, Document, or Photo inputs.
+   - Confirm extracted quantities and units via the Buyer Confirmation Authority Boundary.
+3. **Step 3: Sourcing & Market Intelligence**:
+   - Verify that 4 seeded supplier proposals arrive with cryptographic pseudonyms (`Supplier T74M`) and sanitized attachments.
+   - Inspect cluster market price benchmarks in Step 3 Market Intelligence.
+4. **Step 4: Multi-Factor Committee Evaluation & Enterprise Approvals**:
    - Committee members submit conflict-of-interest declarations.
-   - Perform weighted scoring (60% Commercial, 30% Technical Compliance, 10% SLA).
-   - Verify quorum enforcement before finalizing votes.
-4. **Step 4: Award Locking & One-Way Mutual Reveal**:
-   - Procurement manager inputs award justification and signs the commercial commitment.
+   - Perform weighted scoring (50% Commercial, 20% Technical, 15% SLA, 15% VMI Scorecard).
+   - Verify enterprise approval matrix signoff (<₹5L Tier 1, ₹5L-₹25L Tier 2, >₹25L Tier 3).
+5. **Step 5: Step 11 Contract Gate & Step 12 Mutual Reveal**:
+   - Compile deterministic markdown legal contract; execute SHA-256 digital signoff.
    - Confirm that the winning supplier's corporate identity and GSTIN unmask seamlessly, while non-winning supplier identities remain sealed.
-5. **Step 5: Post-Award Fulfillment & Automatic Settlement**:
+6. **Step 6: Progressive Milestone Inspections & Settlement**:
    - Purchase Order issued (`PO_ISSUED`); supplier confirms acceptance.
-   - Delivery inspection performed; tax invoice submitted (`INVOICED`).
-   - Upon payment verification by buyer, order automatically transitions to `SETTLED`.
-6. **Step 6: Superadmin Diagnostics & Audit Verification**:
-   - Verify live telemetry in Super Admin Console (`/admin?tab=transactions`).
-   - Run SQL diagnostic presets in Terminal (`/admin?tab=terminal`) to audit lifecycle integrity and verify zero orphaned records.
-   - Inspect cryptographic decision receipts and immutable audit records under **Super Admin Console ➔ Audit Trail** (`/admin?tab=logs`).
-
+   - Conduct 5-point milestone quality inspection with photo proof.
+   - Progressive tax invoice uploaded (`INVOICED`).
+   - Payment verified; `0.50%` platform fee assessed, `0.10%` sourcing reward credited to buyer wallet, and order transitions to `SETTLED`.

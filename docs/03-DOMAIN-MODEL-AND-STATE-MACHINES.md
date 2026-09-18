@@ -30,9 +30,15 @@ The OTP Platform domain model is partitioned into distinct entity tiers enforcin
 │                                │ 1:1                                             │ 1:1  │
 │                                ▼                                                 ▼      │
 │                   ┌─────────────────────────┐                       ┌────────────┴─────┐│
-│                   │          Quote          │                       │  PurchaseOrder   ││
-│                   │  (Sealed Commercials)   │                       │ (Legal Contract) ││
-│                   └─────────────────────────┘                       └──────────────────┘│
+│                   │          Quote          │                       │ ContractAgreement││
+│                   │  (Sealed Commercials)   │                       │ (SHA-256 MD Gate)││
+│                   └─────────────────────────┘                       └────────────┬─────┘│
+│                                                                                  │ 1:1  │
+│                                                                                  ▼      │
+│   ┌────────────────────────┐         1:N         ┌────────────────────────┐ ┌────┴─────┐│
+│   │  OrganizationWallet    │◀───────────────────-│  DoubleEntryLedger     │ │Purchase  ││
+│   │(Rewards, Balance, Disc)│                     │ (Paise Exact Journal)  │ │Order (PO)││
+│   └────────────────────────┘                     └────────────────────────┘ └──────────┘│
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -40,7 +46,7 @@ The OTP Platform domain model is partitioned into distinct entity tiers enforcin
 
 ## 2. Indian Standards Taxonomy & Attribute Schemas
 
-OTP natively integrates the **Bureau of Indian Standards (BIS)**, **FSSAI Quality Grades**, and **GST HSN/SAC Codes** into its parsing engine:
+OTP natively integrates the **Bureau of Indian Standards (BIS)**, **FSSAI Quality Grades**, and **GST HSN/SAC Codes** into its parsing and validation engine:
 
 ### 2.1 Standardized Measurement Units (`IndianStandardsUnits`)
 - **Length & Area**: `running_meter`, `sq_ft`, `sq_meter`, `brass` (aggregate/earthwork).
@@ -58,192 +64,129 @@ The engine supports dynamic structured specification attributes for major procur
 
 ---
 
-## 3. Core State Machines & Transition Guards
+## 3. The 15-Step Strict Monotonic Procurement Engine
 
-Every domain lifecycle in OTP is governed by a **deterministic state machine** with transition guards implemented in TypeScript (`packages/domain`) and enforced by database triggers.
-
-### 3.1 Requirement Lifecycle State Machine
-Governs the intake and internal drafting of procurement requirements:
+Implemented in `packages/domain/src/enums/linear-pipeline.ts`, every procurement requirement strictly advances through 15 sequential steps. Out-of-order forward jumps are blocked by transition guards; backward navigation is strictly read-only for historical inspection.
 
 ```
-       ┌──────────┐
-       │  DRAFT   │
-       └────┬─────┘
-            │ submit()
-            ▼
-       ┌──────────┐
-       │SUBMITTED │
-       └────┬─────┘
-            │
-      ┌─────┴─────────────────────────┐
-      │ approve()                     │ cancel()
-      ▼                               ▼
-┌───────────┐                   ┌───────────┐
-│ APPROVED  │                   │ CANCELLED │
-└─────┬─────┘                   └───────────┘
-      │ convertToRfq()
-      ▼
-┌───────────┐
-│RFQ_CREATED│
-└───────────┘
+Step 1:  STEP_1_SPEC_SUBMITTED              (Once Spec is Submitted)
+Step 2:  STEP_2_SEND_ENQUIRY                (Send Enquiry to Verified Suppliers)
+Step 3:  STEP_3_MARKET_INTELLIGENCE         (Real-World Market Intelligence Details)
+Step 4:  STEP_4_START_NEGOTIATION_QA        (Review Received Quotes, Start Negotiation & QA)
+Step 5:  STEP_5_CLOSE_NEGOTIATION_QA        (Close Negotiation & QA, Seal Quotes)
+Step 6:  STEP_6_COMPARE_QUOTES              (Identity-Protected Evaluation)
+Step 7:  STEP_7_VOTING_ROOM                 (Committee Voting Room & Quorum)
+Step 8:  STEP_8_CAST_VOTE                   (Cast Weighted Ballots & COI Declarations)
+Step 9:  STEP_9_AWARD_JUSTIFICATION         (Proceed with Award Justification)
+Step 10: STEP_10_LOCK_AWARD_DECISION        (Lock Award Decision & Multi-Signature Freeze)
+Step 11: STEP_11_CONTRACT_GATE              (Contract Gate: SHA-256 Markdown Agreement)
+Step 12: STEP_12_REVEAL_WINNING_SUPPLIER    (Winner Contact & GST Reveal; Losers Masked)
+Step 13: STEP_13_VIEW_PO                    (View & Accept Purchase Order)
+Step 14: STEP_14_MARK_PROGRESS              (Mark Progress: 0% -> 100% Milestones & Inspections)
+Step 15: STEP_15_STAR_RATING_JUSTIFICATION  (Star Rating with Physical Justification & Closeout)
 ```
 
-- **Invariants**:
-  - A requirement cannot be approved if estimated value is missing.
-  - A requirement in `RFQ_CREATED` cannot be cancelled; cancellation must occur at the RFQ level.
+### 3.1 Mapping 15 Linear Steps to the 8 Core Procurement Lifecycle States
+
+| 15-Step Linear Code | Core Procurement State | Key Actions & Invariants |
+| :--- | :--- | :--- |
+| `STEP_1_SPEC_SUBMITTED` | `DRAFT` | NLP specification authoring, budget estimate, BIS unit selection. |
+| `STEP_2_SEND_ENQUIRY` | `QUOTING` | Multi-channel dispatch to verified domain supplier registry (ONDC/Direct). |
+| `STEP_3_MARKET_INTELLIGENCE` | `QUOTING` | Fair market pricing benchmarks, historical TAT, and reliability scores. |
+| `STEP_4_START_NEGOTIATION_QA` | `QUOTING` | Masked bi-directional clarification threads; zero contact leakage. |
+| `STEP_5_CLOSE_NEGOTIATION_QA` | `QUOTING` / `EVALUATING` | Quoting deadline closes; cryptographic quote seals frozen. |
+| `STEP_6_COMPARE_QUOTES` | `EVALUATING` | Normalized evaluation matrix (Commercial, Specs, SLA, VMI Scorecard). |
+| `STEP_7_VOTING_ROOM` | `EVALUATING` | Committee quorum activation; mandatory Conflict of Interest signoffs. |
+| `STEP_8_CAST_VOTE` | `EVALUATING` | Immutable weighted ballots cast; justification required for non-L1 votes. |
+| `STEP_9_AWARD_JUSTIFICATION` | `EVALUATING` | Majority decision receipt formulated with institutional sentence starters. |
+| `STEP_10_LOCK_AWARD_DECISION`| `AWARDED` | Multi-signature decision lock; winner quote frozen irrevocably. |
+| `STEP_11_CONTRACT_GATE` | `AWARDED` | Deterministic markdown legal contract compiled; SHA-256 hash signed. |
+| `STEP_12_REVEAL_WINNING_SUPPLIER` | `AWARDED` | Bilateral mutual unmasking of Winner & Buyer GSTIN; losing quotes stay masked. |
+| `STEP_13_VIEW_PO` | `PO_ISSUED` | Binding Purchase Order issued; supplier accepts commercial terms. |
+| `STEP_14_MARK_PROGRESS` | `PO_ISSUED` / `INVOICED` | Milestone execution, 5-point inspection checklists, progressive invoices. |
+| `STEP_15_STAR_RATING_JUSTIFICATION` | `SETTLED` | 1-5 star performance rating recorded, VMI metrics updated, audit closed. |
 
 ---
 
-### 3.2 RFQ Phase Lifecycle State Machine
-Governs the public sourcing window, quoting phase, evaluation, and award:
+## 4. Vendor Master Intelligence (VMI) Performance Scorecard
 
-```
-       ┌──────────┐
-       │  INTAKE  │
-       └────┬─────┘
-            │ publishRfq() [Dispatches WhatsApp invites]
-            ▼
-       ┌──────────┐
-       │ QUOTING  │◀─────────────────────────┐
-       └────┬─────┘                          │
-            │ closeQuotes() [Deadline reached]│ requestRevisions()
-            ▼                                │
-       ┌──────────┐                          │
-       │EVALUATION│──────────────────────────┘
-       └────┬─────┘
-            │ awardWinner() [Justification gate passed]
-            ▼
-       ┌──────────┐
-       │ AWARDED  │
-       └────┬─────┘
-            │ issuePurchaseOrder()
-            ▼
-       ┌──────────┐
-       │FULFILLMENT│
-       └──────────┘
-```
+Implemented in `packages/domain/src/types/vendor-intelligence.ts`, OTP evaluates suppliers across a **35/30/20/15 dimensional model**:
 
-- **Parallel Reveal State Machine (Bilateral Unmasking for GST Compliance)**:
-  - `SEALED` (Default): Supplier business names, contacts, GSTIN, and attachments are strictly masked; Buyer organization details remain protected from non-awarded vendors.
-  - `REVEALED`: Triggered atomically when an award is locked and PO is issued (`00156`). Identity unmasking is **bilateral and mutual**:
-    - **Buyer $\rightarrow$ Supplier**: Reveals Buyer Organization Legal Entity, Buyer GSTIN (`tax_registration`), Billing & Delivery Site Address, and Authorized Contact Person, enabling the vendor to generate statutory GST Tax Invoices and pass Input Tax Credit (ITC) benefits under Section 16 of the CGST Act.
-    - **Supplier $\rightarrow$ Buyer**: Reveals Supplier Business Name, Legal Name, Supplier GSTIN, Contact Email, and Phone.
-    - **Platform Separation**: Reports generated by OTP serve as platform governance/audit summaries; POs and Invoices are direct bilateral commercial contracts between Buyer and Supplier. OTP does not act as buyer, seller, merchant of record, or payment custodian.
+1. **Quality Score (35% Weight)**: Step 15 closeout star ratings, 5-point milestone inspection pass rate, and rework penalty.
+2. **Delivery & On-Time Performance (30% Weight)**: Adherence to agreed work order milestone delivery dates.
+3. **SLA & Dispute Adherence (20% Weight)**: Frequency of disputes, critical escalations, and resolution cycle times.
+4. **Commercial & Price Consistency (15% Weight)**: Quote-to-invoice variance, change order frequency, and price stability.
+
+### 4.1 Performance Tiers & Privacy-Preserving Scorecard Badges
+- **PLATINUM**: Score $\ge 90$ (`EXEMPLARY` badge, `4.8 - 5.0 ★`, `95%+ On-Time`, `50+ Orders`).
+- **GOLD**: Score $80 - 89$ (`COMMENDED` badge, `4.5 - 4.7 ★`, `85-94% On-Time`, `25-49 Orders`).
+- **SILVER**: Score $70 - 79$ (`STANDARD` badge, `4.0 - 4.4 ★`, `75-84% On-Time`, `10-24 Orders`).
+- **BRONZE**: Score $60 - 69$ (`EMERGING` badge, `3.5 - 3.9 ★`, `5-9 Orders`).
+- **PROBATIONARY**: Score $< 60$ (`UNDER_OBSERVATION` badge).
+
+*Privacy Invariant:* During quoting and evaluation (Steps 1–11), scores are rendered strictly as **anonymized coarse badges** (`Supplier A7K3`, `EXEMPLARY`, `4.8 - 5.0 ★`) to prevent boutique vendor fingerprinting.
 
 ---
 
-### 3.3 Quote Lifecycle State Machine
-Governs individual supplier proposals submitted against an RFQ:
+## 5. Multi-Tier Enterprise Approval Matrix
 
-```
-       ┌──────────┐
-       │  DRAFT   │
-       └────┬─────┘
-            │ submitQuote() [Validates pricing, HSN, timeline]
-            ▼
-       ┌──────────┐
-       │SUBMITTED │
-       └────┬─────┘
-            │ closeQuotes() [RFQ moves to EVALUATION]
-            ▼
-       ┌────────────┐
-       │UNDER_REVIEW│
-       └────┬───────┘
-            │
-      ┌─────┴─────────────────────────┐
-      │ selectAsWinner()              │ rejectAsNotSelected()
-      ▼                               ▼
-┌───────────┐                   ┌─────────────┐
-│ SELECTED  │                   │NOT_SELECTED │
-└─────┬─────┘                   └─────────────┘
-      │ signCommitment()
-      ▼
-┌───────────┐
-│  AWARDED  │
-└───────────┘
-```
+Implemented in `packages/domain/src/types/approval-matrix.ts`, organization procurement governance enforces multi-tiered financial threshold approval chains:
 
-- **Invariants**:
-  - Quotes cannot be edited or submitted once the RFQ quoting deadline expires.
-  - A supplier cannot view quotes submitted by other suppliers.
-  - Losing suppliers transition to `NOT_SELECTED` and receive automated outcome notices while remaining identity-protected.
+- **Tier 1: Team / Procurement Manager (`< ₹5,00,000`)**: Single manager signoff for small operational purchases.
+- **Tier 2: Department Head / VP (`₹5,00,000` to `₹25,00,000`)**: Departmental review and budget owner signoff.
+- **Tier 3: CFO / Executive Director (`> ₹25,00,000`)**: Executive committee and financial lead signoff.
+
+### 5.1 Anti-Bypass Governance Guards:
+1. **Self-Approval Prevention**: An RFQ creator/requester cannot approve their own procurement stage if `preventSelfApproval = true`.
+2. **Sequential Stage Order**: Stage $N$ cannot be approved until Stage $N-1$ is fully in `APPROVED` status.
+3. **Dual-Signoff Tracking**: Configurable mandatory dual signoff for high-value contracts above enterprise thresholds (e.g., >₹50L).
+4. **Digital Signature Hashing**: Every approval step records a cryptographic signoff hash with timestamp and profile metadata.
 
 ---
 
-## 4. The 8 Canonical Procurement Lifecycle States
+## 6. Tamper-Evident Contract Operations (Step 11 Contract Gate)
 
-### 4.0 Canonical High-Level Procurement Lifecycle
-
-The high-level conceptual sequence across the entire OTP platform is:
-
-**Requirement → Discovery → RFQ → Identity-Protected Evaluation → Market Intelligence → Committee Vote → Award → Reveal → PO → Work Order → Invoice → Payment → Performance → Audit**
-
-- **Market Intelligence** is positioned as an explicit stage between *Identity-Protected Evaluation* and *Committee Vote* to deliver real-world cluster pricing benchmarks and supplier reliability indicators prior to committee voting.
-- The lifecycle culminates in **Performance → Audit**, with *Audit* serving as the immutable post-settlement verification and compliance control stage.
-
-### 4.1 Underlying State Machine States
-
-The OTP Platform backend data models, telemetry, and operational troubleshooting suite map the workflow into **8 Core Procurement Lifecycle States**:
-
-```mermaid
-stateDiagram-v2
-    [*] --> DRAFT : Requirement Created
-    DRAFT --> QUOTING : RFQ Published & Vendors Dispatched
-    QUOTING --> EVALUATING : Quoting Window Closes / Quotes Ingested
-    EVALUATING --> AWARDED : Winner Selected & Identity Unmasked
-    AWARDED --> PO_ISSUED : Purchase Order Generated & Issued
-    PO_ISSUED --> INVOICED : Inspection Signed & Invoice Uploaded
-    INVOICED --> SETTLED : Payment Verified (Automatic Transition)
-    SETTLED --> [*] : Lifecycle Completed
-
-    DRAFT --> STALLED : Abandoned or Missing Specifications
-    QUOTING --> STALLED : Sourcing Window Expired with 0 Quotes
-    EVALUATING --> STALLED : Committee Quorum Deadlock
-    AWARDED --> STALLED : Missing Supplier Acceptance Flag
-    PO_ISSUED --> STALLED : Delivery Inspection Dispute / Non-Compliance
-    INVOICED --> STALLED : Payment Verification Failure / TDS Discrepancy
-    STALLED --> QUOTING : Sourcing Window Reopened
-    STALLED --> EVALUATING : Quorum Override / Dispute Resolved
-    STALLED --> PO_ISSUED : PO Acceptance Re-verified
-```
-
-### 4.1 State Definitions & Transition Criteria
-
-| State | Institutional Meaning | Transition Pre-Conditions | Exit Actions & Automations |
-| :--- | :--- | :--- | :--- |
-| **`DRAFT`** | Initial buyer drafting, NLP specification parsing, and document attachment. | Valid Indian Standards taxonomy, estimated budget, PIN-code location. | Triggers `publishRfq()`: generates cryptographic RFQ token and dispatches invites. |
-| **`QUOTING`** | Live sourcing window; invited suppliers submit cryptographically sealed proposals. | RFQ published; quoting deadline active; identity protection enforced. | Closes quoting window; moves to comparison room; triggers quote normalization. |
-| **`EVALUATING`** | Multi-factor comparison room; committee members vote on sealed scores. | Minimum 1 valid quote; conflict-of-interest declarations recorded. | Locks award justification; verifies quorum threshold; triggers one-way identity reveal. |
-| **`AWARDED`** | Winning commercial proposal locked; buyer and winning vendor identities mutually unmasked. | Verified award justification; winning quote immutable. | Unmasks winning vendor GSTIN & contact; generates draft Purchase Order. |
-| **`PO_ISSUED`** | Binding legal contract issued to winning supplier; manufacturing/service execution active. | PO signed by authorized procurement manager. | Supplier acknowledges PO; work order milestones created; delivery tracking activated. |
-| **`INVOICED`** | Goods delivered / services rendered; formal commercial invoice uploaded with GST compliance. | Delivery inspection signed off; invoice GSTIN matching vendor record. | Enters settlement verification queue; verifies invoice line items vs PO amounts. |
-| **`SETTLED`** | **Final Terminal State**: Payment verified against bank/UTR reference; contract fully closed. | Payment recorded and verified by finance/treasurer. | **Automatic transition upon payment verification**; immutable audit certificate minted. |
-| **`STALLED`** | **Operational Exception State**: Process halted due to timeouts, quorum deadlock, or disputes. | Time limit exceeded (>24h inactivity), failed inspection, or explicit dispute raised. | Flagged in Admin Console Diagnostics; enables Super Admin Force-Advance or Revert tools. |
+Implemented in `packages/domain/src/types/contract-agreement.ts`:
+- **Deterministic Legal Markdown Compilation**: Generates standardized bilingual procurement agreements detailing scope, commercial milestones, GST tax breakdown, delivery sites, and warranty clauses.
+- **SHA-256 Document Checksum**: The compiled contract markdown is hashed into an immutable 64-character SHA-256 fingerprint.
+- **Bilateral Digital Sign-Off**: Captures HMAC-SHA256 digital signature hashes for both the Buyer Procurement Authority and Supplier Authorized Signatory.
+- **Liquidated Damages Clause**: Automated tracking of daily delay penalties (e.g. `0.50%` per day overdue, capped at `10%` of contract value).
 
 ---
 
-## 5. Advanced Domain Engines & ERP Integrations
+## 7. Double-Entry Financial Accounting Ledger & Non-Custodial Settlement
 
-### 5.1 Multi-Factor Supplier Performance Smart Scoring Engine
-Implemented in `packages/domain/src/evaluation/smart-scoring.ts`:
-- **Commercial Score (50% Weight)**: Inverse ratio based on L1 lowest price ($100 \times \frac{\text{Lowest Price}}{\text{Quote Price}}$).
-- **Delivery Speed Score (20% Weight)**: Normalized against the fastest lead time ($100 \times \frac{\text{Fastest Days}}{\text{Quote Days}}$).
-- **Warranty Score (15% Weight)**: Normalized against maximum warranty months ($100 \times \frac{\text{Quote Warranty}}{\text{Max Warranty}}$).
-- **Quality & Technical Score (15% Weight)**: Based on verified catalog compliance and past inspection history.
-- **GST Compliance Bonus (+5 Bonus Points)**: +5 point addition for active GSTIN verified suppliers.
+Implemented in `packages/domain/src/accounting/` and `packages/domain/src/types/`:
+- **Non-Custodial Architecture**: OTP does not hold client funds or act as an escrow agent. Payments move directly between Buyer and Supplier bank accounts.
+- **Supplier Platform Fee (`0.50%`)**: A transparent `0.50%` platform fee is assessed at settlement on gross transaction value.
+- **Buyer Sourcing Reward (`0.10%`)**: Buyers earn a `0.10%` sourcing reward credited directly to their **Organization Wallet** (`balanceCredits`).
+- **Organization Wallets**: Reward credits can be redeemed for future platform subscriptions or add-on analytical services.
+- **Paise-Exact Conservation**: Enforces the invariant:
+  $$\text{Adjusted Gross} = \text{TDS} + \text{Platform Fee} + \text{Supplier Net Settlement}$$
+- **Statutory Tax Splits**: Native calculation of CGST, SGST, IGST, and Section 194C / 194J / 194Q TDS withholding.
 
-### 5.2 Multi-Lingual Regional Procurement NLP Parser
-Implemented in `packages/domain/src/parser/extractors.ts`:
-- Native Unicode regex support (`u` flag) extracting quantity and units from Devnagari/Hindi text:
-  - `लीटर` / `लीटरों` $\rightarrow$ `L` (Litres)
-  - `किलो` / `किलोग्राम` $\rightarrow$ `KG` (Kilograms)
-  - `मीटर` $\rightarrow$ `M` (Meters)
-  - `टन` $\rightarrow$ `MT` (Metric Tons)
-  - `नग` / `पीस` $\rightarrow$ `PCS` (Pieces)
-- Example: *"5000 लीटर पानी का टैंकर"* auto-populates `{ quantity: 5000, unit: 'L' }`.
+---
 
-### 5.3 Open Standard ERP Exporters
-Implemented in `packages/domain/src/accounting/`:
-- **Tally Prime XML Exporter** (`tally-xml-exporter.ts`): Generates balanced double-entry `VOUCHER` XML (Purchase Order voucher type) with separate ledger allocations for base expense, CGST, SGST/IGST, and supplier payables.
-- **Zoho Books JSON Exporter** (`zoho-json-exporter.ts`): Produces structured invoice payloads matching Zoho Books API schema with line item HSN codes, GST tax rates, and payment milestone terms.
+## 8. Progressive Milestone Inspections & Dispute Escalation
 
+### 8.1 5-Point Milestone Inspection Checklist (`milestone-inspection.ts`)
+1. **Materials & Specifications**: Verification against BIS standards and agreed bill of materials.
+2. **Dimensional & Quantity Compliance**: Physical measurement and unit count verification.
+3. **Functional & Operational Testing**: Live testing of equipment, machinery, or systems.
+4. **Safety & Regulatory Compliance**: Adherence to statutory safety, fire, and structural norms.
+5. **Aesthetics & Completion Quality**: Workmanship, finishing, and site clearance.
+
+*Inspection Gate:* Progressive tax invoices can only be generated for milestones that have achieved an **`APPROVED` inspection with `passed = true`**.
+
+### 8.2 4-Tier Dispute Resolution Hierarchy (`dispute-escalation.ts`)
+- **7 Dispute Artifacts**: `PURCHASE_ORDER`, `WORK_ORDER`, `MILESTONE`, `INVOICE`, `PAYMENT`, `SETTLEMENT`, `DELIVERY`.
+- **4 Severity Levels & SLA Timers**:
+  - `CRITICAL`: 24-hour SLA
+  - `HIGH`: 48-hour SLA
+  - `MEDIUM`: 72-hour SLA
+  - `LOW`: 120-hour SLA
+- **4 Escalation Levels**:
+  1. `TIER_1_DIRECT_RESOLUTION`: Direct vendor-buyer clarification and mutual remediation.
+  2. `TIER_2_COMMITTEE_MEDIATION`: RWA/Corporate procurement committee arbitration.
+  3. `TIER_3_EXECUTIVE_ARBITRATION`: Executive board and legal lead review.
+  4. `TIER_4_LEGAL_ESCALATION`: Formal institutional legal proceedings.

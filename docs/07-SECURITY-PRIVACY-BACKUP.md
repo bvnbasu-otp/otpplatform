@@ -23,32 +23,49 @@ The OTP Platform enforces privacy through automated sanitization pipelines preve
   - Email Addresses: `[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}`
   - Social Media Links: Twitter/X handles, LinkedIn profiles, Instagram tags, WhatsApp invite links.
 
+### 1.4 Device Hardware Permissions & Track Teardown
+- **Microphone Teardown**: Audio stream tracks are immediately stopped (`track.stop()`) when voice dictation finishes or modals close.
+- **Camera Teardown**: Video streams used for photo capture or milestone inspections are immediately stopped and unbound.
+- **Geolocation Fallback**: High-precision GPS is requested with a graceful fallback to manual Indian PIN-code entry.
+
 ---
 
-## 2. Automated Production Database Backups & AES-256 Encryption
+## 2. Cryptographic Integrity & Contract Security
+
+### 2.1 Tamper-Evident Contract Hashes (Step 11 Contract Gate)
+- Compiled legal markdown contracts are hashed into an immutable 64-character SHA-256 document fingerprint (`computeContractDocumentHash`).
+- Bilateral digital signatures are verified using HMAC-SHA256 digests (`generateDigitalSignoffHash`), ensuring neither party can alter commercial terms post-award.
+
+### 2.2 Decision Receipts & Audit Event Chaining
+- Every award generates a tamper-evident decision receipt recording the hashes of all competing quotes, committee vote tallies, and justification sentences.
+- Row-level triggers prevent `UPDATE` or `DELETE` operations on `audit_events`.
+
+---
+
+## 3. Automated Production Database Backups & AES-256 Encryption
 
 Database backups are managed via the automated PowerShell utility located at [`scripts/backup-prod-db.ps1`](file:///G:/My%20Drive/otp/scripts/backup-prod-db.ps1):
 
-### 2.1 Backup Execution & Encryption Architecture
+### 3.1 Backup Execution & Encryption Architecture
 - Executes a full `pg_dump` against container `otp-prod-db`.
 - **AES-256-CBC Encryption**: Derives a 256-bit symmetric key using PBKDF2 (`Rfc2898DeriveBytes`) with **100,000 iterations** and a 16-byte cryptographically secure random salt (`RNGCryptoServiceProvider`).
 - Prepends salt (16 bytes) and initialization vector (16 bytes) to the encrypted payload.
 - Generates timestamped encrypted SQL archives:
   `G:\My Drive\otp\backups\otp_prod_backup_YYYYMMDD_HHMMSS.sql.enc`
 - **SHA-256 Cryptographic Checksum**: Generates an accompanying `.sha256` integrity manifest for tamper verification.
-- Average execution time: **4.8 seconds** (approx 1.0 MB dump size).
+- Average execution time: **4.8 seconds** (approx 1.2 MB dump size).
 
-### 2.2 Retention & Auto-Pruning Policy
+### 3.2 Retention & Auto-Pruning Policy
 - **30-Day Rolling Window**: Backups older than 30 days are automatically detected and pruned to prevent disk exhaustion.
 - **Zero-Downtime Guarantee**: Dumps run concurrently without locking tables or interrupting active RFQ quoting windows.
 
 ---
 
-## 3. Disaster Recovery & Automated Restoration Engine
+## 4. Disaster Recovery & Automated Restoration Engine
 
 Restoration and disaster recovery are automated via [`scripts/restore-prod-db.ps1`](file:///G:/My%20Drive/otp/scripts/restore-prod-db.ps1):
 
-### 3.1 Verification & Restoration Workflow
+### 4.1 Verification & Restoration Workflow
 - **SHA-256 Validation**: Validates the archive against its `.sha256` checksum before attempting decryption.
 - **In-Memory Decryption**: Decrypts the AES-256 payload using the provided encryption key without writing unencrypted dumps to persistent disk.
 - **Syntax & Header Checks**: Verifies PostgreSQL dump header integrity.
@@ -64,28 +81,28 @@ Restoration and disaster recovery are automated via [`scripts/restore-prod-db.ps
 
 ---
 
-## 4. Platform Security & Immutability Protections
+## 5. Platform Security & Immutability Protections
 
-### 4.1 Cryptographic Payment Webhook Verification
+### 5.1 Cryptographic Payment Webhook Verification
 - Implemented in `supabase/functions/payment-webhook/index.ts`.
 - **Razorpay**: Validates HMAC-SHA256 hex digest against `x-razorpay-signature`.
 - **Stripe**: Validates 300-second timestamp freshness window and HMAC-SHA256 signature against `stripe-signature`.
 - **Timing Safe Comparison**: Uses constant-time byte comparisons (`timingSafeEqual`) to prevent timing attacks.
 - **Idempotent Ledger Settlement**: Stored procedure `record_verified_payment()` enforces uniqueness on `gateway_event_id`.
 
-### 4.2 SuperAdmin Account Immutability
+### 5.2 SuperAdmin Account Immutability
 - Migration `00152_immutable_platform_admin_role.sql` establishes schema `private_security` with `admin_whitelist`.
 - PostgreSQL trigger `enforce_superadmin_immutability` blocks `DELETE`, privilege revocation (`is_platform_admin = false`), status changes to `BLOCKED`/`SUSPENDED`, or email modifications on whitelisted administrator accounts.
 
-### 4.3 PII-Sanitizing Error Boundary & Telemetry
+### 5.3 PII-Sanitizing Error Boundary & Telemetry
 - Global React Error Boundary (`apps/web/src/components/ErrorBoundary.tsx`) catches unhandled exceptions.
 - Telemetry sanitizer (`apps/web/src/lib/telemetry.ts`) redacts email addresses, 10-digit Indian phone numbers, Bearer JWT tokens, and API passwords before passing payloads to loggers or monitoring systems.
 
-### 4.4 Pre-Award Attachment Anti-Leak Sanitization
+### 5.4 Pre-Award Attachment Anti-Leak Sanitization
 - `packages/domain/src/enums/attachment.ts` enforces `sanitizeAttachmentFilename()` (`Supplier-XXXX_doc_1.pdf`) and asserts zero metadata leaks (EXIF, author, company, device model) prior to the irrevocable award stage.
 
-### 4.5 Centralized Route Guarding & Client State Sanitization
+### 5.5 Centralized Route Guarding & Client State Sanitization
 - Implemented in `apps/web/src/features/auth/ProtectedRoute.tsx`.
 - **Session & Role Verification**: Rejects unauthenticated visits to internal workspace views and redirects with preserved destination queries (`/login?redirect=...`).
 - **Administrative Diagnostic Cache Purging**: Calls `clearSensitiveClientState` to sanitize `sessionStorage` and `localStorage` of sensitive keys prefixed with `admin_`, `diagnostic_`, `sensitive_`, and `otp_admin_` when an unauthorized navigation occurs.
-- **Strict Role-Based Access Control (RBAC)**: Enforces role isolation across public routes, regular workspace routes, and elevated paths (`/admin`, `/purchase-orders`).
+- **Strict Role-Based Access Control (RBAC)**: Enforces role isolation across public routes, regular workspace routes, and elevated paths (`/admin`, `/purchase-orders`, `/rfq/:rfqId/contract`).

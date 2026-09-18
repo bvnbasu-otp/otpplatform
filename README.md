@@ -18,131 +18,121 @@ OTP owns a different category: **Identity-Protected Competitive Sourcing**
 
 ---
 
-Requirement-first, location-aware, network-agnostic. OTP connects buyers (individual, MSME, community, local business, institution) to open supplier networks (ONDC, BNI, associations, direct, local registry) and runs **Identity-Protected Competitive Sourcing** through award, fulfillment, and market intelligence.
+Requirement-first, location-aware, network-agnostic. OTP connects buyers (individual, MSME, community, local business, institution) to open supplier networks (ONDC, BNI, associations, direct, local registry) and runs **Identity-Protected Competitive Sourcing** through award, fulfillment, contract governance, and market intelligence.
 
 **Two distinct procurement experiences, same platform:**
 - **⚡ Fast Track (2-step, 3-5 min)** — Individual/MSME with real-time AI parsing, smart defaults, direct award
-- **🏛️ Full Governance (4-step, 12-15 min)** — RWA/Enterprise with mandatory committee voting, detailed justification
+- **🏛️ Full Governance (4-step, 12-15 min)** — RWA/Enterprise with mandatory committee voting, multi-tier approval matrix, and detailed justification
 
-Both flows maintain 100% identity protection until award.
+Both flows maintain 100% identity protection until award and contract sign-off.
 
 ### Three Pillars of Identity-Protected Competitive Sourcing
 
 #### 🔐 1. Identity Protection
-
-Buyer/supplier identities remain protected according to procurement state and role.
+Buyer/supplier identities remain cryptographically sealed (`Supplier T74M`) according to procurement state and role, preventing commercial bias and favoritism.
 
 #### ⚖️ 2. Bias-Resistant Governance
-
-Quotes are normalized and presented for evaluation without unnecessary identity information.
+Quotes are normalized and presented for evaluation without identity information, scored via multi-factor weighting (50% Commercial, 20% Technical, 15% SLA, 15% VMI Scorecard).
 
 #### 🔎 3. Auditable Decision Trail
-
-Every action, evaluation, vote, negotiation and reveal is recorded and traceable.
-
----
-
-**OTP is an identity-protected competitive sourcing platform.**
-
-OTP is **not** apartment/RWA software, an IndiaMART clone, anonymous marketplace, ERP, ONDC replacement, or supplier advertising platform. Communities are **Pilot 1** of a horizontal platform, not the product definition.
+Every action, evaluation, vote, contract hash, and reveal is recorded in an immutable append-only ledger with SHA-256 cryptographic verification.
 
 ---
 
-## 🔐 Identity Protection
+## 🚀 Series-6 Production Baseline Capabilities
 
-OTP's opportunity is the **specific implementation and combination** of these capabilities working together:
-
-**Requirement**  
-→ Discovery  
-→ RFQ  
-→ Identity-Protected Evaluation  
-→ Market Intelligence  
-→ Committee Vote  
-→ Award  
-→ Reveal  
-→ PO  
-→ Work Order  
-→ Invoice  
-→ Payment  
-→ Performance  
-→ Audit
-
-This **complete, integrated system** is what differentiates OTP from ordinary vendor-management software.
-
-**Example:** Three suppliers submit ₹98k/7 days/2-year warranty, ₹92k/15 days/1-year warranty, and ₹1.02L/5 days/3-year warranty. OTP normalizes them into **Price + Delivery + Warranty + Specification + Supplier Score + Market Intelligence**, then committee members vote on normalized scores **without necessarily knowing supplier identity**. That's **governance + competitive sourcing** that ordinary vendor management software doesn't provide.
-
-**Potential IP:** The implementation uses an identity-protected procurement protocol (protected identity/token system, controlled disclosure, cryptographically protected quotes, controlled visibility, staged reveal) that may represent defensible IP. See [Architecture](docs/02-ARCHITECTURE.md) and [Product Constitution](docs/01-PLATFORM-OVERVIEW.md) for details worth investigating with patent professionals.
-
-**The Real Moat:** The accumulated **supplier intelligence dataset** — categories, GST verification, geography, quote history, response rate, delivery performance, price history, award history, quality scores, committee feedback, RFQ-to-award conversion, and market price benchmarks. OTP is designed from Day 1 so that **every completed RFQ creates reusable market intelligence**. This dataset can become more valuable than the software itself, and competitors cannot easily reproduce historical procurement intelligence.
+1. **15-Step Strict Monotonic Engine**: End-to-end sequential workflow from `STEP_1_SPEC_SUBMITTED` to `STEP_15_STAR_RATING_JUSTIFICATION` with zero duplicate steps and single-instance integrity.
+2. **Vendor Master Intelligence (VMI)**: 35/30/20/15 dimensional scorecard (Quality 35%, Delivery 30%, SLA/Disputes 20%, Commercial 15%) with performance tiers (`PLATINUM`, `GOLD`, `SILVER`, `BRONZE`) and anonymized coarse badges.
+3. **Multi-Tier Enterprise Approval Matrix**: Financial threshold governance (<₹5L Tier 1 Manager, ₹5L–₹25L Tier 2 VP, >₹25L Tier 3 CFO) with anti-bypass guards, self-approval prevention, and sequential sign-offs.
+4. **Tamper-Evident Contract Operations**: Deterministic legal markdown contracts compiled at Step 11 (Contract Gate) with SHA-256 document checksums and bilateral digital signatures.
+5. **Non-Custodial Double-Entry Financial Accounting**: Transparent `0.50%` supplier platform fee, `0.10%` buyer sourcing reward, Organization Wallets, statutory tax splitting (CGST/SGST/IGST), TDS (194C/194J/194Q), and automated ERP exports (Tally Prime XML & Zoho Books JSON).
+6. **Progressive Milestone Inspections & Dispute Escalation**: 5-point quality checklist with photo evidence and digital sign-offs, paired with a 4-tier dispute resolution hierarchy across 7 artifact types with SLA timers.
+7. **Intelligent Multimodal Buyer Intake**: Voice dictation, natural language parsing, document extraction, and photo capture governed by a strict **Buyer Confirmation Authority Boundary**.
+8. **Device & Privacy Hardening**: Browser camera and microphone hardware stream track teardown, geolocation fallback, Web Share API, and automated EXIF/PDF metadata scrubbing.
 
 ---
 
 ## Documentation
 
-The complete platform documentation is organized into 14 canonical documents in [`docs/`](docs/00-DOCUMENTATION-INDEX.md). See the [**Master Documentation Index**](docs/00-DOCUMENTATION-INDEX.md) for the full library map.
+The complete platform documentation is organized into 15 canonical documents in [`docs/`](docs/00-DOCUMENTATION-INDEX.md), supported by the Standalone Operations Runbook and the Historical QA Archive in [`archive/qa/`](archive/qa/README.md).
 
 | Document | Purpose |
 |:---|:---|
 | [**00. Master Documentation Index**](docs/00-DOCUMENTATION-INDEX.md) | Canonical index, platform status, and documentation library map |
 | [**01. Platform Overview & Constitution**](docs/01-PLATFORM-OVERVIEW.md) | Mission, Core Principles, Identity Protection standard, Canonical Vocabulary, IP notice |
 | [**02. Architecture & Technical Specs**](docs/02-ARCHITECTURE.md) | End-to-end architecture, Docker stack, Kong Gateway, Realtime, Zero-cost telephony |
-| [**03. Domain Model & State Machines**](docs/03-DOMAIN-MODEL-AND-STATE-MACHINES.md) | Domain entities, Indian Standards taxonomy (BIS, FSSAI, HSN/SAC), 8 canonical lifecycle states |
-| [**04. Workflows & Callflows**](docs/04-WORKFLOWS-AND-CALLFLOWS.md) | Fast Track (2-step) flow, Full Governance (4-step) flow, WhatsApp callflows |
-| [**05. UI/UX Design System**](docs/05-UI-UX-DESIGN-SYSTEM.md) | Visual token architecture, Mobile-first PWA, Identity-protected comparison & voting rooms |
-| [**06. Database & RLS Policies**](docs/06-DATABASE-AND-RLS-POLICIES.md) | PostgreSQL 15 schema, 140 applied migrations, cryptographic RPCs, RLS policies, operational RPCs |
-| [**07. Security, Privacy & Backups**](docs/07-SECURITY-PRIVACY-BACKUP.md) | Media EXIF sanitization, PDF redaction, daily automated backups, disaster recovery |
-| [**08. Demo Mode vs Production**](docs/08-DEMO-PILOT-VS-PRODUCTION.md) | Synthetic demo isolation, benchmark RWA org, 16 verified domain suppliers |
-| [**09. Feature Specifications**](docs/09-MODULE-FEATURE-SPECIFICATIONS.md) | Detailed feature guide for Super Admin Console, Buyer Portal, and Supplier Portal |
-| [**10. Deployment & Live Tunnel**](docs/10-DEPLOYMENT-AND-TUNNEL-OPERATIONS.md) | Production Docker Compose, Cloudflare Tunnel watchdog, secrets, SSL configuration |
-| [**11. Testing & Regression Suite**](docs/11-TESTING-AND-REGRESSION-SUITE.md) | 820 test inventory, master regression pipeline (`pnpm test:regression`), superadmin test center |
-| [**12. Maintenance & Alerts Pipeline**](docs/12-MAINTENANCE-AND-ALERTS-PIPELINE.md) | Fast Server Refresh (`update-live.ps1`), dual pre/post maintenance alerts (Email + WhatsApp) |
-| [**13. Go-Live & Pilot Readiness**](docs/13-GO-LIVE-AND-PILOT-READINESS-CHECKLIST.md) | Go-live verification checklist, friendly pilot protocol, 140 migrations, 9.5/10 scorecard |
+| [**03. Domain Model & State Machines**](docs/03-DOMAIN-MODEL-AND-STATE-MACHINES.md) | 15-step linear monotonic engine, Indian Standards (BIS/HSN), VMI scorecards, Approval Matrix, Ledger |
+| [**04. Workflows & Callflows**](docs/04-WORKFLOWS-AND-CALLFLOWS.md) | Fast Track, Full Governance, Multimodal Intake, Omnichannel Communications, Milestone & Dispute Callflows |
+| [**05. UI/UX Design System**](docs/05-UI-UX-DESIGN-SYSTEM.md) | Visual token architecture, Mobile-first PWA (`100dvh`), Comparison & Voting rooms, Device Capabilities |
+| [**06. Database & RLS Policies**](docs/06-DATABASE-AND-RLS-POLICIES.md) | PostgreSQL 15 schema, 183 applied migrations, financial tables, cryptographic RPCs, RLS policies |
+| [**07. Security, Privacy & Backups**](docs/07-SECURITY-PRIVACY-BACKUP.md) | Media EXIF sanitization, PDF redaction, hardware teardown, PBKDF2/AES-256 automated backups |
+| [**08. Demo Mode vs Production**](docs/08-DEMO-PILOT-VS-PRODUCTION.md) | Synthetic demo isolation, benchmark RWA org, 16 verified domain suppliers across 5 verticals |
+| [**09. Feature Specifications**](docs/09-MODULE-FEATURE-SPECIFICATIONS.md) | Detailed feature guide for Super Admin Console (`/admin`), Buyer Portal, Supplier Portal, Contracts, Wallets |
+| [**10. Deployment & Live Tunnel**](docs/10-DEPLOYMENT-AND-TUNNEL-OPERATIONS.md) | Production Docker Compose, Vercel Global Edge CDN, gated blue-green deployment pipeline |
+| [**11. Testing & Regression Suite**](docs/11-TESTING-AND-REGRESSION-SUITE.md) | 1,355 Vitest test inventory across 139 test files (100% green), staging verification gate |
+| [**12. Maintenance & Alerts Pipeline**](docs/12-MAINTENANCE-AND-ALERTS-PIPELINE.md) | Zero-data-loss maintenance (`update-live.ps1`), DB snapshots, dual alerts (Gmail SMTP + WhatsApp WAHA) |
+| [**13. Go-Live & Pilot Readiness**](docs/13-GO-LIVE-AND-PILOT-READINESS-CHECKLIST.md) | Go-live verification checklist, friendly pilot protocol, 183 migrations, 9.8/10 scorecard |
+| [**14. Security Clearances & Pre-Prod Audit**](docs/14-SECURITY-CLEARANCES-AND-PRE-PROD-AUDIT-CHECKLIST.md) | Enterprise VAPT, SAST/DAST, Zero-BOLA/IDOR, MFA, cryptographic signing, immutable audit logs |
+| [**15. Production Readiness & CTO Clearance**](docs/15-PRODUCTION-READINESS-AND-CTO-CLEARANCE-REPORT.md) | 50-domain review, Series-6 baseline certification, risk register, official CTO clearance verdict |
+| [**Standalone Operations Runbook**](docs/STANDALONE-OPERATIONS-RUNBOOK.md) | Self-contained operational CLI (`.\scripts\otp.ps1`), maintenance, backups, and disaster recovery |
+
+---
 
 ## Monorepo Structure
 
 ```
 otp/
-├── docs/                 Product and architecture docs
 ├── apps/
-│   └── web/              React web app (presentation layer)
+│   └── web/              React 19 + Vite 6 PWA (Presentation Layer)
 ├── packages/
-│   ├── domain/           Types, enums, pure domain rules
-│   ├── database/         Repositories and data access
-│   ├── services/         Service interfaces and implementations
-│   ├── ui/               Shared UI components
+│   ├── domain/           Types, enums, pure DDD business logic, tax math, state machines
+│   ├── database/         Repositories, Supabase DB client bindings
+│   ├── services/         Hexagonal service layer, external adapters, communications queue
+│   ├── ui/               Shared UI components & design tokens
 │   └── config/           Shared TypeScript / tooling config
-├── supabase/             Migrations, Edge Functions, seed
-├── tests/                Unit and integration tests
-├── scripts/              Dev and ops scripts
+├── supabase/
+│   ├── migrations/       PostgreSQL 15 SQL migrations (00001 through 00183)
+│   └── functions/        Deno Edge Functions (payment-webhook, etc.)
+├── docs/                 Canonical platform specifications (00 to 15 + Runbook)
+├── archive/
+│   └── qa/               Archived historical QA passes & legacy milestone reports
+├── qa/
+│   └── release/          Active release certification & operational checklists
+├── scripts/              Ops, build, test, backup, and deployment automation
+├── tests/                Master integration, security, demo, and functional test suites
 └── README.md
 ```
+
+---
 
 ## MVP Golden Path (Pilot 1)
 
 **10 HP Borewell Motor Winding** — local facility service in Bengaluru. Same engine for MSME, textile, or local business pilots:
 
-Requirement → Discovery → RFQ → Identity-Protected Evaluation → Market Intelligence → Committee Vote → Award → Reveal → PO → Work Order → Invoice → Payment → Performance → Audit
+Requirement → Discovery → RFQ → Identity-Protected Evaluation → Market Intelligence → Committee Vote → Award → Contract Gate → Reveal → PO → Work Order → Inspection → Invoice → Payment → Performance → Audit
+
+---
 
 ## Tech Stack
 
-- **Frontend:** React, TypeScript, Tailwind, shadcn-style UI, Vite, PWA
-- **Backend:** Supabase (PostgreSQL, Auth, RLS, Edge Functions, Storage)
-- **Monorepo:** pnpm workspaces
+- **Frontend:** React 19, TypeScript, Tailwind CSS, Vite 6, PWA, Lucide Icons
+- **Backend:** Supabase (PostgreSQL 15, GoTrue Auth, RLS, PostgREST, Realtime, Storage)
+- **Monorepo:** pnpm 9.15 workspaces
+- **Messaging:** Self-hosted WAHA (WhatsApp Web API) + Gmail SMTP (TLS 587)
+- **Testing:** Vitest, Playwright, Deno Test
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
 - **Node.js 20+**
-- **pnpm 9.15+** — enable via Corepack (bundled with Node):
+- **pnpm 9.15+** — enable via Corepack:
   ```bash
   corepack enable
   corepack prepare pnpm@9.15.0 --activate
   ```
-  On Windows, if `corepack enable` fails with `EPERM` you need an elevated
-  PowerShell (Corepack writes shims into the Node install directory).
-  Alternative: install pnpm directly with `npm install -g pnpm@9.15.0`, or use
-  Volta / fnm.
 - **Supabase CLI** — <https://supabase.com/docs/guides/cli>
 
 ### First run
@@ -154,35 +144,41 @@ pnpm install
 # Start Supabase locally
 pnpm db:start
 
-# Run database migrations + seed the borewell walkthrough
+# Run database migrations (00001 - 00183) + seed demo data
 pnpm db:reset
 
 # Start web app (http://localhost:3000)
 pnpm dev
 ```
 
-The dev server runs on **port 3000** (`strictPort`), matching the Supabase auth
-redirect URLs in [supabase/config.toml](supabase/config.toml).
+The dev server runs on **port 3000** (`strictPort`), matching the Supabase auth redirect URLs in [supabase/config.toml](supabase/config.toml).
 
-### Production & Testing
+---
 
-- **Master Regression Suite:** `pnpm test:regression` (579 tests, 100% pass across 12 layers)
-- **Pre-Deployment Gate:** `pnpm gate:verify`
+## Production & Testing
+
+- **Master Automated Test Battery:** `pnpm test` (**1,355 Vitest tests across 139 test files, 100% green**)
+- **TypeScript Workspace Check:** `pnpm typecheck`
+- **Canonical Vocabulary Check:** `pnpm test:vocab` (0 violations)
+- **Staging Verification Gate:** `pnpm gate:verify`
 - **Full Architecture & Production Review:** [15-PRODUCTION-READINESS-AND-CTO-CLEARANCE-REPORT.md](docs/15-PRODUCTION-READINESS-AND-CTO-CLEARANCE-REPORT.md)
 - **Deployment Operations:** [10-DEPLOYMENT-AND-TUNNEL-OPERATIONS.md](docs/10-DEPLOYMENT-AND-TUNNEL-OPERATIONS.md)
+- **Standalone Operations CLI:** `.\scripts\otp.ps1`
+
+---
 
 ## Engineering Rules
 
-- TypeScript strict mode
-- Business logic in `packages/domain` and `packages/services` — not in React components
+- TypeScript strict mode across all workspace packages
+- Business logic in `packages/domain` and `packages/services` — never in React components
 - Database access in `packages/database` repositories
-- Server-side identity-protected evaluation — no supplier PII in client payloads pre-reveal
+- Server-side identity-protected evaluation — zero supplier PII in client payloads pre-reveal
 - External supplier networks via `SupplierNetworkPort` adapters (discovery only)
-- All state transitions generate audit events
+- Non-custodial settlement: direct buyer-to-supplier payments with double-entry ledger tracking
+- All state transitions generate immutable audit events
+
+---
 
 ## License
 
 Proprietary — OTP Platform
-#   o t p p l a t f o r m 
- 
- 

@@ -1,7 +1,7 @@
 # OTP Platform — Master Documentation Suite
 **Official Technical, Architectural & Operational Documentation Library**  
 *Open Trade & Procurement (OTP) Platform — Identity-Protected Institutional Procurement*  
-*Canonical Workspace:* `G:\My Drive\otp` | *Last Updated:* September 2026
+*Canonical Workspace:* `G:\My Drive\otp` | *Certified Baseline:* Series-6 Production Architecture | *Last Updated:* September 2026
 
 ---
 
@@ -13,74 +13,79 @@ Unlike commercial auction houses, public tender directories, or vendor listing s
 
 ---
 
-## Core Operational Parameters
+## Core Operational Parameters (Series-6 Certified Baseline)
 
 | Parameter | Production Value | Verification Status |
 | :--- | :--- | :---: |
 | **Live Public Endpoint** | `https://otpplatform-theta.vercel.app` | 🟢 HTTP 200 OK |
-| **Local Application Port** | `http://localhost:3000` (Vite PWA) | 🟢 HTTP 200 OK |
+| **Local Application Port** | `http://localhost:3000` (Vite 6 PWA) | 🟢 HTTP 200 OK |
 | **Canonical Workspace** | `G:\My Drive\otp` (Exclusively; secondary junctions/aliases strictly prohibited) | 🟢 Enforced |
 | **Primary Super Administrator** | **Baskar Loganathan** (`bvnbasu@gmail.com`) | 🟢 Verified OWNER |
 | **Containerized Services** | 6 Production Docker Containers (`otp-prod-*`) | 🟢 Healthy |
 | **WhatsApp Gateway** | WAHA Paired Container (`otp_whatsapp_gateway`, Port `3008`) | 🟢 Session WORKING |
 | **Email SMTP Gateway** | Gmail SMTP SSL (`bvnbasu@gmail.com`, Port `587`) | 🟢 Verified Live |
 | **Support & Ticket Routing** | Centralized automated routing to `bvnbasu@gmail.com` | 🟢 Verified Live |
-| **Core Procurement States** | 8 States (`DRAFT`, `QUOTING`, `EVALUATING`, `AWARDED`, `PO_ISSUED`, `INVOICED`, `SETTLED`, `STALLED`) | 🟢 Verified Live |
+| **Linear State Machine** | 15-Step Monotonic Engine (`STEP_1_SPEC_SUBMITTED` $\rightarrow$ `STEP_15_STAR_RATING_JUSTIFICATION`) | 🟢 Verified Live |
+| **Core Procurement States** | 8 Canonical Lifecycle States (`DRAFT`, `QUOTING`, `EVALUATING`, `AWARDED`, `PO_ISSUED`, `INVOICED`, `SETTLED`, `STALLED`) | 🟢 Verified Live |
+| **Financial Accounting** | Double-Entry Ledger, Non-Custodial Settlement, `0.50%` Supplier Platform Fee, `0.10%` Buyer Sourcing Reward, Organization Wallets | 🟢 Verified Live |
+| **Vendor Intelligence (VMI)** | 35/30/20/15 Dimensional Scorecard (Quality, Delivery, SLA/Disputes, Commercial), Performance Tiers & Anonymized Badges | 🟢 Verified Live |
+| **Enterprise Governance** | Multi-Tier Approval Matrix (<₹5L Tier 1, ₹5L–₹25L Tier 2, >₹25L Tier 3) with Anti-Bypass Guards | 🟢 Verified Live |
+| **Tamper-Evident Contracts** | SHA-256 Hashed Markdown Contracts with Bilateral Digital Sign-Offs (Step 11 Contract Gate) | 🟢 Verified Live |
+| **Inspections & Disputes** | 5-Point Milestone Inspection Checklists, Digital Signatures, 7 Dispute Artifacts, 4 Severity Levels, SLA Timers, 4-Tier Escalation | 🟢 Verified Live |
+| **Multimodal Intake** | Voice, Text, Document, Photo Capture with Buyer Confirmation Authority Boundary | 🟢 Verified Live |
+| **Device & Privacy Hardening** | Camera & Microphone Track Teardown, Geolocation Fallback, Web Share, EXIF/PDF Metadata Scrubbing | 🟢 Verified Live |
 | **SMS Gateway** | Permanently Disabled (Zero-Cost Communication Policy) | 🟢 Enforced |
-| **Production Data Retention** | Permanent Retention of Production DB, Orders & Users (Migration 00125+) | 🟢 Locked & Enforced |
-| **Staging Verification Gate** | `pnpm gate:verify` (828 Automated Checks, 100% Pass Required) | 🟢 100% Passed (828/828) |
-| **End-to-End Test Suite** | Vitest (235/235 Passed) + Live Smoke Suite (11/11 Passed) | 🟢 100% Passed |
-| **Deployment Pipeline** | Gated Atomic Blue-Green Pipeline (`deploy-prod.ps1`) with Instant Rollback | 🟢 Dry-Run Verified |
-| **Database Migrations** | 161 Tracked Migrations (`00001` to `00161`) via `otp_schema_migrations` | 🟢 Synced |
-| **Prohibited Vocabulary** | Zero tolerance for `bid`, `bidder`, `bidding`, `blind` | 🟢 0 Violations |
-| **Payment Webhooks** | Multi-Gateway Cryptographic HMAC-SHA256 (Razorpay & Stripe) | 🟢 Verified Live |
+| **Production Data Retention** | Permanent Retention of Production DB, Orders & Users (Migrations 00125, 00177+) | 🟢 Locked & Enforced |
+| **Automated Test Battery** | **1,355 Vitest Tests across 139 Test Files** (100% Green, Zero Regressions) | 🟢 1,355/1,355 Passed |
+| **Database Migrations** | **183 Tracked Migrations** (`00001_enums.sql` through `00183_phase6_group6_vendor_intelligence_governance_contracts.sql`) | 🟢 Synced |
+| **Prohibited Vocabulary** | Zero tolerance for `bid`, `bids`, `bidder`, `bidders`, `bidding`, `blind` | 🟢 0 Violations |
+| **Payment Webhooks** | Multi-Gateway Cryptographic HMAC-SHA256 (Razorpay & Stripe) with Idempotent Ledger Settlement | 🟢 Verified Live |
 | **Backup Encryption** | PBKDF2 (100k rounds) + AES-256-CBC with SHA-256 Checksums | 🟢 Verified Live |
-| **SuperAdmin Immutability** | PostgreSQL Trigger & Whitelist Schema (`private_security`) | 🟢 Verified Live |
+| **SuperAdmin Immutability** | PostgreSQL Trigger & Whitelist Schema (`private_security.admin_whitelist`) | 🟢 Verified Live |
 | **Route Security & RBAC** | Centralized `<ProtectedRoute>` & Strict Deep-Link Preservation | 🟢 Verified Live |
-| **E2E Automation** | Playwright & Vitest Multi-Tenant Sourcing Battery (631+ Tests) | 🟢 100% Passed |
 
 ---
 
 ## Documentation Library Map
 
-This documentation library has been consolidated, standardized, and organized into 14 canonical documents plus the Standalone Operations Runbook:
+The platform technical documentation is organized into 15 canonical specifications in [`docs/`](./00-DOCUMENTATION-INDEX.md), supported by the Standalone Operations Runbook and the Historical QA Archive:
 
 ### 1. Fundamentals, Positioning & Governance
 - [**01. Platform Overview & Product Constitution**](./01-PLATFORM-OVERVIEW.md)  
-  *Mission, Core Principles, Identity-Protected Sourcing Philosophy, Canonical Vocabulary Standard, Intellectual Property & Proprietary Innovations.*
+  *Mission, Core Principles, Identity-Protected Sourcing Philosophy, Canonical Vocabulary Standard, Intellectual Property & Proprietary Innovations, Series-6 Monotonic Workflow Architecture.*
 
 - [**02. System Architecture & Technical Specifications**](./02-ARCHITECTURE.md)  
-  *End-to-End System Architecture, Production Docker Compose Stack, Kong API Gateway, PostgREST, Realtime WebSockets, Zero-Cost Telephony.*
+  *End-to-End System Architecture, Production Docker Compose Stack, Kong API Gateway, PostgREST, Realtime WebSockets, Zero-Cost Telephony, Device & Privacy Integrations.*
 
 - [**03. Domain Model, Indian Standards & State Machines**](./03-DOMAIN-MODEL-AND-STATE-MACHINES.md)  
-  *Core Domain Entities, Value Objects, Indian Standards Taxonomy (BIS, FSSAI, HSN/SAC), 8 Canonical Procurement Lifecycle States (`DRAFT`, `QUOTING`, `EVALUATING`, `AWARDED`, `PO_ISSUED`, `INVOICED`, `SETTLED`, `STALLED`), and Automated Settlement.*
+  *Core Domain Entities, Indian Standards Taxonomy (BIS, FSSAI, HSN/SAC), 15-Step Strict Linear Procurement Workflow (`STEP_1` $\rightarrow$ `STEP_15`), 8 Canonical Lifecycle States, Vendor Master Intelligence (VMI), Multi-Tier Enterprise Approval Matrix, Tamper-Evident Contract Operations, Double-Entry Financial Accounting Ledger, and Non-Custodial Settlement.*
 
 ### 2. Lifecycles, User Experience & Data Layer
 - [**04. End-to-End Workflows & Interaction Sequences (Callflows)**](./04-WORKFLOWS-AND-CALLFLOWS.md)  
-  *Fast Track (2-Step) Flow, Full Governance (4-Step) Committee Flow, Supplier Sourcing Callflows, and WhatsApp Real-Time Notification Sequences.*
+  *Fast Track (2-Step) Intake, Full Governance (4-Step) Committee Flow, Multimodal Requirement Capture (Voice, Text, Document, Photo), Buyer Confirmation Authority Boundary, Omnichannel Communications (WAHA WhatsApp, Email SMTP, In-App), Milestone Inspections, and Dispute Escalation Sequences.*
 
 - [**05. UI/UX Design System & Experience Specifications**](./05-UI-UX-DESIGN-SYSTEM.md)  
-  *Visual Token Architecture, Responsive Mobile-First PWA, Identity-Protected Comparison Room, Committee Voting Room, Decision Receipts, Support Help Modal Sheet, and Universal Home Navigation.*
+  *Visual Token Architecture, Responsive Mobile-First PWA, Identity-Protected Comparison Room, Committee Voting Room, Decision Receipts, Support Help Modal Sheet, Universal Home Navigation, Camera/Microphone Track Teardown, and Device Capabilities.*
 
 - [**06. Database Schema, Migrations & Row-Level Security (RLS)**](./06-DATABASE-AND-RLS-POLICIES.md)  
-  *PostgreSQL 15 Schema, 161 Applied Migrations (`00001` - `00161`), Core Entity Tables, Cryptographic RPCs, Identity-Protected Views, and Cross-Tenant RLS Policies.*
+  *PostgreSQL 15 Schema, 183 Applied Migrations (`00001` - `00183`), Core Entity Tables, Financial Ledgers, Wallet Balances, Scorecard Tables, Cryptographic RPCs, Identity-Protected Views, and Cross-Tenant RLS Policies.*
 
 ### 3. Security, Operations & Deployment
 - [**07. Security, Privacy & Backup/Restore Posture**](./07-SECURITY-PRIVACY-BACKUP.md)  
-  *Photo EXIF & PDF Metadata Sanitization, Social Handle Redaction, Daily Automated Database Backups (`backup-prod-db.ps1`), 30-Day Retention, Disaster Recovery.*
+  *Photo EXIF & PDF Metadata Sanitization, Contact Redaction, Device Permissions, PBKDF2/AES-256 Automated Database Backups (`backup-prod-db.ps1`), 30-Day Retention, Disaster Recovery, and Contract SHA-256 Hashes.*
 
 - [**08. Demo/Pilot Mode vs. Production Architecture**](./08-DEMO-PILOT-VS-PRODUCTION.md)  
-  *Synthetic Demo Isolation, Benchmark RWA Organization, 39 Verified Domain Suppliers, Demo Scenarios & Reset State.*
+  *Synthetic Demo Isolation, Benchmark RWA Organization, 16 Verified Domain Suppliers across 5 Verticals, Demo Scenarios & Reset State.*
 
 - [**09. Comprehensive Feature Specifications by Module**](./09-MODULE-FEATURE-SPECIFICATIONS.md)  
-  *Detailed Feature Guide across Super Admin Console (`/admin` with SQL Query Terminal, Buyer Troubleshooter, Seller Troubleshooter, Telemetry & Support Tickets), Buyer Portal (`/requirements`, `/rfq`), and Supplier Portal (`/supplier`).*
+  *Detailed Feature Guide across Super Admin Console (`/admin` with SQL Query Terminal, Buyer/Seller Troubleshooter, Telemetry & Support Tickets), Buyer Portal (`/requirements`, `/rfq`), Supplier Portal (`/supplier`), Contract Gate, Milestone Inspections, and Dispute Management.*
 
 - [**10. Deployment, Production Operations & Vercel Edge Hosting**](./10-DEPLOYMENT-AND-TUNNEL-OPERATIONS.md)  
   *Gated Blue-Green Deployment Pipeline (`deploy-prod.ps1`), Staging Gate Enforcement, Static Vercel Edge CDN Hosting, Production Zero-Downtime Old-Code Protection.*
 
 ### 4. Quality Assurance, Testing & Maintenance
 - [**11. Testing Architecture, Master Regression & Superadmin Test Center**](./11-TESTING-AND-REGRESSION-SUITE.md)  
-  *Staging Verification Gate (828 Tests across 12 Layers), Master Regression Suite (`pnpm test:regression`), Staging Gate Certificate, and Superadmin Interactive Test Runner (`/admin?tab=tests`).*
+  *1,355 Vitest Test Inventory across 139 Test Files, Staging Verification Gate, Master Regression Suite (`pnpm test:regression`), Staging Gate Certificate, and Superadmin Interactive Test Runner (`/admin?tab=tests`).*
 
 - [**12. Maintenance, Updates & Real-Time Alert Pipeline**](./12-MAINTENANCE-AND-ALERTS-PIPELINE.md)  
   *Zero-Data-Loss Maintenance Pipeline (`update-live.ps1`), Mandatory Pre-Maintenance DB Snapshots, Hard Production Safety Locks, Automated Dual Pre/Post Alerts (Gmail SMTP + WhatsApp WAHA).*
@@ -93,10 +98,24 @@ This documentation library has been consolidated, standardized, and organized in
   *Enterprise VAPT, SAST/DAST, Zero-BOLA/IDOR Enforcement, Multi-Factor Authentication, Cryptographic Key Isolation, ONDC/Beckn Digital Signing, and Immutable Audit Logging.*
 
 - [**15. Production Readiness Review & Official CTO Clearance Report**](./15-PRODUCTION-READINESS-AND-CTO-CLEARANCE-REPORT.md)  
-  *50-Domain Comprehensive Review, Competitive Matrix, Risk Register, Data Retention Schedule, Mobile Viewport Audit, 20-Item Backlog Resolution, and CTO Pilot Clearance Verdict.*
+  *50-Domain Comprehensive Review, Series-6 Architecture Certification, 183 Migrations, 1,355 Tests, Risk Register, Data Retention Schedule, and CTO Clearance Verdict.*
 
 - [**Standalone Operations Runbook**](./STANDALONE-OPERATIONS-RUNBOOK.md)  
   *Self-contained operational playbooks (`.\scripts\otp.ps1`), routine maintenance, disaster recovery, zero-data-loss upgrades, and background daemon lifecycle without AI assistance.*
+
+---
+
+## Historical & Superseded QA Archive (`archive/qa/`)
+
+Historical milestone passes, early UI redesign exploration notes, and legacy QA audit logs have been systematically archived into [`archive/qa/`](../archive/qa/README.md) to preserve historical compliance without cluttering the active documentation suite:
+
+| Archive Section | Contents |
+| :--- | :--- |
+| **Legacy Phase 1-3 Passes** | `phase1-activity-profile-mobile.md`, `phase1-execution-settlement-mobile.md`, `phase1-governance-award-mobile.md`, `phase1-supplier-experience-mobile.md`, `phase2-super-admin-control-tower.md`, `phase3-public-experience-auth.md` |
+| **Historical Passes 01-05** | `pass-01-content-ia-audit.md` through `pass-05-final-information-audit.md`, `content-priority-matrix.md` |
+| **UX Redesign Notes** | `buyer-home-mobile-redesign.md`, `create-requirement-mobile.md`, `mobile-shell-redesign.md`, `quote-comparison-mobile.md`, `ux-implementation-report.md`, `ux-master-action-plan.md` |
+| **Legacy Phase Reports (B-F)**| `phase-b-*` (Functional), `phase-c-*` (Security), `phase-d-*` (Integrations), `phase-e-*` (Data State), `phase-f-*` (Release Candidate) |
+| **Interim UAT & Roadmaps** | `uat-internal-simulation-report.md`, `post-qa-lifecycle-roadmap.md` |
 
 ---
 
