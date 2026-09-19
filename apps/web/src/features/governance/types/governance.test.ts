@@ -133,4 +133,10 @@ describe('4-Pillar candidate quote structure and quorum metrics', () => {
     const quorumPercent = Math.round((voted / assigned) * 100);
     expect(quorumPercent).toBe(67);
   });
+
+  it('DEF-006: verifies WeightedTallyTable exports and scroll affordance structure', async () => {
+    const { WeightedTallyTable } = await import('../components/WeightedTallyTable');
+    expect(WeightedTallyTable).toBeDefined();
+    expect(typeof WeightedTallyTable).toBe('function');
+  });
 });

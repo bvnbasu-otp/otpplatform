@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Button } from './Button';
 import { cn } from './cn';
+import { useRoleContext } from '@/features/roles/hooks/use-role-context';
 
 // ============================================================================
 // EMPTY STATE COMPONENT
@@ -341,6 +342,10 @@ export interface ModalProps {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
   className?: string;
   testId?: string;
+  /** When true (default), automatically resets/closes the modal if active role or organization context changes */
+  closeOnContextChange?: boolean;
+  /** Optional callback fired when tenant or role context changes while modal is active */
+  onContextChange?: (detail: { role?: string | null; organizationId?: string | null }) => void;
 }
 
 const MAX_WIDTH_MAP = {
@@ -363,7 +368,64 @@ export function Modal({
   maxWidth = 'lg',
   className = '',
   testId = 'accessible-modal',
+  closeOnContextChange = true,
+  onContextChange,
 }: ModalProps) {
+  // DEF-004: Tenant & Role Context Sync — Listen to active role / organization context changes
+  // so any active modal gracefully resets or notifies when tenant/role changes mid-session.
+  const roleState = useRoleContext();
+  const currentOrgId = roleState?.context?.organizationId ?? null;
+  const currentRoleCode = roleState?.context?.activeRole?.code ?? null;
+
+  const initialContextRef = useRef<{ orgId: string | null; roleCode: string | null }>({
+    orgId: currentOrgId,
+    roleCode: currentRoleCode,
+  });
+
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      initialContextRef.current = {
+        orgId: currentOrgId,
+        roleCode: currentRoleCode,
+      };
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen, currentOrgId, currentRoleCode]);
+
+  useEffect(() => {
+    if (!isOpen || !closeOnContextChange) return;
+
+    if (
+      initialContextRef.current.orgId !== currentOrgId ||
+      initialContextRef.current.roleCode !== currentRoleCode
+    ) {
+      onContextChange?.({ organizationId: currentOrgId, role: currentRoleCode });
+      onClose();
+    }
+  }, [isOpen, currentOrgId, currentRoleCode, closeOnContextChange, onClose, onContextChange]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleWindowContextChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ role?: string; organizationId?: string; activeRoleCode?: string }>;
+      if (isOpen) {
+        onContextChange?.({
+          organizationId: customEvent.detail?.organizationId,
+          role: customEvent.detail?.role || customEvent.detail?.activeRoleCode,
+        });
+        if (closeOnContextChange) {
+          onClose();
+        }
+      }
+    };
+
+    window.addEventListener('otp:role-context-change', handleWindowContextChange);
+    return () => window.removeEventListener('otp:role-context-change', handleWindowContextChange);
+  }, [isOpen, closeOnContextChange, onClose, onContextChange]);
+
   useEffect(() => {
     if (isOpen) {
       const originalOverflow = document.body.style.overflow;

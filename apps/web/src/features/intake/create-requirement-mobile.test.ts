@@ -257,6 +257,28 @@ describe('Create Requirement Mobile Redesign — Progressive Flow & Invariants',
       expect(normalized.weights.commercial).toBe(40);
     });
 
+    it('DEF-003: dynamically computes quorum explanation badge for sourcing modes', () => {
+      const getQuorumHelper = (mode: string) => {
+        switch (mode) {
+          case 'IDENTITY_PROTECTED':
+            return '🛡️ Identity-Protected Quorum: Minimum 3 sealed quotes recommended for unbiased commercial & technical merit evaluation before unsealing.';
+          case 'OPEN_RFQ':
+            return '📢 Open RFQ Quorum: Minimum 3 quotes recommended (up to 5) for healthy competitive tender benchmarking across verified suppliers.';
+          case 'INVITE_SELECTED':
+            return '🎯 Direct Curated Quorum: Minimum 2–3 quotes recommended from specifically invited suppliers.';
+          case 'PREVIOUS_SUPPLIERS':
+            return '🤝 Network Quorum: Minimum 1–2 quotes required from your verified past supplier relationships.';
+          default:
+            return 'Optimal competitive pricing is achieved with 3+ quotes.';
+        }
+      };
+
+      expect(getQuorumHelper('IDENTITY_PROTECTED')).toContain('Minimum 3 sealed quotes');
+      expect(getQuorumHelper('OPEN_RFQ')).toContain('Minimum 3 quotes recommended');
+      expect(getQuorumHelper('INVITE_SELECTED')).toContain('2–3 quotes');
+      expect(getQuorumHelper('PREVIOUS_SUPPLIERS')).toContain('1–2 quotes');
+    });
+
     it('prevents double submissions by disabling submit handler while isPublishing is true', () => {
       let callCount = 0;
       const isPublishing = true;

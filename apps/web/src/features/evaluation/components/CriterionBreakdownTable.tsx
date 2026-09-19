@@ -107,77 +107,85 @@ export function CriterionBreakdownTable({
         </p>
       )}
 
-      <div className="overflow-x-auto" data-testid="criterion-breakdown-table">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Supplier</th>
-              {codes.map((code) => (
-                <th key={code} className="px-4 py-3 text-right font-medium">
-                  {nameFor.get(code) ?? code}
-                  <span className="ml-1 font-normal normal-case">
-                    ({weightFor.get(code) ?? 0}%)
-                  </span>
-                </th>
-              ))}
-              <th className="px-4 py-3 text-right font-medium">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {evaluations.map((evaluation, index) => (
-              <tr
-                key={evaluation.evaluationId}
-                className={`border-b last:border-0 ${index === 0 ? 'bg-accent/60' : ''}`}
-                data-testid={`breakdown-row-${evaluation.anonymousLabel.replace(/\s+/g, '-')}`}
-              >
-                <td className="px-4 py-3 font-medium">
-                  {evaluation.anonymousLabel}
-                  {evaluation.status === 'STALE' && (
-                    <Badge tone="warning" className="ml-2">
-                      Stale
-                    </Badge>
-                  )}
-                </td>
+      <div className="relative overflow-hidden group" data-testid="criterion-breakdown-container">
+        {/* Subtle mobile horizontal scroll indicator & gradient edge fade */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card via-card/80 to-transparent sm:hidden z-10" />
+        <div className="sm:hidden absolute right-2 top-2 pointer-events-none z-10 flex items-center gap-1 rounded bg-background/90 px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground backdrop-blur-xs border shadow-2xs">
+          <span>↔ Scroll</span>
+        </div>
 
-                {codes.map((code) => {
-                  const score = evaluation.criteria.find((c) => c.code === code);
-                  if (!score) {
+        <div className="overflow-x-auto" data-testid="criterion-breakdown-table">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="border-b bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-medium">Supplier</th>
+                {codes.map((code) => (
+                  <th key={code} className="px-4 py-3 text-right font-medium">
+                    {nameFor.get(code) ?? code}
+                    <span className="ml-1 font-normal normal-case">
+                      ({weightFor.get(code) ?? 0}%)
+                    </span>
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-right font-medium">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {evaluations.map((evaluation, index) => (
+                <tr
+                  key={evaluation.evaluationId}
+                  className={`border-b last:border-0 ${index === 0 ? 'bg-accent/60' : ''}`}
+                  data-testid={`breakdown-row-${evaluation.anonymousLabel.replace(/\s+/g, '-')}`}
+                >
+                  <td className="px-4 py-3 font-medium">
+                    {evaluation.anonymousLabel}
+                    {evaluation.status === 'STALE' && (
+                      <Badge tone="warning" className="ml-2">
+                        Stale
+                      </Badge>
+                    )}
+                  </td>
+
+                  {codes.map((code) => {
+                    const score = evaluation.criteria.find((c) => c.code === code);
+                    if (!score) {
+                      return (
+                        <td key={code} className="px-4 py-3 text-right text-muted-foreground">
+                          —
+                        </td>
+                      );
+                    }
+
                     return (
-                      <td key={code} className="px-4 py-3 text-right text-muted-foreground">
-                        —
+                      <td key={code} className="px-4 py-3 text-right tabular-nums">
+                        <span className={score.neutral ? 'text-muted-foreground' : ''}>
+                          {score.normalized.toFixed(0)}
+                        </span>
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          (+{score.contribution.toFixed(1)})
+                        </span>
+                        {score.neutral && (
+                          <span
+                            className="block text-[10px] text-muted-foreground"
+                            title="Nothing comparable to score, so it scored neutrally"
+                          >
+                            not stated
+                          </span>
+                        )}
                       </td>
                     );
-                  }
+                  })}
 
-                  return (
-                    <td key={code} className="px-4 py-3 text-right tabular-nums">
-                      <span className={score.neutral ? 'text-muted-foreground' : ''}>
-                        {score.normalized.toFixed(0)}
-                      </span>
-                      <span className="ml-1 text-xs text-muted-foreground">
-                        (+{score.contribution.toFixed(1)})
-                      </span>
-                      {score.neutral && (
-                        <span
-                          className="block text-[10px] text-muted-foreground"
-                          title="Nothing comparable to score, so it scored neutrally"
-                        >
-                          not stated
-                        </span>
-                      )}
-                    </td>
-                  );
-                })}
-
-                <td className="px-4 py-3 text-right font-semibold tabular-nums">
-                  {evaluation.evaluationScore === null
-                    ? '—'
-                    : evaluation.evaluationScore.toFixed(1)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <td className="px-4 py-3 text-right font-semibold tabular-nums">
+                    {evaluation.evaluationScore === null
+                      ? '—'
+                      : evaluation.evaluationScore.toFixed(1)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <p className="border-t px-4 py-3 text-xs text-muted-foreground">

@@ -631,6 +631,7 @@ export const FinancialControlDashboardPage: React.FC<
             type="button"
             onClick={() => handleExportAuditPack('JSON')}
             disabled={exporting !== null}
+            title={(summary?.totalPaid ?? 0) === 0 ? 'Tally XML and Zoho JSON export manifests require at least 1 recorded payment allocation in the financial ledger.' : 'Export Financial Audit Pack in JSON format'}
             className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition disabled:opacity-50"
           >
             {exporting === 'JSON' ? 'Exporting…' : '📥 Audit Pack (JSON)'}
@@ -639,12 +640,26 @@ export const FinancialControlDashboardPage: React.FC<
             type="button"
             onClick={() => handleExportAuditPack('CSV')}
             disabled={exporting !== null}
+            title={(summary?.totalPaid ?? 0) === 0 ? 'Tally XML and Zoho JSON export manifests require at least 1 recorded payment allocation in the financial ledger.' : 'Export Financial Audit Pack in CSV format'}
             className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition disabled:opacity-50"
           >
             {exporting === 'CSV' ? 'Exporting…' : '📊 Audit Pack (CSV)'}
           </button>
         </div>
       </div>
+
+      {/* DEF-005: ERP Export Inactivity Notice when 0 payments are recorded */}
+      {(summary && summary.totalPaid === 0) && (
+        <div
+          className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2 shadow-2xs"
+          data-testid="erp-export-inactivity-notice"
+        >
+          <span className="text-base">ℹ️</span>
+          <span className="font-medium">
+            Tally XML and Zoho JSON export manifests require at least 1 recorded payment allocation in the financial ledger.
+          </span>
+        </div>
+      )}
 
       {errorMsg && (
         <div className="p-3 bg-destructive/10 text-destructive rounded-lg border border-destructive/20 text-xs font-medium">
@@ -1419,8 +1434,14 @@ export const FinancialControlDashboardPage: React.FC<
           </div>
 
           {manifests.length === 0 ? (
-            <div className="text-center py-8 text-xs text-muted-foreground border border-dashed rounded-lg">
-              No statutory ERP export manifests generated yet. Manifests are recorded upon Tally, Zoho, or Audit Pack exports.
+            <div className="text-center py-8 text-xs text-muted-foreground border border-dashed rounded-lg space-y-2">
+              <p>No statutory ERP export manifests generated yet. Manifests are recorded upon Tally, Zoho, or Audit Pack exports.</p>
+              {(summary?.totalPaid ?? 0) === 0 && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-[11px] font-medium" data-testid="erp-manifests-inactivity-badge">
+                  <span>ℹ️</span>
+                  <span>Tally XML and Zoho JSON export manifests require at least 1 recorded payment allocation in the financial ledger.</span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">

@@ -59,5 +59,18 @@ describe('TemplatesAndExamplesModal & Buyer Confirmation Authority Suite', () =>
       expect(element).toBeDefined();
       expect(element.type).toBe(TemplatesAndExamplesModal);
     });
+
+    it('DEF-001: verifies responsive spec wrapping and category attributes on templates', () => {
+      for (const tmpl of CANONICAL_TEMPLATES) {
+        expect(tmpl.category.length).toBeGreaterThan(0);
+        expect(tmpl.subcategory.length).toBeGreaterThan(0);
+        const specs = Object.entries(tmpl.specifications);
+        expect(specs.length).toBeGreaterThanOrEqual(2);
+        for (const [key, val] of specs) {
+          expect(key.length).toBeGreaterThan(0);
+          expect(val.length).toBeGreaterThan(0);
+        }
+      }
+    });
   });
 });

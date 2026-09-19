@@ -314,6 +314,7 @@ export function WhatDoYouNeedStep({
               busyLabel="Analyzing with AI…"
               onClick={() => void runParser(text.trim())}
               className="min-h-[40px] px-3.5"
+              data-testid="re-extract-btn"
             >
               ⚡ Re-Extract with AI
             </Button>
@@ -450,13 +451,18 @@ export function WhatDoYouNeedStep({
 
         {error && <p className="mt-3 text-sm text-red-600 font-medium">{error}</p>}
 
-        <div className="mt-5 pt-3 border-t border-border/70 flex items-center justify-end">
+        {/* Action bar with mobile sticky clearance */}
+        <div className="mt-5 pt-3 border-t border-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sticky bottom-0 sm:static z-20 bg-card/95 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none p-2 sm:p-0 rounded-b-xl sm:rounded-none">
+          <div className="hidden sm:block text-[11px] text-muted-foreground">
+            Step 1 of 6: Classification &amp; Scope
+          </div>
           <Button
             type="button"
             onClick={handleSubmit}
             busy={isBusy || isParsing}
             busyLabel="Saving Requirement…"
-            className="min-h-[48px] w-full sm:w-auto font-extrabold text-xs sm:text-sm shadow-xs mobile-touch-target"
+            className="min-h-[48px] w-full sm:w-auto font-extrabold text-xs sm:text-sm shadow-md mobile-touch-target"
+            data-testid="continue-step-btn"
           >
             Continue →
           </Button>

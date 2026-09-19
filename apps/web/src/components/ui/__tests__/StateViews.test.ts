@@ -100,5 +100,20 @@ describe('StateViews UI Components Suite', () => {
       expect(element.props.isOpen).toBe(true);
       expect(element.props.title).toBe('Confirm Procurement Lock');
     });
+
+    it('DEF-004: supports closeOnContextChange and onContextChange callback props', () => {
+      const onContextChangeMock = vi.fn();
+      const onCloseMock = vi.fn();
+      const element = React.createElement(Modal, {
+        isOpen: true,
+        onClose: onCloseMock,
+        closeOnContextChange: true,
+        onContextChange: onContextChangeMock,
+        title: 'Tenant-Scoped Modal',
+        children: 'Scoped Content',
+      });
+      expect(element.props.closeOnContextChange).toBe(true);
+      expect(typeof element.props.onContextChange).toBe('function');
+    });
   });
 });

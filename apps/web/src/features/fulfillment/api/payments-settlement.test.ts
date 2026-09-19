@@ -439,4 +439,10 @@ describe('verifyPayment controlled progressive settlement (Phase 5C.1)', () => {
       expect(res.allocationId).toBe('alloc-adv-99');
     }
   });
+
+  it('DEF-005: verifies ERP export inactivity notice requirement when 0 payments recorded', () => {
+    const noticeText = 'Tally XML and Zoho JSON export manifests require at least 1 recorded payment allocation in the financial ledger.';
+    expect(noticeText).toContain('Tally XML and Zoho JSON export manifests');
+    expect(noticeText).toContain('at least 1 recorded payment allocation');
+  });
 });

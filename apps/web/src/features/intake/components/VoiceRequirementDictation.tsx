@@ -246,11 +246,11 @@ export function VoiceRequirementDictation({
         </div>
       </div>
 
-      <div className="mt-2.5 flex items-center gap-2">
+      <div className="mt-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <button
           type="button"
           onClick={toggleListening}
-          className={`flex-1 min-h-[44px] rounded-xl px-4 py-2.5 text-xs font-extrabold transition shadow-2xs flex items-center justify-center gap-2 border ${
+          className={`flex-1 min-h-[44px] rounded-xl px-4 py-2.5 text-xs font-extrabold transition shadow-2xs flex items-center justify-center gap-2 border mobile-touch-target ${
             isListening
               ? 'bg-red-600 text-white border-red-700 animate-pulse'
               : 'bg-primary text-primary-foreground border-primary hover:bg-primary/90'
@@ -258,7 +258,7 @@ export function VoiceRequirementDictation({
           data-testid="voice-dictate-main-btn"
         >
           <span className="text-sm">{isListening ? '⏹️' : '🎙️'}</span>
-          <span>
+          <span className="text-center">
             {isListening
               ? `Listening in ${currentLang.nativeLabel}… Tap to Complete`
               : `Tap to Speak in ${currentLang.label} (${currentLang.nativeLabel})`}
@@ -272,7 +272,7 @@ export function VoiceRequirementDictation({
             setInterimTranscript(currentLang.samplePhrase);
             onTranscript(currentLang.samplePhrase);
           }}
-          className="rounded-xl border bg-muted/30 px-3 py-2 text-[11px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px] shrink-0"
+          className="rounded-xl border bg-muted/30 px-3 py-2 text-[11px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px] shrink-0 mobile-touch-target"
           title="Fill with regional sample phrase"
         >
           ⚡ Sample

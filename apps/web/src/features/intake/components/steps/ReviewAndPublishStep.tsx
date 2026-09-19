@@ -122,6 +122,22 @@ export function ReviewAndPublishStep({
   const criterionName = new Map(criteria.map((c) => [c.code, c.name]));
   const normalizedWeights = safeNormalize(weights);
 
+  // DEF-003: Dynamic quorum explanation helper text and badge based on active sourcing mode
+  const quorumHelper = useMemo(() => {
+    switch (sourcingMode) {
+      case 'IDENTITY_PROTECTED':
+        return '🛡️ Identity-Protected Quorum: Minimum 3 sealed quotes recommended for unbiased commercial & technical merit evaluation before unsealing.';
+      case 'OPEN_RFQ':
+        return '📢 Open RFQ Quorum: Minimum 3 quotes recommended (up to 5) for healthy competitive tender benchmarking across verified suppliers.';
+      case 'INVITE_SELECTED':
+        return '🎯 Direct Curated Quorum: Minimum 2–3 quotes recommended from specifically invited suppliers.';
+      case 'PREVIOUS_SUPPLIERS':
+        return '🤝 Network Quorum: Minimum 1–2 quotes required from your verified past supplier relationships.';
+      default:
+        return 'Optimal competitive pricing is achieved with 3+ quotes.';
+    }
+  }, [sourcingMode]);
+
   // Validate required vs optional domain fields
   const missingValidation = useMemo(() => {
     const errors: Array<{ message: string; stepIndex: number; label: string }> = [];
@@ -606,15 +622,24 @@ export function ReviewAndPublishStep({
           <div className="grid gap-3 sm:grid-cols-2">
             <Field
               label="Quorum (Minimum Quotes Needed)"
-              help="Optimal competitive pricing is achieved with 3+ quotes."
+              help={quorumHelper}
             >
               {({ id }) => (
-                <NumberInput
-                  id={id}
-                  min={1}
-                  value={minQuotes}
-                  onValueChange={setMinQuotes}
-                />
+                <div className="space-y-1.5">
+                  <NumberInput
+                    id={id}
+                    min={1}
+                    value={minQuotes}
+                    onValueChange={setMinQuotes}
+                  />
+                  <div
+                    className="rounded-lg border border-primary/20 bg-primary/5 p-2 text-[11px] text-foreground flex items-start gap-1.5 animate-in fade-in-50"
+                    data-testid="quorum-explanation-badge"
+                  >
+                    <span className="shrink-0 mt-0.5">ℹ️</span>
+                    <span className="leading-snug">{quorumHelper}</span>
+                  </div>
+                </div>
               )}
             </Field>
 

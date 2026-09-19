@@ -54,38 +54,46 @@ export function WeightedTallyTable({
       {tally.length === 0 ? (
         <p className="text-xs text-muted-foreground p-2">No recommendations yet.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b bg-muted/30 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-3 py-2 font-bold">Candidate</th>
-                <th className="px-3 py-2 text-right font-bold">Weight</th>
-                <th className="px-3 py-2 text-right font-bold">Share</th>
-                <th className="px-3 py-2 text-right font-bold">Members</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tally.map((row) => (
-                <tr
-                  key={row.anonymousLabel}
-                  className={
-                    highlightQuoteId && row.quoteId === highlightQuoteId
-                      ? 'border-b bg-primary/10 font-bold'
-                      : 'border-b'
-                  }
-                >
-                  <td className="px-3 py-2 font-medium">{row.anonymousLabel}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{row.recommendWeight}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                    {totalWeight > 0
-                      ? `${Math.round((row.recommendWeight / totalWeight) * 100)}%`
-                      : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{row.recommendCount}</td>
+        <div className="relative rounded-xl border overflow-hidden group" data-testid="weighted-tally-container">
+          {/* Subtle mobile scroll indicator & gradient edge fade */}
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card via-card/80 to-transparent sm:hidden z-10" />
+          <div className="sm:hidden absolute right-2 top-2 pointer-events-none z-10 flex items-center gap-1 rounded bg-background/90 px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground backdrop-blur-xs border shadow-2xs">
+            <span>↔ Scroll</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[320px] text-xs">
+              <thead>
+                <tr className="border-b bg-muted/30 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-3 py-2 font-bold">Candidate</th>
+                  <th className="px-3 py-2 text-right font-bold">Weight</th>
+                  <th className="px-3 py-2 text-right font-bold">Share</th>
+                  <th className="px-3 py-2 text-right font-bold">Members</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tally.map((row) => (
+                  <tr
+                    key={row.anonymousLabel}
+                    className={
+                      highlightQuoteId && row.quoteId === highlightQuoteId
+                        ? 'border-b bg-primary/10 font-bold'
+                        : 'border-b'
+                    }
+                  >
+                    <td className="px-3 py-2 font-medium">{row.anonymousLabel}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{row.recommendWeight}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                      {totalWeight > 0
+                        ? `${Math.round((row.recommendWeight / totalWeight) * 100)}%`
+                        : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{row.recommendCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

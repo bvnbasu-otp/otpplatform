@@ -55,6 +55,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const result = await switchActiveRole(code);
     if (!result.ok) return { ok: false, error: result.error };
     setContext(result.context);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('otp:role-context-change', {
+          detail: {
+            role: result.context.activeRole?.code,
+            activeRoleCode: result.context.activeRole?.code,
+            organizationId: result.context.organizationId,
+          },
+        }),
+      );
+    }
     return { ok: true };
   }, []);
 
@@ -62,6 +73,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const result = await switchActiveOrganization(orgId);
     if (!result.ok) return { ok: false, error: result.error };
     setContext(result.context);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('otp:role-context-change', {
+          detail: {
+            role: result.context.activeRole?.code,
+            activeRoleCode: result.context.activeRole?.code,
+            organizationId: result.context.organizationId,
+          },
+        }),
+      );
+    }
     return { ok: true };
   }, []);
 
