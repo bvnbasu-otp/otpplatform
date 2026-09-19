@@ -96,7 +96,6 @@ describe('Functional User Workflow & Lifecycle Suite', () => {
       'EVALUATING',
       'AWARDED',
       'PO_ISSUED',
-      'INVOICED',
       'SETTLED',
     ]);
 

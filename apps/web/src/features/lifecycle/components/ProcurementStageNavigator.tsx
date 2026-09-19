@@ -116,7 +116,7 @@ export function ProcurementStageNavigator({
               className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold shadow-2xs border shrink-0 ${activeStageDesc.badgeClass}`}
             >
               <span>{activeStageDesc.icon} </span>
-              <span>Stage {activeStageDesc.stepNumber || 0}/7: {activeStageDesc.shortLabel}</span>
+              <span>Stage {activeStageDesc.stepNumber || 0}/6: {activeStageDesc.shortLabel}</span>
             </span>
           </div>
 
@@ -148,8 +148,8 @@ export function ProcurementStageNavigator({
           </div>
         </div>
 
-        {/* 7-State Golden Path Navigation Stepper Bar */}
-        <nav aria-label="7-State Golden Path Procurement Pipeline" className="pt-1 border-t border-border/60">
+        {/* 6-State Golden Path Navigation Stepper Bar */}
+        <nav aria-label="6-State Golden Path Procurement Pipeline" className="pt-1 border-t border-border/60">
           <ol className="flex items-center justify-between gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             {GOLDEN_PATH_STATES.map((stageKey, idx) => {
               const stageDesc = CORE_PROCUREMENT_STATES[stageKey];
@@ -161,7 +161,7 @@ export function ProcurementStageNavigator({
 
               const stageBadge = (
                 <div
-                  className={`flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 rounded-xl border transition select-none shrink-0 ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-1.5 rounded-xl border transition select-none shrink-0 ${
                     isCurrent
                       ? 'bg-primary text-primary-foreground font-black border-primary shadow-xs ring-2 ring-primary/30'
                       : isDone
@@ -170,7 +170,7 @@ export function ProcurementStageNavigator({
                   }`}
                 >
                   <span
-                    className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black ${
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-black ${
                       isCurrent
                         ? 'bg-white text-primary'
                         : isDone
@@ -180,14 +180,19 @@ export function ProcurementStageNavigator({
                   >
                     {isDone ? '✓' : idx + 1}
                   </span>
-                  <span className="text-[11px] font-bold whitespace-nowrap">
-                    {stageDesc.icon} {stageDesc.shortLabel}
+                  <span className="text-xs shrink-0">{stageDesc.icon}</span>
+                  <span
+                    className={`text-[11px] font-bold whitespace-nowrap truncate max-w-[90px] sm:max-w-none ${
+                      isCurrent ? 'inline' : 'hidden sm:inline'
+                    }`}
+                  >
+                    {stageDesc.shortLabel}
                   </span>
                 </div>
               );
 
               return (
-                <li key={stageKey} className="flex-1 min-w-[75px] xs:min-w-[90px] sm:min-w-0">
+                <li key={stageKey} className="shrink-0 sm:flex-1">
                   {isClickable ? (
                     <Link
                       to={targetUrl}
@@ -274,175 +279,175 @@ export function ProcurementStageNavigator({
         )}
       </div>
 
-      {/* 2. Fixed/Sticky Bottom Lifecycle Progress Bar (7 Golden Path + 15 Linear Steps) */}
-      <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 shadow-md backdrop-blur transition-all pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))]" aria-label="Procurement Progress">
-        {/* Expanded Drawer (Upward - Admin Only) */}
-        {isBottomBarExpanded && role === 'admin' && (
-          <div className="border-b border-border bg-card/98 p-3 shadow-inner max-h-[50vh] overflow-y-auto animate-in slide-in-from-bottom-5">
-            <div className="mx-auto max-w-7xl space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Complete 15-Step Linear Procurement Pipeline
-                </p>
-                <span className="text-xs font-semibold text-primary">
-                  Step {activeLinearStep} of 15: {activeStepDesc.title}
-                </span>
-              </div>
-
-              <nav aria-label="Procurement Lifecycle Stages Full">
-                <ol className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-5">
-                  {PROCUREMENT_STEP_NUMBERS.map((stepNum) => {
-                    const desc = LINEAR_PROCUREMENT_STEPS[stepNum];
-                    const stepState = getLinearStepState(stepNum, activeLinearStep);
-                    const isCurrent = stepState === 'CURRENT';
-                    const isDone = stepState === 'DONE';
-                    const targetUrl = resolveLinearStepUrl(stepNum, ids);
-                    const isClickable = isDone || isCurrent;
-
-                    const content = (
-                      <div
-                        className={`group relative flex flex-col justify-between rounded-lg border p-2 text-left transition ${
-                          isCurrent
-                            ? 'border-primary ring-1 ring-primary/30 bg-primary/5 shadow-2xs font-bold'
-                            : isDone
-                            ? 'border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/40 dark:bg-emerald-950/20 hover:border-emerald-500 cursor-pointer'
-                            : 'border-border/60 bg-muted/20 opacity-60 cursor-not-allowed'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
-                              isCurrent
-                                ? 'bg-primary text-primary-foreground'
-                                : isDone
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-muted text-muted-foreground'
-                            }`}
-                          >
-                            {isDone ? '✓' : stepNum}
-                          </span>
-
-                          <span
-                            className={`text-[8px] font-bold ${
-                              isCurrent
-                                ? 'text-primary'
-                                : isDone
-                                ? 'text-emerald-700 dark:text-emerald-400'
-                                : 'text-muted-foreground'
-                            }`}
-                          >
-                            {isCurrent ? 'ACTIVE' : isDone ? 'DONE' : 'PENDING'}
-                          </span>
-                        </div>
-
-                        <div className="mt-1">
-                          <p
-                            className={`text-[11px] font-bold truncate ${
-                              isCurrent
-                                ? 'text-foreground'
-                                : isDone
-                                ? 'text-foreground group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition'
-                                : 'text-muted-foreground'
-                            }`}
-                          >
-                            {desc.icon} {desc.shortLabel}
-                          </p>
-                          <p className="mt-0.5 text-[9px] text-muted-foreground line-clamp-1 leading-tight">
-                            {desc.description}
-                          </p>
-                        </div>
-                      </div>
-                    );
-
-                    return (
-                      <li key={stepNum}>
-                        {isClickable ? (
-                          <Link
-                            to={targetUrl}
-                            title={`Navigate to Step ${stepNum}: ${desc.title}`}
-                            className="block focus:outline-none rounded-lg min-h-[44px] mobile-touch-target"
-                            onClick={() => setIsBottomBarExpanded(false)}
-                          >
-                            {content}
-                          </Link>
-                        ) : (
-                          content
-                        )}
-                      </li>
-                    );
-                  })}
-                </ol>
-              </nav>
-            </div>
-          </div>
-        )}
-
-        {/* Compact Docked Bottom Bar */}
-        <div className="mx-auto max-w-7xl px-3 py-1.5 flex items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-foreground flex items-center gap-1.5 text-xs min-w-0">
-              <span>{activeStageDesc.icon}</span>
-              <span className="hidden sm:inline">Stage {activeStageDesc.stepNumber || 0}/7:</span>
-              <span className="text-primary font-black truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[240px]">
-                {activeStageDesc.title}
-              </span>
-            </span>
-
-            {/* Mobile Progress Pill */}
-            <div className="flex sm:hidden items-center gap-1.5 pl-1.5 border-l border-border">
-              <span className="text-[10px] font-bold text-muted-foreground">
-                {Math.round(((activeStageDesc.stepNumber || 1) / 7) * 100)}%
-              </span>
-              <div className="w-10 xs:w-12 h-1.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: `${((activeStageDesc.stepNumber || 1) / 7) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Desktop / Tablet 7-Stage Progress Nodes */}
-            <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-border">
-              {GOLDEN_PATH_STATES.map((stageKey, idx) => {
-                const desc = CORE_PROCUREMENT_STATES[stageKey];
-                const stepState = getStageStepState(stageKey, effectiveStage);
-                const isCurrent = stepState === 'CURRENT';
-                const isDone = stepState === 'DONE';
-                const targetUrl = resolveStageNavigationUrl(stageKey, ids, role);
-                const isClickable = isDone || isCurrent;
-
-                const dot = (
-                  <span
-                    key={stageKey}
-                    className={`flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black transition ${
-                      isCurrent
-                        ? 'bg-primary text-primary-foreground ring-1 ring-primary/40'
-                        : isDone
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-muted/70 text-muted-foreground'
-                    }`}
-                    title={`Stage ${idx + 1}: ${desc.title} (${isCurrent ? 'Active' : isDone ? 'Done' : 'Pending'})`}
-                  >
-                    {isDone ? '✓' : idx + 1}
+      {/* 2. Fixed/Sticky Bottom Lifecycle Progress Bar (Admin 15-Step Linear Telemetry) */}
+      {role === 'admin' && (
+        <aside className="fixed sm:absolute bottom-0 inset-x-0 z-30 border-t border-border bg-card/95 shadow-md backdrop-blur transition-all pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))]" aria-label="Procurement Progress">
+          {/* Expanded Drawer (Upward - Admin Only) */}
+          {isBottomBarExpanded && (
+            <div className="border-b border-border bg-card/98 p-3 shadow-inner max-h-[50vh] overflow-y-auto animate-in slide-in-from-bottom-5">
+              <div className="mx-auto max-w-7xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Complete 15-Step Linear Procurement Pipeline
+                  </p>
+                  <span className="text-xs font-semibold text-primary">
+                    Step {activeLinearStep} of 15: {activeStepDesc.title}
                   </span>
-                );
+                </div>
 
-                return isClickable ? (
-                  <Link key={stageKey} to={targetUrl} className="hover:scale-110 transition">
-                    {dot}
-                  </Link>
-                ) : (
-                  <span key={stageKey}>{dot}</span>
-                );
-              })}
+                <nav aria-label="Procurement Lifecycle Stages Full">
+                  <ol className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-5">
+                    {PROCUREMENT_STEP_NUMBERS.map((stepNum) => {
+                      const desc = LINEAR_PROCUREMENT_STEPS[stepNum];
+                      const stepState = getLinearStepState(stepNum, activeLinearStep);
+                      const isCurrent = stepState === 'CURRENT';
+                      const isDone = stepState === 'DONE';
+                      const targetUrl = resolveLinearStepUrl(stepNum, ids);
+                      const isClickable = isDone || isCurrent;
+
+                      const content = (
+                        <div
+                          className={`group relative flex flex-col justify-between rounded-lg border p-2 text-left transition ${
+                            isCurrent
+                              ? 'border-primary ring-1 ring-primary/30 bg-primary/5 shadow-2xs font-bold'
+                              : isDone
+                              ? 'border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/40 dark:bg-emerald-950/20 hover:border-emerald-500 cursor-pointer'
+                              : 'border-border/60 bg-muted/20 opacity-60 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
+                                isCurrent
+                                  ? 'bg-primary text-primary-foreground'
+                                  : isDone
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-muted text-muted-foreground'
+                              }`}
+                            >
+                              {isDone ? '✓' : stepNum}
+                            </span>
+
+                            <span
+                              className={`text-[8px] font-bold ${
+                                isCurrent
+                                  ? 'text-primary'
+                                  : isDone
+                                  ? 'text-emerald-700 dark:text-emerald-400'
+                                  : 'text-muted-foreground'
+                              }`}
+                            >
+                              {isCurrent ? 'ACTIVE' : isDone ? 'DONE' : 'PENDING'}
+                            </span>
+                          </div>
+
+                          <div className="mt-1">
+                            <p
+                              className={`text-[11px] font-bold truncate ${
+                                isCurrent
+                                  ? 'text-foreground'
+                                  : isDone
+                                  ? 'text-foreground group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition'
+                                  : 'text-muted-foreground'
+                              }`}
+                            >
+                              {desc.icon} {desc.shortLabel}
+                            </p>
+                            <p className="mt-0.5 text-[9px] text-muted-foreground line-clamp-1 leading-tight">
+                              {desc.description}
+                            </p>
+                          </div>
+                        </div>
+                      );
+
+                      return (
+                        <li key={stepNum}>
+                          {isClickable ? (
+                            <Link
+                              to={targetUrl}
+                              title={`Navigate to Step ${stepNum}: ${desc.title}`}
+                              className="block focus:outline-none rounded-lg min-h-[44px] mobile-touch-target"
+                              onClick={() => setIsBottomBarExpanded(false)}
+                            >
+                              {content}
+                            </Link>
+                          ) : (
+                            content
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </nav>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex items-center gap-2">
-            <span className="hidden lg:inline text-[10px] text-muted-foreground truncate max-w-xs">
-              {activeStageDesc.description}
-            </span>
-            {role === 'admin' && (
+          {/* Compact Docked Bottom Bar */}
+          <div className="mx-auto max-w-7xl px-3 py-1.5 flex items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-foreground flex items-center gap-1.5 text-xs min-w-0">
+                <span>{activeStageDesc.icon}</span>
+                <span className="hidden sm:inline">Stage {activeStageDesc.stepNumber || 0}/6:</span>
+                <span className="text-primary font-black truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[240px]">
+                  {activeStageDesc.title}
+                </span>
+              </span>
+
+              {/* Mobile Progress Pill */}
+              <div className="flex sm:hidden items-center gap-1.5 pl-1.5 border-l border-border">
+                <span className="text-[10px] font-bold text-muted-foreground">
+                  {Math.round(((activeStageDesc.stepNumber || 1) / 6) * 100)}%
+                </span>
+                <div className="w-10 xs:w-12 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{ width: `${((activeStageDesc.stepNumber || 1) / 6) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Desktop / Tablet 6-Stage Progress Nodes */}
+              <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-border">
+                {GOLDEN_PATH_STATES.map((stageKey, idx) => {
+                  const desc = CORE_PROCUREMENT_STATES[stageKey];
+                  const stepState = getStageStepState(stageKey, effectiveStage);
+                  const isCurrent = stepState === 'CURRENT';
+                  const isDone = stepState === 'DONE';
+                  const targetUrl = resolveStageNavigationUrl(stageKey, ids, role);
+                  const isClickable = isDone || isCurrent;
+
+                  const dot = (
+                    <span
+                      key={stageKey}
+                      className={`flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black transition ${
+                        isCurrent
+                          ? 'bg-primary text-primary-foreground ring-1 ring-primary/40'
+                          : isDone
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-muted/70 text-muted-foreground'
+                      }`}
+                      title={`Stage ${idx + 1}: ${desc.title} (${isCurrent ? 'Active' : isDone ? 'Done' : 'Pending'})`}
+                    >
+                      {isDone ? '✓' : idx + 1}
+                    </span>
+                  );
+
+                  return isClickable ? (
+                    <Link key={stageKey} to={targetUrl} className="hover:scale-110 transition">
+                      {dot}
+                    </Link>
+                  ) : (
+                    <span key={stageKey}>{dot}</span>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="hidden lg:inline text-[10px] text-muted-foreground truncate max-w-xs">
+                {activeStageDesc.description}
+              </span>
               <button
                 type="button"
                 onClick={() => setIsBottomBarExpanded((v) => !v)}
@@ -451,10 +456,10 @@ export function ProcurementStageNavigator({
               >
                 <span>{isBottomBarExpanded ? '▼ Collapse' : '▲ 15 Steps'}</span>
               </button>
-            )}
+            </div>
           </div>
-        </div>
-      </aside>
+        </aside>
+      )}
     </div>
   );
 }

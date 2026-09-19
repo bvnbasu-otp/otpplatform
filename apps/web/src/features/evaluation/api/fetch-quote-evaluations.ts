@@ -91,10 +91,16 @@ export type RecomputeResult =
 
 /** Rescore every live quote against the buyer's current weights. */
 export async function recomputeEvaluations(rfqId: string): Promise<RecomputeResult> {
-  const { data, error } = await supabase.rpc('compute_quote_evaluations', {
-    p_rfq_id: rfqId,
-  });
+  try {
+    const res = await supabase.rpc('compute_quote_evaluations', {
+      p_rfq_id: rfqId,
+    });
 
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, scored: (data as { scored?: number })?.scored ?? 0 };
+    if (!res || res.error) {
+      return { ok: false, error: res?.error?.message ?? 'Failed to compute quote evaluations' };
+    }
+    return { ok: true, scored: (res.data as { scored?: number })?.scored ?? 0 };
+  } catch (err: any) {
+    return { ok: false, error: err?.message ?? 'Failed to compute quote evaluations' };
+  }
 }

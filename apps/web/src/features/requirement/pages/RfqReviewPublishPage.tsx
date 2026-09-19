@@ -168,7 +168,7 @@ export function RfqReviewPublishPage({
 
   return (
     <div
-      className="zero-scroll-container p-3 sm:p-4 max-w-5xl mx-auto w-full overflow-x-hidden space-y-3.5 pb-28 text-foreground"
+      className="zero-scroll-container p-3 sm:p-4 max-w-5xl mx-auto w-full overflow-x-hidden space-y-3.5 pb-36 text-foreground relative"
       data-testid="rfq-review-publish-page"
     >
       {/* 15-Stage Linear Pipeline Navigator */}
@@ -266,7 +266,7 @@ export function RfqReviewPublishPage({
       />
 
       {/* Sticky Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg">
+      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center justify-between w-full sm:w-auto gap-2">
             <div className="text-left">

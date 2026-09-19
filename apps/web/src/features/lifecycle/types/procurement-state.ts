@@ -103,8 +103,8 @@ export const CORE_PROCUREMENT_STATES: Record<CoreProcurementState, ProcurementSt
   PO_ISSUED: {
     key: 'PO_ISSUED',
     stepNumber: 5,
-    title: '5. PO & Execution',
-    shortLabel: 'PO Issued',
+    title: '5. PO & Fulfillment',
+    shortLabel: 'Fulfillment',
     tagline: 'Purchase order acceptance, milestone fulfillment & delivery inspection',
     description: 'Official PO accepted by supplier. Work order tracked through 0–100% milestones with on-site buyer sign-off.',
     icon: '📦',
@@ -126,8 +126,8 @@ export const CORE_PROCUREMENT_STATES: Record<CoreProcurementState, ProcurementSt
   },
   SETTLED: {
     key: 'SETTLED',
-    stepNumber: 7,
-    title: '7. Settled & Completed',
+    stepNumber: 6,
+    title: '6. Settled & Completed',
     shortLabel: 'Settled',
     tagline: 'Payment reconciliation, performance rating & immutable audit closeout',
     description: 'Payment verified and remitted. Performance rating recorded and transaction sealed in immutable audit log.',
@@ -157,7 +157,6 @@ export const CHRONOLOGICAL_STAGES: CoreProcurementState[] = [
   'EVALUATING',
   'AWARDED',
   'PO_ISSUED',
-  'INVOICED',
   'SETTLED',
 ];
 

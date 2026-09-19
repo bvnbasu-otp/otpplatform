@@ -34,7 +34,6 @@ describe('8 Core Procurement States Lifecycle Engine', () => {
       'EVALUATING',
       'AWARDED',
       'PO_ISSUED',
-      'INVOICED',
       'SETTLED',
     ]);
   });

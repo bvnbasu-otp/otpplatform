@@ -268,8 +268,7 @@ BEGIN
         v_label := 'Supplier ' || chr(65 + v_existing + v_invited);
         v_score := LEAST(100, 75 + COALESCE(v_supplier.rating_avg, 3.5) * 5);
         v_reasons := ARRAY[
-          'category_match:' || COALESCE(v_cat_name, 'General'),
-          'source:' || v_supplier.source::text
+          'category_match:' || COALESCE(v_cat_name, 'General')
         ];
 
         INSERT INTO rfq_invitations (
@@ -299,7 +298,7 @@ BEGIN
     LOOP
       v_label := 'Supplier ' || chr(65 + v_existing + v_invited);
       v_score := 75.0;
-      v_reasons := ARRAY['open_network_discovery', 'source:' || v_supplier.source::text];
+      v_reasons := ARRAY['open_network_discovery'];
 
       INSERT INTO rfq_invitations (
         rfq_id, supplier_id, anonymous_label, status, match_score, match_reasons

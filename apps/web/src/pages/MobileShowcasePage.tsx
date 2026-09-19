@@ -20,7 +20,7 @@ export function MobileShowcasePage() {
               B2B Sourcing Engineered for Indian Smartphones
             </h1>
             <p className="text-xs sm:text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Experience the complete 7-step procurement lifecycle inside realistic mobile device viewports. No dense desktop tables—only 1-tap thumb interactions, voice dictation, and WhatsApp-native workflows.
+              Experience the complete 6-stage procurement lifecycle inside realistic mobile device viewports. No dense desktop tables—only 1-tap thumb interactions, voice dictation, and WhatsApp-native workflows.
             </p>
 
             {/* View Mode Switcher */}

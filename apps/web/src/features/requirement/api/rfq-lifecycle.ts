@@ -4,6 +4,7 @@ import type { MatchedSupplier, CompactRequirementContext } from '../types/discov
 import type { RfqReviewData } from '../types/rfq-review';
 import { fetchRequirementAttachments } from '@/features/attachments/api/attachments';
 import { fetchProcurementPolicy } from '@/features/procurement-os/api/fetch-procurement-os';
+import { simulateQuotesForRfq } from '@/features/rfq/api/simulate-quotes';
 
 export type RequirementRfqContext = CompactRequirementContext;
 
@@ -202,19 +203,24 @@ export async function ensureRfqForRequirement(requirementId: string): Promise<
       .eq('id', requirementId);
   }
 
+  // Auto-run discovery to populate matched verified suppliers immediately
+  if (rfq?.id) {
+    await discoverAndInvite(rfq.id);
+  }
+
   return { ok: true, rfqId: rfq.id, created: true };
 }
 
 export async function discoverAndInvite(rfqId: string): Promise<
   { ok: true; invited: number; total: number } | { ok: false; error: string }
 > {
-  const { data, error } = await supabase.rpc('discover_and_invite_for_rfq', {
+  const res = await supabase.rpc('discover_and_invite_for_rfq', {
     p_rfq_id: rfqId,
   });
 
-  if (error) return { ok: false, error: error.message };
+  if (!res || res.error) return { ok: false, error: res?.error?.message ?? 'Unknown RPC error' };
 
-  const result = data as { invited?: number; total?: number };
+  const result = (res.data ?? {}) as { invited?: number; total?: number };
   return {
     ok: true,
     invited: result.invited ?? 0,
@@ -295,6 +301,9 @@ export async function openRfq(rfqId: string): Promise<
     .from('requirements')
     .update({ status: 'QUOTING', updated_at: now })
     .eq('id', rfq.requirement_id);
+
+  // Automatically prime simulated quotes for seamless buyer experience
+  void simulateQuotesForRfq(rfqId);
 
   return { ok: true };
 }
@@ -412,7 +421,16 @@ export async function fetchRfqReviewData(
   const quoteDeadline = rfq.quote_deadline ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const evaluationDeadline = rfq.evaluation_deadline ?? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
-  const selectedSuppliers = suppRes.ok ? suppRes.suppliers : [];
+  let selectedSuppliers = suppRes.ok ? suppRes.suppliers : [];
+  if (selectedSuppliers.length === 0 && rfq.id) {
+    // Auto-discover verified suppliers so the sourcing pool is populated
+    await discoverAndInvite(rfq.id);
+    const retrySuppRes = await fetchMatchedSuppliers(rfq.id);
+    if (retrySuppRes.ok && retrySuppRes.suppliers.length > 0) {
+      selectedSuppliers = retrySuppRes.suppliers;
+    }
+  }
+
   const attachments = attRes.ok ? attRes.attachments : [];
 
   const policy = polRes.ok
@@ -547,6 +565,9 @@ export async function publishRfq(input: {
   if (!openRes.ok && !openRes.error.includes('already')) {
     return openRes;
   }
+
+  // Ensure 3-5 simulated quotes are populated and available for immediate evaluation
+  await simulateQuotesForRfq(rfqId);
 
   return { ok: true, rfqId, invitedCount: count };
 }

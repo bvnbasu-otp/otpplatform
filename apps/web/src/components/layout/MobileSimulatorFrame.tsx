@@ -77,7 +77,7 @@ export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
           <div className="hidden sm:block absolute -right-[8px] top-[120px] w-[3px] h-[60px] bg-slate-700 rounded-r-sm pointer-events-none" />
 
           {/* Inner Screen Display Viewport */}
-          <div className="relative w-full h-full bg-background flex flex-col overflow-hidden sm:rounded-[36px]">
+          <div className="relative w-full h-full bg-background flex flex-col overflow-hidden sm:rounded-[36px] sm:transform-gpu sm:[transform:translate3d(0,0,0)] [contain:paint]">
             
             {/* Top Hardware Dynamic Island & Status Bar (Desktop Only) */}
             <div className="hidden sm:flex shrink-0 h-8 w-full px-5 pt-1.5 items-center justify-between text-[11px] font-semibold text-foreground z-40 bg-background/95 backdrop-blur-xs select-none border-b border-border/40">
@@ -98,7 +98,7 @@ export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
             </div>
 
             {/* Application Inside Viewport */}
-            <div className="relative w-full h-full flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="relative w-full h-full flex-1 min-h-0 flex flex-col overflow-hidden sm:transform-gpu sm:[transform:translate3d(0,0,0)] [contain:paint]">
               {children}
             </div>
 

@@ -4,7 +4,6 @@ import { useAuth } from '@/features/auth';
 import { useRoleContext } from '@/features/roles';
 import { supabase } from '@/lib/supabase';
 import { OtpLogo } from '@/components/ui/OtpLogo';
-import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
@@ -150,11 +149,6 @@ export function SiteHeader() {
               FAQs
             </NavLink>
           </nav>
-        </div>
-
-        {/* Center/Right: Role Switcher Toggle */}
-        <div className="hidden sm:flex items-center">
-          <RoleModeToggle size="sm" />
         </div>
 
         {/* Right Action Cluster: Canonical Sequence [Profile / Theme Trigger] → [Help & Support (?)] */}
@@ -316,12 +310,6 @@ export function SiteHeader() {
             className="relative border-b bg-card shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100%-48px)] overflow-y-auto"
           >
             <div className="mx-auto w-full px-4 py-3 space-y-3 text-xs">
-              {/* Role mode switcher inside drawer */}
-              <div className="flex items-center justify-between pb-2 border-b">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase">Mode Switcher</span>
-                <RoleModeToggle size="sm" />
-              </div>
-
               {/* Context-aware action button in mobile drawer */}
               {isSupplier ? (
                 <div className="pb-1">

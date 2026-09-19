@@ -2,8 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { useRoleContext } from '@/features/roles';
-import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api/roles';
-import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 import { getHomeRoute, getOrdersRoute, getRoleLabel } from '../navigation-config';
 
 export interface WorkspaceHeaderMenuProps {
@@ -33,18 +31,13 @@ export function WorkspaceHeaderMenu({
   onOpenSupplierCapabilities,
 }: WorkspaceHeaderMenuProps) {
   const { user, signOut } = useAuth();
-  const { context, switchTo, switchOrg } = useRoleContext();
+  const { context } = useRoleContext();
   const { pathname } = useLocation();
   const menuRef = useRef<HTMLDivElement>(null);
-
-  const [pendingRole, setPendingRole] = React.useState<string | null>(null);
-  const [pendingOrg, setPendingOrg] = React.useState<string | null>(null);
 
   const roleLabel = getRoleLabel(context);
   const homeRoute = getHomeRoute(context);
   const ordersRoute = getOrdersRoute(context);
-  const multiRole = hasMultipleRoles(context);
-  const multiOrg = hasMultipleOrganizations(context);
   const userInitials = initials(context.fullName || user?.email);
 
   // Close menu on Escape key press
@@ -72,32 +65,6 @@ export function WorkspaceHeaderMenu({
       document.body.style.overflow = '';
     };
   }, [isOpen]);
-
-  async function handleChooseRole(code: string) {
-    if (code === context.activeRole?.code) {
-      onClose();
-      return;
-    }
-    setPendingRole(code);
-    const result = await switchTo(code);
-    setPendingRole(null);
-    if (result.ok) {
-      onClose();
-    }
-  }
-
-  async function handleChooseOrg(orgId: string) {
-    if (orgId === context.organizationId) {
-      onClose();
-      return;
-    }
-    setPendingOrg(orgId);
-    const result = await switchOrg(orgId);
-    setPendingOrg(null);
-    if (result.ok) {
-      onClose();
-    }
-  }
 
   if (!isOpen) return null;
 
@@ -376,86 +343,16 @@ export function WorkspaceHeaderMenu({
               </div>
             </div>
 
-            {/* Portal / Role Mode Switcher */}
-            {!context.isPlatformAdmin && (
-              <div className="rounded-xl border border-border bg-muted/30 p-2.5 space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  <span>Portal Mode</span>
-                  <span className="text-primary font-bold">
-                    {context.side === 'SUPPLIER' ? 'Supplier Mode Active' : 'Buyer Mode Active'}
-                  </span>
-                </div>
-                <div className="flex justify-center">
-                  <RoleModeToggle size="sm" className="w-full justify-center" onToggle={onClose} />
-                </div>
-              </div>
-            )}
+            {/* Profile Settings Link & Sign Out Row */}
+            <div className="pt-2 border-t flex items-center justify-between gap-3">
+              <Link
+                to="/profile?tab=preferences"
+                onClick={onClose}
+                className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition active:scale-95 min-h-[44px] mobile-touch-target"
+              >
+                <span>⚙️</span> Preferences
+              </Link>
 
-            {/* Switch Organization (if multi-org) */}
-            {multiOrg && !context.isPlatformAdmin && (
-              <div className="rounded-xl border border-border p-3 space-y-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
-                  Switch Organization
-                </span>
-                <ul className="space-y-1">
-                  {context.organizations.map((org) => {
-                    const active = org.id === context.organizationId;
-                    return (
-                      <li key={org.id}>
-                        <button
-                          type="button"
-                          onClick={() => void handleChooseOrg(org.id)}
-                          disabled={pendingOrg !== null}
-                          className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition min-h-[44px] mobile-touch-target ${
-                            active ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
-                          }`}
-                        >
-                          <div className="truncate min-w-0">
-                            <span className="block truncate font-semibold text-xs">{org.name}</span>
-                            <span className="block text-[10px] text-muted-foreground capitalize">
-                              {org.isPersonal ? 'Personal' : org.role.toLowerCase()}
-                            </span>
-                          </div>
-                          {active && <span className="text-primary font-bold ml-2">✓</span>}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-
-            {/* Switch Role (if multi-role) */}
-            {multiRole && !context.isPlatformAdmin && (
-              <div className="rounded-xl border border-border p-3 space-y-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
-                  Switch Role / View
-                </span>
-                <ul className="space-y-1">
-                  {context.roles.map((role) => {
-                    const active = role.code === context.activeRole?.code;
-                    return (
-                      <li key={role.code}>
-                        <button
-                          type="button"
-                          onClick={() => void handleChooseRole(role.code)}
-                          disabled={pendingRole !== null}
-                          className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition min-h-[44px] mobile-touch-target ${
-                            active ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
-                          }`}
-                        >
-                          <span className="truncate font-semibold text-xs">{role.label}</span>
-                          {active && <span className="text-primary font-bold ml-2">✓</span>}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-
-            {/* Sign Out Button */}
-            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => {
@@ -463,7 +360,7 @@ export function WorkspaceHeaderMenu({
                   void signOut();
                 }}
                 data-testid="header-menu-sign-out"
-                className="w-full flex items-center justify-center gap-2 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-4 py-2.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-950/70 transition active:scale-95 min-h-[44px] mobile-touch-target"
+                className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-950/70 transition active:scale-95 min-h-[44px] mobile-touch-target"
               >
                 <span>🚪</span> Sign Out
               </button>

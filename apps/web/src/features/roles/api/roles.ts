@@ -342,16 +342,6 @@ export async function switchActiveOrganization(
   return { ok: true, context: toContext((data ?? {}) as Record<string, unknown>) };
 }
 
-export async function switchPortalSide(
-  side: PortalSide,
-): Promise<{ ok: true; context: RoleContext } | { ok: false; error: string }> {
-  const { data, error } = await supabase.rpc('switch_portal_side', {
-    p_side: side,
-  });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, context: toContext((data ?? {}) as Record<string, unknown>) };
-}
-
 // ---------------------------------------------------------------------------
 // Reading a context
 //

@@ -39,11 +39,21 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
   const [isLoading, setIsLoading] = useState(true);
 
   const loadNetworksAndSuppliers = useCallback(async (id: string) => {
-    const [netRes, count, supRes] = await Promise.all([
+    let [netRes, count, supRes] = await Promise.all([
       fetchSupplierNetworkSummary(id),
       fetchInvitationCount(id),
       fetchMatchedSuppliers(id),
     ]);
+
+    // If 0 suppliers discovered yet, run discovery automatically
+    if (count === 0 || (supRes.ok && supRes.suppliers.length === 0)) {
+      await discoverAndInvite(id);
+      [netRes, count, supRes] = await Promise.all([
+        fetchSupplierNetworkSummary(id),
+        fetchInvitationCount(id),
+        fetchMatchedSuppliers(id),
+      ]);
+    }
 
     if (netRes.ok) {
       setNetworks(netRes.networks);
@@ -52,7 +62,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
     if (supRes.ok) {
       setSuppliers(supRes.suppliers);
-      // Auto-select all available suppliers on initial load if none were selected
+      // Auto-select all available suppliers on initial load so user is never blocked on 0 selected
       setSelectedIds((prev) => {
         if (prev.size > 0) return prev;
         return new Set(supRes.suppliers.map((s) => s.invitationId));
@@ -181,7 +191,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
   return (
     <div
-      className="zero-scroll-container p-3 sm:p-4 max-w-5xl mx-auto w-full overflow-x-hidden space-y-3.5 pb-28 text-foreground"
+      className="zero-scroll-container p-3 sm:p-4 max-w-5xl mx-auto w-full overflow-x-hidden space-y-3.5 pb-36 text-foreground relative"
       data-testid="discover-suppliers-page"
     >
       {/* 15-Stage Linear Pipeline Navigator */}
@@ -405,7 +415,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
       )}
 
       {/* Mobile-First Sticky Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg">
+      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center justify-between w-full sm:w-auto gap-2">
             <div className="text-left">

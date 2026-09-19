@@ -1,12 +1,16 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     alias: {
+      '@': resolve(__dirname, 'apps/web/src'),
       '@otp/domain': resolve(__dirname, 'packages/domain/src/index.ts'),
       '@otp/database': resolve(__dirname, 'packages/database/src/index.ts'),
       '@otp/services': resolve(__dirname, 'packages/services/src/index.ts'),
+      '@otp/messaging': resolve(__dirname, 'supabase/functions/_shared/messaging/index.ts'),
     },
   },
   esbuild: {
@@ -21,7 +25,14 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/**/*.test.ts'],
+    include: [
+      'tests/**/*.test.ts',
+      'apps/web/src/**/*.test.ts',
+      'apps/web/src/**/*.test.tsx',
+      'packages/domain/src/**/*.test.ts',
+      'packages/services/src/**/*.test.ts',
+      'packages/database/src/**/*.test.ts',
+    ],
     testTimeout: 60_000,
     hookTimeout: 60_000,
     fileParallelism: false,

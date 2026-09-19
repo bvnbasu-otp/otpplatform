@@ -26,12 +26,12 @@ export function AppLayout() {
 
   return (
     <MobileSimulatorFrame>
-      <div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden relative">
+      <div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden relative sm:transform-gpu sm:[transform:translate3d(0,0,0)] [contain:paint]">
         {/* Canonical Authenticated Header: OTP Logo | ROLE | Help & Support | Notifications | Menu */}
         <WorkspaceHeader onOpenSupplierCapabilities={() => setIsCapabilityModalOpen(true)} />
 
         {/* Main Content Viewport with Safe Bottom Padding */}
-        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col pb-[calc(5rem+env(safe-area-inset-bottom,0px))] relative">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>

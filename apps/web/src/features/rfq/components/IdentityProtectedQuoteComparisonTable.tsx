@@ -11,6 +11,8 @@ export interface IdentityProtectedQuoteComparisonTableProps {
   rfqTitle?: string;
   selectedQuoteId?: string | null;
   onSelectForAward?: (quote: IdentityProtectedQuote) => void;
+  onSimulateQuotes?: () => void;
+  isSimulating?: boolean;
 }
 
 /**
@@ -26,6 +28,8 @@ export function IdentityProtectedQuoteComparisonTable({
   rfqTitle = 'Procurement Requirement',
   selectedQuoteId = null,
   onSelectForAward,
+  onSimulateQuotes,
+  isSimulating = false,
 }: IdentityProtectedQuoteComparisonTableProps) {
   const [activeBoqQuote, setActiveBoqQuote] = useState<IdentityProtectedQuote | null>(null);
 
@@ -86,12 +90,27 @@ export function IdentityProtectedQuoteComparisonTable({
   if (quotes.length === 0) {
     return (
       <div
-        className="rounded-2xl border bg-card p-8 text-center text-muted-foreground text-xs space-y-1.5 shadow-2xs"
+        className="rounded-2xl border bg-card p-8 text-center text-muted-foreground text-xs space-y-3 shadow-2xs"
         data-testid="identity-protected-quotes-empty"
       >
         <span className="text-2xl">⏳</span>
-        <p className="font-bold text-foreground">No quotes available for fair anonymous comparison yet.</p>
-        <p className="text-[11px]">Suppliers are currently submitting quotes. Comparison unlocks when quotes arrive.</p>
+        <div className="space-y-1">
+          <p className="font-bold text-foreground">No quotes available for fair anonymous comparison yet.</p>
+          <p className="text-[11px]">Suppliers are currently submitting quotes. Comparison unlocks when quotes arrive.</p>
+        </div>
+        {onSimulateQuotes && (
+          <div className="pt-2">
+            <button
+              type="button"
+              disabled={isSimulating}
+              onClick={onSimulateQuotes}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
+              data-testid="simulate-quotes-empty-state-btn"
+            >
+              <span>{isSimulating ? '⏳ Simulating Quotes…' : '⚡ Simulate 4 Demo Quotes'}</span>
+            </button>
+          </div>
+        )}
       </div>
     );
   }

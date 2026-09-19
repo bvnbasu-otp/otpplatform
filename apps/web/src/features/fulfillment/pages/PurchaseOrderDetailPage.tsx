@@ -770,7 +770,7 @@ export function PurchaseOrderDetailPage({
   })();
 
   return (
-    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]" data-testid="purchase-order-detail">
+    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] relative" data-testid="purchase-order-detail">
       {/* 15-Step Linear Procurement Navigator */}
       <ProcurementStageNavigator
         currentLinearStep={activeLinearStep}
@@ -1498,7 +1498,7 @@ export function PurchaseOrderDetailPage({
       </div>
 
       {/* Screen 10 Sticky Bottom Bar: [ 📥 Download PO / Share ] & [ Update Milestone Progress ] */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           {/* Left: Summary Mini Pill */}
           <div className="min-w-0 hidden sm:block">

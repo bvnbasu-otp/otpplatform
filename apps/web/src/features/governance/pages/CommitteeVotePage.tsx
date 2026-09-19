@@ -204,7 +204,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
 
   return (
     <div
-      className="zero-scroll-container min-h-screen bg-background text-foreground overflow-x-hidden max-w-full pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]"
+      className="zero-scroll-container min-h-screen bg-background text-foreground overflow-x-hidden max-w-full pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] relative"
       data-testid="committee-vote-page"
     >
       <ProcurementStageNavigator
@@ -722,7 +722,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       </div>
 
       {/* SINGLE STICKY PRIMARY CTA (Fixed Mobile Action Bar) */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-background/95 backdrop-blur-md p-3 sm:px-6 shadow-xl pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-md p-3 sm:px-6 shadow-xl pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           {/* Status Indicator */}
           <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 text-xs">

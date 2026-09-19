@@ -37,8 +37,11 @@ export {
 export {
   fetchIdentityProtectedQuotes,
   fetchIdentityProtectedQuotes as fetchBlindQuotes,
+  simulateQuotesForRfq,
+  ensureSimulatedQuotesForRfq,
 } from './api';
 export type {
   FetchIdentityProtectedQuotesResult,
   FetchIdentityProtectedQuotesResult as FetchBlindQuotesResult,
+  SimulateQuotesResult,
 } from './api';

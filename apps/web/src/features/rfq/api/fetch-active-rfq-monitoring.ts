@@ -5,6 +5,7 @@ import { fetchIdentityProtectedQuotes } from './fetch-identity-protected-quotes'
 import { fetchClarificationMessagesForBuyer } from '@/features/clarification/api/clarification';
 import { fetchProcurementPolicy } from '@/features/procurement-os/api/fetch-procurement-os';
 import { fetchRequirementAttachments } from '@/features/attachments/api/attachments';
+import { ensureSimulatedQuotesForRfq } from './simulate-quotes';
 import type {
   ActiveRfqMonitoringData,
   RfqActionRequired,
@@ -123,8 +124,24 @@ export async function fetchActiveRfqMonitoringData(
   const qualityNotes = quality.notes ?? null;
 
   // Supplier invitations & Quotes integration
-  const suppliers = suppRes.ok ? suppRes.suppliers : [];
-  const quotes = quotesRes.ok ? quotesRes.quotes : [];
+  let suppliers = suppRes.ok ? suppRes.suppliers : [];
+  let quotes = quotesRes.ok ? quotesRes.quotes : [];
+
+  // Deterministic quote simulation guarantee: ensure 3-5 quotes exist for active sourcing
+  if (quotes.length === 0 && (rfq.status === 'OPEN' || rfq.status === 'CLARIFICATION' || rfq.status === 'QUOTING' || rfq.status === 'DRAFT')) {
+    await ensureSimulatedQuotesForRfq(rfqId);
+    const [retryQuotesRes, retrySuppRes] = await Promise.all([
+      fetchIdentityProtectedQuotes(rfqId),
+      fetchMatchedSuppliers(rfqId),
+    ]);
+    if (retryQuotesRes.ok && retryQuotesRes.quotes.length > 0) {
+      quotes = retryQuotesRes.quotes;
+    }
+    if (retrySuppRes.ok && retrySuppRes.suppliers.length > 0) {
+      suppliers = retrySuppRes.suppliers;
+    }
+  }
+
   const messages = msgRes.ok ? msgRes.messages : [];
   const attachments = attRes.ok ? attRes.attachments : [];
 

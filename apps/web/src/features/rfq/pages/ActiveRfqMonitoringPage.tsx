@@ -11,6 +11,7 @@ import { ActiveRfqExtendDeadlineModal } from '../components/ActiveRfqExtendDeadl
 import { ActiveRfqScopeAccordion } from '../components/ActiveRfqScopeAccordion';
 import { ActiveRfqWhatHappensNextCard } from '../components/ActiveRfqWhatHappensNextCard';
 import { CancelRfqModal } from '../components/CancelRfqModal';
+import { simulateQuotesForRfq } from '../api/simulate-quotes';
 
 interface ActiveRfqMonitoringPageProps {
   rfqId?: string;
@@ -31,6 +32,7 @@ export function ActiveRfqMonitoringPage({
   const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   const loadData = useCallback(async (showRefreshing = false) => {
     if (!effectiveId) {
@@ -73,6 +75,14 @@ export function ActiveRfqMonitoringPage({
 
   function handleRfqCancelled() {
     navigate('/dashboard');
+  }
+
+  async function handleSimulateQuotes() {
+    if (!effectiveId) return;
+    setIsSimulating(true);
+    await simulateQuotesForRfq(effectiveId, { force: true });
+    setIsSimulating(false);
+    void loadData(true);
   }
 
   if (isLoading) {
@@ -120,7 +130,7 @@ export function ActiveRfqMonitoringPage({
 
   return (
     <div
-      className="zero-scroll-container p-3 sm:p-4 max-w-5xl mx-auto w-full overflow-x-hidden space-y-3.5 pb-28 text-foreground"
+      className="zero-scroll-container p-3 sm:p-4 max-w-5xl mx-auto w-full overflow-x-hidden space-y-3.5 pb-36 text-foreground relative"
       data-testid="active-rfq-monitoring-page"
     >
       {/* 15-Stage Linear Pipeline Navigator */}
@@ -195,7 +205,7 @@ export function ActiveRfqMonitoringPage({
       />
 
       {/* Sticky Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg">
+      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center justify-between w-full sm:w-auto gap-2">
             <div className="text-left">
@@ -224,8 +234,20 @@ export function ActiveRfqMonitoringPage({
             </button>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {/* Secondary Actions */}
+            <button
+              type="button"
+              disabled={isSimulating}
+              onClick={() => void handleSimulateQuotes()}
+              className="min-h-[48px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary/10 px-3.5 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition mobile-touch-target"
+              title="Inject simulated supplier quotes for testing"
+              data-testid="simulate-quotes-monitoring-btn"
+            >
+              <span>⚡</span>
+              <span>{isSimulating ? 'Simulating…' : 'Simulate 4 Demo Quotes'}</span>
+            </button>
+
             <Link
               to={`/rfq/${rfq.id}/clarification`}
               className="min-h-[48px] inline-flex items-center justify-center rounded-xl border bg-muted/40 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition mobile-touch-target"

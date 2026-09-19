@@ -6,7 +6,6 @@ import { useRoleContext } from '../hooks/use-role-context';
 import { PermissionChips } from './PermissionChips';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { ProfileEditModal } from '@/features/profile';
-import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
 
 function initials(nameOrEmail: string | undefined): string {
   if (!nameOrEmail) return '?';
@@ -168,19 +167,6 @@ export function AccountMenu() {
               <span className="text-[10px] text-muted-foreground">Manage ➔</span>
             </button>
           </div>
-
-          {/* Portal / Role Mode Switcher */}
-          {!context.isPlatformAdmin && (
-            <div className="mt-2.5 rounded-lg border bg-muted/30 p-2 space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                <span>Portal Mode</span>
-                <span className="text-primary font-bold">{context.side === 'SUPPLIER' ? 'Supplier Mode' : 'Buyer Mode'}</span>
-              </div>
-              <div className="flex justify-center">
-                <RoleModeToggle size="sm" className="w-full justify-center" onToggle={() => setOpen(false)} />
-              </div>
-            </div>
-          )}
 
           <p className="mt-2 text-[0.7rem] text-muted-foreground">
             {context.isPlatformAdmin

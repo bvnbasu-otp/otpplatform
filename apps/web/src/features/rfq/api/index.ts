@@ -14,3 +14,9 @@ export {
   type ExitReasonCode,
   type ExitReasonOption,
 } from './cancellations';
+
+export {
+  simulateQuotesForRfq,
+  ensureSimulatedQuotesForRfq,
+  type SimulateQuotesResult,
+} from './simulate-quotes';

@@ -68,7 +68,7 @@ export function MobilePhoneFrame({
         <div className="absolute -right-[7px] top-[120px] w-[3px] h-[65px] bg-slate-600 rounded-r-sm" />
 
         {/* Inner Screen Display */}
-        <div className="relative w-full h-full bg-background rounded-[34px] overflow-hidden flex flex-col select-none border border-black/10 dark:border-white/5">
+        <div className="relative w-full h-full bg-background rounded-[34px] overflow-hidden flex flex-col select-none border border-black/10 dark:border-white/5 sm:transform-gpu sm:[transform:translate3d(0,0,0)] [contain:paint]">
           {/* Top Status Bar with Dynamic Island */}
           <div className="shrink-0 h-10 w-full px-5 pt-2 flex items-center justify-between text-[11px] font-semibold text-foreground z-30 bg-background/90 backdrop-blur-xs">
             <span className="tabular-nums font-bold text-xs">{time}</span>

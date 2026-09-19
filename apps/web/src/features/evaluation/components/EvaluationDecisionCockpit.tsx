@@ -15,6 +15,8 @@ import {
   fetchRfqStatus,
   waiveMinQuotesAndEvaluate,
 } from '@/features/clarification/api/clarification';
+import { openRfq, discoverAndInvite } from '@/features/requirement/api/rfq-lifecycle';
+import { simulateQuotesForRfq } from '@/features/rfq/api/simulate-quotes';
 import {
   fetchAward,
   lockAndRevealAwardAtomic,
@@ -90,9 +92,26 @@ export function EvaluationDecisionCockpit({
   const [showAwardModal, setShowAwardModal] = useState(false);
   const [awardJustification, setAwardJustification] = useState('');
   const [isAwarding, setIsAwarding] = useState(false);
+  const [isSimulatingQuotes, setIsSimulatingQuotes] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const handleSimulateQuotes = async () => {
+    setIsSimulatingQuotes(true);
+    setError(null);
+    setSuccess(null);
+    const res = await simulateQuotesForRfq(rfqId, { force: true });
+    setIsSimulatingQuotes(false);
+    if (res.ok) {
+      setSuccess(`⚡ Successfully generated ${res.quotesSubmitted ?? 4} simulated supplier quotes!`);
+      await loadCockpitStatus();
+      void refreshQuotes();
+      void recompute();
+    } else {
+      setError(res.error || 'Failed to simulate quotes');
+    }
+  };
 
   // Pilot / Context Metadata
   const pilot = useMemo(() => getPilotByRfqId(rfqId), [rfqId]);
@@ -114,6 +133,15 @@ export function EvaluationDecisionCockpit({
       if (statusRes.ok) {
         setRfqStatus(statusRes.status);
         if (statusRes.minQuotesRequired) setMinQuotesRequired(statusRes.minQuotesRequired);
+        // Auto-seed quotes if landed on evaluation while in draft
+        if (statusRes.status === 'DRAFT') {
+          void discoverAndInvite(rfqId).then(() => {
+            void openRfq(rfqId).then(() => {
+              void refreshQuotes();
+              void recompute();
+            });
+          });
+        }
       }
 
       if (awardRes.ok && awardRes.award) {
@@ -222,7 +250,19 @@ export function EvaluationDecisionCockpit({
   const handleCloseAndEvaluate = async () => {
     setBusy(true);
     setError(null);
-    const res = await closeClarificationForEvaluation(rfqId);
+
+    // If currently in DRAFT or 0 quotes, ensure RFQ is opened first with discovered quotes
+    if (rfqStatus === 'DRAFT' || quotes.length === 0) {
+      await discoverAndInvite(rfqId);
+      await openRfq(rfqId);
+    }
+
+    let res = await closeClarificationForEvaluation(rfqId);
+    if (!res.ok && (res.error?.toLowerCase().includes('draft') || res.error?.toLowerCase().includes('open'))) {
+      await openRfq(rfqId);
+      res = await closeClarificationForEvaluation(rfqId);
+    }
+
     setBusy(false);
     if (!res.ok) {
       setError(res.error);
@@ -290,7 +330,7 @@ export function EvaluationDecisionCockpit({
 
   return (
     <div
-      className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden"
+      className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden relative"
       data-testid="evaluation-decision-cockpit"
     >
       {/* 1. 7-State Golden Path Stepper Header */}
@@ -424,7 +464,7 @@ export function EvaluationDecisionCockpit({
         {activeTab === 'matrix' && (
           <div className="space-y-4 animate-in fade-in-50">
             {/* 4-Pillar Offers Header & Refresh */}
-            <div className="flex items-center justify-between px-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-black uppercase tracking-wider text-muted-foreground">
                   4-Pillar Offer Comparison Matrix
@@ -433,17 +473,29 @@ export function EvaluationDecisionCockpit({
                   🔒 Zero-Bias Sealed Protocol
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  void loadCockpitStatus();
-                  void refreshQuotes();
-                  void recompute();
-                }}
-                className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
-              >
-                <span>🔄</span> Refresh
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={isSimulatingQuotes}
+                  onClick={() => void handleSimulateQuotes()}
+                  className="rounded-lg border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/20 transition flex items-center gap-1 mobile-touch-target"
+                  data-testid="simulate-quotes-header-btn"
+                >
+                  <span>⚡</span>
+                  <span>{isSimulatingQuotes ? 'Simulating…' : 'Simulate 4 Demo Quotes'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void loadCockpitStatus();
+                    void refreshQuotes();
+                    void recompute();
+                  }}
+                  className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
+                >
+                  <span>🔄</span> Refresh
+                </button>
+              </div>
             </div>
 
             {/* Matrix Cards */}
@@ -455,6 +507,8 @@ export function EvaluationDecisionCockpit({
               rfqTitle={effectiveTitle}
               selectedQuoteId={selectedQuote?.quoteId ?? null}
               onSelectForAward={(q) => setSelectedQuoteId(q.quoteId)}
+              onSimulateQuotes={() => void handleSimulateQuotes()}
+              isSimulating={isSimulatingQuotes}
             />
 
             {/* Progressive Disclosure: Criterion Breakdown */}
@@ -698,7 +752,7 @@ export function EvaluationDecisionCockpit({
 
       {/* 2. SINGLE OBVIOUS PRIMARY ACTION (Sticky Bottom Action Dock) */}
       <aside
-        className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
+        className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
         data-testid="cockpit-sticky-bottom-bar"
         aria-label="Evaluation Cockpit Primary Action Dock"
       >
