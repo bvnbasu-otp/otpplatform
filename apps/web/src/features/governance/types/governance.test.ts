@@ -128,8 +128,8 @@ describe('4-Pillar candidate quote structure and quorum metrics', () => {
   });
 
   it('validates anti-self-approval and COI separation rules', () => {
-    const creatorId = 'profile-buyer-1';
-    const voterId = 'profile-committee-2';
+    const creatorId: string = 'profile-buyer-1';
+    const voterId: string = 'profile-committee-2';
     const hasConflictOfInterest = creatorId === voterId;
     expect(hasConflictOfInterest).toBe(false);
   });

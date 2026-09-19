@@ -913,6 +913,7 @@ export function ProfilePage() {
             </form>
           </div>
         </div>
+      </div>
       )}
 
       {/* 3. TAB 2: WORKSPACE & TEAM MEMBERS */}
@@ -1345,6 +1346,9 @@ export function ProfilePage() {
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
           organizationId={orgId}
+          organizationName={context.organizationName || orgName || 'Organization'}
+          initialTierId={subscription?.tierId}
+          initialCycle={subscription?.plan || 'MONTHLY'}
           onSuccess={() => {
             setIsPaymentModalOpen(false);
             if (context.organizationId) {

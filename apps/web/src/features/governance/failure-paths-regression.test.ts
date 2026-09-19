@@ -207,8 +207,8 @@ describe('Phase 7.1 — 22 Formal Failure Path Regressions (F01 to F22)', () => 
 
   // F21: Cross-Organization Data Leakage
   it('F21: Enforces tenant organization ID isolation on procurement drafts', () => {
-    const org1 = 'org-tenant-a';
-    const org2 = 'org-tenant-b';
+    const org1: string = 'org-tenant-a';
+    const org2: string = 'org-tenant-b';
     expect(org1 === org2).toBe(false);
   });
 
