@@ -4,6 +4,7 @@ import { Button, Field, controlClasses } from '@/components/ui';
 import { useAuth } from '../AuthProvider';
 import { isSuperAdminEmail } from '../user-role';
 import { fetchDemoStatus } from '../../demo/api/demo';
+import { isDemoMode } from '../../demo/demo-config';
 
 type Method = 'code' | 'password';
 
@@ -173,8 +174,13 @@ export function SignInForm({
 
   useEffect(() => {
     async function checkDemo() {
+      // If client environment variable explicitly turns off demo mode, disable immediately
+      if (!isDemoMode) {
+        setDemoEnabled(false);
+        return;
+      }
       const status = await fetchDemoStatus();
-      setDemoEnabled(status.enabled);
+      setDemoEnabled(Boolean(status.enabled && isDemoMode));
     }
     void checkDemo();
   }, []);

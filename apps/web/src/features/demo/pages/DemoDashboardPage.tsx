@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { fetchScenarioBoard, stageScenario } from '../api/demo';
 import { useDemoMode } from '../hooks/use-demo-mode';
+import { isDemoMode } from '../demo-config';
 import {
   formatVotingPower,
   isBehindTarget,
@@ -25,6 +26,8 @@ export function DemoDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [staging, setStaging] = useState<string | null>(null);
 
+  const isDemoActive = Boolean(isDemoMode && status.enabled);
+
   const load = useCallback(async () => {
     setIsLoading(true);
     const result = await fetchScenarioBoard();
@@ -38,12 +41,12 @@ export function DemoDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!status.enabled) {
+    if (!isDemoActive) {
       setIsLoading(false);
       return;
     }
     void load();
-  }, [status.enabled, load]);
+  }, [isDemoActive, load]);
 
   async function handleStage(code: string) {
     setStaging(code);
@@ -58,16 +61,16 @@ export function DemoDashboardPage() {
 
   if (statusLoading) return <p className="p-8 text-muted-foreground">Loading…</p>;
 
-  if (!status.enabled) {
+  if (!isDemoActive) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12" data-testid="demo-off">
         <h1 className="text-2xl font-semibold">Demo Mode Is Off</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          This installation is running for real. There are no demo scenarios to
-          drive, and the reset action is unavailable.
+          This installation is running in clean production mode. There are no demo scenarios to
+          drive, and demo features are hidden.
         </p>
-        <Link to="/" className="mt-4 inline-block text-sm text-primary hover:underline">
-          ← Back
+        <Link to="/dashboard" className="mt-4 inline-block text-sm text-primary hover:underline">
+          ← Back to Workspace
         </Link>
       </div>
     );

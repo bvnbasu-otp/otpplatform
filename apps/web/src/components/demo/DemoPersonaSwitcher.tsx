@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
+import { useDemoMode } from '@/features/demo';
+import { isDemoMode } from '@/features/demo/demo-config';
 
 export interface PersonaOption {
   id: 'buyer' | 'voter' | 'supplier';
@@ -51,7 +53,13 @@ export const DEMO_PERSONAS: PersonaOption[] = [
 ];
 
 export function DemoPersonaSwitcher() {
-  // Hidden until further notice
+  const { status } = useDemoMode();
+
+  // Strictly hidden if demo mode is false or disabled
+  if (!isDemoMode || !status.enabled) {
+    return null;
+  }
+
   return null;
 }
 

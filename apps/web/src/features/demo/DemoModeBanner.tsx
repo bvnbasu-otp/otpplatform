@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { isDemoMode } from './demo-config';
 import { useDemoMode } from './hooks/use-demo-mode';
 import { formatVotingPower } from './types/demo';
 import { DemoResetButton } from './DemoResetButton';
@@ -14,7 +15,8 @@ import { DemoResetButton } from './DemoResetButton';
 export function DemoModeBanner() {
   const { status, identity } = useDemoMode();
 
-  if (!status.enabled) return null;
+  // Hide completely if environment variable is false OR server database demo mode is disabled
+  if (!isDemoMode || !status.enabled) return null;
 
   return (
     <div

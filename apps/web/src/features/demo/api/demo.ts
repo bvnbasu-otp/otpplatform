@@ -16,13 +16,19 @@ import type {
  */
 
 export async function fetchDemoStatus(): Promise<DemoStatus> {
+  // Client-side quick check: if VITE_DEMO_MODE is not true, immediately report disabled
+  const envDemo = import.meta.env.VITE_DEMO_MODE === 'true';
+  if (!envDemo) {
+    return { enabled: false, runId: null, lastResetAt: null };
+  }
+
   const { data, error } = await supabase.rpc('demo_status');
 
   if (error || !data) return { enabled: false, runId: null, lastResetAt: null };
 
   const row = data as { enabled: boolean; run_id: string | null; last_reset_at: string | null };
   return {
-    enabled: Boolean(row.enabled),
+    enabled: Boolean(row.enabled && envDemo),
     runId: row.run_id,
     lastResetAt: row.last_reset_at,
   };

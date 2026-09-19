@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isDemoMode } from './demo-config';
+import { useDemoMode } from './hooks/use-demo-mode';
 import { WALKTHROUGH_STEPS } from './walkthrough-steps';
 
 export function DemoWalkthroughPanel() {
   const navigate = useNavigate();
+  const { status } = useDemoMode();
   const [open, setOpen] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
 
-  if (!isDemoMode) return null;
+  // If environment variable is false OR server database demo mode is disabled, hide completely
+  if (!isDemoMode || !status.enabled) return null;
 
   const step = WALKTHROUGH_STEPS[currentStep];
 

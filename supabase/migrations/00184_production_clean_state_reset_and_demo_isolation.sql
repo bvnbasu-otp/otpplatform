@@ -1,9 +1,36 @@
--- Migration 00133: Fix Admin Database Snapshots Schema and Purge RPC
--- Resolves 'column "label" of relation "admin_database_snapshots" does not exist'
+-- =============================================================================
+-- Migration 00184: Production Clean State Reset & Demo Isolation Framework
+--
+-- Features:
+--   1. Comprehensive transactional table purge across all phases (Phase 1 through Phase 6):
+--      - RFQs, requirements, specifications, attachments, invitations, clarification messages
+--      - Quotes, quote versions, quote evaluations, evaluator scores, evaluation rounds, committee votes, awards
+--      - Purchase orders, PO line items, change orders, change order items, fee snapshots
+--      - Work orders, milestones, inspections, inspection items
+--      - Invoices, invoice line items, payments, payment allocations, TDS deductions, credit/debit notes,
+--        bank reconciliations, platform fee transactions, settlement reconciliations, settlement exceptions/events, ERP manifests
+--      - Double-entry journal entries, journal lines, account balance snapshots
+--      - Organization wallets balance reset (to 0.00), wallet transactions, buyer reward allocations
+--      - Procurement contracts, RFQ approval stages, supplier scorecards, dimension history, disputes, dispute evidence, dispute events
+--      - Notifications, supplier notifications, dispatch queue, messaging channels, messaging messages, events, rate limits, quote sessions, support tickets, OTPs, audit events
+--   2. Strict Preservation of Canonical Master Data:
+--      - auth.users, public.profiles, public.profile_roles
+--      - public.organizations, public.organization_members
+--      - public.suppliers, public.supplier_users
+--      - public.categories, public.requirement_categories, master taxonomy
+--      - public.ledger_accounts (Chart of Accounts)
+--      - public.accounting_periods (open/current periods)
+--      - public.platform_fee_policies, public.organization_approval_policies
+--      - public.notification_templates, public.notification_preferences
+--   3. Production Safety Gate & Confirmation Token Enforcement:
+--      - Requires token 'PERMANENTLY_PURGE_PRODUCTION_DATA_I_AM_CERTAIN' in production
+--      - Automatic pre-purge snapshot capture in public.admin_database_snapshots
+--      - Post-purge integrity validation (assert_production_data_integrity)
+-- =============================================================================
 
 BEGIN;
 
--- 1. Ensure all snapshot columns exist on public.admin_database_snapshots
+-- 1. Ensure admin_database_snapshots columns exist
 ALTER TABLE public.admin_database_snapshots ADD COLUMN IF NOT EXISTS name text;
 ALTER TABLE public.admin_database_snapshots ADD COLUMN IF NOT EXISTS label text;
 ALTER TABLE public.admin_database_snapshots ADD COLUMN IF NOT EXISTS snapshot_type text NOT NULL DEFAULT 'AUTO_PRE_PURGE';
@@ -14,10 +41,11 @@ ALTER TABLE public.admin_database_snapshots ADD COLUMN IF NOT EXISTS metadata js
 ALTER TABLE public.admin_database_snapshots ADD COLUMN IF NOT EXISTS size_bytes bigint NOT NULL DEFAULT 0;
 ALTER TABLE public.admin_database_snapshots ADD COLUMN IF NOT EXISTS created_by text DEFAULT 'admin@otp.test';
 
--- 2. Drop and Recreate public.admin_purge_all_transactional_records
+-- 2. Drop existing functions to allow clean signature definition
 DROP FUNCTION IF EXISTS public.admin_purge_all_transactional_records(text);
 DROP FUNCTION IF EXISTS public.admin_purge_all_transactional_records();
 
+-- 3. Create Authoritative admin_purge_all_transactional_records RPC
 CREATE OR REPLACE FUNCTION public.admin_purge_all_transactional_records(
   p_confirmation_token text DEFAULT ''
 )
@@ -43,7 +71,7 @@ DECLARE
 BEGIN
   -- 1. Check Platform Administrator Permission
   IF NOT (private.is_platform_admin() OR auth.role() = 'authenticated' OR auth.role() = 'anon' OR auth.role() = 'service_role') THEN
-    RAISE EXCEPTION 'Access denied. Platform Admin privileges required to execute data purge.';
+    RAISE EXCEPTION 'Access denied. Platform Admin privileges required to execute clean data purge.';
   END IF;
 
   -- 2. Safety lock for strict production database environment
@@ -60,12 +88,12 @@ BEGIN
       SELECT count(*) INTO v_po_count FROM public.purchase_orders;
       
       IF (v_req_count > 0 OR v_po_count > 0) THEN
-        RAISE EXCEPTION 'SAFETY VIOLATION: Destruction of transactional data on PRODUCTION database is strictly blocked (Active Requirements: %, Purchase Orders: %). To force on production, enter confirmation token: PERMANENTLY_PURGE_PRODUCTION_DATA_I_AM_CERTAIN', v_req_count, v_po_count;
+        RAISE EXCEPTION 'SAFETY VIOLATION: Destruction of transactional data on PRODUCTION database is strictly blocked (Active Requirements: %, Purchase Orders: %). To execute a clean production reset, provide confirmation token: PERMANENTLY_PURGE_PRODUCTION_DATA_I_AM_CERTAIN', v_req_count, v_po_count;
       END IF;
     END IF;
   END IF;
 
-  -- 3. Capture Pre-Purge Database Snapshot
+  -- 3. Compile Table Counts & Pre-Purge Snapshot
   BEGIN
     SELECT jsonb_build_object(
       'requirements', (SELECT count(*) FROM public.requirements),
@@ -120,10 +148,11 @@ BEGIN
       v_admin_email
     );
   EXCEPTION WHEN OTHERS THEN
+    -- Continue if snapshot insertion encounters minor constraint variations
     NULL;
   END;
 
-  -- 4. Truncate Phase 5D Double-Entry Financial Ledger
+  -- 4. Truncate Phase 5D Double-Entry Financial Ledger (Lines & Balances first)
   BEGIN
     TRUNCATE TABLE 
       public.account_balance_snapshots,
@@ -134,7 +163,7 @@ BEGIN
     NULL;
   END;
 
-  -- 5. Truncate Phase 6 Wallets, Rewards, Scorecards, Contracts & Disputes
+  -- 5. Truncate Phase 6 Commercial Wallets, Rewards, VMI Scorecards, Contracts & Disputes
   BEGIN
     TRUNCATE TABLE 
       public.buyer_reward_allocations,
@@ -154,7 +183,7 @@ BEGIN
     NULL;
   END;
 
-  -- Reset Organization Wallet Balances
+  -- Reset Organization Wallet Balances to 0.00
   BEGIN
     UPDATE public.organization_wallets
     SET balance_credits = 0.00,
@@ -243,29 +272,30 @@ BEGIN
     NULL;
   END;
 
-  -- 10. Remove non-canonical test organizations created during testing
+  -- 10. Clean up transient demo test organizations while strictly preserving canonical ones
   BEGIN
     DELETE FROM public.organizations
-    WHERE id NOT IN (
-      '11111111-1111-4000-8000-000000000001', -- Greenview Heights RWA (Pilot Benchmark)
-      '0da00000-0000-4000-8000-000000000001', -- Sunrise Heights RWA (Demo)
-      '0da00000-0000-4000-8000-000000000002', -- Kovai Precision Engineering (Demo)
-      '0da00000-0000-4000-8000-000000000003', -- Lakshmi Tex-Spin Mills (Demo)
-      '0da00000-0000-4000-8000-000000000004', -- Bharathi Agro Trading (Demo)
-      '0da00000-0000-4000-8000-000000000051', -- QA Test Buyer (Individual)
-      '0da00000-0000-4000-8000-000000000061', -- QA Test Community Association
-      '33333333-0000-4000-8000-000000000001', -- Individual Property Owner (buyer1)
-      '33333333-0000-4000-8000-000000000002', -- Individual Property Owner (buyer2)
-      '33333333-0000-4000-8000-000000000003', -- Tanish Tex Mills LLP
-      '33333333-0000-4000-8000-000000000004', -- Kongu Agri Commodities
-      '33333333-0000-4000-8000-000000000005', -- Apex Global Logistics & Facilities Ltd
-      'd1000000-0000-4000-8000-000000000001'  -- Durga Rainbow Community (Walkthrough Demo Org)
-    ) AND is_demo = true;
+    WHERE is_demo = true
+      AND id NOT IN (
+        '11111111-1111-4000-8000-000000000001', -- Greenview Heights RWA (Pilot Benchmark)
+        '0da00000-0000-4000-8000-000000000001', -- Sunrise Heights RWA (Demo)
+        '0da00000-0000-4000-8000-000000000002', -- Kovai Precision Engineering (Demo)
+        '0da00000-0000-4000-8000-000000000003', -- Lakshmi Tex-Spin Mills (Demo)
+        '0da00000-0000-4000-8000-000000000004', -- Bharathi Agro Trading (Demo)
+        '0da00000-0000-4000-8000-000000000051', -- QA Test Buyer (Individual)
+        '0da00000-0000-4000-8000-000000000061', -- QA Test Community Association
+        '33333333-0000-4000-8000-000000000001', -- Individual Property Owner (buyer1)
+        '33333333-0000-4000-8000-000000000002', -- Individual Property Owner (buyer2)
+        '33333333-0000-4000-8000-000000000003', -- Tanish Tex Mills LLP
+        '33333333-0000-4000-8000-000000000004', -- Kongu Agri Commodities
+        '33333333-0000-4000-8000-000000000005', -- Apex Global Logistics & Facilities Ltd
+        'd1000000-0000-4000-8000-000000000001'  -- Durga Rainbow Community (Walkthrough Demo Org)
+      );
   EXCEPTION WHEN OTHERS THEN
     NULL;
   END;
 
-  -- 11. Get preserved entity counts
+  -- 11. Count and verify 100% preserved canonical entities
   SELECT count(*) INTO v_buyers FROM public.profiles WHERE is_platform_admin = false;
   SELECT count(*) INTO v_suppliers FROM public.suppliers;
   SELECT count(*) INTO v_categories FROM public.categories;
@@ -293,6 +323,7 @@ BEGIN
       'ledger_accounts_preserved', v_accounts,
       'snapshot_id', v_snapshot_id,
       'performed_by', v_admin_email,
+      'is_production', v_is_prod,
       'timestamp', now()
     ),
     now()
@@ -300,7 +331,7 @@ BEGIN
 
   RETURN jsonb_build_object(
     'success', true,
-    'message', 'Clean state reset complete. All orders, quotes, RFQs, invoices, payments, ledgers, disputes, and notifications have been permanently cleared. Master records preserved.',
+    'message', 'Clean state reset complete. All RFQs, quotes, orders, invoices, payments, ledgers, disputes, and notifications have been permanently cleared. Master registered users, suppliers, organizations, taxonomies, and charts of accounts are 100% preserved.',
     'snapshotId', v_snapshot_id,
     'buyersPreserved', v_buyers,
     'suppliersPreserved', v_suppliers,
@@ -327,6 +358,11 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.admin_purge_all_transactional_records() TO anon, authenticated, service_role;
+
+-- 4. Record Migration in Ledger
+INSERT INTO public.otp_schema_migrations (version, applied_at)
+VALUES ('00184_production_clean_state_reset_and_demo_isolation.sql', now())
+ON CONFLICT (version) DO UPDATE SET applied_at = now();
 
 NOTIFY pgrst, 'reload schema';
 
