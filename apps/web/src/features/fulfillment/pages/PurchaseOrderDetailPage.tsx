@@ -944,7 +944,7 @@ export function PurchaseOrderDetailPage({
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          📄 Screen 10: PO &amp; Ledger
+          📄 PO &amp; Ledger
         </button>
 
         <button
@@ -956,7 +956,7 @@ export function PurchaseOrderDetailPage({
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          🛠️ Screen 11: Milestones ({workOrder?.progressPercent || 0}%)
+          🛠️ Milestones ({workOrder?.progressPercent || 0}%)
         </button>
 
         <button
@@ -968,7 +968,7 @@ export function PurchaseOrderDetailPage({
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          🧾 Screen 12: Invoice
+          🧾 Invoice
         </button>
 
         <button
@@ -980,7 +980,7 @@ export function PurchaseOrderDetailPage({
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          💳 Screen 13: Escrow
+          💳 Settlement
         </button>
       </div>
 

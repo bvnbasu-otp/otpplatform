@@ -708,7 +708,7 @@ export function InvoicePaymentPanel({
       </section>
 
       {/* =========================================================================
-          SCREEN 12: ACTIVE INVOICE DETAIL & STATUTORY TAX BREAKDOWN
+          STATUTORY TAX BREAKDOWN
           ========================================================================= */}
       <section className="rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
@@ -716,7 +716,7 @@ export function InvoicePaymentPanel({
             <div className="flex items-center gap-2">
               <span className="text-sm">🧾</span>
               <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
-                Screen 12: Statutory GST Tax Invoice (Phase 5B)
+                Statutory GST Tax Invoice
               </h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -965,7 +965,7 @@ export function InvoicePaymentPanel({
       </section>
 
       {/* =========================================================================
-          SCREEN 13: ESCROW & PAYMENT EXECUTION SECTION (PHASE 5C.1)
+          PAYMENT EXECUTION & SETTLEMENT SECTION
           ========================================================================= */}
       <section className="rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
@@ -973,7 +973,7 @@ export function InvoicePaymentPanel({
             <div className="flex items-center gap-2">
               <span className="text-sm">💳</span>
               <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
-                Screen 13: Payment Execution &amp; Settlement
+                Payment Execution &amp; Settlement
               </h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">

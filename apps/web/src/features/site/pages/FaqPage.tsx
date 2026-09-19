@@ -337,7 +337,7 @@ export function FaqPage() {
                     04. Technical Architecture, Governance &amp; Direct Settlement Rules
                   </h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Direct escrow, milestone releases, zero commissions, immutable audit logging.
+                    Direct bilateral settlement, milestone releases, transparent platform fee, immutable audit logging.
                   </p>
                 </div>
               </div>

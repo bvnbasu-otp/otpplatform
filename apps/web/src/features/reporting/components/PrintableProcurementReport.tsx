@@ -26,20 +26,25 @@ export function PrintableProcurementReport({
   });
 
   return (
-    <div className="print-report-container hidden print:block text-slate-900 bg-white p-8 max-w-5xl mx-auto font-sans leading-normal">
+    <div className="print-report-container hidden print:block text-slate-900 bg-white p-8 max-w-5xl mx-auto font-sans leading-normal print:p-6 print:max-w-full">
       {/* Official Header */}
       <div className="border-b-2 border-slate-900 pb-4 mb-6">
         <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">
-              Procurement Decision &amp; Fulfillment Statement
-            </h1>
-            <p className="text-sm font-semibold text-slate-700 mt-0.5">
-              Platform Governance Engine: {PRODUCT_NAME} ({PRODUCT_FULL_NAME})
-            </p>
-            <p className="text-xs text-slate-600 mt-1">
-              <strong>Reporting Entity:</strong> {organizationName}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white font-black text-xl">
+              OTP
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">
+                Procurement Decision &amp; Fulfillment Statement
+              </h1>
+              <p className="text-sm font-semibold text-slate-700 mt-0.5">
+                Platform Governance Engine: {PRODUCT_NAME} ({PRODUCT_FULL_NAME})
+              </p>
+              <p className="text-xs text-slate-600 mt-1">
+                <strong>Reporting Entity:</strong> {organizationName}
+              </p>
+            </div>
           </div>
           <div className="text-right text-xs text-slate-600">
             <p className="font-bold text-slate-900">REPORT REF: OTP-REP-{Date.now().toString().slice(-6)}</p>

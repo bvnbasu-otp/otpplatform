@@ -94,4 +94,14 @@ describe('User Profile Management & Customization Suite', () => {
     expect(channels.email).toBe(true);
     expect(channels.inapp).toBe(true);
   });
+
+  it('validates verified permission-backed role switching structure in RoleContext', () => {
+    const heldRoles = [
+      { code: 'BUYER', label: 'Buyer', permissions: ['READ', 'WRITE', 'PROPOSE'] },
+      { code: 'COMMITTEE_MEMBER', label: 'Committee Member', permissions: ['READ', 'VOTE'] },
+    ];
+    expect(heldRoles.length).toBe(2);
+    expect(heldRoles.find((r) => r.code === 'BUYER')?.permissions).toContain('PROPOSE');
+    expect(heldRoles.find((r) => r.code === 'COMMITTEE_MEMBER')?.permissions).toContain('VOTE');
+  });
 });

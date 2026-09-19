@@ -31,13 +31,13 @@ export function HomeContextBar({
     <header className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-2xs space-y-2.5">
       <div className="flex items-center justify-between gap-2.5">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground truncate">
-            {organizationName && (
-              <span className="truncate max-w-[160px] sm:max-w-xs">🏢 {organizationName}</span>
-            )}
-            {organizationName && <span>•</span>}
-            <span className="text-primary font-bold">{roleLabel}</span>
-          </div>
+              <div className="flex items-center gap-1.5 font-bold text-muted-foreground truncate">
+                {organizationName && (
+                  <span className="truncate max-w-[160px] sm:max-w-xs">🏢 {organizationName}</span>
+                )}
+                {organizationName && <span>•</span>}
+                <span className="text-foreground/90 font-bold">{roleLabel}</span>
+              </div>
 
           <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight truncate mt-0.5">
             {greeting}, {name}

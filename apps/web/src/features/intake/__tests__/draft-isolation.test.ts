@@ -82,4 +82,29 @@ describe('Buyer Intake Draft Isolation & User Safety', () => {
     expect(loadLocalIntakeDraft(orgId, userA)).toBeNull();
     expect(loadLocalIntakeDraft(orgId, userB)?.scopeState?.title).toBe('Bob Security Cameras');
   });
+
+  it('guarantees intake inputs (Type, Voice, Photo, Upload, Template) remain strictly in draft until explicit buyer confirmation', () => {
+    const orgId = 'org-1';
+    const userId = 'user-1';
+    const draft: Omit<SavedIntakeState, 'version' | 'updatedAt'> = {
+      stepIndex: 0,
+      furthestIndex: 0,
+      draft: null,
+      scopeState: {
+        originalText: 'Dictated Voice Input for Elevator Maintenance',
+        title: 'Elevator Maintenance',
+        categoryId: 'cat-elevators',
+        subcategoryId: 'sub-amc',
+        requirementMode: 'SERVICE',
+        quantity: 1,
+        unit: 'JOB',
+      },
+    };
+
+    saveLocalIntakeDraft(draft, orgId, userId);
+    const loaded = loadLocalIntakeDraft(orgId, userId);
+
+    expect(loaded?.draft).toBeNull();
+    expect(loaded?.scopeState?.originalText).toBe('Dictated Voice Input for Elevator Maintenance');
+  });
 });

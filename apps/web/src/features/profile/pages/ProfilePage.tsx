@@ -15,6 +15,13 @@ import { useTheme, ThemeBottomSheet } from '@/features/theme';
 import { ChangePasswordModal } from '@/features/roles/components/ChangePasswordModal';
 import { listOrgMembers, inviteOrgMember, removeOrgMember, type OrgMember } from '@/features/org/api/org-members';
 import { RoleModeToggle } from '@/components/ui/RoleModeToggle';
+import {
+  SubscriptionPaymentModal,
+  SubscriptionExpiryBanner,
+  OtpWalletCreditsWidget,
+  fetchOrganizationSubscription,
+  type OrganizationSubscription,
+} from '@/features/subscription';
 
 const ROLE_OPTIONS = [
   { value: 'COMMITTEE_MEMBER', label: 'Committee Member — evaluates & votes on RFQs' },
@@ -32,7 +39,7 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 export function ProfilePage() {
-  const { context, refresh, switchOrg } = useRoleContext();
+  const { context, refresh, switchOrg, switchTo } = useRoleContext();
   const { user } = useAuth();
   const { theme, resolvedTheme, colorTheme } = useTheme();
 
@@ -101,6 +108,8 @@ export function ProfilePage() {
   const [inviteResult, setInviteResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
   const [switchingOrg, setSwitchingOrg] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<OrganizationSubscription | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   // Password modal & Canonical Theme Sheet Drawer
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -206,8 +215,12 @@ export function ProfilePage() {
     setEmail(context.email || '');
     setPhone(context.phone || '');
 
-    Promise.all([fetchMyProfile(), fetchUserOrganization().catch(() => null)])
-      .then(([res, orgRes]) => {
+    Promise.all([
+      fetchMyProfile(),
+      fetchUserOrganization().catch(() => null),
+      context.organizationId ? fetchOrganizationSubscription(context.organizationId).catch(() => null) : Promise.resolve(null),
+    ])
+      .then(([res, orgRes, subRes]) => {
         if (res.ok) {
           setFullName(res.profile.fullName || context.fullName || '');
           setTitle(res.profile.title || context.title || '');
@@ -218,6 +231,9 @@ export function ProfilePage() {
         if (orgRes && orgRes.ok) {
           setOrgName(orgRes.org.organizationName);
           setOrgId(orgRes.org.organizationId);
+        }
+        if (subRes && subRes.ok) {
+          setSubscription(subRes.subscription);
         }
       })
       .catch((err) => console.error('Error fetching profile:', err))
@@ -568,7 +584,24 @@ export function ProfilePage() {
 
       {/* 2. TAB 1: USER PROFILE & IDENTITY */}
       {activeTab === 'profile' && (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+        <div className="space-y-3">
+          {/* Subscription Expiry & Starter Credit Banner */}
+          {subscription && (
+            <SubscriptionExpiryBanner
+              subscription={subscription}
+              onRenewClick={() => setIsPaymentModalOpen(true)}
+            />
+          )}
+
+          {/* OTP Wallet Credits Widget */}
+          {orgId && (
+            <OtpWalletCreditsWidget
+              organizationId={orgId}
+              onApplyRenewal={() => setIsPaymentModalOpen(true)}
+            />
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
           {/* Identity & Avatar Card (4 cols) */}
           <div className="md:col-span-4 space-y-3">
             {/* Identity Hero Card */}
@@ -885,41 +918,84 @@ export function ProfilePage() {
       {/* 3. TAB 2: WORKSPACE & TEAM MEMBERS */}
       {activeTab === 'team' && (
         <div className="space-y-3">
-          {/* Organization Switcher Banner (if multi-org) */}
-          {context.organizations.length > 1 && (
-            <div className="rounded-2xl border border-border bg-card p-3.5 shadow-xs space-y-2">
+          {/* Organization Switcher & Role Selector Banner */}
+          <div className="rounded-2xl border border-border bg-card p-3.5 shadow-xs space-y-3">
+            <div>
               <h3 className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">
-                Active Organization &amp; Context
+                Active Organization &amp; Role Context
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {context.organizations.map((org) => {
-                  const isActive = org.id === context.organizationId;
-                  const isBusy = switchingOrg === org.id;
-                  return (
-                    <button
-                      key={org.id}
-                      type="button"
-                      disabled={isBusy}
-                      onClick={() => void handleSwitchOrg(org.id)}
-                      className={`flex items-center justify-between p-3 rounded-xl border text-left transition min-h-[44px] mobile-touch-target ${
-                        isActive
-                          ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
-                          : 'border-border/70 bg-card hover:bg-muted text-foreground'
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold truncate">{org.name}</p>
-                        <p className="text-[10px] text-muted-foreground capitalize">
-                          {org.isPersonal ? 'Personal' : org.role.toLowerCase()}
-                        </p>
-                      </div>
-                      {isActive && <span className="text-primary font-extrabold">✓ Active</span>}
-                    </button>
-                  );
-                })}
-              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Switch between your authorized organizations and verified governance roles.
+              </p>
             </div>
-          )}
+
+            {context.organizations.length > 1 && (
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-muted-foreground">Organizations:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {context.organizations.map((org) => {
+                    const isActive = org.id === context.organizationId;
+                    const isBusy = switchingOrg === org.id;
+                    return (
+                      <button
+                        key={org.id}
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => void handleSwitchOrg(org.id)}
+                        className={`flex items-center justify-between p-3 rounded-xl border text-left transition min-h-[44px] mobile-touch-target cursor-pointer ${
+                          isActive
+                            ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                            : 'border-border/70 bg-card hover:bg-muted text-foreground'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold truncate">{org.name}</p>
+                          <p className="text-[10px] text-muted-foreground capitalize">
+                            {org.isPersonal ? 'Personal' : org.role.toLowerCase()}
+                          </p>
+                        </div>
+                        {isActive && <span className="text-primary font-extrabold">✓ Active</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {context.roles.length > 1 && (
+              <div className="space-y-1.5 pt-2 border-t border-border/60">
+                <span className="text-[11px] font-bold text-muted-foreground">Active Operational Role:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {context.roles.map((r) => {
+                    const isActive = r.code === context.activeRole?.code;
+                    return (
+                      <button
+                        key={r.code}
+                        type="button"
+                        onClick={async () => {
+                          if (r.code !== context.activeRole?.code) {
+                            await switchTo(r.code);
+                            await refresh();
+                          }
+                        }}
+                        className={`flex items-center justify-between p-3 rounded-xl border text-left transition min-h-[44px] mobile-touch-target cursor-pointer ${
+                          isActive
+                            ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                            : 'border-border/70 bg-card hover:bg-muted text-foreground'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold truncate">{r.label}</p>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1">{r.description}</p>
+                        </div>
+                        {isActive && <span className="text-primary font-extrabold">✓ Active</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Team Invitation Card (if Manager/Owner) */}
           {canManageTeam && (
@@ -1262,6 +1338,23 @@ export function ProfilePage() {
         isOpen={showThemeSheet}
         onClose={() => setShowThemeSheet(false)}
       />
+
+      {/* Subscription Payment Modal */}
+      {isPaymentModalOpen && orgId && (
+        <SubscriptionPaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          organizationId={orgId}
+          onSuccess={() => {
+            setIsPaymentModalOpen(false);
+            if (context.organizationId) {
+              void fetchOrganizationSubscription(context.organizationId).then((res) => {
+                if (res.ok) setSubscription(res.subscription);
+              });
+            }
+          }}
+        />
+      )}
 
       {/* Guaranteed scroll clearance spacer above MobileBottomNav */}
       <div className="h-28 sm:h-16 shrink-0 w-full" aria-hidden="true" />

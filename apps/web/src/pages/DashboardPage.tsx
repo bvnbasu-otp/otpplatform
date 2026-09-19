@@ -4,6 +4,8 @@ import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import {
   SubscriptionPaymentModal,
+  SubscriptionExpiryBanner,
+  OtpWalletCreditsWidget,
   validateOrganizationSourcingAccess,
 } from '@/features/subscription';
 import { fastTrackExpressIntake } from '@/features/intake/api/fast-track-intake';
@@ -113,6 +115,22 @@ export function DashboardPage() {
         freeCredits={subscription?.freeRfqCredits}
         onRenewClick={() => setIsPaymentModalOpen(true)}
       />
+
+      {/* Subscription Expiry & Starter Credit Banner */}
+      {subscription && (
+        <SubscriptionExpiryBanner
+          subscription={subscription}
+          onRenewClick={() => setIsPaymentModalOpen(true)}
+        />
+      )}
+
+      {/* OTP Wallet & Sourcing Rewards Widget */}
+      {org?.organizationId && (
+        <OtpWalletCreditsWidget
+          organizationId={org.organizationId}
+          onApplyRenewal={() => setIsPaymentModalOpen(true)}
+        />
+      )}
 
       {/* Loading State */}
       {isLoading ? (

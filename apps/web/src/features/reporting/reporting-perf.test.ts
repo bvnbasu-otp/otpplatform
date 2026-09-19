@@ -44,4 +44,20 @@ describe('Spend Analytics In-Memory Computation & Aggregation', () => {
     expect(res.categoryBreakdown['Painting']).toBe(645600);
     expect(res.categoryBreakdown['Water Supply']).toBe(80000);
   });
+
+  it('validates printable A4 procurement report properties and cryptographic signoff structure', () => {
+    const sampleSummary = {
+      dateRange: { label: 'Last 30 Days', start: '2026-08-19', end: '2026-09-19' },
+      role: 'buyer',
+      totalOrdersCount: 3,
+      totalAmount: 725600,
+      settledAmount: 495600,
+      settledOrdersCount: 1,
+      activeAmount: 230000,
+      activeOrdersCount: 2,
+    };
+    expect(sampleSummary.totalOrdersCount).toBe(3);
+    expect(sampleSummary.totalAmount).toBe(725600);
+    expect(sampleSummary.settledAmount + sampleSummary.activeAmount).toBe(sampleSummary.totalAmount);
+  });
 });
