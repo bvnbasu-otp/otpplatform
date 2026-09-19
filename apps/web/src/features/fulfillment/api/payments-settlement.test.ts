@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { verifyPayment } from './payments';
 import { supabase } from '@/lib/supabase';
 
@@ -9,16 +9,28 @@ vi.mock('@/features/auth/user-role', () => ({
   }),
 }));
 
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
+vi.mock('@/lib/supabase', () => {
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
     from: vi.fn(),
-  },
-}));
+    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
+    },
+  };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
+});
 
 describe('verifyPayment controlled progressive settlement (Phase 5C.1)', () => {
+  const originalRpc = (supabase as any).rpc;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    delete (supabase as any).rpc;
+    (supabase as any).rpc = undefined;
+  });
+
+  afterEach(() => {
+    (supabase as any).rpc = originalRpc || vi.fn().mockResolvedValue({ data: null, error: null });
   });
 
   it('keeps PO and Work Order IN_PROGRESS when milestone payment is verified but other invoices remain unpaid', async () => {

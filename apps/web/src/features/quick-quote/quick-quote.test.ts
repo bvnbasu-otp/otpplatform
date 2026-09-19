@@ -8,15 +8,15 @@ import {
 import { supabase } from '@/lib/supabase';
 
 vi.mock('@/lib/supabase', () => {
-  return {
-    supabase: {
-      from: vi.fn(),
-      rpc: vi.fn(),
-      auth: {
-        getUser: vi.fn(),
-      },
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
     },
   };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
 });
 
 describe('Quick Quote Feature Module Tests', () => {

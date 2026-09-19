@@ -3,15 +3,17 @@ import { listOrgMembers, inviteOrgMember, removeOrgMember, switchActiveOrganizat
 import { supabase } from '@/lib/supabase';
 import { switchActiveOrganization as switchOrgRpc } from '@/features/roles/api/roles';
 
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
+vi.mock('@/lib/supabase', () => {
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
     from: vi.fn(),
     rpc: vi.fn(),
     auth: {
       getUser: vi.fn(),
     },
-  },
-}));
+  };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
+});
 
 vi.mock('@/features/roles/api/roles', () => ({
   switchActiveOrganization: vi.fn(),

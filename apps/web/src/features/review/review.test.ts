@@ -4,15 +4,17 @@ import { supabase } from '@/lib/supabase';
 import { fetchLifecycleSignals } from '@/features/lifecycle/api/fetch-lifecycle';
 import { fetchPerformanceRecords } from '@/features/performance/api/fetch-performance';
 
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
+vi.mock('@/lib/supabase', () => {
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
     from: vi.fn(),
     rpc: vi.fn(),
     auth: {
       getUser: vi.fn(),
     },
-  },
-}));
+  };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
+});
 
 vi.mock('@/features/lifecycle/api/fetch-lifecycle', () => ({
   fetchLifecycleSignals: vi.fn(),

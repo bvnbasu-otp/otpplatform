@@ -8,17 +8,18 @@ import {
 } from './api/clarification';
 import { supabase } from '@/lib/supabase';
 import * as userRole from '@/features/auth/user-role';
+import { createSupabaseQueryMock } from '@/lib/supabase-query-mock';
 
 vi.mock('@/lib/supabase', () => {
-  return {
-    supabase: {
-      from: vi.fn(),
-      rpc: vi.fn(),
-      auth: {
-        getUser: vi.fn(),
-      },
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
     },
   };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
 });
 
 describe('Clarification Feature Module Tests', () => {

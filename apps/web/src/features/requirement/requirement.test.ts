@@ -2,32 +2,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchUserOrganization, fetchOrganizationRequirements } from './api/requirements';
 import { supabase } from '@/lib/supabase';
 import * as userRole from '@/features/auth/user-role';
+import { createSupabaseQueryMock } from '@/lib/supabase-query-mock';
 
 vi.mock('@/lib/supabase', () => {
-  return {
-    supabase: {
-      from: vi.fn(),
-      rpc: vi.fn(),
-      auth: {
-        getUser: vi.fn(),
-      },
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
     },
   };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
 });
-
-function createSupabaseQueryMock(resolvedResult: { data: any; error: any }) {
-  const chain: any = {
-    select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    order: vi.fn(() => chain),
-    limit: vi.fn(() => chain),
-    maybeSingle: vi.fn().mockResolvedValue(resolvedResult),
-    single: vi.fn().mockResolvedValue(resolvedResult),
-    then: (resolve: (val: any) => any, reject?: (err: any) => any) =>
-      Promise.resolve(resolvedResult).then(resolve, reject),
-  };
-  return chain;
-}
 
 describe('Requirement Feature Module Tests', () => {
   let profileSpy: any;
