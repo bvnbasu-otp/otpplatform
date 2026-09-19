@@ -194,7 +194,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
         rfqId={rfqId}
         role="buyer"
         backToUrl={`/requirements/${requirementId}`}
-        backToLabel="Step 1: Spec Submitted"
+        backToLabel="Requirement Specification"
       />
 
       {/* Top Compact Requirement Context */}
@@ -436,7 +436,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
                 data-testid="continue-to-market-intelligence-cta"
               >
-                <span>Step 3: Market Intelligence</span>
+                <span>Market Intelligence</span>
                 <span>→</span>
               </Link>
             ) : (

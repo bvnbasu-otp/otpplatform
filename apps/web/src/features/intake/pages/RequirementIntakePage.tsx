@@ -10,6 +10,7 @@ import {
 import { Button, WizardStepper, type WizardStep } from '@/components/ui';
 import { REQUIREMENT_PROMPT_KEY } from '@/features/site/components/RequirementPrompt';
 import { useRoleContext } from '@/features/roles';
+import { useAuth } from '@/features/auth';
 import { fetchSuggestedWeights } from '../api/taxonomy';
 import { publishDraft } from '../api/draft';
 import type { DraftPatch } from '../api/draft';
@@ -61,6 +62,7 @@ function readHandoff(queryText: string | null): string {
 export function RequirementIntakePage() {
   const navigate = useNavigate();
   const { context } = useRoleContext();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const requirementId = searchParams.get('draft');
   const [handoff] = useState(() =>
@@ -238,6 +240,29 @@ export function RequirementIntakePage() {
   async function handlePublishWithSourcing(sourcingPatch: DraftPatch) {
     if (!draft) return;
 
+    // Check if user is unauthenticated
+    if (!user || !context.profileId) {
+      const latestDraft = {
+        ...draft,
+        sourcing: {
+          ...draft.sourcing,
+          ...sourcingPatch.sourcing,
+        },
+      };
+      saveLocalIntakeDraft(
+        {
+          stepIndex: 5,
+          furthestIndex: Math.max(furthestIndex, 5),
+          draft: latestDraft,
+          parsed,
+        },
+        context.organizationId,
+      );
+      const redirectUrl = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+      navigate(redirectUrl);
+      return;
+    }
+
     if (subscription?.isExpired && (!subscription.freeRfqCredits || subscription.freeRfqCredits <= 0)) {
       setIsPaymentModalOpen(true);
       setPublishError('Your prepaid subscription has expired and you have 0 free RFQ credits remaining. Please recharge via UPI to publish requirements.');
@@ -266,6 +291,11 @@ export function RequirementIntakePage() {
     setIsPublishing(false);
 
     if (!result.ok) {
+      if (result.error?.toLowerCase().includes('authenticated') || result.error?.toLowerCase().includes('not logged in')) {
+        const redirectUrl = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        navigate(redirectUrl);
+        return;
+      }
       setPublishError(result.error);
       return;
     }

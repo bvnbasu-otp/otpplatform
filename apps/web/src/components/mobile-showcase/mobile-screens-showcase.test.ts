@@ -38,11 +38,11 @@ describe('Mobile-First Flow Pipeline Architecture Tests', () => {
 
   it('maps 5-step Executive Overview directly to the 7-screen mobile pipeline', () => {
     const buyerPhaseMappings = [
-      { phaseNumber: 1, label: 'Intake & Specs', screenIndices: [0, 1], screensLabel: 'Screens 01 & 02' },
-      { phaseNumber: 2, label: 'Sourcing Radar', screenIndices: [2], screensLabel: 'Screen 03' },
-      { phaseNumber: 3, label: 'Sealed Quoting', screenIndices: [3, 4], screensLabel: 'Screens 04 & 05' },
-      { phaseNumber: 4, label: 'Committee Vote', screenIndices: [5], screensLabel: 'Screen 06' },
-      { phaseNumber: 5, label: 'Digital PO & Tracking', screenIndices: [6], screensLabel: 'Screen 07' },
+      { phaseNumber: 1, label: 'Intake & Specs', screenIndices: [0, 1], screensLabel: 'Intake & Specs' },
+      { phaseNumber: 2, label: 'Sourcing Radar', screenIndices: [2], screensLabel: 'Supplier Radar' },
+      { phaseNumber: 3, label: 'Sealed Quoting', screenIndices: [3, 4], screensLabel: 'Quoting Engine' },
+      { phaseNumber: 4, label: 'Committee Vote', screenIndices: [5], screensLabel: 'Committee Governance' },
+      { phaseNumber: 5, label: 'Digital PO & Tracking', screenIndices: [6], screensLabel: 'Digital PO & Ledger' },
     ];
 
     expect(buyerPhaseMappings).toHaveLength(5);

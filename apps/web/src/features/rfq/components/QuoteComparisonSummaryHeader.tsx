@@ -47,7 +47,7 @@ export function QuoteComparisonSummaryHeader({
           <div className="min-w-0 space-y-0.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="rounded-md bg-teal-100 dark:bg-teal-950/60 px-2 py-0.5 text-[10px] font-extrabold text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 shrink-0">
-                Step 6 / 15 · Evaluation
+                Proposal Comparison &amp; Evaluation
               </span>
               {location && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">

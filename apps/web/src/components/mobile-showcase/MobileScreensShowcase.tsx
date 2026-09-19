@@ -58,7 +58,7 @@ export function MobileScreensShowcase() {
       icon: '🏢',
       title: 'Mobile Sourcing Cockpit',
       tagline: '1-Tap requirement launch, voice search, and real-time order pulse.',
-      badge: 'Screen 01 · Sourcing Cockpit',
+      badge: 'Requirement Intake',
       badgeColor: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-300',
       description: 'Zero desktop complexity. Post a procurement need in 10 seconds via voice or template chips.',
       component: <ScreenBuyerCockpit onNewRequirement={() => setActiveScreenIndex(1)} />,
@@ -70,7 +70,7 @@ export function MobileScreensShowcase() {
       icon: '🎙️',
       title: 'Conversational Voice Intake',
       tagline: 'Regional voice dictation with automatic spec parsing and 1-tap city selection.',
-      badge: 'Screen 02 · Voice Intake',
+      badge: 'Voice Intake',
       badgeColor: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300',
       description: 'Supports Tamil, Hindi, Kannada, and English. Extracts quantity, deadline, and technical SLAs automatically.',
       component: <ScreenBuyerVoiceIntake onNext={() => setActiveScreenIndex(2)} />,
@@ -82,7 +82,7 @@ export function MobileScreensShowcase() {
       icon: '📡',
       title: 'Multi-Channel Supplier Radar',
       tagline: 'Broadcasts sealed RFQ invitations across WhatsApp, ONDC, and SMS.',
-      badge: 'Screen 03 · Supplier Radar',
+      badge: 'Supplier Radar',
       badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300',
       description: 'Reaches local verified vendors without forcing them to create complicated portal accounts.',
       component: <ScreenBuyerSupplierRadar onNext={() => setActiveScreenIndex(3)} />,
@@ -94,7 +94,7 @@ export function MobileScreensShowcase() {
       icon: '💬',
       title: '30-Minute Mobile Quoting',
       tagline: 'WhatsApp & mobile-optimized 3-field numeric quote sheet with instant GST.',
-      badge: 'Screen 04 · Supplier Quoting',
+      badge: 'Quoting Engine',
       badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
       description: 'Suppliers quote within 30 minutes from their phones. All quotes remain cryptographically sealed.',
       component: <ScreenBuyerQuoting onNext={() => setActiveScreenIndex(4)} />,
@@ -106,7 +106,7 @@ export function MobileScreensShowcase() {
       icon: '⚖️',
       title: '4-Pillar Sealed Matrix',
       tagline: 'Zero-bias cards comparing ₹ Price, Delivery TAT, Warranty, and Merit Score.',
-      badge: 'Screen 05 · Sealed Matrix',
+      badge: 'Sealed Matrix',
       badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300',
       description: 'Vendor names are masked as Supplier A7K3, B2M9. Decisions are made 100% on commercial & technical merit.',
       component: <ScreenBuyerMatrix onNext={() => setActiveScreenIndex(5)} />,
@@ -118,7 +118,7 @@ export function MobileScreensShowcase() {
       icon: '🗳️',
       title: '1-Tap Committee Decision Room',
       tagline: 'Preset rationale chips, live quorum meters, and fast-track solo approvals.',
-      badge: 'Screen 06 · Committee Vote',
+      badge: 'Committee Governance',
       badgeColor: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-300',
       description: 'Eliminates endless WhatsApp committee arguments with transparent 1-tap recorded justifications.',
       component: <ScreenBuyerVoting onNext={() => setActiveScreenIndex(6)} />,
@@ -130,7 +130,7 @@ export function MobileScreensShowcase() {
       icon: '📦',
       title: 'Digital PO & Live Tracking',
       tagline: 'Instant GST Purchase Order execution and Swiggy-style milestone tracker.',
-      badge: 'Screen 07 · Digital PO & Tracking',
+      badge: 'Digital PO & Ledger',
       badgeColor: 'bg-emerald-600/10 text-emerald-800 dark:text-emerald-300 border-emerald-400',
       description: 'Unmask verified GST credentials, share PO via WhatsApp PDF, and track pickup to invoice settlement.',
       component: <ScreenBuyerOrderTracking onRestart={() => setActiveScreenIndex(0)} />,
@@ -145,7 +145,7 @@ export function MobileScreensShowcase() {
       icon: '📡',
       title: 'Supplier Radar & Notification Hub',
       tagline: 'View incoming sealed RFQ alerts filtered by location, taxonomy, capacity.',
-      badge: 'Screen 01 · Supplier Radar & Notification Hub',
+      badge: 'Supplier Radar & Notification Hub',
       badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300',
       description: 'Instant alerts received on WhatsApp and mobile app matched by domain taxonomy, HP rating, and radius.',
       component: <ScreenSupplierHub onNext={() => setActiveScreenIndex(1)} />,
@@ -157,7 +157,7 @@ export function MobileScreensShowcase() {
       icon: '⚡',
       title: '30-Minute Quoting Engine',
       tagline: 'Unit price + GST auto-split, TAT days, warranty SLA under masked alias.',
-      badge: 'Screen 02 · 30-Minute Quoting Engine',
+      badge: '30-Minute Quoting Engine',
       badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
       description: 'Suppliers quote unit rates within 30 minutes. Indian GST tax rates split automatically with zero complex account logins.',
       component: <ScreenSupplierQuotingEngine onNext={() => setActiveScreenIndex(2)} />,
@@ -169,7 +169,7 @@ export function MobileScreensShowcase() {
       icon: '📊',
       title: 'Quote Status & Active Quotes',
       tagline: 'Live status: Sealed, Under Review, Shortlisted, Outbid, with live revision controls.',
-      badge: 'Screen 03 · Quote Status & Active Quotes',
+      badge: 'Quote Status & Active Quotes',
       badgeColor: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300',
       description: 'Real-time quote tracking under identity-protected alias. Edit commercial offers or delivery TAT prior to closing.',
       component: <ScreenSupplierQuoteStatus onNext={() => setActiveScreenIndex(3)} />,
@@ -181,7 +181,7 @@ export function MobileScreensShowcase() {
       icon: '📝',
       title: 'Award Notification & PO Sign-off',
       tagline: 'Unmasked buyer GST credentials, digital PO acceptance.',
-      badge: 'Screen 04 · Award Notification & PO Sign-off',
+      badge: 'Award Notification & PO Sign-off',
       badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300',
       description: 'Winning quote triggers unmasked institutional buyer details, milestone schedule, and 1-tap digital PO acceptance.',
       component: <ScreenSupplierPoSignoff onNext={() => setActiveScreenIndex(4)} />,
@@ -193,7 +193,7 @@ export function MobileScreensShowcase() {
       icon: '🚚',
       title: 'Order Fulfillment & Milestone Tracker',
       tagline: 'Live status steps: Pickup Scheduled, In Progress, Ready for Delivery, Invoiced.',
-      badge: 'Screen 05 · Order Fulfillment & Milestone Tracker',
+      badge: 'Order Fulfillment & Milestone Tracker',
       badgeColor: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-300',
       description: 'Update execution stages with 1-thumb touch. Auto-generates GST tax invoices and payment release requests.',
       component: <ScreenSupplierFulfillmentTracker onRestart={() => setActiveScreenIndex(0)} />,
@@ -205,19 +205,19 @@ export function MobileScreensShowcase() {
   const nextScreen: MobileScreenDef = screens[(activeScreenIndex + 1) % screens.length] ?? screens[0]!;
 
   const buyerPhaseMappings: PhaseMapping[] = useMemo(() => [
-    { phaseNumber: 1, label: 'Intake & Specs', screenIndices: [0, 1], screensLabel: 'Screens 01 & 02' },
-    { phaseNumber: 2, label: 'Sourcing Radar', screenIndices: [2], screensLabel: 'Screen 03' },
-    { phaseNumber: 3, label: 'Sealed Quoting', screenIndices: [3, 4], screensLabel: 'Screens 04 & 05' },
-    { phaseNumber: 4, label: 'Committee Vote', screenIndices: [5], screensLabel: 'Screen 06' },
-    { phaseNumber: 5, label: 'Digital PO & Tracking', screenIndices: [6], screensLabel: 'Screen 07' },
+    { phaseNumber: 1, label: 'Intake & Specs', screenIndices: [0, 1], screensLabel: 'Intake & Specs' },
+    { phaseNumber: 2, label: 'Sourcing Radar', screenIndices: [2], screensLabel: 'Supplier Radar' },
+    { phaseNumber: 3, label: 'Sealed Quoting', screenIndices: [3, 4], screensLabel: 'Quoting Engine' },
+    { phaseNumber: 4, label: 'Committee Vote', screenIndices: [5], screensLabel: 'Committee Governance' },
+    { phaseNumber: 5, label: 'Digital PO & Tracking', screenIndices: [6], screensLabel: 'Digital PO & Ledger' },
   ], []);
 
   const supplierPhaseMappings: PhaseMapping[] = useMemo(() => [
-    { phaseNumber: 1, label: 'Radar & Alerts', screenIndices: [0], screensLabel: 'Screen 01' },
-    { phaseNumber: 2, label: '30-Min Quoting', screenIndices: [1], screensLabel: 'Screen 02' },
-    { phaseNumber: 3, label: 'Quote Status', screenIndices: [2], screensLabel: 'Screen 03' },
-    { phaseNumber: 4, label: 'Award & PO Sign-off', screenIndices: [3], screensLabel: 'Screen 04' },
-    { phaseNumber: 5, label: 'Live Fulfillment', screenIndices: [4], screensLabel: 'Screen 05' },
+    { phaseNumber: 1, label: 'Radar & Alerts', screenIndices: [0], screensLabel: 'Radar & Alerts' },
+    { phaseNumber: 2, label: '30-Min Quoting', screenIndices: [1], screensLabel: '30-Min Quoting' },
+    { phaseNumber: 3, label: 'Quote Status', screenIndices: [2], screensLabel: 'Quote Status' },
+    { phaseNumber: 4, label: 'Award & PO Sign-off', screenIndices: [3], screensLabel: 'Award & PO Sign-off' },
+    { phaseNumber: 5, label: 'Live Fulfillment', screenIndices: [4], screensLabel: 'Live Fulfillment' },
   ], []);
 
   const phaseMappings: PhaseMapping[] = pipelineMode === 'buyer' ? buyerPhaseMappings : supplierPhaseMappings;
@@ -603,7 +603,7 @@ export function MobileScreensShowcase() {
               {/* Phone Frame */}
               <MobilePhoneFrame
                 title={showSupplierCapabilityPreview ? 'Quick Capability Editor' : currentScreen.title}
-                badge={showSupplierCapabilityPreview ? 'Screen 00 · Radar Scope & Capabilities' : currentScreen.badge}
+                badge={showSupplierCapabilityPreview ? 'Capabilities & Scope' : currentScreen.badge}
                 badgeColor={
                   showSupplierCapabilityPreview
                     ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300'
@@ -1241,7 +1241,7 @@ function ScreenBuyerOrderTracking({ onRestart }: { onRestart: () => void }) {
         onClick={onRestart}
         className="w-full rounded-xl border border-border bg-card py-2 text-xs font-bold text-foreground hover:bg-muted transition text-center"
       >
-        ↻ Back to Screen 01 (Cockpit Overview)
+        ↻ Back to Cockpit Overview
       </button>
     </div>
   );
@@ -1588,7 +1588,7 @@ function ScreenSupplierFulfillmentTracker({ onRestart }: { onRestart: () => void
         onClick={onRestart}
         className="w-full rounded-xl border border-border bg-card py-2 text-xs font-bold text-foreground hover:bg-muted transition text-center"
       >
-        ↻ Back to Screen 01 (Radar Hub)
+        ↻ Back to Radar Hub
       </button>
     </div>
   );

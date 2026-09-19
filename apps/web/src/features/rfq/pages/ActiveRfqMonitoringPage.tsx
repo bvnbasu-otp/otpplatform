@@ -248,7 +248,7 @@ export function ActiveRfqMonitoringPage({
                 className="min-h-[48px] flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
                 data-testid="market-intelligence-primary-cta"
               >
-                <span>Step 3: Market Intelligence →</span>
+                <span>Market Intelligence →</span>
               </Link>
             )}
           </div>

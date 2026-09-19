@@ -134,14 +134,17 @@ export function ProcurementStageNavigator({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={() => setShowSubTabs((v) => !v)}
-              className="rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition min-h-[32px] mobile-touch-target"
-              title="Toggle granular 15-step technical telemetry pipeline"
-            >
-              {showSubTabs ? '▲ Hide 15 Steps' : '⚡ 15 Steps'}
-            </button>
+            {role === 'admin' && (
+              <button
+                type="button"
+                onClick={() => setShowSubTabs((v) => !v)}
+                className="rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition min-h-[32px] mobile-touch-target"
+                title="Toggle granular 15-step technical telemetry pipeline"
+                data-testid="admin-telemetry-toggle"
+              >
+                {showSubTabs ? '▲ Hide 15 Steps' : '⚡ 15 Steps'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -228,8 +231,8 @@ export function ProcurementStageNavigator({
           </div>
         )}
 
-        {/* 15-Step Linear Telemetry Traversal Quick Ribbon (Collapsible) */}
-        {showSubTabs && (
+        {/* 15-Step Linear Telemetry Traversal Quick Ribbon (Collapsible - Admin Only) */}
+        {showSubTabs && role === 'admin' && (
           <div className="mt-2 border-t border-border/80 pt-2 space-y-1.5 animate-in fade-in-50">
             <div className="flex items-center justify-between">
               <span className="font-bold uppercase tracking-wider text-muted-foreground text-[9px]">
@@ -273,8 +276,8 @@ export function ProcurementStageNavigator({
 
       {/* 2. Fixed/Sticky Bottom Lifecycle Progress Bar (7 Golden Path + 15 Linear Steps) */}
       <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 shadow-md backdrop-blur transition-all pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))]" aria-label="Procurement Progress">
-        {/* Expanded Drawer (Upward) */}
-        {isBottomBarExpanded && (
+        {/* Expanded Drawer (Upward - Admin Only) */}
+        {isBottomBarExpanded && role === 'admin' && (
           <div className="border-b border-border bg-card/98 p-3 shadow-inner max-h-[50vh] overflow-y-auto animate-in slide-in-from-bottom-5">
             <div className="mx-auto max-w-7xl space-y-3">
               <div className="flex items-center justify-between">
@@ -439,13 +442,16 @@ export function ProcurementStageNavigator({
             <span className="hidden lg:inline text-[10px] text-muted-foreground truncate max-w-xs">
               {activeStageDesc.description}
             </span>
-            <button
-              type="button"
-              onClick={() => setIsBottomBarExpanded((v) => !v)}
-              className="rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-[10px] font-bold text-foreground hover:bg-muted transition flex items-center gap-1 min-h-[32px] mobile-touch-target"
-            >
-              <span>{isBottomBarExpanded ? '▼ Collapse' : '▲ 15 Steps'}</span>
-            </button>
+            {role === 'admin' && (
+              <button
+                type="button"
+                onClick={() => setIsBottomBarExpanded((v) => !v)}
+                className="rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-[10px] font-bold text-foreground hover:bg-muted transition flex items-center gap-1 min-h-[32px] mobile-touch-target"
+                data-testid="admin-bottom-telemetry-toggle"
+              >
+                <span>{isBottomBarExpanded ? '▼ Collapse' : '▲ 15 Steps'}</span>
+              </button>
+            )}
           </div>
         </div>
       </aside>

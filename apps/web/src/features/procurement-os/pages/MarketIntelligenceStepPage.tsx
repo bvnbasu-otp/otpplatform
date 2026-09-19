@@ -74,14 +74,14 @@ export function MarketIntelligenceStepPage() {
         rfqId={rfqId}
         role="buyer"
         backToUrl={resolvedReqId ? `/requirements/${resolvedReqId}/discover` : '/dashboard'}
-        backToLabel="Step 2: Sourcing Enquiry"
+        backToLabel="Sourcing Enquiry"
       />
 
       {/* Header Description - High Density Bar */}
       <div className="rounded-lg border bg-card px-3 py-2.5 shadow-2xs shrink-0 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="rounded-md bg-indigo-100 dark:bg-indigo-950/60 px-2 py-0.5 text-[10px] font-bold text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shrink-0">
-            Step 3 / 15
+            Market Intelligence &amp; Pricing Radar
           </span>
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate">
@@ -100,7 +100,7 @@ export function MarketIntelligenceStepPage() {
               className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
               data-testid="proceed-to-negotiation-btn"
             >
-              <span>Step 4: Negotiation &amp; Q&amp;A</span>
+              <span>Negotiation &amp; Q&amp;A</span>
               <span>→</span>
             </Link>
           ) : (

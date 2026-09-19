@@ -224,7 +224,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-cyan-100 dark:bg-cyan-950/70 px-2.5 py-0.5 text-[11px] font-bold text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
-                Screen 8 · Step {myVote ? '8' : '7'} of 15
+                Committee Voting &amp; Deliberation
               </span>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
@@ -243,7 +243,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 dark:bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 active:scale-[0.98] transition min-h-[44px]"
                 data-testid="proceed-to-award-button"
               >
-                <span>Proceed to Award (Step 9)</span>
+                <span>Proceed to Award</span>
                 <span>→</span>
               </Link>
             )}
@@ -744,7 +744,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 dark:bg-emerald-600 px-5 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-emerald-800 active:scale-[0.98] transition min-h-[44px]"
                 data-testid="proceed-to-award-button"
               >
-                <span>🏆 Proceed to Award (Step 9)</span>
+                <span>🏆 Proceed to Award</span>
                 <span>→</span>
               </Link>
             ) : (

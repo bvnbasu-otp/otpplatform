@@ -60,6 +60,9 @@ export type UploadResult =
  * upload complete so half-finished rows are easy to find and sweep.
  */
 export async function uploadAttachment(input: UploadAttachmentInput): Promise<UploadResult> {
+  if (input.requirementId?.startsWith('local-')) {
+    return { ok: false, error: 'Please save requirement before uploading attachments.' };
+  }
   const { file } = input;
   const contentType = contentTypeFor(file);
 
@@ -120,6 +123,9 @@ export async function uploadAttachment(input: UploadAttachmentInput): Promise<Up
 export async function fetchRequirementAttachments(
   requirementId: string,
 ): Promise<AttachmentsResult> {
+  if (!requirementId || requirementId.startsWith('local-')) {
+    return { ok: true, attachments: [] };
+  }
   const { data, error } = await supabase
     .from('attachments')
     .select(OWN_COLUMNS)

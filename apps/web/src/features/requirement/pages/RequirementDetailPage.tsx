@@ -87,7 +87,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
       <div className="rounded-lg border bg-card px-3 py-2.5 shadow-2xs shrink-0 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shrink-0">
-            Step 1 / 15
+            Requirement Specification
           </span>
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate">Once Spec is Submitted</h1>
@@ -100,7 +100,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
           to={`/requirements/${requirementId}/discover`}
           className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition shrink-0 mobile-touch-target"
         >
-          <span>Step 2: Send Enquiry</span>
+          <span>Send Sourcing Enquiry</span>
           <span>→</span>
         </Link>
       </div>
@@ -137,7 +137,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
             <div className="space-y-2">
               <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Workflow Transition</h2>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                This requirement is active in the 15-step linear pipeline. Next action is matching and broadcasting the enquiry to verified suppliers.
+                This requirement is active in the procurement pipeline. Next action is matching and broadcasting the enquiry to verified suppliers.
               </p>
             </div>
 
@@ -164,7 +164,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
                   to={`/requirements/${requirementId}/discover`}
                   className="min-h-[48px] w-full flex items-center justify-between rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
                 >
-                  <span>Step 2: Send Enquiry</span>
+                  <span>Send Sourcing Enquiry</span>
                   <span>→</span>
                 </Link>
               )}

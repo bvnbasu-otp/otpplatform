@@ -181,7 +181,7 @@ export function RfqReviewPublishPage({
         rfqId={rfq.id}
         role="buyer"
         backToUrl={`/requirements/${requirement.id}/discover`}
-        backToLabel="Step 2: Supplier Discovery"
+        backToLabel="Supplier Discovery"
       />
 
       {/* Header Banner */}
@@ -309,7 +309,7 @@ export function RfqReviewPublishPage({
                   className="min-h-[48px] flex-1 sm:flex-initial inline-flex items-center justify-center rounded-xl border bg-muted/40 px-3.5 py-2.5 text-xs font-semibold text-foreground hover:bg-muted transition mobile-touch-target"
                   data-testid="market-intelligence-button"
                 >
-                  Step 3: Intelligence
+                  Market Intelligence
                 </Link>
               </div>
             ) : (

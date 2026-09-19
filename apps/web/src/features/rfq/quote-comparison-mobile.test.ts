@@ -179,20 +179,20 @@ describe('Quote Comparison Mobile Redesign — Flagship OTP Screen', () => {
       if (isSoloBuyer) {
         return {
           type: 'SOLO_AWARD',
-          label: 'Proceed to Award (Step 9) →',
+          label: 'Proceed to Award →',
           targetUrl: selectedQuoteId ? `/rfq/${rfqId}/award?quote=${selectedQuoteId}` : `/rfq/${rfqId}/award`,
         };
       }
       if (hasCommitteeVote) {
         return {
           type: 'COMMITTEE_VOTE',
-          label: 'Cast Committee Vote (Step 7) →',
+          label: 'Cast Committee Vote →',
           targetUrl: selectedQuoteId ? `/rfq/${rfqId}/committee?quote=${selectedQuoteId}` : `/rfq/${rfqId}/committee`,
         };
       }
       return {
         type: 'PROCEED_COMMITTEE',
-        label: 'Proceed to Committee Vote (Step 7) →',
+        label: 'Proceed to Committee Vote →',
         targetUrl: selectedQuoteId ? `/rfq/${rfqId}/committee?quote=${selectedQuoteId}` : `/rfq/${rfqId}/committee`,
       };
     }

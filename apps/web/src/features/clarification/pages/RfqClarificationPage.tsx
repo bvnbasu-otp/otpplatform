@@ -79,7 +79,7 @@ export function RfqClarificationPage({ rfqId }: { rfqId: string }) {
       setError(result.error);
       return;
     }
-    setSuccess('Negotiation closed — proceed to Step 6: Compare Quotes.');
+    setSuccess('Negotiation closed — proceed to Compare Quotes.');
     await load();
   }
 
@@ -97,14 +97,14 @@ export function RfqClarificationPage({ rfqId }: { rfqId: string }) {
         rfqId={rfqId}
         role="buyer"
         backToUrl={`/rfq/${rfqId}/market-intelligence`}
-        backToLabel="Step 3: Market Intelligence"
+        backToLabel="Market Intelligence"
       />
 
       {/* Header Bar */}
       <div className="rounded-lg border bg-card px-3 py-2 shadow-2xs shrink-0 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="rounded-md bg-blue-100 dark:bg-blue-950/60 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
-            Step {activeLinearStep} / 15
+            Negotiation &amp; Clarification
           </span>
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate">
@@ -158,7 +158,7 @@ export function RfqClarificationPage({ rfqId }: { rfqId: string }) {
             to={`/rfq/${rfqId}/evaluation`}
             className="rounded bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition shrink-0"
           >
-            Step 6: Compare Quotes →
+            Compare Quotes →
           </Link>
         )}
       </div>

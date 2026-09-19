@@ -114,7 +114,7 @@ export function QuoteStickyBottomBar({
               data-testid="proceed-to-award-button"
             >
               <span>🏆</span>
-              <span>Proceed to Award (Step 9) →</span>
+              <span>Proceed to Award →</span>
             </Link>
           ) : hasCommitteeVote ? (
             <Link
@@ -123,7 +123,7 @@ export function QuoteStickyBottomBar({
               data-testid="proceed-to-evaluation-room-button"
             >
               <span>🗳️</span>
-              <span>Cast Committee Vote (Step 7) →</span>
+              <span>Cast Committee Vote →</span>
             </Link>
           ) : (
             <Link
@@ -132,7 +132,7 @@ export function QuoteStickyBottomBar({
               data-testid="proceed-to-evaluation-room-button"
             >
               <span>⚖️</span>
-              <span>Proceed to Committee Vote (Step 7) →</span>
+              <span>Proceed to Committee Vote →</span>
             </Link>
           )}
         </div>

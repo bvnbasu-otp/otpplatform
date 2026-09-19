@@ -35,7 +35,7 @@ export function AboutPage() {
             </span>
             <h2 className="text-sm font-bold text-foreground">Mobile-First Pipeline</h2>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              7-Screen buyer workflow and 5-screen supplier pipeline optimized for rapid voice dictation, WhatsApp quoting, and 1-tap voting.
+              6-Stage commercial procurement workflow and 5-screen supplier pipeline optimized for rapid voice dictation, WhatsApp quoting, and 1-tap voting.
             </p>
           </div>
 

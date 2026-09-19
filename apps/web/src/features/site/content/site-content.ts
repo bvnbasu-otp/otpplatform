@@ -356,17 +356,15 @@ export const GENERAL_FAQS: FaqEntry[] = [
       + '(min 50 characters). Both flows maintain 100% identity protection until award.',
   },
   {
-    question: 'What are the 8 Core Procurement Lifecycle States on OTP Platform?',
+    question: 'What are the 6 Core Commercial Procurement Lifecycle Stages on OTP Platform?',
     answer:
-      'Every procurement enquiry on the OTP Platform transitions through 7 chronological stages with State 8 as an automated SLA exception overlay:\n\n'
-      + '1. **Draft & Intake** — Commercial and technical specification intake (Express AI or 4-step wizard) with smart defaults.\n'
-      + '2. **Sourcing & Quoting** — Multi-pass verified supplier matching, discovery, and anonymous sealed quote submission.\n'
-      + '3. **Evaluation & Voting** — Identity-protected comparison matrix, anonymous clarifications, and committee consensus voting.\n'
-      + '4. **Award & Reveal** — Permanent freeze of evaluation scores, justification recording, and winning supplier identity unmasking.\n'
-      + '5. **PO & Execution** — Purchase Order issuance, live delivery tracking (0–100%), and on-site inspection sign-off.\n'
-      + '6. **Invoiced & Review** — GST tax invoice matching, line-item verification, and approval.\n'
-      + '7. **Settled & Rating** — Direct UPI/bank remittance, supplier merit score rating, and sealed immutable audit logging.\n'
-      + '8. **Stalled (>24h SLA Overlay)** — Automated detection of bottlenecks at any stage with 1-click diagnostic and unblocking actions.',
+      'Every procurement enquiry on the OTP Platform transitions through 6 chronological stages:\n\n'
+      + '1. **Requirement Intake & Scope** — Commercial and technical specification intake (Express AI or wizard) with smart defaults.\n'
+      + '2. **Supplier Discovery & Quoting** — Multi-pass verified supplier matching, discovery, and anonymous sealed quote submission.\n'
+      + '3. **Proposal Comparison & Evaluation** — Identity-protected comparison matrix, anonymous clarifications, and merit scoring.\n'
+      + '4. **Committee Governance & Voting** — Democratic evaluation room with quorum tracking and audit-stamped voting consensus.\n'
+      + '5. **Award & Controlled Supplier Reveal** — Permanent freeze of evaluation scores, justification recording, and winning supplier identity unmasking.\n'
+      + '6. **Purchase Order, Fulfillment & Direct Settlement** — Purchase Order issuance, live delivery tracking (0–100%), and direct bilateral settlement.',
   },
   {
     question: `Who can use ${PRODUCT_NAME}?`,
@@ -486,17 +484,17 @@ export const BUYER_FAQS: FaqEntry[] = [
       'No. You contract and settle directly with the supplier. The platform records purchase orders, work orders, sign-offs, invoices and approvals so there is an audit trail — but no payment passes through us, and we do not guarantee one.',
   },
   {
-    question: 'How do buyers navigate the 7 procurement lifecycle stages?',
+    question: 'How do buyers navigate the 6 commercial procurement lifecycle stages?',
     answer:
-      'Buyers progress smoothly through: (1) Draft requirement specification, (2) Sourcing and supplier invitation, (3) Sealed quote evaluation and committee voting, (4) Award lock and supplier reveal, (5) Purchase order issuance and execution tracking, (6) GST tax invoice review, and (7) Payment settlement with merit rating. If an order exceeds 24 hours without action, automated Stalled SLA diagnostics help you unblock it with one click.',
+      'Buyers progress smoothly through: (1) Requirement Intake & Scope, (2) Supplier Discovery & Quoting, (3) Proposal Comparison & Evaluation, (4) Committee Governance & Voting, (5) Award & Controlled Supplier Reveal, and (6) Purchase Order, Fulfillment & Direct Settlement. If an order exceeds 24 hours without action, automated Stalled SLA diagnostics help you unblock it with one click.',
   },
 ];
 
 export const SUPPLIER_FAQS: FaqEntry[] = [
   {
-    question: 'How do suppliers participate across the procurement lifecycle stages?',
+    question: 'How do suppliers participate across the 6 procurement lifecycle stages?',
     answer:
-      'Suppliers receive enquiry invitations via portal or WhatsApp in Stage 2 (Quoting), submit competitive sealed prices without revealing company identities during Stage 3 (Evaluation), and upon award in Stage 4, receive unmasked buyer details to generate official Purchase Orders (Stage 5), submit verified GST invoices (Stage 6), and receive direct settlement with trust-building ratings (Stage 7).',
+      'Suppliers receive enquiry invitations via portal or WhatsApp in Stage 2 (Supplier Discovery & Quoting), submit competitive sealed prices without revealing company identities during Stage 3 (Proposal Comparison & Evaluation), and upon award in Stage 5 (Award & Controlled Supplier Reveal), receive unmasked buyer details to generate official Purchase Orders, track execution, submit verified GST invoices, and receive direct settlement (Stage 6).',
   },
   {
     question: 'Will the buyer know it is us when they compare quotes?',

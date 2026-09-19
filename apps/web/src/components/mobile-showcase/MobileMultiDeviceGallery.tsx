@@ -60,7 +60,7 @@ export function MobileMultiDeviceGallery() {
             {/* DEVICE 1: HOME COCKPIT */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 01 · Sourcing Cockpit"
+                title="Requirement Intake"
                 badge="Sourcing Cockpit"
                 badgeColor="bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-300"
                 subtitle="Voice search & 1-tap template chips"
@@ -99,7 +99,7 @@ export function MobileMultiDeviceGallery() {
             {/* DEVICE 2: VOICE INTAKE */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 02 · Voice Intake"
+                title="Voice Intake"
                 badge="Voice Intake"
                 badgeColor="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300"
                 subtitle="Regional voice parsing in seconds"
@@ -138,7 +138,7 @@ export function MobileMultiDeviceGallery() {
             {/* DEVICE 3: SUPPLIER RADAR */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 03 · Supplier Radar"
+                title="Supplier Radar"
                 badge="Supplier Radar"
                 badgeColor="bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300"
                 subtitle="Broadcasts to verified local vendors"
@@ -175,7 +175,7 @@ export function MobileMultiDeviceGallery() {
             {/* DEVICE 4: SUPPLIER QUOTING */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 04 · Supplier Quoting"
+                title="Quoting Engine"
                 badge="Supplier Quoting"
                 badgeColor="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300"
                 subtitle="30 Min from Supplier"
@@ -205,7 +205,7 @@ export function MobileMultiDeviceGallery() {
             {/* DEVICE 5: SEALED MATRIX */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 05 · Sealed Matrix"
+                title="Sealed Matrix"
                 badge="Sealed Matrix"
                 badgeColor="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300"
                 subtitle="4-pillar metrics under protected aliases"
@@ -248,7 +248,7 @@ export function MobileMultiDeviceGallery() {
             {/* DEVICE 6: COMMITTEE VOTE */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 06 · Committee Vote"
+                title="Committee Governance"
                 badge="Committee Vote"
                 badgeColor="bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-300"
                 subtitle="1-tap preset rationale chips"
@@ -279,7 +279,7 @@ export function MobileMultiDeviceGallery() {
             {/* DEVICE 7: DIGITAL PO & TRACKING */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 07 · Digital PO & Tracking"
+                title="Digital PO &amp; Ledger"
                 badge="Digital PO & Tracking"
                 badgeColor="bg-emerald-600/10 text-emerald-800 dark:text-emerald-300 border-emerald-400"
                 subtitle="Digital GST PO & Delivery Tracking"
@@ -313,7 +313,7 @@ export function MobileMultiDeviceGallery() {
             {/* SUPPLIER DEVICE 1: RADAR & ALERTS */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 01 · Radar & Hub"
+                title="Supplier Radar &amp; Hub"
                 badge="Radar & Alerts"
                 badgeColor="bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300"
                 subtitle="Category & location matched RFQ alerts"
@@ -342,7 +342,7 @@ export function MobileMultiDeviceGallery() {
             {/* SUPPLIER DEVICE 2: 30-MIN QUOTING ENGINE */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 02 · Quoting Engine"
+                title="30-Minute Quoting Engine"
                 badge="30-Min Quoting"
                 badgeColor="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300"
                 subtitle="Instant GST auto-calculation & TAT"
@@ -370,7 +370,7 @@ export function MobileMultiDeviceGallery() {
             {/* SUPPLIER DEVICE 3: QUOTE STATUS */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 03 · Quote Status"
+                title="Quote Status &amp; Active Quotes"
                 badge="Quote Status"
                 badgeColor="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300"
                 subtitle="Live status tracking & term revisions"
@@ -398,7 +398,7 @@ export function MobileMultiDeviceGallery() {
             {/* SUPPLIER DEVICE 4: PO SIGN-OFF */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 04 · PO Sign-off"
+                title="Award Notification &amp; PO Sign-off"
                 badge="PO Acceptance"
                 badgeColor="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300"
                 subtitle="Unmasked buyer GST & 1-tap sign-off"
@@ -424,7 +424,7 @@ export function MobileMultiDeviceGallery() {
             {/* SUPPLIER DEVICE 5: FULFILLMENT TRACKER */}
             <div className="snap-center shrink-0">
               <MobilePhoneFrame
-                title="Screen 05 · Milestone Tracker"
+                title="Order Fulfillment &amp; Milestone Tracker"
                 badge="Fulfillment Tracker"
                 badgeColor="bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-300"
                 subtitle="4-stage milestone execution & invoicing"

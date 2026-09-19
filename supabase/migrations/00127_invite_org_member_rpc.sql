@@ -35,9 +35,9 @@ BEGIN
     'full_name', p.full_name,
     'email', p.email,
     'role', om.role::text,
-    'joined_at', om.created_at,
+    'joined_at', om.joined_at,
     'is_self', (p.id = v_caller)
-  ) ORDER BY om.created_at ASC), '[]'::jsonb)
+  ) ORDER BY om.joined_at ASC), '[]'::jsonb)
   INTO v_results
   FROM organization_members om
   JOIN profiles p ON p.id = om.profile_id

@@ -179,7 +179,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-rose-100 dark:bg-rose-950/70 px-2.5 py-0.5 text-[11px] font-bold text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                Screen 9 · Step {activeLinearStep} of 15
+                Controlled Supplier Identity Reveal
               </span>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
@@ -242,7 +242,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
               to={`/rfq/${rfqId}/award`}
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground min-h-[44px]"
             >
-              Record Award Decision (Step 9) →
+              Record Award Decision →
             </Link>
           </div>
         )}
@@ -370,7 +370,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                   data-testid="view-po-link"
                 >
                   <span>📄</span>
-                  <span>View Purchase Order (Step 13) →</span>
+                  <span>View Purchase Order →</span>
                 </Link>
               ) : (
                 <button

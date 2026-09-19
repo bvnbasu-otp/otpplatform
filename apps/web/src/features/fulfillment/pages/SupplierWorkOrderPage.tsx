@@ -145,7 +145,7 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          🛠️ Screen 11: Milestones ({workOrder.progressPercent}%)
+          🛠️ Delivery Milestones ({workOrder.progressPercent}%)
         </button>
 
         <button

@@ -116,7 +116,7 @@ describe('Phase 7.1 — 22 Formal Failure Path Regressions (F01 to F22)', () => 
   });
 
   // F09: Identity De-anonymization Premature Access
-  it('F09: Blocks access to revealed supplier identities before Step 12 award reveal', () => {
+  it('F09: Blocks access to revealed supplier identities before award reveal', () => {
     const rfq = { status: 'EVALUATING', revealStatus: 'PROTECTED' };
     const isRevealPermitted = rfq.revealStatus === 'REVEALED' || rfq.status === 'AWARDED';
     expect(isRevealPermitted).toBe(false);

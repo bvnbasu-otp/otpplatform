@@ -40,8 +40,9 @@ export function useAttachments({
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    if (!targetId) {
+    if (!targetId || targetId.startsWith('local-')) {
       setAttachments([]);
+      setError(null);
       return;
     }
     setIsLoading(true);
@@ -64,8 +65,8 @@ export function useAttachments({
 
   const upload = useCallback(
     async (file: File, kind: AttachmentKind, durationSeconds?: number) => {
-      if (!targetId) {
-        setError('Save the requirement before attaching files.');
+      if (!targetId || targetId.startsWith('local-')) {
+        setError('Please sign in or save requirement before attaching files.');
         return;
       }
       const result = await uploadAttachment({

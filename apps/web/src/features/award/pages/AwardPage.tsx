@@ -259,7 +259,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-yellow-100 dark:bg-yellow-950/70 px-2.5 py-0.5 text-[11px] font-bold text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800">
-                Screen 9 · Step {activeLinearStep} of 15
+                Award Governance &amp; Decision Lock
               </span>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${

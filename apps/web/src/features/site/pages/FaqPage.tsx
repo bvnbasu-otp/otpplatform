@@ -73,13 +73,13 @@ export function FaqPage() {
             How OTP Works &amp; FAQ
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed">
-            Understand the complete 7-screen mobile procurement pipeline, cryptographic alias protection, multi-channel vendor reach, and direct settlement rules.
+            Understand the complete 6-stage commercial procurement lifecycle, cryptographic alias protection, multi-channel vendor reach, and direct settlement rules.
           </p>
         </div>
 
         {/* 4 CORE ARCHITECTURAL ACCORDION SECTIONS */}
         <div className="space-y-4" id="workflow">
-          {/* SECTION 1: THE 7-SCREEN PROCUREMENT WORKFLOW */}
+          {/* SECTION 1: THE 6-STAGE SOURCING-TO-SETTLEMENT WORKFLOW */}
           <div className="rounded-2xl border bg-card shadow-xs overflow-hidden transition">
             <button
               type="button"
@@ -92,10 +92,10 @@ export function FaqPage() {
                 </span>
                 <div>
                   <h2 className="text-base sm:text-lg font-black text-foreground">
-                    01. The 7-Screen Procurement Workflow
+                    01. The 6-Stage Sourcing-to-Settlement Workflow
                   </h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    End-to-end visual breakdown from plain-text intake to digital GST Purchase Order.
+                    End-to-end visual breakdown from plain-text intake to digital GST Purchase Order and direct settlement.
                   </p>
                 </div>
               </div>
@@ -107,77 +107,67 @@ export function FaqPage() {
             {openSections.workflow && (
               <div className="p-4 sm:p-6 space-y-4 bg-muted/10 text-xs">
                 <p className="text-sm text-foreground leading-relaxed">
-                  The OTP Platform streamlines procurement into a mobile-first, 7-screen pipeline replacing convoluted desktop portals with high-velocity thumb interactions:
+                  The OTP Platform streamlines commercial procurement into a 6-stage lifecycle replacing convoluted desktop portals with high-velocity thumb interactions:
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
                   <div className="rounded-xl border bg-card p-3.5 space-y-1.5 shadow-2xs">
                     <span className="rounded bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-bold px-2 py-0.5 text-[10px]">
-                      Screen 01 · Sourcing Cockpit
+                      Stage 1
                     </span>
-                    <h3 className="font-bold text-foreground text-xs">1-Tap Sourcing Launch</h3>
+                    <h3 className="font-bold text-foreground text-xs">1. Requirement Intake &amp; Scope</h3>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Launch requirements in seconds via popular template tiles or voice search. Real-time 3-state glance bar (Active, Action, Settled).
+                      Launch requirements in seconds via structured specs, popular template tiles, or voice dictation with rule-based auto-extraction.
                     </p>
                   </div>
 
                   <div className="rounded-xl border bg-card p-3.5 space-y-1.5 shadow-2xs">
                     <span className="rounded bg-purple-500/10 text-purple-700 dark:text-purple-300 font-bold px-2 py-0.5 text-[10px]">
-                      Screen 02 · Voice Intake
+                      Stage 2
                     </span>
-                    <h3 className="font-bold text-foreground text-xs">Conversational Dictation</h3>
+                    <h3 className="font-bold text-foreground text-xs">2. Supplier Discovery &amp; Quoting</h3>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Speak requirement in Tamil, Hindi, or English. Rule-based parser auto-extracts technical capacity, delivery radius, and timeline.
+                      Matches verified regional suppliers within delivery radius and broadcasts sealed RFQ invites. Suppliers submit competitive quotes within 30 minutes.
                     </p>
                   </div>
 
                   <div className="rounded-xl border bg-card p-3.5 space-y-1.5 shadow-2xs">
                     <span className="rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 text-[10px]">
-                      Screen 03 · Supplier Radar
+                      Stage 3
                     </span>
-                    <h3 className="font-bold text-foreground text-xs">Multi-Channel Broadcast</h3>
+                    <h3 className="font-bold text-foreground text-xs">3. Proposal Comparison &amp; Evaluation</h3>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Scans verified regional suppliers within 15 km and broadcasts sealed RFQ invitations across WhatsApp, ONDC, and SMS.
+                      Side-by-side zero-bias metric cards comparing ₹ Price, TAT, Warranty, and Merit Score under anonymous aliases (e.g. Supplier A7K3).
                     </p>
                   </div>
 
                   <div className="rounded-xl border bg-card p-3.5 space-y-1.5 shadow-2xs">
                     <span className="rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold px-2 py-0.5 text-[10px]">
-                      Screen 04 · Supplier Quoting
+                      Stage 4
                     </span>
-                    <h3 className="font-bold text-foreground text-xs">30-Minute Quoting</h3>
+                    <h3 className="font-bold text-foreground text-xs">4. Committee Governance &amp; Voting</h3>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Suppliers quote base price, 1-tap GST (+0%, +18%, +28%), turnaround days, and warranty directly on mobile keyboards.
+                      Democratic evaluation room with 1-tap justification chips, quorum tracking, and audit-stamped voting consensus.
                     </p>
                   </div>
 
                   <div className="rounded-xl border bg-card p-3.5 space-y-1.5 shadow-2xs">
                     <span className="rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 text-[10px]">
-                      Screen 05 · Sealed Matrix
+                      Stage 5
                     </span>
-                    <h3 className="font-bold text-foreground text-xs">4-Pillar Zero-Bias Cards</h3>
+                    <h3 className="font-bold text-foreground text-xs">5. Award &amp; Controlled Supplier Reveal</h3>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Side-by-side vertical metric cards comparing ₹ Price, TAT, Warranty, and Merit Score under anonymous aliases (e.g. Supplier A7K3).
+                      Winning supplier is permanently locked and unmasked, verified GSTIN credentials revealed, and non-winning quotes remain sealed.
                     </p>
                   </div>
 
                   <div className="rounded-xl border bg-card p-3.5 space-y-1.5 shadow-2xs">
-                    <span className="rounded bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 font-bold px-2 py-0.5 text-[10px]">
-                      Screen 06 · Committee Vote
-                    </span>
-                    <h3 className="font-bold text-foreground text-xs">Democratic Decision Room</h3>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      1-Tap preset justification chips, live committee quorum meters, and fast-track solo approvals for individual owners.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border bg-card p-3.5 space-y-1.5 shadow-2xs sm:col-span-2 lg:col-span-3">
                     <span className="rounded bg-teal-500/10 text-teal-700 dark:text-teal-300 font-bold px-2 py-0.5 text-[10px]">
-                      Screen 07 · Digital PO &amp; Tracking
+                      Stage 6
                     </span>
-                    <h3 className="font-bold text-foreground text-xs">Winner Reveal &amp; Procure-to-Pay</h3>
+                    <h3 className="font-bold text-foreground text-xs">6. Purchase Order, Fulfillment &amp; Direct Settlement</h3>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Winning supplier is unmasked, verified GSTIN credentials revealed, instant PDF Purchase Order issued, and live milestone stepper tracks delivery.
+                      Instant PDF Purchase Order issued, milestone execution tracked (0–100%), and direct bilateral payment settlement completed with merit rating.
                     </p>
                   </div>
                 </div>

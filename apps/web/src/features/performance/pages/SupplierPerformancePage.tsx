@@ -64,7 +64,7 @@ export function SupplierPerformancePage({ rfqId }: SupplierPerformancePageProps)
       <header className="rounded-lg border bg-card px-3 py-2 shadow-2xs shrink-0 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="rounded-md bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
-            Step 15 / 15
+            Performance Scorecard &amp; Rating
           </span>
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate">Star Rating with Physical Justification</h1>

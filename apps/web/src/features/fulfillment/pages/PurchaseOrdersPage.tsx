@@ -274,7 +274,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
             <span className="text-base">📊</span>
             <div>
               <h1 className="text-xs sm:text-sm font-black tracking-tight text-foreground truncate">
-                Screen 10: Orders Ledger &amp; Reporting
+                Digital Orders Ledger &amp; Reporting
               </h1>
               <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
                 GST Compliance, PO Milestone Tracking &amp; Escrow Settlement

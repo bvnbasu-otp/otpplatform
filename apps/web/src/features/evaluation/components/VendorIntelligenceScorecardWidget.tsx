@@ -78,7 +78,7 @@ export function VendorIntelligenceScorecardWidget({
       </div>
 
       <p className="mt-2.5 text-[11px] text-slate-400 dark:text-slate-500 italic text-center">
-        🔒 Performance scorecard identity-protected prior to Step 12 winner reveal.
+        🔒 Performance scorecard identity-protected prior to winner reveal.
       </p>
     </div>
   );

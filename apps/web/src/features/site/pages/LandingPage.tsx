@@ -252,60 +252,43 @@ function HeroQuoteComparisonVisual() {
 // =============================================================================
 // SECTION 2: HOW OTP WORKS
 // =============================================================================
-const CANONICAL_LIFECYCLE_STAGES = [
-  'Requirement',
-  'Discovery',
-  'RFQ',
-  'Identity-Protected Evaluation',
-  'Market Intelligence',
-  'Committee Vote',
-  'Award',
-  'Reveal',
-  'PO',
-  'Work Order',
-  'Invoice',
-  'Payment',
-  'Performance',
-  'Audit',
-] as const;
-
 function HowItWorksSection() {
   const steps = [
     {
       num: '01',
       icon: '✍️',
-      title: 'Create Requirement',
-      desc: 'Tell us what you need via text or regional voice.',
+      title: 'Requirement Intake & Scope',
+      desc: 'Tell us what you need via structured text, specs, or regional voice dictation.',
     },
     {
       num: '02',
       icon: '🔍',
-      title: 'Find Suppliers',
-      desc: 'Regional verified suppliers are matched instantly.',
+      title: 'Supplier Discovery & Quoting',
+      desc: 'Broadcast to verified regional suppliers and receive competitive sealed quotes.',
     },
     {
       num: '03',
-      icon: '⚡',
-      title: 'Receive Quotes',
-      desc: 'Suppliers submit competitive quotes under aliases.',
+      icon: '📊',
+      title: 'Proposal Comparison & Evaluation',
+      desc: 'Compare price, delivery TAT, warranty, and merit scores under anonymous aliases.',
     },
     {
       num: '04',
-      icon: '📊',
-      title: 'Compare',
-      desc: 'See comparable offers without identity bias.',
+      icon: '🗳️',
+      title: 'Committee Governance & Voting',
+      desc: 'Evaluate proposals with multi-member committee voting and recorded justifications.',
     },
     {
       num: '05',
-      icon: '🗳️',
-      title: 'Decide',
-      desc: 'Vote with your committee, review and select.',
+      icon: '🏆',
+      title: 'Award & Controlled Reveal',
+      desc: 'Lock the award decision and unseal winning supplier credentials and verified GST.',
     },
     {
       num: '06',
-      icon: '🏆',
-      title: 'Award & Complete',
-      desc: 'PO → Work Order → Invoice → Direct Settlement.',
+      icon: '📦',
+      title: 'PO, Fulfillment & Settlement',
+      desc: 'Generate digital PO, track fulfillment milestones, and complete direct settlement.',
     },
   ];
 
@@ -314,34 +297,11 @@ function HowItWorksSection() {
       <div className="mx-auto max-w-5xl">
         <div className="text-center max-w-2xl mx-auto">
           <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            How OTP Works
+            The 6-Stage Commercial Procurement Lifecycle
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
-            Six simple steps from requirement to completed work order.
+            Six governed steps from requirement intake to direct settlement.
           </p>
-        </div>
-
-        {/* Canonical 14-Stage Governed Lifecycle Strip */}
-        <div className="mt-6 rounded-2xl border bg-card/60 p-3.5 sm:p-4 shadow-2xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-action">
-              Canonical Procurement Lifecycle
-            </span>
-            <span className="text-[10px] text-muted-foreground font-mono">14 Governed Stages</span>
-          </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] font-medium">
-            {CANONICAL_LIFECYCLE_STAGES.map((stage, idx) => (
-              <span key={stage} className="flex items-center gap-1.5 shrink-0">
-                <span className="shrink-0 rounded-lg border bg-muted/40 px-2.5 py-1 text-foreground shadow-2xs whitespace-nowrap">
-                  <span className="text-muted-foreground font-mono text-[9px] mr-1">{(idx + 1).toString().padStart(2, '0')}</span>
-                  {stage}
-                </span>
-                {idx < CANONICAL_LIFECYCLE_STAGES.length - 1 && (
-                  <span className="text-muted-foreground/50 shrink-0">→</span>
-                )}
-              </span>
-            ))}
-          </div>
         </div>
 
         {/* 6-Step Flow (Responsive Vertical on Mobile, Grid on Desktop) */}
@@ -357,7 +317,7 @@ function HowItWorksSection() {
                     {step.icon}
                   </span>
                   <span className="font-mono text-xs font-extrabold text-muted-foreground/60">
-                    STEP {step.num}
+                    STAGE {step.num}
                   </span>
                 </div>
                 <h3 className="mt-3 text-sm sm:text-base font-bold text-foreground">

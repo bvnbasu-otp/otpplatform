@@ -12,6 +12,7 @@ import {
 import { Badge, Button, Card, Field, NumberInput, RadioCardGroup } from '@/components/ui';
 import { EvaluationCriteriaEditor } from '@/features/evaluation/components/EvaluationCriteriaEditor';
 import { useRoleContext } from '@/features/roles';
+import { useAuth } from '@/features/auth';
 import { formatSize, signedUrlFor, useAttachments, type Attachment } from '@/features/attachments';
 import type { DraftPatch } from '../../api/draft';
 import type { IntakeDraft } from '../../types/intake-draft';
@@ -79,6 +80,7 @@ export function ReviewAndPublishStep({
   onPublish,
 }: ReviewAndPublishStepProps) {
   const { context } = useRoleContext();
+  const { user } = useAuth();
   const isFullGovernance = ['RESIDENTIAL_RWA', 'COMMUNITY', 'ENTERPRISE', 'RWA'].includes(
     context.buyerType || '',
   );
@@ -282,6 +284,17 @@ export function ReviewAndPublishStep({
           </p>
         </div>
       </div>
+
+      {!user && !context.profileId && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-foreground space-y-1">
+          <div className="flex items-center gap-1.5 font-bold text-primary">
+            <span>🔑</span> Guest / Unauthenticated Draft
+          </div>
+          <p className="text-muted-foreground text-[11px] leading-relaxed">
+            Your draft is safely saved on this device. Clicking <strong>Start Sourcing →</strong> will direct you to sign in or register to broadcast your requirement to verified suppliers.
+          </p>
+        </div>
+      )}
 
       {/* Validation Errors & Warnings Alert Banners */}
       {missingValidation.errors.length > 0 && (
