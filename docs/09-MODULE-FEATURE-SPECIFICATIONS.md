@@ -63,7 +63,7 @@ A centralized customer support hub linking user-submitted feedback directly to p
 ### 1.5 System Diagnostics, Test Center & Service Actions
 - **System Health (`/admin?tab=health`)**: Real-time probes for PostgreSQL latency, table record counts, audit chain integrity, Kong gateway, and WAHA WhatsApp session.
 - **Service Actions Panel (`/admin?tab=actions`)**: One-click execution of administrative routines (Kong restart, WAHA restart, database vacuum, mode-aware transaction purge).
-- **Pre-Production Test Center (`/admin?tab=tests`)**: Complete master regression matrix (**1,355 Vitest tests across 139 test files**) with an interactive live database test runner.
+- **Pre-Production Test Center (`/admin?tab=tests`)**: Complete master regression matrix (**1,514+ automated verifications across 12 layers**) with an interactive live database test runner.
 
 ---
 
@@ -71,13 +71,17 @@ A centralized customer support hub linking user-submitted feedback directly to p
 
 Designed for procurement managers, facility secretaries, and institutional buyers:
 
-### 2.1 Multimodal Intake & Dual-Track Wizards
-- **Multimodal Inputs**: Voice dictation, free-text NLP parsing, document spec upload, and photo capture.
+### 2.1 Multimodal Intake, Guest Draft Review & Sourcing Redirect
+- **Multimodal Inputs**: Voice dictation with UUID syntax guards, free-text NLP parsing, document spec upload, and photo capture.
+- **Guest Draft Review & Login Sourcing Redirect**: Unauthenticated visitors can draft and review specifications with instant restoration upon login/signup.
+- **Resilient Workspace Loading**: Continuous visibility of active subscription status and Organization Wallet balances.
+- **Single Authoritative Role Header**: Streamlined UI navigation with single unambiguous role badge.
 - **Fast Track (2-Step)**: Category selection, Indian Standards quantity unit, budget range, and immediate RFQ dispatch.
 - **Full Governance (4-Step)**: AI/rule-based NLP parsing of requirement text, compliance document uploads, custom evaluation weight assignment (50/20/15/15), and multi-tier approval matrix setup.
 
-### 2.2 15-Step Linear Procurement Workflow & VMI Comparison Room
-- **Monotonic Step Progression**: Requirements advance from `STEP_1_SPEC_SUBMITTED` to `STEP_15_STAR_RATING_JUSTIFICATION`.
+### 2.2 6-Stage Commercial View & VMI Comparison Room
+- **Commercial Progress**: Requirements advance cleanly across the 6-Stage Commercial Procurement Lifecycle (`DRAFT` → `QUOTING` → `EVALUATING` → `AWARDED` → `PO_ISSUED` → `SETTLED`).
+- **Telemetry Scrubbing**: Internal 15-step indices and prototype tags stripped from user views (verified by `ux-telemetry-abstraction.test.ts`).
 - **Identity-Protected Comparison Room**: Sealed supplier cards with cryptographic pseudonyms (`Supplier T74M`).
 - **Vendor Master Intelligence (VMI) Scorecards**: 35/30/20/15 scorecard metrics rendered as anonymized badges (`EXEMPLARY`, `4.8 - 5.0 ★`, `95%+ On-Time`).
 - **Bi-Directional Clarification Thread**: Chat with suppliers through masked channels without exposing buyer or seller contact details.

@@ -59,3 +59,13 @@ The platform maintains 16 standardized domain suppliers configured with valid GS
 - `gas02@otpdemo.test` — **Bharat Gas Piping Lead** (PNG Copper Piping & Commercial Reticulation)
 - `gas03@otpdemo.test` — **IndoGas Technical Lead** (High-Pressure Industrial Gas Infrastructure)
 - `gas04@otpdemo.test` — **Apex Gas Piping Rep** (Gas Leak Detection & Emergency Safety Valves)
+
+---
+
+## 4. Production Clean State Reset & Demo Isolation (Migration 00184)
+
+Implemented in migration `00184_production_clean_state_reset_and_demo_isolation.sql`:
+1. **Strict Data Separation**: Complete isolation between synthetic sandbox records (`is_demo = true` or `mode = 'DEMO'`) and live production accounts.
+2. **Deterministic Seed Reset**: `pnpm demo:reset` and `pnpm demo:seed` can reset demo environments without affecting live transactional ledgers.
+3. **Production Safety Gate**: Destruction or purge of production data requires the explicit cryptographic confirmation token `PERMANENTLY_PURGE_PRODUCTION_DATA_I_AM_CERTAIN`.
+4. **185 Contiguous Migrations**: All migration tables and test data generators conform strictly to the 185 PostgreSQL migration ledger.

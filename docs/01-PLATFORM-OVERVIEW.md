@@ -67,22 +67,31 @@ To maintain institutional neutrality, the following terminology standards are st
 
 ### 4.1 Canonical Procurement Lifecycle Sequence
 
-The canonical high-level procurement lifecycle is:
+The platform presents a streamlined **6-Stage Commercial Procurement Lifecycle** across all public touchpoints and user-facing views:
 
-**Requirement → Discovery → RFQ → Identity-Protected Evaluation → Market Intelligence → Committee Vote → Award → Reveal → PO → Work Order → Invoice → Payment → Performance → Audit**
+**1. Requirement & Specification (`DRAFT`) → 2. Sourcing & Quotes (`QUOTING`) → 3. Evaluation & Decision (`EVALUATING`) → 4. Contract & Award (`AWARDED`) → 5. Fulfillment & Inspection (`PO_ISSUED`) → 6. Invoicing & Settlement (`SETTLED`)**
 
-- **Market Intelligence** is positioned as an explicit lifecycle stage between **Identity-Protected Evaluation** and **Committee Vote** to provide market-pricing benchmarks and decision context before voting.
-- The lifecycle culminates at **Performance → Audit** (with **Audit** as the final governing control stage, never terminating at a generic "End").
+- **Public & Commercial Cleanliness**: All internal 15-step linear pipeline details and prototype telemetry are scrubbed from public views (enforced via `ux-telemetry-abstraction.test.ts`), presenting clean, enterprise-grade commercial progress.
+- **Admin Control Engine**: The full **15-Step Strict Monotonic Engine** (`STEP_1_SPEC_SUBMITTED` $\rightarrow$ `STEP_15_STAR_RATING_JUSTIFICATION`) is gated strictly behind administrative capability (`role === 'admin'`).
+- **Market Intelligence**: Explicitly integrated between Evaluation and Committee Deliberation to provide fair-market pricing benchmarks before awarding.
+- **Final Settlement & Audit**: The lifecycle culminates at comprehensive double-entry accounting settlement, performance scorecard updates, and immutable audit logs.
 
 ---
 
-## 5. Series-6 Certified Core Innovations
+## 5. Phase 7.1 Certified Innovations & System Milestones
 
-OTP embodies several proprietary algorithms and procedural innovations:
-1. **15-Step Strict Monotonic State Machine Engine**: Enforces sequential step transitions from `STEP_1_SPEC_SUBMITTED` to `STEP_15_STAR_RATING_JUSTIFICATION` with zero duplicate steps and zero out-of-order jumps.
-2. **Salting-Based Anonymous Supplier Label Generator**: Generates unlinkable, deterministic pseudonyms per RFQ so suppliers cannot be fingerprinted across inquiries.
-3. **Vendor Master Intelligence (VMI) 35/30/20/15 Scorecard**: Aggregates Quality (35%), Delivery (30%), SLA & Disputes (20%), and Commercial consistency (15%) into coarse performance tiers and anonymized badges.
-4. **Non-Custodial Double-Entry Ledger**: Balanced multi-party accounting tracking `0.50%` platform fees, `0.10%` buyer sourcing rewards, TDS (194C/194J/194Q), and GST splits without custodial money holding.
-5. **Tamper-Evident Contract Gate (Step 11)**: Deterministic markdown compilation, bilateral digital signature hashes, and automated liquidated damages calculations.
-6. **Intelligent Multimodal Buyer Intake**: Voice, Text, Document, and Photo intake governed by a strict **Buyer Confirmation Authority Boundary** where AI suggests but the buyer retains exclusive confirmation authority.
-7. **Device & Privacy Hardening**: Hardware track teardown for cameras/microphones, geolocation fallback, and universal metadata sanitization.
+OTP embodies several proprietary algorithms and procedural innovations validated through Phase 7.1 Re-Certification:
+1. **Phase 7.1 Closure & Human Defect Resolution**:
+   - **Baseline:** `01198bc` | **Final Certified Commit:** `c5c97ca`
+   - **Certification Status:** **CERTIFIED — UPGRADE RESILIENT** & **PHASE 7.1 FULLY CERTIFIED — PHASE 8 PILOT READINESS GATE OPEN**
+   - **Closed Defects (P1/P2):** Migration 00185 (`joined_at` column in `list_org_members` RPC), local UUID syntax guard for attachments and voice notes, guest unauthenticated draft review & login sourcing redirect, resilient workspace loading with persistent subscription/wallet visibility, single authoritative role header (duplicate badge removal), and removal of obsolete binary toggles from profile preferences.
+2. **22 Formal Failure Paths Regression Suite (`failure-paths-regression.test.ts`)**: 32/32 tests passed verifying all edge cases and boundary rejection conditions (F01–F22).
+3. **UX Telemetry Abstraction Regression Suite (`ux-telemetry-abstraction.test.ts`)**: Enforces clean 6-Stage commercial presentation across all user-facing views.
+4. **15-Step Strict Monotonic State Machine Engine**: Enforces sequential step transitions from `STEP_1_SPEC_SUBMITTED` to `STEP_15_STAR_RATING_JUSTIFICATION` (admin gated) with zero duplicate steps and zero out-of-order jumps.
+5. **Salting-Based Anonymous Supplier Label Generator**: Generates unlinkable, deterministic pseudonyms per RFQ so suppliers cannot be fingerprinted across inquiries.
+6. **Vendor Master Intelligence (VMI) 35/30/20/15 Scorecard**: Aggregates Quality (35%), Delivery (30%), SLA & Disputes (20%), and Commercial consistency (15%) into coarse performance tiers and anonymized badges.
+7. **Non-Custodial Double-Entry Ledger**: Balanced multi-party accounting tracking `0.50%` platform fees, `0.10%` buyer sourcing rewards, TDS (194C/194J/194Q), and GST splits without custodial money holding.
+8. **Tamper-Evident Contract Gate (Step 11)**: Deterministic markdown compilation, bilateral digital signature hashes, and automated liquidated damages calculations.
+9. **Intelligent Multimodal Buyer Intake**: Voice, Text, Document, and Photo intake governed by a strict **Buyer Confirmation Authority Boundary** where AI suggests but the buyer retains exclusive confirmation authority.
+10. **Device & Privacy Hardening**: Hardware track teardown for cameras/microphones, geolocation fallback, and universal metadata sanitization.
+11. **Technology Currency & Upgrade Resilience**: Node >=20 (tested 20.x, 22.x, 24.x LTS), TypeScript 5.6.3, React 19.2.8, React Router 7.18.2, Vite 6.4.3, Vitest 5.0.0, Tailwind CSS 3.4.19, Supabase JS 2.112.4, with 185 contiguous SQL migrations and 1,514+ automated verifications across 12 layers.

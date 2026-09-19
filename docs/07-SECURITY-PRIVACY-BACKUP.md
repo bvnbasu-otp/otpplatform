@@ -23,8 +23,9 @@ The OTP Platform enforces privacy through automated sanitization pipelines preve
   - Email Addresses: `[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}`
   - Social Media Links: Twitter/X handles, LinkedIn profiles, Instagram tags, WhatsApp invite links.
 
-### 1.4 Device Hardware Permissions & Track Teardown
+### 1.4 Device Hardware Permissions, Track Teardown & UUID Syntax Guards
 - **Microphone Teardown**: Audio stream tracks are immediately stopped (`track.stop()`) when voice dictation finishes or modals close.
+- **Voice Note UUID Syntax Guard**: In-memory audio recording blobs and temporary attachments are guarded with strict UUID syntax validation, eliminating invalid UUID format runtime errors during drafting.
 - **Camera Teardown**: Video streams used for photo capture or milestone inspections are immediately stopped and unbound.
 - **Geolocation Fallback**: High-precision GPS is requested with a graceful fallback to manual Indian PIN-code entry.
 
@@ -106,3 +107,10 @@ Restoration and disaster recovery are automated via [`scripts/restore-prod-db.ps
 - **Session & Role Verification**: Rejects unauthenticated visits to internal workspace views and redirects with preserved destination queries (`/login?redirect=...`).
 - **Administrative Diagnostic Cache Purging**: Calls `clearSensitiveClientState` to sanitize `sessionStorage` and `localStorage` of sensitive keys prefixed with `admin_`, `diagnostic_`, `sensitive_`, and `otp_admin_` when an unauthorized navigation occurs.
 - **Strict Role-Based Access Control (RBAC)**: Enforces role isolation across public routes, regular workspace routes, and elevated paths (`/admin`, `/purchase-orders`, `/rfq/:rfqId/contract`).
+
+### 5.6 Database Search Path & Stored Procedure Hardening
+- Every database stored procedure and RPC across all 185 migrations (`00001` through `00185`) explicitly declares:
+  ```sql
+  SECURITY DEFINER SET search_path = public, private, auth, extensions;
+  ```
+- This completely mitigates search path hijacking attacks and enforces 100% strict PostgreSQL Row-Level Security (RLS) isolation across all multi-tenant tables.

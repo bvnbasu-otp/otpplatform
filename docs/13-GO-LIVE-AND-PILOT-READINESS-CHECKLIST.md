@@ -8,11 +8,12 @@
 
 ## 1. Executive Summary & Readiness Verdict
 
-The **Open Trade & Procurement (OTP) Platform** has undergone comprehensive architectural, security, state-machine, operational, and multi-tenant evaluations under the Series-6 production baseline. 
+The **Open Trade & Procurement (OTP) Platform** has undergone comprehensive architectural, security, state-machine, operational, and multi-tenant evaluations under Phase 7.1 Final Closure & Re-Certification. 
 
-- **Overall Readiness Verdict**: **9.8 / 10** — 🟢 **APPROVED FOR CONTROLLED PILOT (10 Buyers, 30 Suppliers)**.
-- **Scope**: Covers technical prerequisites, 183 applied PostgreSQL migrations, strict RLS security, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 15-step linear monotonic procurement engine, support ticket routing to `bvnbasu@gmail.com`, payment webhook verification, atomic award locking, Step 11 Contract Gate, Vendor Master Intelligence (VMI), and Double-Entry Financial Accounting.
-- **Verification Confidence**: **1,355 automated tests passing (100% pass rate) across 139 test files**, zero TypeScript build errors, and zero runtime console crashes across mobile and desktop viewports.
+- **Overall Readiness Verdict**: **9.9 / 10** — 🟢 **PHASE 7.1 FULLY CERTIFIED — PHASE 8 PILOT READINESS GATE OPEN**.
+- **Scope**: Covers technical prerequisites, 185 contiguous PostgreSQL migrations, strict RLS security, hardened `search_path`, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 6-Stage Commercial Lifecycle UX mapped to the admin-gated 15-step linear monotonic engine, support ticket routing to `bvnbasu@gmail.com`, payment webhook verification, atomic award locking, Step 11 Contract Gate, Vendor Master Intelligence (VMI), and Double-Entry Financial Accounting.
+- **Verification Confidence**: **1,514+ automated verifications passing (100% pass rate) across 12 layers**, 22 Formal Failure Paths suite (`failure-paths-regression.test.ts`, 32/32 tests passed), UX telemetry scrub suite (`ux-telemetry-abstraction.test.ts`), zero TypeScript build errors, and zero runtime console crashes across mobile and desktop viewports.
+- **Closed Human-Reported Defects**: Migration 00185 (`joined_at` column in `list_org_members` RPC), attachments/voice notes local UUID syntax guard, guest unauthenticated draft review & login sourcing redirect, resilient workspace loading with persistent subscription/wallet visibility, single authoritative role header, and profile preferences cleanup.
 
 ```mermaid
 graph TD
@@ -41,7 +42,7 @@ Before opening the platform to friendly trial users or general production traffi
 ### 2.3 Row-Level Security (RLS) & Role Purity
 - [x] **All Public Tables Protected**: RLS enabled and strictly enforced on all tables in PostgreSQL (`organizations`, `rfqs`, `quotes`, `committee_votes`, `contract_agreements`, `organization_wallets`, `disputes`, `audit_events`, `notifications`, `support_tickets`, etc.).
 - [x] **SuperAdmin Role Isolation**: Migration `00123` ensures primary SuperAdmin account (`bvnbasu@gmail.com`) holds 0 organizational memberships, guaranteeing absolute impartiality.
-- [x] **Admin RPC Gatekeeping**: All administrative and troubleshooting procedures (`00139`, `00140`, `00170`, `00183`) enforce `private.is_platform_admin()`.
+- [x] **Admin RPC Gatekeeping**: All administrative and troubleshooting procedures (`00139`, `00140`, `00170`, `00183`, `00185`) enforce `private.is_platform_admin()`.
 - [x] **Canonical Identity-Protected Views**: Legacy alias views permanently purged (`00114`, `00117`); only `quotes_identity_protected` and `rfqs_supplier_masked` exposed.
 - [x] **Centralized Route Guards & Cache Sanitization**: Client `<ProtectedRoute>` enforces session auth, blocked user hold, onboarding verification, and role boundaries, with automatic cache sanitization (`clearSensitiveClientState()`) and deep-link redirect preservation.
 

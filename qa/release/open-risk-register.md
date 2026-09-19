@@ -1,17 +1,17 @@
 # OTP Platform — Master Open Risk Register & Mitigation Strategy
 
-**Document Identifier:** `OTP-RISK-REG-2026-09-13`  
+**Document Identifier:** `OTP-RISK-REG-2026-09-19-PHASE7.1`  
 **Security Classification:** Confidential / Release Operations Board  
-**Effective Date:** Sunday, September 13, 2026  
+**Effective Date:** Saturday, September 19, 2026  
 **Auditor in Charge:** Chief Release & Certification Auditor  
 **Target Platform:** Open Trade & Procurement (`OTP`) Platform  
-**Target Release Candidate:** `RC-1.0.0` (Release Snapshot 2026-09-13)  
+**Target Release Candidate:** Phase 7.1 Re-Certified Production Release (`Commit: c5c97ca`, Baseline: `01198bc`)  
 
 ---
 
 ## 1. Executive Summary & Risk Heatmap
 
-This Master Open Risk Register documents all identified technical, operational, statutory, integration, and security risks across the OTP platform following comprehensive evaluation of QA Phases A through F.
+This Master Open Risk Register documents all identified technical, operational, statutory, integration, and security risks across the OTP platform following comprehensive evaluation through Phase 7.1 Re-Certification.
 
 Each risk is classified by **Severity** (Critical, High, Medium, Low), **Likelihood** (High, Moderate, Low, Rare), **Trigger Threshold**, and assigned a deterministic **Mitigation & Containment Strategy**.
 

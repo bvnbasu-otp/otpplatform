@@ -1,11 +1,11 @@
 # OTP Platform — Phase H: Production Deployment & Release Candidate Checklist
 
 **Document Reference:** `QA-PHASE-H-PRODUCTION-DEPLOYMENT-CHECKLIST`  
-**Version:** 1.0.0-RC  
-**Date:** Sunday, September 13, 2026  
+**Version:** Phase 7.1 Certified Baseline  
+**Date:** Saturday, September 19, 2026  
 **Auditors & Sign-Off Authorities:** Lead DevOps Engineer, Site Reliability Engineer (SRE), Security Architect  
 **Platform Target:** Open Trade & Procurement (OTP) Platform  
-**Target Release Candidate:** `v1.0.0-rc1` (Git Commit: `f8a9e2c4`)  
+**Target Release Candidate:** Phase 7.1 Re-Certified Production Release (`Commit: c5c97ca`, Baseline: `01198bc`)  
 **Overall Readiness Score:** **100.0% (VERIFIED & PRODUCTION-READY)**
 
 ---
@@ -22,9 +22,9 @@ Phase H formalizes the transition of the Open Trade & Procurement (OTP) platform
 ```
 
 ### Transition Promotion Invariants:
-1. **Zero Unverified Code in Production:** 100% automated regression test pass rate (828+ tests across 12 suites) required before release promotion (`scripts/verify-staging-gate.ts`).
+1. **Zero Unverified Code in Production:** 100% automated regression test pass rate (1,514+ verifications across 12 suites) required before release promotion (`scripts/verify-staging-gate.ts`).
 2. **Strict Environment Separation:** Production runtime keys and secrets are physically segregated from development/staging environments with zero hardcoded credentials.
-3. **Zero Data Loss Guarantee:** Buyer/Supplier orders, accounts, and audit records are preserved unconditionally with automated pre-deployment snapshots and transactional rollback barriers.
+3. **Zero Data Loss Guarantee:** Buyer/Supplier orders, accounts, and audit records are preserved unconditionally with automated pre-deployment snapshots and transactional rollback barriers across 185 contiguous migrations.
 
 ---
 

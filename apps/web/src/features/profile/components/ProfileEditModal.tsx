@@ -619,7 +619,7 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
                         type="email"
                         value={newEmail}
                         onChange={(e) => setNewEmail(e.target.value)}
-                        placeholder="e.g. bvnbasu@yahoo.com"
+                        placeholder="e.g. buyer@example.com"
                         className="flex-1 w-full rounded-md border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
                       />
                       <button

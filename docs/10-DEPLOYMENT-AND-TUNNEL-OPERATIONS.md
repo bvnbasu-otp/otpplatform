@@ -9,9 +9,9 @@ The OTP Platform is deployed with a decoupled architecture utilizing containeriz
 - **Container Engine**: Docker Desktop with Docker Compose v2
 - **Orchestration File**: [`docker-compose.prod.yml`](file:///G:/My%20Drive/otp/docker-compose.prod.yml)
 - **Public URL**: `https://otpplatform-theta.vercel.app`
-- **Internal Web Server**: Vite 6 PWA listening on `0.0.0.0:3000` (serving `apps/web/dist`)
+- **Internal Web Server**: Vite 6.4.3 PWA listening on `0.0.0.0:3000` (serving `apps/web/dist`)
 - **Staging / Pre-Production Gateway**: Port `54321` (Kong) / Port `54322` (Staging Postgres)
-- **Production Database**: Port `5432` (`otp-prod-db`, Supabase Postgres 15 with 183 migrations)
+- **Production Database**: Port `5432` (`otp-prod-db`, Supabase Postgres 15 with 185 contiguous migrations)
 
 ### 1.1 Sole Authoritative Production Codebase Policy
 - **Primary Canonical Workspace**: `G:\My Drive\otp`
@@ -68,7 +68,7 @@ pnpm gate:verify
 11. **BUILD**: Clean production TypeScript compilation (`pnpm typecheck`) and asset packaging.
 
 **Staging Gate Certificate**:
-When all tests pass (100% green across 1,355 Vitest tests), the runner generates a digitally signed JSON certificate at:
+When all tests pass (100% green across 1,514+ automated verifications), the runner generates a digitally signed JSON certificate at:
 `G:\My Drive\otp\backups\staging-gate-cert.json`
 The production deployment pipeline validates this certificate timestamp before proceeding.
 
@@ -91,7 +91,7 @@ The production deployment pipeline (`scripts/deploy-prod.ps1`) orchestrates an a
 
 ### Key Safety Guarantees:
 - **Mandatory Pre-Deployment Physical Snapshot**: PostgreSQL binary dump created in `backups/` before any SQL is executed.
-- **Tracked Incremental Migrations**: Schema migrations are tracked in `public.otp_schema_migrations` (183 migrations). Only unapplied migrations are executed. Destructive `DROP TABLE` or `TRUNCATE` operations are strictly rejected.
+- **Tracked Incremental Migrations**: Schema migrations are tracked in `public.otp_schema_migrations` (185 migrations). Only unapplied migrations are executed. Destructive `DROP TABLE` or `TRUNCATE` operations are strictly rejected.
 - **Isolated Staging Directory**: The new web build compiles into a timestamped directory (`apps/web/releases/release_<timestamp>`), preventing partial or corrupted builds from touching the live site.
 - **Atomic Release Promotion**: The live `apps/web/dist` is swapped in milliseconds. The previous working build is kept as `apps/web/dist_prev`.
 - **Automated Post-Deployment Smoke & Auto-Rollback**: If post-deployment smoke tests fail, `dist` is immediately replaced with `dist_prev`, returning users to the last known working release.

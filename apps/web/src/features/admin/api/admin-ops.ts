@@ -2139,6 +2139,15 @@ export async function bulkDeleteUsers(
 
       if (delErr) throw delErr;
     } else {
+      // Direct client fallback cascade for hard delete:
+      // Clean child records first to satisfy FK constraints
+      await Promise.allSettled([
+        supabase.from('profile_roles').delete().in('profile_id', userIds),
+        supabase.from('organization_members').delete().in('profile_id', userIds),
+        supabase.from('supplier_users').delete().in('profile_id', userIds),
+        supabase.from('notification_preferences').delete().in('user_id', userIds),
+      ]);
+
       const { error: delErr } = await supabase
         .from('profiles')
         .delete()

@@ -1,17 +1,17 @@
 # OTP Platform — Authoritative Inventory of Known Limitations & System Boundaries
 
-**Document Identifier:** `OTP-LIMITATIONS-2026-09-13`  
+**Document Identifier:** `OTP-LIMITATIONS-2026-09-19-PHASE7.1`  
 **Security Classification:** Public / Operational Reference  
-**Effective Date:** Sunday, September 13, 2026  
+**Effective Date:** Saturday, September 19, 2026  
 **Auditor in Charge:** Chief Release & Certification Auditor  
 **Target Platform:** Open Trade & Procurement (`OTP`) Platform  
-**Target Release Candidate:** `RC-1.0.0` (Release Snapshot 2026-09-13)  
+**Target Release Candidate:** Phase 7.1 Re-Certified Production Release (`Commit: c5c97ca`, Baseline: `01198bc`)  
 
 ---
 
 ## 1. Executive Summary & Purpose
 
-This document provides an explicit, transparent, and authoritative inventory of known system boundaries, operational scale parameters, architectural constraints, fallback mechanisms, and Service Level Agreement (SLA) commitments for the OTP (Open Trade & Procurement) platform (`RC-1.0.0`).
+This document provides an explicit, transparent, and authoritative inventory of known system boundaries, operational scale parameters, architectural constraints, fallback mechanisms, and Service Level Agreement (SLA) commitments for the OTP (Open Trade & Procurement) platform (`Phase 7.1 Certified Baseline`).
 
 Understanding these boundaries allows buyers, suppliers, administrators, and integration partners to operate with predictable confidence while maintaining platform security, high-concurrency data integrity, and statutory compliance.
 

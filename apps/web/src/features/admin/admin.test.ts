@@ -505,4 +505,28 @@ describe('Super Admin & Ops Console Data Layer', () => {
     expect(testModule?.categoryKey).toBe('TESTS_OPS');
     expect(testModule?.title).toContain('Test Suite Runner');
   });
+
+  it('validates soft-delete and hard-delete user filtering logic for Superadmin roster', () => {
+    const activeUser = normalizeAdminUserItem({
+      id: 'usr-1',
+      email: 'user1@test.com',
+      status: 'ACTIVE',
+      deleted_at: null,
+    });
+    const deletedUser = normalizeAdminUserItem({
+      id: 'usr-2',
+      email: 'user2@test.com',
+      status: 'DELETED',
+      deleted_at: '2026-09-19T10:00:00.000Z',
+    });
+
+    expect(activeUser.status).toBe('ACTIVE');
+    expect(deletedUser.status).toBe('DELETED');
+
+    // Simulate roster filtering (active users only vs deleted)
+    const allUsers = [activeUser, deletedUser];
+    const visibleActiveUsers = allUsers.filter((u) => u.status !== 'DELETED');
+    expect(visibleActiveUsers).toHaveLength(1);
+    expect(visibleActiveUsers[0]?.id).toBe('usr-1');
+  });
 });

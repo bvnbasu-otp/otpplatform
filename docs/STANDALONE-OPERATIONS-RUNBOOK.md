@@ -16,11 +16,11 @@ Set-Location "G:\My Drive\otp"
 
 | Command | Action | When to Use |
 |---|---|---|
-| `.\scripts\otp.ps1 start` | Boots all Docker containers (with strict `127.0.0.1` loopback bindings), runs DB migrations (183 migrations), and launches local web preview on port 3000. | After PC reboot or host restart. |
+| `.\scripts\otp.ps1 start` | Boots all Docker containers (with strict `127.0.0.1` loopback bindings), runs DB migrations (185 migrations), and launches local web preview on port 3000. | After PC reboot or host restart. |
 | `.\scripts\otp.ps1 status` | Diagnostic check: displays container states, loopback port listeners (3000, 3008, 5432, 8000, 54321), DB integrity lock, and live URL response. | Anytime to verify system health. |
-| `.\scripts\otp.ps1 test` | Runs web unit test suite (726 tests) + live un-mocked smoke test battery. | Fast verification after local code edits. |
-| `.\scripts\otp.ps1 gate` | Executes the strict **12-Layer Staging Verification Gate** (1,355 Vitest tests across 139 test files, 100% green required). | Pre-flight check before production promotion. |
-| `.\scripts\otp.ps1 deploy` | **Full Production Deployment Pipeline**: Dispatches `STARTING` alert -> Gate (1,355 tests) -> DB Backup -> Migrations (183) -> Bundle build -> Live Smoke -> `COMPLETED` alert. | When deploying changes to production live. |
+| `.\scripts\otp.ps1 test` | Runs web unit test suite + live un-mocked smoke test battery. | Fast verification after local code edits. |
+| `.\scripts\otp.ps1 gate` | Executes the strict **12-Layer Staging Verification Gate** (1,514+ automated verifications, 100% green required). | Pre-flight check before production promotion. |
+| `.\scripts\otp.ps1 deploy` | **Full Production Deployment Pipeline**: Dispatches `STARTING` alert -> Gate (1,514+ verifications) -> DB Backup -> Migrations (185) -> Bundle build -> Live Smoke -> `COMPLETED` alert. | When deploying changes to production live. |
 | `.\scripts\otp.ps1 rollback` | **Instant Rollback**: Swaps active `apps/web/dist` with `apps/web/dist_prev`, restarts web server, and dispatches emergency `ROLLBACK` email & WhatsApp alerts. | If production encounters an unexpected issue. |
 | `.\scripts\otp.ps1 backup` | Dumps production database (`otp-prod-db`) to `backups/` and prunes backups older than 30 days. | Before manual DB maintenance or on-demand snapshot. |
 | `.\scripts\otp.ps1 alert` | Dispatches test email (Gmail SMTP) and WhatsApp (WAHA) alerts to verify communication channels. | To test admin notification delivery. |
@@ -44,9 +44,9 @@ Set-Location "G:\My Drive\otp"
 
 #### What `.\scripts\otp.ps1 deploy` does automatically:
 1. **Dispatches Start Alert**: Sends an automated email and WhatsApp message to Baskar (`bvnbasu@gmail.com` and `919972967530@c.us`) that maintenance/deployment has started.
-2. **Executes Staging Gate**: Runs all 1,355 tests across 139 test files (`pnpm gate:verify`). **If even 1 test fails, the process halts immediately and production is left untouched on the old code flow.**
+2. **Executes Staging Gate**: Runs all 1,514+ verifications across 184 active test files (`pnpm gate:verify`). **If even 1 test fails, the process halts immediately and production is left untouched on the old code flow.**
 3. **Creates Zero-Loss Backup**: Dumps the production PostgreSQL database to `backups/otp_prod_backup_<timestamp>.sql`.
-4. **Applies Migrations**: Scans `supabase/migrations/*.sql` against `public.otp_schema_migrations` (migrations `00001` through `00183`) and applies only new incremental migrations.
+4. **Applies Migrations**: Scans `supabase/migrations/*.sql` against `public.otp_schema_migrations` (migrations `00001` through `00185`) and applies only new incremental migrations.
 5. **Asserts Data Integrity**: Verifies that Buyer/Supplier orders, wallets, organizations, and user accounts are 100% retained.
 6. **Compiles Web Bundle**: Builds the latest React bundle into `apps/web/dist`, keeping `apps/web/dist_prev` for instant rollback.
 7. **Verifies Live Smoke**: Executes real, un-mocked call flows (Kong, SuperAdmin login, Buyer login, Supplier login, WAHA WhatsApp gateway, password reset OTP).
@@ -132,8 +132,8 @@ Set-Location "G:\My Drive\otp"
 
 | Purpose | Script / Command | Description |
 |---|---|---|
-| **Staging Gate** | `pnpm gate:verify` | Executes 1,355 tests across all platform layers and issues certificate. |
-| **Unit Tests** | `pnpm test:domain; pnpm test:services; pnpm test:database; pnpm test:web` | Runs all 1,355 Vitest tests. |
+| **Staging Gate** | `pnpm gate:verify` | Executes 1,514+ verifications across all platform layers and issues certificate. |
+| **Unit Tests** | `pnpm test:domain; pnpm test:services; pnpm test:database; pnpm test:web` | Runs all workspace package Vitest test suites. |
 | **Edge Functions Tests** | `pnpm test:functions` | Runs Deno unit tests for Edge Functions (`_shared/`, `payment-webhook/`). |
 | **Typecheck** | `pnpm typecheck` | Strict zero-error TypeScript typecheck across monorepo packages. |
 | **Vocabulary Check** | `pnpm test:vocab` | Scans for zero prohibited procurement terms (`bid`, `bids`, `bidder`, `blind`). |

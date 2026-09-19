@@ -39,7 +39,7 @@ describe('User Profile Management & Customization Suite', () => {
   it('ensures UserProfileDetails provides credential properties', () => {
     const mockProfile: UserProfileDetails = {
       id: 'mock-uuid',
-      email: 'bvnbasu@yahoo.com',
+      email: 'buyer@greenview.test',
       phone: 'Not registered',
       fullName: 'Basu',
       title: 'Lead Operations Engineer',
@@ -47,7 +47,7 @@ describe('User Profile Management & Customization Suite', () => {
       isPlatformAdmin: true,
     };
 
-    expect(mockProfile.email).toBe('bvnbasu@yahoo.com');
+    expect(mockProfile.email).toBe('buyer@greenview.test');
     expect(mockProfile.phone).toBe('Not registered');
     expect(mockProfile.fullName).toBe('Basu');
     expect(mockProfile.title).toBe('Lead Operations Engineer');

@@ -1,8 +1,8 @@
 # OTP Platform — Production Rollback & Disaster Recovery Standard Operating Procedure (SOP)
 
 **Document Reference:** `SRE-SOP-PROD-ROLLBACK-01`  
-**Version:** 1.0.0  
-**Effective Date:** Sunday, September 13, 2026  
+**Version:** Phase 7.1 Baseline  
+**Effective Date:** Saturday, September 19, 2026  
 **Target Platform:** Open Trade & Procurement (OTP) Platform  
 **Owner:** Lead DevOps Engineer & Site Reliability Engineering (SRE)  
 **Classification:** Critical Operational Runbook  

@@ -18,32 +18,38 @@ The OTP Platform user interface is designed for **institutional authority, trans
 - **Inline Editing with Authority Boundary**: Pre-populated fields are presented with interactive quantity steppers and unit dropdowns, requiring explicit buyer confirmation before RFQ generation.
 - **Starter Template Drawer**: Quick-load templates for standard institutional projects (Solar EPC, Commercial RO Plants, CCTV Surveillance, Gas Piping, Modular Furniture).
 
-### 2.2 The 15-Step Linear Stage Navigator (`<ProcurementStageNavigator />`)
-- **Monotonic Stepper**: Visual progress tracker showing steps 1 to 15 with dedicated icons and state badges.
-- **Safe Historical Inspection**: Clicking completed historical steps loads the view in read-only audit mode without regressing the underlying state machine.
+### 2.2 Commercial Stage Navigator & Admin 15-Step Telemetry (`<ProcurementStageNavigator />`)
+- **6-Stage Commercial UI Model**: Public, buyer, and supplier interfaces present a clean 6-stage lifecycle progress bar (`1. Draft` → `2. Quoting` → `3. Evaluation` → `4. Award` → `5. Fulfillment` → `6. Settlement`).
+- **Telemetry Scrub & Abstraction**: Internal 15-step linear pipeline indices, prototype screen tags, and debug labels are completely stripped from commercial views (verified via `ux-telemetry-abstraction.test.ts`).
+- **Admin-Gated Linear Engine**: The complete 15-step monotonic inspector and override panel are gated strictly behind admin role capability (`role === 'admin'`).
+- **Safe Historical Inspection**: Clicking completed historical stages loads the view in read-only audit mode without regressing the underlying state machine.
 
-### 2.3 The Identity-Protected Quote Comparison Room (`/rfq/:rfqId/evaluation`)
+### 2.3 Single Authoritative Role Header & Profile Preferences
+- **Unified Header**: Displays a single, authoritative organization/role badge in the top navigation, eliminating duplicate persona indicators.
+- **Clean Profile Settings**: Obsolete binary toggles purged from profile preferences, presenting a clean, modern user configuration panel.
+
+### 2.4 The Identity-Protected Quote Comparison Room (`/rfq/:rfqId/evaluation`)
 - **Sealed Supplier Cards**: Displays cryptographic pseudonyms (`Supplier T74M`, `Supplier 9K2X`, `Supplier A7K3`) with distinct avatar badges.
 - **Vendor Master Intelligence (VMI) Coarse Badges**: Displays anonymized performance badges (`EXEMPLARY`, `4.8 - 5.0 ★`, `95%+ On-Time`, `50+ Orders`) ensuring zero boutique vendor fingerprinting.
 - **Side-by-Side Spec Diffing**: Highlights variances against Indian Standards baselines (e.g. panel efficiency, pipe gauge, warranty duration).
 - **Multi-Factor Score Gauge**: Displays commercial vs technical vs SLA vs VMI score breakdown (e.g. 50/20/15/15 + GST bonus).
 
-### 2.4 The Committee Voting & Enterprise Approval Room (`/rfq/:rfqId/committee`)
+### 2.5 The Committee Voting & Enterprise Approval Room (`/rfq/:rfqId/committee`)
 - **Conflict of Interest Gate**: Modal dialog requiring explicit sign-off before viewing normalized quotations.
 - **Weighted Tally Board**: Real-time progress bar displaying voter turnout and quorum thresholds.
 - **Enterprise Approval Matrix Banner**: Displays active approval tier (Tier 1 Manager `<₹5L`, Tier 2 VP `₹5L-₹25L`, Tier 3 CFO `>₹25L`), approver role requirements, and digital sign-off actions.
 
-### 2.5 Contract Gate & Mutual Reveal Modal (`/rfq/:rfqId/contract`, `/rfq/:rfqId/reveal`)
+### 2.6 Contract Gate & Mutual Reveal Modal (`/rfq/:rfqId/contract`, `/rfq/:rfqId/reveal`)
 - **Step 11 Contract Gate**: Interactive markdown contract viewer with SHA-256 document checksum and digital signature pad for authorized signatories.
 - **Step 12 Mutual Reveal Certificate**: Irrevocable unmasking certificate displaying winner legal entity, GSTIN, phone, and billing details.
 - **Web Share Action**: Native `navigator.share` integration for mobile sharing of award receipts, with automatic clipboard copy fallback.
 
-### 2.6 Progressive Milestone Inspection & Dispute Console (`/purchase-orders/:poId`)
+### 2.7 Progressive Milestone Inspection & Dispute Console (`/purchase-orders/:poId`)
 - **5-Point Inspection Checklist**: Interactive check-cards for Materials, Dimensions, Functional Testing, Safety, and Workmanship with photo evidence upload.
 - **Dispute Exception Sheet**: Slide-over drawer to file disputes across 7 artifact types with 4 severity levels and real-time SLA countdown timers.
 
-### 2.7 Super Admin Operations Console (`/admin`)
-- **Multi-Tab Command Center**: Live Buyer Orders, Seller Orders, System Health, Support Tickets, Service Actions, Pre-Production Test Runner (1,355 Vitest tests), Buyer/Seller Debuggers, SQL Query Terminal, Database Backup/Restore, and Audit Logs.
+### 2.8 Super Admin Operations Console (`/admin`)
+- **Multi-Tab Command Center**: Live Buyer Orders, Seller Orders, System Health, Support Tickets, Service Actions, Pre-Production Test Runner (1,514+ automated verifications), Buyer/Seller Debuggers, SQL Query Terminal, Database Backup/Restore, and Audit Logs.
 
 ---
 

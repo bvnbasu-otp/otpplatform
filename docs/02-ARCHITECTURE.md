@@ -7,10 +7,10 @@
 │                                   CLIENT TIERS                                          │
 │  ┌────────────────────────┐   ┌────────────────────────┐   ┌─────────────────────────┐  │
 │  │   Buyer Portal (PWA)   │   │  Supplier Portal (PWA) │   │ Super Admin Console     │  │
-│  │   React 19 + Vite 6    │   │  React 19 + Vite 6     │   │ Cross-Tenant Ops        │  │
+│  │ React 19.2 + Vite 6.4  │   │ React 19.2 + Vite 6.4  │   │ Cross-Tenant Ops        │  │
 │  │  - Multimodal Intake   │   │  - Quoting Desk        │   │  - SQL Query Terminal   │  │
-│  │  - 15-Step Linear Nav  │   │  - Milestone Progress  │   │  - Lifecycle Diagnostics│  │
-│  │  - VMI Comparison Room │   │  - Invoice Upload      │   │  - 1,355 Test Runner    │  │
+│  │  - 6-Stage Commercial  │   │  - Milestone Progress  │   │  - 15-Step Linear Engine│  │
+│  │  - VMI Comparison Room │   │  - Invoice Upload      │   │  - 1,514+ Test Runner   │  │
 │  └───────────┬────────────┘   └───────────┬────────────┘   └────────────┬────────────┘  │
 └──────────────┼────────────────────────────┼─────────────────────────────┼───────────────┘
                │                            │                             │
@@ -50,8 +50,8 @@
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                         POSTGRESQL 15 DATABASE (Port 5432)                              │
 │  Container: otp-prod-db                                                                 │
-│  - 183 Applied Production Migrations (00001 to 00183)                                   │
-│  - Row Level Security (RLS) on all core tables                                          │
+│  - 185 Contiguous Migrations (00001 to 00185) with hardened search_path                 │
+│  - 100% Row Level Security (RLS) enforcement across all tables                          │
 │  - Security Definer Functions (private_security schema, SuperAdmin Immutability Triggers)│
 │  - Cryptographic Masking Views (quotes_identity_protected, rfqs_supplier_masked)        │
 │  - Sliding-Window Rate Limiting Engine & Materialized Composite Analytics Indexes        │
@@ -91,7 +91,7 @@ The OTP production backend runs via 6 consolidated, orchestrated Docker containe
 
 | Service Name | Container Name | Base Image / Build | Port | Memory / CPU | Responsibility |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **db** | `otp-prod-db` | `supabase/postgres:15.1.1.130` | `127.0.0.1:5432` | 2GB / 2 cores | Primary database, RLS policies, 183 migrations, ledger schemas, cryptographic RPCs. |
+| **db** | `otp-prod-db` | `supabase/postgres:15.1.1.130` | `127.0.0.1:5432` | 2GB / 2 cores | Primary database, RLS policies, 185 migrations, ledger schemas, cryptographic RPCs. |
 | **auth** | `otp-prod-auth` | `supabase/gotrue:v2.158.1` | Internal `9999` | 512MB / 1 core | User identity, JWT generation, password hashing, email OTP. |
 | **rest** | `otp-prod-rest` | `postgrest/postgrest:v12.2.0` | Internal `3000` | 512MB / 1 core | High-performance RESTful API over PostgreSQL tables & RPCs. |
 | **realtime** | `otp-prod-realtime` | `supabase/realtime:v2.30.23` | Internal `4000` | 512MB / 1 core | WebSocket streaming for live quote arrival, chat, and vote tallies. |
@@ -144,3 +144,27 @@ The frontend routing system in `apps/web/src/App.tsx` enforces a 3-tier perimete
 4. **Edge Function Runtime Standard**
    - Deno Edge Functions in `supabase/functions/` (e.g. `payment-webhook/index.ts`) utilize ESM execution guards (`if (import.meta.main)`) to ensure testing and CI importing do not inadvertently bind network listening sockets.
    - Standardized permission tasks (`deno test --allow-env --no-lock`) in `supabase/functions/deno.json` ensuring clean test execution across Deno 1.x and 2.x runtimes.
+
+---
+
+## 5. Technology Currency & Upgrade Resilience Architecture (Phase 7.1 Baseline)
+
+### 5.1 Runtime & Framework Standards
+- **Node.js**: `>=20` (actively tested on 20.x, 22.x, and 24.x LTS).
+- **TypeScript**: `5.6.3` with strict mode enabled across all workspace packages (`packages/*`, `apps/*`).
+- **React Ecosystem**: React `19.2.8`, React DOM `19.2.8`, React Router `7.18.2` (declarative data routing and deep-link preservation).
+- **Build & Test Engine**: Vite `6.4.3`, Vitest `5.0.0`, Tailwind CSS `3.4.19`, `@supabase/supabase-js` `2.112.4`.
+- **Database Engine**: PostgreSQL 15 running 185 contiguous idempotent migrations (`00001` through `00185`) with 100% RLS coverage and explicit `SECURITY DEFINER SET search_path = public, private, auth, extensions;` parameterization.
+
+### 5.2 Architectural Enhancements & Closed Defects (P1/P2)
+- **Migration 00185 Fix**: Resolved `joined_at` column reference in `list_org_members` stored procedure (correcting legacy `created_at` lookup).
+- **UUID Syntax Guards**: Local URI parsing guards applied on multimodal voice notes and attachments, eliminating invalid UUID format runtime errors.
+- **Guest Unauthenticated Sourcing Flow**: Draft requirements created by unauthenticated visitors are preserved in local storage and seamlessly restored upon login via `/login?redirect=/requirements/draft`.
+- **Workspace Resilience**: Resilient organization loader with non-blocking error boundaries, persistent subscription status, and live wallet balance caching.
+- **Single Authoritative Role Header**: Streamlined UI navigation with duplicate role badge removal and single authoritative indicator.
+- **Profile Preferences Cleanup**: Obsolete binary toggles purged from user profile settings.
+
+### 5.3 UX Abstraction vs Administrative Engine
+- **Commercial User Surface**: Clean 6-Stage Commercial Procurement Lifecycle (`DRAFT` → `QUOTING` → `EVALUATING` → `AWARDED` → `PO_ISSUED` → `SETTLED`) on all buyer, supplier, and public views.
+- **Admin Control Engine**: 15-Step Strict Monotonic Engine (`advance_procurement_step`) gated exclusively behind administrative capability (`role === 'admin'`).
+- **Regression Batteries**: Enforced via `failure-paths-regression.test.ts` (22 Failure Modes, 32/32 tests pass) and `ux-telemetry-abstraction.test.ts`.

@@ -1,11 +1,11 @@
 # OTP Platform — Formal Production Go / No-Go Decision Document
 
-**Document Identifier:** `OTP-DECISION-GNG-2026-09-13`  
+**Document Identifier:** `OTP-DECISION-GNG-2026-09-19-PHASE7.1`  
 **Security Classification:** Highly Confidential / Executive Release Board  
-**Effective Date:** Sunday, September 13, 2026  
+**Effective Date:** Saturday, September 19, 2026  
 **Auditor in Charge:** Chief Release & Certification Auditor  
 **Target Platform:** Open Trade & Procurement (`OTP`) Platform  
-**Target Release Candidate:** `RC-1.0.0` (Release Snapshot 2026-09-13)  
+**Target Release Candidate:** Phase 7.1 Re-Certified Production Release (`Commit: c5c97ca`, Baseline: `01198bc`)  
 
 ---
 
@@ -17,9 +17,9 @@
                      FORMAL PRODUCTION GO / NO-GO DECISION MATRIX
 ====================================================================================================
 
-  AUDITED RELEASE:       Release Candidate 1.0.0-canonical (RC-1.0.0)
-  AUDIT BASIS:           Phases A–F Master Reports (UX, Functional, Security, Integration,
-                         Data/State, Regression, Performance, Accessibility, Observability, DR)
+  AUDITED RELEASE:       Phase 7.1 Final Release (Commit: c5c97ca | Baseline: 01198bc)
+  AUDIT BASIS:           Phases A–7.1 Master Reports (UX Telemetry Scrub, Functional, Security,
+                         22 Failure Paths Suite, Upgrade Resilience, Database 00001-00185)
 
   FINAL AUTHORITATIVE VERDICT:
   
@@ -38,10 +38,10 @@
                      ╚═╝  ╚═╝╚══════╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
   
   SUMMARY STATEMENT:
-  The OTP Platform is APPROVED FOR IMMEDIATE PRODUCTION ROLLOUT across Stage A (Internal UAT),
+  The OTP Platform is CERTIFIED — UPGRADE RESILIENT and PHASE 7.1 FULLY CERTIFIED.
+  The Phase 8 Pilot Readiness Gate is officially OPEN for Stage A (Internal UAT),
   Stage B (Friendly Pilot / Design Partners), and Stage C (Customer Pilot / Live Commercial Orders),
-  with strict operational guardrails and staged gate requirements for Stage D (Public Beta) and
-  Stage E (Unrestricted Pan-India General Availability).
+  with staged gate progression for Stage D (Public Beta) and Stage E (General Availability).
 
 ====================================================================================================
 ```
@@ -87,10 +87,10 @@ flowchart TD
 
 ### 3.1 Why NOT "NO-GO"?
 A `NO-GO` verdict is unequivocally rejected because the OTP platform meets or exceeds every enterprise-grade quality benchmark:
-1. **Zero Open P0/P1 Defects:** There are zero open blocker or critical issues across the entire monorepo.
-2. **100% Regression Suite Pass Rate:** All 660 automated tests across 12 verification layers passed without error.
-3. **Clean Monorepo Build:** 100% clean TypeScript compilation (`tsc --noEmit` on 5 project configs) and clean Vite production bundle.
-4. **Hardened Security & Data Integrity:** 100% RLS enforcement on 40+ PostgreSQL tables, `SELECT FOR UPDATE` row locks preventing double awards, 128-bit CSPRNG salt pseudonymization, and SHA-256 tamper-evident decision receipts.
+1. **Zero Open P0/P1 Defects:** There are zero open blocker or critical issues across the entire monorepo (all human-reported defects closed).
+2. **100% Regression Suite Pass Rate:** All 1,514+ automated verifications across 12 layers passed without error.
+3. **Clean Monorepo Build:** 100% clean TypeScript compilation (`pnpm typecheck` on all packages) and clean Vite production bundle.
+4. **Hardened Security & Data Integrity:** 100% RLS enforcement and search_path hardening across 185 PostgreSQL migrations, `SELECT FOR UPDATE` row locks preventing double awards, 128-bit CSPRNG salt pseudonymization, and SHA-256 tamper-evident decision receipts.
 5. **Statutory & Financial Rigidity:** Full Indian GST Luhn Mod-36 checksum validation, Section 16 CGST Act compliance for ITC claims, and direct non-custodial B2B settlement eliminating RBI escrow liability.
 
 ### 3.2 Why NOT "Unrestricted GO"?

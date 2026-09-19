@@ -64,9 +64,38 @@ The engine supports dynamic structured specification attributes for major procur
 
 ---
 
-## 3. The 15-Step Strict Monotonic Procurement Engine
+## 3. Procurement Lifecycle Models: 6-Stage Commercial vs 15-Step Linear Engine
 
-Implemented in `packages/domain/src/enums/linear-pipeline.ts`, every procurement requirement strictly advances through 15 sequential steps. Out-of-order forward jumps are blocked by transition guards; backward navigation is strictly read-only for historical inspection.
+OTP employs a dual-tiered lifecycle model:
+1. **6-Stage Commercial Procurement Lifecycle**: The authoritative, user-facing mental model across all public, buyer, and supplier touchpoints.
+2. **15-Step Strict Monotonic State Machine**: The granular, low-level transaction engine implemented in `packages/domain/src/enums/linear-pipeline.ts` and gated strictly behind administrative capability (`role === 'admin'`).
+
+### 3.1 The 6-Stage Commercial Procurement Lifecycle (Public & User Views)
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              6-STAGE COMMERCIAL PROCUREMENT LIFECYCLE                                  │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 1. Specification     2. Quoting & Sourcing  3. Evaluation & Vote   4. Award & Contract                 │
+│    (Drafting)     ──►   (Supplier Desk)  ──►   (Masked Analysis)──►   (Digital Sign-Off)              │
+│                                                                              │                         │
+│ 6. Settlement & Audit 5. Milestone Inspection                                │                         │
+│    (Ledger & VMI) ◀──   (Progress Tracking) ◀────────────────────────────────┘                         │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Stage 1 (`DRAFT`)**: Requirement specification authoring, BIS standards unit definition, multimodal intake (Voice, Text, Photo, Doc).
+- **Stage 2 (`QUOTING`)**: Sealed RFQ window, verified supplier dispatch, fair market intelligence benchmarks.
+- **Stage 3 (`EVALUATING`)**: Identity-protected proposal comparison, committee deliberation, weighted ballots, COI signoffs.
+- **Stage 4 (`AWARDED`)**: Award decision lock, Step 11 SHA-256 legal contract gate, controlled mutual supplier reveal.
+- **Stage 5 (`PO_ISSUED`)**: Purchase order issuance, milestone progression, 5-point physical inspections with photographic evidence.
+- **Stage 6 (`SETTLED`)**: Tax invoicing, double-entry financial ledger accounting, non-custodial settlement, VMI scorecards, closeout audit.
+
+---
+
+### 3.2 The 15-Step Strict Monotonic State Machine Engine (Admin Engine)
+
+Implemented in `packages/domain/src/enums/linear-pipeline.ts`, every procurement requirement advances strictly through 15 sequential steps. Out-of-order forward jumps are blocked by transition guards; backward navigation is strictly read-only for historical inspection.
 
 ```
 Step 1:  STEP_1_SPEC_SUBMITTED              (Once Spec is Submitted)
@@ -86,25 +115,25 @@ Step 14: STEP_14_MARK_PROGRESS              (Mark Progress: 0% -> 100% Milestone
 Step 15: STEP_15_STAR_RATING_JUSTIFICATION  (Star Rating with Physical Justification & Closeout)
 ```
 
-### 3.1 Mapping 15 Linear Steps to the 8 Core Procurement Lifecycle States
+### 3.3 Mapping 15 Linear Steps to the 6 Commercial Stages & 8 Core States
 
-| 15-Step Linear Code | Core Procurement State | Key Actions & Invariants |
-| :--- | :--- | :--- |
-| `STEP_1_SPEC_SUBMITTED` | `DRAFT` | NLP specification authoring, budget estimate, BIS unit selection. |
-| `STEP_2_SEND_ENQUIRY` | `QUOTING` | Multi-channel dispatch to verified domain supplier registry (ONDC/Direct). |
-| `STEP_3_MARKET_INTELLIGENCE` | `QUOTING` | Fair market pricing benchmarks, historical TAT, and reliability scores. |
-| `STEP_4_START_NEGOTIATION_QA` | `QUOTING` | Masked bi-directional clarification threads; zero contact leakage. |
-| `STEP_5_CLOSE_NEGOTIATION_QA` | `QUOTING` / `EVALUATING` | Quoting deadline closes; cryptographic quote seals frozen. |
-| `STEP_6_COMPARE_QUOTES` | `EVALUATING` | Normalized evaluation matrix (Commercial, Specs, SLA, VMI Scorecard). |
-| `STEP_7_VOTING_ROOM` | `EVALUATING` | Committee quorum activation; mandatory Conflict of Interest signoffs. |
-| `STEP_8_CAST_VOTE` | `EVALUATING` | Immutable weighted ballots cast; justification required for non-L1 votes. |
-| `STEP_9_AWARD_JUSTIFICATION` | `EVALUATING` | Majority decision receipt formulated with institutional sentence starters. |
-| `STEP_10_LOCK_AWARD_DECISION`| `AWARDED` | Multi-signature decision lock; winner quote frozen irrevocably. |
-| `STEP_11_CONTRACT_GATE` | `AWARDED` | Deterministic markdown legal contract compiled; SHA-256 hash signed. |
-| `STEP_12_REVEAL_WINNING_SUPPLIER` | `AWARDED` | Bilateral mutual unmasking of Winner & Buyer GSTIN; losing quotes stay masked. |
-| `STEP_13_VIEW_PO` | `PO_ISSUED` | Binding Purchase Order issued; supplier accepts commercial terms. |
-| `STEP_14_MARK_PROGRESS` | `PO_ISSUED` / `INVOICED` | Milestone execution, 5-point inspection checklists, progressive invoices. |
-| `STEP_15_STAR_RATING_JUSTIFICATION` | `SETTLED` | 1-5 star performance rating recorded, VMI metrics updated, audit closed. |
+| 15-Step Linear Code | Commercial Stage | Core State | Key Actions & Invariants |
+| :--- | :--- | :--- | :--- |
+| `STEP_1_SPEC_SUBMITTED` | Stage 1: Draft | `DRAFT` | NLP specification authoring, budget estimate, BIS unit selection. |
+| `STEP_2_SEND_ENQUIRY` | Stage 2: Quoting | `QUOTING` | Multi-channel dispatch to verified domain supplier registry (ONDC/Direct). |
+| `STEP_3_MARKET_INTELLIGENCE` | Stage 2: Quoting | `QUOTING` | Fair market pricing benchmarks, historical TAT, and reliability scores. |
+| `STEP_4_START_NEGOTIATION_QA` | Stage 2: Quoting | `QUOTING` | Masked bi-directional clarification threads; zero contact leakage. |
+| `STEP_5_CLOSE_NEGOTIATION_QA` | Stage 2 / 3 | `QUOTING` / `EVALUATING` | Quoting deadline closes; cryptographic quote seals frozen. |
+| `STEP_6_COMPARE_QUOTES` | Stage 3: Evaluation | `EVALUATING` | Normalized evaluation matrix (Commercial, Specs, SLA, VMI Scorecard). |
+| `STEP_7_VOTING_ROOM` | Stage 3: Evaluation | `EVALUATING` | Committee quorum activation; mandatory Conflict of Interest signoffs. |
+| `STEP_8_CAST_VOTE` | Stage 3: Evaluation | `EVALUATING` | Immutable weighted ballots cast; justification required for non-L1 votes. |
+| `STEP_9_AWARD_JUSTIFICATION` | Stage 3: Evaluation | `EVALUATING` | Majority decision receipt formulated with institutional sentence starters. |
+| `STEP_10_LOCK_AWARD_DECISION`| Stage 4: Award | `AWARDED` | Multi-signature decision lock; winner quote frozen irrevocably. |
+| `STEP_11_CONTRACT_GATE` | Stage 4: Award | `AWARDED` | Deterministic markdown legal contract compiled; SHA-256 hash signed. |
+| `STEP_12_REVEAL_WINNING_SUPPLIER` | Stage 4: Award | `AWARDED` | Bilateral mutual unmasking of Winner & Buyer GSTIN; losing quotes stay masked. |
+| `STEP_13_VIEW_PO` | Stage 5: Fulfillment | `PO_ISSUED` | Binding Purchase Order issued; supplier accepts commercial terms. |
+| `STEP_14_MARK_PROGRESS` | Stage 5: Fulfillment | `PO_ISSUED` / `INVOICED` | Milestone execution, 5-point inspection checklists, progressive invoices. |
+| `STEP_15_STAR_RATING_JUSTIFICATION` | Stage 6: Settlement | `SETTLED` | 1-5 star performance rating recorded, VMI metrics updated, audit closed. |
 
 ---
 
@@ -190,3 +219,34 @@ Implemented in `packages/domain/src/accounting/` and `packages/domain/src/types/
   2. `TIER_2_COMMITTEE_MEDIATION`: RWA/Corporate procurement committee arbitration.
   3. `TIER_3_EXECUTIVE_ARBITRATION`: Executive board and legal lead review.
   4. `TIER_4_LEGAL_ESCALATION`: Formal institutional legal proceedings.
+
+---
+
+## 9. 22 Formal Failure Path Invariants (F01 to F22)
+
+Codified in `apps/web/src/features/governance/failure-paths-regression.test.ts` (32/32 tests passing), OTP mathematically enforces 22 formal failure path guards:
+
+| Code | Failure Path Invariant & Guard Condition | Enforcement Behavior |
+| :---: | :--- | :--- |
+| **F01** | Empty Justification on Award Lock | Rejects award lock with empty or whitespace justification string. |
+| **F02** | Zero Quorum Deliberation Bypass | Rejects award lock when total votes cast = 0 without quorum. |
+| **F03** | Premature Quoting State Award Lock | Blocks award locking while RFQ is in active `QUOTING` state. |
+| **F04** | Invalid Winning Quote UUID Reference | Rejects award referencing non-existent quote UUID (`00000000-...`). |
+| **F05** | Double Awarding on Already Finalized RFQ | Throws conflict exception when attempting to lock an already awarded RFQ. |
+| **F06** | COI Signoff Gate in Voting Room | Blocks ballot submission without explicit Conflict of Interest signoff. |
+| **F07** | Non-Existent Quote Candidate Vote | Rejects vote cast for unknown quote ID. |
+| **F08** | Superseded Historical Vote Invalidation | Invalidates prior votes when an updated ballot is cast by the same member. |
+| **F09** | Missing Justification on Non-L1 Deviation | Mandates physical justification when recommending higher-priced quote over L1. |
+| **F10** | Unsigned Step 11 Contract Gate Advance | Rejects transition from Step 11 to Step 12 without buyer digital signature. |
+| **F11** | Contract SHA-256 Checksum Tampering | Detects content mutation between compilation and signature execution. |
+| **F12** | Premature Supplier Unmasking Pre-Award | Rejects identity reveal requests before RFQ reaches `AWARDED` state. |
+| **F13** | Non-Winning Supplier PII Leakage | Ensures losing supplier identities remain permanently masked post-award. |
+| **F14** | PO Generation on Stalled/Cancelled RFQ | Blocks PO creation on cancelled, expired, or stalled RFQs. |
+| **F15** | Negative Line Item Unit Pricing | Rejects quote submission or PO with unit price $\le 0$. |
+| **F16** | Uninspected Milestone Invoice Generation | Blocks invoice creation for milestones without `passed = true` inspection. |
+| **F17** | Inspection Checklist Partial Completion | Rejects inspection signoff if any of the 5 criteria lack a pass/fail determination. |
+| **F18** | Duplicate Gateway Payment Webhook | Deduplicates webhook idempotently via `gateway_event_id` unique constraint. |
+| **F19** | Non-Custodial Paise Imbalance | Rejects settlement ledger entry where $\text{Gross} \ne \text{TDS} + \text{Fee} + \text{Net}$. |
+| **F20** | Negative Wallet Reward Balance | Rejects reward debit operations exceeding available wallet credits. |
+| **F21** | Self-Approval in Approval Matrix | Blocks workflow creator from approving their own tier when `preventSelfApproval = true`. |
+| **F22** | Out-of-Order Approval Stage Signoff | Blocks approval of Tier $N$ before Tier $N-1$ is fully approved. |

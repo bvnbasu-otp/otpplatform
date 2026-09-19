@@ -43,18 +43,27 @@ The OTP Platform provides two distinct intake and procurement workflows tailored
 
 ## 2. Intelligent Buyer Experience & Multimodal Intake Engine
 
-### 2.1 Multimodal Input Channels
+### 2.1 Multimodal Input Channels & UUID Syntax Guards
 Buyers can specify requirements using 4 flexible modalities:
-1. **Voice Dictation**: Direct in-browser microphone capture with multi-lingual Devnagari/Hindi & English speech recognition.
+1. **Voice Dictation**: Direct in-browser microphone capture with multi-lingual Devnagari/Hindi & English speech recognition. Built-in UUID syntax guards ensure that audio blobs generated in memory cannot trigger runtime URI-to-UUID parsing exceptions.
 2. **Natural Text Description**: Free-form procurement description with automatic NLP extraction of units (`L`, `KG`, `M`, `SQFT`, `HP`, `NOS`) and quantities.
-3. **Document Upload**: PDF/DOCX specification sheets with automatic metadata scrubbing.
+3. **Document Upload**: PDF/DOCX specification sheets with automatic metadata scrubbing and UUID integrity validation.
 4. **Site Photo Capture**: Mobile camera or gallery upload with automated EXIF GPS coordinate stripping.
 
 ### 2.2 Buyer Confirmation Authority Boundary
 - **Core Principle**: AI and rule-based extractors *assist* but *never unilaterally publish*.
 - The extraction engine proposes categories, quantities, delivery timeframes, and estimated budgets, but the **Buyer retains absolute confirmation authority** to review, adjust quantities, toggle units, or override defaults before publishing the RFQ.
 
-### 2.3 Templates vs. Examples vs. Actual Requirements
+### 2.3 Guest Unauthenticated Sourcing & Login Sourcing Redirect
+- Unauthenticated visitors can freely compose requirements, test multimodal dictation, and review drafted specifications.
+- When the guest clicks "Publish RFQ" or "Proceed to Sourcing", the state is preserved in local storage and the browser redirects to `/login?redirect=/requirements/draft`.
+- Post-authentication or signup, the application seamlessly restores the draft payload, sets the active organization, and promotes the draft directly to Stage 2 (`QUOTING`) without data loss.
+
+### 2.4 Resilient Workspace Loading & Wallet Visibility
+- Organization context loading implements non-blocking error boundaries and resilient fallback caching.
+- Persistent subscription status, active credit allocations, and Organization Wallet reward balances remain immediately visible across route transitions without layout shifts.
+
+### 2.5 Templates vs. Examples vs. Actual Requirements
 - **Starter Templates**: Pre-configured procurement structures (e.g., *Centralized Commercial RO Plant*, *Rooftop Solar EPC*, *CCTV Surveillance System*) providing standard BIS specification fields.
 - **Inspirational Examples**: Reference samples showcasing compliant specification descriptions.
 - **Actual Requirements**: Unique, binding organizational procurement records authored, confirmed, and owned by the buyer.
