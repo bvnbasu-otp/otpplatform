@@ -135,6 +135,12 @@ export async function simulateQuotesForRfq(
           const s = suppliers[i];
           if (!s) continue;
           const label = `Supplier ${String.fromCharCode(65 + i)}`;
+          const fallbackInvite = {
+            id: `inv-${s.id}-${rfqId}`,
+            supplier_id: s.id,
+            anonymous_label: label,
+            status: 'INVITED',
+          };
           const { data: inv } = await supabase
             .from('rfq_invitations')
             .insert({
@@ -148,7 +154,7 @@ export async function simulateQuotesForRfq(
             .select('id, supplier_id, anonymous_label, status')
             .maybeSingle();
 
-          if (inv) newInvites.push(inv);
+          newInvites.push(inv || fallbackInvite);
         }
         activeInvites = newInvites;
       }
@@ -227,6 +233,8 @@ export async function simulateQuotesForRfq(
       const transportCost = Math.round(basePrice * transportRatio);
       const totalCost = basePrice + gstAmount + transportCost;
 
+      const fallbackQuoteId = `sim-quote-${inv.supplier_id}-${rfqId}`;
+
       // Upsert quote record
       const { data: quote, error: quoteErr } = await supabase
         .from('quotes')
@@ -245,11 +253,13 @@ export async function simulateQuotesForRfq(
         .select('id')
         .single();
 
-      if (!quoteErr && quote) {
+      const effectiveQuoteId = quote?.id || fallbackQuoteId;
+
+      if (!quoteErr) {
         // Upsert quote version snapshot
         await supabase.from('quote_versions').upsert(
           {
-            quote_id: quote.id,
+            quote_id: effectiveQuoteId,
             version: 1,
             snapshot: {
               basePrice,

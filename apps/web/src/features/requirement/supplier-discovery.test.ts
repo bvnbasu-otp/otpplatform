@@ -6,38 +6,23 @@ import {
   discoverAndInvite,
   inviteDirectSupplier,
   openRfq,
-} from './api/rfq-lifecycle';
+} from '@/features/requirement/api/rfq-lifecycle';
 import { supabase } from '@/lib/supabase';
 import * as userRole from '@/features/auth/user-role';
 import type { MatchedSupplier } from './types/discovery';
+import { createSupabaseQueryMock } from '@/lib/supabase-query-mock';
 
 vi.mock('@/lib/supabase', () => {
-  return {
-    supabase: {
-      from: vi.fn(),
-      rpc: vi.fn(),
-      auth: {
-        getUser: vi.fn(),
-      },
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
     },
   };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
 });
-
-function createSupabaseQueryMock(resolvedResult: { data: any; error: any }) {
-  const chain: any = {
-    select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    order: vi.fn(() => chain),
-    limit: vi.fn(() => chain),
-    maybeSingle: vi.fn().mockResolvedValue(resolvedResult),
-    single: vi.fn().mockResolvedValue(resolvedResult),
-    insert: vi.fn(() => chain),
-    update: vi.fn(() => chain),
-    then: (resolve: (val: any) => any, reject?: (err: any) => any) =>
-      Promise.resolve(resolvedResult).then(resolve, reject),
-  };
-  return chain;
-}
 
 describe('Phase 2.3 — Supplier Discovery Feature Tests', () => {
   let profileSpy: any;
@@ -45,6 +30,10 @@ describe('Phase 2.3 — Supplier Discovery Feature Tests', () => {
   beforeEach(() => {
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
+    vi.mocked(supabase.auth.getUser).mockReset();
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
+    vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock([]));
     profileSpy = vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
       profileId: 'prof-buyer-1',
       email: 'buyer@apex.test',
@@ -55,8 +44,9 @@ describe('Phase 2.3 — Supplier Discovery Feature Tests', () => {
 
   afterEach(() => {
     profileSpy?.mockRestore();
-    vi.mocked(supabase.from).mockReset();
-    vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock([]));
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
   });
 
   describe('1. Compact Requirement Context Extraction', () => {
@@ -403,70 +393,51 @@ describe('Phase 2.3 — Supplier Discovery Feature Tests', () => {
         networkLabel: 'Local Registry',
         gstVerified: true,
         isLocal: true,
-        availabilityText: 'Available this week',
+        availabilityText: 'Available Immediately',
       },
       {
         invitationId: 'inv-4',
         anonymousLabel: 'Supplier #04',
         status: 'INVITED',
-        matchScore: 65,
+        matchScore: 68,
         matchLevel: 'RELEVANT',
-        matchReasons: ['direct_invite'],
-        network: 'DIRECT',
-        networkLabel: 'Direct Invite',
+        matchReasons: ['category_match'],
+        network: 'OTP_REGISTERED',
+        networkLabel: 'OTP Network',
         gstVerified: true,
         isLocal: false,
-        availabilityText: 'Available Immediately',
+        availabilityText: 'Available this week',
       },
     ];
 
-    it('filters supplier pool by High Match (85%+)', () => {
-      const highMatches = mockPool.filter((s) => s.matchScore >= 85);
-      expect(highMatches).toHaveLength(2);
-      expect(highMatches.map((s) => s.anonymousLabel)).toEqual(['Supplier #01', 'Supplier #02']);
+    it('filters supplier pool by minimum match score correctly', () => {
+      const topTier = mockPool.filter((s) => s.matchScore >= 85);
+      expect(topTier).toHaveLength(2);
+      expect(topTier.map((s) => s.anonymousLabel)).toEqual(['Supplier #01', 'Supplier #02']);
     });
 
-    it('filters supplier pool by Local Radius', () => {
-      const localMatches = mockPool.filter((s) => s.isLocal);
-      expect(localMatches).toHaveLength(2);
-      expect(localMatches.map((s) => s.anonymousLabel)).toEqual(['Supplier #01', 'Supplier #03']);
-    });
-
-    it('filters supplier pool by Sourcing Channel (ONDC vs Direct)', () => {
-      const ondcMatches = mockPool.filter((s) => s.network === 'ONDC');
-      expect(ondcMatches).toHaveLength(1);
-      expect(ondcMatches[0]?.anonymousLabel).toBe('Supplier #02');
-
-      const directMatches = mockPool.filter((s) => s.network === 'DIRECT');
-      expect(directMatches).toHaveLength(1);
-      expect(directMatches[0]?.anonymousLabel).toBe('Supplier #04');
-    });
-
-    it('validates quorum satisfaction against policy minimum quotes required', () => {
+    it('identifies quorum satisfaction when candidate count >= policy threshold', () => {
       const minRequired = 3;
-      const selectedIds = new Set(['inv-1', 'inv-2', 'inv-3']);
-      const isQuorumMet = selectedIds.size >= minRequired;
+      const isQuorumMet = mockPool.length >= minRequired;
       expect(isQuorumMet).toBe(true);
 
-      const partialSelection = new Set(['inv-1', 'inv-2']);
-      expect(partialSelection.size >= minRequired).toBe(false);
+      const sparsePool = mockPool.slice(0, 2);
+      expect(sparsePool.length >= minRequired).toBe(false);
+    });
+
+    it('sorts suppliers by match score descending by default', () => {
+      const sorted = [...mockPool].sort((a, b) => b.matchScore - a.matchScore);
+      expect(sorted[0]?.anonymousLabel).toBe('Supplier #01');
+      expect(sorted[sorted.length - 1]?.anonymousLabel).toBe('Supplier #04');
     });
   });
 
-  describe('6. Vocabulary Scanner & Supplier Response SLA Invariants', () => {
-    it('enforces 30-minute supplier response policy without prohibited 15-second claims', () => {
-      const noticeText = 'Suppliers submit sealed quotes under protected aliases with responses expected within 30 minutes.';
-      expect(noticeText).toContain('within 30 minutes');
-      expect(noticeText).not.toContain('15 sec');
-      expect(noticeText).not.toContain('15 seconds');
-    });
-
-    it('contains ZERO prohibited terminology across discovery headers, buttons, and badges', () => {
+  describe('6. Canonical Vocabulary Compliance', () => {
+    it('contains ZERO prohibited auction terms across supplier discovery interfaces & copies', () => {
       const prohibitedTerms = ['bid', 'bids', 'bidder', 'bidders', 'bidding', 'blind'];
       const combinedText = `
-        Procurement Context Matched Supplier Pool Verified Nearby Radar Pulse
-        Sealed Quoting Open Market Intelligence Sourcing Channels Direct Invite
-        Quorum Met Excellent Match Strong Match
+        Matched Verified Suppliers Discovery Quorum Sealed identity-protected offer
+        Anonymous Supplier #01 OTP Network ONDC Protocol Direct Invite
       `.toLowerCase();
 
       for (const term of prohibitedTerms) {

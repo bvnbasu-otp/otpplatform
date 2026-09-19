@@ -6,7 +6,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileSimulatorFrame } from '@/components/layout/MobileSimulatorFrame';
 import { SupplierCapabilityModal } from '@/features/supplier';
-import { WorkspaceHeader } from '@/features/navigation';
+import { WorkspaceHeader, isTransactionalWorkflowRoute } from '@/features/navigation';
 import { PRODUCT_NAME } from '@/lib/brand';
 
 export function AppLayout() {
@@ -24,6 +24,8 @@ export function AppLayout() {
     return <Navigate to={dest} replace />;
   }
 
+  const isWorkflowRoute = isTransactionalWorkflowRoute(pathname);
+
   return (
     <MobileSimulatorFrame>
       <div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden relative sm:transform-gpu sm:[transform:translate3d(0,0,0)] [contain:paint]">
@@ -31,14 +33,18 @@ export function AppLayout() {
         <WorkspaceHeader onOpenSupplierCapabilities={() => setIsCapabilityModalOpen(true)} />
 
         {/* Main Content Viewport with Safe Bottom Padding */}
-        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col pb-[calc(5rem+env(safe-area-inset-bottom,0px))] relative">
+        <main
+          className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col relative ${
+            isWorkflowRoute ? 'pb-0' : 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]'
+          }`}
+        >
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
         </main>
 
         {/* Canonical Authenticated Bottom Navigation: Home | Orders | + | Audit | Profile */}
-        <MobileBottomNav />
+        {!isWorkflowRoute && <MobileBottomNav />}
 
         {/* Quick Capability Editor Modal for Suppliers */}
         <SupplierCapabilityModal

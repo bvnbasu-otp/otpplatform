@@ -1,34 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { simulateQuotesForRfq, ensureSimulatedQuotesForRfq } from './api/simulate-quotes';
+import { simulateQuotesForRfq, ensureSimulatedQuotesForRfq } from '@/features/rfq/api/simulate-quotes';
 import { supabase } from '@/lib/supabase';
 import * as evaluationApi from '@/features/evaluation/api/fetch-quote-evaluations';
+import { createSupabaseQueryMock } from '@/lib/supabase-query-mock';
 
 vi.mock('@/lib/supabase', () => {
-  return {
-    supabase: {
-      from: vi.fn(),
-      rpc: vi.fn(),
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
     },
   };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
 });
-
-function createSupabaseQueryMock(resolvedResult: { data: any; error: any }) {
-  const chain: any = {
-    select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    in: vi.fn(() => chain),
-    order: vi.fn(() => chain),
-    limit: vi.fn(() => chain),
-    maybeSingle: vi.fn().mockResolvedValue(resolvedResult),
-    single: vi.fn().mockResolvedValue(resolvedResult),
-    insert: vi.fn(() => chain),
-    upsert: vi.fn(() => chain),
-    update: vi.fn(() => chain),
-    then: (resolve: (val: any) => any, reject?: (err: any) => any) =>
-      Promise.resolve(resolvedResult).then(resolve, reject),
-  };
-  return chain;
-}
 
 describe('Simulated Quotes Generation Engine (Demo / Pilot Mode)', () => {
   let recomputeSpy: any;
@@ -36,6 +22,10 @@ describe('Simulated Quotes Generation Engine (Demo / Pilot Mode)', () => {
   beforeEach(() => {
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
+    vi.mocked(supabase.auth.getUser).mockReset();
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
+    vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock([]));
     recomputeSpy = vi.spyOn(evaluationApi, 'recomputeEvaluations').mockResolvedValue({
       ok: true,
       scored: 4,
@@ -44,8 +34,9 @@ describe('Simulated Quotes Generation Engine (Demo / Pilot Mode)', () => {
 
   afterEach(() => {
     recomputeSpy?.mockRestore();
-    vi.mocked(supabase.from).mockReset();
-    vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock([]));
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
   });
 
   describe('1. RPC-driven quote generation', () => {
@@ -115,12 +106,20 @@ describe('Simulated Quotes Generation Engine (Demo / Pilot Mode)', () => {
         { id: 'sup-4', business_name: 'BrightGrid Power Ltd' },
       ];
 
+      const mockInvitations = [
+        { id: 'inv-1', supplier_id: 'sup-1', anonymous_label: 'Supplier A', status: 'INVITED' },
+        { id: 'inv-2', supplier_id: 'sup-2', anonymous_label: 'Supplier B', status: 'INVITED' },
+        { id: 'inv-3', supplier_id: 'sup-3', anonymous_label: 'Supplier C', status: 'INVITED' },
+        { id: 'inv-4', supplier_id: 'sup-4', anonymous_label: 'Supplier D', status: 'INVITED' },
+      ];
+      const mockQuote = { id: 'quote-fallback-1' };
+
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'rfqs') return createSupabaseQueryMock({ data: mockRfq, error: null });
         if (table === 'requirements') return createSupabaseQueryMock({ data: mockReq, error: null });
         if (table === 'suppliers') return createSupabaseQueryMock({ data: mockSuppliers, error: null });
-        if (table === 'rfq_invitations') return createSupabaseQueryMock({ data: [], error: null });
-        if (table === 'quotes') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'rfq_invitations') return createSupabaseQueryMock({ data: mockInvitations, error: null });
+        if (table === 'quotes') return createSupabaseQueryMock({ data: mockQuote, error: null });
         if (table === 'quote_versions') return createSupabaseQueryMock({ data: [], error: null });
         return createSupabaseQueryMock({ data: null, error: null });
       });

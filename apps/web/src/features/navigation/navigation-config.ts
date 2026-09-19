@@ -124,6 +124,48 @@ export function getCanonicalBottomNav(context: RoleContext): CanonicalNavItem[] 
 }
 
 /**
+ * Determines whether a route is a deep transactional workflow screen
+ * (e.g. Committee Voting, Quote Evaluation, Awarding, PO Details, Supplier Quoting, Intake Wizard)
+ * where the global MobileBottomNav must be suppressed so that the screen's dedicated
+ * primary action dock has 100% unobstructed, full-width prominence.
+ */
+export function isTransactionalWorkflowRoute(pathname: string): boolean {
+  if (!pathname) return false;
+  // Strip trailing slashes and query/hash
+  const pathWithoutQuery = pathname.split('?')[0] ?? '';
+  const pathWithoutHash = pathWithoutQuery.split('#')[0] ?? '';
+  const cleanPath = pathWithoutHash.replace(/\/+$/, '') || '/';
+
+  // Specific purchase order / work order detail pages (e.g. /purchase-orders/:poId, /supplier/purchase-orders/:poId)
+  if (cleanPath.startsWith('/purchase-orders/') && cleanPath !== '/purchase-orders') {
+    return true;
+  }
+  if (cleanPath.startsWith('/supplier/purchase-orders/') && cleanPath !== '/supplier/purchase-orders') {
+    return true;
+  }
+  if (cleanPath.startsWith('/supplier/work-orders/')) {
+    return true;
+  }
+
+  // Sourcing & RFQ workflow pages
+  if (
+    cleanPath.startsWith('/rfq/') ||
+    cleanPath.startsWith('/rfqs/') ||
+    cleanPath.startsWith('/governance/') ||
+    cleanPath.startsWith('/requirements/') ||
+    cleanPath === '/intake' ||
+    cleanPath.startsWith('/intake/') ||
+    cleanPath.startsWith('/supplier/rfq/') ||
+    cleanPath.startsWith('/supplier/rfqs/') ||
+    cleanPath.startsWith('/q/')
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Check if a route matches the current pathname.
  */
 export function isRouteActive(item: CanonicalNavItem, pathname: string): boolean {

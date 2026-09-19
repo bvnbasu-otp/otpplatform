@@ -1,37 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchActiveRfqMonitoringData } from './api/fetch-active-rfq-monitoring';
+import { fetchActiveRfqMonitoringData } from '@/features/rfq/api/fetch-active-rfq-monitoring';
 import { updateRfqDeadline } from '@/features/requirement/api/rfq-lifecycle';
 import { supabase } from '@/lib/supabase';
 import * as userRole from '@/features/auth/user-role';
+import { createSupabaseQueryMock } from '@/lib/supabase-query-mock';
 
 vi.mock('@/lib/supabase', () => {
-  return {
-    supabase: {
-      from: vi.fn(),
-      rpc: vi.fn(),
-      auth: {
-        getUser: vi.fn(),
-      },
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
     },
   };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
 });
-
-function createSupabaseQueryMock(resolvedResult: { data: any; error: any }) {
-  const chain: any = {
-    select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    or: vi.fn(() => chain),
-    order: vi.fn(() => chain),
-    limit: vi.fn(() => chain),
-    maybeSingle: vi.fn().mockResolvedValue(resolvedResult),
-    single: vi.fn().mockResolvedValue(resolvedResult),
-    insert: vi.fn(() => chain),
-    update: vi.fn(() => chain),
-    then: (resolve: (val: any) => any, reject?: (err: any) => any) =>
-      Promise.resolve(resolvedResult).then(resolve, reject),
-  };
-  return chain;
-}
 
 describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
   let profileSpy: any;
@@ -39,6 +23,10 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
   beforeEach(() => {
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
+    vi.mocked(supabase.auth.getUser).mockReset();
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
+    vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock([]));
     profileSpy = vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
       profileId: 'prof-buyer-1',
       email: 'buyer@apex.test',
@@ -49,8 +37,9 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
 
   afterEach(() => {
     profileSpy?.mockRestore();
-    vi.mocked(supabase.from).mockReset();
-    vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock([]));
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
   });
 
   describe('1. Active RFQ Data Extraction & Metrics Engine', () => {

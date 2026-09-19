@@ -9,7 +9,7 @@ import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
-import { AdminQuickActionsSheet } from '@/features/navigation';
+import { AdminQuickActionsSheet, isTransactionalWorkflowRoute } from '@/features/navigation';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -76,6 +76,12 @@ export function MobileBottomNav() {
   const isPublicRoute =
     ['/', '/pricing', '/about-us', '/faqs', '/showcase', '/mobile', '/mobile-showcase', '/how-it-works', '/howitworks'].includes(pathname) ||
     pathname.startsWith('/legal');
+
+  // Suppress global MobileBottomNav on deep transactional workflow screens
+  // so that the page's dedicated primary action dock (e.g. Vote, Award, Sourcing, PO details) has 100% unobstructed, full-width prominence.
+  if (isTransactionalWorkflowRoute(pathname)) {
+    return null;
+  }
 
   return (
     <>

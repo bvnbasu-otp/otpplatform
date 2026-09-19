@@ -4,46 +4,23 @@ import {
   resolvePortalRole,
   fetchCurrentProfile,
   SUPERADMIN_EMAILS,
-} from './user-role';
+} from '@/features/auth/user-role';
 import { supabase } from '@/lib/supabase';
+import { createSupabaseQueryMock } from '@/lib/supabase-query-mock';
 
 vi.mock('@/lib/supabase', () => {
-  return {
-    supabase: {
-      auth: {
-        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null } as any),
-      },
-      from: vi.fn(),
-      rpc: vi.fn(),
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
     },
   };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
 });
 
-function createMockQueryBuilder(data: any = null, error: any = null) {
-  const promiseResult = Promise.resolve({ data, error });
-  const builder: any = {
-    select: vi.fn().mockImplementation(() => builder),
-    eq: vi.fn().mockImplementation(() => builder),
-    or: vi.fn().mockImplementation(() => builder),
-    in: vi.fn().mockImplementation(() => builder),
-    order: vi.fn().mockImplementation(() => builder),
-    limit: vi.fn().mockImplementation(() => {
-      const arrayData = Array.isArray(data) ? data : data ? [data] : [];
-      return Promise.resolve({ data: arrayData, error });
-    }),
-    maybeSingle: vi.fn().mockImplementation(() => {
-      const singleData = Array.isArray(data) ? (data[0] ?? null) : data;
-      return Promise.resolve({ data: singleData, error });
-    }),
-    single: vi.fn().mockImplementation(() => {
-      const singleData = Array.isArray(data) ? (data[0] ?? null) : data;
-      return Promise.resolve({ data: singleData, error });
-    }),
-    then: (resolve: any, reject: any) => promiseResult.then(resolve, reject),
-    catch: (reject: any) => promiseResult.catch(reject),
-  };
-  return builder;
-}
+const createMockQueryBuilder = createSupabaseQueryMock;
 
 describe('Auth Feature & Portal Role Resolution', () => {
   beforeEach(() => {
@@ -51,13 +28,14 @@ describe('Auth Feature & Portal Role Resolution', () => {
     vi.mocked(supabase.rpc).mockReset();
     vi.mocked(supabase.auth.getUser).mockReset();
     vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
     vi.mocked(supabase.from).mockImplementation(() => createMockQueryBuilder([]));
   });
 
   afterEach(() => {
-    vi.mocked(supabase.from).mockReset();
-    vi.mocked(supabase.rpc).mockReset();
-    vi.mocked(supabase.auth.getUser).mockReset();
+    vi.mocked(supabase.from).mockImplementation(() => createMockQueryBuilder([]));
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as any);
   });
 
   it('correctly identifies superadmin emails', () => {
