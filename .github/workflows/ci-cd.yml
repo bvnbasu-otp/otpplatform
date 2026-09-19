@@ -104,6 +104,9 @@ jobs:
       - name: Canonical Vocabulary Enforcement
         run: pnpm test:vocab
 
+      - name: Verify Supabase Migration Continuity & Integrity
+        run: pnpm db:migrate:check
+
       - name: Compile Production Web Bundle
         run: pnpm --filter @otp/web build
 
@@ -222,6 +225,62 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Synchronize Supabase Database Migrations (Production)
+        if: needs.resolve-env.outputs.target_env == 'PRODUCTION'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE_DB_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD || secrets.DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "================================================================="
+          echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS"
+          echo "  Target Environment: PRODUCTION"
+          echo "  Active Live Build Version Hash: ${{ env.BUILD_HASH }}"
+          echo "================================================================="
+          pnpm db:migrate:deploy
+
+      - name: Synchronize Supabase Database Migrations (Staging / Demo)
+        if: needs.resolve-env.outputs.target_env == 'STAGING/DEMO'
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.DATABASE_URL || secrets.SUPABASE_DB_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL || secrets.DIRECT_URL }}
+          DATABASE_POOLER_URL: ${{ secrets.STAGING_DATABASE_POOLER_URL || secrets.DATABASE_POOLER_URL }}
+          SUPABASE_PROJECT_ID: ${{ secrets.STAGING_SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD || secrets.SUPABASE_DB_PASSWORD || secrets.DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.STAGING_VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "================================================================="
+          echo "  SYNCHRONIZING SUPABASE STAGING / DEMO MIGRATIONS"
+          echo "  Target Environment: STAGING/DEMO"
+          echo "  Active Live Build Version Hash: ${{ env.BUILD_HASH }}"
+          echo "================================================================="
+          pnpm db:migrate:deploy
 
       - name: Deploy Direct to Production
         if: needs.resolve-env.outputs.target_env == 'PRODUCTION'

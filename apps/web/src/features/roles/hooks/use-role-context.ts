@@ -10,6 +10,8 @@ export interface RoleContextState {
   switchTo: (code: string) => Promise<{ ok: boolean; error?: string }>;
   /** Switches the active organization context (e.g. Personal vs Society/Enterprise). */
   switchOrg: (orgId: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Switches the active portal side between BUYER and SUPPLIER. */
+  switchSide: (side: import('../api/roles').PortalSide) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export const RoleContextContext = createContext<RoleContextState>({
@@ -18,6 +20,7 @@ export const RoleContextContext = createContext<RoleContextState>({
   refresh: async () => {},
   switchTo: async () => ({ ok: false, error: 'Not ready' }),
   switchOrg: async () => ({ ok: false, error: 'Not ready' }),
+  switchSide: async () => ({ ok: false, error: 'Not ready' }),
 });
 
 /**

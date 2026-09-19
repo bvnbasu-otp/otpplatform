@@ -168,14 +168,14 @@ export async function fetchRoleContext(): Promise<
 
     let { data: profile } = await supabase
       .from('profiles')
-      .select('id, email, full_name, is_platform_admin, status, blocked_at, blocked_reason, active_role_code')
+      .select('id, email, full_name, is_platform_admin, status, blocked_at, blocked_reason, active_role_code, active_portal_side')
       .or(`auth_user_id.eq.${user.id},id.eq.${user.id}`)
       .maybeSingle();
 
     if (!profile && user.email) {
       const { data: fallbackProfile } = await supabase
         .from('profiles')
-        .select('id, email, full_name, is_platform_admin, status, blocked_at, blocked_reason, active_role_code')
+        .select('id, email, full_name, is_platform_admin, status, blocked_at, blocked_reason, active_role_code, active_portal_side')
         .eq('email', user.email)
         .maybeSingle();
       if (fallbackProfile) profile = fallbackProfile;
@@ -188,7 +188,7 @@ export async function fetchRoleContext(): Promise<
         Boolean(profile.blocked_at) ||
         Boolean(profile.blocked_reason);
 
-      let side: PortalSide = 'BUYER';
+      let side: PortalSide = profile.active_portal_side ? (profile.active_portal_side as PortalSide) : 'BUYER';
       let supplierId: string | null = null;
       let organizationId: string | null = null;
       let organizationName: string | null = null;
@@ -337,6 +337,16 @@ export async function switchActiveOrganization(
 ): Promise<{ ok: true; context: RoleContext } | { ok: false; error: string }> {
   const { data, error } = await supabase.rpc('switch_active_organization', {
     p_organization_id: organizationId,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, context: toContext((data ?? {}) as Record<string, unknown>) };
+}
+
+export async function switchPortalSide(
+  side: PortalSide,
+): Promise<{ ok: true; context: RoleContext } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('switch_portal_side', {
+    p_side: side,
   });
   if (error) return { ok: false, error: error.message };
   return { ok: true, context: toContext((data ?? {}) as Record<string, unknown>) };

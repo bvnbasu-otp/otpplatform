@@ -95,6 +95,10 @@ export function RequirementIntakePage() {
   useEffect(() => {
     if (!requirementId) {
       const local = loadLocalIntakeDraft(context.organizationId);
+      if (local?.draft?.status && local.draft.status !== 'DRAFT') {
+        clearLocalIntakeDraft(context.organizationId);
+        return;
+      }
       if (local?.draft?.requirementId && !local.draft.requirementId.startsWith('local-')) {
         setSearchParams({ draft: local.draft.requirementId }, { replace: true });
         if (typeof local.stepIndex === 'number' && local.stepIndex >= 0 && local.stepIndex < STEPS.length) {
@@ -118,6 +122,10 @@ export function RequirementIntakePage() {
   // Sync draft state to localStorage on changes
   useEffect(() => {
     if (draft) {
+      if (draft.status && draft.status !== 'DRAFT') {
+        clearLocalIntakeDraft(context.organizationId);
+        return;
+      }
       saveLocalIntakeDraft(
         {
           stepIndex,
@@ -297,6 +305,9 @@ export function RequirementIntakePage() {
         return;
       }
       setPublishError(result.error);
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       return;
     }
 
@@ -360,6 +371,38 @@ export function RequirementIntakePage() {
           </div>
         )}
       </header>
+
+      {/* Notice if requirement is already published/completed */}
+      {draft?.status && draft.status !== 'DRAFT' && (
+        <div className="rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-4 space-y-2.5 shadow-2xs">
+          <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold text-sm">
+            <span>ℹ️</span>
+            <span>Requirement Already {draft.status === 'COMPLETED' ? 'Completed' : 'Published'} (Status: {draft.status})</span>
+          </div>
+          <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+            This requirement is currently in status <strong>{draft.status}</strong>. Only DRAFT requirements can be edited or published through the intake wizard.
+          </p>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                clearLocalIntakeDraft(context.organizationId);
+                setSearchParams({}, { replace: true });
+                window.location.href = '/requirements/new';
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs hover:bg-primary/90 transition mobile-touch-target cursor-pointer"
+            >
+              <span>+</span> Start Fresh Requirement
+            </button>
+            <Link
+              to={draft.status === 'QUOTING' ? `/requirements/${draft.requirementId}/discover` : `/requirements/${draft.requirementId}`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-card text-foreground text-xs font-bold hover:bg-muted transition mobile-touch-target cursor-pointer"
+            >
+              <span>📄</span> View Sourcing Lifecycle →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Subscription Notice */}
       {subscription?.isExpired && (subscription.freeRfqCredits > 0 ? (

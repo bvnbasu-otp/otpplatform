@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   SIGNED_OUT_CONTEXT,
   can,
@@ -6,11 +6,13 @@ import {
   hasMultipleRoles,
   hasMultipleOrganizations,
   isReadOnly,
+  switchPortalSide,
   type HeldRole,
   type RoleContext,
   type RolePermission,
 } from './api/roles';
 import { isActivePath, navigationFor } from './nav';
+import { supabase } from '@/lib/supabase';
 
 /**
  * The client's half of the role rules.
@@ -305,3 +307,60 @@ describe('highlighting the page someone is on', () => {
     expect(isActivePath(dashboard, '/dashboard/settings')).toBe(false);
   });
 });
+
+describe('switchPortalSide', () => {
+  it('calls switch_portal_side RPC and returns mapped context on success', async () => {
+    const mockContextData = {
+      signedIn: true,
+      profileId: 'prof-123',
+      side: 'SUPPLIER',
+      isPlatformAdmin: false,
+      needsOnboarding: false,
+      roles: [
+        {
+          code: 'SUPPLIER_FOUNDER',
+          side: 'SUPPLIER',
+          label: 'Supplier Founder / Owner',
+          description: 'Full commercial authority',
+          permissions: ['READ', 'WRITE', 'PROPOSE', 'APPROVE', 'AWARD'],
+        },
+      ],
+      activeRole: {
+        code: 'SUPPLIER_FOUNDER',
+        label: 'Supplier Founder / Owner',
+        description: 'Full commercial authority',
+        permissions: ['READ', 'WRITE', 'PROPOSE', 'APPROVE', 'AWARD'],
+      },
+      supplierId: 'supp-456',
+    };
+
+    const spy = vi.spyOn(supabase, 'rpc').mockResolvedValueOnce({
+      data: mockContextData,
+      error: null,
+    } as any);
+
+    const result = await switchPortalSide('SUPPLIER');
+    expect(spy).toHaveBeenCalledWith('switch_portal_side', { p_side: 'SUPPLIER' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.context.side).toBe('SUPPLIER');
+      expect(result.context.profileId).toBe('prof-123');
+      expect(result.context.supplierId).toBe('supp-456');
+      expect(result.context.activeRole?.code).toBe('SUPPLIER_FOUNDER');
+    }
+  });
+
+  it('returns error when switch_portal_side RPC fails', async () => {
+    vi.spyOn(supabase, 'rpc').mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Database error switching portal side' },
+    } as any);
+
+    const result = await switchPortalSide('SUPPLIER');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe('Database error switching portal side');
+    }
+  });
+});
+

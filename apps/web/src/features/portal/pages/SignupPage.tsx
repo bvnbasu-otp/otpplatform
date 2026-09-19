@@ -67,7 +67,13 @@ export function SignupPage() {
                 <SignupSuccess
                   copy={copy}
                   result={submitted}
-                  onSignIn={() => navigate('/login')}
+                  onSignIn={() =>
+                    navigate(
+                      copy.side === 'BUYER' || submitted.side === 'BUYER'
+                        ? '/login?redirect=%2Frequirements%2Fnew'
+                        : '/login',
+                    )
+                  }
                 />
               ) : (
                 <>

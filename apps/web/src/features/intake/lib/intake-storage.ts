@@ -17,7 +17,7 @@ export interface SavedIntakeState {
     requirementMode: RequirementMode;
     quantity: number | null;
     unit: string | null;
-  };
+  } | null;
   parsed?: ParsedRequirement | null;
 }
 

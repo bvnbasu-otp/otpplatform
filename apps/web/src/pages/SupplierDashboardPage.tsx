@@ -7,6 +7,7 @@ import {
   useSupplierHomeData,
   HomeContextBar,
   HomeSection,
+  SupplierIdentityShieldBanner,
   SupplierOpportunityCard,
   SupplierActionCard,
   SupplierQuoteCard,
@@ -67,6 +68,16 @@ export function SupplierDashboardPage() {
         activeCount={newOpportunities.length + activeQuotes.length}
         isLoading={isLoading}
         onRefresh={refresh}
+      />
+
+      {/* 2. Identity-Protected Sourcing Hub & Scope Overview */}
+      <SupplierIdentityShieldBanner
+        profile={profile}
+        opportunitiesCount={newOpportunities.length}
+        actionCount={actionRequiredItems.length}
+        activeQuotesCount={activeQuotes.length}
+        activeOrdersCount={ordersSummary.activeCount}
+        onEditScope={() => setIsCapabilityModalOpen(true)}
       />
 
       {/* Loading State */}

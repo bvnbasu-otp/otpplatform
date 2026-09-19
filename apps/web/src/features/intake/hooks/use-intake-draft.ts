@@ -7,7 +7,7 @@ import {
   type DraftPatch,
 } from '../api/draft';
 import type { IntakeDraft } from '../types/intake-draft';
-import { loadLocalIntakeDraft, saveLocalIntakeDraft } from '../lib/intake-storage';
+import { clearLocalIntakeDraft, loadLocalIntakeDraft, saveLocalIntakeDraft } from '../lib/intake-storage';
 
 /**
  * Owns the draft requirement for the wizard with offline fallback.
@@ -19,6 +19,10 @@ export function useIntakeDraft(requirementId: string | null, orgId?: string | nu
   const [draft, setDraft] = useState<IntakeDraft | null>(() => {
     if (!requirementId) {
       const local = loadLocalIntakeDraft(orgId);
+      if (local?.draft?.status && local.draft.status !== 'DRAFT') {
+        clearLocalIntakeDraft(orgId);
+        return null;
+      }
       return local?.draft ?? null;
     }
     return null;
@@ -31,7 +35,12 @@ export function useIntakeDraft(requirementId: string | null, orgId?: string | nu
     if (!requirementId) {
       const local = loadLocalIntakeDraft(orgId);
       if (local?.draft) {
-        setDraft(local.draft);
+        if (local.draft.status && local.draft.status !== 'DRAFT') {
+          clearLocalIntakeDraft(orgId);
+          setDraft(null);
+        } else {
+          setDraft(local.draft);
+        }
       } else {
         setDraft(null);
       }
@@ -45,14 +54,23 @@ export function useIntakeDraft(requirementId: string | null, orgId?: string | nu
     void fetchDraft(requirementId).then((result) => {
       if (cancelled) return;
       if (result.ok) {
+        if (result.draft.status && result.draft.status !== 'DRAFT') {
+          clearLocalIntakeDraft(orgId);
+        } else {
+          saveLocalIntakeDraft({ stepIndex: 0, furthestIndex: 0, draft: result.draft }, orgId);
+        }
         setDraft(result.draft);
-        saveLocalIntakeDraft({ stepIndex: 0, furthestIndex: 0, draft: result.draft }, orgId);
         setError(null);
       } else {
         const local = loadLocalIntakeDraft(orgId);
         if (local?.draft && local.draft.requirementId === requirementId) {
-          setDraft(local.draft);
-          setError(null);
+          if (local.draft.status && local.draft.status !== 'DRAFT') {
+            clearLocalIntakeDraft(orgId);
+            setDraft(null);
+          } else {
+            setDraft(local.draft);
+            setError(null);
+          }
         } else {
           setError(result.error);
         }

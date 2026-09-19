@@ -236,6 +236,10 @@ export function ReviewAndPublishStep({
   }
 
   function handlePublish() {
+    if (draft.status && draft.status !== 'DRAFT') {
+      setValidationError(`Only a DRAFT requirement can be published; this requirement is currently ${draft.status}.`);
+      return;
+    }
     if (missingValidation.errors.length > 0) {
       setValidationError(missingValidation.errors[0]?.message ?? 'Please complete all required fields.');
       return;
@@ -729,6 +733,32 @@ export function ReviewAndPublishStep({
         </div>
       </Card>
 
+      {draft.status && draft.status !== 'DRAFT' && (
+        <div className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3.5 text-xs text-amber-900 dark:text-amber-200 font-semibold space-y-2 shadow-2xs">
+          <div className="flex items-center gap-1.5 font-bold">
+            <span>ℹ️</span>
+            <span>Requirement Already {draft.status === 'COMPLETED' ? 'Completed' : 'Published'} (Status: {draft.status})</span>
+          </div>
+          <p className="text-[11px] text-amber-800 dark:text-amber-300 font-normal leading-relaxed">
+            Only DRAFT requirements can be published. This requirement has already completed its drafting phase.
+          </p>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <a
+              href="/requirements/new"
+              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white shadow hover:opacity-90 transition"
+            >
+              + Start Fresh Requirement
+            </a>
+            <a
+              href={`/requirements/${draft.requirementId}`}
+              className="inline-flex items-center gap-1 rounded-lg border bg-card px-3 py-1.5 text-xs font-bold text-foreground hover:bg-muted transition"
+            >
+              View Requirement Details →
+            </a>
+          </div>
+        </div>
+      )}
+
       {(validationError || error) && (
         <div className="rounded-xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-200 font-semibold space-y-2">
           <div className="flex items-center gap-1.5">
@@ -761,6 +791,14 @@ export function ReviewAndPublishStep({
         </p>
       </div>
 
+      {/* Inline validation or submission error directly above action CTA */}
+      {(validationError || error) && (
+        <div className="rounded-lg border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-2.5 text-xs text-rose-800 dark:text-rose-200 font-bold flex items-center gap-1.5">
+          <span>⚠️</span>
+          <span>{validationError || error}</span>
+        </div>
+      )}
+
       {/* Action CTA with Double-Submission Protection */}
       <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-border/70">
         <Button variant="ghost" onClick={onBack} className="min-h-[48px] mobile-touch-target">
@@ -771,7 +809,7 @@ export function ReviewAndPublishStep({
           variant="action"
           size="lg"
           onClick={handlePublish}
-          disabled={isBusy || missingValidation.errors.length > 0}
+          disabled={isBusy || missingValidation.errors.length > 0 || (Boolean(draft.status) && draft.status !== 'DRAFT')}
           busy={isBusy}
           busyLabel="Publishing RFQ & Discovering Suppliers…"
           className="min-h-[48px] w-full sm:w-auto font-extrabold text-sm shadow-md mobile-touch-target"

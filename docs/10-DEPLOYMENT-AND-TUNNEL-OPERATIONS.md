@@ -11,7 +11,8 @@ The OTP Platform is deployed with a decoupled architecture utilizing containeriz
 - **Public URL**: `https://otpplatform-theta.vercel.app`
 - **Internal Web Server**: Vite 6.4.3 PWA listening on `0.0.0.0:3000` (serving `apps/web/dist`)
 - **Staging / Pre-Production Gateway**: Port `54321` (Kong) / Port `54322` (Staging Postgres)
-- **Production Database**: Port `5432` (`otp-prod-db`, Supabase Postgres 15 with 185 contiguous migrations)
+- **Production Database**: Port `5432` (`otp-prod-db`, Supabase Postgres 15 with 187 contiguous migrations)
+- **Automated CI/CD Migration Runner**: `pnpm db:migrate:deploy` (orchestrates 187 migrations via GitHub Actions and local deployment pipelines)
 
 ### 1.1 Sole Authoritative Production Codebase Policy
 - **Primary Canonical Workspace**: `G:\My Drive\otp`
@@ -91,7 +92,7 @@ The production deployment pipeline (`scripts/deploy-prod.ps1`) orchestrates an a
 
 ### Key Safety Guarantees:
 - **Mandatory Pre-Deployment Physical Snapshot**: PostgreSQL binary dump created in `backups/` before any SQL is executed.
-- **Tracked Incremental Migrations**: Schema migrations are tracked in `public.otp_schema_migrations` (185 migrations). Only unapplied migrations are executed. Destructive `DROP TABLE` or `TRUNCATE` operations are strictly rejected.
+- **Tracked Incremental Migrations**: Schema migrations are tracked in `public.otp_schema_migrations` and `supabase_migrations.schema_migrations` (187 contiguous migrations). Only unapplied migrations are executed. Destructive `DROP TABLE` or `TRUNCATE` operations are strictly rejected. Automatic deployment in CI/CD via `pnpm db:migrate:deploy`.
 - **Isolated Staging Directory**: The new web build compiles into a timestamped directory (`apps/web/releases/release_<timestamp>`), preventing partial or corrupted builds from touching the live site.
 - **Atomic Release Promotion**: The live `apps/web/dist` is swapped in milliseconds. The previous working build is kept as `apps/web/dist_prev`.
 - **Automated Post-Deployment Smoke & Auto-Rollback**: If post-deployment smoke tests fail, `dist` is immediately replaced with `dist_prev`, returning users to the last known working release.

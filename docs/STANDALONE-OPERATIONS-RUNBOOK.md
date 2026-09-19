@@ -16,7 +16,7 @@ Set-Location "G:\My Drive\otp"
 
 | Command | Action | When to Use |
 |---|---|---|
-| `.\scripts\otp.ps1 start` | Boots all Docker containers (with strict `127.0.0.1` loopback bindings), runs DB migrations (185 migrations), and launches local web preview on port 3000. | After PC reboot or host restart. |
+| `.\scripts\otp.ps1 start` | Boots all Docker containers (with strict `127.0.0.1` loopback bindings), runs DB migrations (187 migrations), and launches local web preview on port 3000. | After PC reboot or host restart. |
 | `.\scripts\otp.ps1 status` | Diagnostic check: displays container states, loopback port listeners (3000, 3008, 5432, 8000, 54321), DB integrity lock, and live URL response. | Anytime to verify system health. |
 | `.\scripts\otp.ps1 test` | Runs web unit test suite + live un-mocked smoke test battery. | Fast verification after local code edits. |
 | `.\scripts\otp.ps1 gate` | Executes the strict **12-Layer Staging Verification Gate** (1,514+ automated verifications, 100% green required). | Pre-flight check before production promotion. |
@@ -46,7 +46,7 @@ Set-Location "G:\My Drive\otp"
 1. **Dispatches Start Alert**: Sends an automated email and WhatsApp message to Baskar (`bvnbasu@gmail.com` and `919972967530@c.us`) that maintenance/deployment has started.
 2. **Executes Staging Gate**: Runs all 1,514+ verifications across 184 active test files (`pnpm gate:verify`). **If even 1 test fails, the process halts immediately and production is left untouched on the old code flow.**
 3. **Creates Zero-Loss Backup**: Dumps the production PostgreSQL database to `backups/otp_prod_backup_<timestamp>.sql`.
-4. **Applies Migrations**: Scans `supabase/migrations/*.sql` against `public.otp_schema_migrations` (migrations `00001` through `00185`) and applies only new incremental migrations.
+4. **Applies Migrations**: Scans `supabase/migrations/*.sql` against `public.otp_schema_migrations` and `supabase_migrations.schema_migrations` (migrations `00001` through `00187`) and applies only new incremental migrations via `pnpm db:migrate:deploy`.
 5. **Asserts Data Integrity**: Verifies that Buyer/Supplier orders, wallets, organizations, and user accounts are 100% retained.
 6. **Compiles Web Bundle**: Builds the latest React bundle into `apps/web/dist`, keeping `apps/web/dist_prev` for instant rollback.
 7. **Verifies Live Smoke**: Executes real, un-mocked call flows (Kong, SuperAdmin login, Buyer login, Supplier login, WAHA WhatsApp gateway, password reset OTP).

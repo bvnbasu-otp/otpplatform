@@ -18,6 +18,7 @@ import {
   HomeSection,
   BuyerActionCard,
   BuyerProcurementCard,
+  BuyerSourcingCockpitCard,
   HomeActivityTimeline,
   HomeEmptyState,
   HomeSkeleton,
@@ -39,7 +40,11 @@ export function DashboardPage() {
     isLoading,
     error,
     refresh,
-  } = useBuyerHomeData();
+  } = useBuyerHomeData({
+    organizationId: context.organizationId,
+    organizationName: context.organizationName,
+    orgRole: context.orgRole,
+  });
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedRequirement, setSelectedRequirement] = useState<OrganizationRequirementSummary | null>(null);
@@ -131,6 +136,15 @@ export function DashboardPage() {
           onApplyRenewal={() => setIsPaymentModalOpen(true)}
         />
       )}
+
+      {/* 2. Interactive Sourcing Cockpit: Voice & Text Intake + Template Chips + Live KPI Grid */}
+      <BuyerSourcingCockpitCard
+        onExpressSubmit={(query) => handleExpressSubmit(query)}
+        activeRfqsCount={activeProcurements.length}
+        pendingVotesCount={actionRequiredItems.length}
+        settledOrdersCount={stats.settled || 0}
+        isExpressSubmitting={isSubmittingExpress}
+      />
 
       {/* Loading State */}
       {isLoading ? (

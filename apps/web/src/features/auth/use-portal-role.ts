@@ -25,7 +25,7 @@ export function usePortalRole() {
     let cancelled = false;
     setIsLoading(true);
 
-    void (async () => {
+    const load = async () => {
       const p = await fetchCurrentProfile();
       if (cancelled) return;
       if (!p) {
@@ -40,10 +40,28 @@ export function usePortalRole() {
       setProfile(p);
       setRole(r);
       setIsLoading(false);
-    })();
+    };
+
+    void load();
+
+    const handleRoleChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ side?: string; role?: string }>;
+      if (customEvent.detail?.side) {
+        setRole(customEvent.detail.side === 'SUPPLIER' ? 'supplier' : 'buyer');
+      } else {
+        void load();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('otp:role-context-change', handleRoleChange);
+    }
 
     return () => {
       cancelled = true;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('otp:role-context-change', handleRoleChange);
+      }
     };
   }, [user, authLoading]);
 

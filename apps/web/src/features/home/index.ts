@@ -5,6 +5,8 @@ export * from './components/HomeContextBar';
 export * from './components/HomeSection';
 export * from './components/BuyerActionCard';
 export * from './components/BuyerProcurementCard';
+export * from './components/BuyerSourcingCockpitCard';
+export * from './components/SupplierIdentityShieldBanner';
 export * from './components/SupplierOpportunityCard';
 export * from './components/SupplierActionCard';
 export * from './components/SupplierQuoteCard';

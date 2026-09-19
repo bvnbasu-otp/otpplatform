@@ -2,7 +2,7 @@
 
 ## 1. Database Architecture & Applied Migrations
 
-The OTP database runs on **PostgreSQL 15** with **185 applied production migrations** located in `supabase/migrations/` (tracked via `public.otp_schema_migrations`).
+The OTP database runs on **PostgreSQL 15** with **187 applied production migrations** located in `supabase/migrations/` (tracked via `public.otp_schema_migrations` and `supabase_migrations.schema_migrations`).
 
 ### Migration Progression Overview:
 - `00001 - 00015`: Foundation schema, user profiles, organizations, and multi-tenant member roles.
@@ -17,7 +17,7 @@ The OTP database runs on **PostgreSQL 15** with **185 applied production migrati
 - `00162 - 00166`: Presence heartbeats (`00162`), audit event RLS optimization (`00163`), supplier profile side context (`00164`), superadmin presence visibility (`00165`), buyer auto-approval and free RFQ credits (`00166`).
 - `00167 - 00176`: Phase 5 progressive invoicing line items (`00167`), statutory GST and tax splitting (`00168`), payment allocations and partial settlement (`00169`), idempotency & atomic payment allocation RPC (`00170`), cumulative reconciliation & PO settlement (`00171`), payment vouchers & adjustments (`00172`), TDS withholding & change orders (`00173`), settlement execution fees (`00174`), ERP manifests (`00175`), double-entry financial ledger schema & journal rules (`00176`).
 - `00177 - 00183`: Phase 6 database hardening (`00177`), edge adapters & retry bridges (`00178`), cross-cutting remediation (`00179`), signup & publish audit fixes (`00180`), wallet and sourcing rewards schema (`00181`), omnichannel communications, milestone inspections, dispute escalation (`00182`), vendor master intelligence (VMI) scorecards, multi-tier enterprise approval matrix, and tamper-evident contracts (`00183`).
-- `00184 - 00185`: Phase 7.1 clean state reset and isolation (`00184`), fix `list_org_members` `joined_at` column reference RPC (`00185`). All stored procedures hardened with explicit `SECURITY DEFINER SET search_path = public, private, auth, extensions;`.
+- `00184 - 00187`: Phase 7.1 clean state reset and isolation (`00184`), fix `list_org_members` `joined_at` column reference RPC (`00185`), SuperAdmin user deletion with cascade purge (`00186`), and Dual Persona Portal Switching & Context Synchronization (`00187`). All stored procedures hardened with explicit `SECURITY DEFINER SET search_path = public, private, auth, extensions;`. Automated deployment via `pnpm db:migrate:deploy` in CI/CD pipeline.
 
 ---
 

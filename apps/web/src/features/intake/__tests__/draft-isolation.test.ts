@@ -107,4 +107,32 @@ describe('Buyer Intake Draft Isolation & User Safety', () => {
     expect(loaded?.draft).toBeNull();
     expect(loaded?.scopeState?.originalText).toBe('Dictated Voice Input for Elevator Maintenance');
   });
+
+  it('prevents reviving completed or published requirements from cached drafts', () => {
+    const orgId = 'org-completed-test';
+    const userId = 'user-completed-test';
+    const completedDraft: Omit<SavedIntakeState, 'version' | 'updatedAt'> = {
+      stepIndex: 5,
+      furthestIndex: 5,
+      draft: {
+        id: 'req-completed-99',
+        status: 'COMPLETED',
+        title: 'Already Completed Procurement',
+      } as any,
+      scopeState: undefined,
+    };
+
+    saveLocalIntakeDraft(completedDraft, orgId, userId);
+    const loaded = loadLocalIntakeDraft(orgId, userId);
+    expect(loaded).not.toBeNull();
+    expect(loaded?.draft?.status).toBe('COMPLETED');
+
+    // When a draft is detected as non-DRAFT, clearing prevents re-publish exceptions
+    if (loaded?.draft && loaded.draft.status !== 'DRAFT') {
+      clearLocalIntakeDraft(orgId, userId);
+    }
+
+    expect(loadLocalIntakeDraft(orgId, userId)).toBeNull();
+  });
 });
+

@@ -161,7 +161,14 @@ BEGIN
     BEGIN
       DELETE FROM public.notification_preferences WHERE user_id = ANY(v_yahoo_profile_ids);
     EXCEPTION WHEN OTHERS THEN NULL; END;
-    DELETE FROM public.profiles WHERE id = ANY(v_yahoo_profile_ids);
+
+    BEGIN
+      DELETE FROM public.profiles WHERE id = ANY(v_yahoo_profile_ids);
+    EXCEPTION WHEN foreign_key_violation THEN
+      UPDATE public.profiles
+      SET status = 'DELETED', deleted_at = now()
+      WHERE id = ANY(v_yahoo_profile_ids);
+    END;
   END IF;
 
   -- Remove signup requests and auth accounts
@@ -170,6 +177,16 @@ BEGIN
     DELETE FROM auth.identities WHERE lower(identity_data->>'email') = 'bvnbasu@yahoo.com' OR (v_yahoo_auth_ids IS NOT NULL AND user_id = ANY(v_yahoo_auth_ids));
     DELETE FROM auth.users WHERE lower(email) = 'bvnbasu@yahoo.com' OR (v_yahoo_auth_ids IS NOT NULL AND id = ANY(v_yahoo_auth_ids));
   EXCEPTION WHEN OTHERS THEN NULL; END;
+END $$;
+
+-- 4. Record migration in otp_schema_migrations if table exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'otp_schema_migrations') THEN
+    INSERT INTO public.otp_schema_migrations (version, applied_at)
+    VALUES ('00186_fix_admin_user_deletion_and_purge.sql', now())
+    ON CONFLICT (version) DO UPDATE SET applied_at = now();
+  END IF;
 END $$;
 
 COMMIT;

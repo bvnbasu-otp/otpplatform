@@ -19,7 +19,8 @@ export function SignupSuccess({
   onSignIn: () => void;
 }) {
   const text = useFormText();
-  const isAutoApprovedBuyer = result.autoApproved || (result.status === 'ONBOARDED' && (result.side === 'BUYER' || copy.side === 'BUYER'));
+  const isBuyer = result.side === 'BUYER' || copy.side === 'BUYER';
+  const isAutoApprovedBuyer = result.autoApproved || (result.status === 'ONBOARDED' && isBuyer);
 
   return (
     <div data-testid="signup-success" className="space-y-4">
@@ -43,7 +44,9 @@ export function SignupSuccess({
           ? 'We already have this registration'
           : isAutoApprovedBuyer
             ? '🎉 Account Activated & Auto-Approved!'
-            : 'Registration received'}
+            : isBuyer
+              ? 'Registration received — 1 Free RFQ Included'
+              : 'Registration received'}
       </h2>
 
       <p className={`leading-relaxed text-muted-foreground ${text.body}`}>
@@ -51,12 +54,12 @@ export function SignupSuccess({
           ? 'This email is already registered on the platform under the reference below.'
           : isAutoApprovedBuyer
             ? 'Your buyer workspace is ready with 1 Free RFQ Credit. You can sign in immediately and post your first requirement with zero upfront charges.'
-            : copy.side === 'BUYER'
-              ? 'We verify the organisation before your first request goes out to suppliers, so someone will be in touch to confirm who you buy for.'
+            : isBuyer
+              ? 'We verify the organisation before your first request goes out to suppliers, so someone will be in touch to confirm who you buy for. You are allowed to post your first requirement for free right now while your registration is reviewed.'
               : 'We verify a business before commercial requests reach it, so someone will be in touch to confirm your registration and coverage.'}
       </p>
 
-      {isAutoApprovedBuyer && (
+      {isBuyer && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 space-y-1 text-xs">
           <div className="flex items-center gap-1.5 font-bold text-emerald-950 dark:text-emerald-200">
             <span>🎁</span>
@@ -103,7 +106,7 @@ export function SignupSuccess({
         onClick={onSignIn}
       >
         <span>⚡</span>
-        <span>{isAutoApprovedBuyer ? 'Sign In & Post First RFQ' : 'Back to sign in'}</span>
+        <span>{isBuyer ? 'Sign In & Post First RFQ Free →' : 'Back to sign in'}</span>
       </Button>
     </div>
   );

@@ -363,7 +363,11 @@ export function deriveBuyerRecentActivity(requirements: OrganizationRequirementS
   return events.slice(0, 5);
 }
 
-export function useBuyerHomeData() {
+export function useBuyerHomeData(fallbackOrg?: {
+  organizationId?: string | null;
+  organizationName?: string | null;
+  orgRole?: string | null;
+}) {
   const [org, setOrg] = useState<UserOrganization | null>(null);
   const [subscription, setSubscription] = useState<OrganizationSubscription | null>(null);
   const [requirements, setRequirements] = useState<OrganizationRequirementSummary[]>([]);
@@ -374,23 +378,37 @@ export function useBuyerHomeData() {
     setIsLoading(true);
     setError(null);
     try {
+      let resolvedOrg: UserOrganization | null = null;
       const orgRes = await fetchUserOrganization();
-      if (!orgRes.ok) {
+
+      if (orgRes.ok) {
+        resolvedOrg = orgRes.org;
+      } else if (fallbackOrg?.organizationId) {
+        resolvedOrg = {
+          organizationId: fallbackOrg.organizationId,
+          organizationName: fallbackOrg.organizationName || 'My Organization',
+          orgType: 'BUYER',
+          role: fallbackOrg.orgRole || 'OWNER',
+        };
+      } else {
         setError(orgRes.error);
         setIsLoading(false);
         return;
       }
-      setOrg(orgRes.org);
+
+      setOrg(resolvedOrg);
 
       const [reqRes, subRes] = await Promise.all([
-        fetchOrganizationRequirements(orgRes.org.organizationId),
-        fetchOrganizationSubscription(orgRes.org.organizationId),
+        fetchOrganizationRequirements(resolvedOrg.organizationId),
+        fetchOrganizationSubscription(resolvedOrg.organizationId),
       ]);
 
       if (reqRes.ok) {
         setRequirements(reqRes.requirements);
       } else {
-        setError(reqRes.error);
+        // If requirements fetch errored, default to empty rather than fatal workspace crash
+        console.warn('Failed to fetch organization requirements:', reqRes.error);
+        setRequirements([]);
       }
 
       if (subRes.ok) {
@@ -401,7 +419,7 @@ export function useBuyerHomeData() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fallbackOrg?.organizationId, fallbackOrg?.organizationName, fallbackOrg?.orgRole]);
 
   useEffect(() => {
     void loadData();

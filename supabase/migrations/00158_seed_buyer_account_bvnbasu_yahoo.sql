@@ -5,61 +5,83 @@ BEGIN;
 
 DO $$
 DECLARE
-  v_auth_user_id uuid := 'ee3dedee-0c2a-4254-b2af-342b41d56386'::uuid;
+  v_auth_user_id uuid;
   v_profile_id uuid;
-  v_org_id uuid := '11111111-1111-4000-8000-000000000001'::uuid; -- Greenview Heights RWA
+  v_org_id uuid;
   v_encrypted_password text := extensions.crypt('Password@123', extensions.gen_salt('bf'));
 BEGIN
+  -- 0. Ensure buyer organization exists
+  SELECT om.organization_id INTO v_org_id
+  FROM public.organization_members om
+  JOIN public.profiles p ON p.id = om.profile_id
+  WHERE lower(p.email) = 'bvnbasu@yahoo.com'
+  LIMIT 1;
+
+  IF v_org_id IS NULL THEN
+    SELECT id INTO v_org_id FROM public.organizations WHERE id = '11111111-1111-4000-8000-000000000001'::uuid;
+    IF v_org_id IS NULL THEN
+      INSERT INTO public.organizations (id, name, org_type, status, free_rfq_credits, rfq_credits_used)
+      VALUES ('11111111-1111-4000-8000-000000000001'::uuid, 'Greenview Heights RWA', 'ENTERPRISE', 'ACTIVE', 5, 0)
+      ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
+      RETURNING id INTO v_org_id;
+    END IF;
+  END IF;
   -- 1. Create / Upsert auth.users record for bvnbasu@yahoo.com
-  INSERT INTO auth.users (
-    id,
-    instance_id,
-    email,
-    phone,
-    encrypted_password,
-    email_confirmed_at,
-    created_at,
-    updated_at,
-    raw_app_meta_data,
-    raw_user_meta_data,
-    is_super_admin,
-    role,
-    aud,
-    confirmation_token,
-    email_change,
-    email_change_token_new,
-    email_change_token_current,
-    recovery_token,
-    phone_change,
-    phone_change_token,
-    reauthentication_token,
-    is_sso_user,
-    is_anonymous
-  )
-  VALUES (
-    v_auth_user_id,
-    '00000000-0000-0000-0000-000000000000',
-    'bvnbasu@yahoo.com',
-    '+919840000001',
-    v_encrypted_password,
-    now(),
-    now(),
-    now(),
-    '{"provider": "email", "providers": ["email"]}'::jsonb,
-    '{"full_name": "Baskar Loganathan", "phone": "+919840000001"}'::jsonb,
-    false,
-    'authenticated',
-    'authenticated',
-    '', '', '', '', '', '', '', '', false, false
-  )
-  ON CONFLICT (id) DO UPDATE
-  SET email = 'bvnbasu@yahoo.com',
-      encrypted_password = EXCLUDED.encrypted_password,
-      email_confirmed_at = COALESCE(auth.users.email_confirmed_at, now()),
-      is_super_admin = false,
-      confirmation_token = '',
-      recovery_token = '',
-      updated_at = now();
+  SELECT id INTO v_auth_user_id FROM auth.users WHERE lower(email) = 'bvnbasu@yahoo.com';
+
+  IF v_auth_user_id IS NULL THEN
+    v_auth_user_id := 'ee3dedee-0c2a-4254-b2af-342b41d56386'::uuid;
+    INSERT INTO auth.users (
+      id,
+      instance_id,
+      email,
+      phone,
+      encrypted_password,
+      email_confirmed_at,
+      created_at,
+      updated_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      is_super_admin,
+      role,
+      aud,
+      confirmation_token,
+      email_change,
+      email_change_token_new,
+      email_change_token_current,
+      recovery_token,
+      phone_change,
+      phone_change_token,
+      reauthentication_token,
+      is_sso_user,
+      is_anonymous
+    )
+    VALUES (
+      v_auth_user_id,
+      '00000000-0000-0000-0000-000000000000',
+      'bvnbasu@yahoo.com',
+      '+919840000001',
+      v_encrypted_password,
+      now(),
+      now(),
+      now(),
+      '{"provider": "email", "providers": ["email"]}'::jsonb,
+      '{"full_name": "Baskar Loganathan", "phone": "+919840000001"}'::jsonb,
+      false,
+      'authenticated',
+      'authenticated',
+      '', '', '', '', '', '', '', '', false, false
+    );
+  ELSE
+    UPDATE auth.users
+    SET encrypted_password = v_encrypted_password,
+        email_confirmed_at = COALESCE(auth.users.email_confirmed_at, now()),
+        is_super_admin = false,
+        confirmation_token = '',
+        recovery_token = '',
+        updated_at = now()
+    WHERE id = v_auth_user_id;
+  END IF;
 
   -- 2. Upsert auth.identities record
   INSERT INTO auth.identities (

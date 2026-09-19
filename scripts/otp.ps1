@@ -87,6 +87,14 @@ function Invoke-Pnpm {
       $gateScript = Join-Path $WorkspaceRoot "scripts\verify-staging-gate.ts"
       & $node $TsxEntry $gateScript $Arguments[1..($Arguments.Length-1)]
       return
+    } elseif (($Arguments[0] -eq "db:migrate:deploy" -or $Arguments[0] -eq "db:migrate") -and (Test-Path $TsxEntry)) {
+      $migScript = Join-Path $WorkspaceRoot "scripts\deploy-migrations.ts"
+      & $node $TsxEntry $migScript --deploy
+      return
+    } elseif ($Arguments[0] -eq "db:migrate:check" -and (Test-Path $TsxEntry)) {
+      $migScript = Join-Path $WorkspaceRoot "scripts\deploy-migrations.ts"
+      & $node $TsxEntry $migScript --check-only
+      return
     } elseif ($Arguments[0] -eq "--filter" -and $Arguments[1] -eq "@otp/web" -and $Arguments[2] -eq "build" -and (Test-Path $ViteEntry)) {
       $viteConfig = Join-Path $WorkspaceRoot "apps\web\vite.config.ts"
       $webDir = Join-Path $WorkspaceRoot "apps\web"

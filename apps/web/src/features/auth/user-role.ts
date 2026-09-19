@@ -109,6 +109,24 @@ export async function resolvePortalRole(
   if (isFounder || isFounderEmail(email)) return 'founder';
   if (isPlatformAdmin || isSuperAdminEmail(email)) return 'admin';
 
+  // 0. Check explicit active_portal_side if user switched persona
+  try {
+    const { data: personaRow } = await supabase
+      .from('profiles')
+      .select('active_portal_side, active_role_code')
+      .eq('id', profileId)
+      .maybeSingle();
+
+    if (personaRow?.active_portal_side === 'SUPPLIER') {
+      return 'supplier';
+    }
+    if (personaRow?.active_portal_side === 'BUYER') {
+      return 'buyer';
+    }
+  } catch {
+    // Fall through
+  }
+
   try {
     // 1. Check supplier_users by profileId
     const { data: supplierRows } = await supabase

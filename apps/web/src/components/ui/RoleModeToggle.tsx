@@ -13,7 +13,7 @@ export function RoleModeToggle({ className = '', size = 'sm', onToggle }: RoleMo
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { context, switchTo } = useRoleContext();
+  const { context, switchTo, switchSide } = useRoleContext();
 
   const isSupplierPath =
     location.pathname.startsWith('/supplier') ||
@@ -27,10 +27,15 @@ export function RoleModeToggle({ className = '', size = 'sm', onToggle }: RoleMo
         navigate('/signup?side=supplier');
         return;
       }
-      // If user has a supplier role, switch to it
-      const supplierRole = context.roles.find((r) => r.side === 'SUPPLIER');
-      if (supplierRole && supplierRole.code !== context.activeRole?.code) {
-        await switchTo(supplierRole.code);
+      if (context.side !== 'SUPPLIER') {
+        const res = await switchSide('SUPPLIER');
+        if (!res.ok) {
+          // Fallback to role switch if holding supplier role
+          const supplierRole = context.roles.find((r) => r.side === 'SUPPLIER');
+          if (supplierRole && supplierRole.code !== context.activeRole?.code) {
+            await switchTo(supplierRole.code);
+          }
+        }
       }
       navigate('/supplier/purchase-orders');
     } else {
@@ -38,10 +43,15 @@ export function RoleModeToggle({ className = '', size = 'sm', onToggle }: RoleMo
         navigate('/');
         return;
       }
-      // If user has a buyer role, switch to it
-      const buyerRole = context.roles.find((r) => r.side === 'BUYER');
-      if (buyerRole && buyerRole.code !== context.activeRole?.code) {
-        await switchTo(buyerRole.code);
+      if (context.side !== 'BUYER') {
+        const res = await switchSide('BUYER');
+        if (!res.ok) {
+          // Fallback to role switch if holding buyer role
+          const buyerRole = context.roles.find((r) => r.side === 'BUYER');
+          if (buyerRole && buyerRole.code !== context.activeRole?.code) {
+            await switchTo(buyerRole.code);
+          }
+        }
       }
       navigate('/dashboard');
     }

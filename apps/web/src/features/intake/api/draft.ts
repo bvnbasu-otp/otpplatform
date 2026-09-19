@@ -217,6 +217,7 @@ export async function updateDraft(
     if (createRes.ok) {
       return createRes;
     }
+    return { ok: false, error: createRes.error };
   }
 
   const { data, error } = await supabase

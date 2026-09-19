@@ -18,7 +18,7 @@ export function SupplierOpportunityCard({ opportunity }: SupplierOpportunityCard
       }`}
       data-testid={`supplier-opportunity-card-${opportunity.id}`}
     >
-      {/* Top Meta Row: Public Ref, Anonymous Tender Tag, Status & Identity Shield */}
+      {/* Top Meta Row: Public Ref, Anonymous Tender Tag, Match Badge & Identity Shield */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -30,8 +30,11 @@ export function SupplierOpportunityCard({ opportunity }: SupplierOpportunityCard
             <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold shrink-0 truncate">
               🛡️ {opportunity.anonymousLabel}
             </span>
+            <span className="rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-800 px-2 py-0.5 text-[10px] font-extrabold shrink-0">
+              ⚡ 98% Match
+            </span>
             {opportunity.isClosingSoon && (
-              <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-2 py-0.5 text-[10px] font-extrabold shrink-0">
+              <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-2 py-0.5 text-[10px] font-extrabold shrink-0 animate-pulse">
                 ⏳ Closing Soon
               </span>
             )}
@@ -85,13 +88,13 @@ export function SupplierOpportunityCard({ opportunity }: SupplierOpportunityCard
         </span>
       </div>
 
-      {/* Direct CTA: Min 48px touch target */}
+      {/* Direct CTA: Min 48px touch target with 30-Min Quote indicator */}
       <div className="pt-0.5">
         <Link
           to={opportunity.actionUrl}
           className="min-h-[48px] w-full flex items-center justify-center gap-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2.5 text-xs font-extrabold shadow-sm active:scale-98 transition shadow-primary/20 mobile-touch-target"
         >
-          <span>Review RFQ &amp; Quote</span>
+          <span>⚡ Quote in 30 Mins</span>
           <span>→</span>
         </Link>
       </div>

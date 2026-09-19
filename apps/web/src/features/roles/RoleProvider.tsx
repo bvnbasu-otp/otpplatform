@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from '@/features/auth';
-import { fetchRoleContext, switchActiveRole, switchActiveOrganization, SIGNED_OUT_CONTEXT, type RoleContext } from './api/roles';
+import { fetchRoleContext, switchActiveRole, switchActiveOrganization, switchPortalSide, SIGNED_OUT_CONTEXT, type RoleContext, type PortalSide } from './api/roles';
 import { RoleContextContext } from './hooks/use-role-context';
 
 export function RoleProvider({ children }: { children: ReactNode }) {
@@ -62,6 +62,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             role: result.context.activeRole?.code,
             activeRoleCode: result.context.activeRole?.code,
             organizationId: result.context.organizationId,
+            side: result.context.side,
           },
         }),
       );
@@ -80,6 +81,26 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             role: result.context.activeRole?.code,
             activeRoleCode: result.context.activeRole?.code,
             organizationId: result.context.organizationId,
+            side: result.context.side,
+          },
+        }),
+      );
+    }
+    return { ok: true };
+  }, []);
+
+  const switchSide = useCallback(async (side: PortalSide) => {
+    const result = await switchPortalSide(side);
+    if (!result.ok) return { ok: false, error: result.error };
+    setContext(result.context);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('otp:role-context-change', {
+          detail: {
+            role: result.context.activeRole?.code,
+            activeRoleCode: result.context.activeRole?.code,
+            organizationId: result.context.organizationId,
+            side: result.context.side,
           },
         }),
       );
@@ -88,8 +109,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ context, isLoading: authLoading || isLoading, refresh: load, switchTo, switchOrg }),
-    [context, authLoading, isLoading, load, switchTo, switchOrg],
+    () => ({ context, isLoading: authLoading || isLoading, refresh: load, switchTo, switchOrg, switchSide }),
+    [context, authLoading, isLoading, load, switchTo, switchOrg, switchSide],
   );
 
   return <RoleContextContext.Provider value={value}>{children}</RoleContextContext.Provider>;

@@ -152,6 +152,11 @@ const steps: GateStep[] = [
     critical: true,
   },
   {
+    name: 'Supabase Database Migration Contiguity & Integrity Audit (187 Migrations)',
+    command: 'pnpm tsx scripts/deploy-migrations.ts --check-only',
+    critical: true,
+  },
+  {
     name: 'Master Regression Suite (902+ Tests across 12 Layers)',
     command: 'pnpm test:regression',
     critical: true,
