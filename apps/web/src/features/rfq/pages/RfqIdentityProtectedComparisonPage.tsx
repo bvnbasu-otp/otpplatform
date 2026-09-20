@@ -1,10 +1,10 @@
 import React from 'react';
-import { EvaluationDecisionCockpit } from '@/features/evaluation/components/EvaluationDecisionCockpit';
+import { EvaluationDecisionCockpit, type CockpitTab } from '@/features/evaluation/components/EvaluationDecisionCockpit';
 
 export interface RfqIdentityProtectedComparisonPageProps {
   rfqId: string;
   rfqTitle?: string;
-  initialTab?: 'matrix' | 'vote' | 'award';
+  initialTab?: CockpitTab | 'matrix' | 'clarification' | 'committee' | 'ballot' | 'decision' | 'reveal';
 }
 
 // Legacy alias
@@ -13,7 +13,7 @@ export type RfqBlindComparisonPageProps = RfqIdentityProtectedComparisonPageProp
 export function RfqIdentityProtectedComparisonPage({
   rfqId,
   rfqTitle,
-  initialTab = 'matrix',
+  initialTab = 'quotes',
 }: RfqIdentityProtectedComparisonPageProps) {
   return (
     <EvaluationDecisionCockpit

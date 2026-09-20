@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, useSearchParams, Navigate } from 'react-router-dom';
-import { EvaluationDecisionCockpit } from '../components/EvaluationDecisionCockpit';
+import { EvaluationDecisionCockpit, type CockpitTab } from '../components/EvaluationDecisionCockpit';
 import { getPilotByRfqId } from '@/lib/pilots';
 
 function sanitizeRouteParam(raw: string | undefined): string | null {
@@ -18,13 +18,17 @@ function sanitizeRouteParam(raw: string | undefined): string | null {
   return decoded;
 }
 
+export interface EvaluationDecisionCockpitPageProps {
+  rfqId?: string;
+  rfqTitle?: string;
+  initialTab?: CockpitTab;
+}
+
 export function EvaluationDecisionCockpitPage({
   rfqId: propRfqId,
   rfqTitle: propRfqTitle,
-}: {
-  rfqId?: string;
-  rfqTitle?: string;
-}) {
+  initialTab: propInitialTab,
+}: EvaluationDecisionCockpitPageProps) {
   const params = useParams<{ rfqId: string }>();
   const [searchParams] = useSearchParams();
   const rawId = propRfqId || params.rfqId;
@@ -34,13 +38,16 @@ export function EvaluationDecisionCockpitPage({
     return <Navigate to="/dashboard" replace />;
   }
 
-  const tabParam = searchParams.get('tab');
-  const initialTab: 'matrix' | 'vote' | 'award' =
-    tabParam === 'vote' || tabParam === 'ballot'
-      ? 'vote'
-      : tabParam === 'award' || tabParam === 'reveal'
-      ? 'award'
-      : 'matrix';
+  const tabParam = searchParams.get('tab')?.toLowerCase();
+  const resolvedTab: CockpitTab = propInitialTab
+    ? propInitialTab
+    : tabParam === 'qa' || tabParam === 'clarification' || tabParam === 'q&a' || tabParam === 'questions'
+    ? 'qa'
+    : tabParam === 'vote' || tabParam === 'ballot' || tabParam === 'committee'
+    ? 'vote'
+    : tabParam === 'award' || tabParam === 'decision' || tabParam === 'reveal'
+    ? 'award'
+    : 'quotes';
 
   const pilot = getPilotByRfqId(rfqId);
   const effectiveTitle =
@@ -50,7 +57,7 @@ export function EvaluationDecisionCockpitPage({
     <EvaluationDecisionCockpit
       rfqId={rfqId}
       rfqTitle={effectiveTitle}
-      initialTab={initialTab}
+      initialTab={resolvedTab}
     />
   );
 }

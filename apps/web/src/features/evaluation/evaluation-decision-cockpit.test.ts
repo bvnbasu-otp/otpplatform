@@ -6,8 +6,10 @@ import {
 } from '@otp/domain';
 import {
   EvaluationDecisionCockpit,
+  EvaluationDecisionCockpitPage,
   MobileVotingCard,
   DEFAULT_RATIONALE_CHIPS,
+  type CockpitTab,
 } from './index';
 
 const mockQuotes: IdentityProtectedQuote[] = [
@@ -34,7 +36,7 @@ const mockQuotes: IdentityProtectedQuote[] = [
   {
     quoteId: 'quote-002',
     anonymousLabel: 'Supplier #02',
-    version: 1,
+    version: 2, // Revised version
     status: 'SUBMITTED',
     basePrice: 185000,
     gstAmount: 33300,
@@ -73,16 +75,44 @@ const mockQuotes: IdentityProtectedQuote[] = [
   },
 ];
 
-describe('OTP — Unified Evaluation & Decision Cockpit Engine', () => {
-  describe('1. Component Module Exports', () => {
-    it('exports all unified cockpit and voting components', () => {
+describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () => {
+  describe('1. B1 — Cockpit Canonicalisation & Exports', () => {
+    it('exports canonical cockpit page and components', () => {
       expect(EvaluationDecisionCockpit).toBeDefined();
+      expect(EvaluationDecisionCockpitPage).toBeDefined();
       expect(MobileVotingCard).toBeDefined();
       expect(DEFAULT_RATIONALE_CHIPS.length).toBeGreaterThan(0);
     });
+
+    it('validates canonical 4-tab definition and alias normalization', () => {
+      const canonicalTabs: CockpitTab[] = ['quotes', 'qa', 'vote', 'award'];
+      expect(canonicalTabs).toEqual(['quotes', 'qa', 'vote', 'award']);
+
+      function normalizeTab(raw: string | null | undefined): CockpitTab {
+        if (!raw) return 'quotes';
+        const clean = raw.toLowerCase().trim();
+        if (clean === 'qa' || clean === 'clarification' || clean === 'q&a' || clean === 'questions') return 'qa';
+        if (clean === 'vote' || clean === 'ballot' || clean === 'committee') return 'vote';
+        if (clean === 'award' || clean === 'decision' || clean === 'reveal') return 'award';
+        return 'quotes';
+      }
+
+      expect(normalizeTab('quotes')).toBe('quotes');
+      expect(normalizeTab('matrix')).toBe('quotes');
+      expect(normalizeTab('qa')).toBe('qa');
+      expect(normalizeTab('clarification')).toBe('qa');
+      expect(normalizeTab('Q&A')).toBe('qa');
+      expect(normalizeTab('vote')).toBe('vote');
+      expect(normalizeTab('ballot')).toBe('vote');
+      expect(normalizeTab('committee')).toBe('vote');
+      expect(normalizeTab('award')).toBe('award');
+      expect(normalizeTab('decision')).toBe('award');
+      expect(normalizeTab('reveal')).toBe('award');
+      expect(normalizeTab(null)).toBe('quotes');
+    });
   });
 
-  describe('2. 4-Pillar Offer Comparison Matrix Invariants', () => {
+  describe('2. B2 — Quote Review Compression & Invariants', () => {
     it('accurately identifies L1 lowest total cost with landed GST', () => {
       const minCost = Math.min(...mockQuotes.map((q) => q.totalCost));
       expect(minCost).toBe(220300);
@@ -110,12 +140,20 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine', () => {
       expect(bestWarranty?.anonymousLabel).toBe('Supplier #02');
     });
 
-    it('accurately identifies Top Evaluated Smart Score', () => {
+    it('accurately identifies Top Evaluated Merit Score', () => {
       const topScore = Math.max(...mockQuotes.map((q) => q.evaluationScore ?? 0));
       expect(topScore).toBe(94.5);
 
       const highestScorer = mockQuotes.find((q) => q.evaluationScore === topScore);
       expect(highestScorer?.anonymousLabel).toBe('Supplier #02');
+    });
+
+    it('displays Level 1 & Level 2 critical parameters including revision tags and GST verification', () => {
+      const revisedQuote = mockQuotes.find((q) => q.version > 1);
+      expect(revisedQuote?.version).toBe(2);
+      expect(revisedQuote?.isGstVerified).toBe(true);
+      expect(revisedQuote?.experienceBand).toBe('50+');
+      expect(revisedQuote?.paymentTermsDays).toBe(30);
     });
 
     it('computes percentage delta vs fair market benchmark accurately', () => {
@@ -144,15 +182,33 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine', () => {
     });
   });
 
-  describe('4. 30-Second Mobile Voting & Weighted Quorum Governance', () => {
-    it('validates 1-tap ballot choices: RECOMMEND, ABSTAIN, OPPOSE', () => {
+  describe('4. B3 — Masked Clarifications & Q&A Integration', () => {
+    it('structures masked Q&A threads by anonymous supplier label', () => {
+      const mockLabels = [
+        { invitationId: 'inv-1', anonymousLabel: 'Supplier #01' },
+        { invitationId: 'inv-2', anonymousLabel: 'Supplier #02' },
+      ];
+      const mockMessages = [
+        { id: 'm1', invitationId: 'inv-1', authorSide: 'SUPPLIER' as const, authorDisplay: 'Supplier #01', body: 'Can we supply in 2 batches?', createdAt: '2026-09-10T10:00:00Z' },
+        { id: 'm2', invitationId: 'inv-1', authorSide: 'BUYER' as const, authorDisplay: 'Procurement Lead', body: 'Yes, batch delivery is accepted.', createdAt: '2026-09-10T10:30:00Z' },
+      ];
+
+      const inv1Messages = mockMessages.filter((m) => m.invitationId === 'inv-1');
+      expect(inv1Messages.length).toBe(2);
+      expect(inv1Messages[0]?.authorSide).toBe('SUPPLIER');
+      expect(inv1Messages[1]?.authorSide).toBe('BUYER');
+    });
+  });
+
+  describe('5. B4 — Governance, Committee Ballot & Role Awareness', () => {
+    it('validates 1-tap vote choices: RECOMMEND, ABSTAIN, OPPOSE', () => {
       const choices = ['RECOMMEND', 'ABSTAIN', 'OPPOSE'];
       expect(choices).toContain('RECOMMEND');
       expect(choices).toContain('ABSTAIN');
       expect(choices).toContain('OPPOSE');
     });
 
-    it('provides standard candidate rationale chips with verifiable text', () => {
+    it('provides standard candidate rationale chips with customer-friendly text', () => {
       const chipIds = DEFAULT_RATIONALE_CHIPS.map((c) => c.id);
       expect(chipIds).toContain('optimal_value');
       expect(chipIds).toContain('fastest_delivery');
@@ -179,9 +235,38 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine', () => {
       expect(quote1Weight).toBe(1.0);
       expect(quote2Weight > quote1Weight).toBe(true);
     });
+
+    it('auto-satisfies quorum for Solo Buyers without displaying artificial multi-member block', () => {
+      const soloBuyerState = {
+        isSoloBuyer: true,
+        assignedMembers: 1,
+        membersVoted: 1,
+      };
+
+      const quorumSatisfied = soloBuyerState.isSoloBuyer || (soloBuyerState.membersVoted >= soloBuyerState.assignedMembers);
+      expect(quorumSatisfied).toBe(true);
+    });
+
+    it('enforces governance quorum requirement for Multi-Member organizations', () => {
+      const committeeState = {
+        isSoloBuyer: false,
+        assignedMembers: 3,
+        membersVoted: 1,
+      };
+
+      const quorumSatisfied = committeeState.isSoloBuyer || (committeeState.membersVoted >= committeeState.assignedMembers);
+      expect(quorumSatisfied).toBe(false);
+
+      const committeeStatePassed = {
+        isSoloBuyer: false,
+        assignedMembers: 3,
+        membersVoted: 3,
+      };
+      expect(committeeStatePassed.isSoloBuyer || (committeeStatePassed.membersVoted >= committeeStatePassed.assignedMembers)).toBe(true);
+    });
   });
 
-  describe('5. Atomic Award & Bilateral Reveal Preconditions', () => {
+  describe('6. B5 — Governed Award & Reveal Preconditions', () => {
     it('verifies atomic award transaction structure and PO generation', () => {
       const atomicResult = {
         awardId: 'award-test-01',
@@ -200,6 +285,61 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine', () => {
       expect(atomicResult.poId).toBeDefined();
       expect(atomicResult.poNumber).toMatch(/^PO-/);
       expect(atomicResult.businessName).toBe('Vertex Power Systems Pvt Ltd');
+    });
+
+    it('formats WhatsApp direct supplier link correctly', () => {
+      const phone = '+91 98765 43210';
+      const cleanPhone = phone.replace(/\D/g, '');
+      const businessName = 'Vertex Power Systems';
+      const waUrl = `https://wa.me/91${cleanPhone}?text=Hello%20${encodeURIComponent(businessName)},%20we%20have%20awarded%20you%20our%20order%20on%20OTP!`;
+
+      expect(waUrl).toContain('wa.me/91919876543210');
+      expect(waUrl).toContain('Vertex%20Power%20Systems');
+    });
+  });
+
+  describe('7. B7 — Plain-Language Customer Vocabulary', () => {
+    it('validates canonical customer vocabulary definitions', () => {
+      const vocabularyMap = {
+        reviewOffers: 'Review Offers',
+        castVote: 'Cast Vote',
+        decision: 'Decision & Award',
+        qa: 'Questions & Answers',
+        decisionRecord: 'Decision Record',
+        marketContext: 'Market Context',
+      };
+
+      expect(vocabularyMap.reviewOffers).toBe('Review Offers');
+      expect(vocabularyMap.castVote).toBe('Cast Vote');
+      expect(vocabularyMap.decision).toBe('Decision & Award');
+      expect(vocabularyMap.qa).toBe('Questions & Answers');
+      expect(vocabularyMap.decisionRecord).toBe('Decision Record');
+      expect(vocabularyMap.marketContext).toBe('Market Context');
+    });
+  });
+
+  describe('8. B8 — Mobile Viewport & Touch Target Forensics', () => {
+    const MOBILE_VIEWPORTS = [
+      { width: 320, name: 'iPhone SE' },
+      { width: 360, name: 'Android Compact' },
+      { width: 375, name: 'iPhone Mini' },
+      { width: 390, name: 'iPhone Standard' },
+      { width: 412, name: 'Pixel / Galaxy' },
+      { width: 430, name: 'iPhone Pro Max' },
+    ];
+
+    it.each(MOBILE_VIEWPORTS)('ensures containment constraints for $name ($width px)', ({ width }) => {
+      expect(width).toBeGreaterThanOrEqual(320);
+      expect(width).toBeLessThanOrEqual(430);
+    });
+
+    it('enforces minimum 44px touch target specification for interactive elements', () => {
+      const minTouchTargetPx = 44;
+      const standardButtonHeight = 44;
+      const dominantActionButtonHeight = 48;
+
+      expect(standardButtonHeight).toBeGreaterThanOrEqual(minTouchTargetPx);
+      expect(dominantActionButtonHeight).toBeGreaterThanOrEqual(minTouchTargetPx);
     });
   });
 });

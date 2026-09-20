@@ -103,8 +103,8 @@ function RfqIdentityProtectedComparisonRoute() {
   const pilot = getPilotByRfqId(sanitized);
   const title = pilot
     ? `${pilot.requirementTitle} — RFQ`
-    : 'RFQ — Identity-Protected Evaluation';
-  return <RfqIdentityProtectedComparisonPage rfqId={sanitized} rfqTitle={title} />;
+    : 'RFQ — Unified Evaluation & Decision Cockpit';
+  return <EvaluationDecisionCockpitPage rfqId={sanitized} rfqTitle={title} />;
 }
 
 function SupplierRfqRoute() {
@@ -347,23 +347,23 @@ export function App() {
               path="/rfq/:rfqId/market-intelligence"
               element={<MarketIntelligenceStepPage />}
             />
-            <Route path="/rfq/:rfqId/evaluation" element={<RfqIdentityProtectedComparisonRoute />} />
+            <Route path="/rfq/:rfqId/evaluation" element={<EvaluationDecisionCockpitPage />} />
             <Route path="/rfq/:rfqId/cockpit" element={<EvaluationDecisionCockpitPage />} />
             <Route path="/rfq/:rfqId/decision" element={<EvaluationDecisionCockpitPage />} />
             <Route path="/rfqs/:rfqId/evaluation" element={<EvaluationDecisionCockpitPage />} />
-            <Route path="/rfq/:rfqId/quotes" element={<RfqIdentityProtectedComparisonRoute />} />
-            <Route path="/rfqs/:rfqId/quotes" element={<RfqIdentityProtectedComparisonRoute />} />
-            {/* Legacy routes */}
-            <Route path="/rfq/:rfqId/identity-protected-comparison" element={<RfqIdentityProtectedComparisonRoute />} />
-            <Route path={`/rfq/:rfqId/${['bl', 'ind-comparison'].join('')}`} element={<RfqIdentityProtectedComparisonRoute />} />
-            <Route path={`/rfqs/:rfqId/${['bl', 'ind-comparison'].join('')}`} element={<RfqIdentityProtectedComparisonRoute />} />
+            <Route path="/rfq/:rfqId/quotes" element={<EvaluationDecisionCockpitPage />} />
+            <Route path="/rfqs/:rfqId/quotes" element={<EvaluationDecisionCockpitPage />} />
+            {/* Legacy comparison routes */}
+            <Route path="/rfq/:rfqId/identity-protected-comparison" element={<EvaluationDecisionCockpitPage />} />
+            <Route path={`/rfq/:rfqId/${['bl', 'ind-comparison'].join('')}`} element={<EvaluationDecisionCockpitPage />} />
+            <Route path={`/rfqs/:rfqId/${['bl', 'ind-comparison'].join('')}`} element={<EvaluationDecisionCockpitPage />} />
             <Route path="/rfq/:rfqId/clarification" element={<ClarificationRoute />} />
             <Route path="/rfq/:rfqId/committee" element={<CommitteeVoteRoute />} />
             <Route path="/rfq/:rfqId/award" element={<AwardRoute />} />
             <Route path="/rfq/:rfqId/reveal" element={<RevealRoute />} />
             {/* Route Aliases & Redirects for notification links & deep links */}
-            <Route path="/rfq/:rfqId" element={<RfqIdentityProtectedComparisonRoute />} />
-            <Route path="/rfqs/:rfqId" element={<RfqIdentityProtectedComparisonRoute />} />
+            <Route path="/rfq/:rfqId" element={<EvaluationDecisionCockpitPage />} />
+            <Route path="/rfqs/:rfqId" element={<EvaluationDecisionCockpitPage />} />
             <Route path="/governance/evaluations/:rfqId/vote" element={<CommitteeVoteRoute />} />
             <Route path="/governance/evaluations/:rfqId" element={<CommitteeVoteRoute />} />
             <Route path="/supplier/rfq/:rfqId/quote" element={<SupplierQuoteSubmitRoute />} />

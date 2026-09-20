@@ -10,11 +10,18 @@ import { DecisionReceipt } from '@/features/reveal/components/DecisionReceipt';
 import { QuoteComparisonSummaryHeader } from '@/features/rfq/components/QuoteComparisonSummaryHeader';
 import { IdentityProtectedQuoteComparisonTable } from '@/features/rfq/components/IdentityProtectedQuoteComparisonTable';
 import { QuoteBoqBottomSheet } from '@/features/rfq/components/QuoteBoqBottomSheet';
+import { MarketIntelligencePanel } from '@/features/procurement-os/components/MarketIntelligencePanel';
+import { fetchMarketIntelligence } from '@/features/procurement-os/api/fetch-market-intelligence';
+import type { MarketIntelligenceSummary } from '@otp/domain';
 import {
   closeClarificationForEvaluation,
   fetchRfqStatus,
   waiveMinQuotesAndEvaluate,
+  fetchInvitedLabels,
+  fetchClarificationMessagesForBuyer,
+  type ClarificationMessage,
 } from '@/features/clarification/api/clarification';
+import { ClarificationThread } from '@/features/clarification/components/ClarificationThread';
 import { openRfq, discoverAndInvite } from '@/features/requirement/api/rfq-lifecycle';
 import { simulateQuotesForRfq } from '@/features/rfq/api/simulate-quotes';
 import {
@@ -33,10 +40,12 @@ import { fetchPurchaseOrderByRfq } from '@/features/fulfillment/api/purchase-ord
 import { fetchRevealedQuotes, type RevealedQuoteRow } from '@/features/reveal/api/fetch-revealed-quotes';
 import { getPilotByRfqId } from '@/lib/pilots';
 
+export type CockpitTab = 'quotes' | 'qa' | 'vote' | 'award';
+
 export interface EvaluationDecisionCockpitProps {
   rfqId: string;
   rfqTitle?: string;
-  initialTab?: 'matrix' | 'vote' | 'award';
+  initialTab?: 'quotes' | 'qa' | 'vote' | 'award' | 'matrix' | 'clarification' | 'committee' | 'ballot' | 'decision' | 'reveal';
 }
 
 function formatInr(amount: number | null | undefined): string {
@@ -52,14 +61,35 @@ function formatInr(amount: number | null | undefined): string {
   }
 }
 
+function normalizeTab(raw: string | null | undefined): CockpitTab {
+  if (!raw) return 'quotes';
+  const clean = raw.toLowerCase().trim();
+  if (clean === 'qa' || clean === 'clarification' || clean === 'q&a' || clean === 'questions') return 'qa';
+  if (clean === 'vote' || clean === 'ballot' || clean === 'committee') return 'vote';
+  if (clean === 'award' || clean === 'decision' || clean === 'reveal') return 'award';
+  return 'quotes';
+}
+
 export function EvaluationDecisionCockpit({
   rfqId,
   rfqTitle,
-  initialTab = 'matrix',
+  initialTab = 'quotes',
 }: EvaluationDecisionCockpitProps) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const urlQuoteId = searchParams.get('quote') || searchParams.get('quoteId');
+  const urlTab = searchParams.get('tab');
+
+  // Active Tab State
+  const [activeTab, setActiveTab] = useState<CockpitTab>(() => normalizeTab(urlTab || initialTab));
+
+  // Sync tab state when URL changes or tab is switched
+  const handleTabChange = useCallback((newTab: CockpitTab) => {
+    setActiveTab(newTab);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', newTab);
+    setSearchParams(newParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Quotes and Evaluations
   const { quotes, isLoading: quotesLoading, error: quotesError, refresh: refreshQuotes } =
@@ -74,8 +104,7 @@ export function EvaluationDecisionCockpit({
     refresh: refreshScores,
   } = useQuoteEvaluations(rfqId);
 
-  // Cockpit States
-  const [activeTab, setActiveTab] = useState<'matrix' | 'vote' | 'award'>(initialTab);
+  // Cockpit Governance & Execution States
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
   const [rfqStatus, setRfqStatus] = useState<string | null>(null);
   const [minQuotesRequired, setMinQuotesRequired] = useState(3);
@@ -87,8 +116,22 @@ export function EvaluationDecisionCockpit({
   const [isSoloBuyer, setIsSoloBuyer] = useState(false);
   const [quorumMet, setQuorumMet] = useState(false);
   const [summaryVotes, setSummaryVotes] = useState<any>(null);
+
+  // Progressive Disclosure Sheets & Drawers
   const [showBoqQuote, setShowBoqQuote] = useState<IdentityProtectedQuote | null>(null);
   const [showCriterionBreakdown, setShowCriterionBreakdown] = useState(false);
+  const [showMarketContext, setShowMarketContext] = useState(false);
+  const [marketIntelligence, setMarketIntelligence] = useState<MarketIntelligenceSummary | null>(null);
+  const [marketIntelLoading, setMarketIntelLoading] = useState(false);
+  const [showDecisionReceiptFull, setShowDecisionReceiptFull] = useState(false);
+
+  // Q&A / Clarification States
+  const [qaLabels, setQaLabels] = useState<{ invitationId: string; anonymousLabel: string }[]>([]);
+  const [qaMessages, setQaMessages] = useState<ClarificationMessage[]>([]);
+  const [selectedInvitationId, setSelectedInvitationId] = useState<string>('');
+  const [qaLoading, setQaLoading] = useState(false);
+
+  // Award Modal & Operations
   const [showAwardModal, setShowAwardModal] = useState(false);
   const [awardJustification, setAwardJustification] = useState('');
   const [isAwarding, setIsAwarding] = useState(false);
@@ -96,22 +139,6 @@ export function EvaluationDecisionCockpit({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  const handleSimulateQuotes = async () => {
-    setIsSimulatingQuotes(true);
-    setError(null);
-    setSuccess(null);
-    const res = await simulateQuotesForRfq(rfqId, { force: true });
-    setIsSimulatingQuotes(false);
-    if (res.ok) {
-      setSuccess(`⚡ Successfully generated ${res.quotesSubmitted ?? 4} simulated supplier quotes!`);
-      await loadCockpitStatus();
-      void refreshQuotes();
-      void recompute();
-    } else {
-      setError(res.error || 'Failed to simulate quotes');
-    }
-  };
 
   // Pilot / Context Metadata
   const pilot = useMemo(() => getPilotByRfqId(rfqId), [rfqId]);
@@ -167,19 +194,65 @@ export function EvaluationDecisionCockpit({
         setSummaryVotes(summaryRes.summary);
         if (summaryRes.summary.assignedMembers <= 1) {
           setIsSoloBuyer(true);
-        }
-        if (summaryRes.summary.membersVoted >= summaryRes.summary.assignedMembers) {
+          setQuorumMet(true);
+        } else if (summaryRes.summary.membersVoted >= summaryRes.summary.assignedMembers) {
           setQuorumMet(true);
         }
       }
     } catch {
       // Non-critical governance signal
     }
+  }, [rfqId, refreshQuotes, recompute]);
+
+  // Load Q&A Messages
+  const loadQaMessages = useCallback(async () => {
+    setQaLoading(true);
+    try {
+      const [labelsRes, msgRes] = await Promise.all([
+        fetchInvitedLabels(rfqId),
+        fetchClarificationMessagesForBuyer(rfqId),
+      ]);
+      if (labelsRes.ok) {
+        setQaLabels(labelsRes.labels);
+        if (!selectedInvitationId && labelsRes.labels[0]) {
+          setSelectedInvitationId(labelsRes.labels[0].invitationId);
+        }
+      }
+      if (msgRes.ok) {
+        setQaMessages(msgRes.messages);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setQaLoading(false);
+    }
+  }, [rfqId, selectedInvitationId]);
+
+  // Load Market Context Benchmarks
+  const loadMarketIntelligence = useCallback(async () => {
+    setMarketIntelLoading(true);
+    try {
+      const res = await fetchMarketIntelligence(rfqId);
+      if (res.ok) {
+        setMarketIntelligence(res.intelligence);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setMarketIntelLoading(false);
+    }
   }, [rfqId]);
 
   useEffect(() => {
     void loadCockpitStatus();
-  }, [loadCockpitStatus]);
+    void loadQaMessages();
+  }, [loadCockpitStatus, loadQaMessages]);
+
+  useEffect(() => {
+    if (showMarketContext && !marketIntelligence) {
+      void loadMarketIntelligence();
+    }
+  }, [showMarketContext, marketIntelligence, loadMarketIntelligence]);
 
   // Derived Best-in-Class Metrics
   const validQuotes = useMemo(() => quotes.filter((q) => q.totalCost && q.totalCost > 0), [quotes]);
@@ -228,7 +301,7 @@ export function EvaluationDecisionCockpit({
         `Warranty: ${selectedQuote.warrantyMonths} months`,
       ];
       if (selectedQuote.evaluationScore != null) {
-        parts.push(`Merit Smart Score: ${(selectedQuote.evaluationScore / 10).toFixed(1)}/10`);
+        parts.push(`Merit Score: ${(selectedQuote.evaluationScore / 10).toFixed(1)}/10`);
       }
       setAwardJustification(parts.join(' · '));
     }
@@ -238,7 +311,7 @@ export function EvaluationDecisionCockpit({
   const isEvaluating = rfqStatus === 'EVALUATING' || rfqStatus === 'CLOSED';
   const isQuoting = !isAwarded && !isEvaluating;
 
-  // DEF-002: Auto-rescore in background on quote revision hash change
+  // Auto-rescore in background on quote revision hash change
   const hasStaleEvaluations = useMemo(() => evaluations.some((e) => e.status === 'STALE'), [evaluations]);
   useEffect(() => {
     if (hasStaleEvaluations && !isRecomputing && !scoresLoading) {
@@ -251,7 +324,6 @@ export function EvaluationDecisionCockpit({
     setBusy(true);
     setError(null);
 
-    // If currently in DRAFT or 0 quotes, ensure RFQ is opened first with discovered quotes
     if (rfqStatus === 'DRAFT' || quotes.length === 0) {
       await discoverAndInvite(rfqId);
       await openRfq(rfqId);
@@ -287,6 +359,23 @@ export function EvaluationDecisionCockpit({
     void recompute();
   };
 
+  const handleSimulateQuotes = async () => {
+    setIsSimulatingQuotes(true);
+    setError(null);
+    setSuccess(null);
+    const res = await simulateQuotesForRfq(rfqId, { force: true });
+    setIsSimulatingQuotes(false);
+    if (res.ok) {
+      setSuccess(`⚡ Successfully generated ${res.quotesSubmitted ?? 4} simulated supplier quotes!`);
+      await loadCockpitStatus();
+      void refreshQuotes();
+      void recompute();
+      void loadQaMessages();
+    } else {
+      setError(res.error || 'Failed to simulate quotes');
+    }
+  };
+
   // Handler: Atomic Award & Bilateral Reveal Execution
   const handleExecuteAtomicAward = async () => {
     if (!selectedQuote) {
@@ -320,13 +409,17 @@ export function EvaluationDecisionCockpit({
 
     await loadCockpitStatus();
     void refreshQuotes();
-    setActiveTab('award');
+    handleTabChange('award');
   };
 
   const winningQuoteRevealed = useMemo(() => {
     const targetQuoteId = award?.quoteId || revealedResult?.quoteId || selectedQuote?.quoteId;
     return revealedQuotes.find((q) => q.quoteId === targetQuoteId);
   }, [revealedQuotes, award, revealedResult, selectedQuote]);
+
+  const activeThreadMessages = useMemo(() => {
+    return qaMessages.filter((m) => m.invitationId === selectedInvitationId);
+  }, [qaMessages, selectedInvitationId]);
 
   return (
     <div
@@ -347,7 +440,7 @@ export function EvaluationDecisionCockpit({
 
       {/* Main Content Area */}
       <div className="zero-scroll-pane mt-2 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] space-y-4">
-        {/* Requirement Summary & Market Intelligence Header */}
+        {/* Requirement Summary & Market Context Header */}
         <QuoteComparisonSummaryHeader
           rfqTitle={effectiveTitle}
           location={location}
@@ -388,15 +481,15 @@ export function EvaluationDecisionCockpit({
                 💬 Sourcing &amp; Quoting Window Open ({quotes.length} Quotes Received)
               </span>
               <p className="text-[11px] text-amber-800 dark:text-amber-300">
-                Suppliers have submitted identity-protected offers. You can close quoting to start consensus evaluation.
+                Suppliers have submitted identity-protected offers. You can close quoting to start evaluation and voting.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => void handleCloseAndEvaluate()}
-                className="rounded-xl bg-primary px-3.5 py-2 text-xs font-extrabold text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
+                className="rounded-xl bg-primary px-3.5 py-2 text-xs font-extrabold text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition min-h-[44px] mobile-touch-target"
                 data-testid="close-quoting-evaluate-button"
               >
                 {busy ? 'Opening Evaluation…' : 'Close Quoting & Start Evaluation →'}
@@ -406,7 +499,7 @@ export function EvaluationDecisionCockpit({
                   type="button"
                   disabled={busy}
                   onClick={() => void handleWaiveAndEvaluate()}
-                  className="rounded-xl border border-amber-400 dark:border-amber-700 bg-card px-3 py-2 text-xs font-extrabold text-amber-950 dark:text-amber-200 hover:bg-amber-100 disabled:opacity-50 transition mobile-touch-target"
+                  className="rounded-xl border border-amber-400 dark:border-amber-700 bg-card px-3 py-2 text-xs font-extrabold text-amber-950 dark:text-amber-200 hover:bg-amber-100 disabled:opacity-50 transition min-h-[44px] mobile-touch-target"
                 >
                   ⚡ Fast-Track
                 </button>
@@ -415,26 +508,45 @@ export function EvaluationDecisionCockpit({
           </div>
         )}
 
-        {/* Cockpit Navigation Tabs */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl border border-border bg-muted/30">
+        {/* Canonical 4 Cockpit Navigation Tabs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-2xl border border-border bg-muted/30">
           <button
             type="button"
-            onClick={() => setActiveTab('matrix')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
-              activeTab === 'matrix'
+            onClick={() => handleTabChange('quotes')}
+            className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition min-h-[44px] mobile-touch-target ${
+              activeTab === 'quotes'
                 ? 'bg-card text-foreground shadow-xs border border-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            data-testid="cockpit-tab-matrix"
+            data-testid="cockpit-tab-quotes"
           >
             <span>⚖️</span>
-            <span>1. Offer Comparison ({quotes.length})</span>
+            <span className="truncate">1. Review Offers ({quotes.length})</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('vote')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
+            onClick={() => handleTabChange('qa')}
+            className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition min-h-[44px] mobile-touch-target ${
+              activeTab === 'qa'
+                ? 'bg-card text-foreground shadow-xs border border-border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            data-testid="cockpit-tab-qa"
+          >
+            <span>💬</span>
+            <span className="truncate">2. Questions &amp; Answers</span>
+            {qaMessages.length > 0 && (
+              <span className="rounded-full bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-black">
+                {qaMessages.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange('vote')}
+            className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition min-h-[44px] mobile-touch-target ${
               activeTab === 'vote'
                 ? 'bg-card text-foreground shadow-xs border border-border'
                 : 'text-muted-foreground hover:text-foreground'
@@ -442,13 +554,13 @@ export function EvaluationDecisionCockpit({
             data-testid="cockpit-tab-vote"
           >
             <span>🗳️</span>
-            <span>2. 30-Sec Vote &amp; Quorum {quorumMet ? '✓' : ''}</span>
+            <span className="truncate">3. Cast Vote {quorumMet ? '✓' : ''}</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('award')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
+            onClick={() => handleTabChange('award')}
+            className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition min-h-[44px] mobile-touch-target ${
               activeTab === 'award'
                 ? 'bg-card text-foreground shadow-xs border border-border'
                 : 'text-muted-foreground hover:text-foreground'
@@ -456,14 +568,14 @@ export function EvaluationDecisionCockpit({
             data-testid="cockpit-tab-award"
           >
             <span>🏆</span>
-            <span>3. Award &amp; PO Contract {isAwarded ? '✓' : ''}</span>
+            <span className="truncate">4. Decision &amp; Award {isAwarded ? '✓' : ''}</span>
           </button>
         </div>
 
-        {/* TAB 1: 4-PILLAR OFFER COMPARISON MATRIX */}
-        {activeTab === 'matrix' && (
-          <div className="space-y-4 animate-in fade-in-50">
-            {/* 4-Pillar Offers Header & Refresh */}
+        {/* TAB 1: 4-PILLAR OFFER COMPARISON MATRIX (Review Offers) */}
+        {activeTab === 'quotes' && (
+          <div className="space-y-4 animate-in fade-in-50" data-testid="cockpit-panel-quotes">
+            {/* 4-Pillar Offers Header & Fast Actions */}
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-black uppercase tracking-wider text-muted-foreground">
@@ -473,12 +585,26 @@ export function EvaluationDecisionCockpit({
                   🔒 Zero-Bias Sealed Protocol
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowMarketContext((prev) => !prev)}
+                  className={`rounded-lg border px-2.5 py-1 text-[11px] font-bold transition flex items-center gap-1 min-h-[36px] mobile-touch-target ${
+                    showMarketContext
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border bg-card text-foreground hover:bg-muted'
+                  }`}
+                  data-testid="toggle-market-context-btn"
+                >
+                  <span>📊</span>
+                  <span>{showMarketContext ? 'Hide Market Context' : 'Market Context'}</span>
+                </button>
+
                 <button
                   type="button"
                   disabled={isSimulatingQuotes}
                   onClick={() => void handleSimulateQuotes()}
-                  className="rounded-lg border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/20 transition flex items-center gap-1 mobile-touch-target"
+                  className="rounded-lg border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/20 transition flex items-center gap-1 min-h-[36px] mobile-touch-target"
                   data-testid="simulate-quotes-header-btn"
                 >
                   <span>⚡</span>
@@ -490,15 +616,26 @@ export function EvaluationDecisionCockpit({
                     void loadCockpitStatus();
                     void refreshQuotes();
                     void recompute();
+                    void loadQaMessages();
                   }}
-                  className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
+                  className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 min-h-[36px] mobile-touch-target"
                 >
                   <span>🔄</span> Refresh
                 </button>
               </div>
             </div>
 
-            {/* Matrix Cards */}
+            {/* Progressive Disclosure: Market Context Benchmark Panel */}
+            {showMarketContext && (
+              <div className="animate-in fade-in-50 rounded-2xl border border-primary/20 bg-card p-3 shadow-xs">
+                <MarketIntelligencePanel
+                  intelligence={marketIntelligence}
+                  isLoading={marketIntelLoading}
+                />
+              </div>
+            )}
+
+            {/* Matrix Cards (Level 1 & Level 2 Parameters) */}
             <IdentityProtectedQuoteComparisonTable
               quotes={quotes}
               isLoading={quotesLoading}
@@ -517,7 +654,7 @@ export function EvaluationDecisionCockpit({
                 <button
                   type="button"
                   onClick={() => setShowCriterionBreakdown((prev) => !prev)}
-                  className="flex items-center gap-1.5 text-xs font-extrabold text-foreground hover:text-primary transition py-1"
+                  className="flex items-center gap-1.5 text-xs font-extrabold text-foreground hover:text-primary transition py-1 min-h-[44px] mobile-touch-target"
                 >
                   <span>{showCriterionBreakdown ? '▼' : '▶'}</span>
                   <span>View Criterion-by-Criterion Weight Breakdown</span>
@@ -530,7 +667,7 @@ export function EvaluationDecisionCockpit({
                   type="button"
                   onClick={() => void recompute()}
                   disabled={isRecomputing}
-                  className="text-[11px] font-semibold text-primary hover:underline disabled:opacity-50"
+                  className="text-[11px] font-semibold text-primary hover:underline disabled:opacity-50 min-h-[44px] mobile-touch-target flex items-center"
                 >
                   {isRecomputing ? 'Rescoring…' : 'Rescore Quotes'}
                 </button>
@@ -552,9 +689,109 @@ export function EvaluationDecisionCockpit({
           </div>
         )}
 
-        {/* TAB 2: 30-SECOND MOBILE VOTING CARD */}
+        {/* TAB 2: MASKED CLARIFICATIONS & Q&A INTEGRATION */}
+        {activeTab === 'qa' && (
+          <div className="space-y-4 animate-in fade-in-50" data-testid="cockpit-panel-qa">
+            <div className="rounded-3xl border border-border bg-card p-4 sm:p-5 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border/60">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">💬</span>
+                    <h3 className="text-sm font-black text-foreground">
+                      Masked Questions &amp; Answers
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Clarify specifications and negotiate commercial points with suppliers without leaking identities.
+                  </p>
+                </div>
+
+                {isQuoting && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void handleCloseAndEvaluate()}
+                    className="rounded-xl bg-primary px-3.5 py-2 text-xs font-extrabold text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition min-h-[44px] mobile-touch-target"
+                  >
+                    <span>🔒 Freeze Quotes &amp; Start Evaluation →</span>
+                  </button>
+                )}
+              </div>
+
+              {qaLabels.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-xs space-y-2">
+                  <span className="text-2xl">⏳</span>
+                  <p className="font-bold text-foreground">No supplier Q&amp;A threads yet.</p>
+                  <p className="text-[11px]">When suppliers submit quotes or questions, their masked discussion channels will appear here.</p>
+                  <button
+                    type="button"
+                    disabled={isSimulatingQuotes}
+                    onClick={() => void handleSimulateQuotes()}
+                    className="mt-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition min-h-[44px] mobile-touch-target"
+                  >
+                    ⚡ Simulate Supplier Questions
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Supplier Channel Selector Chips */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase font-extrabold tracking-wider text-muted-foreground block">
+                      Select Supplier Thread:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {qaLabels.map((lbl) => {
+                        const count = qaMessages.filter((m) => m.invitationId === lbl.invitationId).length;
+                        const isSelected = selectedInvitationId === lbl.invitationId;
+                        return (
+                          <button
+                            key={lbl.invitationId}
+                            type="button"
+                            onClick={() => setSelectedInvitationId(lbl.invitationId)}
+                            className={`rounded-xl px-3 py-2 text-xs font-bold border transition flex items-center gap-1.5 min-h-[44px] mobile-touch-target ${
+                              isSelected
+                                ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
+                                : 'bg-muted/30 text-muted-foreground hover:text-foreground border-border hover:bg-muted'
+                            }`}
+                          >
+                            <span>🔒 {lbl.anonymousLabel}</span>
+                            {count > 0 && (
+                              <span
+                                className={`rounded-full px-1.5 py-0.2 text-[9px] font-black ${
+                                  isSelected ? 'bg-white/20 text-white' : 'bg-primary/20 text-primary'
+                                }`}
+                              >
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Clarification Thread Component */}
+                  {selectedInvitationId && (
+                    <div className="pt-2">
+                      <ClarificationThread
+                        rfqId={rfqId}
+                        invitationId={selectedInvitationId}
+                        messages={activeThreadMessages}
+                        authorSide="BUYER"
+                        readOnly={isAwarded}
+                        onPosted={() => void loadQaMessages()}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: GOVERNANCE & COMMITTEE BALLOT (Cast Vote) */}
         {activeTab === 'vote' && (
-          <div className="space-y-4 animate-in fade-in-50">
+          <div className="space-y-4 animate-in fade-in-50" data-testid="cockpit-panel-vote">
             <MobileVotingCard
               rfqId={rfqId}
               quotes={quotes.map((q) => ({
@@ -575,10 +812,10 @@ export function EvaluationDecisionCockpit({
           </div>
         )}
 
-        {/* TAB 3: AWARD & BILATERAL REVEAL EXECUTION */}
+        {/* TAB 4: GOVERNED AWARD & REVEAL (Decision & Award) */}
         {activeTab === 'award' && (
-          <div className="space-y-4 animate-in fade-in-50">
-            {/* If Already Awarded -> Show Unmasked Winner + Decision Receipt + PO Contract Preview */}
+          <div className="space-y-4 animate-in fade-in-50" data-testid="cockpit-panel-award">
+            {/* If Already Awarded -> Show Unmasked Winner + Decision Record + PO Contract Preview */}
             {isAwarded ? (
               <div className="space-y-4">
                 {/* 1. Winner Banner */}
@@ -598,13 +835,13 @@ export function EvaluationDecisionCockpit({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {(winningQuoteRevealed?.phone || revealedResult?.supplierId) && (
                         <a
                           href={`https://wa.me/91${(winningQuoteRevealed?.phone || '').replace(/\D/g, '')}?text=Hello%20${encodeURIComponent(winningQuoteRevealed?.businessName || 'Supplier')},%20we%20have%20awarded%20you%20our%20order%20on%20OTP!`}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-xl bg-emerald-600 px-3.5 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700 transition shadow-xs flex items-center gap-1.5 mobile-touch-target"
+                          className="rounded-xl bg-emerald-600 px-3.5 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700 transition shadow-xs flex items-center gap-1.5 min-h-[44px] mobile-touch-target"
                         >
                           <span>💬</span> WhatsApp
                         </a>
@@ -612,7 +849,7 @@ export function EvaluationDecisionCockpit({
 
                       <Link
                         to={existingPoId ? `/purchase-orders/${existingPoId}` : '/purchase-orders'}
-                        className="rounded-xl bg-primary px-4 py-2.5 text-xs font-extrabold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center gap-1.5 mobile-touch-target"
+                        className="rounded-xl bg-primary px-4 py-2.5 text-xs font-extrabold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center gap-1.5 min-h-[44px] mobile-touch-target"
                       >
                         <span>📄</span> View Purchase Order →
                       </Link>
@@ -654,11 +891,27 @@ export function EvaluationDecisionCockpit({
                   </div>
                 </div>
 
-                {/* 2. Cryptographic Decision Receipt */}
-                <DecisionReceipt
-                  rfqId={rfqId}
-                  winningQuoteId={award?.quoteId || revealedResult?.quoteId || selectedQuote?.quoteId || ''}
-                />
+                {/* 2. Decision Record (Cryptographic Decision Receipt) */}
+                <div className="rounded-3xl border border-border bg-card p-4 sm:p-5 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">📜</span>
+                      <h3 className="text-sm font-black text-foreground">Decision Record</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowDecisionReceiptFull((v) => !v)}
+                      className="text-xs font-bold text-primary hover:underline min-h-[44px] mobile-touch-target flex items-center"
+                    >
+                      {showDecisionReceiptFull ? '▲ Hide Full Proof' : '▼ View Verification Proof'}
+                    </button>
+                  </div>
+                  <DecisionReceipt
+                    rfqId={rfqId}
+                    winningQuoteId={award?.quoteId || revealedResult?.quoteId || selectedQuote?.quoteId || ''}
+                    showTable={showDecisionReceiptFull}
+                  />
+                </div>
               </div>
             ) : (
               /* Pre-Award Execution Workspace */
@@ -666,10 +919,10 @@ export function EvaluationDecisionCockpit({
                 <div className="space-y-1">
                   <h3 className="text-base font-black text-foreground flex items-center gap-2">
                     <span>🏆</span>
-                    <span>Lock Award &amp; Bilateral Reveal</span>
+                    <span>Decision &amp; Governed Award</span>
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Atomic 1-step transaction: locks voting results, unmasks winning supplier identity, and generates legal Purchase Order.
+                    Atomic 1-step transaction: locks voting consensus, unmasks winning supplier identity, and generates legal Purchase Order.
                   </p>
                 </div>
 
@@ -706,7 +959,7 @@ export function EvaluationDecisionCockpit({
                         <strong className="font-bold">{selectedQuote.warrantyMonths} Months</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-muted-foreground block">Smart Score:</span>
+                        <span className="text-[10px] text-muted-foreground block">Merit Score:</span>
                         <strong className="font-bold">
                           {selectedQuote.evaluationScore != null
                             ? `${(selectedQuote.evaluationScore / 10).toFixed(1)}/10`
@@ -716,6 +969,23 @@ export function EvaluationDecisionCockpit({
                     </div>
                   </div>
                 )}
+
+                {/* Governance Quorum Status Indicator */}
+                <div className="rounded-2xl border border-border bg-muted/20 p-3 flex items-center justify-between gap-2">
+                  <div className="text-xs">
+                    <span className="font-extrabold text-foreground block">Governance Approval Status:</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {isSoloBuyer
+                        ? 'Solo Buyer Direct Authorization — 100% quorum satisfied'
+                        : quorumMet
+                        ? `Committee Quorum Met (${summaryVotes?.membersVoted ?? 1}/${summaryVotes?.assignedMembers ?? 1} members voted)`
+                        : 'Committee Quorum Pending'}
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 border border-emerald-300 px-2.5 py-1 text-[10px] font-black shrink-0">
+                    {quorumMet || isSoloBuyer ? '✓ Approval Satisfied' : '⏳ Quorum Required'}
+                  </span>
+                </div>
 
                 {/* Award Justification Rationale Input */}
                 <div className="space-y-1.5">
@@ -813,25 +1083,35 @@ export function EvaluationDecisionCockpit({
                 <span>💬</span>
                 <span>{busy ? 'Opening Evaluation…' : 'Close Quoting & Start Evaluation →'}</span>
               </button>
-            ) : activeTab === 'matrix' ? (
+            ) : activeTab === 'quotes' ? (
               <button
                 type="button"
-                onClick={() => setActiveTab('vote')}
+                onClick={() => handleTabChange('vote')}
                 className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
                 data-testid="proceed-to-vote-button"
               >
                 <span>🗳️</span>
-                <span>Proceed to 30-Sec Vote →</span>
+                <span>Proceed to Cast Vote →</span>
+              </button>
+            ) : activeTab === 'qa' ? (
+              <button
+                type="button"
+                onClick={() => handleTabChange('vote')}
+                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
+                data-testid="proceed-from-qa-to-vote-button"
+              >
+                <span>🗳️</span>
+                <span>Proceed to Cast Vote →</span>
               </button>
             ) : activeTab === 'vote' ? (
               <button
                 type="button"
-                onClick={() => setActiveTab('award')}
+                onClick={() => handleTabChange('award')}
                 className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-emerald-800 active:scale-98 transition mobile-touch-target"
                 data-testid="proceed-to-award-tab-button"
               >
                 <span>🏆</span>
-                <span>Proceed to Award &amp; PO →</span>
+                <span>Proceed to Decision &amp; Award →</span>
               </button>
             ) : (
               <button
@@ -858,7 +1138,7 @@ export function EvaluationDecisionCockpit({
               <button
                 type="button"
                 onClick={() => setShowAwardModal(false)}
-                className="rounded-full p-2 text-muted-foreground hover:text-foreground text-xs font-bold"
+                className="rounded-full p-2 text-muted-foreground hover:text-foreground text-xs font-bold min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 ✕ Close
               </button>
@@ -902,7 +1182,7 @@ export function EvaluationDecisionCockpit({
                 type="button"
                 disabled={isAwarding}
                 onClick={() => setShowAwardModal(false)}
-                className="w-full min-h-[44px] rounded-2xl border border-border bg-muted/40 py-2.5 text-xs font-bold text-foreground hover:bg-muted transition"
+                className="w-full min-h-[44px] rounded-2xl border border-border bg-muted/40 py-2.5 text-xs font-bold text-foreground hover:bg-muted transition mobile-touch-target"
               >
                 Cancel
               </button>

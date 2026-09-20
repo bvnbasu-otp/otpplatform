@@ -13,7 +13,6 @@ import {
   formatVoteChoice,
   formatVotingPower,
   weightDisagreesWithHeadCount,
-  type CoiDeclaration,
   type CommitteeVote,
   type MyVote,
   type VoteTallyEntry,
@@ -161,7 +160,7 @@ export function MobileVotingCard({
     try {
       // 1. Declare COI if profile is loaded
       if (profileId) {
-        await declareCoi(rfqId, profileId, 'DECLARED_NONE', 'Certified via OTP 30-Second Quick Ballot');
+        await declareCoi(rfqId, profileId, 'DECLARED_NONE', 'Certified via OTP Quick Vote');
       }
 
       // 2. Cast Vote
@@ -187,7 +186,7 @@ export function MobileVotingCard({
 
   const isSoloBuyer = summary?.assignedMembers === 1 || myVote?.buyerType === 'INDIVIDUAL';
   const hasDisagreement = weightDisagreesWithHeadCount(tally);
-  const quorumMet = summary ? summary.membersVoted >= summary.assignedMembers : false;
+  const quorumMet = isSoloBuyer || (summary ? summary.membersVoted >= summary.assignedMembers : false);
 
   return (
     <div
@@ -200,21 +199,27 @@ export function MobileVotingCard({
           <div className="flex items-center gap-2">
             <span className="text-xl">⚡</span>
             <h3 className="text-sm font-black text-foreground">
-              30-Second Mobile Ballot &amp; Quorum
+              {isSoloBuyer ? 'Solo Buyer Direct Approval' : 'Cast Vote & Committee Quorum'}
             </h3>
           </div>
           <p className="text-xs text-muted-foreground">
-            Fast committee voting with weighted voting power and instant quorum tally.
+            {isSoloBuyer
+              ? 'Solo buyer direct authorization with certified conflict-of-interest check.'
+              : 'Fast committee voting with weighted voting power and instant quorum tally.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {myVote && (
             <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 text-[10px] font-black">
               {formatVotingPower(myVote.votingPower)}
             </span>
           )}
-          {quorumMet ? (
+          {isSoloBuyer ? (
+            <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300 border border-emerald-300 px-2.5 py-1 text-[10px] font-black">
+              ✓ Solo Approval Authority (100% Quorum)
+            </span>
+          ) : quorumMet ? (
             <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300 border border-emerald-300 px-2.5 py-1 text-[10px] font-black">
               ✓ Quorum Reached ({summary?.membersVoted}/{summary?.assignedMembers})
             </span>
@@ -226,23 +231,8 @@ export function MobileVotingCard({
         </div>
       </div>
 
-      {/* Quorum Progress Meter Bar with Real-Time Smooth Transition (DEF-006) */}
-      {summary && summary.assignedMembers > 0 && (
-        <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden" data-testid="quorum-meter-container">
-          <div
-            className={`h-full rounded-full transition-all duration-300 ease-in-out ${
-              quorumMet ? 'bg-emerald-500' : 'bg-primary'
-            }`}
-            style={{
-              width: `${Math.min(100, Math.round((summary.membersVoted / summary.assignedMembers) * 100))}%`,
-            }}
-            data-testid="quorum-progress-meter"
-          />
-        </div>
-      )}
-
-      {/* Quorum Progress Meter Bar with Real-Time Smooth Transition (DEF-006) */}
-      {summary && summary.assignedMembers > 0 && (
+      {/* Quorum Progress Meter Bar with Real-Time Smooth Transition */}
+      {!isSoloBuyer && summary && summary.assignedMembers > 0 && (
         <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden" data-testid="quorum-meter-container">
           <div
             className={`h-full rounded-full transition-all duration-300 ease-in-out ${
@@ -264,7 +254,7 @@ export function MobileVotingCard({
             checked={coiConfirmed}
             onChange={(e) => setCoiConfirmed(e.target.checked)}
             disabled={disabled || isSubmitting}
-            className="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+            className="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500 min-w-[16px] min-h-[16px]"
           />
           <div className="text-xs text-emerald-950 dark:text-emerald-200">
             <strong className="font-extrabold block">Conflict of Interest (COI) Certification:</strong>
@@ -305,7 +295,7 @@ export function MobileVotingCard({
                 onChange={(e) => onSelectQuote(e.target.value)}
                 disabled={disabled || isSubmitting}
                 aria-label="Select candidate supplier"
-                className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-bold text-foreground focus:ring-1 focus:ring-primary min-h-[36px]"
+                className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-bold text-foreground focus:ring-1 focus:ring-primary min-h-[44px] mobile-touch-target"
               >
                 {quotes.map((q) => (
                   <option key={q.quoteId} value={q.quoteId}>
@@ -318,10 +308,10 @@ export function MobileVotingCard({
         </div>
       )}
 
-      {/* 4. 1-Tap Ballot Buttons (RECOMMEND / ABSTAIN / OPPOSE) */}
+      {/* 4. 1-Tap Vote Buttons (RECOMMEND / ABSTAIN / OPPOSE) */}
       <div className="space-y-1.5">
         <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
-          Your 1-Tap Ballot:
+          Your 1-Tap Vote:
         </label>
 
         <div className="grid grid-cols-3 gap-2">
@@ -387,7 +377,7 @@ export function MobileVotingCard({
                 type="button"
                 onClick={() => toggleChip(chip.text)}
                 disabled={disabled || isSubmitting}
-                className={`rounded-xl px-2.5 py-1 text-xs font-bold border transition min-h-[36px] mobile-touch-target ${
+                className={`rounded-xl px-2.5 py-1.5 text-xs font-bold border transition min-h-[44px] mobile-touch-target ${
                   isSelected
                     ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
                     : 'bg-muted/40 text-muted-foreground hover:text-foreground border-border hover:bg-muted'
@@ -441,14 +431,14 @@ export function MobileVotingCard({
           <span>{isSubmitting ? '⏳' : myVote ? '✓' : '⚡'}</span>
           <span>
             {isSubmitting
-              ? 'Recording Ballot…'
+              ? 'Recording Vote…'
               : myVote
-              ? `Update Ballot (${formatVoteChoice(activeChoice)})`
-              : `Submit 30-Sec Vote (${formatVoteChoice(activeChoice)})`}
+              ? `Update Vote (${formatVoteChoice(activeChoice)})`
+              : `Submit Vote (${formatVoteChoice(activeChoice)})`}
           </span>
         </button>
 
-        {tally.length > 0 && (
+        {tally.length > 0 && !isSoloBuyer && (
           <button
             type="button"
             onClick={() => setShowTallyDetail((v) => !v)}
@@ -460,7 +450,7 @@ export function MobileVotingCard({
       </div>
 
       {/* 8. Live Tally Table Breakdown */}
-      {showTallyDetail && tally.length > 0 && (
+      {showTallyDetail && tally.length > 0 && !isSoloBuyer && (
         <div className="pt-2 border-t border-border/60 space-y-2 animate-in fade-in-50">
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
             Current Committee Tally Standings:
