@@ -659,11 +659,11 @@ async function runAllTests() {
     console.log('\n🎉 ALL REAL-TIME CALL FLOWS & CORE CAPABILITIES ARE 100% OPERATIONAL!');
   } else {
     const isConnErr = results.some(r => !r.passed && (r.error?.includes('fetch failed') || r.error?.includes('ECONNREFUSED')));
-    if (isConnErr) {
-      console.log(`\n⚠️ Live database backend offline — skipping live call flow tests in offline test environment.`);
+    if (isConnErr && process.env.ALLOW_OFFLINE === 'true') {
+      console.log(`\n⚠️ Live database backend offline — skipping live call flow tests because ALLOW_OFFLINE=true is explicitly set.`);
       process.exit(0);
     }
-    console.log(`\n⚠️ ${failed} tests failed. See log above.`);
+    console.log(`\n❌ ${failed} live tests failed or backend is unreachable (Exit Code 1). See log above.`);
     process.exit(1);
   }
 }

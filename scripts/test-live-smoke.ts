@@ -257,11 +257,11 @@ export async function runLiveSmokeTests(): Promise<{ passed: number; failed: num
 
   if (failed > 0) {
     const isConnErr = results.some(r => !r.passed && (r.message.includes('fetch failed') || r.message.includes('ECONNREFUSED')));
-    if (isConnErr) {
-      console.log('⚠️ Live backend offline — skipping live smoke check in mock/local test environment.\n');
+    if (isConnErr && process.env.ALLOW_OFFLINE === 'true') {
+      console.log('⚠️ Live backend offline — skipping live smoke check because ALLOW_OFFLINE=true is explicitly set.\n');
       process.exit(0);
     }
-    console.error('❌ LIVE SMOKE CHECKS FAILED — DO NOT PROCEED TO DEMO!\n');
+    console.error('❌ LIVE SMOKE CHECKS FAILED — BACKEND UNREACHABLE OR INVARIANT VIOLATED (Exit Code 1)!\n');
     process.exit(1);
   } else {
     console.log('🎉 ALL 10 LIVE CRITICAL CALL FLOWS VERIFIED ON RUNNING SYSTEM!\n');
