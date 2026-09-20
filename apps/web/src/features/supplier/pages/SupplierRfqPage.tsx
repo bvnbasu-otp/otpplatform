@@ -6,7 +6,7 @@ import {
   type Attachment,
 } from '@/features/attachments';
 import {
-  ClarificationThread,
+  ClarificationWorkbench,
   fetchClarificationMessagesForSupplier,
 } from '@/features/clarification';
 import type { ClarificationMessage } from '@/features/clarification/api/clarification';
@@ -222,18 +222,15 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
             </div>
           )}
 
-          {/* Clarification Thread */}
+          {/* Clarification Workbench */}
           {inClarification && invitation && (
-            <section id="clarification-thread" className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
-              <h3 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <span>💬</span> Neutral Clarification &amp; Technical Q&amp;A
-              </h3>
-              <ClarificationThread
+            <section id="clarification-thread" className="rounded-2xl border bg-card p-3 sm:p-4 shadow-2xs space-y-3">
+              <ClarificationWorkbench
                 rfqId={rfqId}
-                invitationId={invitation.invitationId}
-                messages={clarificationMessages}
-                authorSide="SUPPLIER"
-                onPosted={() => void load()}
+                persona="SUPPLIER"
+                supplierInvitationId={invitation.invitationId}
+                supplierAlias={invitation.anonymousLabel}
+                onActionComplete={() => void load()}
               />
             </section>
           )}
