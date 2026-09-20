@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
 import {
@@ -33,6 +33,9 @@ export function RfqReviewPublishPage({
   const [success, setSuccess] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  // Idempotency lock ref to prevent rapid double-taps/clicks
+  const isPublishingRef = useRef(false);
 
   // Local state for live deadline / instruction edits
   const [currentDeadline, setCurrentDeadline] = useState<string>('');
@@ -75,39 +78,51 @@ export function RfqReviewPublishPage({
   }
 
   async function handleConfirmPublish() {
-    if (!data) return;
+    if (!data || isPublishingRef.current || isBusy) return;
+
+    // Set idempotency locks
+    isPublishingRef.current = true;
     setIsBusy(true);
     setError(null);
 
-    const res = await publishRfq({
-      rfqId: data.rfq.id,
-      requirementId: data.requirement.id,
-      quoteDeadline: currentDeadline,
-      instructions: currentInstructions,
-    });
+    try {
+      const res = await publishRfq({
+        rfqId: data.rfq.id,
+        requirementId: data.requirement.id,
+        quoteDeadline: currentDeadline,
+        instructions: currentInstructions,
+      });
 
-    setIsBusy(false);
-    setIsConfirmModalOpen(false);
+      setIsBusy(false);
+      isPublishingRef.current = false;
+      setIsConfirmModalOpen(false);
 
-    if (!res.ok) {
-      setError(res.error);
-      return;
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+
+      const count = res.invitedCount || data.selectedSuppliers.length;
+      setSuccess(
+        `🎉 RFQ successfully published! Broadcast dispatched to ${count} verified supplier(s). Quoting is now live with responses expected within 30 minutes.`
+      );
+
+      // Update local RFQ status to OPEN and Requirement to QUOTING
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              rfq: { ...prev.rfq, status: 'OPEN' },
+              requirement: { ...prev.requirement, status: 'QUOTING' },
+            }
+          : null
+      );
+    } catch (err: any) {
+      setIsBusy(false);
+      isPublishingRef.current = false;
+      setIsConfirmModalOpen(false);
+      setError(err?.message || 'An unexpected error occurred while broadcasting the RFQ. Please try again.');
     }
-
-    setSuccess(
-      `🎉 RFQ successfully published! Broadcast dispatched to ${res.invitedCount || data.selectedSuppliers.length} verified supplier(s). Quoting is now live with responses expected within 30 minutes.`
-    );
-
-    // Update local RFQ status to OPEN
-    setData((prev) =>
-      prev
-        ? {
-            ...prev,
-            rfq: { ...prev.rfq, status: 'OPEN' },
-            requirement: { ...prev.requirement, status: 'QUOTING' },
-          }
-        : null
-    );
   }
 
   if (isLoading) {
@@ -175,7 +190,7 @@ export function RfqReviewPublishPage({
       <ProcurementStageNavigator
         currentLinearStep={2}
         currentStage="QUOTING"
-        orderTitle={requirement.title || 'RFQ Review & Publish'}
+        orderTitle={requirement.title || 'RFQ Review & Broadcast'}
         orderReference={`RFQ-${rfq.id.slice(0, 8)}`}
         requirementId={requirement.id}
         rfqId={rfq.id}
@@ -192,10 +207,10 @@ export function RfqReviewPublishPage({
           </span>
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base font-black text-foreground truncate">
-              {isQuotingLive ? 'RFQ Published & Quoting Live' : 'RFQ Ready to Publish'}
+              {isQuotingLive ? 'RFQ Published & Quoting Live' : 'RFQ Ready to Broadcast'}
             </h1>
             <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
-              Review specifications, supplier pool, and response deadline before launching competitive sourcing.
+              Review specifications, supplier pool, and response deadline before launching competitive broadcast.
             </p>
           </div>
         </div>
@@ -207,18 +222,36 @@ export function RfqReviewPublishPage({
         )}
       </div>
 
-      {/* Notifications */}
-      {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/40 p-3.5 text-xs font-semibold text-red-700 dark:text-red-300">
-          ⚠️ {error}
-        </div>
-      )}
+      {/* Notifications with ARIA live region */}
+      <div aria-live="polite" className="space-y-2">
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/40 p-3.5 text-xs font-semibold text-red-700 dark:text-red-300 flex items-center justify-between gap-2">
+            <span>⚠️ {error}</span>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-xs font-bold text-red-500 hover:text-red-700 mobile-touch-target p-1"
+              aria-label="Dismiss error"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
-      {success && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-          {success}
-        </div>
-      )}
+        {success && (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2">
+            <span>{success}</span>
+            <button
+              type="button"
+              onClick={() => setSuccess(null)}
+              className="text-xs font-bold text-emerald-600 hover:text-emerald-800 mobile-touch-target p-1"
+              aria-label="Dismiss message"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Validation Banner Checklist */}
       <RfqValidationBanner validation={validation} requirementId={requirement.id} />
@@ -254,7 +287,7 @@ export function RfqReviewPublishPage({
       {/* 6. Governance Protocol Card */}
       <RfqGovernanceCard governance={governance} />
 
-      {/* Publish Confirmation Modal */}
+      {/* Broadcast Confirmation Modal */}
       <RfqPublishConfirmationModal
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}
@@ -266,7 +299,7 @@ export function RfqReviewPublishPage({
       />
 
       {/* Sticky Bottom Action Bar */}
-      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+      <div className="fixed sm:sticky bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center justify-between w-full sm:w-auto gap-2">
             <div className="text-left">
@@ -320,7 +353,14 @@ export function RfqReviewPublishPage({
                 className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
                 data-testid="publish-rfq-primary-button"
               >
-                <span>{isBusy ? 'Publishing RFQ…' : '🚀 Publish RFQ →'}</span>
+                {isBusy ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    <span>Broadcasting RFQ…</span>
+                  </>
+                ) : (
+                  <span>🚀 Broadcast RFQ to {supplierCount} Supplier{supplierCount === 1 ? '' : 's'} →</span>
+                )}
               </button>
             )}
           </div>

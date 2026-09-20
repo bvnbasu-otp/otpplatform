@@ -17,6 +17,11 @@ export function RfqSupplierInstructionsCard({
     onInstructionsChange(instructions);
   }
 
+  function handleCancel() {
+    setIsEditing(false);
+    setInstructions(initialInstructions);
+  }
+
   return (
     <section
       className="rounded-xl border bg-card p-4 shadow-2xs space-y-3 transition-all text-foreground"
@@ -46,7 +51,11 @@ export function RfqSupplierInstructionsCard({
 
       {isEditing ? (
         <div className="space-y-2 pt-1">
+          <label htmlFor="supplier-instructions-input" className="sr-only">
+            Custom Supplier Instructions
+          </label>
           <textarea
+            id="supplier-instructions-input"
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
             rows={3}
@@ -54,6 +63,13 @@ export function RfqSupplierInstructionsCard({
             className="w-full rounded-lg border bg-background p-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
           />
           <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="min-h-[48px] px-3.5 py-1.5 rounded-lg border bg-muted/30 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target"
+            >
+              Cancel
+            </button>
             <button
               type="button"
               onClick={handleSave}

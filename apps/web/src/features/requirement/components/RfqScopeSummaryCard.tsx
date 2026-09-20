@@ -27,7 +27,7 @@ export function RfqScopeSummaryCard({ requirement }: RfqScopeSummaryCardProps) {
     qualityNotes,
   } = requirement;
 
-  const locationDisplay = [deliveryCity, deliveryPincode].filter(Boolean).join(' • ') || 'Location flexible';
+  const locationDisplay = [deliveryCity, deliveryPincode ? `PIN ${deliveryPincode}` : ''].filter(Boolean).join(' • ') || 'Location flexible';
 
   return (
     <section
@@ -38,7 +38,7 @@ export function RfqScopeSummaryCard({ requirement }: RfqScopeSummaryCardProps) {
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-1.5 mb-1">
             <span className="rounded-md bg-purple-100 dark:bg-purple-950/60 px-2 py-0.5 text-[10px] font-bold text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-              1. Requirement &amp; Scope
+              1. Scope &amp; Specifications
             </span>
             {categoryName && (
               <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground border">
@@ -72,7 +72,7 @@ export function RfqScopeSummaryCard({ requirement }: RfqScopeSummaryCardProps) {
         </div>
       )}
 
-      {/* Scope Key Metrics */}
+      {/* Scope Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
         <div className="rounded-lg bg-muted/30 p-2.5 border space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">

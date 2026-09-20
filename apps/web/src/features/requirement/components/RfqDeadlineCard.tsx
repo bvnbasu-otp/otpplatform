@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { RfqDeadlinePreset } from '../types/rfq-review';
 
 interface RfqDeadlineCardProps {
@@ -16,7 +16,7 @@ export function RfqDeadlineCard({
     return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 16);
   });
 
-  const deadlineDate = new Date(currentDeadlineIso);
+  const deadlineDate = useMemo(() => new Date(currentDeadlineIso), [currentDeadlineIso]);
   const isValidDate = !isNaN(deadlineDate.getTime());
   const isPast = isValidDate && deadlineDate.getTime() <= Date.now();
 
@@ -30,6 +30,11 @@ export function RfqDeadlineCard({
         hour12: true,
       })
     : 'Invalid deadline';
+
+  // Compute days difference from now for active preset detection
+  const daysDiff = isValidDate
+    ? Math.round((deadlineDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+    : 0;
 
   function applyPreset(days: number) {
     setIsCustom(false);
@@ -81,35 +86,51 @@ export function RfqDeadlineCard({
         <button
           type="button"
           onClick={() => applyPreset(3)}
-          className="min-h-[48px] px-3 py-1.5 rounded-lg border bg-muted/40 hover:bg-muted text-xs font-bold text-foreground transition mobile-touch-target"
+          className={`min-h-[48px] px-3.5 py-1.5 rounded-lg border text-xs font-bold transition mobile-touch-target ${
+            !isCustom && daysDiff === 3
+              ? 'border-primary/60 bg-primary/15 text-primary'
+              : 'bg-muted/40 hover:bg-muted text-foreground'
+          }`}
         >
           ⚡ 3 Days (Fast)
         </button>
         <button
           type="button"
           onClick={() => applyPreset(5)}
-          className="min-h-[48px] px-3 py-1.5 rounded-lg border bg-muted/40 hover:bg-muted text-xs font-bold text-foreground transition mobile-touch-target"
+          className={`min-h-[48px] px-3.5 py-1.5 rounded-lg border text-xs font-bold transition mobile-touch-target ${
+            !isCustom && daysDiff === 5
+              ? 'border-primary/60 bg-primary/15 text-primary'
+              : 'bg-muted/40 hover:bg-muted text-foreground'
+          }`}
         >
           ⏱️ 5 Days
         </button>
         <button
           type="button"
           onClick={() => applyPreset(7)}
-          className="min-h-[48px] px-3.5 py-1.5 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary transition mobile-touch-target"
+          className={`min-h-[48px] px-3.5 py-1.5 rounded-lg border text-xs font-bold transition mobile-touch-target ${
+            !isCustom && (daysDiff === 7 || (daysDiff >= 6 && daysDiff <= 8))
+              ? 'border-primary/60 bg-primary/15 text-primary'
+              : 'bg-muted/40 hover:bg-muted text-foreground'
+          }`}
         >
           📅 7 Days (Standard)
         </button>
         <button
           type="button"
           onClick={() => applyPreset(14)}
-          className="min-h-[48px] px-3 py-1.5 rounded-lg border bg-muted/40 hover:bg-muted text-xs font-bold text-foreground transition mobile-touch-target"
+          className={`min-h-[48px] px-3.5 py-1.5 rounded-lg border text-xs font-bold transition mobile-touch-target ${
+            !isCustom && (daysDiff === 14 || (daysDiff >= 13 && daysDiff <= 15))
+              ? 'border-primary/60 bg-primary/15 text-primary'
+              : 'bg-muted/40 hover:bg-muted text-foreground'
+          }`}
         >
           📆 14 Days (Complex)
         </button>
         <button
           type="button"
           onClick={() => setIsCustom(!isCustom)}
-          className={`min-h-[48px] px-3 py-1.5 rounded-lg border text-xs font-bold transition mobile-touch-target ${
+          className={`min-h-[48px] px-3.5 py-1.5 rounded-lg border text-xs font-bold transition mobile-touch-target ${
             isCustom
               ? 'bg-primary text-primary-foreground'
               : 'bg-muted/40 text-muted-foreground hover:text-foreground'

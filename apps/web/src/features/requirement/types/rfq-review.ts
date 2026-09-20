@@ -1,6 +1,19 @@
 import type { MatchedSupplier } from './discovery';
 import type { Attachment } from '@/features/attachments';
 
+export type BroadcastReadinessState = 'READY' | 'WARNING' | 'BLOCKED' | 'IN_PROGRESS';
+
+export type RfqValidationCheckStatus = 'PASS' | 'FAIL' | 'WARN';
+
+export interface RfqValidationChecklistItem {
+  id: string;
+  label: string;
+  status: RfqValidationCheckStatus;
+  message: string;
+  actionUrl?: string;
+  actionLabel?: string;
+}
+
 export interface RfqReviewRequirement {
   id: string;
   title: string;
@@ -50,9 +63,12 @@ export interface RfqReviewGovernance {
 }
 
 export interface RfqReviewValidation {
+  state: BroadcastReadinessState;
+  status?: BroadcastReadinessState; // alias for backwards compatibility
   errors: string[];
   warnings: string[];
   isValid: boolean;
+  checklist: RfqValidationChecklistItem[];
 }
 
 export interface RfqReviewData {

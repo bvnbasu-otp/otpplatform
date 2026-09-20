@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface RfqPublishConfirmationModalProps {
   isOpen: boolean;
@@ -21,39 +21,59 @@ export function RfqPublishConfirmationModal({
 }: RfqPublishConfirmationModalProps) {
   const [isAcknowledged, setIsAcknowledged] = useState(false);
 
+  // Close on Escape key press when not busy
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && !isBusy) {
+        onClose();
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isBusy, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in-50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="publish-confirmation-title"
+      aria-describedby="publish-confirmation-desc"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isBusy) {
+          onClose();
+        }
+      }}
     >
-      <div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-2xl space-y-4 text-foreground animate-in fade-in-50 zoom-in-95">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-2xl space-y-4 text-foreground animate-in zoom-in-95">
         <div className="flex items-center justify-between pb-2 border-b">
           <div className="flex items-center gap-2">
             <span className="text-xl">🚀</span>
             <h3 id="publish-confirmation-title" className="text-sm sm:text-base font-bold text-foreground">
-              Ready to Publish RFQ?
+              Ready to Broadcast RFQ?
             </h3>
           </div>
           <button
             type="button"
             disabled={isBusy}
             onClick={onClose}
-            className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition mobile-touch-target"
+            className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 transition mobile-touch-target"
             aria-label="Close confirmation dialog"
           >
             ✕
           </button>
         </div>
 
-        <div className="space-y-2.5 text-xs">
+        <div className="space-y-2.5 text-xs" id="publish-confirmation-desc">
           <p className="text-muted-foreground leading-relaxed">
             You are launching competitive sourcing for:
           </p>
-          <div className="rounded-lg bg-muted/40 p-2.5 font-bold text-foreground border">
+          <div className="rounded-lg bg-muted/40 p-2.5 font-bold text-foreground border break-words">
             {requirementTitle}
           </div>
 
@@ -86,12 +106,13 @@ export function RfqPublishConfirmationModal({
 
           {/* Explicit High-Stakes Confirmation Checkbox */}
           <div className="pt-2">
-            <label className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 cursor-pointer">
+            <label className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={isAcknowledged}
+                disabled={isBusy}
                 onChange={(e) => setIsAcknowledged(e.target.checked)}
-                className="mt-0.5 rounded border-primary/40 text-primary focus:ring-primary h-4 w-4 shrink-0"
+                className="mt-0.5 rounded border-primary/40 text-primary focus:ring-primary h-4 w-4 shrink-0 mobile-touch-target"
               />
               <span className="text-[11px] font-medium leading-relaxed text-foreground">
                 I confirm the specifications, delivery location, and timelines are verified for competitive sealed quoting.
@@ -105,7 +126,7 @@ export function RfqPublishConfirmationModal({
             type="button"
             disabled={isBusy}
             onClick={onClose}
-            className="min-h-[48px] flex-1 rounded-xl border bg-muted/30 px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target"
+            className="min-h-[48px] flex-1 rounded-xl border bg-muted/30 px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 transition mobile-touch-target"
           >
             Back to Review
           </button>
@@ -116,7 +137,14 @@ export function RfqPublishConfirmationModal({
             className="min-h-[48px] flex-1 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-50 transition flex items-center justify-center gap-1.5 mobile-touch-target"
             data-testid="confirm-publish-button"
           >
-            <span>{isBusy ? 'Publishing & Broadcasting…' : '🚀 Confirm & Publish RFQ'}</span>
+            {isBusy ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                <span>Broadcasting RFQ…</span>
+              </>
+            ) : (
+              <span>🚀 Confirm &amp; Broadcast RFQ</span>
+            )}
           </button>
         </div>
       </div>

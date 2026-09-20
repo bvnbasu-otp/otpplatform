@@ -24,7 +24,7 @@ export function RfqSupplierPoolSummaryCard({
         <div>
           <div className="flex flex-wrap items-center gap-1.5 mb-1">
             <span className="rounded-md bg-blue-100 dark:bg-blue-950/60 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-              2. Selected Supplier Pool
+              2. Selected Supplier Sourcing Pool
             </span>
             {isQuorumMet ? (
               <span className="rounded-md bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-300">
@@ -60,7 +60,7 @@ export function RfqSupplierPoolSummaryCard({
             ⚠️ No suppliers selected for this sourcing event
           </p>
           <p className="text-[11px] text-muted-foreground">
-            You must discover and select at least 1 verified supplier before publishing the RFQ.
+            You must discover and select at least 1 verified supplier before broadcasting the RFQ.
           </p>
           <Link
             to={`/requirements/${requirementId}/discover`}

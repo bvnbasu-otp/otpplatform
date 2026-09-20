@@ -1,7 +1,11 @@
 import { supabase } from '@/lib/supabase';
 import { fetchCurrentProfile } from '@/features/auth/user-role';
 import type { MatchedSupplier, CompactRequirementContext } from '../types/discovery';
-import type { RfqReviewData } from '../types/rfq-review';
+import type {
+  RfqReviewData,
+  RfqValidationChecklistItem,
+  BroadcastReadinessState,
+} from '../types/rfq-review';
 import { fetchRequirementAttachments } from '@/features/attachments/api/attachments';
 import { fetchProcurementPolicy } from '@/features/procurement-os/api/fetch-procurement-os';
 import { simulateQuotesForRfq } from '@/features/rfq/api/simulate-quotes';
@@ -450,36 +454,193 @@ export async function fetchRfqReviewData(
 
   const isFastTrack = policy.policyType === 'INDIVIDUAL_DIRECT' || !policy.committeeVoteRequired;
 
-  // Validation Engine
+  // Validation & Checkpoint Engine
   const errors: string[] = [];
   const warnings: string[] = [];
+  const checklist: RfqValidationChecklistItem[] = [];
 
-  if (!req.title?.trim() || !req.description?.trim()) {
-    errors.push('Requirement title and description are required before publishing.');
+  // Check 1: Scope & Title Specifications
+  const hasValidTitle = Boolean(req.title?.trim());
+  const hasValidDesc = Boolean(req.description?.trim());
+  if (!hasValidTitle || !hasValidDesc) {
+    errors.push('Requirement title and description are required before broadcasting.');
+    checklist.push({
+      id: 'spec',
+      label: 'Scope & Specifications',
+      status: 'FAIL',
+      message: 'Title and detailed description are required.',
+      actionUrl: `/requirements/${req.id}`,
+      actionLabel: 'Edit Spec',
+    });
+  } else {
+    checklist.push({
+      id: 'spec',
+      label: 'Scope & Specifications',
+      status: 'PASS',
+      message: `Complete (${req.title})`,
+    });
   }
-  if (!req.delivery_city?.trim() || !req.delivery_pincode?.trim()) {
+
+  // Check 2: Delivery Location
+  const hasCity = Boolean(req.delivery_city?.trim());
+  const hasPincode = Boolean(req.delivery_pincode?.trim());
+  if (!hasCity || !hasPincode) {
     errors.push('Delivery city and PIN code are required.');
+    checklist.push({
+      id: 'location',
+      label: 'Delivery Location',
+      status: 'FAIL',
+      message: 'Delivery city and 6-digit PIN code must be specified.',
+      actionUrl: `/requirements/${req.id}`,
+      actionLabel: 'Set Location',
+    });
+  } else {
+    checklist.push({
+      id: 'location',
+      label: 'Delivery Location',
+      status: 'PASS',
+      message: `${req.delivery_city} • PIN ${req.delivery_pincode}`,
+    });
   }
+
+  // Check 3: Verified Supplier Sourcing Pool
   if (selectedSuppliers.length === 0) {
     errors.push('At least 1 verified supplier must be selected in the sourcing pool.');
-  }
-  const deadlineDate = new Date(quoteDeadline);
-  if (isNaN(deadlineDate.getTime()) || deadlineDate.getTime() <= Date.now()) {
-    errors.push('Quote response deadline must be a valid date in the future.');
+    checklist.push({
+      id: 'suppliers',
+      label: 'Supplier Sourcing Pool',
+      status: 'FAIL',
+      message: 'At least 1 verified supplier must be selected to broadcast.',
+      actionUrl: `/requirements/${req.id}/discover`,
+      actionLabel: 'Discover Suppliers',
+    });
+  } else if (selectedSuppliers.length < policy.minQuotesRequired) {
+    warnings.push(`Selected pool (${selectedSuppliers.length}) is below policy quorum recommendation (${policy.minQuotesRequired} suppliers).`);
+    checklist.push({
+      id: 'suppliers',
+      label: 'Supplier Sourcing Pool',
+      status: 'WARN',
+      message: `${selectedSuppliers.length} supplier(s) selected (recommended: ${policy.minQuotesRequired} for full quorum).`,
+      actionUrl: `/requirements/${req.id}/discover`,
+      actionLabel: 'Add Suppliers',
+    });
+  } else {
+    checklist.push({
+      id: 'suppliers',
+      label: 'Supplier Sourcing Pool',
+      status: 'PASS',
+      message: `${selectedSuppliers.length} verified suppliers selected (quorum met).`,
+    });
   }
 
-  // Warnings (advisory, non-blocking)
-  if (!budgetAmount) {
-    warnings.push('No internal budget ceiling set. Suppliers will submit open market rates.');
-  }
-  if (attachments.length === 0) {
-    warnings.push('No technical drawings or BoQ files attached.');
-  }
-  if (selectedSuppliers.length < policy.minQuotesRequired) {
-    warnings.push(`Selected pool (${selectedSuppliers.length}) is below policy quorum recommendation (${policy.minQuotesRequired} suppliers).`);
-  }
-  if (deadlineDate.getTime() - Date.now() < 24 * 60 * 60 * 1000) {
+  // Check 4: Quote Response Deadline
+  const deadlineDate = new Date(quoteDeadline);
+  const isValidDate = !isNaN(deadlineDate.getTime());
+  const isFuture = isValidDate && deadlineDate.getTime() > Date.now();
+
+  if (!isValidDate || !isFuture) {
+    errors.push('Quote response deadline must be a valid date in the future.');
+    checklist.push({
+      id: 'deadline',
+      label: 'Quote Response Deadline',
+      status: 'FAIL',
+      message: 'Deadline is invalid or in the past.',
+    });
+  } else if (deadlineDate.getTime() - Date.now() < 24 * 60 * 60 * 1000) {
     warnings.push('Quote deadline is within 24 hours. Consider giving suppliers 3–7 days to quote.');
+    checklist.push({
+      id: 'deadline',
+      label: 'Quote Response Deadline',
+      status: 'WARN',
+      message: 'Deadline is within 24 hours (short window).',
+    });
+  } else {
+    checklist.push({
+      id: 'deadline',
+      label: 'Quote Response Deadline',
+      status: 'PASS',
+      message: `Set to ${deadlineDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+    });
+  }
+
+  // Check 5: Category & Classification (Advisory)
+  if (req.category_id?.trim()) {
+    checklist.push({
+      id: 'category',
+      label: 'Category Classification',
+      status: 'PASS',
+      message: req.category_id.replace(/_/g, ' '),
+    });
+  } else {
+    checklist.push({
+      id: 'category',
+      label: 'Category Classification',
+      status: 'WARN',
+      message: 'General category (unclassified)',
+      actionUrl: `/requirements/${req.id}`,
+      actionLabel: 'Classify',
+    });
+  }
+
+  // Check 6: Quantity & Unit (Advisory)
+  if (req.quantity && req.quantity > 0 && req.unit?.trim()) {
+    checklist.push({
+      id: 'quantity',
+      label: 'Quantity & Units',
+      status: 'PASS',
+      message: `${req.quantity} ${req.unit}`,
+    });
+  } else {
+    checklist.push({
+      id: 'quantity',
+      label: 'Quantity & Units',
+      status: 'WARN',
+      message: 'Quantity flexible / based on scope description',
+    });
+  }
+
+  // Check 7: Commercial Baseline Ceiling (Advisory)
+  if (budgetAmount) {
+    checklist.push({
+      id: 'budget',
+      label: 'Commercial Ceiling',
+      status: 'PASS',
+      message: `${budgetFormatted} (Private benchmark)`,
+    });
+  } else {
+    warnings.push('No internal budget ceiling set. Suppliers will submit open market rates.');
+    checklist.push({
+      id: 'budget',
+      label: 'Commercial Ceiling',
+      status: 'WARN',
+      message: 'Open market rates (no internal budget ceiling)',
+    });
+  }
+
+  // Check 8: Technical Drawings & BoQ (Advisory)
+  if (attachments.length > 0) {
+    checklist.push({
+      id: 'attachments',
+      label: 'Drawings & BoQ Files',
+      status: 'PASS',
+      message: `${attachments.length} file(s) attached (metadata stripped)`,
+    });
+  } else {
+    warnings.push('No technical drawings or BoQ files attached.');
+    checklist.push({
+      id: 'attachments',
+      label: 'Drawings & BoQ Files',
+      status: 'WARN',
+      message: 'Quoting based on written specifications',
+    });
+  }
+
+  // Compute Deterministic Readiness State
+  let readinessState: BroadcastReadinessState = 'READY';
+  if (errors.length > 0) {
+    readinessState = 'BLOCKED';
+  } else if (warnings.length > 0) {
+    readinessState = 'WARNING';
   }
 
   const reviewData: RfqReviewData = {
@@ -527,9 +688,12 @@ export async function fetchRfqReviewData(
       isFastTrack,
     },
     validation: {
+      state: readinessState,
+      status: readinessState,
       errors,
       warnings,
       isValid: errors.length === 0,
+      checklist,
     },
   };
 

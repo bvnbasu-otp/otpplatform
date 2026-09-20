@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase', () => {
   return { supabase: globalMock };
 });
 
-describe('Phase 2.4 — RFQ Review & Publish Feature Tests', () => {
+describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => {
   let profileSpy: any;
 
   beforeEach(() => {
@@ -42,8 +42,8 @@ describe('Phase 2.4 — RFQ Review & Publish Feature Tests', () => {
     vi.mocked(supabase.rpc).mockReset();
   });
 
-  describe('1. RFQ Review Data Extraction & Mapping', () => {
-    it('extracts complete sourcing package including requirement, rfq, suppliers, and attachments', async () => {
+  describe('1. Broadcast Readiness Checkpoint Model & Pre-Flight Checklist', () => {
+    it('determines READY state when all mandatory parameters and full quorum are satisfied', async () => {
       const mockReq = {
         id: 'req-201',
         title: 'Borewell Motor Rewinding & Overhaul',
@@ -120,27 +120,17 @@ describe('Phase 2.4 — RFQ Review & Publish Feature Tests', () => {
       ];
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === 'requirements') {
-          return createSupabaseQueryMock({ data: mockReq, error: null });
-        }
-        if (table === 'rfqs') {
-          return createSupabaseQueryMock({ data: mockRfq, error: null });
-        }
-        if (table === 'rfq_invitations_manager') {
-          return createSupabaseQueryMock({ data: mockInvitations, error: null });
-        }
-        if (table === 'attachments') {
-          return createSupabaseQueryMock({ data: mockAttachments, error: null });
-        }
+        if (table === 'requirements') return createSupabaseQueryMock({ data: mockReq, error: null });
+        if (table === 'rfqs') return createSupabaseQueryMock({ data: mockRfq, error: null });
+        if (table === 'rfq_invitations_manager') return createSupabaseQueryMock({ data: mockInvitations, error: null });
+        if (table === 'attachments') return createSupabaseQueryMock({ data: mockAttachments, error: null });
         if (table === 'approval_policies') {
           return createSupabaseQueryMock({
             data: { threshold: { minQuotesRequired: 3, evaluationWeights: { price: 50, delivery: 25, warranty: 25 } } },
             error: null,
           });
         }
-        if (table === 'organizations') {
-          return createSupabaseQueryMock({ data: { org_type: 'MSME' }, error: null });
-        }
+        if (table === 'organizations') return createSupabaseQueryMock({ data: { org_type: 'MSME' }, error: null });
         return createSupabaseQueryMock({ data: null, error: null });
       });
 
@@ -153,10 +143,78 @@ describe('Phase 2.4 — RFQ Review & Publish Feature Tests', () => {
         expect(res.data.attachments).toHaveLength(1);
         expect(res.data.validation.isValid).toBe(true);
         expect(res.data.validation.errors).toHaveLength(0);
+        expect(res.data.validation.state).toBe('READY');
+        expect(res.data.validation.status).toBe('READY');
+
+        // Check itemized checklist items
+        const checks = res.data.validation.checklist;
+        expect(checks.find((c) => c.id === 'spec')?.status).toBe('PASS');
+        expect(checks.find((c) => c.id === 'location')?.status).toBe('PASS');
+        expect(checks.find((c) => c.id === 'suppliers')?.status).toBe('PASS');
+        expect(checks.find((c) => c.id === 'deadline')?.status).toBe('PASS');
+        expect(checks.find((c) => c.id === 'category')?.status).toBe('PASS');
+        expect(checks.find((c) => c.id === 'quantity')?.status).toBe('PASS');
+        expect(checks.find((c) => c.id === 'budget')?.status).toBe('PASS');
+        expect(checks.find((c) => c.id === 'attachments')?.status).toBe('PASS');
       }
     });
 
-    it('flags blocking validation error when supplier pool is empty (0 suppliers)', async () => {
+    it('determines WARNING state when publishable but has advisory recommendations (below quorum, no files)', async () => {
+      const mockReq = {
+        id: 'req-warn',
+        title: 'Emergency Generator Diesel Refill',
+        description: '500 liters high speed diesel delivery',
+        status: 'RFQ_CREATED',
+        delivery_city: 'Bengaluru',
+        delivery_pincode: '560001',
+        commercial: {},
+      };
+
+      const mockRfq = {
+        id: 'rfq-warn',
+        status: 'DRAFT',
+        quote_deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        min_quotes_required: 3,
+      };
+
+      const mockInvitations = [
+        {
+          invitation_id: 'inv-1',
+          anonymous_label: 'Supplier #01',
+          status: 'INVITED',
+          match_score: 92.0,
+          match_reasons: ['category_match'],
+        },
+      ];
+
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'requirements') return createSupabaseQueryMock({ data: mockReq, error: null });
+        if (table === 'rfqs') return createSupabaseQueryMock({ data: mockRfq, error: null });
+        if (table === 'rfq_invitations_manager') return createSupabaseQueryMock({ data: mockInvitations, error: null });
+        if (table === 'attachments') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'approval_policies') {
+          return createSupabaseQueryMock({
+            data: { threshold: { minQuotesRequired: 3, evaluationWeights: { price: 60, delivery: 40 } } },
+            error: null,
+          });
+        }
+        return createSupabaseQueryMock({ data: null, error: null });
+      });
+
+      const res = await fetchRfqReviewData('req-warn', 'rfq-warn');
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.data.validation.isValid).toBe(true);
+        expect(res.data.validation.errors).toHaveLength(0);
+        expect(res.data.validation.state).toBe('WARNING');
+        expect(res.data.validation.warnings.length).toBeGreaterThan(0);
+        expect(res.data.validation.warnings).toContain(
+          'Selected pool (1) is below policy quorum recommendation (3 suppliers).'
+        );
+      }
+    });
+
+    it('determines BLOCKED state when 0 suppliers are selected in the sourcing pool', async () => {
       const mockReq = {
         id: 'req-empty',
         title: 'Generator Maintenance',
@@ -185,9 +243,49 @@ describe('Phase 2.4 — RFQ Review & Publish Feature Tests', () => {
       expect(res.ok).toBe(true);
       if (res.ok) {
         expect(res.data.validation.isValid).toBe(false);
+        expect(res.data.validation.state).toBe('BLOCKED');
         expect(res.data.validation.errors).toContain(
           'At least 1 verified supplier must be selected in the sourcing pool.'
         );
+        const supplierCheck = res.data.validation.checklist.find((c) => c.id === 'suppliers');
+        expect(supplierCheck?.status).toBe('FAIL');
+        expect(supplierCheck?.actionUrl).toBe('/requirements/req-empty/discover');
+      }
+    });
+
+    it('determines BLOCKED state when delivery city or pincode is missing', async () => {
+      const mockReq = {
+        id: 'req-nolocation',
+        title: 'Solar Panel Maintenance',
+        description: '50kW rooftop inverter inspection',
+        delivery_city: '',
+        delivery_pincode: '',
+        status: 'RFQ_CREATED',
+      };
+
+      const mockRfq = {
+        id: 'rfq-loc',
+        status: 'DRAFT',
+        quote_deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+
+      const mockInvitations = [{ invitation_id: 'inv-1', anonymous_label: 'Supplier #01', status: 'INVITED' }];
+
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'requirements') return createSupabaseQueryMock({ data: mockReq, error: null });
+        if (table === 'rfqs') return createSupabaseQueryMock({ data: mockRfq, error: null });
+        if (table === 'rfq_invitations_manager') return createSupabaseQueryMock({ data: mockInvitations, error: null });
+        return createSupabaseQueryMock({ data: [], error: null });
+      });
+
+      const res = await fetchRfqReviewData('req-nolocation', 'rfq-loc');
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.data.validation.isValid).toBe(false);
+        expect(res.data.validation.state).toBe('BLOCKED');
+        expect(res.data.validation.errors).toContain('Delivery city and PIN code are required.');
+        const locCheck = res.data.validation.checklist.find((c) => c.id === 'location');
+        expect(locCheck?.status).toBe('FAIL');
       }
     });
   });
@@ -411,9 +509,9 @@ describe('Phase 2.4 — RFQ Review & Publish Feature Tests', () => {
     it('contains ZERO prohibited terminology across all Phase 2.4 review and publish texts', () => {
       const prohibitedTerms = ['bid', 'bids', 'bidder', 'bidders', 'bidding', 'blind'];
       const combinedText = `
-        RFQ Ready to Publish Selected Supplier Pool Quote Response Deadline
+        RFQ Ready to Broadcast Selected Supplier Pool Quote Response Deadline
         Technical Drawings & BoQ Attachments Supplier Instructions Quoting Guidelines
-        Committee Quorum Rules Transparent Merit Weights Confirm & Publish RFQ
+        Committee Quorum Rules Transparent Merit Weights Confirm & Broadcast RFQ
         Quoting Live Sealed Quotes Identity Protected
       `.toLowerCase();
 
