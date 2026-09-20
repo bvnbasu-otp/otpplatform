@@ -119,7 +119,7 @@ export function OrgContextSwitcher() {
             <div className="border-t pt-1 mt-1">
               <button
                 type="button"
-                onClick={() => { setOpen(false); navigate("/org/members"); }}
+                onClick={() => { setOpen(false); navigate("/profile?tab=team"); }}
                 className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition"
               >
                 <span>&#128101;</span> Manage Organization Members

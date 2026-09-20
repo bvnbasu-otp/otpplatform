@@ -34,8 +34,7 @@ import { PilotProvider } from '@/features/pilots/PilotProvider';
 import { AppLayout } from '@/components/AppLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { NotificationsPage } from '@/features/notifications';
-import { AdminDashboardPage, AdminBuyerDiagnosticsPage, AdminSellerDiagnosticsPage } from '@/features/admin';
-import { OrgMembersPage } from '@/features/org';
+import { AdminDashboardPage } from '@/features/admin';
 import { ProfilePage } from '@/features/profile';
 import { HomePage } from '@/pages/HomePage';
 import { MaintenancePage } from '@/pages/MaintenancePage';
@@ -446,7 +445,7 @@ export function App() {
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings/profile" element={<Navigate to="/profile" replace />} />
-            <Route path="/org/members" element={<OrgMembersPage />} />
+            <Route path="/org/members" element={<Navigate to="/profile?tab=team" replace />} />
             <Route path="/demo" element={<DemoDashboardPage />} />
             <Route
               path="/admin"
@@ -500,7 +499,7 @@ export function App() {
               path="/admin/buyer-diagnostics"
               element={
                 <ProtectedRoute requireAdmin>
-                  <AdminBuyerDiagnosticsPage />
+                  <Navigate to="/admin?tab=buyer_troubleshooter" replace />
                 </ProtectedRoute>
               }
             />
@@ -508,7 +507,7 @@ export function App() {
               path="/admin/seller-diagnostics"
               element={
                 <ProtectedRoute requireAdmin>
-                  <AdminSellerDiagnosticsPage />
+                  <Navigate to="/admin?tab=seller_troubleshooter" replace />
                 </ProtectedRoute>
               }
             />

@@ -195,8 +195,8 @@ export function getCanonicalHeaderMenuSections(context: RoleContext): HeaderMenu
   // Role-specific workspace quick links
   if (context.isPlatformAdmin) {
     workspaceItems.push({ label: 'Admin Console', to: '/admin', icon: '⚡' });
-    workspaceItems.push({ label: 'Buyer Diagnostics', to: '/admin/buyer-diagnostics', icon: '🔍' });
-    workspaceItems.push({ label: 'Seller Diagnostics', to: '/admin/seller-diagnostics', icon: '📡' });
+    workspaceItems.push({ label: 'Buyer Diagnostics', to: '/admin?tab=buyer_troubleshooter', icon: '🔍' });
+    workspaceItems.push({ label: 'Seller Diagnostics', to: '/admin?tab=seller_troubleshooter', icon: '📡' });
   } else if (context.side === 'SUPPLIER') {
     workspaceItems.push({ label: 'Capabilities & Catalog', to: '/supplier/capabilities', icon: '📡' });
   } else {

@@ -16,7 +16,7 @@ export function AdminQuickActionsSheet({ isOpen, onClose }: AdminQuickActionsShe
     >
       <div className="space-y-2.5 text-xs py-1">
         <Link
-          to="/admin/buyer-diagnostics"
+          to="/admin?tab=buyer_troubleshooter"
           onClick={onClose}
           className="flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:bg-muted transition min-h-[48px] mobile-touch-target"
         >
@@ -31,7 +31,7 @@ export function AdminQuickActionsSheet({ isOpen, onClose }: AdminQuickActionsShe
         </Link>
 
         <Link
-          to="/admin/seller-diagnostics"
+          to="/admin?tab=seller_troubleshooter"
           onClick={onClose}
           className="flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:bg-muted transition min-h-[48px] mobile-touch-target"
         >

@@ -123,6 +123,8 @@ export function AdminDashboardPage() {
       rawTab === 'BUYER-DEBUG' ||
       rawTab === 'BUYER_TROUBLESHOOT' ||
       rawTab === 'BUYER-TROUBLESHOOT' ||
+      rawTab === 'BUYER_TROUBLESHOOTER' ||
+      rawTab === 'BUYER-TROUBLESHOOTER' ||
       rawTab === 'BUYER_DIAGNOSTICS' ||
       rawTab === 'DIAGNOSTICS'
     ) {
@@ -135,6 +137,10 @@ export function AdminDashboardPage() {
       rawTab === 'SELLER-DEBUG' ||
       rawTab === 'SUPPLIER_TROUBLESHOOT' ||
       rawTab === 'SUPPLIER-TROUBLESHOOT' ||
+      rawTab === 'SELLER_TROUBLESHOOT' ||
+      rawTab === 'SELLER-TROUBLESHOOT' ||
+      rawTab === 'SELLER_TROUBLESHOOTER' ||
+      rawTab === 'SELLER-TROUBLESHOOTER' ||
       rawTab === 'SELLER_DIAGNOSTICS'
     ) {
       return 'SUPPLIER_DEBUG';

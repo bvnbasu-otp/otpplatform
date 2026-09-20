@@ -460,7 +460,7 @@ export function resolveStageNavigationUrl(
       if (role === 'supplier') return poId ? `/supplier/purchase-orders/${poId}?stage=settled` : '/supplier/purchase-orders';
       return poId ? `/purchase-orders/${poId}?stage=settled` : rfqId ? `/rfq/${rfqId}/audit` : '/audit';
     case 'STALLED':
-      if (role === 'admin') return rfqId ? `/admin/buyer-diagnostics?id=${rfqId}` : '/admin?stalled=true';
+      if (role === 'admin') return rfqId ? `/admin?tab=buyer_troubleshooter&id=${rfqId}` : '/admin?stalled=true';
       if (role === 'supplier') return poId ? `/supplier/purchase-orders/${poId}` : '/dashboard';
       return rfqId ? `/rfq/${rfqId}/quotes` : requirementId ? `/requirements/${requirementId}` : '/dashboard';
     default:

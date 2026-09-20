@@ -451,7 +451,7 @@ export function AdminSellerOrdersTable({
                   </button>
 
                   <Link
-                    to={`/app/admin?tab=supplier_debug&id=${order.po_id || order.po_number || ''}`}
+                    to={`/admin?tab=seller_troubleshooter&id=${order.po_id || order.po_number || ''}`}
                     className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border bg-muted/40 hover:bg-muted text-foreground text-xs font-bold transition active:scale-98 mobile-touch-target text-center"
                   >
                     <span>🩺</span>
