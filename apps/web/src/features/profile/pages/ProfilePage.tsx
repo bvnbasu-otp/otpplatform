@@ -918,6 +918,26 @@ export function ProfilePage() {
       {/* 3. TAB 2: WORKSPACE & TEAM MEMBERS */}
       {activeTab === 'team' && (
         <div className="space-y-3">
+          {/* Quick link to Dedicated Governance & Delegation Workbench */}
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3.5 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+            <div className="min-w-0">
+              <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <span>🛡️</span>
+                <span>Dedicated Governance &amp; Delegation Workbench</span>
+              </h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Manage tokenized invitations, granular proxies, and spend caps in the full-screen governance portal.
+              </p>
+            </div>
+            <Link
+              to="/org/members"
+              className="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-2xs shrink-0 min-h-[44px] mobile-touch-target flex items-center gap-1"
+            >
+              <span>Open Governance Workbench</span>
+              <span>→</span>
+            </Link>
+          </div>
+
           {/* Organization Switcher & Role Selector Banner */}
           <div className="rounded-2xl border border-border bg-card p-3.5 shadow-xs space-y-3">
             <div>

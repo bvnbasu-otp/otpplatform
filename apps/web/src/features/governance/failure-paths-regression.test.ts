@@ -237,7 +237,7 @@ describe('Phase 7.1 — 22 Formal Failure Path Regressions (F01 to F22)', () => 
 
   // F25: Non-Delegable Tier 3 Executive Authority (Phase C8.1)
   it('F25: Rejects Tier 3 executive signoff delegation when delegator is not owner/admin', () => {
-    const delegatorRole = 'MANAGER';
+    const delegatorRole: string = 'MANAGER';
     const requestedPerm = 'APPROVE_TIER_3';
     const canDelegate = delegatorRole === 'OWNER' || requestedPerm !== 'APPROVE_TIER_3';
     expect(canDelegate).toBe(false);

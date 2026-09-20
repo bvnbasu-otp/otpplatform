@@ -36,6 +36,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { NotificationsPage } from '@/features/notifications';
 import { AdminDashboardPage } from '@/features/admin';
 import { ProfilePage } from '@/features/profile';
+import { OrgMembersPage, InviteAcceptancePage } from '@/features/org';
 import { HomePage } from '@/pages/HomePage';
 import { MaintenancePage } from '@/pages/MaintenancePage';
 import { MobileShowcasePage } from '@/pages/MobileShowcasePage';
@@ -282,6 +283,11 @@ export function App() {
             off a phone screen.
           */}
           <Route path="/q/:token" element={<QuickQuotePage />} />
+          {/*
+            Organization invitation acceptance route: accessible unauthenticated
+            (renders preview & sign-in redirect) and authenticated (1-click join).
+          */}
+          <Route path="/invite/:token" element={<InviteAcceptancePage />} />
           <Route path="/maintenance" element={<MaintenancePage />} />
           <Route
             element={
@@ -445,7 +451,10 @@ export function App() {
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings/profile" element={<Navigate to="/profile" replace />} />
-            <Route path="/org/members" element={<Navigate to="/profile?tab=team" replace />} />
+            <Route path="/org/members" element={<OrgMembersPage />} />
+            <Route path="/team" element={<Navigate to="/org/members" replace />} />
+            <Route path="/governance/team" element={<Navigate to="/org/members" replace />} />
+            <Route path="/governance/members" element={<Navigate to="/org/members" replace />} />
             <Route path="/demo" element={<DemoDashboardPage />} />
             <Route
               path="/admin"

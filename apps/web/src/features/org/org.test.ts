@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   listOrgMembers,
   inviteOrgMember,
+  acceptOrgInvitation,
   removeOrgMember,
   listOrgInvitations,
   revokeOrgInvitation,
@@ -36,7 +37,7 @@ const mockSupabaseClient = {
 
 const mockSwitchFn = vi.fn();
 
-describe('Org Feature Module Tests & Phase C8.1 Governance', () => {
+describe('Org Feature Module Tests & Phase C8.2 Governance', () => {
   beforeEach(() => {
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
@@ -105,6 +106,72 @@ describe('Org Feature Module Tests & Phase C8.1 Governance', () => {
       expect(res.message).toContain('Invitation created');
       expect(res.token).toBe('tok-sec-12345');
       expect(res.inviteUrl).toBe('/invite/tok-sec-12345');
+      expect(res.invitationId).toBe('inv-uuid-001');
+    }
+  });
+
+  it('accepts an organization invitation via acceptOrgInvitation atomic RPC', async () => {
+    const mockResponse = {
+      data: {
+        ok: true,
+        organizationId: 'org-123',
+        organizationName: 'Acme Procurement Corp',
+        role: 'BUYER',
+        message: 'Successfully joined Acme Procurement Corp as BUYER.',
+      },
+      error: null,
+    };
+    mockSupabaseClient.rpc.mockResolvedValue(mockResponse);
+
+    const res = await acceptOrgInvitation('tok-valid-abc', mockSupabaseClient as any);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.organizationId).toBe('org-123');
+      expect(res.organizationName).toBe('Acme Procurement Corp');
+      expect(res.role).toBe('BUYER');
+      expect(res.message).toContain('Successfully joined');
+    }
+  });
+
+  it('handles invitation acceptance errors (expired, revoked, already used, email mismatch)', async () => {
+    mockSupabaseClient.rpc.mockResolvedValueOnce({
+      data: { ok: false, error: 'This invitation link has expired.' },
+      error: null,
+    });
+    const expiredRes = await acceptOrgInvitation('tok-expired', mockSupabaseClient as any);
+    expect(expiredRes.ok).toBe(false);
+    if (!expiredRes.ok) {
+      expect(expiredRes.error).toBe('This invitation link has expired.');
+    }
+
+    mockSupabaseClient.rpc.mockResolvedValueOnce({
+      data: { ok: false, error: 'This invitation has been revoked by an administrator.' },
+      error: null,
+    });
+    const revokedRes = await acceptOrgInvitation('tok-revoked', mockSupabaseClient as any);
+    expect(revokedRes.ok).toBe(false);
+    if (!revokedRes.ok) {
+      expect(revokedRes.error).toBe('This invitation has been revoked by an administrator.');
+    }
+
+    mockSupabaseClient.rpc.mockResolvedValueOnce({
+      data: { ok: false, error: 'This invitation token has already been accepted (single-use).' },
+      error: null,
+    });
+    const usedRes = await acceptOrgInvitation('tok-used', mockSupabaseClient as any);
+    expect(usedRes.ok).toBe(false);
+    if (!usedRes.ok) {
+      expect(usedRes.error).toBe('This invitation token has already been accepted (single-use).');
+    }
+
+    mockSupabaseClient.rpc.mockResolvedValueOnce({
+      data: { ok: false, error: 'This invitation was sent to buyer@corp.com, but you are signed in as intruder@evil.com.' },
+      error: null,
+    });
+    const mismatchRes = await acceptOrgInvitation('tok-mismatch', mockSupabaseClient as any);
+    expect(mismatchRes.ok).toBe(false);
+    if (!mismatchRes.ok) {
+      expect(mismatchRes.error).toContain('This invitation was sent to');
     }
   });
 
@@ -183,6 +250,18 @@ describe('Org Feature Module Tests & Phase C8.1 Governance', () => {
     if (listDelRes.ok) {
       expect(listDelRes.delegations).toHaveLength(1);
       expect(listDelRes.delegations[0]?.spendCapAmount).toBe(1000000);
+    }
+  });
+
+  it('revokes a delegation proxy via atomic RPC', async () => {
+    mockSupabaseClient.rpc.mockResolvedValueOnce({
+      data: { ok: true, message: 'Delegation revoked successfully.' },
+      error: null,
+    });
+    const revokeRes = await revokeDelegationProxy('del-uuid-1', mockSupabaseClient as any);
+    expect(revokeRes.ok).toBe(true);
+    if (revokeRes.ok) {
+      expect(revokeRes.message).toBe('Delegation revoked successfully.');
     }
   });
 

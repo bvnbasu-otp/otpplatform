@@ -114,10 +114,14 @@ export async function inviteOrgMember(
   };
 }
 
+export type AcceptInvitationResult =
+  | { ok: true; organizationId: string; organizationName?: string; role?: string; message: string }
+  | { ok: false; error: string };
+
 export async function acceptOrgInvitation(
   token: string,
   client = supabase
-): Promise<{ ok: true; organizationId: string; message: string } | { ok: false; error: string }> {
+): Promise<AcceptInvitationResult> {
   const { data, error } = await client.rpc("accept_organization_invitation_atomic", {
     p_token: token.trim(),
   });
@@ -129,6 +133,8 @@ export async function acceptOrgInvitation(
   return {
     ok: true,
     organizationId: String(result?.organizationId ?? ""),
+    organizationName: result?.organizationName ? String(result.organizationName) : undefined,
+    role: result?.role ? String(result.role) : undefined,
     message: String(result?.message ?? "Joined organization successfully"),
   };
 }
