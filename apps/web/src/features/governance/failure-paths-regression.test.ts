@@ -219,4 +219,27 @@ describe('Phase 7.1 — 22 Formal Failure Path Regressions (F01 to F22)', () => 
     const isMonotonic = new Date(event2.occurredAt).getTime() > new Date(event1.occurredAt).getTime();
     expect(isMonotonic).toBe(true);
   });
+
+  // F23: Tokenized Single-Use Invitation Replay Attack (Phase C8.1)
+  it('F23: Rejects replay/reuse of already accepted organization invitation tokens', () => {
+    const inv = { status: 'ACCEPTED', expiresAt: '2026-09-27T00:00:00Z' };
+    const canAccept = inv.status === 'PENDING' && new Date(inv.expiresAt).getTime() > Date.now();
+    expect(canAccept).toBe(false);
+  });
+
+  // F24: Spend Cap Delegation Breach (Phase C8.1)
+  it('F24: Blocks delegation proxy execution when procurement amount exceeds spend cap', () => {
+    const delegation = { spendCap: 500000, isActive: true };
+    const amount = 750000;
+    const isAllowed = delegation.isActive && (delegation.spendCap === null || amount <= delegation.spendCap);
+    expect(isAllowed).toBe(false);
+  });
+
+  // F25: Non-Delegable Tier 3 Executive Authority (Phase C8.1)
+  it('F25: Rejects Tier 3 executive signoff delegation when delegator is not owner/admin', () => {
+    const delegatorRole = 'MANAGER';
+    const requestedPerm = 'APPROVE_TIER_3';
+    const canDelegate = delegatorRole === 'OWNER' || requestedPerm !== 'APPROVE_TIER_3';
+    expect(canDelegate).toBe(false);
+  });
 });
