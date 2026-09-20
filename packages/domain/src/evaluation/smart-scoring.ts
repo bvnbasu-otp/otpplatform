@@ -9,6 +9,8 @@
  * 5. GST Compliance Bonus: +5 points for verified GSTIN
  */
 
+import type { EvaluationCriterionDef } from '../taxonomy/types';
+
 export interface RawQuoteMetrics {
   quoteId: string;
   totalCost: number;
@@ -19,6 +21,9 @@ export interface RawQuoteMetrics {
   isGstVerified: boolean;
   isDeliveryDaysEstimated?: boolean;
   isWarrantyEstimated?: boolean;
+  anonymousLabel?: string;
+  technicalFitScore?: number; // 0 - 100
+  hasCertification?: boolean;
 }
 
 export interface ScoringWeights {
@@ -39,6 +44,27 @@ export interface ScoredQuoteOutcome {
   isDeliveryDaysEstimated?: boolean;
   isWarrantyEstimated?: boolean;
   slaConfidencePenalty?: number;
+}
+
+export interface DecomposedCriterionContribution {
+  criterionCode: string;
+  criterionName: string;
+  rawMetric: number | string | null;
+  rawDisplay: string;
+  normalizedScore: number; // 0 - 100
+  weightPercent: number; // e.g. 40 (%)
+  weightedContribution: number; // normalizedScore * (weightPercent / 100)
+  isBestInClass: boolean;
+  isEstimatedFallback: boolean;
+  neutral: boolean;
+  explanation: string;
+}
+
+export interface ExplainableSmartScoreOutcome extends ScoredQuoteOutcome {
+  anonymousLabel: string;
+  breakdown: DecomposedCriterionContribution[];
+  formulaSummary: string;
+  bestInClassBadges: string[];
 }
 
 export function computeSmartScores(
@@ -98,6 +124,137 @@ export function computeSmartScores(
       isDeliveryDaysEstimated: q.isDeliveryDaysEstimated ?? false,
       isWarrantyEstimated: q.isWarrantyEstimated ?? false,
       slaConfidencePenalty,
+    };
+  });
+}
+
+/**
+ * Computes fully explainable, transparent merit scores with detailed per-criterion breakdown
+ * adhering to the identity protection invariant (using pseudonymized aliases).
+ */
+export function computeExplainableSmartScores(
+  quotes: RawQuoteMetrics[],
+  weights: ScoringWeights | Record<string, number>,
+): ExplainableSmartScoreOutcome[] {
+  if (quotes.length === 0) return [];
+
+  // Adapt Record<string, number> to ScoringWeights if needed
+  const normalizedWeights: ScoringWeights =
+    'commercial' in weights
+      ? (weights as ScoringWeights)
+      : {
+          commercial: weights['price'] ?? weights['commercial'] ?? 50,
+          speed: weights['delivery_time'] ?? weights['speed'] ?? 20,
+          warranty: weights['warranty'] ?? 15,
+          quality: weights['supplier_rating'] ?? weights['quality'] ?? 15,
+        };
+
+  const baseOutcomes = computeSmartScores(quotes, normalizedWeights);
+  const minPrice = Math.min(...quotes.map((q) => q.totalCost));
+  const minDays = Math.min(...quotes.map((q) => Math.max(1, q.deliveryDays)));
+  const maxWarranty = Math.max(1, ...quotes.map((q) => q.warrantyMonths));
+  const maxRating = Math.max(...quotes.map((q) => q.ratingAvg));
+
+  const totalW =
+    normalizedWeights.commercial +
+    normalizedWeights.speed +
+    normalizedWeights.warranty +
+    normalizedWeights.quality || 100;
+
+  const pctComm = Math.round((normalizedWeights.commercial / totalW) * 1000) / 10;
+  const pctSpeed = Math.round((normalizedWeights.speed / totalW) * 1000) / 10;
+  const pctWarr = Math.round((normalizedWeights.warranty / totalW) * 1000) / 10;
+  const pctQual = Math.round((normalizedWeights.quality / totalW) * 1000) / 10;
+
+  return quotes.map((q, idx) => {
+    const outcome = baseOutcomes.find((o) => o.quoteId === q.quoteId)!;
+    const anonymousLabel = q.anonymousLabel || `Supplier #${String(idx + 1).padStart(2, '0')}`;
+
+    const isLowestPrice = q.totalCost === minPrice;
+    const isFastestDays = q.deliveryDays === minDays;
+    const isMaxWarranty = q.warrantyMonths === maxWarranty;
+    const isTopRating = q.ratingAvg === maxRating;
+
+    const badges: string[] = [];
+    if (isLowestPrice) badges.push('Lowest Landed Price (L1)');
+    if (isFastestDays) badges.push('Fastest TAT');
+    if (isMaxWarranty) badges.push('Longest Warranty');
+    if (isTopRating && q.ratingAvg >= 4.5) badges.push('Top Verified Rating');
+    if (q.isGstVerified) badges.push('GST Verified (+5 pts)');
+
+    const breakdown: DecomposedCriterionContribution[] = [
+      {
+        criterionCode: 'price',
+        criterionName: 'Landed Commercial Price',
+        rawMetric: q.totalCost,
+        rawDisplay: `₹${Math.round(q.totalCost).toLocaleString('en-IN')}`,
+        normalizedScore: outcome.commercialScore,
+        weightPercent: pctComm,
+        weightedContribution: Math.round((outcome.commercialScore * (pctComm / 100)) * 10) / 10,
+        isBestInClass: isLowestPrice,
+        isEstimatedFallback: false,
+        neutral: false,
+        explanation: isLowestPrice
+          ? 'Best-in-class lowest price among all submitted quotes (100 pts)'
+          : `${Math.round(((q.totalCost - minPrice) / minPrice) * 100)}% above lowest price`,
+      },
+      {
+        criterionCode: 'delivery_time',
+        criterionName: 'Delivery Turnaround Time',
+        rawMetric: q.deliveryDays,
+        rawDisplay: `${q.deliveryDays} Days`,
+        normalizedScore: outcome.speedScore,
+        weightPercent: pctSpeed,
+        weightedContribution: Math.round((outcome.speedScore * (pctSpeed / 100)) * 10) / 10,
+        isBestInClass: isFastestDays,
+        isEstimatedFallback: Boolean(q.isDeliveryDaysEstimated),
+        neutral: false,
+        explanation: isFastestDays
+          ? 'Fastest delivery fulfillment schedule (100 pts)'
+          : `${q.deliveryDays - minDays} days longer than fastest candidate`,
+      },
+      {
+        criterionCode: 'warranty',
+        criterionName: 'Warranty Coverage Period',
+        rawMetric: q.warrantyMonths,
+        rawDisplay: `${q.warrantyMonths} Months`,
+        normalizedScore: outcome.warrantyScore,
+        weightPercent: pctWarr,
+        weightedContribution: Math.round((outcome.warrantyScore * (pctWarr / 100)) * 10) / 10,
+        isBestInClass: isMaxWarranty,
+        isEstimatedFallback: Boolean(q.isWarrantyEstimated),
+        neutral: false,
+        explanation: isMaxWarranty
+          ? 'Longest guaranteed warranty support period (100 pts)'
+          : `${q.warrantyMonths}m vs best offer of ${maxWarranty}m`,
+      },
+      {
+        criterionCode: 'supplier_rating',
+        criterionName: 'Verified Track Record & Quality',
+        rawMetric: q.ratingAvg,
+        rawDisplay: `${q.ratingAvg.toFixed(1)} / 5.0 (${q.onTimePercent}% On-Time)`,
+        normalizedScore: outcome.qualityScore,
+        weightPercent: pctQual,
+        weightedContribution: Math.round((outcome.qualityScore * (pctQual / 100)) * 10) / 10,
+        isBestInClass: isTopRating,
+        isEstimatedFallback: false,
+        neutral: false,
+        explanation: `Calculated from ${q.ratingAvg.toFixed(1)}★ rating and ${q.onTimePercent}% past on-time delivery rate`,
+      },
+    ];
+
+    const formulaSummary =
+      `Score = (${outcome.commercialScore} × ${pctComm}%) + (${outcome.speedScore} × ${pctSpeed}%) + (${outcome.warrantyScore} × ${pctWarr}%) + (${outcome.qualityScore} × ${pctQual}%)` +
+      (outcome.gstBonus > 0 ? ` + ${outcome.gstBonus} (GST Bonus)` : '') +
+      (outcome.slaConfidencePenalty ? ` - ${outcome.slaConfidencePenalty} (SLA Uncertainty Penalty)` : '') +
+      ` = ${outcome.compositeScore}`;
+
+    return {
+      ...outcome,
+      anonymousLabel,
+      breakdown,
+      formulaSummary,
+      bestInClassBadges: badges,
     };
   });
 }

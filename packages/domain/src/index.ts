@@ -23,6 +23,7 @@ export * from './parser/extractors';
 export * from './parser/rule-based-requirement-parser';
 export * from './evaluation/normalize-weights';
 export * from './evaluation/smart-scoring';
+export * from './evaluation/category-criteria';
 export * from './gst/types';
 export * from './gst/gstin-validator';
 export * from './gst/gstin-lookup';

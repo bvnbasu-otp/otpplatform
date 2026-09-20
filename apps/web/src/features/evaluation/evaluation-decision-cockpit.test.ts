@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   IDENTITY_PROTECTED_FORBIDDEN_FIELDS,
   assertIdentityProtectedPayloadSafe,
+  getCategoryEvaluationProfile,
+  getSuggestedWeightsForCategory,
+  applyEvaluationPreset,
+  EvaluationPreset,
+  computeExplainableSmartScores,
+  isEssentialCriterion,
+  weightsSumTo100,
   type IdentityProtectedQuote,
 } from '@otp/domain';
 import {
@@ -340,6 +347,82 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () =>
 
       expect(standardButtonHeight).toBeGreaterThanOrEqual(minTouchTargetPx);
       expect(dominantActionButtonHeight).toBeGreaterThanOrEqual(minTouchTargetPx);
+    });
+  });
+
+  describe('9. Phase C.6 — Progressive Advanced Controls & Category-Specific Scoring', () => {
+    it('provides specialized category evaluation profiles with 100% normalized suggested weights', () => {
+      const electricalProfile = getCategoryEvaluationProfile('ELECTRICAL');
+      expect(electricalProfile.categoryCode).toBe('ELECTRICAL');
+      expect(electricalProfile.recommendedCriteriaCodes).toEqual(
+        expect.arrayContaining(['price', 'delivery_time', 'warranty', 'technical_fit', 'certification']),
+      );
+
+      const electricalWeights = getSuggestedWeightsForCategory('ELECTRICAL');
+      expect(weightsSumTo100(electricalWeights)).toBe(true);
+      expect(electricalWeights.price).toBe(40);
+      expect(electricalWeights.delivery_time).toBe(20);
+
+      const civilWeights = getSuggestedWeightsForCategory('CIVIL');
+      expect(weightsSumTo100(civilWeights)).toBe(true);
+      expect(civilWeights.technical_fit).toBe(25);
+
+      const servicesWeights = getSuggestedWeightsForCategory('SERVICES');
+      expect(weightsSumTo100(servicesWeights)).toBe(true);
+      expect(servicesWeights.response_time).toBe(25);
+    });
+
+    it('applies standard strategy presets deterministically', () => {
+      const lowestPriceWeights = applyEvaluationPreset(EvaluationPreset.PRICE_DOMINANT);
+      expect(weightsSumTo100(lowestPriceWeights)).toBe(true);
+      expect(lowestPriceWeights.price).toBe(65);
+
+      const speedWeights = applyEvaluationPreset(EvaluationPreset.RAPID_FULFILLMENT);
+      expect(weightsSumTo100(speedWeights)).toBe(true);
+      expect(speedWeights.delivery_time).toBe(50);
+    });
+
+    it('computes explainable smart score breakdowns with itemized mathematical contributions', () => {
+      const rawMetrics = mockQuotes.map((q) => ({
+        quoteId: q.quoteId,
+        totalCost: q.totalCost,
+        deliveryDays: q.deliveryDays,
+        warrantyMonths: q.warrantyMonths,
+        ratingAvg: q.supplierRatingAvg ?? 4.0,
+        onTimePercent: q.pastPerformanceScore ?? 85,
+        isGstVerified: Boolean(q.isGstVerified),
+        anonymousLabel: q.anonymousLabel,
+      }));
+
+      const explainable = computeExplainableSmartScores(rawMetrics, {
+        commercial: 50,
+        speed: 25,
+        warranty: 15,
+        quality: 10,
+      });
+
+      expect(explainable.length).toBe(3);
+      const winner = explainable.find((e) => e.quoteId === 'quote-002')!;
+      expect(winner.anonymousLabel).toBe('Supplier #02');
+      expect(winner.breakdown.length).toBe(4);
+      expect(winner.formulaSummary).toContain('Score =');
+
+      // Zero supplier identity leakage in breakdown
+      explainable.forEach((e) => {
+        expect(e.anonymousLabel).toMatch(/^Supplier #\d+$/);
+        e.breakdown.forEach((b) => {
+          expect(b.weightedContribution).toBeGreaterThanOrEqual(0);
+          expect(b.normalizedScore).toBeGreaterThanOrEqual(0);
+        });
+      });
+    });
+
+    it('differentiates essential vs advanced criteria for progressive disclosure', () => {
+      expect(isEssentialCriterion('price')).toBe(true);
+      expect(isEssentialCriterion('delivery_time')).toBe(true);
+      expect(isEssentialCriterion('warranty')).toBe(true);
+      expect(isEssentialCriterion('technical_fit')).toBe(false);
+      expect(isEssentialCriterion('certification')).toBe(false);
     });
   });
 });

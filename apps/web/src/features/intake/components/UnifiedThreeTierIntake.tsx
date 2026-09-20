@@ -620,6 +620,8 @@ export function UnifiedThreeTierIntake({
         isFullGovernance={isFullGovernance}
         isExpanded={isTier3Expanded}
         errors={errors}
+        categoryCode={subcategory?.categoryCode}
+        subcategoryCode={subcategory?.code}
         onToggleExpand={() => setIsTier3Expanded(!isTier3Expanded)}
         onSourcingModeChange={setSourcingMode}
         onMinQuotesChange={setMinQuotes}

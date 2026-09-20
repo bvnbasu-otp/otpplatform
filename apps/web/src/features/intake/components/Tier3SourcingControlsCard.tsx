@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   normalizeEvaluationWeights,
+  getCategoryEvaluationProfile,
   type EvaluationCriterionDef,
   type SourcingMode,
 } from '@otp/domain';
@@ -21,6 +22,8 @@ export interface Tier3SourcingControlsCardProps {
   isFullGovernance: boolean;
   isExpanded: boolean;
   errors: Record<string, string>;
+  categoryCode?: string | null;
+  subcategoryCode?: string | null;
   onToggleExpand: () => void;
   onSourcingModeChange: (mode: SourcingMode) => void;
   onMinQuotesChange: (min: number | null) => void;
@@ -88,6 +91,8 @@ export function Tier3SourcingControlsCard({
   isFullGovernance,
   isExpanded,
   errors,
+  categoryCode,
+  subcategoryCode,
   onToggleExpand,
   onSourcingModeChange,
   onMinQuotesChange,
@@ -99,6 +104,11 @@ export function Tier3SourcingControlsCard({
   onLine1Change,
 }: Tier3SourcingControlsCardProps) {
   const [showWeightSliders, setShowWeightSliders] = useState(false);
+
+  const categoryProfile = useMemo(
+    () => getCategoryEvaluationProfile(categoryCode, subcategoryCode),
+    [categoryCode, subcategoryCode],
+  );
 
   const quorumHelper = useMemo(() => {
     switch (sourcingMode) {
@@ -131,9 +141,12 @@ export function Tier3SourcingControlsCard({
   return (
     <Card
       title={
-        <div
-          className="flex flex-wrap items-center justify-between gap-2 cursor-pointer select-none"
+        <button
+          type="button"
+          className="flex w-full flex-wrap items-center justify-between gap-2 cursor-pointer select-none text-left p-0 border-0 bg-transparent"
           onClick={onToggleExpand}
+          aria-expanded={isExpanded}
+          aria-controls="tier-3-sourcing-controls-body"
         >
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary font-black text-xs">
@@ -149,17 +162,25 @@ export function Tier3SourcingControlsCard({
               {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
             </span>
           </div>
-        </div>
+        </button>
       }
       description="Customize supplier identity shielding, competitive quote quorum, deadlines, evaluation criteria weights, and private site access notes."
       data-testid="tier-3-sourcing-controls-card"
     >
-      <div className="space-y-4">
+      <div className="space-y-4" id="tier-3-sourcing-controls-body">
         {/* Accordion Toggle Bar if Collapsed */}
         {!isExpanded && (
           <div
-            className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-3.5 text-center cursor-pointer hover:bg-muted/40 transition"
+            className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-3.5 text-center cursor-pointer hover:bg-muted/40 transition mobile-touch-target"
             onClick={onToggleExpand}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onToggleExpand();
+              }
+            }}
           >
             <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground font-semibold">
               <span>Defaults Active:</span>
@@ -259,11 +280,16 @@ export function Tier3SourcingControlsCard({
               </div>
             )}
 
-            {/* 5. Evaluation Scoring Weights */}
+            {/* 5. Category-Specific Evaluation Scoring Weights */}
             <div className="space-y-2 pt-2 border-t border-border/60">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h4 className="text-xs font-bold text-foreground">Merit Evaluation Weights</h4>
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <span>⚖️</span> Merit Evaluation Weights
+                    <span className="text-[10px] text-primary font-semibold">
+                      ({categoryProfile.categoryName})
+                    </span>
+                  </h4>
                   <p className="text-[11px] text-muted-foreground">
                     Quotes are evaluated transparently against these merit weights.
                   </p>
@@ -273,7 +299,8 @@ export function Tier3SourcingControlsCard({
                   variant="secondary"
                   size="sm"
                   onClick={() => setShowWeightSliders(!showWeightSliders)}
-                  className="text-xs min-h-[36px] mobile-touch-target font-bold"
+                  className="text-xs min-h-[44px] mobile-touch-target font-bold"
+                  data-testid="toggle-customize-weights-btn"
                 >
                   {showWeightSliders ? 'Hide Sliders ▲' : '⚙️ Customize Weights ▼'}
                 </Button>
@@ -293,7 +320,7 @@ export function Tier3SourcingControlsCard({
               </div>
 
               {showWeightSliders && (
-                <div className="mt-2 rounded-xl border bg-card p-3.5 space-y-3">
+                <div className="mt-2 rounded-2xl border bg-card p-3.5 space-y-3">
                   <EvaluationCriteriaEditor
                     catalog={criteria}
                     weights={evaluationWeights}
@@ -301,6 +328,8 @@ export function Tier3SourcingControlsCard({
                     suggested={suggestedWeights}
                     source={evaluationWeightsSource}
                     onSourceChange={onWeightsSourceChange}
+                    categoryCode={categoryCode}
+                    subcategoryCode={subcategoryCode}
                   />
                 </div>
               )}
