@@ -15,7 +15,7 @@ import {
 } from '../api/rfq-lifecycle';
 import type { MatchedSupplier, DiscoveryFilterOption } from '../types/discovery';
 import { CompactRequirementContextCard } from '../components/CompactRequirementContextCard';
-import { SupplierRadarPulseBanner } from '../components/SupplierRadarPulseBanner';
+import { SupplierRadarPulseBanner, type RadarBannerState } from '../components/SupplierRadarPulseBanner';
 import { SupplierCard } from '../components/SupplierCard';
 import { DirectInviteModal } from '../components/DirectInviteModal';
 
@@ -35,7 +35,6 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadNetworksAndSuppliers = useCallback(async (id: string) => {
@@ -62,7 +61,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
     if (supRes.ok) {
       setSuppliers(supRes.suppliers);
-      // Auto-select all available suppliers on initial load so user is never blocked on 0 selected
+      // Auto-select all discovered suppliers on initial load so user is never blocked on 0 selected
       setSelectedIds((prev) => {
         if (prev.size > 0) return prev;
         return new Set(supRes.suppliers.map((s) => s.invitationId));
@@ -98,39 +97,6 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
     void load();
   }, [load]);
 
-  async function handleBroadcastEnquiry() {
-    if (!rfqId) return;
-    setBusy(true);
-    setSuccess(null);
-    setError(null);
-
-    // If RFQ has 0 invitations yet, run discovery RPC to invite candidates
-    let totalSent = invitationCount;
-    if (invitationCount === 0) {
-      const discoverRes = await discoverAndInvite(rfqId);
-      if (!discoverRes.ok) {
-        setBusy(false);
-        setError(discoverRes.error);
-        return;
-      }
-      totalSent = discoverRes.total;
-    }
-
-    // Open quoting if still in DRAFT
-    if (rfqStatus === 'DRAFT' || !rfqStatus) {
-      const openRes = await openRfq(rfqId);
-      if (!openRes.ok && !openRes.error.includes('already')) {
-        // Continue if it was already open
-      }
-    }
-
-    setBusy(false);
-    setSuccess(`Enquiry successfully broadcast to ${totalSent || selectedIds.size || 4} verified supplier(s) — Sealed quoting is now OPEN! Responses expected within 30 minutes.`);
-    setRfqStatus('OPEN');
-    setInvitationCount(totalSent || selectedIds.size || 4);
-    await loadNetworksAndSuppliers(rfqId);
-  }
-
   function handleToggleSelect(invitationId: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -143,15 +109,21 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
     });
   }
 
+  // Add all currently filtered suppliers to existing selection pool
   function handleSelectAll() {
-    setSelectedIds(new Set(filteredSuppliers.map((s) => s.invitationId)));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      filteredSuppliers.forEach((s) => next.add(s.invitationId));
+      return next;
+    });
   }
 
+  // Clear all selections
   function handleClearAll() {
     setSelectedIds(new Set());
   }
 
-  // Filtered suppliers
+  // Filtered suppliers memo
   const filteredSuppliers = useMemo(() => {
     switch (filter) {
       case 'HIGH_MATCH':
@@ -174,7 +146,31 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
   const isQuotingActive = rfqStatus === 'OPEN' || rfqStatus === 'CLARIFICATION' || rfqStatus === 'QUOTING';
   const minRequired = context?.minQuotesRequired ?? 3;
-  const isQuorumMet = selectedIds.size >= minRequired || suppliers.length >= minRequired;
+  const isQuorumMet = selectedIds.size >= minRequired;
+
+  // Filter labels for granular empty states
+  const filterLabelMap: Record<DiscoveryFilterOption, string> = {
+    ALL: 'All Matched',
+    HIGH_MATCH: 'High Match (85%+)',
+    GST_VERIFIED: 'GST Verified',
+    LOCAL: 'Local Radius',
+    ONDC: 'ONDC Protocol',
+    OTP_NETWORK: 'OTP Network',
+    DIRECT: 'Direct Invitations',
+  };
+
+  // Determine Radar state
+  const radarState: RadarBannerState = error
+    ? 'ERROR'
+    : isLoading
+    ? 'DISCOVERING'
+    : isQuotingActive
+    ? 'READY'
+    : suppliers.length === 0
+    ? 'EMPTY'
+    : filteredSuppliers.length === 0
+    ? 'FILTERED_EMPTY'
+    : 'MATCHED';
 
   if (isLoading) {
     return (
@@ -215,6 +211,9 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
         totalCount={suppliers.length > 0 ? suppliers.length : (invitationCount || 4)}
         networks={networks}
         isBroadcasting={isQuotingActive}
+        state={radarState}
+        errorMessage={error}
+        onRetry={() => void load()}
       />
 
       {/* Notifications */}
@@ -242,8 +241,8 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
-              <span>👥</span>
-              <span>Matched Supplier Pool ({suppliers.length || (invitationCount > 0 ? invitationCount : '4')})</span>
+              <span aria-hidden="true">👥</span>
+              <span>Matched Supplier Pool ({suppliers.length || (invitationCount > 0 ? invitationCount : 4)})</span>
             </h2>
             <p className="text-[11px] text-muted-foreground">
               Suppliers submit sealed quotes under protected aliases with responses expected within 30 minutes.
@@ -264,9 +263,11 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
         </div>
 
         {/* Filter Chips */}
-        <div className="flex flex-wrap gap-1.5 pt-1 overflow-x-auto">
+        <div className="flex flex-wrap gap-1.5 pt-1 overflow-x-auto" role="tablist" aria-label="Supplier Filters">
           <button
             type="button"
+            role="tab"
+            aria-selected={filter === 'ALL'}
             onClick={() => setFilter('ALL')}
             className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'ALL'
@@ -274,10 +275,12 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
             }`}
           >
-            All Matched ({suppliers.length || 4})
+            All Matched ({suppliers.length})
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={filter === 'HIGH_MATCH'}
             onClick={() => setFilter('HIGH_MATCH')}
             className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'HIGH_MATCH'
@@ -289,6 +292,8 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={filter === 'GST_VERIFIED'}
             onClick={() => setFilter('GST_VERIFIED')}
             className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'GST_VERIFIED'
@@ -300,6 +305,8 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={filter === 'LOCAL'}
             onClick={() => setFilter('LOCAL')}
             className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'LOCAL'
@@ -311,6 +318,8 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={filter === 'ONDC'}
             onClick={() => setFilter('ONDC')}
             className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
               filter === 'ONDC'
@@ -325,11 +334,20 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
         {/* Selection Tally & Bulk Controls */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2.5 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-foreground">
-              {selectedIds.size} of {filteredSuppliers.length} selected
+            <span className="font-bold text-foreground" data-testid="selection-tally-text">
+              {filter !== 'ALL'
+                ? `${filteredSuppliers.length} visible, ${selectedIds.size} selected`
+                : `${selectedIds.size} of ${suppliers.length} selected`}
             </span>
-            <span className="text-[11px] text-muted-foreground">
-              ({isQuorumMet ? '✓ Quorum ready' : `Needs ${minRequired} for quorum`})
+            <span
+              className={`text-[11px] font-semibold ${
+                isQuorumMet ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+              }`}
+              data-testid="quorum-status-indicator"
+            >
+              {isQuorumMet
+                ? `${selectedIds.size} of ${minRequired} minimum selected ✓`
+                : `${selectedIds.size} of ${minRequired} minimum suppliers selected (Needs ${minRequired - selectedIds.size} more for quorum)`}
             </span>
           </div>
 
@@ -355,20 +373,48 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
       {/* Stacked Supplier Cards List */}
       <section className="space-y-2.5" aria-label="Matched Suppliers List">
-        {filteredSuppliers.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-6 text-center space-y-3 bg-card">
-            <span className="text-3xl">🔍</span>
-            <h3 className="text-sm font-bold text-foreground">No suppliers match this specific filter</h3>
+        {suppliers.length === 0 ? (
+          /* Granular Empty State 1: No suppliers discovered yet */
+          <div className="rounded-xl border border-dashed p-6 text-center space-y-3 bg-card" data-testid="empty-suppliers-pool">
+            <span className="text-3xl" aria-hidden="true">🔍</span>
+            <h3 className="text-sm font-bold text-foreground">No matching suppliers found yet</h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              Try switching back to &ldquo;All Matched&rdquo; or invite a known vendor directly via phone/email.
+              We&apos;re scanning verified networks for your requirement. You can also invite a known supplier directly via phone or email.
             </p>
-            <div className="flex justify-center gap-2 pt-1">
+            <div className="flex flex-wrap justify-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => void load()}
+                className="min-h-[48px] px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
+              >
+                Scan Networks Again
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsInviteModalOpen(true)}
+                className="min-h-[48px] px-3.5 py-2 rounded-lg border bg-muted/40 text-foreground text-xs font-semibold hover:bg-muted transition mobile-touch-target"
+              >
+                + Invite Known Vendor
+              </button>
+            </div>
+          </div>
+        ) : filteredSuppliers.length === 0 ? (
+          /* Granular Empty State 2: Filter produces 0 results */
+          <div className="rounded-xl border border-dashed p-6 text-center space-y-3 bg-card" data-testid="filtered-empty-suppliers">
+            <span className="text-3xl" aria-hidden="true">🎯</span>
+            <h3 className="text-sm font-bold text-foreground">
+              No suppliers match active filter &ldquo;{filterLabelMap[filter]}&rdquo;
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Try switching back to &ldquo;All Matched&rdquo; or invite a known vendor directly via phone or email.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setFilter('ALL')}
                 className="min-h-[48px] px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
               >
-                Show All Matched Suppliers
+                Show All Matched ({suppliers.length})
               </button>
               <button
                 type="button"
@@ -415,13 +461,13 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
       )}
 
       {/* Mobile-First Sticky Bottom Action Bar */}
-      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pb-safe">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center justify-between w-full sm:w-auto gap-2">
             <div className="text-left">
               <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>{selectedIds.size} Suppliers Selected</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" />
+                <span data-testid="selected-suppliers-count">{selectedIds.size} Suppliers Selected</span>
               </div>
               <span className="text-[10px] text-muted-foreground block">
                 {isQuotingActive ? 'Quoting is live • Sealed quotes incoming' : 'Ready to broadcast anonymous requirement'}
@@ -429,12 +475,12 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
             </div>
 
             {isQuorumMet ? (
-              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-300">
-                ✓ Quorum Met
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-300 shrink-0">
+                ✓ Quorum Met ({selectedIds.size}/{minRequired})
               </span>
             ) : (
-              <span className="rounded-full bg-amber-100 dark:bg-amber-950/60 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 border border-amber-300">
-                Min {minRequired} Recommended
+              <span className="rounded-full bg-amber-100 dark:bg-amber-950/60 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 border border-amber-300 shrink-0">
+                Min {minRequired} Recommended ({selectedIds.size}/{minRequired})
               </span>
             )}
           </div>

@@ -19,6 +19,7 @@ export function SupplierCard({
     matchScore,
     matchLevel,
     matchReasons,
+    network,
     networkLabel,
     gstVerified,
     isLocal,
@@ -27,27 +28,51 @@ export function SupplierCard({
     status,
   } = supplier;
 
-  // Human-readable stars
-  const starCount = matchLevel === 'EXCELLENT' ? 5 : matchLevel === 'STRONG' ? 4 : 3;
+  // Visual star rating representation
+  const starCount =
+    matchLevel === 'EXCELLENT'
+      ? 5
+      : matchLevel === 'STRONG'
+      ? 4
+      : matchLevel === 'RELEVANT'
+      ? 3
+      : 2;
   const starsDisplay = '★'.repeat(starCount) + '☆'.repeat(5 - starCount);
 
-  const matchLevelText =
-    matchLevel === 'EXCELLENT'
-      ? 'Excellent Match'
-      : matchLevel === 'STRONG'
-      ? 'Strong Match'
-      : matchLevel === 'RELEVANT'
-      ? 'Relevant Match'
-      : 'Candidate Match';
+  const matchLevelConfig = {
+    EXCELLENT: {
+      label: 'Excellent Match',
+      textColor: 'text-emerald-600 dark:text-emerald-400',
+      badgeBg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    },
+    STRONG: {
+      label: 'Strong Match',
+      textColor: 'text-blue-600 dark:text-blue-400',
+      badgeBg: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+    },
+    RELEVANT: {
+      label: 'Relevant Match',
+      textColor: 'text-purple-600 dark:text-purple-400',
+      badgeBg: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+    },
+    CANDIDATE: {
+      label: 'Candidate Match',
+      textColor: 'text-slate-600 dark:text-slate-400',
+      badgeBg: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800',
+    },
+  };
+
+  const levelConfig = matchLevelConfig[matchLevel] || matchLevelConfig.CANDIDATE;
 
   return (
     <article
       className={`rounded-xl border p-3.5 shadow-2xs transition-all ${
         isSelected
-          ? 'border-primary/50 bg-primary/5 dark:bg-primary/10 shadow-xs ring-1 ring-primary/20'
+          ? 'border-primary/60 bg-primary/5 dark:bg-primary/10 shadow-xs ring-1 ring-primary/30'
           : 'bg-card border-border hover:border-border/80'
       }`}
       data-testid={`supplier-card-${invitationId}`}
+      aria-label={`${anonymousLabel} - ${levelConfig.label}`}
     >
       <div className="flex items-start justify-between gap-3">
         {/* Left Info Column */}
@@ -58,7 +83,7 @@ export function SupplierCard({
               {anonymousLabel}
             </h3>
             <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground border">
-              {networkLabel}
+              {networkLabel || (network === 'ONDC' ? 'ONDC Protocol' : network === 'LOCAL_REGISTRY' ? 'Local Registry' : 'OTP Network')}
             </span>
             {status === 'QUOTED' && (
               <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-300">
@@ -69,14 +94,17 @@ export function SupplierCard({
 
           {/* Match Score & Stars */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-amber-500 tracking-wider">
+            <span className="text-xs font-bold text-amber-500 tracking-wider" aria-hidden="true">
               {starsDisplay}
             </span>
-            <span className="text-xs font-bold text-foreground">
-              {matchLevelText}
+            <span className={`text-xs font-bold ${levelConfig.textColor}`}>
+              {levelConfig.label}
             </span>
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-extrabold text-primary">
-              {matchScore}%
+            <span
+              className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-extrabold text-primary border border-primary/20"
+              data-testid={`match-score-${invitationId}`}
+            >
+              {matchScore}/100
             </span>
           </div>
 
@@ -125,13 +153,14 @@ export function SupplierCard({
             onClick={() => onToggleSelect(invitationId)}
             className={`min-h-[48px] min-w-[48px] px-3.5 py-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 mobile-touch-target ${
               isSelected
-                ? 'bg-primary text-primary-foreground shadow-2xs hover:bg-primary/90'
+                ? 'bg-primary text-primary-foreground shadow-2xs hover:bg-primary/90 ring-2 ring-primary/30'
                 : 'border border-input bg-background text-foreground hover:bg-muted'
             } disabled:opacity-50`}
+            aria-pressed={isSelected}
             aria-label={`${isSelected ? 'Deselect' : 'Select'} ${anonymousLabel}`}
             data-testid={`select-supplier-button-${invitationId}`}
           >
-            <span className="text-sm font-black">{isSelected ? '✓' : '+'}</span>
+            <span className="text-sm font-black" aria-hidden="true">{isSelected ? '✓' : '+'}</span>
             <span>{isSelected ? 'Selected' : 'Select'}</span>
           </button>
         </div>
