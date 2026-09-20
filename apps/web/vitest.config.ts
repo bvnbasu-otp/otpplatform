@@ -14,6 +14,17 @@ export default defineConfig({
       '@otp/messaging': resolve(__dirname, '../../supabase/functions/_shared/messaging/index.ts'),
     },
   },
+  esbuild: {
+    tsconfigRaw: {
+      compilerOptions: {
+        target: 'ES2022',
+        module: 'ESNext',
+        moduleResolution: 'bundler',
+        strict: true,
+        skipLibCheck: true,
+      },
+    },
+  },
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     environment: 'node',
