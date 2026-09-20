@@ -7,7 +7,17 @@ export type { VoiceTextRequirementIntakeModalProps } from './VoiceTextRequiremen
 export { TemplatesAndExamplesModal, CANONICAL_TEMPLATES, CANONICAL_EXAMPLES } from './TemplatesAndExamplesModal';
 export type { TemplatesAndExamplesModalProps, ProcurementTemplate, ProcurementExample } from './TemplatesAndExamplesModal';
 
-// 6 Progressive Conversational Intake Steps
+// Unified 3-Tier Progressive Intake Components
+export { UnifiedThreeTierIntake } from './UnifiedThreeTierIntake';
+export type { UnifiedThreeTierIntakeProps } from './UnifiedThreeTierIntake';
+export { Tier1TellOtpCard } from './Tier1TellOtpCard';
+export type { Tier1TellOtpCardProps } from './Tier1TellOtpCard';
+export { Tier2PrecisionScopeCard } from './Tier2PrecisionScopeCard';
+export type { Tier2PrecisionScopeCardProps } from './Tier2PrecisionScopeCard';
+export { Tier3SourcingControlsCard } from './Tier3SourcingControlsCard';
+export type { Tier3SourcingControlsCardProps } from './Tier3SourcingControlsCard';
+
+// 6 Progressive Conversational Intake Steps (Backward-compatible)
 export { WhatDoYouNeedStep } from './steps/WhatDoYouNeedStep';
 export type { WhatDoYouNeedStepProps } from './steps/WhatDoYouNeedStep';
 export { WhereLocationStep } from './steps/WhereLocationStep';
