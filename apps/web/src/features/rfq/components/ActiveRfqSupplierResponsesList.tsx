@@ -6,6 +6,24 @@ interface ActiveRfqSupplierResponsesListProps {
   responses: RfqMonitoringSupplierResponse[];
 }
 
+function formatResponseTimestamp(iso: string | null | undefined, prefix: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+
+  const now = Date.now();
+  const diffMs = now - d.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMinutes < 1) return `${prefix} just now`;
+  if (diffMinutes < 60) return `${prefix} ${diffMinutes}m ago`;
+  if (diffHours < 24) return `${prefix} ${diffHours}h ago`;
+  if (diffDays === 1) return `${prefix} yesterday`;
+  return `${prefix} ${d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}`;
+}
+
 export function ActiveRfqSupplierResponsesList({
   rfqId,
   responses,
@@ -16,13 +34,14 @@ export function ActiveRfqSupplierResponsesList({
     <section
       className="rounded-xl border bg-card p-4 shadow-2xs space-y-3.5 transition-all text-foreground"
       data-testid="active-rfq-supplier-responses-list"
+      aria-labelledby="supplier-feed-title"
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
         <div>
           <span className="rounded-md bg-blue-100 dark:bg-blue-950/60 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-            Live Supplier Responses ({quotedCount}/{responses.length})
+            Live Supplier Feed ({quotedCount}/{responses.length})
           </span>
-          <h2 className="text-sm sm:text-base font-bold text-foreground mt-1">
+          <h2 id="supplier-feed-title" className="text-sm sm:text-base font-bold text-foreground mt-1">
             Identity-Protected Inbound Activity
           </h2>
           <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -32,28 +51,46 @@ export function ActiveRfqSupplierResponsesList({
 
         <Link
           to={`/rfq/${rfqId}/clarification`}
-          className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-lg border bg-muted/30 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target shrink-0"
+          className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-lg border bg-muted/30 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target shrink-0 self-start"
           title="Open Supplier Clarification Thread"
+          data-testid="supplier-qa-shortcut-btn"
         >
           <span>Q&amp;A Thread 💬</span>
         </Link>
       </div>
 
       {responses.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground bg-muted/20">
-          No suppliers invited yet. Discover suppliers to launch competitive sourcing.
+        <div
+          className="rounded-xl border border-dashed p-6 text-center text-xs text-muted-foreground bg-muted/20 space-y-2"
+          data-testid="empty-suppliers-state"
+        >
+          <span className="text-2xl block">📡</span>
+          <p className="font-semibold text-foreground">No supplier responses recorded yet</p>
+          <p className="text-[11px]">Enquiry broadcast is active. Inbound quotes expected with a 30-min supplier initial target.</p>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-2.5" role="feed" aria-label="Inbound supplier quote responses">
           {responses.map((res) => {
             const hasQuote = res.status === 'QUOTED' && res.quote;
             const isDeclined = res.status === 'DECLINED';
             const isViewed = res.status === 'VIEWED';
 
+            const activityTimeText =
+              hasQuote && res.quote?.submittedAt
+                ? formatResponseTimestamp(res.quote.submittedAt, 'Submitted')
+                : isDeclined && res.declinedAt
+                ? formatResponseTimestamp(res.declinedAt, 'Declined')
+                : isViewed && res.viewedAt
+                ? formatResponseTimestamp(res.viewedAt, 'Viewed')
+                : res.invitedAt
+                ? formatResponseTimestamp(res.invitedAt, 'Invited')
+                : null;
+
             return (
-              <div
+              <article
                 key={res.invitationId}
                 className="rounded-xl border bg-card/60 p-3 shadow-2xs space-y-2 hover:bg-muted/20 transition"
+                data-testid={`supplier-response-card-${res.anonymousLabel.replace(/\s+/g, '-').toLowerCase()}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 space-y-0.5">
@@ -71,11 +108,17 @@ export function ActiveRfqSupplierResponsesList({
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
                       <span className="text-amber-500 font-bold">
                         {'★'.repeat(res.matchLevel === 'EXCELLENT' ? 5 : res.matchLevel === 'STRONG' ? 4 : 3)}
                       </span>
                       <span>{res.matchScore}% Match Score</span>
+                      {activityTimeText && (
+                        <>
+                          <span>•</span>
+                          <span className="text-muted-foreground/80 font-medium">{activityTimeText}</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -124,6 +167,7 @@ export function ActiveRfqSupplierResponsesList({
                     <Link
                       to={`/rfq/${rfqId}/evaluation`}
                       className="min-h-[48px] inline-flex items-center text-[11px] font-bold text-primary hover:underline mobile-touch-target px-2"
+                      data-testid={`compare-matrix-btn-${res.anonymousLabel.replace(/\s+/g, '-').toLowerCase()}`}
                     >
                       Compare in Matrix →
                     </Link>
@@ -135,7 +179,7 @@ export function ActiveRfqSupplierResponsesList({
                     Reason: {res.declineReason}
                   </p>
                 )}
-              </div>
+              </article>
             );
           })}
         </div>

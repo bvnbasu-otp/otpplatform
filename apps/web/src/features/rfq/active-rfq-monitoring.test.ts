@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchActiveRfqMonitoringData } from '@/features/rfq/api/fetch-active-rfq-monitoring';
+import {
+  fetchActiveRfqMonitoringData,
+  computeSourcingHealth,
+  computeLifecycleStage,
+  computeResponseVelocityText,
+  formatTimeRemaining,
+} from '@/features/rfq/api/fetch-active-rfq-monitoring';
 import { updateRfqDeadline } from '@/features/requirement/api/rfq-lifecycle';
 import { supabase } from '@/lib/supabase';
 import * as userRole from '@/features/auth/user-role';
@@ -17,7 +23,7 @@ vi.mock('@/lib/supabase', () => {
   return { supabase: globalMock };
 });
 
-describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
+describe('Phase C.5 — Active Sourcing Telemetry & Quote Monitoring Cockpit Tests', () => {
   let profileSpy: any;
 
   beforeEach(() => {
@@ -43,7 +49,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
   });
 
   describe('1. Active RFQ Data Extraction & Metrics Engine', () => {
-    it('accurately computes response rate, quorum status, and supplier activity counts', async () => {
+    it('accurately computes response rate, quorum status, telemetry, and supplier activity counts', async () => {
       const mockRfq = {
         id: 'rfq-live-101',
         requirement_id: 'req-live-101',
@@ -174,7 +180,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
       expect(res.ok).toBe(true);
 
       if (res.ok) {
-        const { metrics, supplierResponses, rfq, requirement } = res.data;
+        const { metrics, telemetry, supplierResponses, rfq, requirement } = res.data;
 
         expect(rfq.title).toBe('RFQ: Borewell Motor Replacement');
         expect(requirement.budgetFormatted).toBe('₹35,000');
@@ -185,6 +191,14 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
         expect(metrics.pendingCount).toBe(2); // 4 - 1 quote - 1 declined
         expect(metrics.isQuorumMet).toBe(false); // 1 < 3
         expect(metrics.responseRatePercent).toBe(25); // 1 / 4 = 25%
+
+        // Telemetry verification
+        expect(telemetry.quoteCount).toBe(1);
+        expect(telemetry.targetQuorum).toBe(3);
+        expect(telemetry.quorumProgressPercent).toBe(33);
+        expect(telemetry.responseSlaTargetText).toBe('30-min supplier initial target');
+        expect(telemetry.lifecycleStage).toBe('QUOTES RECEIVED');
+        expect(telemetry.health.status).toBe('HEALTHY');
 
         // Supplier responses mapping
         expect(supplierResponses).toHaveLength(4);
@@ -200,7 +214,125 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
     });
   });
 
-  describe('2. Action Required Intelligence', () => {
+  describe('2. Sourcing Health & Lifecycle State Computations', () => {
+    it('computes READY FOR EVALUATION when quorum threshold is reached', () => {
+      const health = computeSourcingHealth({
+        invitedCount: 5,
+        viewedCount: 4,
+        quotesCount: 3,
+        declinedCount: 0,
+        minQuotesRequired: 3,
+        isQuorumMet: true,
+        unansweredClarificationsCount: 0,
+        isDeadlineApproaching: false,
+        isDeadlineExpired: false,
+        rfqStatus: 'OPEN',
+      });
+      expect(health.status).toBe('READY FOR EVALUATION');
+      expect(health.badgeLabel).toBe('READY FOR EVALUATION');
+      expect(health.tone).toBe('ready');
+
+      const stage = computeLifecycleStage({
+        rfqStatus: 'OPEN',
+        isDeadlineExpired: false,
+        isDeadlineApproaching: false,
+        isQuorumMet: true,
+        quotesCount: 3,
+        viewedCount: 4,
+        invitedCount: 5,
+        healthStatus: health.status,
+      });
+      expect(stage).toBe('READY FOR EVALUATION');
+    });
+
+    it('computes STALLED when zero quotes received and majority of suppliers declined', () => {
+      const health = computeSourcingHealth({
+        invitedCount: 4,
+        viewedCount: 2,
+        quotesCount: 0,
+        declinedCount: 3,
+        minQuotesRequired: 3,
+        isQuorumMet: false,
+        unansweredClarificationsCount: 0,
+        isDeadlineApproaching: false,
+        isDeadlineExpired: false,
+        rfqStatus: 'OPEN',
+      });
+      expect(health.status).toBe('STALLED');
+      expect(health.badgeLabel).toBe('STALLED');
+      expect(health.tone).toBe('stalled');
+
+      const stage = computeLifecycleStage({
+        rfqStatus: 'OPEN',
+        isDeadlineExpired: false,
+        isDeadlineApproaching: false,
+        isQuorumMet: false,
+        quotesCount: 0,
+        viewedCount: 2,
+        invitedCount: 4,
+        healthStatus: health.status,
+      });
+      expect(stage).toBe('STALLED');
+    });
+
+    it('computes ATTENTION when clarifications are pending', () => {
+      const health = computeSourcingHealth({
+        invitedCount: 5,
+        viewedCount: 3,
+        quotesCount: 1,
+        declinedCount: 0,
+        minQuotesRequired: 3,
+        isQuorumMet: false,
+        unansweredClarificationsCount: 2,
+        isDeadlineApproaching: false,
+        isDeadlineExpired: false,
+        rfqStatus: 'OPEN',
+      });
+      expect(health.status).toBe('ATTENTION');
+      expect(health.label).toBe('Clarifications Pending');
+      expect(health.tone).toBe('attention');
+    });
+
+    it('computes DEADLINE APPROACHING lifecycle stage when deadline is within 24h', () => {
+      const stage = computeLifecycleStage({
+        rfqStatus: 'OPEN',
+        isDeadlineExpired: false,
+        isDeadlineApproaching: true,
+        isQuorumMet: false,
+        quotesCount: 1,
+        viewedCount: 3,
+        invitedCount: 5,
+        healthStatus: 'ATTENTION',
+      });
+      expect(stage).toBe('DEADLINE APPROACHING');
+    });
+
+    it('computes CLOSED lifecycle stage when deadline has passed or RFQ closed', () => {
+      const stage = computeLifecycleStage({
+        rfqStatus: 'CLOSED',
+        isDeadlineExpired: true,
+        isDeadlineApproaching: false,
+        isQuorumMet: false,
+        quotesCount: 2,
+        viewedCount: 4,
+        invitedCount: 5,
+        healthStatus: 'READY FOR EVALUATION',
+      });
+      expect(stage).toBe('CLOSED');
+    });
+  });
+
+  describe('3. Response Velocity & SLA Target Metrics', () => {
+    it('generates accurate response velocity copy based on inbound activity', () => {
+      expect(computeResponseVelocityText(3, 5, 60, true)).toContain('Quorum achieved');
+      expect(computeResponseVelocityText(2, 4, 40, false)).toContain('Active response velocity');
+      expect(computeResponseVelocityText(1, 3, 20, false)).toContain('Initial quote received');
+      expect(computeResponseVelocityText(0, 2, 0, false)).toContain('reviewing specifications');
+      expect(computeResponseVelocityText(0, 0, 0, false)).toContain('Monitoring 30-min supplier initial target');
+    });
+  });
+
+  describe('4. Action Required Intelligence', () => {
     it('triggers UNANSWERED_CLARIFICATIONS action when pending supplier questions exist', async () => {
       const mockRfq = {
         id: 'rfq-live-202',
@@ -281,7 +413,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
     });
   });
 
-  describe('3. Strict Identity Protection & Anti-Leak Guarantees', () => {
+  describe('5. Strict Identity Protection & Anti-Leak Guarantees', () => {
     it('STRICT ANTI-LEAK: Monitoring model never leaks supplier legal names, emails, phones, or GSTINs', async () => {
       const mockRfq = {
         id: 'rfq-secret-404',
@@ -336,7 +468,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
     });
   });
 
-  describe('4. Quote Deadline Management', () => {
+  describe('6. Quote Deadline Management', () => {
     it('extends RFQ deadline successfully for valid future timestamp', async () => {
       const newDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
       vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock({ data: { id: 'rfq-live-101' }, error: null }));
@@ -356,7 +488,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
     });
   });
 
-  describe('5. Fast Track vs Full Governance Handling', () => {
+  describe('7. Fast Track vs Full Governance Handling', () => {
     it('identifies Fast Track workflow for Individual / MSME organizations', async () => {
       const mockRfq = {
         id: 'rfq-fast',
@@ -413,7 +545,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
     });
   });
 
-  describe('6. Canonical Procurement Terminology & 30-Min SLA Policy', () => {
+  describe('8. Canonical Procurement Terminology & 30-Min SLA Policy', () => {
     it('strictly satisfies 30-minute supplier response proposition without 15-second claims', () => {
       const monitoringCopy = `
         Broadcasting to 5 verified supplier(s). Initial responses are expected with a 30 Min Target from Supplier.
@@ -424,7 +556,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Tests', () => {
       expect(monitoringCopy).not.toContain('15 seconds');
     });
 
-    it('contains ZERO prohibited terminology across all Phase 2.5 Active RFQ Monitoring components', () => {
+    it('contains ZERO prohibited terminology across all Phase C.5 Active RFQ Monitoring components', () => {
       const prohibitedTerms = ['bid', 'bids', 'bidder', 'bidders', 'bidding', 'blind'];
       const combinedText = `
         Active RFQ Monitoring Sourcing Response Progress Live Supplier Responses

@@ -14,11 +14,13 @@ import type {
   RfqMonitoringMetrics,
   RfqActionRequired,
   RfqMonitoringSupplierResponse,
+  SourcingHealthIndicator,
+  SourcingTelemetry,
 } from './types/rfq-monitoring';
 
-describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Tests', () => {
+describe('Phase C.5 — Active RFQ Monitoring Cockpit Component & Invariant Tests', () => {
   describe('1. Component Definition & Export Integrity', () => {
-    it('exports all Phase 2.5 Active RFQ Monitoring components cleanly', () => {
+    it('exports all Phase C.5 Active RFQ Monitoring components cleanly', () => {
       expect(ActiveRfqHeaderBanner).toBeDefined();
       expect(ActiveRfqActionRequiredCard).toBeDefined();
       expect(ActiveRfqProgressCard).toBeDefined();
@@ -35,9 +37,11 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
       const touchTargetMinPixels = 48;
       expect(touchTargetMinPixels).toBeGreaterThanOrEqual(48);
 
-      // Verify mobile design tokens
-      const mobileViewportWidths = [360, 390, 412, 768, 1024];
-      expect(mobileViewportWidths[1]).toBe(390); // 390×844 primary target
+      // Verify mobile design tokens across target viewports
+      const mobileViewportWidths = [320, 360, 390, 412, 430, 768, 1024];
+      expect(mobileViewportWidths[0]).toBe(320); // Smallest mobile viewport
+      expect(mobileViewportWidths[2]).toBe(390); // 390×844 primary target
+      expect(mobileViewportWidths[4]).toBe(430); // Max iPhone Pro Max target
     });
   });
 
@@ -89,7 +93,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
 
       const serialized = JSON.stringify(mockResponses);
 
-      // Invariant checks
+      // Invariant checks: zero PII
       expect(serialized).not.toMatch(/phone/i);
       expect(serialized).not.toMatch(/email/i);
       expect(serialized).not.toMatch(/legal_name/i);
@@ -103,7 +107,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
     });
   });
 
-  describe('4. Sourcing Response Progress Engine', () => {
+  describe('4. Sourcing Telemetry & Response Progress Engine', () => {
     it('accurately computes percentages and quorum flags for various response levels', () => {
       const calcMetrics = (
         invited: number,
@@ -115,6 +119,32 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
         const pending = Math.max(0, invited - quoted - declined);
         const rate = Math.round((quoted / (invited || 1)) * 100);
         const isQuorumMet = quoted >= minQuorum;
+
+        const health: SourcingHealthIndicator = isQuorumMet
+          ? {
+              status: 'READY FOR EVALUATION',
+              label: 'Ready for Evaluation',
+              badgeLabel: 'READY FOR EVALUATION',
+              description: 'Quorum reached',
+              tone: 'ready',
+            }
+          : {
+              status: 'HEALTHY',
+              label: 'Quotes Arriving',
+              badgeLabel: 'HEALTHY',
+              description: 'Active quoting',
+              tone: 'healthy',
+            };
+
+        const telemetry: SourcingTelemetry = {
+          quoteCount: quoted,
+          targetQuorum: minQuorum,
+          quorumProgressPercent: Math.min(100, Math.round((quoted / Math.max(1, minQuorum)) * 100)),
+          responseVelocityText: `${quoted} quotes received`,
+          responseSlaTargetText: '30-min supplier initial target',
+          health,
+          lifecycleStage: isQuorumMet ? 'READY FOR EVALUATION' : 'QUOTES RECEIVED',
+        };
 
         return {
           invitedCount: invited,
@@ -128,6 +158,9 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
           timeRemainingText: '4 days remaining',
           isDeadlineApproaching: false,
           isDeadlineExpired: false,
+          health,
+          lifecycleStage: telemetry.lifecycleStage,
+          telemetry,
         };
       };
 
@@ -137,6 +170,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
       expect(m0.responseRatePercent).toBe(0);
       expect(m0.isQuorumMet).toBe(false);
       expect(m0.pendingCount).toBe(5);
+      expect(m0.telemetry?.quorumProgressPercent).toBe(0);
 
       // Scenario B: 2 of 5 (Below Quorum)
       const m2 = calcMetrics(5, 2, 4, 1, 3);
@@ -144,6 +178,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
       expect(m2.responseRatePercent).toBe(40);
       expect(m2.isQuorumMet).toBe(false);
       expect(m2.pendingCount).toBe(2);
+      expect(m2.telemetry?.quorumProgressPercent).toBe(67);
 
       // Scenario C: 3 of 5 (Quorum Met)
       const m3 = calcMetrics(5, 3, 5, 0, 3);
@@ -151,6 +186,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
       expect(m3.responseRatePercent).toBe(60);
       expect(m3.isQuorumMet).toBe(true);
       expect(m3.pendingCount).toBe(2);
+      expect(m3.telemetry?.quorumProgressPercent).toBe(100);
 
       // Scenario D: 5 of 5 (100% Complete)
       const m5 = calcMetrics(5, 5, 5, 0, 3);
@@ -158,6 +194,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
       expect(m5.responseRatePercent).toBe(100);
       expect(m5.isQuorumMet).toBe(true);
       expect(m5.pendingCount).toBe(0);
+      expect(m5.telemetry?.quorumProgressPercent).toBe(100);
     });
   });
 
@@ -214,7 +251,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
           return {
             type: 'AWAITING_QUOTES',
             title: 'Sourcing Active — Awaiting Quotes',
-            description: 'Responses expected within 30 minutes',
+            description: 'Responses expected with a 30 Min Target from Supplier',
             actionLabel: 'View Market Intelligence →',
             actionUrl: '/rfq/1/market-intelligence',
             severity: 'info',
@@ -232,14 +269,23 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
 
       // Urgent Clarification
       expect(getActionRequired(2, false, 1, false, false).type).toBe('UNANSWERED_CLARIFICATIONS');
+      expect(getActionRequired(2, false, 1, false, false).actionUrl).toBe('/rfq/1/clarification');
+
       // Quorum Met
       expect(getActionRequired(0, true, 3, false, false).type).toBe('QUORUM_MET');
+      expect(getActionRequired(0, true, 3, false, false).actionUrl).toBe('/rfq/1/evaluation');
+
       // Deadline Approaching
       expect(getActionRequired(0, false, 1, true, false).type).toBe('DEADLINE_APPROACHING');
+      expect(getActionRequired(0, false, 1, true, false).actionUrl).toBe('#extend-deadline');
+
       // RFQ Closed
       expect(getActionRequired(0, false, 2, false, true).type).toBe('RFQ_CLOSED');
+      expect(getActionRequired(0, false, 2, false, true).actionUrl).toBe('/rfq/1/evaluation');
+
       // Awaiting initial quotes
       expect(getActionRequired(0, false, 0, false, false).type).toBe('AWAITING_QUOTES');
+      expect(getActionRequired(0, false, 0, false, false).actionUrl).toBe('/rfq/1/market-intelligence');
     });
   });
 
@@ -253,7 +299,9 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
     it('contains ZERO prohibited terminology across all monitoring component labels', () => {
       const labels = [
         'Live Supplier Responses',
+        'Live Supplier Feed',
         'Sourcing Response Progress',
+        'Sourcing Telemetry & Response Progress',
         'Quote Submitted',
         'Viewed RFQ',
         'Awaiting Quote',
@@ -261,6 +309,7 @@ describe('Phase 2.5 — Active RFQ Monitoring Cockpit Component & Invariant Test
         'Extend Quote Deadline',
         'What Suppliers Are Quoting',
         'Identity-Protected Evaluation',
+        'Evaluate Quotes',
       ];
 
       for (const label of labels) {

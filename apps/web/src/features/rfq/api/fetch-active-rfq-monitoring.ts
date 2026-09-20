@@ -11,9 +11,13 @@ import type {
   RfqActionRequired,
   RfqMonitoringMetrics,
   RfqMonitoringSupplierResponse,
+  SourcingHealthIndicator,
+  SourcingHealthStatus,
+  SourcingLifecycleStage,
+  SourcingTelemetry,
 } from '../types/rfq-monitoring';
 
-function formatTimeRemaining(deadlineIso: string): {
+export function formatTimeRemaining(deadlineIso: string): {
   text: string;
   isApproaching: boolean;
   isExpired: boolean;
@@ -46,6 +50,160 @@ function formatTimeRemaining(deadlineIso: string): {
     return { text: `${diffHours}h ${diffMinutes}m remaining`, isApproaching, isExpired: false };
   }
   return { text: `${diffMinutes}m remaining`, isApproaching, isExpired: false };
+}
+
+export function computeSourcingHealth({
+  invitedCount,
+  viewedCount,
+  quotesCount,
+  declinedCount,
+  minQuotesRequired,
+  isQuorumMet,
+  unansweredClarificationsCount,
+  isDeadlineApproaching,
+  isDeadlineExpired,
+  rfqStatus = 'OPEN',
+}: {
+  invitedCount: number;
+  viewedCount: number;
+  quotesCount: number;
+  declinedCount: number;
+  minQuotesRequired: number;
+  isQuorumMet: boolean;
+  unansweredClarificationsCount: number;
+  isDeadlineApproaching: boolean;
+  isDeadlineExpired: boolean;
+  rfqStatus?: string;
+}): SourcingHealthIndicator {
+  if (isQuorumMet || rfqStatus === 'EVALUATING' || (isDeadlineExpired && quotesCount >= 1)) {
+    return {
+      status: 'READY FOR EVALUATION',
+      label: 'Ready for Evaluation',
+      badgeLabel: 'READY FOR EVALUATION',
+      description: `Quorum reached (${quotesCount}/${minQuotesRequired} quotes received). Proceed to evaluate sealed quotes.`,
+      tone: 'ready',
+    };
+  }
+
+  if (
+    quotesCount === 0 &&
+    ((invitedCount > 0 && declinedCount >= Math.ceil(invitedCount / 2)) ||
+      (invitedCount > 0 && isDeadlineApproaching) ||
+      invitedCount === 0)
+  ) {
+    return {
+      status: 'STALLED',
+      label: 'Sourcing Stalled',
+      badgeLabel: 'STALLED',
+      description: 'Zero quotes received with limited active engagement. Consider extending deadline or expanding supplier pool.',
+      tone: 'stalled',
+    };
+  }
+
+  if (unansweredClarificationsCount > 0) {
+    return {
+      status: 'ATTENTION',
+      label: 'Clarifications Pending',
+      badgeLabel: 'ATTENTION',
+      description: `${unansweredClarificationsCount} supplier question(s) awaiting answers before quoting.`,
+      tone: 'attention',
+    };
+  }
+
+  if (isDeadlineApproaching && !isQuorumMet) {
+    return {
+      status: 'ATTENTION',
+      label: 'Deadline Approaching',
+      badgeLabel: 'ATTENTION',
+      description: `Quoting window closing soon with ${quotesCount}/${minQuotesRequired} quotes received.`,
+      tone: 'attention',
+    };
+  }
+
+  if (declinedCount > 0 && quotesCount === 0) {
+    return {
+      status: 'ATTENTION',
+      label: 'Responses Limited',
+      badgeLabel: 'ATTENTION',
+      description: `${declinedCount} invited supplier(s) declined. Additional invitations recommended.`,
+      tone: 'attention',
+    };
+  }
+
+  return {
+    status: 'HEALTHY',
+    label: quotesCount > 0 ? 'Quotes Arriving' : 'Active Sourcing',
+    badgeLabel: 'HEALTHY',
+    description:
+      quotesCount > 0
+        ? `${quotesCount} quote(s) received. Sourcing on track toward ${minQuotesRequired}-quote quorum.`
+        : `Broadcasting to ${invitedCount} verified supplier(s). Inbound responses expected with 30-min supplier target.`,
+    tone: 'healthy',
+  };
+}
+
+export function computeLifecycleStage({
+  rfqStatus = 'OPEN',
+  isDeadlineExpired,
+  isDeadlineApproaching,
+  isQuorumMet,
+  quotesCount,
+  viewedCount,
+  invitedCount,
+  healthStatus,
+}: {
+  rfqStatus?: string;
+  isDeadlineExpired: boolean;
+  isDeadlineApproaching: boolean;
+  isQuorumMet: boolean;
+  quotesCount: number;
+  viewedCount: number;
+  invitedCount: number;
+  healthStatus?: SourcingHealthStatus;
+}): SourcingLifecycleStage {
+  if (isDeadlineExpired || ['CLOSED', 'AWARDED', 'CANCELLED'].includes(rfqStatus)) {
+    return 'CLOSED';
+  }
+  if (isQuorumMet || rfqStatus === 'EVALUATING') {
+    return 'READY FOR EVALUATION';
+  }
+  if (healthStatus === 'STALLED') {
+    return 'STALLED';
+  }
+  if (isDeadlineApproaching) {
+    return 'DEADLINE APPROACHING';
+  }
+  if (quotesCount > 0) {
+    return 'QUOTES RECEIVED';
+  }
+  if (viewedCount > 0) {
+    return 'RESPONSES ARRIVING';
+  }
+  if (invitedCount > 0) {
+    return 'ACTIVE SOURCING';
+  }
+  return 'BROADCAST';
+}
+
+export function computeResponseVelocityText(
+  quotesCount: number,
+  viewedCount: number,
+  responseRatePercent: number,
+  isQuorumMet: boolean
+): string {
+  if (isQuorumMet) {
+    return `Quorum achieved (${quotesCount} quotes received · ${responseRatePercent}% response rate)`;
+  }
+  if (quotesCount >= 2) {
+    return `Active response velocity (${quotesCount} quotes received · ${responseRatePercent}% response rate)`;
+  }
+  if (quotesCount === 1) {
+    return 'Initial quote received · Awaiting additional supplier quotes';
+  }
+  if (viewedCount > 0) {
+    return `${viewedCount} supplier(s) reviewing specifications · Quoting in progress`;
+  }
+  return 'Broadcasting enquiry · Monitoring 30-min supplier initial target';
 }
 
 export async function fetchActiveRfqMonitoringData(
@@ -219,6 +377,54 @@ export async function fetchActiveRfqMonitoringData(
   // Unanswered clarifications (last message from supplier)
   const unansweredClarificationsCount = messages.filter((m) => m.authorSide === 'SUPPLIER').length;
 
+  const health = computeSourcingHealth({
+    invitedCount,
+    viewedCount,
+    quotesCount,
+    declinedCount,
+    minQuotesRequired,
+    isQuorumMet,
+    unansweredClarificationsCount,
+    isDeadlineApproaching: timeRemaining.isApproaching,
+    isDeadlineExpired: timeRemaining.isExpired,
+    rfqStatus: rfq.status,
+  });
+
+  const lifecycleStage = computeLifecycleStage({
+    rfqStatus: rfq.status,
+    isDeadlineExpired: timeRemaining.isExpired,
+    isDeadlineApproaching: timeRemaining.isApproaching,
+    isQuorumMet,
+    quotesCount,
+    viewedCount,
+    invitedCount,
+    healthStatus: health.status,
+  });
+
+  const quorumProgressPercent = Math.min(
+    100,
+    Math.round((quotesCount / Math.max(1, minQuotesRequired)) * 100)
+  );
+
+  const responseVelocityText = computeResponseVelocityText(
+    quotesCount,
+    viewedCount,
+    responseRatePercent,
+    isQuorumMet
+  );
+
+  const responseSlaTargetText = '30-min supplier initial target';
+
+  const telemetry: SourcingTelemetry = {
+    quoteCount: quotesCount,
+    targetQuorum: minQuotesRequired,
+    quorumProgressPercent,
+    responseVelocityText,
+    responseSlaTargetText,
+    health,
+    lifecycleStage,
+  };
+
   const metrics: RfqMonitoringMetrics = {
     invitedCount,
     viewedCount,
@@ -231,6 +437,9 @@ export async function fetchActiveRfqMonitoringData(
     timeRemainingText: timeRemaining.text,
     isDeadlineApproaching: timeRemaining.isApproaching,
     isDeadlineExpired: timeRemaining.isExpired,
+    lifecycleStage,
+    health,
+    telemetry,
   };
 
   // Action Required Determination
@@ -345,6 +554,7 @@ export async function fetchActiveRfqMonitoringData(
       buyerInstructions,
     },
     metrics,
+    telemetry,
     actionRequired,
     supplierResponses,
     governance: {

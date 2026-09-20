@@ -11,6 +11,40 @@ export type RfqMonitoringStatus =
   | 'AWARDED'
   | 'CANCELLED';
 
+export type SourcingLifecycleStage =
+  | 'BROADCAST'
+  | 'ACTIVE SOURCING'
+  | 'RESPONSES ARRIVING'
+  | 'QUOTES RECEIVED'
+  | 'DEADLINE APPROACHING'
+  | 'READY FOR EVALUATION'
+  | 'STALLED'
+  | 'CLOSED';
+
+export type SourcingHealthStatus =
+  | 'HEALTHY'
+  | 'ATTENTION'
+  | 'STALLED'
+  | 'READY FOR EVALUATION';
+
+export interface SourcingHealthIndicator {
+  status: SourcingHealthStatus;
+  label: string;
+  badgeLabel: string;
+  description: string;
+  tone: 'healthy' | 'attention' | 'stalled' | 'ready';
+}
+
+export interface SourcingTelemetry {
+  quoteCount: number;
+  targetQuorum: number;
+  quorumProgressPercent: number;
+  responseVelocityText: string;
+  responseSlaTargetText: string;
+  health: SourcingHealthIndicator;
+  lifecycleStage: SourcingLifecycleStage;
+}
+
 export type RfqActionRequiredType =
   | 'UNANSWERED_CLARIFICATIONS'
   | 'QUORUM_MET'
@@ -40,6 +74,9 @@ export interface RfqMonitoringMetrics {
   timeRemainingText: string;
   isDeadlineApproaching: boolean;
   isDeadlineExpired: boolean;
+  lifecycleStage?: SourcingLifecycleStage;
+  health?: SourcingHealthIndicator;
+  telemetry?: SourcingTelemetry;
 }
 
 export interface RfqMonitoringSupplierResponse {
@@ -121,6 +158,7 @@ export interface ActiveRfqMonitoringData {
   rfq: RfqMonitoringRfqSummary;
   requirement: RfqMonitoringRequirementSummary;
   metrics: RfqMonitoringMetrics;
+  telemetry: SourcingTelemetry;
   actionRequired: RfqActionRequired;
   supplierResponses: RfqMonitoringSupplierResponse[];
   governance: RfqMonitoringGovernance;
