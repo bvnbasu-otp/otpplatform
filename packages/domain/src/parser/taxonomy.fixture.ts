@@ -77,6 +77,8 @@ function attribute(
 }
 
 const categories: CategoryDef[] = [
+  category('electrical_power', 'Electrical & Power', 1),
+  category('construction_infrastructure', 'Construction & Infrastructure', 2),
   category('machinery_engineering', 'Machinery & Engineering', 3),
   category('textile_apparel', 'Textile & Apparel', 6),
   category('agriculture_commodities', 'Agriculture & Commodities', 7),
@@ -85,6 +87,105 @@ const categories: CategoryDef[] = [
 ];
 
 const subcategories: SubcategoryDef[] = [
+  // Electrical & Power
+  subcategory(
+    'electrical_power',
+    'dg_sets',
+    'DG sets & generators',
+    [
+      'dg set',
+      'diesel generator set',
+      'diesel generator',
+      'genset',
+      'generator',
+      'silent dg set',
+      'kirloskar dg',
+      'cummins dg',
+      'diesel genset',
+    ],
+    RequirementMode.PRODUCT_MATERIAL,
+    ['generator_kva'],
+  ),
+  subcategory(
+    'electrical_power',
+    'electrical_items_cables',
+    'Electrical items & cables',
+    [
+      'cable',
+      'wire',
+      'wiring material',
+      'conduit',
+      'gi conduit',
+      'pvc conduit',
+      'electrical conduit',
+      'mcb',
+      'switch socket',
+      'electrical switches',
+      'switch',
+      'light switch',
+      'distribution box',
+    ],
+    RequirementMode.PRODUCT_MATERIAL,
+  ),
+  subcategory(
+    'electrical_power',
+    'switchgear_panels',
+    'Switchgear & panels',
+    [
+      'panel',
+      'switchgear',
+      'distribution board',
+      'db',
+      'mccb',
+      'acb',
+      'control panel',
+      'lt panel',
+      'apfc panel',
+      'main switchboard',
+    ],
+    RequirementMode.PRODUCT_MATERIAL,
+  ),
+  subcategory(
+    'electrical_power',
+    'motor_control_automation',
+    'Motor control & automation',
+    [
+      'vfd',
+      'starter',
+      'plc',
+      'scada',
+      'motor control',
+      'automation panel',
+      'dol starter',
+      'star delta starter',
+      'variable frequency drive',
+    ],
+    RequirementMode.PRODUCT_MATERIAL,
+  ),
+
+  // Construction & Infrastructure
+  subcategory(
+    'construction_infrastructure',
+    'fabrication_structural',
+    'Structural fabrication',
+    [
+      'structural fabrication',
+      'steel structure',
+      'truss',
+      'shed',
+      'grill',
+      'railing',
+      'ms fabrication',
+      'peb shed',
+      'structure fabrication',
+      'industrial shed',
+      'roof truss fabrication',
+      'heavy structural fabrication',
+    ],
+    RequirementMode.JOB_WORK,
+  ),
+
+  // Water & Environmental Solutions
   subcategory(
     'water_environmental',
     'motor_rewinding',
@@ -103,6 +204,10 @@ const subcategories: SubcategoryDef[] = [
       'burnt motor',
       'motor not starting',
       'winding',
+      'submersible rewinding',
+      'pump rewinding',
+      'motor rewind',
+      'rewind',
     ],
     RequirementMode.REPAIR_MAINTENANCE,
     ['motor_hp'],
@@ -130,17 +235,25 @@ const subcategories: SubcategoryDef[] = [
     'Borewell motor & pump supply',
     [
       'submersible pump',
+      'borewell pump',
+      'borewell motor',
       'new pump',
       'pump set',
       'monoblock',
       'openwell',
+      'openwell pump',
       'motor purchase',
       'buy motor',
       'new motor',
+      'submersible motor pump',
+      'water pump',
+      'dewatering pump',
     ],
     RequirementMode.PRODUCT_MATERIAL,
     ['motor_hp'],
   ),
+
+  // Machinery & Engineering
   subcategory(
     'machinery_engineering',
     'cnc_machining',
@@ -156,6 +269,21 @@ const subcategories: SubcategoryDef[] = [
     ['material', 'tolerance_mm'],
   ),
   subcategory(
+    'machinery_engineering',
+    'welding_fabrication',
+    'Welding & fabrication',
+    [
+      'welding',
+      'fabrication',
+      'mig welding',
+      'tig welding',
+      'metal fabrication',
+    ],
+    RequirementMode.JOB_WORK,
+  ),
+
+  // Textile & Apparel
+  subcategory(
     'textile_apparel',
     'cotton_yarn',
     'Cotton yarn',
@@ -163,6 +291,8 @@ const subcategories: SubcategoryDef[] = [
     RequirementMode.PRODUCT_MATERIAL,
     ['yarn_count'],
   ),
+
+  // Agriculture & Commodities
   subcategory(
     'agriculture_commodities',
     'turmeric',
@@ -171,8 +301,8 @@ const subcategories: SubcategoryDef[] = [
     RequirementMode.COMMODITY_TRADING,
     ['quality_grade'],
   ),
-  // The distractor that made this parser hard: people describe the tradesman
-  // who diagnosed the fault, and a bare "electrician" used to hijack the match.
+
+  // Professional & Skilled Services
   subcategory(
     'professional_skilled_services',
     'electrician_technician',
@@ -193,10 +323,25 @@ const subcategories: SubcategoryDef[] = [
 ];
 
 const attributes: AttributeDef[] = [
+  // Electrical & Power
+  attribute({ category: 'electrical_power' }, 'generator_kva', 'Generator rating', 'NUMBER', {
+    unit: 'KVA',
+    patterns: [
+      String.raw`(\d+(?:\.\d+)?)\s*(?:kva|k\.v\.a\.?|hp|kw)\b`,
+      String.raw`rating\s*(?:of)?\s*(\d+(?:\.\d+)?)`,
+    ],
+    sortOrder: 1,
+  }),
+  attribute({ category: 'electrical_power' }, 'motor_hp', 'Motor rating', 'NUMBER', {
+    unit: 'HP',
+    patterns: [String.raw`(\d+(?:\.\d+)?)\s*(?:hp|h\.p\.?|horse\s*power|kw)\b`],
+    sortOrder: 2,
+  }),
+
   // Water & Environmental
   attribute({ category: 'water_environmental' }, 'motor_hp', 'Motor rating', 'NUMBER', {
     unit: 'HP',
-    patterns: [String.raw`(\d+(?:\.\d+)?)\s*(?:hp|h\.p\.?|horse\s*power)`],
+    patterns: [String.raw`(\d+(?:\.\d+)?)\s*(?:hp|h\.p\.?|horse\s*power)\b`],
     sortOrder: 1,
   }),
   attribute({ category: 'water_environmental' }, 'pump_type', 'Pump / motor type', 'ENUM', {

@@ -9,17 +9,26 @@ describe('Voice Requirement Dictation Module', () => {
   });
 
   it('DEF-002: instantiates full and compact voice requirement dictation widgets', () => {
+    const onTranscript = vi.fn();
     const fullEl = React.createElement(VoiceRequirementDictation, {
-      onTranscript: vi.fn(),
+      onTranscript,
     });
     expect(fullEl).toBeDefined();
     expect(fullEl.props.compact).toBeFalsy();
 
     const compactEl = React.createElement(VoiceRequirementDictation, {
-      onTranscript: vi.fn(),
+      onTranscript,
       compact: true,
     });
     expect(compactEl).toBeDefined();
     expect(compactEl.props.compact).toBe(true);
+  });
+
+  it('supports custom class names and default props cleanly', () => {
+    const customEl = React.createElement(VoiceRequirementDictation, {
+      onTranscript: vi.fn(),
+      className: 'test-custom-class',
+    });
+    expect(customEl.props.className).toBe('test-custom-class');
   });
 });

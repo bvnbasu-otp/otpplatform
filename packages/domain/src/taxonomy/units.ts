@@ -26,6 +26,8 @@ const UNIT_ALIASES: Record<string, string> = {
   liter: 'L',
   liters: 'L',
   m: 'M',
+  mtr: 'M',
+  mtrs: 'M',
   metre: 'M',
   metres: 'M',
   meter: 'M',

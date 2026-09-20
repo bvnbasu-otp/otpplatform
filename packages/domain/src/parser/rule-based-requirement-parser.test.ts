@@ -164,6 +164,135 @@ describe('Erode — turmeric fingers', () => {
   });
 });
 
+describe('Phase C.2 — Indian Industrial Procurement Vocabulary & Claim Masking', () => {
+  describe('DG Set & Generator Procurement', () => {
+    it('classifies "DG set" under electrical_power with rating extraction and masked quantity', async () => {
+      const parsed = await parse('Need 10 HP DG set in Coimbatore within 7 days.');
+
+      expect(parsed.subcategoryCode).toBe('dg_sets');
+      expect(parsed.categoryCode).toBe('electrical_power');
+      expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+      expect(attributeValue(parsed, 'generator_kva') ?? attributeValue(parsed, 'motor_hp')).toBe(10);
+      expect(parsed.quantity).toBeNull();
+      expect(parsed.deliveryCity).toBe('Coimbatore');
+      expect(parsed.timing.requiredByDays).toBe(7);
+    });
+
+    it('extracts order quantity when explicitly given for diesel generator sets', async () => {
+      const parsed = await parse(
+        'Requirement for 25 kVA diesel generator set, 2 sets needed for factory in Chennai.',
+      );
+
+      expect(parsed.subcategoryCode).toBe('dg_sets');
+      expect(parsed.categoryCode).toBe('electrical_power');
+      expect(attributeValue(parsed, 'generator_kva')).toBe(25);
+      expect(parsed.quantity).toBe(2);
+      expect(parsed.unit).toBe('SET');
+      expect(parsed.deliveryCity).toBe('Chennai');
+    });
+  });
+
+  describe('Motor Rewinding & Repair Synonyms', () => {
+    it('handles "motor rewinding" and "rewinding" with claim masking', async () => {
+      const parsed = await parse('5 HP motor rewinding in Bengaluru with 6 months warranty.');
+
+      expect(parsed.subcategoryCode).toBe('motor_rewinding');
+      expect(parsed.categoryCode).toBe('water_environmental');
+      expect(parsed.requirementMode).toBe(RequirementMode.REPAIR_MAINTENANCE);
+      expect(attributeValue(parsed, 'motor_hp')).toBe(5);
+      expect(parsed.quantity).toBeNull();
+      expect(parsed.warrantyMonths).toBe(6);
+      expect(parsed.deliveryCity).toBe('Bengaluru');
+    });
+
+    it('extracts piece count for multiple motors rewinding', async () => {
+      const parsed = await parse('5 HP motor rewinding, 3 nos needed in Coimbatore.');
+
+      expect(parsed.subcategoryCode).toBe('motor_rewinding');
+      expect(attributeValue(parsed, 'motor_hp')).toBe(5);
+      expect(parsed.quantity).toBe(3);
+      expect(parsed.unit).toBe('PCS');
+    });
+  });
+
+  describe('GI / PVC Conduit & Electrical Hardware', () => {
+    it('extracts length and category for GI conduit', async () => {
+      const parsed = await parse('Need 100 metres GI conduit in Chennai urgently.');
+
+      expect(parsed.subcategoryCode).toBe('electrical_items_cables');
+      expect(parsed.categoryCode).toBe('electrical_power');
+      expect(parsed.quantity).toBe(100);
+      expect(parsed.unit).toBe('M');
+      expect(parsed.timing.isImmediate).toBe(true);
+      expect(parsed.deliveryCity).toBe('Chennai');
+    });
+
+    it('handles "mtr" abbreviation for PVC conduit', async () => {
+      const parsed = await parse('Require 150 mtr PVC conduit in Salem within 5 days.');
+
+      expect(parsed.subcategoryCode).toBe('electrical_items_cables');
+      expect(parsed.categoryCode).toBe('electrical_power');
+      expect(parsed.quantity).toBe(150);
+      expect(parsed.unit).toBe('M');
+      expect(parsed.deliveryCity).toBe('Salem');
+      expect(parsed.timing.requiredByDays).toBe(5);
+    });
+
+    it('extracts electrical switches piece quantity and category', async () => {
+      const parsed = await parse('Need 20 nos electrical switches in Coimbatore.');
+
+      expect(parsed.subcategoryCode).toBe('electrical_items_cables');
+      expect(parsed.categoryCode).toBe('electrical_power');
+      expect(parsed.quantity).toBe(20);
+      expect(parsed.unit).toBe('PCS');
+      expect(parsed.deliveryCity).toBe('Coimbatore');
+    });
+
+    it('classifies distribution board and switchgear panels correctly', async () => {
+      const parsed = await parse('Need distribution board with MCCB panel for commercial complex in Chennai.');
+
+      expect(parsed.subcategoryCode).toBe('switchgear_panels');
+      expect(parsed.categoryCode).toBe('electrical_power');
+      expect(parsed.deliveryCity).toBe('Chennai');
+    });
+  });
+
+  describe('Borewell Submersible Pump Supply', () => {
+    it('classifies new pump purchase as product material with HP rating attribute', async () => {
+      const parsed = await parse('5 HP submersible pump supply in Coimbatore with 1 year warranty.');
+
+      expect(parsed.subcategoryCode).toBe('borewell_motor_pump');
+      expect(parsed.categoryCode).toBe('water_environmental');
+      expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+      expect(attributeValue(parsed, 'motor_hp')).toBe(5);
+      expect(parsed.warrantyMonths).toBe(12);
+      expect(parsed.deliveryCity).toBe('Coimbatore');
+    });
+
+    it('handles borewell pump trade synonym', async () => {
+      const parsed = await parse('Need new borewell pump set 7.5 HP in Erode.');
+
+      expect(parsed.subcategoryCode).toBe('borewell_motor_pump');
+      expect(parsed.categoryCode).toBe('water_environmental');
+      expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+      expect(parsed.deliveryCity).toBe('Erode');
+    });
+  });
+
+  describe('Structural Fabrication', () => {
+    it('classifies structural fabrication under construction & infrastructure', async () => {
+      const parsed = await parse(
+        'Structural fabrication for industrial shed in Erode, drawing attached.',
+      );
+
+      expect(parsed.subcategoryCode).toBe('fabrication_structural');
+      expect(parsed.categoryCode).toBe('construction_infrastructure');
+      expect(parsed.requirementMode).toBe(RequirementMode.JOB_WORK);
+      expect(parsed.deliveryCity).toBe('Erode');
+    });
+  });
+});
+
 describe('what the parser does when it is not sure', () => {
   it('asks for the details a supplier cannot quote without', async () => {
     const parsed = await parse(
