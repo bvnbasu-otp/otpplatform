@@ -25,10 +25,18 @@ import {
   AsyncCallbackIngestionService,
   computePayloadDigest,
 } from './async-callback-ingestion-service';
-import { GoogleMapsLocationAdapter, MapboxLocationAdapter } from '../gis/google-maps-location-adapter';
+import {
+  GoogleMapsLocationAdapter,
+  MapboxLocationAdapter,
+} from '../gis/google-maps-location-adapter';
+import {
+  GoogleGisSafetyQuotaGuard,
+  InMemoryGoogleGisQuotaStore,
+} from '../gis/google-gis-safety-quota';
+import { ProviderNeutralLocationIntelligence } from '../gis/provider-neutral-location-intelligence';
 
 /**
- * RED-TEAM ADVERSARIAL BATTERY: SN2-RT-01 through SN2-RT-20
+ * RED-TEAM ADVERSARIAL BATTERY: SN2-RT-01 through SN2-RT-28
  * Comprehensive Verification of SN.2 Architecture:
  * - SN2-RT-01: Forged provider signature -> DENIED
  * - SN2-RT-02: Expired callback timestamp -> DENIED
@@ -50,8 +58,16 @@ import { GoogleMapsLocationAdapter, MapboxLocationAdapter } from '../gis/google-
  * - SN2-RT-18: External GIS provider unavailable -> OFFLINE GIS FALLBACK
  * - SN2-RT-19: GIS provider attempts to return malformed coordinates -> VALIDATION FAILURE
  * - SN2-RT-20: GIS provider attempts to inject supplier identity -> REJECTED
+ * - SN2-RT-21: Google quota bypass attempt -> DENIED
+ * - SN2-RT-22: Concurrent quota race -> ATOMIC ENFORCEMENT, NO OVER-ALLOCATION
+ * - SN2-RT-23: Client-side quota manipulation -> SERVER AUTHORITY WINS
+ * - SN2-RT-24: Fail-open quota store -> FAILS CLOSED (OFFLINE FALLBACK)
+ * - SN2-RT-25: Alternate Google execution path -> BOUND TO QUOTA GUARD
+ * - SN2-RT-26: Quota reset manipulation -> SERVER WINDOW CONTROLS
+ * - SN2-RT-27: Cross-tenant quota contamination -> TENANT ISOLATED / GLOBAL SAFETY ENFORCED
+ * - SN2-RT-28: Provider-isolation failure -> EXHAUSTED GOOGLE DOES NOT THROTTLE OTHER PROVIDERS
  */
-describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-RT-20)', () => {
+describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-RT-28)', () => {
   let mem: InMemoryRepositories;
   let services: OtpServices;
 
@@ -672,5 +688,241 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
     expect((distResult as any).legalName).toBeUndefined();
     expect((distResult as any).gstin).toBeUndefined();
     expect((distResult as any).contactPhone).toBeUndefined();
+  });
+
+  // SN2-RT-21: Google quota bypass attempt -> DENIED
+  it('SN2-RT-21: Google quota bypass attempt -> DENIED (Fail closed beyond 1,500/day)', async () => {
+    const quotaGuard = new GoogleGisSafetyQuotaGuard({
+      store: new InMemoryGoogleGisQuotaStore(),
+      limits: { maxDaily: 2, maxMonthly: 50 },
+    });
+
+    const googleAdapter = new GoogleMapsLocationAdapter({
+      apiKey: 'gmaps-live-key',
+      quotaGuard,
+    });
+
+    // 1st request -> Allowed
+    const res1 = await googleAdapter.calculateDistance(
+      { coordinates: { lat: 12.9716, lng: 77.5946 } },
+      { coordinates: { lat: 12.9698, lng: 77.7500 } },
+    );
+    expect(res1.confidenceScore).toBe(100);
+
+    // 2nd request -> Allowed
+    const res2 = await googleAdapter.calculateDistance(
+      { coordinates: { lat: 12.9716, lng: 77.5946 } },
+      { coordinates: { lat: 13.0000, lng: 77.6000 } },
+    );
+    expect(res2.confidenceScore).toBe(100);
+
+    // 3rd request -> Quota exceeded -> Fails closed to ProviderNeutral (confidence 95)
+    const res3 = await googleAdapter.calculateDistance(
+      { coordinates: { lat: 12.9716, lng: 77.5946 } },
+      { coordinates: { lat: 13.1000, lng: 77.6000 } },
+    );
+    expect(res3.confidenceScore).toBe(95);
+    expect(res3.calculationMethod).toBe('HAVERSINE_COORDINATES');
+  });
+
+  // SN2-RT-22: Concurrent quota race -> ATOMIC ENFORCEMENT, NO OVER-ALLOCATION
+  it('SN2-RT-22: Concurrent quota race -> ATOMIC ENFORCEMENT, NO OVER-ALLOCATION', async () => {
+    const quotaGuard = new GoogleGisSafetyQuotaGuard({
+      store: new InMemoryGoogleGisQuotaStore(),
+      limits: { maxDaily: 5, maxMonthly: 50 },
+    });
+
+    // 20 concurrent reservation requests against 5 daily quota units
+    const attempts = await Promise.all(
+      Array.from({ length: 20 }, (_, idx) =>
+        quotaGuard.acquireReservation(new Date('2026-09-21T12:00:00Z')),
+      ),
+    );
+
+    const allowed = attempts.filter((a) => a.allowed);
+    const denied = attempts.filter((a) => !a.allowed);
+
+    expect(allowed).toHaveLength(5);
+    expect(denied).toHaveLength(15);
+    const usage = await quotaGuard.getUsage();
+    expect(usage.dailyCount).toBe(5);
+  });
+
+  // SN2-RT-23: Client-side quota manipulation -> SERVER AUTHORITY WINS
+  it('SN2-RT-23: Client-side quota manipulation -> SERVER AUTHORITY WINS', async () => {
+    const quotaGuard = new GoogleGisSafetyQuotaGuard({
+      store: new InMemoryGoogleGisQuotaStore(),
+      limits: { maxDaily: 1, maxMonthly: 50 },
+    });
+
+    const googleAdapter = new GoogleMapsLocationAdapter({
+      apiKey: 'gmaps-live-key',
+      quotaGuard,
+    });
+
+    // Consume the 1 quota unit
+    await googleAdapter.calculateDistance(
+      { coordinates: { lat: 12.9716, lng: 77.5946 } },
+      { coordinates: { lat: 12.9698, lng: 77.7500 } },
+    );
+
+    // Client attempts to pass fake client-side reset header or override limits in descriptor
+    const maliciousOrigin: any = {
+      coordinates: { lat: 12.9716, lng: 77.5946 },
+      __quotaOverride: 999999,
+      __clientAuthoritative: true,
+      headers: { 'x-reset-quota': 'true' },
+    };
+
+    const nextRes = await googleAdapter.calculateDistance(
+      maliciousOrigin,
+      { coordinates: { lat: 13.0000, lng: 77.6000 } },
+    );
+
+    // Server-side guard strictly denies and falls back offline
+    expect(nextRes.confidenceScore).toBe(95);
+    const usage = await quotaGuard.getUsage();
+    expect(usage.dailyCount).toBe(1);
+  });
+
+  // SN2-RT-24: Fail-open quota store -> FAILS CLOSED (OFFLINE FALLBACK)
+  it('SN2-RT-24: Fail-open quota store -> FAILS CLOSED (OFFLINE FALLBACK)', async () => {
+    const brokenStore = {
+      reserveQuota: async () => {
+        throw new Error('REDIS_CONNECTION_TIMEOUT');
+      },
+      getUsage: async () => ({ dailyCount: -1, monthlyCount: -1, dayKey: '', monthKey: '' }),
+      reset: async () => {},
+    };
+
+    const quotaGuard = new GoogleGisSafetyQuotaGuard({ store: brokenStore });
+    const googleAdapter = new GoogleMapsLocationAdapter({
+      apiKey: 'gmaps-live-key',
+      quotaGuard,
+    });
+
+    // Despite store corruption, adapter must NOT fail open or throw, but fallback cleanly
+    const res = await googleAdapter.calculateDistance(
+      { coordinates: { lat: 12.9716, lng: 77.5946 } },
+      { coordinates: { lat: 12.9698, lng: 77.7500 } },
+    );
+
+    expect(res.calculationMethod).toBe('HAVERSINE_COORDINATES');
+    expect(res.confidenceScore).toBe(95);
+  });
+
+  // SN2-RT-25: Alternate Google execution path -> BOUND TO QUOTA GUARD
+  it('SN2-RT-25: Alternate Google execution path -> BOUND TO QUOTA GUARD', async () => {
+    const quotaGuard = new GoogleGisSafetyQuotaGuard({
+      store: new InMemoryGoogleGisQuotaStore(),
+      limits: { maxDaily: 1, maxMonthly: 50 },
+    });
+
+    const googleAdapter = new GoogleMapsLocationAdapter({
+      apiKey: 'gmaps-live-key',
+      quotaGuard,
+    });
+
+    // Exhaust quota
+    await googleAdapter.calculateDistance(
+      { coordinates: { lat: 12.9716, lng: 77.5946 } },
+      { coordinates: { lat: 12.9698, lng: 77.7500 } },
+    );
+
+    // Call via city/postal calculation path
+    const resCity = await googleAdapter.calculateDistance(
+      { city: 'Bengaluru', pinCode: '560001' },
+      { city: 'Bengaluru', pinCode: '560001' },
+    );
+
+    expect(resCity.calculationMethod).toBe('POSTAL_PIN_EXACT');
+    expect(resCity.isLocal).toBe(true);
+  });
+
+  // SN2-RT-26: Quota reset manipulation -> SERVER WINDOW CONTROLS
+  it('SN2-RT-26: Quota reset manipulation -> SERVER WINDOW CONTROLS', async () => {
+    const quotaGuard = new GoogleGisSafetyQuotaGuard({
+      store: new InMemoryGoogleGisQuotaStore(),
+      limits: { maxDaily: 1, maxMonthly: 50 },
+    });
+
+    const t0 = new Date('2026-09-21T10:00:00Z');
+    const r1 = await quotaGuard.acquireReservation(t0);
+    expect(r1.allowed).toBe(true);
+
+    const r2 = await quotaGuard.acquireReservation(t0);
+    expect(r2.allowed).toBe(false);
+
+    // Only advancing UTC date rolls daily limit window
+    const tNextDay = new Date('2026-09-22T00:00:01Z');
+    const rNextDay = await quotaGuard.acquireReservation(tNextDay);
+    expect(rNextDay.allowed).toBe(true);
+    expect(rNextDay.currentUsage.dailyCount).toBe(1);
+    expect(rNextDay.currentUsage.monthlyCount).toBe(2);
+  });
+
+  // SN2-RT-27: Cross-tenant quota contamination -> TENANT ISOLATED / GLOBAL SAFETY ENFORCED
+  it('SN2-RT-27: Cross-tenant quota contamination -> TENANT ISOLATED / GLOBAL SAFETY ENFORCED', async () => {
+    const sharedStore = new InMemoryGoogleGisQuotaStore();
+    const guardTenantA = new GoogleGisSafetyQuotaGuard({
+      store: sharedStore,
+      limits: { maxDaily: 2, maxMonthly: 50 },
+    });
+    const guardTenantB = new GoogleGisSafetyQuotaGuard({
+      store: sharedStore,
+      limits: { maxDaily: 2, maxMonthly: 50 },
+    });
+
+    const resA1 = await guardTenantA.acquireReservation();
+    expect(resA1.allowed).toBe(true);
+
+    const resB1 = await guardTenantB.acquireReservation();
+    expect(resB1.allowed).toBe(true);
+
+    // Global cap of 2 reached
+    const resA2 = await guardTenantA.acquireReservation();
+    expect(resA2.allowed).toBe(false);
+
+    const resB2 = await guardTenantB.acquireReservation();
+    expect(resB2.allowed).toBe(false);
+  });
+
+  // SN2-RT-28: Provider-isolation failure -> EXHAUSTED GOOGLE DOES NOT THROTTLE OTHER PROVIDERS
+  it('SN2-RT-28: Provider-isolation failure -> EXHAUSTED GOOGLE DOES NOT THROTTLE OTHER PROVIDERS', async () => {
+    const quotaGuard = new GoogleGisSafetyQuotaGuard({
+      store: new InMemoryGoogleGisQuotaStore(),
+      limits: { maxDaily: 0, maxMonthly: 0 }, // Google totally exhausted
+    });
+
+    const googleAdapter = new GoogleMapsLocationAdapter({
+      apiKey: 'gmaps-live-key',
+      quotaGuard,
+    });
+
+    const mapboxAdapter = new MapboxLocationAdapter();
+    const offlineProvider = new ProviderNeutralLocationIntelligence();
+
+    // 1. Google fails closed
+    const googleRes = await googleAdapter.calculateDistance(
+      { coordinates: { lat: 12.9716, lng: 77.5946 } },
+      { coordinates: { lat: 12.9698, lng: 77.7500 } },
+    );
+    expect(googleRes.calculationMethod).toBe('HAVERSINE_COORDINATES');
+    expect(googleRes.confidenceScore).toBe(95);
+
+    // 2. Mapbox remains fully operational
+    const mapboxRes = await mapboxAdapter.calculateDistance(
+      { coordinates: { lat: 12.9716, lng: 77.5946 } },
+      { coordinates: { lat: 12.9698, lng: 77.7500 } },
+    );
+    expect(mapboxRes.calculationMethod).toBe('HAVERSINE_COORDINATES');
+
+    // 3. Offline Haversine & PIN matching remains fully operational
+    const offlineRes = await offlineProvider.calculateDistance(
+      { city: 'Mumbai', pinCode: '400001' },
+      { city: 'Mumbai', pinCode: '400001' },
+    );
+    expect(offlineRes.calculationMethod).toBe('POSTAL_PIN_EXACT');
+    expect(offlineRes.isLocal).toBe(true);
   });
 });

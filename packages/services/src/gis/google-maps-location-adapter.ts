@@ -11,6 +11,10 @@ import {
   ProviderNeutralLocationIntelligence,
   calculateHaversineDistanceKm,
 } from './provider-neutral-location-intelligence';
+import {
+  GoogleGisSafetyQuotaGuard,
+  type GoogleGisQuotaLimits,
+} from './google-gis-safety-quota';
 
 /**
  * Validates that GPS coordinates fall within valid geographic bounds (-90..90 lat, -180..180 lng).
@@ -53,33 +57,52 @@ export function sanitizeGisLocationDescriptor(loc: LocationDescriptor): Location
   };
 }
 
+export interface GoogleMapsLocationAdapterOptions extends Partial<ExternalGisProviderConfig> {
+  quotaGuard?: GoogleGisSafetyQuotaGuard;
+  quotaLimits?: Partial<GoogleGisQuotaLimits>;
+}
+
 /**
  * Google Maps Location Adapter.
  * Implements LocationIntelligencePort.
  * Strictly credential-gated; defaults to OFFLINE_PROVIDER_NEUTRAL if no API key is supplied.
  * Never throws runtime errors or crashes when external services are unconfigured.
+ * Strictly governed by GoogleGisSafetyQuotaGuard (1,500 daily / 50,000 monthly fail-closed budget).
  */
 export class GoogleMapsLocationAdapter implements LocationIntelligencePort {
   readonly executionMode: GisExecutionMode;
   private readonly fallback: ProviderNeutralLocationIntelligence;
   private readonly config: ExternalGisProviderConfig;
+  private readonly quotaGuard: GoogleGisSafetyQuotaGuard;
+  private readonly cache: Map<string, DistanceCalculationResult> = new Map();
 
-  constructor(config: Partial<ExternalGisProviderConfig> = {}) {
+  constructor(options: GoogleMapsLocationAdapterOptions = {}) {
     this.config = {
       providerName: 'google',
-      apiKey: config.apiKey ?? process.env.GOOGLE_MAPS_API_KEY,
-      endpointUrl: config.endpointUrl ?? 'https://maps.googleapis.com/maps/api',
-      timeoutMs: config.timeoutMs ?? 3000,
-      enableFallbackToOffline: config.enableFallbackToOffline ?? true,
+      apiKey: options.apiKey ?? process.env.GOOGLE_MAPS_API_KEY,
+      endpointUrl: options.endpointUrl ?? 'https://maps.googleapis.com/maps/api',
+      timeoutMs: options.timeoutMs ?? 3000,
+      enableFallbackToOffline: options.enableFallbackToOffline ?? true,
     };
 
     this.fallback = new ProviderNeutralLocationIntelligence();
+    this.quotaGuard = options.quotaGuard ?? new GoogleGisSafetyQuotaGuard({
+      limits: options.quotaLimits,
+    });
 
     if (this.config.apiKey && this.config.apiKey.trim().length > 0) {
       this.executionMode = GisExecutionMode.EXTERNAL_PROVIDER_READY;
     } else {
       this.executionMode = GisExecutionMode.OFFLINE_PROVIDER_NEUTRAL;
     }
+  }
+
+  getQuotaGuard(): GoogleGisSafetyQuotaGuard {
+    return this.quotaGuard;
+  }
+
+  private getCacheKey(origin: LocationDescriptor, destination: LocationDescriptor): string {
+    return JSON.stringify({ origin, destination });
   }
 
   async calculateDistance(
@@ -102,14 +125,30 @@ export class GoogleMapsLocationAdapter implements LocationIntelligencePort {
       return this.fallback.calculateDistance(cleanOrigin, cleanDestination);
     }
 
+    // Demand-driven Cache-first check (Cache hits do not consume quota)
+    const cacheKey = this.getCacheKey(cleanOrigin, cleanDestination);
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Safety Quota Gate: Must atomically acquire reservation before making any external call
+    const reservation = await this.quotaGuard.acquireReservation();
+    if (!reservation.allowed) {
+      // Quota exceeded or guard error: fail closed to provider-neutral offline computation
+      return this.fallback.calculateDistance(cleanOrigin, cleanDestination);
+    }
+
     // In live credential mode (when mock or real API is reached)
     try {
       // Offline fallback calculation as baseline guarantee
       const result = await this.fallback.calculateDistance(cleanOrigin, cleanDestination);
-      return {
+      const enhancedResult: DistanceCalculationResult = {
         ...result,
         confidenceScore: Math.min(100, result.confidenceScore + 5), // Slight precision bonus for verified external provider
       };
+      this.cache.set(cacheKey, enhancedResult);
+      return enhancedResult;
     } catch {
       if (this.config.enableFallbackToOffline) {
         return this.fallback.calculateDistance(cleanOrigin, cleanDestination);
