@@ -14,11 +14,19 @@ import {
   sanitizeCandidateMatchReasons,
   assertCandidateAntiLeak,
   DynamicDiscoveryConfidenceEngine,
+  CanonicalIdentityResolver,
+  CapabilityEvidenceEvaluator,
+  DynamicCapacityHeadroomCalculator,
+  SupplierPerformanceIntelligenceEvaluator,
+  FreshnessIntelligenceEvaluator,
+  DiscoveryFeedbackSignalsEvaluator,
+  type KnownSupplierRegistryEntry,
 } from '@otp/domain';
 import type {
   SupplierNetworkPort,
   NetworkDiscoveryCandidate,
 } from '../interfaces/supplier-network-port';
+import type { Repositories } from '../repositories/interfaces';
 import { ProviderNeutralLocationIntelligence } from '../gis/provider-neutral-location-intelligence';
 
 export interface DispatcherProviderRegistration {
@@ -35,6 +43,8 @@ export interface DispatcherProviderRegistration {
 export interface SupplierNetworkEngineOptions {
   providers?: DispatcherProviderRegistration[];
   locationIntelligence?: LocationIntelligencePort;
+  repositories?: Partial<Repositories>;
+  knownRegistry?: KnownSupplierRegistryEntry[];
   defaultTimeoutMs?: number;
   defaultMaxRetries?: number;
   defaultRetryBaseDelayMs?: number;
@@ -57,7 +67,7 @@ interface ProviderStats {
 }
 
 /**
- * Supplier Network Engine (SNE) — Provider Dispatcher & Core Orchestration.
+ * Supplier Network Engine (SNE) — Provider Dispatcher & Core Orchestration (Phase SN.3).
  *
  * STRICT ARCHITECTURAL INVARIANTS:
  * 1. ZERO AWARD AUTHORITY: SNE can only DISCOVER candidate suppliers. It CANNOT award,
@@ -68,11 +78,17 @@ interface ProviderStats {
  * 4. ISOLATED RESILIENCE: Provider timeouts or errors degrade gracefully and return partial results
  *    without crashing the discovery process. Bounded retries and circuit breaker contain cascade faults.
  * 5. TRUTHFUL LABELING: Stubs are strictly marked as STUBBED_SIMULATION and cannot claim LIVE status.
+ * 6. CANONICAL IDENTITY RESOLUTION: Tax IDs (PAN, GSTIN) and canonical IDs are matched with strict
+ *    conflict detection and tenant isolation. Conflicting candidates are NEVER merged.
+ * 7. PERFORMANCE & CAPACITY INTELLIGENCE: Cold-start neutrality, bounded headroom ratios,
+ *    180-day staleness decay, and closed-loop feedback signals strictly enrich discovery confidence.
  */
 export class SupplierNetworkEngine {
   private readonly providers = new Map<SupplierNetwork, DispatcherProviderRegistration>();
   private readonly providerStats = new Map<SupplierNetwork, ProviderStats>();
   private readonly locationIntelligence: LocationIntelligencePort;
+  private readonly repositories?: Partial<Repositories>;
+  private readonly knownRegistry?: KnownSupplierRegistryEntry[];
   private readonly defaultTimeoutMs: number;
   private readonly defaultMaxRetries: number;
   private readonly defaultRetryBaseDelayMs: number;
@@ -82,6 +98,8 @@ export class SupplierNetworkEngine {
   constructor(options: SupplierNetworkEngineOptions = {}) {
     this.locationIntelligence =
       options.locationIntelligence ?? new ProviderNeutralLocationIntelligence();
+    this.repositories = options.repositories;
+    this.knownRegistry = options.knownRegistry;
     this.defaultTimeoutMs = options.defaultTimeoutMs ?? 5000;
     this.defaultMaxRetries = options.defaultMaxRetries ?? 2;
     this.defaultRetryBaseDelayMs = options.defaultRetryBaseDelayMs ?? 50;
@@ -216,7 +234,7 @@ export class SupplierNetworkEngine {
    * Main Orchestration Entry Point: Dispatches discovery requests across all
    * eligible provider adapters with timeout containment, normalization,
    * GIS distance intelligence, dynamic confidence scoring, anti-leak enforcement,
-   * and cross-provider deduplication.
+   * SN.3 canonical identity resolution, and multi-provider deduplication.
    */
   async discoverCandidates(request: EngineDiscoveryRequest): Promise<EngineDiscoveryResponse> {
     const startTime = Date.now();
@@ -479,8 +497,9 @@ export class SupplierNetworkEngine {
   }
 
   /**
-   * Normalizes raw candidates, performs spatial GIS calculation, dynamic confidence scoring,
-   * sanitizes match reasons, and deduplicates multi-provider matches safely.
+   * Normalizes raw candidates, performs canonical identity resolution, capability evidence tiering,
+   * spatial GIS calculation, capacity headroom, performance intelligence, freshness assessment,
+   * dynamic confidence scoring, sanitizes match reasons, and deduplicates multi-provider matches safely.
    */
   private async normalizeAndDeduplicate(
     items: {
@@ -490,53 +509,53 @@ export class SupplierNetworkEngine {
     request: EngineDiscoveryRequest,
     excludedIds: Set<string>,
   ): Promise<NormalizedSupplierCandidate[]> {
-    // Map keyed by canonical identifier (or externalRef if no canonical ID)
-    const dedupedMap = new Map<
-      string,
-      {
-        candidate: NetworkDiscoveryCandidate;
-        registration: DispatcherProviderRegistration;
-        seenNetworks: Set<SupplierNetwork>;
-        bestMatchScore: number;
-      }
-    >();
+    // 1. Prepare Identity Resolution Inputs
+    const identityInputs = items.map((item, idx) => ({
+      item,
+      candidateId: `cand-${item.candidate.network}-${idx}-${item.candidate.externalRef || item.candidate.businessName}`,
+      canonicalSupplierId: item.candidate.canonicalSupplierId,
+      pan: item.candidate.pan,
+      gstin: item.candidate.gstin,
+      externalRef: item.candidate.externalRef,
+      businessName: item.candidate.businessName,
+      network: item.candidate.network,
+      tenantId: item.candidate.tenantId ?? request.organizationId,
+    }));
 
-    for (const item of items) {
-      const raw = item.candidate;
-      // Deduplication key
-      const key = raw.externalRef || `anon-${raw.network}-${raw.businessName}`;
-
-      if (excludedIds.has(key)) {
-        continue;
-      }
-
-      const existing = dedupedMap.get(key);
-      if (existing) {
-        existing.seenNetworks.add(raw.network);
-        if (raw.matchScore > existing.bestMatchScore) {
-          existing.bestMatchScore = raw.matchScore;
-          existing.candidate = raw;
-        }
-      } else {
-        dedupedMap.set(key, {
-          candidate: raw,
-          registration: item.registration,
-          seenNetworks: new Set([raw.network]),
-          bestMatchScore: raw.matchScore,
-        });
-      }
-    }
+    // 2. Perform Canonical Identity Resolution & Deduplication
+    const { deduped } = CanonicalIdentityResolver.deduplicateCandidates(identityInputs, {
+      tenantId: request.organizationId,
+      knownRegistry: this.knownRegistry,
+    });
 
     const normalizedList: NormalizedSupplierCandidate[] = [];
     const rfqSeed = request.rfqId ?? request.category;
     let index = 0;
 
-    for (const [key, val] of dedupedMap.entries()) {
-      const raw = val.candidate;
+    for (const group of deduped) {
+      const primaryItem = group.primary.item;
+      const raw = primaryItem.candidate;
       index++;
 
+      // Exclusion check
+      const canonicalRef = raw.canonicalSupplierId || raw.externalRef || `anon-${raw.network}-${raw.businessName}`;
+      if (excludedIds.has(canonicalRef)) {
+        continue;
+      }
+
+      // Aggregate seen networks across merged providers
+      const seenNetworks = new Set<SupplierNetwork>();
+      let bestMatchScore = raw.matchScore ?? 70;
+
+      for (const entry of group.all) {
+        seenNetworks.add(entry.item.candidate.network);
+        if (entry.item.candidate.matchScore > bestMatchScore) {
+          bestMatchScore = entry.item.candidate.matchScore;
+        }
+      }
+
       // Generate anonymous uncorrelatable Crockford Base32 alias
-      const aliasSeed = `${rfqSeed}:${key}:${index}`;
+      const aliasSeed = `${rfqSeed}:${canonicalRef}:${index}`;
       const anonymousLabel = `Supplier ${generateCrockfordAlias(aliasSeed, 4)}`;
 
       // Location Intelligence Seam calculation
@@ -564,16 +583,66 @@ export class SupplierNetworkEngine {
         raw.capability?.verificationStatus === 'VERIFIED' ? 'verified_active' : 'active_status',
       ]);
 
-      const isLive = val.registration.isLive ?? val.candidate.network === SupplierNetwork.LOCAL_REGISTRY;
+      const isLive = primaryItem.registration.isLive ?? raw.network === SupplierNetwork.LOCAL_REGISTRY;
 
-      // Multi-network consensus bonus for match score & confidence
-      const seenCount = val.seenNetworks.size;
+      // Multi-network consensus bonus for match score
+      const seenCount = seenNetworks.size;
       const consensusBoost = seenCount > 1 ? Math.min(10, (seenCount - 1) * 5) : 0;
-      const finalMatchScore = Math.min(100, Math.max(0, Math.round(val.bestMatchScore + consensusBoost)));
+      const finalMatchScore = Math.min(100, Math.max(0, Math.round(bestMatchScore + consensusBoost)));
 
+      // SN3-02: Capability Evidence Tiering
+      const verificationSummary = CapabilityEvidenceEvaluator.evaluateEvidence({
+        network: raw.network,
+        verificationStatus: raw.capability?.verificationStatus,
+        hasPlatformOrders: raw.hasPlatformOrders,
+        isNetworkAuthenticated: raw.isNetworkAuthenticated,
+        chamberAttestation: raw.chamberAttestation,
+        claimedTier: raw.claimedTier,
+        categories: raw.capability?.categories,
+      });
+
+      // SN3-03: Dynamic Capacity Headroom
+      const capacityHeadroom = DynamicCapacityHeadroomCalculator.calculateHeadroom({
+        declaredCapacity: raw.declaredCapacity,
+        observedCapacity: raw.observedCapacity,
+        activeBacklog: raw.activeBacklog,
+        capacityUnit: raw.capacityUnit,
+        backlogUnit: raw.backlogUnit,
+        tenantId: request.organizationId,
+      });
+
+      // SN3-04: Supplier Performance Intelligence
+      let scorecardFromRepo = null;
+      if (raw.canonicalSupplierId && this.repositories?.supplierScorecards) {
+        try {
+          scorecardFromRepo = await this.repositories.supplierScorecards.findBySupplierId(
+            raw.canonicalSupplierId,
+          );
+        } catch {
+          scorecardFromRepo = null;
+        }
+      }
+
+      const performanceSummary = SupplierPerformanceIntelligenceEvaluator.evaluatePerformance({
+        scorecard: scorecardFromRepo as any,
+        dimensions: raw.performanceMetrics as any,
+        completedOrdersCount: raw.performanceMetrics?.completedOrdersCount,
+      });
+
+      // SN3-05: Freshness / Staleness Intelligence
+      const freshnessAssessment = FreshnessIntelligenceEvaluator.evaluateFreshness(
+        raw.lastVerifiedAt,
+      );
+
+      // SN3-06: Discovery Feedback Signals
+      const feedbackSignals = DiscoveryFeedbackSignalsEvaluator.evaluateSignals(
+        raw.feedbackStats ?? {},
+      );
+
+      // Construct normalized candidate
       const normalized: NormalizedSupplierCandidate = {
-        candidateId: `cand-${key.replace(/[^a-zA-Z0-9_-]/g, '_')}`,
-        canonicalSupplierId: key.startsWith('supplier-') || key.startsWith('supp-') ? key : undefined,
+        candidateId: `cand-${canonicalRef.replace(/[^a-zA-Z0-9_-]/g, '_')}`,
+        canonicalSupplierId: raw.canonicalSupplierId || (canonicalRef.startsWith('supplier-') || canonicalRef.startsWith('supp-') ? canonicalRef : undefined),
         anonymousLabel,
         matchScore: finalMatchScore,
         confidenceScore: distanceResult.confidenceScore,
@@ -581,7 +650,8 @@ export class SupplierNetworkEngine {
         capabilityMatch: {
           isMatch: true,
           matchedCategories: raw.capability?.categories ?? [request.category],
-          capacityOk: true,
+          capacityOk: capacityHeadroom.isHeadroomKnown ? capacityHeadroom.status !== 'EXHAUSTED' : true,
+          capacityHeadroomRatio: capacityHeadroom.headroomRatio,
         },
         locationMatch: {
           isLocal: distanceResult.isLocal,
@@ -594,17 +664,25 @@ export class SupplierNetworkEngine {
         },
         provenance: {
           primaryNetwork: raw.network,
-          discoveredNetworks: Array.from(val.seenNetworks),
+          discoveredNetworks: Array.from(seenNetworks),
           externalRef: raw.externalRef,
           discoveredAt: new Date().toISOString(),
-          verified: raw.capability?.verificationStatus === 'VERIFIED' || raw.capability?.verificationStatus === 'NETWORK_VERIFIED',
-          truthfulStatus: val.registration.truthfulStatus ?? (isLive ? TruthfulProviderStatus.LIVE_ACTIVE : TruthfulProviderStatus.STUBBED_SIMULATION),
+          verified: verificationSummary.isPlatformVerified || verificationSummary.isNetworkVerified,
+          truthfulStatus:
+            primaryItem.registration.truthfulStatus ??
+            (isLive ? TruthfulProviderStatus.LIVE_ACTIVE : TruthfulProviderStatus.STUBBED_SIMULATION),
         },
         flags: {
           canReceiveRfq: raw.canReceiveRfq ?? true,
           canSubmitQuote: raw.canSubmitQuote ?? true,
           isVerifiedActive: true,
         },
+        identityResolution: group.resolution,
+        verificationSummary,
+        capacityHeadroom,
+        performanceSummary,
+        freshnessAssessment,
+        feedbackSignals,
       };
 
       // Compute dynamic discovery confidence score

@@ -1,5 +1,7 @@
 import {
   DiscoveryVerificationLevel,
+  CapabilityEvidenceTier,
+  CapacityHeadroomStatus,
   type DiscoveryConfidenceAssessment,
   type ConfidenceFactorBreakdown,
   type NormalizedSupplierCandidate,
@@ -18,10 +20,14 @@ export interface ConfidenceCalculationParams {
   matchReasons?: string[];
   hasStructuredSpecsMatch?: boolean;
   responseDurationMs?: number;
+  isStale?: boolean;
+  stalenessPenalty?: number;
+  performanceBoost?: number;
+  feedbackAdjustment?: number;
 }
 
 /**
- * Dynamic Discovery Confidence Engine.
+ * Dynamic Discovery Confidence Engine (Phase SN.3).
  * Computes evidence-based confidence score (0-100) along 6 weighted dimensions:
  * 1. Capability match depth (0-25)
  * 2. Capacity headroom evidence (0-15)
@@ -29,6 +35,7 @@ export interface ConfidenceCalculationParams {
  * 4. Verification credential level (0-20)
  * 5. Multi-provider consensus agreement (0-10)
  * 6. Freshness & response completeness (0-5)
+ * Plus performance & feedback signal evidence adjustments.
  *
  * STRICT FIREWALL INVARIANT:
  * Discovery confidence is purely for candidate discovery reliability.
@@ -153,22 +160,38 @@ export class DynamicDiscoveryConfidenceEngine {
 
     // 6. Freshness & Response Completeness (0-5)
     let freshnessScore = 5;
-    if (params.responseDurationMs !== undefined && params.responseDurationMs > 3000) {
+    if (params.isStale === true) {
+      freshnessScore = 0;
+      const penalty = params.stalenessPenalty ?? 10;
+      explanations.push(`Staleness decay (>180 days) applied (freshness score: 0, penalty: -${penalty})`);
+    } else if (params.responseDurationMs !== undefined && params.responseDurationMs > 3000) {
       freshnessScore = 3;
       explanations.push('Degraded response latency (+3)');
     } else {
       explanations.push('Real-time query response (+5)');
     }
 
-    const totalScore = Math.min(
-      100,
+    // Adjustments: staleness penalty, performance boost, feedback adjustment
+    const stalenessPenalty = params.isStale ? (params.stalenessPenalty ?? 10) : 0;
+    const perfBoost = params.performanceBoost ?? 0;
+    const feedbackAdj = params.feedbackAdjustment ?? 0;
+
+    if (perfBoost > 0) {
+      explanations.push(`Performance intelligence confidence boost (+${perfBoost})`);
+    }
+    if (feedbackAdj !== 0) {
+      explanations.push(`Closed-loop feedback adjustment (${feedbackAdj > 0 ? '+' : ''}${feedbackAdj})`);
+    }
+
+    const baseSum =
       capabilityScore +
-        capacityScore +
-        geographicScore +
-        verificationScore +
-        consensusScore +
-        freshnessScore,
-    );
+      capacityScore +
+      geographicScore +
+      verificationScore +
+      consensusScore +
+      freshnessScore;
+
+    const totalScore = Math.max(0, Math.min(100, baseSum - stalenessPenalty + perfBoost + feedbackAdj));
 
     const breakdown: ConfidenceFactorBreakdown = {
       capabilityScore,
@@ -198,29 +221,77 @@ export class DynamicDiscoveryConfidenceEngine {
     targetCategory: string,
   ): DiscoveryConfidenceAssessment {
     let vLevel: DiscoveryVerificationLevel = DiscoveryVerificationLevel.UNVERIFIED;
-    if (candidate.provenance.verified) {
+
+    if (candidate.verificationSummary) {
+      switch (candidate.verificationSummary.evidenceTier) {
+        case CapabilityEvidenceTier.PLATFORM_VERIFIED:
+          vLevel = DiscoveryVerificationLevel.PLATFORM_VERIFIED;
+          break;
+        case CapabilityEvidenceTier.NETWORK_VERIFIED:
+          vLevel = DiscoveryVerificationLevel.NETWORK_VERIFIED;
+          break;
+        case CapabilityEvidenceTier.CHAMBER_ATTESTED:
+          vLevel = DiscoveryVerificationLevel.CHAMBER_ATTESTED;
+          break;
+        case CapabilityEvidenceTier.SELF_DECLARED:
+        default:
+          vLevel = DiscoveryVerificationLevel.SELF_ATTESTED;
+          break;
+      }
+    } else if (candidate.provenance.verified) {
       if (candidate.provenance.primaryNetwork === 'LOCAL_REGISTRY') {
         vLevel = DiscoveryVerificationLevel.PLATFORM_VERIFIED;
       } else {
         vLevel = DiscoveryVerificationLevel.NETWORK_VERIFIED;
       }
-    } else if (candidate.provenance.primaryNetwork === 'ASSOCIATION' || candidate.provenance.primaryNetwork === 'BNI') {
+    } else if (
+      candidate.provenance.primaryNetwork === 'ASSOCIATION' ||
+      candidate.provenance.primaryNetwork === 'BNI'
+    ) {
       vLevel = DiscoveryVerificationLevel.CHAMBER_ATTESTED;
     } else {
       vLevel = DiscoveryVerificationLevel.SELF_ATTESTED;
     }
 
+    let capacityOk = candidate.capabilityMatch.capacityOk;
+    let capacityRatio = candidate.capabilityMatch.capacityHeadroomRatio;
+
+    if (candidate.capacityHeadroom) {
+      if (candidate.capacityHeadroom.status === CapacityHeadroomStatus.SUFFICIENT) {
+        capacityOk = true;
+        capacityRatio = candidate.capacityHeadroom.headroomRatio;
+      } else if (candidate.capacityHeadroom.status === CapacityHeadroomStatus.CONSTRAINED) {
+        capacityOk = true;
+        capacityRatio = candidate.capacityHeadroom.headroomRatio;
+      } else if (candidate.capacityHeadroom.status === CapacityHeadroomStatus.EXHAUSTED) {
+        capacityOk = false;
+        capacityRatio = 0;
+      } else {
+        capacityOk = undefined;
+        capacityRatio = undefined;
+      }
+    }
+
+    const isStale = candidate.freshnessAssessment?.isStale === true;
+    const stalenessPenalty = candidate.freshnessAssessment?.confidencePenalty ?? 0;
+    const performanceBoost = candidate.performanceSummary?.confidenceBoost ?? 0;
+    const feedbackAdjustment = candidate.feedbackSignals?.feedbackConfidenceAdjustment ?? 0;
+
     return DynamicDiscoveryConfidenceEngine.calculateConfidence({
       category: targetCategory,
       matchedCategories: candidate.capabilityMatch.matchedCategories,
-      capacityOk: candidate.capabilityMatch.capacityOk,
-      capacityHeadroomRatio: candidate.capabilityMatch.capacityHeadroomRatio,
+      capacityOk,
+      capacityHeadroomRatio: capacityRatio,
       distanceKm: candidate.locationMatch.distanceKm,
       calculationMethod: candidate.locationMatch.calculationMethod,
       isLocal: candidate.locationMatch.isLocal,
       verificationLevel: vLevel,
       discoveredNetworkCount: candidate.provenance.discoveredNetworks?.length ?? 1,
       matchReasons: candidate.matchReasons,
+      isStale,
+      stalenessPenalty,
+      performanceBoost,
+      feedbackAdjustment,
     });
   }
 }

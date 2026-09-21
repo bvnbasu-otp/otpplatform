@@ -8,6 +8,7 @@ import type {
   DistanceCalculationResult,
   LocationDescriptor,
 } from '../gis/location-intelligence-port';
+import type { PerformanceTier } from './vendor-intelligence';
 
 /** Crockford Base32 alphabet (no I, L, O, U to avoid human transcription confusion) */
 export const CROCKFORD_BASE32_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -206,6 +207,164 @@ export interface CallbackProcessingResult {
   durationMs: number;
 }
 
+/* ========================================================================= */
+/* SN.3 SUPPLIER INTELLIGENCE & IDENTITY RESOLUTION ENUMS & CONTRACTS        */
+/* ========================================================================= */
+
+/**
+ * Canonical match confidence level for identity resolution.
+ */
+export const IdentityMatchConfidence = {
+  EXACT_CANONICAL: 'EXACT_CANONICAL',
+  VERIFIED_MATCH: 'VERIFIED_MATCH',
+  PROBABLE_MATCH: 'PROBABLE_MATCH',
+  UNRESOLVED: 'UNRESOLVED',
+  CONFLICT: 'CONFLICT',
+} as const;
+
+export type IdentityMatchConfidence =
+  (typeof IdentityMatchConfidence)[keyof typeof IdentityMatchConfidence];
+
+/**
+ * Primary method utilized to establish canonical identity.
+ */
+export const IdentityResolutionMethod = {
+  CANONICAL_UUID: 'CANONICAL_UUID',
+  GSTIN_LUHN_MOD36: 'GSTIN_LUHN_MOD36',
+  PAN_STRUCTURE: 'PAN_STRUCTURE',
+  MULTI_PROVIDER_CONSENSUS: 'MULTI_PROVIDER_CONSENSUS',
+  EXTERNAL_REF: 'EXTERNAL_REF',
+  UNRESOLVED: 'UNRESOLVED',
+} as const;
+
+export type IdentityResolutionMethod =
+  (typeof IdentityResolutionMethod)[keyof typeof IdentityResolutionMethod];
+
+/**
+ * Canonical supplier identity resolution summary.
+ * ZERO PII LEAKAGE: Contains NO raw PAN, GSTIN, legal names, or banking details.
+ */
+export interface CanonicalIdentityResolution {
+  matchConfidence: IdentityMatchConfidence;
+  resolutionMethod: IdentityResolutionMethod;
+  canonicalSupplierId?: string;
+  isMerged: boolean;
+  conflictDetected: boolean;
+  conflictReason?: string;
+  resolvedProvenanceCount: number;
+}
+
+/**
+ * Capability verification tiering.
+ */
+export const CapabilityEvidenceTier = {
+  PLATFORM_VERIFIED: 'PLATFORM_VERIFIED',
+  NETWORK_VERIFIED: 'NETWORK_VERIFIED',
+  CHAMBER_ATTESTED: 'CHAMBER_ATTESTED',
+  SELF_DECLARED: 'SELF_DECLARED',
+} as const;
+
+export type CapabilityEvidenceTier =
+  (typeof CapabilityEvidenceTier)[keyof typeof CapabilityEvidenceTier];
+
+/**
+ * Capability specialization and evidence verification summary.
+ */
+export interface CandidateVerificationSummary {
+  evidenceTier: CapabilityEvidenceTier;
+  isPlatformVerified: boolean;
+  isNetworkVerified: boolean;
+  isChamberAttested: boolean;
+  verificationScore: number; // 0 - 100
+  tierExplanation: string;
+}
+
+/**
+ * Capacity headroom operational status.
+ */
+export const CapacityHeadroomStatus = {
+  SUFFICIENT: 'SUFFICIENT',
+  CONSTRAINED: 'CONSTRAINED',
+  EXHAUSTED: 'EXHAUSTED',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+export type CapacityHeadroomStatus =
+  (typeof CapacityHeadroomStatus)[keyof typeof CapacityHeadroomStatus];
+
+/**
+ * Dynamic capacity headroom evaluation.
+ */
+export interface CandidateCapacityHeadroom {
+  status: CapacityHeadroomStatus;
+  declaredCapacity?: number;
+  observedCapacity?: number;
+  activeBacklog?: number;
+  availableHeadroomUnits?: number;
+  headroomRatio?: number; // 0.0 - 1.0 (undefined if UNKNOWN)
+  unit?: string;
+  isHeadroomKnown: boolean;
+  explanation: string;
+}
+
+/**
+ * Supplier performance intelligence summary (35/30/20/15 scorecard metrics).
+ * STRICT FIREWALL: Discovery confidence boost only, ZERO award authority.
+ */
+export interface CandidatePerformanceSummary {
+  hasHistoricalPerformance: boolean;
+  performanceTier?: PerformanceTier;
+  compositeScore?: number; // 0 - 100
+  qualityScore?: number; // 0 - 100 (35% weight)
+  deliveryScore?: number; // 0 - 100 (30% weight)
+  slaDisputeScore?: number; // 0 - 100 (20% weight)
+  commercialScore?: number; // 0 - 100 (15% weight)
+  completedOrdersCount?: number;
+  status: 'MEASURED' | 'INSUFFICIENT_HISTORY';
+  confidenceBoost: number; // 0 - 20 discovery confidence bonus
+  explanation: string;
+}
+
+/**
+ * Freshness and staleness assessment status.
+ */
+export const CandidateFreshnessStatus = {
+  PROFILE_FRESH: 'PROFILE_FRESH',
+  PROFILE_STALE: 'PROFILE_STALE',
+  FRESHNESS_UNKNOWN: 'FRESHNESS_UNKNOWN',
+} as const;
+
+export type CandidateFreshnessStatus =
+  (typeof CandidateFreshnessStatus)[keyof typeof CandidateFreshnessStatus];
+
+/**
+ * Freshness assessment with deterministic 180-day staleness threshold.
+ */
+export interface CandidateFreshnessAssessment {
+  status: CandidateFreshnessStatus;
+  ageInDays: number;
+  lastVerifiedAt?: string;
+  isStale: boolean;
+  stalenessDecayApplied: boolean;
+  confidencePenalty: number;
+  decayReasonCode?: 'STALENESS_DECAY' | 'CLOCK_ANOMALY' | 'NONE';
+  explanation: string;
+}
+
+/**
+ * Closed-loop discovery feedback signals from historical procurement outcomes.
+ */
+export interface CandidateFeedbackSignals {
+  invitationResponseRate?: number; // 0.0 - 1.0
+  quoteConversionRate?: number; // 0.0 - 1.0
+  fulfillmentSuccessRate?: number; // 0.0 - 1.0
+  totalInvitationsReceived: number;
+  totalQuotesSubmitted: number;
+  feedbackConfidenceAdjustment: number; // -10 to +10
+  isSignalReliable: boolean;
+  explanation: string;
+}
+
 /**
  * Provider-neutral normalized supplier candidate representation.
  * STRICT FIREWALL: Contains ZERO pre-award PII, ZERO network fingerprint leaks,
@@ -232,6 +391,14 @@ export interface NormalizedSupplierCandidate {
   provenance: CandidateProvenance;
   /** Operational capability flags */
   flags: CandidateFlags;
+
+  /* SN.3 Additive Supplier Intelligence & Identity Enrichment */
+  identityResolution?: CanonicalIdentityResolution;
+  performanceSummary?: CandidatePerformanceSummary;
+  verificationSummary?: CandidateVerificationSummary;
+  capacityHeadroom?: CandidateCapacityHeadroom;
+  freshnessAssessment?: CandidateFreshnessAssessment;
+  feedbackSignals?: CandidateFeedbackSignals;
 }
 
 export interface ProviderExecutionSummary {
@@ -302,12 +469,14 @@ export function sanitizeCandidateMatchReasons(reasons: string[]): string[] {
       if (/^bni:/i.test(r)) return 'association_match';
       if (/^association:/i.test(r)) return 'industry_network_match';
       if (/^direct:/i.test(r)) return 'direct_invite_match';
+      if (/^local_registry:/i.test(r)) return 'registry_catalog_match';
       return r;
     });
 }
 
 /**
  * Validates that a candidate payload strictly adheres to anti-leak identity protection.
+ * Recursively scans nested structures to ensure no PII or source fingerprints leak.
  */
 export function validateCandidateAntiLeak(candidate: unknown): {
   valid: boolean;
@@ -318,22 +487,47 @@ export function validateCandidateAntiLeak(candidate: unknown): {
     return { valid: false, violations: ['Invalid candidate payload: expected object'] };
   }
 
-  const obj = candidate as Record<string, any>;
+  const forbiddenSet = new Set<string>(FORBIDDEN_CANDIDATE_PII_FIELDS);
 
-  for (const field of FORBIDDEN_CANDIDATE_PII_FIELDS) {
-    if (field in obj && obj[field] !== undefined && obj[field] !== null && obj[field] !== '') {
-      violations.push(`Forbidden PII field "${field}" present in candidate`);
+  function checkObject(obj: any, path = ''): void {
+    if (!obj || typeof obj !== 'object') return;
+
+    if (Array.isArray(obj)) {
+      obj.forEach((item, idx) => {
+        if (typeof item === 'string' && item.toLowerCase().startsWith('source:')) {
+          violations.push(`Network source fingerprint "${item}" detected at ${path}[${idx}]`);
+        } else if (typeof item === 'object') {
+          checkObject(item, `${path}[${idx}]`);
+        }
+      });
+      return;
     }
-  }
 
-  // Check matchReasons for source leakage
-  if (Array.isArray(obj.matchReasons)) {
-    for (const r of obj.matchReasons) {
-      if (typeof r === 'string' && r.toLowerCase().startsWith('source:')) {
-        violations.push(`Network source fingerprint "${r}" detected in matchReasons`);
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      const currentPath = path ? `${path}.${key}` : key;
+
+      if (forbiddenSet.has(key)) {
+        if (val !== undefined && val !== null && val !== '') {
+          violations.push(`Forbidden PII field "${currentPath}" present in candidate`);
+        }
+      }
+
+      if (key === 'matchReasons' && Array.isArray(val)) {
+        for (const r of val) {
+          if (typeof r === 'string' && r.toLowerCase().startsWith('source:')) {
+            violations.push(`Network source fingerprint "${r}" detected in matchReasons`);
+          }
+        }
+      }
+
+      if (typeof val === 'object' && val !== null) {
+        checkObject(val, currentPath);
       }
     }
   }
+
+  checkObject(candidate);
 
   return {
     valid: violations.length === 0,

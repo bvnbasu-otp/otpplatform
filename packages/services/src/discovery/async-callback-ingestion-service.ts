@@ -12,6 +12,12 @@ import {
   sanitizeCandidateMatchReasons,
   assertCandidateAntiLeak,
   DynamicDiscoveryConfidenceEngine,
+  CanonicalIdentityResolver,
+  CapabilityEvidenceEvaluator,
+  DynamicCapacityHeadroomCalculator,
+  SupplierPerformanceIntelligenceEvaluator,
+  FreshnessIntelligenceEvaluator,
+  DiscoveryFeedbackSignalsEvaluator,
 } from '@otp/domain';
 import { ProviderNeutralLocationIntelligence } from '../gis/provider-neutral-location-intelligence';
 import { verifyOndcAuthHeader } from '../ondc/crypto/ondc-auth-crypto';
@@ -271,9 +277,49 @@ export class AsyncCallbackIngestionService {
         raw.capability?.verificationStatus === 'VERIFIED' ? 'verified_active' : 'active_status',
       ]);
 
+      // SN.3 Intelligence Evaluations
+      const identityResolution = CanonicalIdentityResolver.resolveIdentity({
+        candidateId: key,
+        canonicalSupplierId: key.startsWith('supplier-') || key.startsWith('supp-') ? key : undefined,
+        pan: raw.pan,
+        gstin: raw.gstin,
+        externalRef: raw.externalRef,
+        businessName: raw.businessName,
+        network: payload.provider,
+        tenantId: payload.tenantId,
+      });
+
+      const verificationSummary = CapabilityEvidenceEvaluator.evaluateEvidence({
+        network: payload.provider,
+        verificationStatus: raw.capability?.verificationStatus,
+        claimedTier: raw.claimedTier,
+      });
+
+      const capacityHeadroom = DynamicCapacityHeadroomCalculator.calculateHeadroom({
+        declaredCapacity: raw.declaredCapacity,
+        observedCapacity: raw.observedCapacity,
+        activeBacklog: raw.activeBacklog,
+        capacityUnit: raw.capacityUnit,
+        backlogUnit: raw.backlogUnit,
+        tenantId: payload.tenantId,
+      });
+
+      const performanceSummary = SupplierPerformanceIntelligenceEvaluator.evaluatePerformance({
+        dimensions: raw.performanceMetrics,
+        completedOrdersCount: raw.performanceMetrics?.completedOrdersCount,
+      });
+
+      const freshnessAssessment = FreshnessIntelligenceEvaluator.evaluateFreshness(
+        raw.lastVerifiedAt ?? payload.timestamp,
+      );
+
+      const feedbackSignals = DiscoveryFeedbackSignalsEvaluator.evaluateSignals(
+        raw.feedbackStats ?? {},
+      );
+
       const cand: NormalizedSupplierCandidate = {
         candidateId: `cand-${key.replace(/[^a-zA-Z0-9_-]/g, '_')}`,
-        canonicalSupplierId: key.startsWith('supplier-') ? key : undefined,
+        canonicalSupplierId: key.startsWith('supplier-') || key.startsWith('supp-') ? key : undefined,
         anonymousLabel,
         matchScore: Math.min(100, Math.max(0, Math.round(raw.matchScore ?? 75))),
         confidenceScore: distanceResult.confidenceScore,
@@ -281,7 +327,8 @@ export class AsyncCallbackIngestionService {
         capabilityMatch: {
           isMatch: true,
           matchedCategories: raw.capability?.categories ?? [targetCategory],
-          capacityOk: true,
+          capacityOk: capacityHeadroom.isHeadroomKnown ? capacityHeadroom.status !== 'EXHAUSTED' : true,
+          capacityHeadroomRatio: capacityHeadroom.headroomRatio,
         },
         locationMatch: {
           isLocal: distanceResult.isLocal,
@@ -295,7 +342,7 @@ export class AsyncCallbackIngestionService {
           discoveredNetworks: [payload.provider],
           externalRef: raw.externalRef,
           discoveredAt: new Date().toISOString(),
-          verified: raw.capability?.verificationStatus === 'VERIFIED' || payload.provider === SupplierNetwork.LOCAL_REGISTRY,
+          verified: verificationSummary.isPlatformVerified || verificationSummary.isNetworkVerified,
           truthfulStatus:
             payload.provider === SupplierNetwork.LOCAL_REGISTRY
               ? TruthfulProviderStatus.LIVE_ACTIVE
@@ -306,6 +353,12 @@ export class AsyncCallbackIngestionService {
           canSubmitQuote: true,
           isVerifiedActive: true,
         },
+        identityResolution,
+        verificationSummary,
+        capacityHeadroom,
+        performanceSummary,
+        freshnessAssessment,
+        feedbackSignals,
       };
 
       // Compute dynamic confidence score
@@ -347,7 +400,7 @@ export class AsyncCallbackIngestionService {
         businessName: p.descriptor?.name || 'ONDC Supplier',
         capability: { categories: (p.categories || []).map((c: any) => c.descriptor?.name || c.id) },
         matchScore: 80,
-        matchReasons: ['catalog_match'],
+        matchReasons: ['ondc:catalog_provider'],
       }));
     }
 

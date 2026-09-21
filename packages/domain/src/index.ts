@@ -11,6 +11,12 @@ export * from './enums/provider-execution';
 export * from './gis/location-intelligence-port';
 export * from './types/supplier-network-engine';
 export * from './confidence/discovery-confidence-engine';
+export * from './identity/canonical-identity-resolver';
+export * from './intelligence/capability-evidence';
+export * from './intelligence/capacity-headroom';
+export * from './intelligence/performance-intelligence';
+export * from './intelligence/freshness-evaluator';
+export * from './intelligence/feedback-signals';
 export * from './enums/requirement-mode';
 export * from './enums/attachment';
 export * from './types/blind-quote'; // Legacy export - use IdentityProtectedQuote
@@ -63,4 +69,3 @@ export * from './accounting/ledger-balance';
 export * from './accounting/journal-posting-rules';
 export * from './accounting/tally-journal-exporter';
 export * from './accounting/zoho-journal-exporter';
-
