@@ -10,6 +10,7 @@ import {
   LocalRegistryNetworkAdapter,
 } from '../discovery/networks/supplier-network-adapters';
 import { OndcNetworkAdapter } from '../discovery/networks/ondc-network-adapter';
+import { TruthfulProviderStatus } from '@otp/domain';
 import { DefaultApprovalPolicyService } from '../approval/default-approval-policy-service';
 import { InMemoryAuditService } from '../audit/in-memory-audit-service';
 import { QuoteEvaluationServiceImpl } from '../evaluation/quote-evaluation-service-impl';
@@ -89,11 +90,31 @@ export function createOtpServices(
   const sneEngine = new SupplierNetworkEngine({
     locationIntelligence: new ProviderNeutralLocationIntelligence(),
     providers: [
-      { adapter: LocalRegistryNetworkAdapter, isLive: true },
-      { adapter: DirectNetworkAdapter, isLive: true },
-      { adapter: new OndcNetworkAdapter() },
-      { adapter: BniNetworkAdapter },
-      { adapter: AssociationNetworkAdapter },
+      {
+        adapter: LocalRegistryNetworkAdapter,
+        isLive: true,
+        truthfulStatus: TruthfulProviderStatus.LIVE_ACTIVE,
+      },
+      {
+        adapter: DirectNetworkAdapter,
+        isLive: true,
+        truthfulStatus: TruthfulProviderStatus.LIVE_ACTIVE,
+      },
+      {
+        adapter: new OndcNetworkAdapter(),
+        isLive: false,
+        truthfulStatus: TruthfulProviderStatus.DISABLED_GATE,
+      },
+      {
+        adapter: BniNetworkAdapter,
+        isLive: false,
+        truthfulStatus: TruthfulProviderStatus.DISABLED_GATE,
+      },
+      {
+        adapter: AssociationNetworkAdapter,
+        isLive: false,
+        truthfulStatus: TruthfulProviderStatus.DISABLED_GATE,
+      },
     ],
   });
 

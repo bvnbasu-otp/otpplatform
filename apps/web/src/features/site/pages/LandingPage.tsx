@@ -42,9 +42,12 @@ function HeroSection() {
         {/* Text & CTAs */}
         <div className="text-center max-w-3xl mx-auto">
           {/* Eyebrow */}
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-0.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-primary shadow-2xs">
-            <span>⚡</span>
-            <span>OTP — Open Trade &amp; Procurement</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-0.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-primary shadow-2xs">
+              <span>⚡</span>
+              <span>OTP — Open Trade &amp; Procurement</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground font-medium">Last updated: 21 September 2026</span>
           </div>
 
           {/* Headline */}

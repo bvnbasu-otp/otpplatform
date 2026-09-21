@@ -18,7 +18,7 @@ export const DEMO_REQUIREMENT_ID = ids.requirementId;
 export const DEMO_PERFORMANCE_ID = ids.performanceId;
 
 export const ORG_DISPLAY_NAME = isDemoMode
-  ? 'Durga Rainbow Community'
+  ? 'Durga Rainbow Flat Owner Welfare Association'
   : 'Greenview Apartments';
 
 /** Pilot framing — buyer org is one vertical; OTP is horizontal. */

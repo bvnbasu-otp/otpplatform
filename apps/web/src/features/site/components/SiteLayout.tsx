@@ -39,10 +39,14 @@ export function SiteLayout({ children }: { children: ReactNode }) {
           <footer className="mt-auto border-t bg-card/60 backdrop-blur-xs py-6 px-4" data-testid="site-footer">
             <div className="mx-auto max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
               {/* Brand & Copyright */}
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-foreground">{PRODUCT_NAME}</span>
-                <span>·</span>
-                <span>© {new Date().getFullYear()} All rights reserved.</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-foreground">{PRODUCT_NAME}</span>
+                  <span>·</span>
+                  <span>© {new Date().getFullYear()} All rights reserved.</span>
+                </div>
+                <span className="hidden sm:inline">·</span>
+                <span className="text-[11px] text-muted-foreground/80">Last updated: 21 September 2026</span>
               </div>
 
               {/* Strict 5-Item Navigation Footer Links */}

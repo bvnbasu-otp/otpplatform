@@ -15,9 +15,12 @@ export function PricingPage() {
       <div className="mx-auto max-w-5xl px-4 py-10 sm:py-14 overflow-x-hidden">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2">
-          <span className="rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 px-3 py-1 text-xs font-bold border border-emerald-500/30">
-            ⚡ Predictable Prepaid Access
-          </span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 px-3 py-1 text-xs font-bold border border-emerald-500/30">
+              ⚡ Predictable Prepaid Access
+            </span>
+            <span className="text-[10px] text-muted-foreground font-medium">Last updated: 21 September 2026</span>
+          </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
             Simple, Transparent Pricing
           </h1>
