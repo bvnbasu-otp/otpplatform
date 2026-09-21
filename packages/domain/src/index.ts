@@ -10,6 +10,7 @@ export * from './enums/supplier-network';
 export * from './enums/provider-execution';
 export * from './gis/location-intelligence-port';
 export * from './types/supplier-network-engine';
+export * from './confidence/discovery-confidence-engine';
 export * from './enums/requirement-mode';
 export * from './enums/attachment';
 export * from './types/blind-quote'; // Legacy export - use IdentityProtectedQuote

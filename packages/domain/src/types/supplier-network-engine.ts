@@ -64,6 +64,149 @@ export interface CandidateFlags {
 }
 
 /**
+ * Circuit Breaker operational state for resilient provider execution.
+ */
+export const CircuitBreakerState = {
+  CLOSED: 'CLOSED',
+  OPEN: 'OPEN',
+  HALF_OPEN: 'HALF_OPEN',
+} as const;
+
+export type CircuitBreakerState =
+  (typeof CircuitBreakerState)[keyof typeof CircuitBreakerState];
+
+export interface CircuitBreakerStatus {
+  provider: SupplierNetwork;
+  state: CircuitBreakerState;
+  consecutiveFailures: number;
+  failureThreshold: number;
+  cooldownMs: number;
+  lastFailureTimestamp?: number;
+  lastSuccessTimestamp?: number;
+  nextProbeTimestamp?: number;
+}
+
+export interface ProviderHealthReport {
+  provider: SupplierNetwork;
+  truthfulStatus: TruthfulProviderStatus;
+  circuitBreaker: CircuitBreakerStatus;
+  isAvailable: boolean;
+  totalCalls: number;
+  successfulCalls: number;
+  failedCalls: number;
+  rateLimitedCalls: number;
+  averageLatencyMs: number;
+  lastError?: string;
+  lastSeenTimestamp?: string;
+}
+
+/**
+ * Verification level for dynamic discovery confidence assessment.
+ */
+export const DiscoveryVerificationLevel = {
+  PLATFORM_VERIFIED: 'PLATFORM_VERIFIED',
+  NETWORK_VERIFIED: 'NETWORK_VERIFIED',
+  CHAMBER_ATTESTED: 'CHAMBER_ATTESTED',
+  SELF_ATTESTED: 'SELF_ATTESTED',
+  UNVERIFIED: 'UNVERIFIED',
+} as const;
+
+export type DiscoveryVerificationLevel =
+  (typeof DiscoveryVerificationLevel)[keyof typeof DiscoveryVerificationLevel];
+
+export interface ConfidenceFactorBreakdown {
+  /** Capability match score contribution (0-25) */
+  capabilityScore: number;
+  /** Capacity headroom score contribution (0-15) */
+  capacityScore: number;
+  /** Geographic precision score contribution (0-25) */
+  geographicScore: number;
+  /** Verification credential level score contribution (0-20) */
+  verificationScore: number;
+  /** Multi-provider consensus agreement score contribution (0-10) */
+  consensusScore: number;
+  /** Freshness and payload completeness contribution (0-5) */
+  freshnessScore: number;
+  /** Detailed explanations for each factor */
+  factorExplanations: string[];
+}
+
+export interface DiscoveryConfidenceAssessment {
+  overallConfidenceScore: number; // 0-100
+  factors: ConfidenceFactorBreakdown;
+  verificationLevel: DiscoveryVerificationLevel;
+  consensusProviderCount: number;
+  isMultiNetworkVerified: boolean;
+  recommendedForInvitation: boolean;
+}
+
+/**
+ * Replay protection and payload digest verification.
+ */
+export interface PayloadIntegrityDigest {
+  algorithm: 'sha256' | 'blake2b';
+  digest: string;
+  rawPayloadLength: number;
+  computedAt: string;
+}
+
+export interface CallbackReplayRecord {
+  messageId: string;
+  provider: SupplierNetwork;
+  transactionId: string;
+  tenantId?: string;
+  rfqId?: string;
+  payloadDigest: string;
+  receivedAt: string;
+  processedAt?: string;
+  expiresAt: string;
+}
+
+/**
+ * Async provider callback & webhook types.
+ */
+export interface AsyncProviderCallbackPayload<TBody = unknown> {
+  provider: SupplierNetwork;
+  messageId: string;
+  transactionId: string;
+  timestamp: string | number; // ISO string or epoch millis/seconds
+  tenantId?: string;
+  rfqId?: string;
+  authHeader?: string;
+  signature?: string;
+  body: TBody;
+  headers?: Record<string, string | string[]>;
+}
+
+export interface CallbackVerificationResult {
+  valid: boolean;
+  rejectionCode?:
+    | 'INVALID_SIGNATURE'
+    | 'TIMESTAMP_EXPIRED'
+    | 'FUTURE_TIMESTAMP'
+    | 'REPLAY_DETECTED'
+    | 'INTEGRITY_MISMATCH'
+    | 'TENANT_MISMATCH'
+    | 'MALFORMED_PAYLOAD'
+    | 'UNAUTHORIZED_PROVIDER';
+  rejectionReason?: string;
+  tenantId?: string;
+  rfqId?: string;
+  messageId?: string;
+}
+
+export interface CallbackProcessingResult {
+  success: boolean;
+  messageId: string;
+  provider: SupplierNetwork;
+  candidatesProcessed: number;
+  candidates: NormalizedSupplierCandidate[];
+  verification: CallbackVerificationResult;
+  processedAt: string;
+  durationMs: number;
+}
+
+/**
  * Provider-neutral normalized supplier candidate representation.
  * STRICT FIREWALL: Contains ZERO pre-award PII, ZERO network fingerprint leaks,
  * and ZERO authority to self-award or self-issue purchase orders.

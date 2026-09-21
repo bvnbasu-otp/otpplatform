@@ -20,9 +20,13 @@ export type ProviderExecutionStatus =
  */
 export const TruthfulProviderStatus = {
   LIVE_ACTIVE: 'LIVE_ACTIVE',
+  PRODUCTION_READY: 'PRODUCTION_READY',
+  ACTIVATION_BLOCKED: 'ACTIVATION_BLOCKED',
   STUBBED_SIMULATION: 'STUBBED_SIMULATION',
   DISABLED_GATE: 'DISABLED_GATE',
+  DISABLED: 'DISABLED',
   DEGRADED: 'DEGRADED',
+  FAILED: 'FAILED',
 } as const;
 
 export type TruthfulProviderStatus =

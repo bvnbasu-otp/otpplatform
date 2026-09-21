@@ -48,11 +48,40 @@ export interface CoverageValidationResult {
 }
 
 /**
+ * GIS Execution Mode indicates whether location intelligence is operating via
+ * offline provider-neutral computation or active/credentialed external services.
+ */
+export const GisExecutionMode = {
+  OFFLINE_PROVIDER_NEUTRAL: 'OFFLINE_PROVIDER_NEUTRAL',
+  EXTERNAL_PROVIDER_READY: 'EXTERNAL_PROVIDER_READY',
+  EXTERNAL_PROVIDER_ACTIVE: 'EXTERNAL_PROVIDER_ACTIVE',
+  EXTERNAL_PROVIDER_FAILED: 'EXTERNAL_PROVIDER_FAILED',
+} as const;
+
+export type GisExecutionMode =
+  (typeof GisExecutionMode)[keyof typeof GisExecutionMode];
+
+/**
+ * Configuration options for external GIS provider adapters.
+ */
+export interface ExternalGisProviderConfig {
+  providerName: 'google' | 'mapbox' | 'here' | 'custom';
+  apiKey?: string;
+  endpointUrl?: string;
+  timeoutMs?: number;
+  rateLimitRps?: number;
+  enableFallbackToOffline?: boolean;
+}
+
+/**
  * Provider-neutral GIS Seam.
  * Enables interchangeable location intelligence adapters (Null, Haversine, Offline PostGIS, etc.)
  * without leaking Google or external provider credentials into core domain logic.
  */
 export interface LocationIntelligencePort {
+  /** Mode of GIS execution currently active */
+  readonly executionMode?: GisExecutionMode;
+
   /**
    * Calculate distance and locality between candidate supplier and delivery destination.
    */
