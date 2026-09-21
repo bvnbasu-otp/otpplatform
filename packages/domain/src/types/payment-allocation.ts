@@ -539,7 +539,10 @@ export function calculatePoSettlementSummary(
       const invPaid = allocSumByInvoice[inv.id] !== undefined
         ? allocSumByInvoice[inv.id]!
         : Math.round(Number(inv.paidAmount || 0) * 100) / 100;
-      return invPaid >= invAmount && inv.status === 'PAID';
+      const invBal = inv.balanceDue !== undefined && inv.balanceDue !== null
+        ? Number(inv.balanceDue)
+        : Math.max(0, Math.round((invAmount - invPaid) * 100) / 100);
+      return (invPaid >= invAmount || inv.status === 'PAID' || invBal <= 0) && invAmount > 0;
     });
 
   return {

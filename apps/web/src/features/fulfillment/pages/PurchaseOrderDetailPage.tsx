@@ -27,6 +27,7 @@ import { SupplierMilestoneStepper } from '../components/SupplierMilestoneStepper
 import { PoActionButtons, StatusBadge } from '../components/FulfillmentStatus';
 import { ChangeOrderModal } from '../components/ChangeOrderModal';
 import { ProcurementStageNavigator, type CoreProcurementState } from '@/features/lifecycle';
+import { translateError } from '@/lib/error-translator';
 import { formatMoney, type PurchaseOrderSummary, type WorkOrderSummary } from '../types/fulfillment';
 
 function formatAddress(addr: unknown, city?: string | null): string {
@@ -312,7 +313,7 @@ export function PurchaseOrderDetailPage({
     try {
       const poResult = await fetchPurchaseOrder(cleanId);
       if (!poResult.ok) {
-        setError(poResult.error);
+        setError(translateError(poResult.error));
         return;
       }
       setOrder(poResult.order);
@@ -381,7 +382,7 @@ export function PurchaseOrderDetailPage({
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load purchase order';
-      setError(msg);
+      setError(translateError(msg));
     } finally {
       setIsLoading(false);
     }
@@ -413,7 +414,7 @@ export function PurchaseOrderDetailPage({
     try {
       const result = await updatePurchaseOrderStatus(cleanId, next);
       if (!result.ok) {
-        setError(result.error);
+        setError(translateError(result.error));
         return;
       }
 
@@ -430,7 +431,7 @@ export function PurchaseOrderDetailPage({
       await load();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to update PO status';
-      setError(msg);
+      setError(translateError(msg));
     } finally {
       setBusy(false);
     }
@@ -444,7 +445,7 @@ export function PurchaseOrderDetailPage({
     try {
       const result = await updatePurchaseOrderStatus(cleanId, 'COMPLETED');
       if (!result.ok) {
-        setError(result.error);
+        setError(translateError(result.error));
         return;
       }
       setSuccess('✓ Purchase Order marked COMPLETED! All invoices and financial settlements are verified.');
@@ -452,7 +453,7 @@ export function PurchaseOrderDetailPage({
       await load();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to complete Purchase Order';
-      setError(msg);
+      setError(translateError(msg));
     } finally {
       setBusy(false);
     }
@@ -465,7 +466,7 @@ export function PurchaseOrderDetailPage({
     try {
       const res = await generatePoSettlementCertificate(cleanId);
       if (!res.ok) {
-        setError(res.error);
+        setError(translateError(res.error));
         return;
       }
       const jsonStr = JSON.stringify(res.certificate, null, 2);
@@ -480,7 +481,7 @@ export function PurchaseOrderDetailPage({
       URL.revokeObjectURL(url);
       setSuccess(`✓ Settlement Certificate ${res.certificate.certificateId} downloaded!`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to download certificate');
+      setError(translateError(err instanceof Error ? err.message : 'Failed to download certificate'));
     } finally {
       setDownloadingCert(false);
     }
@@ -497,7 +498,7 @@ export function PurchaseOrderDetailPage({
     try {
       const res = await exportTallyPaymentVoucherXml(pid, order.id);
       if (!res.ok) {
-        setError(res.error);
+        setError(translateError(res.error));
         return;
       }
       const blob = new Blob([res.xml], { type: 'application/xml' });
@@ -511,7 +512,7 @@ export function PurchaseOrderDetailPage({
       URL.revokeObjectURL(url);
       setSuccess(`✓ Tally XML Payment Voucher exported successfully!`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to export Tally payment voucher');
+      setError(translateError(err instanceof Error ? err.message : 'Failed to export Tally payment voucher'));
     } finally {
       setExportingTally(false);
     }
@@ -528,7 +529,7 @@ export function PurchaseOrderDetailPage({
     try {
       const res = await exportZohoPaymentReceiptJson(pid, order.id);
       if (!res.ok) {
-        setError(res.error);
+        setError(translateError(res.error));
         return;
       }
       const jsonStr = JSON.stringify(res.payload, null, 2);
@@ -543,7 +544,7 @@ export function PurchaseOrderDetailPage({
       URL.revokeObjectURL(url);
       setSuccess(`✓ Zoho Books Payment Receipt JSON exported successfully!`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to export Zoho payment receipt');
+      setError(translateError(err instanceof Error ? err.message : 'Failed to export Zoho payment receipt'));
     } finally {
       setExportingZoho(false);
     }
@@ -556,7 +557,7 @@ export function PurchaseOrderDetailPage({
     try {
       const res = await fetchVendorSettlementStatement(orgId, order.supplierId);
       if (!res.ok) {
-        setError(res.error);
+        setError(translateError(res.error));
         return;
       }
       const jsonStr = JSON.stringify(res.statement, null, 2);
@@ -571,7 +572,7 @@ export function PurchaseOrderDetailPage({
       URL.revokeObjectURL(url);
       setSuccess(`✓ Multi-PO Vendor Settlement Statement downloaded!`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to download vendor settlement statement');
+      setError(translateError(err instanceof Error ? err.message : 'Failed to download vendor settlement statement'));
     } finally {
       setDownloadingVendorStatement(false);
     }
@@ -589,14 +590,14 @@ export function PurchaseOrderDetailPage({
         'Work order — ' + order.poNumber,
       );
       if (!result.ok) {
-        setError(result.error);
+        setError(translateError(result.error));
         return;
       }
       setSuccess('Work order progress tracking initialized.');
       await load();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to create work order';
-      setError(msg);
+      setError(translateError(msg));
     } finally {
       setBusy(false);
     }
@@ -608,7 +609,7 @@ export function PurchaseOrderDetailPage({
     try {
       const result = await updateWorkOrderProgress(workOrder.id, percent);
       if (!result.ok) {
-        setError(result.error);
+        setError(translateError(result.error));
         return;
       }
       setSuccess(
@@ -619,7 +620,7 @@ export function PurchaseOrderDetailPage({
       await load();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to update progress';
-      setError(msg);
+      setError(translateError(msg));
     } finally {
       setBusy(false);
     }
@@ -772,17 +773,19 @@ export function PurchaseOrderDetailPage({
   return (
     <div className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] relative" data-testid="purchase-order-detail">
       {/* 15-Step Linear Procurement Navigator */}
-      <ProcurementStageNavigator
-        currentLinearStep={activeLinearStep}
-        currentStage={currentStage}
-        orderTitle={order.rfqTitle || `Purchase Order ${order.poNumber}`}
-        orderReference={order.poNumber}
-        rfqId={order.rfqId}
-        poId={order.id}
-        role={role}
-        backToUrl={listPath}
-        backToLabel="All Purchase Orders"
-      />
+      <div className="no-print">
+        <ProcurementStageNavigator
+          currentLinearStep={activeLinearStep}
+          currentStage={currentStage}
+          orderTitle={order.rfqTitle || `Purchase Order ${order.poNumber}`}
+          orderReference={order.poNumber}
+          rfqId={order.rfqId}
+          poId={order.id}
+          role={role}
+          backToUrl={listPath}
+          backToLabel="All Purchase Orders"
+        />
+      </div>
 
       {/* Screen 10 Hero Card: High-Impact Digital Purchase Order Details */}
       <div className="mt-2 rounded-2xl border bg-card p-3.5 sm:p-5 shadow-sm space-y-3.5">
@@ -885,7 +888,7 @@ export function PurchaseOrderDetailPage({
         </div>
 
         {/* Action Buttons Row: Print / PDF, WhatsApp Share & PO Workflow */}
-        <div className="pt-1 border-t flex flex-wrap items-center justify-between gap-2">
+        <div className="pt-1 border-t flex flex-wrap items-center justify-between gap-2 no-print">
           <div className="flex items-center gap-1.5">
             <button
               type="button"
@@ -916,29 +919,31 @@ export function PurchaseOrderDetailPage({
       </div>
 
       {error && (
-        <div className="mt-2 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-bold text-red-700 dark:text-red-300">
+        <div className="mt-2 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-bold text-red-700 dark:text-red-300 no-print">
           ⚠️ {error}
         </div>
       )}
 
       {success && (
-        <div className="mt-2 rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300" data-testid="fulfillment-success">
+        <div className="mt-2 rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 no-print" data-testid="fulfillment-success">
           {success}
         </div>
       )}
 
       {showShareToast && (
-        <div className="mt-2 rounded-xl border border-blue-300 bg-blue-50 dark:bg-blue-950/40 p-2.5 text-xs font-bold text-blue-800 dark:text-blue-300">
+        <div className="mt-2 rounded-xl border border-blue-300 bg-blue-50 dark:bg-blue-950/40 p-2.5 text-xs font-bold text-blue-800 dark:text-blue-300 no-print">
           ✓ Digital PO summary copied to clipboard for sharing!
         </div>
       )}
 
-      {/* Screen Tabs for 10/11/12/13 Multi-Screen Scopes */}
-      <div className="mt-3 flex items-center gap-1 rounded-xl bg-muted/40 p-1 border overflow-x-auto">
+      {/* Screen Tabs for 10/11/12/13 Multi-Screen Scopes (POL-02 Mobile-Hardened 320px+) */}
+      <div className="mt-3 flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border overflow-x-auto no-scrollbar scroll-smooth no-print min-w-0" role="tablist" aria-label="Purchase Order Sections">
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'OVERVIEW'}
           onClick={() => setActiveTab('OVERVIEW')}
-          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'OVERVIEW'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
@@ -949,8 +954,10 @@ export function PurchaseOrderDetailPage({
 
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'MILESTONES'}
           onClick={() => setActiveTab('MILESTONES')}
-          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'MILESTONES'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
@@ -961,8 +968,10 @@ export function PurchaseOrderDetailPage({
 
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'INVOICE'}
           onClick={() => setActiveTab('INVOICE')}
-          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'INVOICE'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
@@ -973,8 +982,10 @@ export function PurchaseOrderDetailPage({
 
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'PAYMENT'}
           onClick={() => setActiveTab('PAYMENT')}
-          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'PAYMENT'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
@@ -1170,7 +1181,7 @@ export function PurchaseOrderDetailPage({
                         type="button"
                         onClick={() => void handleDownloadCertificate()}
                         disabled={downloadingCert}
-                        className="min-h-[36px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 text-[10px] font-bold inline-flex items-center gap-1 transition"
+                        className="min-h-[36px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 text-[10px] font-bold inline-flex items-center gap-1 transition no-print"
                       >
                         <span>📜</span>
                         <span>{downloadingCert ? 'Generating…' : 'Download Certificate'}</span>
@@ -1238,7 +1249,7 @@ export function PurchaseOrderDetailPage({
                 )}
 
                 {/* Phase 5C.3 Dual-Rail ERP Payment Vouchers & Multi-PO Settlement Actions */}
-                <div className="border-t border-border/60 pt-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="border-t border-border/60 pt-3 flex flex-wrap items-center justify-between gap-2 no-print">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className="font-bold text-foreground">ERP Payment Vouchers (Phase 5C.3):</span>
                   </div>
@@ -1328,7 +1339,7 @@ export function PurchaseOrderDetailPage({
                       <button
                         type="button"
                         onClick={() => setShowChangeOrderModal(true)}
-                        className="px-2.5 py-1 bg-primary text-primary-foreground rounded text-[11px] font-bold hover:bg-primary/90 transition"
+                        className="px-2.5 py-1 bg-primary text-primary-foreground rounded text-[11px] font-bold hover:bg-primary/90 transition no-print"
                       >
                         + Request Variation
                       </button>
@@ -1370,7 +1381,7 @@ export function PurchaseOrderDetailPage({
 
             {/* Auto Create Work Order if missing */}
             {!workOrder && (
-              <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2">
+              <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2 no-print">
                 <p className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">Work Execution &amp; Progress</p>
                 <p className="text-xs text-muted-foreground">
                   Initialize milestone progress tracking (0% → 100%) and mutual inspection acknowledgment.
@@ -1383,38 +1394,6 @@ export function PurchaseOrderDetailPage({
                 >
                   {busy ? 'Initializing…' : 'Initialize Work Order Progress →'}
                 </button>
-              </div>
-            )}
-
-            {workOrder && (
-              <SupplierMilestoneStepper
-                workOrder={workOrder}
-                totalAmount={order.totalAmount}
-                currency={order.currency}
-                role={role}
-                onUpdateProgress={handleProgress}
-                busy={busy}
-              />
-            )}
-
-            {workOrder && (
-              <DeliveryInspectionPanel
-                workOrder={workOrder}
-                role={role}
-                onAccepted={() => void load()}
-              />
-            )}
-
-            {workOrder && (
-              <div id="invoicing-section">
-                <InvoicePaymentPanel
-                  workOrderId={workOrder.id}
-                  supplierId={order.supplierId}
-                  role={role}
-                  poAmount={order.totalAmount}
-                  deliveryAccepted={Boolean(workOrder.buyerAcceptedAt)}
-                  onUpdated={() => void load()}
-                />
               </div>
             )}
           </div>
@@ -1498,7 +1477,7 @@ export function PurchaseOrderDetailPage({
       </div>
 
       {/* Screen 10 Sticky Bottom Bar: [ 📥 Download PO / Share ] & [ Update Milestone Progress ] */}
-      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] no-print">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           {/* Left: Summary Mini Pill */}
           <div className="min-w-0 hidden sm:block">

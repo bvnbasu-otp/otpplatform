@@ -626,27 +626,35 @@ html, body {
   line-height: 1;
 }
 
-/* Print Optimization for PDF Export */
+/* Print Optimization for PDF Export & A4 Printable Documents (POL-04) */
 @media print {
   body {
     background: #ffffff !important;
     color: #000000 !important;
-    font-size: 12pt;
+    font-size: 11pt;
   }
 
-  header, nav, .no-print, [title="Notifications"] {
+  header, nav, aside, .no-print, [title="Notifications"], [role="navigation"], [role="tablist"] {
     display: none !important;
   }
 
-  .print-report-container {
+  .print-report-container,
+  [data-testid="purchase-order-detail"] {
     display: block !important;
     width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .zero-scroll-container {
+    padding: 0 !important;
+    min-height: auto !important;
   }
 
   @page {
     size: A4 portrait;
-    margin: 15mm 12mm 15mm 12mm;
+    margin: 12mm 10mm 12mm 10mm;
   }
 }

@@ -457,4 +457,139 @@ describe('verifyPayment controlled progressive settlement (Phase 5C.1)', () => {
     expect(noticeText).toContain('Tally XML and Zoho JSON export manifests');
     expect(noticeText).toContain('at least 1 recorded payment allocation');
   });
+
+  it('POL-01: verifyPayment synchronizes unpaid invoice records when all payments are satisfied', async () => {
+    const mockPayment = {
+      id: 'pay-pol-1',
+      invoice_id: 'inv-pol-1',
+      purchase_order_id: 'po-pol-1',
+      amount: 10000,
+    };
+
+    const mockInvoice = {
+      id: 'inv-pol-1',
+      amount: 10000,
+      work_order_id: 'wo-pol-1',
+      purchase_order_id: 'po-pol-1',
+      status: 'APPROVED',
+      paid_amount: 10000,
+      balance_due: 0,
+    };
+
+    const mockPo = {
+      id: 'po-pol-1',
+      total_amount: 10000,
+      rfq_id: 'rfq-pol-1',
+      status: 'IN_PROGRESS',
+    };
+
+    const mockInvoicesForPo = [
+      { id: 'inv-pol-1', amount: 10000, status: 'APPROVED', paid_amount: 10000, balance_due: 0 },
+    ];
+
+    const invoiceUpdated = vi.fn().mockReturnValue({
+      in: vi.fn().mockResolvedValue({ error: null }),
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    (supabase.from as any).mockImplementation((table: string) => {
+      if (table === 'payments') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({ data: mockPayment, error: null }),
+            }),
+          }),
+          update: () => ({
+            eq: () => Promise.resolve({ error: null }),
+          }),
+        };
+      }
+      if (table === 'invoices') {
+        return {
+          select: (query: string) => {
+            if (query.includes('work_order_id')) {
+              return {
+                eq: () => ({
+                  maybeSingle: () => Promise.resolve({ data: mockInvoice, error: null }),
+                }),
+              };
+            }
+            return {
+              or: () => ({
+                neq: () => Promise.resolve({ data: mockInvoicesForPo, error: null }),
+              }),
+            };
+          },
+          update: invoiceUpdated,
+        };
+      }
+      if (table === 'purchase_orders') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({ data: mockPo, error: null }),
+            }),
+          }),
+          update: () => ({
+            eq: () => Promise.resolve({ error: null }),
+          }),
+        };
+      }
+      if (table === 'work_orders') {
+        return {
+          update: () => ({
+            eq: () => Promise.resolve({ error: null }),
+          }),
+        };
+      }
+      if (table === 'rfqs') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({ data: { requirement_id: 'req-1' }, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === 'requirements') {
+        return {
+          update: () => ({
+            eq: () => Promise.resolve({ error: null }),
+          }),
+        };
+      }
+      return {
+        select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }) }),
+      };
+    });
+
+    const { verifyPayment } = await import('./payments');
+    const res = await verifyPayment('pay-pol-1');
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.isFullySettled).toBe(true);
+    }
+  });
+
+  it('POL-01: calculatePoSettlementSummary harmonizes ₹0.00 balance due with completed PO predicate', async () => {
+    const { calculatePoSettlementSummary } = await import('@otp/domain');
+    const summary = calculatePoSettlementSummary(
+      { id: 'po-test-101', totalAmount: 100000 },
+      [
+        { id: 'inv-1', amount: 60000, paidAmount: 60000, balanceDue: 0, status: 'PAID' },
+        { id: 'inv-2', amount: 40000, paidAmount: 40000, balanceDue: 0, status: 'APPROVED' },
+      ],
+      [{ id: 'pay-1', amount: 100000 }],
+      [
+        { paymentId: 'pay-1', invoiceId: 'inv-1', allocatedAmount: 60000, status: 'ALLOCATED' },
+        { paymentId: 'pay-1', invoiceId: 'inv-2', allocatedAmount: 40000, status: 'ALLOCATED' },
+      ],
+    );
+
+    expect(summary.isFullySettled).toBe(true);
+    expect(summary.invoicedOutstandingAmount).toBe(0);
+    expect(summary.cumulativePaidAmount).toBe(100000);
+    expect(summary.contractualExposure).toBe(0);
+  });
 });

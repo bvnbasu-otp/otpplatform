@@ -478,6 +478,53 @@ export async function updatePurchaseOrderStatus(
   if (!cleanId) return { ok: false, error: 'Purchase order identifier is required' };
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
 
+  // POL-01: Financial Transition Predicate Harmonization
+  // When completing PO, cleanly synchronize any invoices with balance_due <= 0.00 or paid_amount >= amount to status = 'PAID'
+  if (status === 'COMPLETED') {
+    try {
+      let resolvedPoId = isUuid ? cleanId : null;
+      if (!resolvedPoId) {
+        const { data: poLookup } = await supabase
+          .from('purchase_orders')
+          .select('id')
+          .eq('po_number', cleanId)
+          .maybeSingle();
+        resolvedPoId = poLookup?.id || null;
+      }
+
+      if (resolvedPoId) {
+        // Query non-rejected invoices for this PO
+        const { data: invoices } = await supabase
+          .from('invoices')
+          .select('id, amount, paid_amount, balance_due, status')
+          .or(`purchase_order_id.eq.${resolvedPoId},work_order_id.in.(select id from work_orders where purchase_order_id='${resolvedPoId}')`)
+          .neq('status', 'REJECTED');
+
+        if (invoices && invoices.length > 0) {
+          const eligibleInvoiceIds = invoices
+            .filter((inv) => inv.status !== 'PAID' && (
+              (inv.balance_due !== null && inv.balance_due !== undefined && Number(inv.balance_due) <= 0) ||
+              (Number(inv.paid_amount || 0) >= Number(inv.amount) && Number(inv.amount) > 0)
+            ))
+            .map((inv) => inv.id);
+
+          if (eligibleInvoiceIds.length > 0) {
+            await supabase
+              .from('invoices')
+              .update({
+                status: 'PAID',
+                balance_due: 0,
+                updated_at: new Date().toISOString(),
+              })
+              .in('id', eligibleInvoiceIds);
+          }
+        }
+      }
+    } catch {
+      // Allow database trigger to perform final authoritative validation
+    }
+  }
+
   const patch: Record<string, unknown> = {
     status,
     updated_at: new Date().toISOString(),

@@ -472,5 +472,54 @@ describe('Payment Allocation Pure Calculators (Phase 5C.1)', () => {
       expect(cert.paymentLedger).toHaveLength(1);
       expect(cert.settlementDeclaration).toContain('fully settled in accordance with all contractual and statutory terms');
     });
+
+    it('POL-01: cleanly derives isFullySettled when balance_due is ₹0.00 even if invoice status was un-flipped APPROVED', () => {
+      const invoices = [
+        { id: 'inv-1', amount: 50000, paidAmount: 50000, balanceDue: 0, status: 'APPROVED' as const },
+        { id: 'inv-2', amount: 50000, paidAmount: 50000, balanceDue: 0, status: 'APPROVED' as const },
+      ];
+
+      const payments = [
+        { id: 'pay-1', amount: 100000, unallocatedAmount: 0 },
+      ];
+
+      const allocations = [
+        { paymentId: 'pay-1', invoiceId: 'inv-1', allocatedAmount: 50000, status: 'ALLOCATED' },
+        { paymentId: 'pay-1', invoiceId: 'inv-2', allocatedAmount: 50000, status: 'ALLOCATED' },
+      ];
+
+      const summary = calculatePoSettlementSummary(samplePo, invoices, payments, allocations);
+
+      expect(summary.isFullySettled).toBe(true);
+      expect(summary.invoicedOutstandingAmount).toBe(0);
+      expect(summary.cumulativePaidAmount).toBe(100000);
+      expect(summary.uninvoicedAuthorizationBalance).toBe(0);
+      expect(summary.contractualExposure).toBe(0);
+      expect(isPurchaseOrderFullySettled(samplePo, invoices, payments, allocations)).toBe(true);
+    });
+
+    it('POL-01: prevents isFullySettled when outstanding balance remains > ₹0.00', () => {
+      const invoices = [
+        { id: 'inv-1', amount: 50000, paidAmount: 50000, balanceDue: 0, status: 'PAID' as const },
+        { id: 'inv-2', amount: 50000, paidAmount: 25000, balanceDue: 25000, status: 'PARTIALLY_PAID' as const },
+      ];
+
+      const payments = [
+        { id: 'pay-1', amount: 75000, unallocatedAmount: 0 },
+      ];
+
+      const allocations = [
+        { paymentId: 'pay-1', invoiceId: 'inv-1', allocatedAmount: 50000, status: 'ALLOCATED' },
+        { paymentId: 'pay-1', invoiceId: 'inv-2', allocatedAmount: 25000, status: 'ALLOCATED' },
+      ];
+
+      const summary = calculatePoSettlementSummary(samplePo, invoices, payments, allocations);
+
+      expect(summary.isFullySettled).toBe(false);
+      expect(summary.invoicedOutstandingAmount).toBe(25000);
+      expect(summary.cumulativePaidAmount).toBe(75000);
+      expect(summary.contractualExposure).toBe(25000);
+      expect(isPurchaseOrderFullySettled(samplePo, invoices, payments, allocations)).toBe(false);
+    });
   });
 });

@@ -32,6 +32,7 @@ import {
   validateInvoiceAmountAgainstPo,
   type CreditDebitNote,
 } from '@otp/domain';
+import { translateError } from '@/lib/error-translator';
 
 export interface InvoicePaymentPanelProps {
   workOrderId: string;
@@ -134,7 +135,7 @@ export function InvoicePaymentPanel({
         setPayAmountInput('');
       }
     } else {
-      setError(invsRes.error);
+      setError(translateError(invsRes.error));
     }
 
     if (mRes.ok && mRes.milestones) {
@@ -260,7 +261,7 @@ export function InvoicePaymentPanel({
 
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError(translateError(result.error));
       return;
     }
 
@@ -279,7 +280,7 @@ export function InvoicePaymentPanel({
     const result = await approveInvoice(invId);
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError(translateError(result.error));
       return;
     }
     setSuccess('✓ Invoice approved for payment settlement!');
@@ -293,7 +294,7 @@ export function InvoicePaymentPanel({
     const result = await rejectInvoice(invId);
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError(translateError(result.error));
       return;
     }
     setSuccess('Invoice rejected. Supplier notified to re-submit.');
@@ -331,7 +332,7 @@ export function InvoicePaymentPanel({
     );
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError(translateError(result.error));
       return;
     }
     setSuccess(
@@ -373,7 +374,7 @@ export function InvoicePaymentPanel({
     );
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError(translateError(result.error));
       return;
     }
     setSuccess(`✓ Successfully allocated ₹${allocAmt} from advance payment against ${activeInvoice.invoiceNumber}!`);
@@ -388,7 +389,7 @@ export function InvoicePaymentPanel({
     const result = await verifyPayment(payment.id);
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError(translateError(result.error));
       return;
     }
     setSuccess('✓ Payment verified and milestone settlement confirmed!');
@@ -412,7 +413,7 @@ export function InvoicePaymentPanel({
     setBusy(false);
 
     if (!result.ok) {
-      setError(result.error);
+      setError(translateError(result.error));
       return;
     }
 
@@ -453,7 +454,7 @@ export function InvoicePaymentPanel({
     setBusy(false);
 
     if (!result.ok) {
-      setError(result.error);
+      setError(translateError(result.error));
       return;
     }
 
@@ -472,7 +473,7 @@ export function InvoicePaymentPanel({
     const res = await exportTallyPaymentVoucherXml(pid, activeInvoice.purchaseOrderId || undefined);
     setBusy(false);
     if (!res.ok) {
-      setError(res.error);
+      setError(translateError(res.error));
       return;
     }
     const blob = new Blob([res.xml], { type: 'application/xml' });
@@ -493,7 +494,7 @@ export function InvoicePaymentPanel({
     const res = await exportZohoPaymentReceiptJson(pid, activeInvoice.purchaseOrderId || undefined);
     setBusy(false);
     if (!res.ok) {
-      setError(res.error);
+      setError(translateError(res.error));
       return;
     }
     const jsonStr = JSON.stringify(res.payload, null, 2);

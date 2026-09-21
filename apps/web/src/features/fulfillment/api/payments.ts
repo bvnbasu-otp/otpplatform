@@ -384,6 +384,20 @@ export async function recordInvoicePayment(
     };
   }
 
+  // Synchronize invoice balance_due, paid_amount, and status in test fallback mode
+  const newPaidAmount = Math.min(Number(inv.amount), Number(inv.paid_amount || 0) + amount);
+  const newBalanceDue = Math.max(0, Number(inv.amount) - newPaidAmount);
+  const newStatus = newPaidAmount >= Number(inv.amount) || newBalanceDue <= 0 ? 'PAID' : 'PARTIALLY_PAID';
+  await supabase
+    .from('invoices')
+    .update({
+      paid_amount: newPaidAmount,
+      balance_due: newBalanceDue,
+      status: newStatus,
+      updated_at: now,
+    })
+    .eq('id', invoiceId);
+
   return { ok: true, paymentId: payData.id, allocationId: allocData.id };
 }
 
@@ -484,19 +498,30 @@ export async function verifyPayment(paymentId: string): Promise<
         .maybeSingle(),
       supabase
         .from('invoices')
-        .select('id, amount, status, paid_amount')
+        .select('id, amount, status, paid_amount, balance_due')
         .or(`purchase_order_id.eq.${poId},work_order_id.in.(select id from work_orders where purchase_order_id='${poId}')`)
         .neq('status', 'REJECTED'),
     ]);
 
     if (po && poInvoices && poInvoices.length > 0) {
-      const allInvoicesPaid = poInvoices.every((i) => i.status === 'PAID');
+      const allInvoicesPaid = poInvoices.every(
+        (i) => i.status === 'PAID' || Number(i.paid_amount || 0) >= Number(i.amount) || (i.balance_due != null && Number(i.balance_due) <= 0),
+      );
       const totalPaid = poInvoices.reduce((sum, i) => sum + Number(i.paid_amount || (i.status === 'PAID' ? i.amount : 0)), 0);
       const totalPoAmount = Number(po.total_amount);
 
       // Controlled completion condition: exact ceiling invariant
       if (allInvoicesPaid && totalPaid >= totalPoAmount) {
         isFullySettled = true;
+
+        // Synchronize all invoices to status = 'PAID'
+        const unpaidInvIds = poInvoices.filter((i) => i.status !== 'PAID').map((i) => i.id);
+        if (unpaidInvIds.length > 0) {
+          await supabase
+            .from('invoices')
+            .update({ status: 'PAID', balance_due: 0, updated_at: now })
+            .in('id', unpaidInvIds);
+        }
 
         // Complete Work Order
         if (workOrderId) {
@@ -705,6 +730,28 @@ export async function allocateAdvancePayment(
 
   if (allocErr || !allocData) {
     return { ok: false, error: allocErr?.message || 'Failed to allocate advance payment' };
+  }
+
+  // Synchronize invoice balance_due, paid_amount, and status in test fallback mode
+  const { data: targetInv } = await supabase
+    .from('invoices')
+    .select('id, amount, paid_amount, balance_due, status')
+    .eq('id', invoiceId)
+    .maybeSingle();
+
+  if (targetInv) {
+    const newPaidAmount = Math.min(Number(targetInv.amount), Number(targetInv.paid_amount || 0) + amount);
+    const newBalanceDue = Math.max(0, Number(targetInv.amount) - newPaidAmount);
+    const newStatus = newPaidAmount >= Number(targetInv.amount) || newBalanceDue <= 0 ? 'PAID' : 'PARTIALLY_PAID';
+    await supabase
+      .from('invoices')
+      .update({
+        paid_amount: newPaidAmount,
+        balance_due: newBalanceDue,
+        status: newStatus,
+        updated_at: now,
+      })
+      .eq('id', invoiceId);
   }
 
   return { ok: true, allocationId: allocData.id };
