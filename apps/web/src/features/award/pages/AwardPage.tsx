@@ -17,18 +17,30 @@ import {
 } from '@/features/governance/types/governance';
 import { revealSupplier, type RevealedWinner } from '@/features/reveal/api/reveal';
 import { fetchRevealedQuotes, type RevealedQuoteRow } from '@/features/reveal/api/fetch-revealed-quotes';
-import { approve, fetchApproval, requestApproval } from '../api/approval';
+import { approve, fetchApproval, requestApproval, fetchRfqApprovalStages, fetchUserActiveDelegations, submitTierApprovalAtomic } from '../api/approval';
 import { fetchAward, lockAward, unlockAwardDecision } from '../api/awards';
 import { CancelRfqModal } from '@/features/rfq/components';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
 import { triggerPrintDialog } from '@/features/reporting/lib/pdf-generator';
+import { MultiTierApprovalGatePanel } from '@/features/governance/components/MultiTierApprovalGatePanel';
+import { useAuth } from '@/features/auth';
+import { supabase } from '@/lib/supabase';
+import {
+  type RfqApprovalStage,
+  type OrganizationDelegation,
+  isAwardLockEligible,
+} from '@otp/domain';
 import type { AwardSummary } from '../api/awards';
 import type { ApprovalSummary } from '../api/approval';
 
 export function AwardPage({ rfqId }: { rfqId: string }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [award, setAward] = useState<AwardSummary | null>(null);
   const [approval, setApproval] = useState<ApprovalSummary | null>(null);
+  const [stages, setStages] = useState<RfqApprovalStage[]>([]);
+  const [delegations, setDelegations] = useState<OrganizationDelegation[]>([]);
+  const [rfqCreatorId, setRfqCreatorId] = useState<string>('');
   const [quotes, setQuotes] = useState<IdentityProtectedQuoteForVote[]>([]);
   const [revealedQuotes, setRevealedQuotes] = useState<RevealedQuoteRow[]>([]);
   const [votes, setVotes] = useState<CommitteeVote[]>([]);
@@ -48,13 +60,15 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
 
   const load = useCallback(async () => {
     setIsLoading(true);
-    const [awardRes, approvalRes, quotesRes, tallyRes, summaryRes, votesRes] = await Promise.all([
+    const [awardRes, approvalRes, quotesRes, tallyRes, summaryRes, votesRes, stagesRes, rfqDataRes] = await Promise.all([
       fetchAward(rfqId),
       fetchApproval(rfqId),
       fetchIdentityProtectedQuotesForVote(rfqId),
       fetchVoteTally(rfqId),
       fetchVotingSummary(rfqId),
       fetchVotes(rfqId),
+      fetchRfqApprovalStages(rfqId),
+      supabase.from('rfqs').select('id, organization_id, created_by').eq('id', rfqId).maybeSingle(),
     ]);
 
     if (awardRes.ok) {
@@ -69,6 +83,14 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
       }
     }
     if (approvalRes.ok) setApproval(approvalRes.approval);
+    if (stagesRes.ok) setStages(stagesRes.stages);
+    if (rfqDataRes.data) {
+      setRfqCreatorId(rfqDataRes.data.created_by);
+      if (rfqDataRes.data.organization_id) {
+        const delRes = await fetchUserActiveDelegations(rfqDataRes.data.organization_id);
+        if (delRes.ok) setDelegations(delRes.delegations);
+      }
+    }
     if (quotesRes.ok) {
       setQuotes(quotesRes.quotes);
       if (!selectedQuote && quotesRes.quotes.length > 0) {
@@ -90,6 +112,10 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
     () => quotes.find((q) => q.quoteId === (award?.quoteId || selectedQuote)) || quotes[0],
     [quotes, award, selectedQuote],
   );
+
+  const lockEligibility = useMemo(() => {
+    return isAwardLockEligible(stages);
+  }, [stages]);
 
   const revealedWinnerQuote = useMemo(
     () => revealedQuotes.find((q) => q.quoteId === award?.quoteId),
@@ -132,10 +158,36 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
     await load();
   }
 
+  async function handleApproveStage(stageOrder: number, options?: { delegationId?: string; notes?: string }) {
+    const targetStage = stages.find((s) => s.stageOrder === stageOrder);
+    if (!targetStage) return;
+
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    const result = await submitTierApprovalAtomic({
+      rfqId,
+      tierLevel: targetStage.tierLevel,
+      notes: options?.notes,
+      delegationId: options?.delegationId,
+    });
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setSuccess(`Approval stage ${stageOrder} (${targetStage.tierLevel.replace(/_/g, ' ')}) digitally signed!`);
+    await load();
+  }
+
   async function handleLockAward() {
     if (!selectedQuote) return;
     if (!confirmedAward) {
       setError('Please confirm the award selection and consensus rationale before locking.');
+      return;
+    }
+    if (!lockEligibility.eligible) {
+      setError(lockEligibility.reason);
       return;
     }
     setBusy(true);
@@ -722,6 +774,21 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
           </section>
         )}
 
+        {/* Multi-Tier Spend Approval & Delegation Signoff Chain */}
+        {stages.length > 0 && (
+          <MultiTierApprovalGatePanel
+            stages={stages}
+            procurementAmount={winningQuote?.totalCost ?? 0}
+            currentUserId={user?.id || ''}
+            currentUserRole={(user as any)?.org_role || 'BUYER'}
+            currentUserRoles={[(user as any)?.org_role || 'BUYER']}
+            rfqCreatorId={rfqCreatorId}
+            delegations={delegations}
+            onApproveStage={handleApproveStage}
+            className="mb-4"
+          />
+        )}
+
         {/* Standings & Governance Collapsible Section */}
         <div className="pt-1">
           <button
@@ -746,7 +813,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
               {approval && (
                 <section className="rounded-2xl border bg-card p-3.5 shadow-2xs space-y-2" data-testid="approval-section">
                   <h3 className="font-bold text-xs text-foreground uppercase tracking-wider text-muted-foreground">
-                    Governance Approval Gate
+                    Legacy Governance Approval Gate
                   </h3>
                   <div className="flex items-center justify-between text-xs">
                     <span>Status: <strong>{approval.status}</strong></span>
@@ -808,6 +875,17 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
               >
                 <span>🏆</span>
                 <span>{busy ? 'Unmasking…' : 'Confirm Award & Issue Purchase Order →'}</span>
+              </button>
+            ) : !lockEligibility.eligible ? (
+              <button
+                type="button"
+                disabled={true}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600/70 text-white px-6 py-3 text-xs sm:text-sm font-black shadow-md cursor-not-allowed opacity-90 min-h-[44px]"
+                data-testid="lock-award-button-locked"
+                title={lockEligibility.reason}
+              >
+                <span>🔒</span>
+                <span>Award Locked ({lockEligibility.pendingTierLevels.length} Tier(s) Pending)</span>
               </button>
             ) : (
               <button

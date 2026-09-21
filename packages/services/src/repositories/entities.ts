@@ -935,10 +935,50 @@ export interface RfqApprovalStageEntity {
   approverRole?: string | null;
   approverComments?: string | null;
   digitalSignatureHash?: string | null;
+  delegationId?: string | null;
+  delegatorProfileId?: string | null;
+  signatureMode?: 'DIRECT' | 'DELEGATED' | null;
+  notes?: string | null;
   approvedAt?: string | null;
   rejectedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OrganizationDelegationEntity {
+  id: string;
+  organizationId: string;
+  delegatorId: string;
+  delegateeId: string;
+  permissions: string[];
+  spendCapAmount?: number | null;
+  startsAt: string;
+  expiresAt: string;
+  isActive: boolean;
+  revokedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RfqApprovalRouteEvaluationEntity {
+  id: string;
+  rfqId: string;
+  organizationId: string;
+  procurementAmount: number;
+  requiredApprovalLevel: string;
+  requiredTierLevels: string[];
+  requiredApproversCount: number;
+  isExecutiveGate: boolean;
+  isDelegationAllowed: boolean;
+  isVotingRequired: boolean;
+  isQuorumRequired: boolean;
+  policyVersion: number;
+  policySnapshot: Record<string, unknown>;
+  evaluationReason: string;
+  evaluatedBy?: string | null;
+  evaluatedAt: string;
+  createdAt: string;
 }
 
 export interface ProcurementContractEntity {

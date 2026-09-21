@@ -58,6 +58,10 @@ export interface RfqApprovalStage {
   approverRole?: string | null;
   approverComments?: string | null;
   digitalSignatureHash?: string | null;
+  delegationId?: string | null;
+  delegatorProfileId?: string | null;
+  signatureMode?: 'DIRECT' | 'DELEGATED' | null;
+  notes?: string | null;
   approvedAt?: string | null;
   rejectedAt?: string | null;
   createdAt: string;

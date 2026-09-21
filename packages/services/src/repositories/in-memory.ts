@@ -51,6 +51,8 @@ import type {
   OrganizationApprovalPolicyEntity,
   RfqApprovalStageEntity,
   ProcurementContractEntity,
+  OrganizationDelegationEntity,
+  RfqApprovalRouteEvaluationEntity,
 } from './entities';
 
 function id(): string {
@@ -114,6 +116,8 @@ export class InMemoryRepositories {
   organizationApprovalPolicies = new Map<string, OrganizationApprovalPolicyEntity>();
   rfqApprovalStages = new Map<string, RfqApprovalStageEntity>();
   procurementContracts = new Map<string, ProcurementContractEntity>();
+  organizationDelegations = new Map<string, OrganizationDelegationEntity>();
+  rfqApprovalRouteEvaluations = new Map<string, RfqApprovalRouteEvaluationEntity>();
   suppliers = new Map<string, Supplier>();
 
   performance = new Map<string, ProcurementPerformanceRecord>();
@@ -1026,6 +1030,44 @@ export class InMemoryRepositories {
     };
   }
 
+  get organizationDelegationsRepo(): NonNullable<Repositories['organizationDelegations']> {
+    const store = this.organizationDelegations;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (orgId) =>
+        [...store.values()].filter((d) => d.organizationId === orgId),
+      findByDelegateeId: async (orgId, delegateeId) =>
+        [...store.values()].filter(
+          (d) => d.organizationId === orgId && d.delegateeId === delegateeId,
+        ),
+      save: async (delegation) => {
+        store.set(delegation.id, delegation);
+        return delegation;
+      },
+    };
+  }
+
+  get rfqApprovalRouteEvaluationsRepo(): NonNullable<Repositories['rfqApprovalRouteEvaluations']> {
+    const store = this.rfqApprovalRouteEvaluations;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByRfqId: async (rfqId) =>
+        [...store.values()]
+          .filter((e) => e.rfqId === rfqId)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+      findLatestByRfqId: async (rfqId) => {
+        const list = [...store.values()]
+          .filter((e) => e.rfqId === rfqId)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return list[0] ?? null;
+      },
+      save: async (evaluation) => {
+        store.set(evaluation.id, evaluation);
+        return evaluation;
+      },
+    };
+  }
+
   get suppliersRepo(): Repositories['suppliers'] {
     const store = this.suppliers;
     return {
@@ -1099,6 +1141,8 @@ export class InMemoryRepositories {
       organizationApprovalPolicies: this.organizationApprovalPoliciesRepo,
       rfqApprovalStages: this.rfqApprovalStagesRepo,
       procurementContracts: this.procurementContractsRepo,
+      organizationDelegations: this.organizationDelegationsRepo,
+      rfqApprovalRouteEvaluations: this.rfqApprovalRouteEvaluationsRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

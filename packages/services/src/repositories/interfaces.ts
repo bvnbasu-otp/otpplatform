@@ -50,6 +50,8 @@ import type {
   OrganizationApprovalPolicyEntity,
   RfqApprovalStageEntity,
   ProcurementContractEntity,
+  OrganizationDelegationEntity,
+  RfqApprovalRouteEvaluationEntity,
 } from './entities';
 
 
@@ -409,6 +411,20 @@ export interface ProcurementContractRepository {
   save(contract: ProcurementContractEntity): Promise<ProcurementContractEntity>;
 }
 
+export interface OrganizationDelegationRepository {
+  findById(id: string): Promise<OrganizationDelegationEntity | null>;
+  findByOrganizationId(organizationId: string): Promise<OrganizationDelegationEntity[]>;
+  findByDelegateeId(organizationId: string, delegateeId: string): Promise<OrganizationDelegationEntity[]>;
+  save(delegation: OrganizationDelegationEntity): Promise<OrganizationDelegationEntity>;
+}
+
+export interface RfqApprovalRouteEvaluationRepository {
+  findById(id: string): Promise<RfqApprovalRouteEvaluationEntity | null>;
+  findByRfqId(rfqId: string): Promise<RfqApprovalRouteEvaluationEntity[]>;
+  findLatestByRfqId(rfqId: string): Promise<RfqApprovalRouteEvaluationEntity | null>;
+  save(evaluation: RfqApprovalRouteEvaluationEntity): Promise<RfqApprovalRouteEvaluationEntity>;
+}
+
 export interface Repositories {
   requirements: RequirementRepository;
   rfqs: RfqRepository;
@@ -459,6 +475,8 @@ export interface Repositories {
   organizationApprovalPolicies?: OrganizationApprovalPolicyRepository;
   rfqApprovalStages?: RfqApprovalStageRepository;
   procurementContracts?: ProcurementContractRepository;
+  organizationDelegations?: OrganizationDelegationRepository;
+  rfqApprovalRouteEvaluations?: RfqApprovalRouteEvaluationRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

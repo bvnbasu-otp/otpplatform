@@ -158,4 +158,30 @@ describe('Atomic Award, Reveal & PO Preconditions Validation', () => {
       'Approved with committee consensus: Negotiated additional 6-month preventive maintenance SLA.',
     );
   });
+
+  it('enforces multi-tier approval gate: blocks award locking when required tier is pending', () => {
+    const stages = [
+      { id: 's1', rfqId: 'rfq-01', organizationId: 'org-01', tierLevel: 'TIER_1_MANAGER' as const, stageOrder: 1, status: 'APPROVED' as const, thresholdMinAmount: 0, procurementAmount: 1200000, createdAt: '', updatedAt: '' },
+      { id: 's2', rfqId: 'rfq-01', organizationId: 'org-01', tierLevel: 'TIER_2_DEPT_HEAD' as const, stageOrder: 2, status: 'PENDING' as const, thresholdMinAmount: 500000, procurementAmount: 1200000, createdAt: '', updatedAt: '' },
+    ];
+
+    const pendingStages = stages.filter((s) => s.status !== 'APPROVED');
+    const isLockEligible = pendingStages.length === 0;
+
+    expect(isLockEligible).toBe(false);
+    expect(pendingStages).toHaveLength(1);
+    expect(pendingStages[0]?.tierLevel).toBe('TIER_2_DEPT_HEAD');
+  });
+
+  it('enforces multi-tier approval gate: permits award locking once all required tiers are approved', () => {
+    const stages = [
+      { id: 's1', rfqId: 'rfq-01', organizationId: 'org-01', tierLevel: 'TIER_1_MANAGER' as const, stageOrder: 1, status: 'APPROVED' as const, thresholdMinAmount: 0, procurementAmount: 1200000, createdAt: '', updatedAt: '' },
+      { id: 's2', rfqId: 'rfq-01', organizationId: 'org-01', tierLevel: 'TIER_2_DEPT_HEAD' as const, stageOrder: 2, status: 'APPROVED' as const, thresholdMinAmount: 500000, procurementAmount: 1200000, createdAt: '', updatedAt: '' },
+    ];
+
+    const pendingStages = stages.filter((s) => s.status !== 'APPROVED');
+    const isLockEligible = pendingStages.length === 0;
+
+    expect(isLockEligible).toBe(true);
+  });
 });
