@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateExponentialBackoff,
+  classifyDeliveryFailure,
   computeDeterministicHmac,
   isCategoryOptedOut,
   isChannelEnabled,
   isWithinQuietHours,
   redactNotificationPayload,
   renderNotificationTemplate,
+  sanitizeLogData,
   validateProviderWebhookSignature,
   type NotificationPreferences,
 } from './procurement-communications';
@@ -80,6 +82,22 @@ describe('Omnichannel Procurement Communications Domain Engine', () => {
     expect(calculateExponentialBackoff(2, 30, 3600)).toBe(60);
     expect(calculateExponentialBackoff(3, 30, 3600)).toBe(120);
     expect(calculateExponentialBackoff(10, 30, 3600)).toBe(3600); // capped
+  });
+
+  it('classifies delivery failure categories accurately', () => {
+    expect(classifyDeliveryFailure(new Error('Connection reset by peer'))).toBe('TRANSIENT');
+    expect(classifyDeliveryFailure(new Error('Invalid email address format'))).toBe('PERMANENT');
+    expect(classifyDeliveryFailure(new Error('Unauthorized: Invalid API Key'), 401)).toBe('CREDENTIAL_ERROR');
+    expect(classifyDeliveryFailure(new Error('Rate limited'), 429)).toBe('TRANSIENT');
+  });
+
+  it('sanitizes tokens and passwords from logs', () => {
+    const rawLog = 'Error contacting gateway: Bearer eyJhbGciOiJIUzI1NiJ9 with password=MySecretPassword123';
+    const sanitized = sanitizeLogData(rawLog);
+    expect(sanitized).toContain('[REDACTED_TOKEN]');
+    expect(sanitized).toContain('[REDACTED_PASS]');
+    expect(sanitized).not.toContain('eyJhbGciOiJIUzI1NiJ9');
+    expect(sanitized).not.toContain('MySecretPassword123');
   });
 
   it('verifies provider webhook signatures and rejects replay drift', () => {

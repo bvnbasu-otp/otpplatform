@@ -859,13 +859,63 @@ export class InMemoryRepositories {
       findById: async (id) => store.get(id) ?? null,
       findByIdempotencyKey: async (key) =>
         [...store.values()].find((i) => i.idempotencyKey === key) ?? null,
+      findByProviderMessageId: async (providerMessageId) =>
+        [...store.values()].find((i) => i.providerMessageId === providerMessageId) ?? null,
       findPending: async () =>
         [...store.values()].filter((i) => i.status === 'PENDING'),
       findByRecipient: async (recipientUserId) =>
         [...store.values()].filter((i) => i.recipientUserId === recipientUserId),
+      claimPendingBatch: async (params) => {
+        const nowIso = params.now || new Date().toISOString();
+        const nowTime = new Date(nowIso).getTime();
+        const leaseExpiryTime = new Date(nowTime + params.leaseTimeoutMs).toISOString();
+
+        const claimable: NotificationDispatchQueueEntity[] = [];
+        for (const item of store.values()) {
+          // Tenant isolation check if org specified
+          if (params.organizationId && item.organizationId !== params.organizationId) {
+            continue;
+          }
+
+          const isEligiblePending =
+            item.status === 'PENDING' &&
+            new Date(item.nextRetryAt).getTime() <= nowTime;
+
+          const isStaleLease =
+            item.status === 'PROCESSING' &&
+            item.leaseExpiresAt &&
+            new Date(item.leaseExpiresAt).getTime() < nowTime;
+
+          if (isEligiblePending || isStaleLease) {
+            claimable.push(item);
+            if (claimable.length >= params.limit) {
+              break;
+            }
+          }
+        }
+
+        const claimed: NotificationDispatchQueueEntity[] = [];
+        for (const item of claimable) {
+          const updated: NotificationDispatchQueueEntity = {
+            ...item,
+            status: 'PROCESSING',
+            claimedAt: nowIso,
+            claimedBy: params.workerId,
+            leaseExpiresAt: leaseExpiryTime,
+            updatedAt: nowIso,
+          };
+          store.set(updated.id, updated);
+          claimed.push(updated);
+        }
+        return claimed;
+      },
       save: async (item) => {
         store.set(item.id, item);
         return item;
+      },
+      saveMany: async (items) => {
+        for (const item of items) store.set(item.id, item);
+        return items;
       },
     };
   }

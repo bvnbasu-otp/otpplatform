@@ -74,5 +74,7 @@ export * from './ondc/receiver/ondc-bap-receiver';
 export * from './ondc/ondc-network-service';
 export * from './gst/gst-verification-service';
 export * from './security/cors-policy';
+export * from './notifications/email-dispatcher';
+export * from './notifications/notification-queue-worker';
 
 

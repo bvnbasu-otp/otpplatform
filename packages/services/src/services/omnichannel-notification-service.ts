@@ -219,6 +219,9 @@ export class OmnichannelNotificationService {
           item.status = 'DELIVERED';
           item.providerMessageId = result.providerMessageId ?? null;
           item.deliveryConfirmedAt = now;
+          item.claimedAt = null;
+          item.claimedBy = null;
+          item.leaseExpiresAt = null;
           item.updatedAt = now;
           delivered++;
         } else {
@@ -238,6 +241,9 @@ export class OmnichannelNotificationService {
             item.nextRetryAt = new Date(Date.now() + backoffSeconds * 1000).toISOString();
             failed++;
           }
+          item.claimedAt = null;
+          item.claimedBy = null;
+          item.leaseExpiresAt = null;
           item.updatedAt = now;
         }
       } catch (e: any) {
@@ -254,6 +260,9 @@ export class OmnichannelNotificationService {
           item.status = 'PENDING';
           failed++;
         }
+        item.claimedAt = null;
+        item.claimedBy = null;
+        item.leaseExpiresAt = null;
         item.updatedAt = now;
       }
       await queueRepo.save(item);
@@ -279,6 +288,7 @@ export class OmnichannelNotificationService {
       timestampMs: number;
       providerMessageId: string;
       eventStatus: 'DELIVERED' | 'READ' | 'FAILED';
+      errorReason?: string;
     },
   ): Promise<Result<{ verified: boolean; updated: boolean }, Error>> {
     const isValid = validateProviderWebhookSignature(
@@ -295,6 +305,35 @@ export class OmnichannelNotificationService {
     const queueRepo = this.repos.notificationQueue;
     if (!queueRepo) return ok({ verified: true, updated: false });
 
+    let item: NotificationDispatchQueueEntity | null = null;
+    if (typeof queueRepo.findByProviderMessageId === 'function') {
+      item = await queueRepo.findByProviderMessageId(params.providerMessageId);
+    } else {
+      const allPending = await queueRepo.findPending();
+      item = allPending.find((i) => i.providerMessageId === params.providerMessageId) ?? null;
+    }
+
+    if (!item) {
+      return ok({ verified: true, updated: false });
+    }
+
+    const now = timestamp();
+    if (params.eventStatus === 'DELIVERED' || params.eventStatus === 'READ') {
+      item.status = 'DELIVERED';
+      item.deliveryConfirmedAt = now;
+      item.updatedAt = now;
+    } else if (params.eventStatus === 'FAILED') {
+      item.status = 'DEAD_LETTER';
+      item.errorLog.push({
+        timestamp: now,
+        error: params.errorReason || 'Provider webhook delivery failed',
+        attempt: item.retryCount,
+        category: 'PERMANENT',
+      });
+      item.updatedAt = now;
+    }
+
+    await queueRepo.save(item);
     return ok({ verified: true, updated: true });
   }
 

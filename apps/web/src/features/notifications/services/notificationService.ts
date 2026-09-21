@@ -419,6 +419,32 @@ export const notificationService = {
   },
 
   /**
+   * Triggers the notification queue delivery worker (for cron or administrative manual trigger).
+   */
+  async processDispatchQueue(
+    options: { limit?: number; organizationId?: string } = {}
+  ): Promise<{ ok: boolean; processed?: number; delivered?: number; failed?: number; deadLetter?: number; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('process_notification_dispatch_queue_batch', {
+        p_limit: options.limit || 20,
+        p_organization_id: options.organizationId || null,
+      });
+
+      if (error) throw error;
+      return {
+        ok: true,
+        processed: data?.processed ?? 0,
+        delivered: data?.delivered ?? 0,
+        failed: data?.failed ?? 0,
+        deadLetter: data?.dead_letter ?? 0,
+      };
+    } catch (err: any) {
+      console.error('Failed to trigger notification dispatch queue:', err);
+      return { ok: false, error: err?.message || 'Failed to process dispatch queue' };
+    }
+  },
+
+  /**
    * Subscribe to real-time notifications for a profile.
    * Uses a unique channel topic per caller instance to avoid collision with other mounted listeners.
    */

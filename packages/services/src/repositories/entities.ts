@@ -750,11 +750,14 @@ export interface NotificationDispatchQueueEntity {
   retryCount: number;
   maxRetries: number;
   nextRetryAt: string;
-  errorLog: Array<{ timestamp: string; error: string; attempt: number }>;
+  errorLog: Array<{ timestamp: string; error: string; attempt: number; category?: string }>;
   providerMessageId?: string | null;
   providerResponse?: Record<string, unknown> | null;
   idempotencyKey?: string | null;
   deliveryConfirmedAt?: string | null;
+  claimedAt?: string | null;
+  claimedBy?: string | null;
+  leaseExpiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

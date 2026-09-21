@@ -33,6 +33,7 @@ import { SupplierPerformanceService } from '../services/supplier-performance-ser
 import { WorkOrderService } from '../services/work-order-service';
 import { AccountingService } from '../services/accounting-service';
 import { OmnichannelNotificationService } from '../services/omnichannel-notification-service';
+import { NotificationQueueWorker } from '../notifications/notification-queue-worker';
 import { MilestoneInspectionService } from '../services/milestone-inspection-service';
 import { DisputeResolutionService } from '../services/dispute-resolution-service';
 import { VendorMasterIntelligenceService } from '../services/vendor-master-intelligence-service';
@@ -61,6 +62,7 @@ export interface OtpServices {
   audit: AuditAppService;
   notifications: NotificationAppService;
   omnichannelNotifications: OmnichannelNotificationService;
+  notificationWorker: NotificationQueueWorker;
   milestoneInspections: MilestoneInspectionService;
   disputeResolution: DisputeResolutionService;
   vendorIntelligence: VendorMasterIntelligenceService;
@@ -122,6 +124,7 @@ export function createOtpServices(
   const accounting = new AccountingService(repos, audit);
   const supplierPerformance = new SupplierPerformanceService(repos, audit);
   const omnichannelNotifications = new OmnichannelNotificationService(repos, audit);
+  const notificationWorker = new NotificationQueueWorker(repos, audit);
   const milestoneInspections = new MilestoneInspectionService(repos, audit);
   const disputeResolution = new DisputeResolutionService(repos, audit);
   const vendorIntelligence = new VendorMasterIntelligenceService(repos, audit);
@@ -149,6 +152,7 @@ export function createOtpServices(
     audit,
     notifications,
     omnichannelNotifications,
+    notificationWorker,
     milestoneInspections,
     disputeResolution,
     vendorIntelligence,

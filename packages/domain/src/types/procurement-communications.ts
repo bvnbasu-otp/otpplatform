@@ -102,11 +102,14 @@ export interface NotificationDispatchQueueItem {
   retryCount: number;
   maxRetries: number;
   nextRetryAt: string;
-  errorLog: Array<{ timestamp: string; error: string; attempt: number }>;
+  errorLog: Array<{ timestamp: string; error: string; attempt: number; category?: string }>;
   providerMessageId?: string | null;
   providerResponse?: Record<string, unknown> | null;
   idempotencyKey?: string | null;
   deliveryConfirmedAt?: string | null;
+  claimedAt?: string | null;
+  claimedBy?: string | null;
+  leaseExpiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -224,6 +227,114 @@ export function calculateExponentialBackoff(
   if (retryCount <= 0) return 0;
   const exponential = baseDelaySeconds * Math.pow(2, retryCount - 1);
   return Math.min(exponential, maxDelaySeconds);
+}
+
+export type DeliveryFailureCategory = 'TRANSIENT' | 'PERMANENT' | 'CREDENTIAL_ERROR';
+
+/**
+ * Classifies delivery error into TRANSIENT (retryable), PERMANENT (fatal), or CREDENTIAL_ERROR (fatal secret/auth issue).
+ */
+export function classifyDeliveryFailure(
+  error: unknown,
+  statusCode?: number,
+): DeliveryFailureCategory {
+  if (statusCode === 401 || statusCode === 403) {
+    return 'CREDENTIAL_ERROR';
+  }
+  if (statusCode === 400 || statusCode === 404 || statusCode === 410 || statusCode === 422) {
+    return 'PERMANENT';
+  }
+  if (statusCode === 408 || statusCode === 429 || (statusCode !== undefined && statusCode >= 500 && statusCode <= 599)) {
+    return 'TRANSIENT';
+  }
+
+  const message = error instanceof Error ? error.message : String(error || '');
+  const lowerMsg = message.toLowerCase();
+
+  // Credential error checks
+  if (
+    lowerMsg.includes('unauthorized') ||
+    lowerMsg.includes('invalid api key') ||
+    lowerMsg.includes('invalid credentials') ||
+    lowerMsg.includes('auth failed') ||
+    lowerMsg.includes('authentication failed') ||
+    lowerMsg.includes('eauth') ||
+    lowerMsg.includes('forbidden') ||
+    lowerMsg.includes('access denied')
+  ) {
+    return 'CREDENTIAL_ERROR';
+  }
+
+  // Permanent error checks
+  if (
+    lowerMsg.includes('invalid recipient') ||
+    lowerMsg.includes('invalid email') ||
+    lowerMsg.includes('invalid phone') ||
+    lowerMsg.includes('not found') ||
+    lowerMsg.includes('unregistered') ||
+    lowerMsg.includes('blacklisted') ||
+    lowerMsg.includes('unsubscribed') ||
+    lowerMsg.includes('template not found') ||
+    lowerMsg.includes('malformed') ||
+    lowerMsg.includes('bad request') ||
+    lowerMsg.includes('validation') ||
+    lowerMsg.includes('permanent')
+  ) {
+    return 'PERMANENT';
+  }
+
+  // Transient / network error checks
+  if (
+    lowerMsg.includes('timeout') ||
+    lowerMsg.includes('timed out') ||
+    lowerMsg.includes('aborted') ||
+    lowerMsg.includes('econnreset') ||
+    lowerMsg.includes('etimedout') ||
+    lowerMsg.includes('enotfound') ||
+    lowerMsg.includes('econnrefused') ||
+    lowerMsg.includes('rate limit') ||
+    lowerMsg.includes('too many requests') ||
+    lowerMsg.includes('service unavailable') ||
+    lowerMsg.includes('gateway timeout') ||
+    lowerMsg.includes('fetch failed') ||
+    lowerMsg.includes('transient')
+  ) {
+    return 'TRANSIENT';
+  }
+
+  return 'TRANSIENT';
+}
+
+/**
+ * Calculates exponential backoff with randomized jitter (+- jitterFactor).
+ */
+export function calculateExponentialBackoffWithJitter(
+  retryCount: number,
+  baseDelaySeconds = 30,
+  maxDelaySeconds = 3600,
+  jitterFactor = 0.2,
+  rng: () => number = Math.random,
+): number {
+  if (retryCount <= 0) return 0;
+  const base = calculateExponentialBackoff(retryCount, baseDelaySeconds, maxDelaySeconds);
+  const jitterRange = base * jitterFactor;
+  const jitter = (rng() * 2 - 1) * jitterRange;
+  const result = Math.round(base + jitter);
+  return Math.min(Math.max(1, result), maxDelaySeconds);
+}
+
+/**
+ * Sanitizes an error message or payload to prevent credential or secret or PII leakage in logs.
+ */
+export function sanitizeLogData(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/(bearer\s+)[a-zA-Z0-9_\-\.]{8,}/gi, '$1[REDACTED_TOKEN]')
+    .replace(/(api[_-]?key[:=]\s*)[a-zA-Z0-9_\-\.]{8,}/gi, '$1[REDACTED_KEY]')
+    .replace(/(password[:=]\s*)[^\s,;]+/gi, '$1[REDACTED_PASS]')
+    .replace(/(secret[:=]\s*)[a-zA-Z0-9_\-\.]{8,}/gi, '$1[REDACTED_SECRET]')
+    .replace(/(token[:=]\s*)[a-zA-Z0-9_\-\.]{8,}/gi, '$1[REDACTED_TOKEN]')
+    .replace(/(authorization[:=]\s*)[^\s,;]+/gi, '$1[REDACTED_AUTH]');
 }
 
 /**

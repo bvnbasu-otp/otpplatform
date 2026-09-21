@@ -332,12 +332,23 @@ export interface NotificationPreferencesRepository {
   save(prefs: NotificationPreferencesEntity): Promise<NotificationPreferencesEntity>;
 }
 
+export interface NotificationClaimParams {
+  limit: number;
+  leaseTimeoutMs: number;
+  workerId: string;
+  organizationId?: string;
+  now?: string;
+}
+
 export interface NotificationDispatchQueueRepository {
   findById(id: string): Promise<NotificationDispatchQueueEntity | null>;
   findByIdempotencyKey(key: string): Promise<NotificationDispatchQueueEntity | null>;
+  findByProviderMessageId?(providerMessageId: string): Promise<NotificationDispatchQueueEntity | null>;
   findPending(): Promise<NotificationDispatchQueueEntity[]>;
   findByRecipient(recipientUserId: string): Promise<NotificationDispatchQueueEntity[]>;
+  claimPendingBatch?(params: NotificationClaimParams): Promise<NotificationDispatchQueueEntity[]>;
   save(item: NotificationDispatchQueueEntity): Promise<NotificationDispatchQueueEntity>;
+  saveMany?(items: NotificationDispatchQueueEntity[]): Promise<NotificationDispatchQueueEntity[]>;
 }
 
 export interface WorkOrderInspectionRepository {
