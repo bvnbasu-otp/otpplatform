@@ -59,18 +59,36 @@ export function MarketIntelligencePanel({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
         <div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm">📊</span>
             <h3 className="text-xs font-bold text-foreground">
               Real-World Market Intelligence &amp; Pricing Benchmarks
             </h3>
-            <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">
-              Verified Cluster Data
+            <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase border ${
+              intelligence.freshnessStatus === 'FRESH'
+                ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300'
+                : intelligence.freshnessStatus === 'AGING'
+                ? 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border-blue-300'
+                : intelligence.freshnessStatus === 'STALE'
+                ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border-amber-300'
+                : 'bg-muted text-muted-foreground border-border'
+            }`}>
+              {intelligence.freshnessStatus ?? 'FRESH'} DATA
+            </span>
+            <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase border ${
+              intelligence.confidenceLevel === 'HIGH'
+                ? 'bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-300 border-purple-300'
+                : intelligence.confidenceLevel === 'MEDIUM'
+                ? 'bg-teal-100 text-teal-900 dark:bg-teal-950 dark:text-teal-300 border-teal-300'
+                : 'bg-muted text-muted-foreground border-border'
+            }`}>
+              {intelligence.confidenceLevel ?? 'MEDIUM'} CONFIDENCE
             </span>
           </div>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             Benchmarked against {intelligence.sampleSize.toLocaleString('en-IN')} audited contracts
-            {intelligence.locationCity ? ` in ${intelligence.locationCity}` : ' across active MSME hubs'}.
+            {intelligence.locationCity ? ` in ${intelligence.locationCity}` : ' across active MSME hubs'}
+            {intelligence.sourceProviderName ? ` via ${intelligence.sourceProviderName}` : ''}.
           </p>
         </div>
 

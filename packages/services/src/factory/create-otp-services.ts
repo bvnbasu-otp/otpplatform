@@ -29,6 +29,7 @@ import { DisputeResolutionService } from '../services/dispute-resolution-service
 import { VendorMasterIntelligenceService } from '../services/vendor-master-intelligence-service';
 import { EnterpriseApprovalMatrixService } from '../services/enterprise-approval-matrix-service';
 import { ProcurementContractOperationsService } from '../services/procurement-contract-operations-service';
+import { MarketIntelligenceService } from '../services/market-intelligence-service';
 import { IdentityProtectedRfqService } from '../blind/blind-rfq-service';
 import { createInMemoryBlindViewPorts } from '../blind/in-memory-blind-view-ports';
 import type { BlindViewPorts } from '../interfaces/blind-view-ports';
@@ -56,6 +57,7 @@ export interface OtpServices {
   vendorIntelligence: VendorMasterIntelligenceService;
   enterpriseApprovalMatrix: EnterpriseApprovalMatrixService;
   contractOperations: ProcurementContractOperationsService;
+  marketIntelligence: MarketIntelligenceService;
   supplierReveal: SupplierRevealServiceImpl;
   approvalPolicy: DefaultApprovalPolicyService;
 }
@@ -101,6 +103,7 @@ export function createOtpServices(
   const vendorIntelligence = new VendorMasterIntelligenceService(repos, audit);
   const enterpriseApprovalMatrix = new EnterpriseApprovalMatrixService(repos, audit);
   const contractOperations = new ProcurementContractOperationsService(repos, audit);
+  const marketIntelligence = new MarketIntelligenceService(repos, audit);
   const blindViewPorts = blindViews ?? createInMemoryBlindViewPorts(repos);
   const blindRfq = new IdentityProtectedRfqService(repos, blindViewPorts, auditInner);
 
@@ -127,6 +130,7 @@ export function createOtpServices(
     vendorIntelligence,
     enterpriseApprovalMatrix,
     contractOperations,
+    marketIntelligence,
     supplierReveal,
     approvalPolicy,
   };

@@ -43,6 +43,7 @@ export interface Requirement {
   status: RequirementStatus;
   title: string;
   description?: string;
+  budgetAmount?: number | null;
   structuredSpecs?: StructuredSpecs;
   createdAt: string;
   updatedAt: string;

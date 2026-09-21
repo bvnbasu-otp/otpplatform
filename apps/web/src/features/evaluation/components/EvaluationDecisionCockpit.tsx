@@ -12,7 +12,9 @@ import { IdentityProtectedQuoteComparisonTable } from '@/features/rfq/components
 import { QuoteBoqBottomSheet } from '@/features/rfq/components/QuoteBoqBottomSheet';
 import { MarketIntelligencePanel } from '@/features/procurement-os/components/MarketIntelligencePanel';
 import { fetchMarketIntelligence } from '@/features/procurement-os/api/fetch-market-intelligence';
-import type { MarketIntelligenceSummary } from '@otp/domain';
+import { EvaluationApprovalRouteBanner } from './EvaluationApprovalRouteBanner';
+import type { MarketIntelligenceSummary, ApprovalRouteEvaluation } from '@otp/domain';
+import { evaluateApprovalRoute } from '@otp/domain';
 import {
   closeClarificationForEvaluation,
   fetchRfqStatus,
@@ -306,6 +308,22 @@ export function EvaluationDecisionCockpit({
       setAwardJustification(parts.join(' · '));
     }
   }, [selectedQuote, awardJustification]);
+
+  // Derived Dynamic Spend Approval Route Evaluation
+  const approvalRouteEvaluation = useMemo<ApprovalRouteEvaluation | null>(() => {
+    const amount = selectedQuote?.totalCost ?? lowestPriceQuote?.totalCost ?? null;
+    if (amount == null || amount < 0) return null;
+    try {
+      return evaluateApprovalRoute({
+        rfqId,
+        organizationId: 'org-current',
+        estimatedOrAwardedAmount: amount,
+        creatorProfileId: 'usr-buyer',
+      });
+    } catch {
+      return null;
+    }
+  }, [rfqId, selectedQuote?.totalCost, lowestPriceQuote?.totalCost]);
 
   const isAwarded = rfqStatus === 'AWARDED' || Boolean(award && award.status === 'REVEALED');
   const isEvaluating = rfqStatus === 'EVALUATING' || rfqStatus === 'CLOSED';
@@ -969,6 +987,12 @@ export function EvaluationDecisionCockpit({
                     </div>
                   </div>
                 )}
+
+                {/* Dynamic Spend Approval Route Banner */}
+                <EvaluationApprovalRouteBanner
+                  evaluation={approvalRouteEvaluation}
+                  procurementAmount={selectedQuote?.totalCost ?? null}
+                />
 
                 {/* Governance Quorum Status Indicator */}
                 <div className="rounded-2xl border border-border bg-muted/20 p-3 flex items-center justify-between gap-2">

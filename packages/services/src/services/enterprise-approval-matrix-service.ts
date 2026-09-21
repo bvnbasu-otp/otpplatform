@@ -3,12 +3,15 @@ import type {
   OrganizationApprovalPolicy,
   RfqApprovalStage,
   ApprovalTierLevel,
+  ApprovalRouteEvaluation,
 } from '@otp/domain';
 import {
   DEFAULT_ENTERPRISE_APPROVAL_TIERS,
   resolveRequiredApprovalTiers,
   validateApprovalEligibility,
   isRfqFullyApproved,
+  evaluateApprovalRoute,
+  validateApprovalPolicy,
 } from '@otp/domain';
 import type { Repositories } from '../repositories/interfaces';
 import type { AuditAppService } from './audit-service';
@@ -201,5 +204,35 @@ export class EnterpriseApprovalMatrixService {
     );
 
     return updatedStage;
+  }
+
+  /**
+   * Evaluates dynamic spend approval route and returns threshold routing details.
+   */
+  async evaluateApprovalRoute(
+    actor: ActorContext,
+    params: {
+      rfqId: string;
+      procurementAmount: number;
+    }
+  ): Promise<ApprovalRouteEvaluation> {
+    const rfq = await this.repos.rfqs.findById(params.rfqId);
+    if (!rfq) throw new NotFoundError(`RFQ ${params.rfqId} not found`);
+
+    const policy = await this.repos.organizationApprovalPolicies?.findByOrganizationId(rfq.organizationId);
+
+    const evaluation = evaluateApprovalRoute(
+      {
+        rfqId: params.rfqId,
+        organizationId: rfq.organizationId,
+        estimatedOrAwardedAmount: params.procurementAmount,
+        creatorProfileId: rfq.createdBy,
+        actorProfileId: actor.profileId,
+        actorRole: actor.orgRole,
+      },
+      policy ? (policy as unknown as OrganizationApprovalPolicy) : null
+    );
+
+    return evaluation;
   }
 }

@@ -74,6 +74,16 @@ export interface MarketIntelligenceSummary {
   matchedKey?: string;
   matchedScope?: MarketIntelligenceScope;
   matchedCity?: string | null;
+  /** Source classification for transparency */
+  sourceType?: 'LIVE_API' | 'PLATFORM_TRANSACTED' | 'HISTORICAL_BENCHMARK' | 'ESTIMATED_STATISTICAL' | 'UNAVAILABLE';
+  sourceProviderName?: string;
+  freshnessStatus?: 'FRESH' | 'AGING' | 'STALE' | 'EXPIRED' | 'UNAVAILABLE';
+  confidenceLevel?: 'HIGH' | 'MEDIUM' | 'LOW' | 'INSUFFICIENT_DATA';
+  confidenceScore?: number;
+  confidenceMethodology?: string;
+  isFallback?: boolean;
+  fallbackReason?: string | null;
+  observedAt?: string | null;
   /** Short note explaining what the band covers. */
   notes?: string | null;
   /** ISO timestamp of when the snapshot was stamped onto the requirement. */

@@ -15,6 +15,7 @@ import {
 } from '../api/org-members';
 import {
   DELEGATION_PERMISSIONS,
+  DEFAULT_ENTERPRISE_APPROVAL_TIERS,
   type OrganizationInvitation,
   type OrganizationDelegation,
   type DelegationPermission,
@@ -82,7 +83,7 @@ const PERMISSION_LABELS: Record<DelegationPermission, { title: string; subtitle:
 
 export function OrgMembersPage() {
   const { context, switchOrg, refresh } = useRoleContext();
-  const [activeTab, setActiveTab] = useState<'members' | 'invitations' | 'delegations'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'invitations' | 'delegations' | 'thresholds'>('members');
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [invitations, setInvitations] = useState<OrganizationInvitation[]>([]);
   const [delegations, setDelegations] = useState<OrganizationDelegation[]>([]);
@@ -427,7 +428,7 @@ export function OrgMembersPage() {
         <div
           role="tablist"
           aria-label="Governance Workbench Navigation"
-          className="grid grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1 border border-border/80"
+          className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl bg-muted/60 p-1 border border-border/80"
         >
           <button
             type="button"
@@ -475,6 +476,22 @@ export function OrgMembersPage() {
           >
             <span>🛡️</span>
             <span className="truncate">Delegations ({activeDelCount})</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'thresholds'}
+            onClick={() => setActiveTab('thresholds')}
+            data-testid="tab-thresholds"
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+              activeTab === 'thresholds'
+                ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>⚖️</span>
+            <span className="truncate">Spend Thresholds</span>
           </button>
         </div>
       </header>
@@ -1128,7 +1145,86 @@ export function OrgMembersPage() {
         </div>
       )}
 
-      {/* Role Modification Modal */}
+      {/* ================================================================= */}
+      {/* TAB 4: SPEND APPROVAL MATRIX & THRESHOLDS VISUALIZATION          */}
+      {/* ================================================================= */}
+      {activeTab === 'thresholds' && (
+        <div className="space-y-4">
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚖️</span>
+              <div>
+                <h2 className="text-xs font-bold text-foreground">Organizational Spend Approval Thresholds</h2>
+                <p className="text-[11px] text-muted-foreground">
+                  Configured financial authority tiers, sequential signoff rules, and anti-bypass controls.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+              {DEFAULT_ENTERPRISE_APPROVAL_TIERS.map((tier, idx) => (
+                <div
+                  key={tier.tierLevel}
+                  className="rounded-xl border border-border/70 bg-muted/20 p-3.5 space-y-2 relative overflow-hidden"
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                      Tier {idx + 1}
+                    </span>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                      tier.tierLevel === 'TIER_3_EXECUTIVE'
+                        ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950 dark:text-purple-300'
+                        : tier.tierLevel === 'TIER_2_DEPT_HEAD'
+                        ? 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-300'
+                        : 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300'
+                    }`}>
+                      {tier.tierLevel.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xs font-black text-foreground">{tier.tierName}</h3>
+
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Monetary Range:</span>
+                      <strong className="text-foreground font-mono">
+                        ₹{tier.minAmount.toLocaleString('en-IN')} – {tier.maxAmount ? `₹${tier.maxAmount.toLocaleString('en-IN')}` : 'Unlimited'}
+                      </strong>
+                    </div>
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Min Approvers:</span>
+                      <strong className="text-foreground">{tier.minApproversRequired} Signoff</strong>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/50 text-[11px]">
+                    <span className="text-muted-foreground block text-[10px] uppercase font-bold">Authorized Roles:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {tier.requiredApproverRoles.map((role) => (
+                        <span key={role} className="rounded bg-background px-1.5 py-0.5 text-[9px] font-semibold border border-border">
+                          {role}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 flex items-center justify-between gap-2 text-xs">
+              <div className="space-y-0.5">
+                <strong className="text-foreground font-bold block">🔒 Anti-Bypass Invariants Active:</strong>
+                <p className="text-[11px] text-muted-foreground">
+                  Requester cannot approve their own RFQ · Dual-signoff enforced above ₹50 Lakhs · Strict sequential signoffs.
+                </p>
+              </div>
+              <span className="rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 text-[10px] font-black shrink-0">
+                100% Enforced
+              </span>
+            </div>
+          </section>
+        </div>
+      )}
       {editingMember && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 animate-in fade-in duration-150">
           <div className="bg-card w-full max-w-md rounded-2xl border border-border p-5 shadow-xl space-y-4">

@@ -41,11 +41,20 @@ for (const pkg of packages) {
   process.stdout.write(`⏳ Typechecking ${pkg.name}... `);
 
   try {
-    execSync(`${tscCmd} --noEmit -p "${pkg.config}"`, {
+    // If compiling domain, also emit declaration files to packages/domain/dist and sync to node_modules/@otp/domain/dist
+    const emitFlag = pkg.name === '@otp/domain' ? '' : '--noEmit';
+    execSync(`${tscCmd} ${emitFlag} -p "${pkg.config}"`, {
       stdio: 'pipe',
       encoding: 'utf8',
       env: process.env,
     });
+    if (pkg.name === '@otp/domain') {
+      const srcDist = path.resolve('packages/domain/dist');
+      const nodeModulesDist = path.resolve('node_modules/@otp/domain/dist');
+      if (fs.existsSync(srcDist) && fs.existsSync(path.dirname(nodeModulesDist))) {
+        fs.cpSync(srcDist, nodeModulesDist, { recursive: true });
+      }
+    }
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     console.log(`\x1b[32mPASSED\x1b[0m (${duration}s)`);
   } catch (err: any) {

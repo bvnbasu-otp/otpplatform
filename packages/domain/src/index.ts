@@ -44,6 +44,8 @@ export * from './types/vendor-intelligence';
 export * from './types/approval-matrix';
 export * from './types/contract-agreement';
 export * from './types/buyer-governance';
+export * from './types/threshold-routing';
+export * from './types/market-intelligence';
 export * from './accounting/tally-xml-exporter';
 export * from './accounting/zoho-json-exporter';
 export * from './accounting/tally-payment-voucher';
