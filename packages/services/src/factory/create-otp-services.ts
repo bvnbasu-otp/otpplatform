@@ -1,6 +1,15 @@
 import { CompositeDiscoveryService } from '../discovery/composite-discovery-service';
 import { LocalRegistryDiscoveryService } from '../discovery/local-registry-discovery-service';
 import { MockNetworkDiscoveryService } from '../discovery/mock-network-discovery-service';
+import { SupplierNetworkEngine } from '../discovery/supplier-network-engine';
+import { ProviderNeutralLocationIntelligence } from '../gis/provider-neutral-location-intelligence';
+import {
+  BniNetworkAdapter,
+  AssociationNetworkAdapter,
+  DirectNetworkAdapter,
+  LocalRegistryNetworkAdapter,
+} from '../discovery/networks/supplier-network-adapters';
+import { OndcNetworkAdapter } from '../discovery/networks/ondc-network-adapter';
 import { DefaultApprovalPolicyService } from '../approval/default-approval-policy-service';
 import { InMemoryAuditService } from '../audit/in-memory-audit-service';
 import { QuoteEvaluationServiceImpl } from '../evaluation/quote-evaluation-service-impl';
@@ -60,6 +69,7 @@ export interface OtpServices {
   marketIntelligence: MarketIntelligenceService;
   supplierReveal: SupplierRevealServiceImpl;
   approvalPolicy: DefaultApprovalPolicyService;
+  supplierNetworkEngine: SupplierNetworkEngine;
 }
 
 export function createOtpServices(
@@ -74,10 +84,24 @@ export function createOtpServices(
   const evaluationInner = new QuoteEvaluationServiceImpl();
   const approvalPolicy = new DefaultApprovalPolicyService();
 
-  const discoveryInner = new CompositeDiscoveryService([
-    new LocalRegistryDiscoveryService(repos.suppliers),
-    new MockNetworkDiscoveryService(),
-  ]);
+  const sneEngine = new SupplierNetworkEngine({
+    locationIntelligence: new ProviderNeutralLocationIntelligence(),
+    providers: [
+      { adapter: LocalRegistryNetworkAdapter, isLive: true },
+      { adapter: DirectNetworkAdapter, isLive: true },
+      { adapter: new OndcNetworkAdapter() },
+      { adapter: BniNetworkAdapter },
+      { adapter: AssociationNetworkAdapter },
+    ],
+  });
+
+  const discoveryInner = new CompositeDiscoveryService(
+    [
+      new LocalRegistryDiscoveryService(repos.suppliers),
+      new MockNetworkDiscoveryService(),
+    ],
+    { engine: sneEngine },
+  );
   const discovery = new SupplierDiscoveryAppService(discoveryInner);
 
   const requirements = new RequirementService(repos, audit, parser);
@@ -133,5 +157,6 @@ export function createOtpServices(
     marketIntelligence,
     supplierReveal,
     approvalPolicy,
+    supplierNetworkEngine: sneEngine,
   };
 }

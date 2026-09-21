@@ -18,6 +18,8 @@ export * from './repositories/in-memory';
 export * from './discovery/local-registry-discovery-service';
 export * from './discovery/mock-network-discovery-service';
 export * from './discovery/composite-discovery-service';
+export * from './discovery/supplier-network-engine';
+export * from './gis/provider-neutral-location-intelligence';
 export * from './discovery/networks/ondc-network-adapter';
 export * from './discovery/networks/supplier-network-adapters';
 export * from './evaluation/quote-evaluation-service-impl';

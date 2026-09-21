@@ -4,6 +4,7 @@ import { SupplierNetwork } from '@otp/domain';
 function stubAdapter(network: SupplierNetwork, label: string): SupplierNetworkPort {
   return {
     network,
+    isTruthfulLive: false,
     async discover(criteria) {
       return [
         {

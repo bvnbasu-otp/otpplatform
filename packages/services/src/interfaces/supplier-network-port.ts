@@ -27,6 +27,10 @@ export interface NetworkDiscoveryCandidate {
 
 export interface SupplierNetworkPort {
   readonly network: SupplierNetwork;
+  /** Declares whether this provider adapter is live active or a stubbed simulation */
+  readonly isTruthfulLive?: boolean;
+  /** Optional health or status indicator */
+  isEnabled?(): boolean;
   discover(criteria: {
     category: string;
     location?: { city?: string; pinCode?: string };

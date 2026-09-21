@@ -16,6 +16,7 @@ function envFlag(): boolean {
 
 export class OndcNetworkAdapter implements SupplierNetworkPort {
   readonly network = SupplierNetwork.ONDC;
+  readonly isTruthfulLive = false; // Flag-gated stub / dev integration; not live prod
   private readonly enabled: boolean;
   private readonly service: OndcNetworkService;
 

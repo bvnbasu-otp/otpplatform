@@ -7,6 +7,9 @@ export * from './enums/announcements';
 export * from './enums/status-badges';
 export * from './enums/supplier';
 export * from './enums/supplier-network';
+export * from './enums/provider-execution';
+export * from './gis/location-intelligence-port';
+export * from './types/supplier-network-engine';
 export * from './enums/requirement-mode';
 export * from './enums/attachment';
 export * from './types/blind-quote'; // Legacy export - use IdentityProtectedQuote
