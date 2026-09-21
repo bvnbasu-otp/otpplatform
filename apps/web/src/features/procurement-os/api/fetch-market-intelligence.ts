@@ -29,6 +29,32 @@ interface SnapshotShape {
   sampleSize?: number | null;
   notes?: string | null;
   capturedAt?: string | null;
+  responseIntegrityHash?: string | null;
+}
+
+interface MarketSnapshotRow {
+  id: string;
+  category_key: string;
+  location_city: string | null;
+  fair_price_min: number | null;
+  fair_price_max: number | null;
+  fair_price_median: number | null;
+  typical_delivery_days_min: number | null;
+  typical_delivery_days_max: number | null;
+  typical_warranty_months_min: number | null;
+  typical_warranty_months_max: number | null;
+  network_reliability_score: number | null;
+  sample_size: number;
+  source_type: string;
+  source_provider_name: string;
+  observed_at: string;
+  freshness_status: string;
+  confidence_level: string;
+  confidence_score: number;
+  confidence_methodology: string;
+  is_fallback: boolean;
+  fallback_reason: string | null;
+  created_at: string;
 }
 
 function mapBaseline(row: BaselineRow): MarketIntelligenceSummary {
@@ -44,6 +70,12 @@ function mapBaseline(row: BaselineRow): MarketIntelligenceSummary {
     supplierPerformanceAvg:
       row.supplier_performance_avg != null ? Number(row.supplier_performance_avg) : null,
     sampleSize: row.sample_size,
+    sourceType: 'STATIC_REFERENCE',
+    sourceProviderName: 'OTP Curated Cluster Baselines',
+    freshnessStatus: 'AGING',
+    confidenceLevel: 'MEDIUM',
+    confidenceScore: 65,
+    confidenceMethodology: `Audited regional baseline from ${row.sample_size} transacted contracts.`,
   };
 }
 
@@ -72,6 +104,33 @@ function mapSnapshot(snapshot: SnapshotShape): MarketIntelligenceSummary | null 
     confidenceLevel: 'HIGH',
     confidenceScore: 85,
     confidenceMethodology: 'Captured from verified requirement evaluation transaction.',
+    responseIntegrityHash: snapshot.responseIntegrityHash ?? null,
+  };
+}
+
+function mapMarketSnapshotRow(row: MarketSnapshotRow): MarketIntelligenceSummary {
+  return {
+    categoryKey: row.category_key,
+    locationCity: row.location_city,
+    historicalPriceMin: row.fair_price_min != null ? Number(row.fair_price_min) : null,
+    historicalPriceMax: row.fair_price_max != null ? Number(row.fair_price_max) : null,
+    typicalDeliveryDaysMin: row.typical_delivery_days_min,
+    typicalDeliveryDaysMax: row.typical_delivery_days_max,
+    typicalWarrantyMonthsMin: row.typical_warranty_months_min,
+    typicalWarrantyMonthsMax: row.typical_warranty_months_max,
+    supplierPerformanceAvg:
+      row.network_reliability_score != null ? Number(row.network_reliability_score) : null,
+    sampleSize: row.sample_size,
+    sourceType: (row.source_type as any) || 'DATABASE_CACHE',
+    sourceProviderName: row.source_provider_name,
+    freshnessStatus: (row.freshness_status as any) || 'FRESH',
+    confidenceLevel: (row.confidence_level as any) || 'HIGH',
+    confidenceScore: row.confidence_score,
+    confidenceMethodology: row.confidence_methodology,
+    isFallback: row.is_fallback,
+    fallbackReason: row.fallback_reason,
+    observedAt: row.observed_at,
+    capturedAt: row.created_at,
   };
 }
 
@@ -83,6 +142,23 @@ export async function fetchMarketIntelligence(
 > {
   let intelligence: MarketIntelligenceSummary | null = null;
 
+  // 1. Check for immutable stamped market intelligence snapshot on RFQ
+  try {
+    const { data: stampedRow } = await supabase
+      .from('market_intelligence_snapshots')
+      .select('*')
+      .eq('rfq_id', rfqId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (stampedRow) {
+      intelligence = mapMarketSnapshotRow(stampedRow as MarketSnapshotRow);
+    }
+  } catch {
+    // Graceful fallback to requirement snapshot
+  }
+
   const { data: rfqRow } = await supabase
     .from('rfqs')
     .select('id, requirement_id')
@@ -93,7 +169,7 @@ export async function fetchMarketIntelligence(
   let reqBudget: number | null = null;
   let reqCity = '';
 
-  if (rfqRow?.requirement_id) {
+  if (!intelligence && rfqRow?.requirement_id) {
     const { data: requirementRow } = await supabase
       .from('requirements')
       .select('title, description, budget_amount, location, market_intel_snapshot')
@@ -112,7 +188,7 @@ export async function fetchMarketIntelligence(
     }
   }
 
-  // If no snapshot, search baselines by keyword or pilot
+  // 2. If no snapshot, search baselines by keyword or pilot
   if (!intelligence) {
     const pilot = getPilotByRfqId(rfqId);
     let key = categoryKey ?? pilot?.marketIntelCategory;
@@ -148,14 +224,8 @@ export async function fetchMarketIntelligence(
       intelligence = mapBaseline(baseline as BaselineRow);
       intelligence.matchedKey = key;
       intelligence.matchedScope = 'category';
-      intelligence.sourceType = 'HISTORICAL_BENCHMARK';
-      intelligence.sourceProviderName = 'OTP Curated Cluster Baselines';
-      intelligence.freshnessStatus = 'AGING';
-      intelligence.confidenceLevel = 'MEDIUM';
-      intelligence.confidenceScore = 65;
-      intelligence.confidenceMethodology = `Audited regional baseline from ${intelligence.sampleSize} transacted contracts.`;
     } else {
-      // Dynamic baseline derived from requirement specs
+      // Dynamic baseline derived from requirement specs (statistical estimate)
       const basePrice = reqBudget && reqBudget > 0 ? reqBudget : 25000;
       intelligence = {
         categoryKey: key,

@@ -1,3 +1,4 @@
+import React from 'react';
 import type { MarketIntelligenceSummary } from '@otp/domain';
 
 function formatInr(amount: number | null | undefined): string {
@@ -17,6 +18,7 @@ export interface MarketIntelligencePanelProps {
 
 /**
  * Market Intelligence & Pricing Benchmark Decision Support Panel
+ * Strictly enforces honest labeling: Live API vs Transacted Cache vs Regional Benchmark vs Statistical Estimate.
  */
 export function MarketIntelligencePanel({
   intelligence,
@@ -25,8 +27,8 @@ export function MarketIntelligencePanel({
 }: MarketIntelligencePanelProps) {
   if (isLoading) {
     return (
-      <section className="rounded-lg border bg-card p-4 text-xs text-muted-foreground">
-        Loading real-time market intelligence…
+      <section className="rounded-lg border bg-card p-4 text-xs text-muted-foreground animate-pulse">
+        Evaluating market intelligence benchmarks…
       </section>
     );
   }
@@ -52,6 +54,27 @@ export function MarketIntelligencePanel({
       ? intelligence.historicalPriceMax - intelligence.currentQuoteRangeMin
       : null;
 
+  const isLive = intelligence.sourceType === 'LIVE_API';
+  const isTransacted =
+    intelligence.sourceType === 'DATABASE_CACHE' || intelligence.sourceType === 'PLATFORM_TRANSACTED';
+  const isStatistical = intelligence.sourceType === 'ESTIMATED_STATISTICAL';
+
+  const sourceBadgeLabel = isLive
+    ? '🟢 LIVE API FEED'
+    : isTransacted
+    ? '💾 TRANSACTED RECORD'
+    : isStatistical
+    ? '📐 STATISTICAL ESTIMATE'
+    : '🏛️ REGIONAL BENCHMARK';
+
+  const sourceBadgeStyle = isLive
+    ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300'
+    : isTransacted
+    ? 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border-blue-300'
+    : isStatistical
+    ? 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-300'
+    : 'bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-slate-300 border-slate-300';
+
   return (
     <section
       className="rounded-lg border bg-card p-3 shadow-2xs space-y-2.5"
@@ -62,8 +85,13 @@ export function MarketIntelligencePanel({
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm">📊</span>
             <h3 className="text-xs font-bold text-foreground">
-              Real-World Market Intelligence &amp; Pricing Benchmarks
+              Market Intelligence &amp; Pricing Benchmarks
             </h3>
+            {/* Honest Source Badge */}
+            <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase border ${sourceBadgeStyle}`}>
+              {sourceBadgeLabel}
+            </span>
+            {/* Freshness Badge */}
             <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase border ${
               intelligence.freshnessStatus === 'FRESH'
                 ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300'
@@ -73,8 +101,9 @@ export function MarketIntelligencePanel({
                 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border-amber-300'
                 : 'bg-muted text-muted-foreground border-border'
             }`}>
-              {intelligence.freshnessStatus ?? 'FRESH'} DATA
+              {intelligence.freshnessStatus ?? 'FRESH'} FRESHNESS
             </span>
+            {/* Confidence Badge */}
             <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase border ${
               intelligence.confidenceLevel === 'HIGH'
                 ? 'bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-300 border-purple-300'
@@ -90,6 +119,11 @@ export function MarketIntelligencePanel({
             {intelligence.locationCity ? ` in ${intelligence.locationCity}` : ' across active MSME hubs'}
             {intelligence.sourceProviderName ? ` via ${intelligence.sourceProviderName}` : ''}.
           </p>
+          {intelligence.responseIntegrityHash && (
+            <p className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">
+              Captured response integrity hash: <span className="font-semibold">{intelligence.responseIntegrityHash.slice(0, 16)}…</span>
+            </p>
+          )}
         </div>
 
         {intelligence.currentQuoteRangeMin != null && (

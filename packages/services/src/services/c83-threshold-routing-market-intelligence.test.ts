@@ -3,6 +3,11 @@ import { InMemoryRepositories } from '../repositories/in-memory';
 import { createOtpServices } from '../factory/create-otp-services';
 import type { ActorContext } from '../types/actor-context';
 import type { MarketBenchmarkQuery, MarketBenchmarkResult } from '@otp/domain';
+import {
+  HttpMarketIntelligenceProvider,
+  DatabaseCacheMarketIntelligenceProvider,
+  computeResponseIntegrityHash,
+} from './market-intelligence-service';
 
 const BUYER_ORG_ID = 'org-c83-buyer-01';
 const BUYER_CREATOR: ActorContext = {
@@ -17,7 +22,7 @@ const BUYER_MANAGER: ActorContext = {
   orgRole: 'MANAGER',
 };
 
-describe('OTP Phase C8.3: Dynamic Threshold Routing & Market Intelligence Service Integration', () => {
+describe('OTP Phase C8.3.1: Dynamic Threshold Routing & Live Market Intelligence Integration', () => {
   let mem: InMemoryRepositories;
   let services: ReturnType<typeof createOtpServices>;
 
@@ -100,7 +105,7 @@ describe('OTP Phase C8.3: Dynamic Threshold Routing & Market Intelligence Servic
 
       const snapshot = await services.marketIntelligence.resolveMarketIntelligence(query, 92000);
 
-      expect(snapshot.sourceType).toBe('HISTORICAL_BENCHMARK');
+      expect(snapshot.sourceType).toBe('STATIC_REFERENCE');
       expect(snapshot.freshness).toBe('AGING');
       expect(snapshot.confidence).toBe('MEDIUM');
       expect(snapshot.fairPriceMedian).toBe(98000);
@@ -119,35 +124,36 @@ describe('OTP Phase C8.3: Dynamic Threshold Routing & Market Intelligence Servic
       expect(snapshot.fairPriceMax).toBe(120000);
     });
 
-    it('supports live provider registration taking priority over cluster baselines', async () => {
-      const liveMockProvider = {
-        providerId: 'ondc-live-registry-adapter',
-        providerName: 'ONDC Real-Time Commodity Index',
-        supportedSourceType: 'LIVE_API' as const,
-        async getBenchmark(query: MarketBenchmarkQuery): Promise<MarketBenchmarkResult | null> {
-          if (query.categoryKey === 'cctv_surveillance') {
-            return {
-              categoryKey: query.categoryKey,
-              locationCity: 'Bengaluru',
-              fairPriceMin: 88000,
-              fairPriceMax: 105000,
-              fairPriceMedian: 92000,
-              typicalDeliveryDaysMin: 2,
-              typicalDeliveryDaysMax: 4,
-              typicalWarrantyMonthsMin: 24,
-              typicalWarrantyMonthsMax: 36,
-              networkReliabilityScore: 99.1,
-              sampleSize: 55,
-              sourceType: 'LIVE_API',
-              sourceProviderName: 'ONDC Real-Time Commodity Index',
-              observedAt: new Date().toISOString(), // FRESH
-            };
-          }
-          return null;
-        },
-      };
+    it('supports HttpMarketIntelligenceProvider with live fetch simulation and integrity hash', async () => {
+      const mockPayload = JSON.stringify({
+        categoryKey: 'cctv_surveillance',
+        locationCity: 'Bengaluru',
+        fairPriceMin: 88000,
+        fairPriceMax: 105000,
+        fairPriceMedian: 92000,
+        typicalDeliveryDaysMin: 2,
+        typicalDeliveryDaysMax: 4,
+        typicalWarrantyMonthsMin: 24,
+        typicalWarrantyMonthsMax: 36,
+        networkReliabilityScore: 99.1,
+        sampleSize: 55,
+        observedAt: new Date().toISOString(),
+      });
 
-      services.marketIntelligence.registerProvider(liveMockProvider);
+      const mockFetch = async () => ({
+        ok: true,
+        text: async () => mockPayload,
+      } as any);
+
+      const liveHttpProvider = new HttpMarketIntelligenceProvider({
+        providerId: 'ondc-live-http-adapter',
+        providerName: 'ONDC Real-Time Commodity Index',
+        endpointUrl: 'https://api.marketintel.ondc.org/benchmarks',
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch,
+      });
+
+      services.marketIntelligence.registerProvider(liveHttpProvider);
 
       const query: MarketBenchmarkQuery = {
         categoryKey: 'cctv_surveillance',
@@ -161,6 +167,58 @@ describe('OTP Phase C8.3: Dynamic Threshold Routing & Market Intelligence Servic
       expect(snapshot.freshness).toBe('FRESH');
       expect(snapshot.confidence).toBe('HIGH');
       expect(snapshot.sampleSize).toBe(55);
+      expect(snapshot.responseIntegrityHash).toBe(computeResponseIntegrityHash(mockPayload));
+    });
+
+    it('gracefully falls back to database cache and static reference when live feed fails or times out', async () => {
+      const failingMockFetch = async () => {
+        throw new Error('Network timeout connecting to external commodity gateway');
+      };
+
+      const liveFailingProvider = new HttpMarketIntelligenceProvider({
+        providerId: 'unreachable-live-feed',
+        providerName: 'Unreachable External API',
+        endpointUrl: 'https://offline.api.example.com/feed',
+        fetchFn: failingMockFetch,
+      });
+
+      const dbCacheProvider = new DatabaseCacheMarketIntelligenceProvider(async (cat, city) => {
+        if (cat === 'cctv_surveillance') {
+          return {
+            categoryKey: cat,
+            locationCity: city ?? 'Bengaluru',
+            fairPriceMin: 86000,
+            fairPriceMax: 115000,
+            fairPriceMedian: 94000,
+            typicalDeliveryDaysMin: 3,
+            typicalDeliveryDaysMax: 6,
+            typicalWarrantyMonthsMin: 12,
+            typicalWarrantyMonthsMax: 24,
+            networkReliabilityScore: 97.5,
+            sampleSize: 20,
+            observedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // FRESH
+          };
+        }
+        return null;
+      });
+
+      // Register failing live provider first, then database cache provider
+      services.marketIntelligence.registerProvider(dbCacheProvider);
+      services.marketIntelligence.registerProvider(liveFailingProvider);
+
+      const query: MarketBenchmarkQuery = {
+        categoryKey: 'cctv_surveillance',
+        locationCity: 'Bengaluru',
+      };
+
+      const snapshot = await services.marketIntelligence.resolveMarketIntelligence(query, 90000);
+
+      // Should gracefully fall back from failing live feed to database cache
+      expect(snapshot.sourceType).toBe('DATABASE_CACHE');
+      expect(snapshot.sourceProviderName).toBe('OTP Verified Database Cache');
+      expect(snapshot.freshness).toBe('FRESH');
+      expect(snapshot.confidence).toBe('HIGH');
+      expect(snapshot.fairPriceMedian).toBe(94000);
     });
   });
 });

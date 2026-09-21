@@ -75,7 +75,14 @@ export interface MarketIntelligenceSummary {
   matchedScope?: MarketIntelligenceScope;
   matchedCity?: string | null;
   /** Source classification for transparency */
-  sourceType?: 'LIVE_API' | 'PLATFORM_TRANSACTED' | 'HISTORICAL_BENCHMARK' | 'ESTIMATED_STATISTICAL' | 'UNAVAILABLE';
+  sourceType?:
+    | 'LIVE_API'
+    | 'DATABASE_CACHE'
+    | 'PLATFORM_TRANSACTED'
+    | 'STATIC_REFERENCE'
+    | 'HISTORICAL_BENCHMARK'
+    | 'ESTIMATED_STATISTICAL'
+    | 'UNAVAILABLE';
   sourceProviderName?: string;
   freshnessStatus?: 'FRESH' | 'AGING' | 'STALE' | 'EXPIRED' | 'UNAVAILABLE';
   confidenceLevel?: 'HIGH' | 'MEDIUM' | 'LOW' | 'INSUFFICIENT_DATA';
@@ -84,6 +91,8 @@ export interface MarketIntelligenceSummary {
   isFallback?: boolean;
   fallbackReason?: string | null;
   observedAt?: string | null;
+  /** Captured response integrity hash (SHA-256) for auditability */
+  responseIntegrityHash?: string | null;
   /** Short note explaining what the band covers. */
   notes?: string | null;
   /** ISO timestamp of when the snapshot was stamped onto the requirement. */

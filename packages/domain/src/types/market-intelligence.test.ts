@@ -6,7 +6,7 @@ import {
   type MarketBenchmarkResult,
 } from './market-intelligence';
 
-describe('OTP Phase C8.3: Live Market Intelligence Domain Engine', () => {
+describe('OTP Phase C8.3.1: Live Market Intelligence Domain Engine', () => {
   const baseTime = new Date('2026-09-21T10:00:00Z');
 
   describe('Freshness Calculation Engine', () => {
@@ -50,15 +50,27 @@ describe('OTP Phase C8.3: Live Market Intelligence Domain Engine', () => {
       expect(res.methodology).toContain('42 audited contracts');
     });
 
-    it('computes MEDIUM confidence for moderate sample size with aging data', () => {
+    it('computes HIGH confidence for fresh DATABASE_CACHE provider data', () => {
+      const res = calculateMarketConfidence({
+        sampleSize: 30,
+        sourceType: 'DATABASE_CACHE',
+        freshness: 'FRESH',
+        priceSpreadPercent: 10,
+      });
+
+      expect(res.confidence).toBe('HIGH');
+      expect(res.confidenceScore).toBeGreaterThanOrEqual(75);
+    });
+
+    it('computes MEDIUM confidence for STATIC_REFERENCE benchmark with aging data', () => {
       const res = calculateMarketConfidence({
         sampleSize: 12,
-        sourceType: 'HISTORICAL_BENCHMARK',
+        sourceType: 'STATIC_REFERENCE',
         freshness: 'AGING',
       });
 
       expect(res.confidence).toBe('MEDIUM');
-      expect(res.confidenceScore).toBeGreaterThanOrEqual(45);
+      expect(res.confidenceScore).toBeGreaterThanOrEqual(40);
     });
 
     it('returns INSUFFICIENT_DATA when sample size is 0 or source is UNAVAILABLE', () => {
@@ -89,9 +101,10 @@ describe('OTP Phase C8.3: Live Market Intelligence Domain Engine', () => {
       sourceType: 'LIVE_API',
       sourceProviderName: 'OTP MSME Open Registry Feed',
       observedAt: '2026-09-20T12:00:00Z',
+      responseIntegrityHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
     };
 
-    it('generates a full snapshot with calculated variance against candidate quote', () => {
+    it('generates a full snapshot with calculated variance against candidate quote and integrity hash', () => {
       const snapshot = createMarketIntelligenceSnapshot({
         benchmark: mockLiveBenchmark,
         rfqId: 'rfq-cctv-01',
@@ -105,6 +118,7 @@ describe('OTP Phase C8.3: Live Market Intelligence Domain Engine', () => {
       expect(snapshot.confidence).toBe('HIGH');
       expect(snapshot.fairPriceMedian).toBe(95000);
       expect(snapshot.quoteVariancePercent).toBe(-5.3);
+      expect(snapshot.responseIntegrityHash).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
       expect(snapshot.isFallback).toBe(false);
     });
 

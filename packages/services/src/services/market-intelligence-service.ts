@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type {
   MarketIntelligenceProvider,
   MarketBenchmarkQuery,
@@ -13,12 +14,154 @@ import { auditLog } from './service-helpers';
 import { NotFoundError } from '../types/errors';
 
 /**
- * Standard Curated Historical Baseline Provider (Fallback tier 2)
+ * Computes a SHA-256 integrity hash for an external or cached market benchmark response payload.
+ */
+export function computeResponseIntegrityHash(content: string): string {
+  return createHash('sha256').update(content).digest('hex');
+}
+
+export interface HttpMarketIntelligenceProviderOptions {
+  providerId?: string;
+  providerName?: string;
+  endpointUrl: string;
+  apiKey?: string;
+  timeoutMs?: number;
+  fetchFn?: typeof fetch;
+}
+
+/**
+ * Live External HTTP Market Intelligence Provider (Tier 1 Live Feed)
+ * Connects to external commodity indices, ONDC registries, or verified market price APIs.
+ */
+export class HttpMarketIntelligenceProvider implements MarketIntelligenceProvider {
+  readonly providerId: string;
+  readonly providerName: string;
+  readonly supportedSourceType: MarketIntelligenceSourceType = 'LIVE_API';
+  private readonly endpointUrl: string;
+  private readonly apiKey?: string;
+  private readonly timeoutMs: number;
+  private readonly fetchFn?: typeof fetch;
+
+  constructor(options: HttpMarketIntelligenceProviderOptions) {
+    this.providerId = options.providerId ?? 'http-live-market-feed';
+    this.providerName = options.providerName ?? 'Verified Live Market Feed';
+    this.endpointUrl = options.endpointUrl;
+    this.apiKey = options.apiKey;
+    this.timeoutMs = options.timeoutMs ?? 5000;
+    this.fetchFn = options.fetchFn ?? (typeof globalThis.fetch === 'function' ? globalThis.fetch.bind(globalThis) : undefined);
+  }
+
+  async getBenchmark(query: MarketBenchmarkQuery): Promise<MarketBenchmarkResult | null> {
+    if (!this.endpointUrl || !this.fetchFn) return null;
+
+    try {
+      const url = new URL(this.endpointUrl);
+      url.searchParams.set('category', query.categoryKey);
+      if (query.locationCity) url.searchParams.set('city', query.locationCity);
+      if (query.stateCode) url.searchParams.set('state', query.stateCode);
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
+      const headers: Record<string, string> = {
+        Accept: 'application/json',
+      };
+      if (this.apiKey) {
+        headers['Authorization'] = `Bearer ${this.apiKey}`;
+      }
+
+      const response = await this.fetchFn(url.toString(), {
+        method: 'GET',
+        headers,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const rawText = await response.text();
+      const data = JSON.parse(rawText);
+
+      // Captured response integrity hash (SHA-256)
+      const integrityHash = computeResponseIntegrityHash(rawText);
+
+      return {
+        categoryKey: query.categoryKey,
+        locationCity: data.locationCity ?? query.locationCity ?? null,
+        fairPriceMin: data.fairPriceMin != null ? Number(data.fairPriceMin) : null,
+        fairPriceMax: data.fairPriceMax != null ? Number(data.fairPriceMax) : null,
+        fairPriceMedian: data.fairPriceMedian != null ? Number(data.fairPriceMedian) : null,
+        typicalDeliveryDaysMin: data.typicalDeliveryDaysMin != null ? Number(data.typicalDeliveryDaysMin) : null,
+        typicalDeliveryDaysMax: data.typicalDeliveryDaysMax != null ? Number(data.typicalDeliveryDaysMax) : null,
+        typicalWarrantyMonthsMin: data.typicalWarrantyMonthsMin != null ? Number(data.typicalWarrantyMonthsMin) : null,
+        typicalWarrantyMonthsMax: data.typicalWarrantyMonthsMax != null ? Number(data.typicalWarrantyMonthsMax) : null,
+        networkReliabilityScore: data.networkReliabilityScore != null ? Number(data.networkReliabilityScore) : null,
+        sampleSize: data.sampleSize != null ? Number(data.sampleSize) : 25,
+        sourceType: this.supportedSourceType,
+        sourceProviderName: this.providerName,
+        observedAt: data.observedAt ?? new Date().toISOString(),
+        responseIntegrityHash: integrityHash,
+        metadata: data.metadata,
+      };
+    } catch {
+      // Gracefully return null on network errors/timeouts to trigger fallback hierarchy
+      return null;
+    }
+  }
+}
+
+/**
+ * Database-Cached Market Intelligence Provider (Tier 2 Database Cache)
+ */
+export class DatabaseCacheMarketIntelligenceProvider implements MarketIntelligenceProvider {
+  readonly providerId = 'otp-database-cache-provider';
+  readonly providerName = 'OTP Verified Database Cache';
+  readonly supportedSourceType: MarketIntelligenceSourceType = 'DATABASE_CACHE';
+
+  constructor(
+    private readonly cacheLookup?: (categoryKey: string, city?: string | null) => Promise<Partial<MarketBenchmarkResult> | null>
+  ) {}
+
+  async getBenchmark(query: MarketBenchmarkQuery): Promise<MarketBenchmarkResult | null> {
+    if (!this.cacheLookup) return null;
+    try {
+      const cached = await this.cacheLookup(query.categoryKey, query.locationCity);
+      if (!cached || cached.fairPriceMin == null) return null;
+
+      const observedAt = cached.observedAt ?? new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+      return {
+        categoryKey: query.categoryKey,
+        locationCity: query.locationCity ?? cached.locationCity ?? null,
+        fairPriceMin: cached.fairPriceMin ?? null,
+        fairPriceMax: cached.fairPriceMax ?? null,
+        fairPriceMedian: cached.fairPriceMedian ?? null,
+        typicalDeliveryDaysMin: cached.typicalDeliveryDaysMin ?? null,
+        typicalDeliveryDaysMax: cached.typicalDeliveryDaysMax ?? null,
+        typicalWarrantyMonthsMin: cached.typicalWarrantyMonthsMin ?? null,
+        typicalWarrantyMonthsMax: cached.typicalWarrantyMonthsMax ?? null,
+        networkReliabilityScore: cached.networkReliabilityScore ?? null,
+        sampleSize: cached.sampleSize ?? 18,
+        sourceType: this.supportedSourceType,
+        sourceProviderName: this.providerName,
+        observedAt,
+        responseIntegrityHash: cached.responseIntegrityHash ?? null,
+      };
+    } catch {
+      return null;
+    }
+  }
+}
+
+/**
+ * Standard Curated Historical Baseline Provider (Tier 3 Static Reference)
  */
 export class CuratedClusterBaselineProvider implements MarketIntelligenceProvider {
   readonly providerId = 'otp-cluster-curated-baseline';
   readonly providerName = 'OTP MSME Curated Cluster Benchmarks';
-  readonly supportedSourceType: MarketIntelligenceSourceType = 'HISTORICAL_BENCHMARK';
+  readonly supportedSourceType: MarketIntelligenceSourceType = 'STATIC_REFERENCE';
 
   private static readonly BASELINES: Record<string, Partial<MarketBenchmarkResult>> = {
     cctv_surveillance: {
@@ -92,7 +235,7 @@ export class CuratedClusterBaselineProvider implements MarketIntelligenceProvide
 
 /**
  * Composite Market Intelligence Service orchestrating the fallback hierarchy:
- * LIVE -> CACHED -> HISTORICAL -> UNAVAILABLE
+ * LIVE_API -> DATABASE_CACHE -> STATIC_REFERENCE -> UNAVAILABLE
  */
 export class MarketIntelligenceService {
   private providers: MarketIntelligenceProvider[];
@@ -194,6 +337,7 @@ export class MarketIntelligenceService {
         sourceType: stampedSnapshot.sourceType,
         freshness: stampedSnapshot.freshness,
         confidence: stampedSnapshot.confidence,
+        responseIntegrityHash: stampedSnapshot.responseIntegrityHash,
       }
     );
 

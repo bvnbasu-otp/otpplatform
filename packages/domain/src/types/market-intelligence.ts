@@ -16,7 +16,9 @@
 
 export type MarketIntelligenceSourceType =
   | 'LIVE_API'
+  | 'DATABASE_CACHE'
   | 'PLATFORM_TRANSACTED'
+  | 'STATIC_REFERENCE'
   | 'HISTORICAL_BENCHMARK'
   | 'ESTIMATED_STATISTICAL'
   | 'UNAVAILABLE';
@@ -71,6 +73,8 @@ export interface MarketIntelligenceSnapshot {
   fallbackReason?: string | null;
   /** Variance between buyer's lowest quote and benchmark median, in percent */
   quoteVariancePercent?: number | null;
+  /** Captured response integrity hash (SHA-256) for auditability */
+  responseIntegrityHash?: string | null;
   capturedAt: string;
 }
 
@@ -89,6 +93,8 @@ export interface MarketBenchmarkResult {
   sourceType: MarketIntelligenceSourceType;
   sourceProviderName: string;
   observedAt: string;
+  /** Captured response integrity hash (SHA-256) for auditability */
+  responseIntegrityHash?: string | null;
   metadata?: Record<string, unknown>;
 }
 
@@ -171,9 +177,13 @@ export function calculateMarketConfidence(params: {
   }
 
   // 2. Source Type weighting & cap
-  if (sourceType === 'LIVE_API' || sourceType === 'PLATFORM_TRANSACTED') {
+  if (
+    sourceType === 'LIVE_API' ||
+    sourceType === 'DATABASE_CACHE' ||
+    sourceType === 'PLATFORM_TRANSACTED'
+  ) {
     baseScore += 15;
-  } else if (sourceType === 'HISTORICAL_BENCHMARK') {
+  } else if (sourceType === 'HISTORICAL_BENCHMARK' || sourceType === 'STATIC_REFERENCE') {
     baseScore += 0;
   } else if (sourceType === 'ESTIMATED_STATISTICAL') {
     baseScore -= 15;
@@ -200,7 +210,9 @@ export function calculateMarketConfidence(params: {
   if (
     confidenceScore >= 75 &&
     sampleSize >= 15 &&
-    (sourceType === 'LIVE_API' || sourceType === 'PLATFORM_TRANSACTED') &&
+    (sourceType === 'LIVE_API' ||
+      sourceType === 'DATABASE_CACHE' ||
+      sourceType === 'PLATFORM_TRANSACTED') &&
     freshness === 'FRESH'
   ) {
     confidence = 'HIGH';
@@ -316,6 +328,7 @@ export function createMarketIntelligenceSnapshot(params: {
     isFallback: Boolean(fallbackReason),
     fallbackReason: fallbackReason ?? null,
     quoteVariancePercent,
+    responseIntegrityHash: benchmark.responseIntegrityHash ?? null,
     capturedAt: currentTime.toISOString(),
   };
 }
