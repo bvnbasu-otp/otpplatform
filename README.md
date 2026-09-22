@@ -1,6 +1,6 @@
 # OTP — Open Trade & Procurement
 
-> **Tell us what you need. Let suppliers compete. You decide.**
+> **Identity-Protected Competitive Sourcing**
 
 **OTP is an identity-protected competitive sourcing platform.**
 

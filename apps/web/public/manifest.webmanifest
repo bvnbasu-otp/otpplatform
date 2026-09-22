@@ -1,7 +1,7 @@
 {
   "name": "OTP Platform — Open Trade & Procurement",
   "short_name": "OTP Platform",
-  "description": "Local procurement network. Blind RFQ / neutral evaluation. Requirement-first, network-agnostic.",
+  "description": "OTP Platform — Open Trade & Procurement. Identity-Protected Competitive Sourcing.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

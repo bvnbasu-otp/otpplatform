@@ -3,7 +3,8 @@
 export const PRODUCT_NAME = 'OTP';
 export const PRODUCT_FULL_NAME = 'Open Trade & Procurement';
 
-export const PRODUCT_TAGLINE = 'Tell us what you need. Let suppliers compete. You decide.';
+export const PRODUCT_TAGLINE = 'Identity-Protected Competitive Sourcing';
+export const PRODUCT_JOURNEY_STATEMENT = 'Request. Compare. Decide.';
 
 export const PRODUCT_CONCEPT =
   'A local procurement network and procurement operating system — one engine, any buyer, any locality, any supplier network.';

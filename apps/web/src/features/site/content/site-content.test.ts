@@ -15,6 +15,7 @@ import {
   type FaqEntry,
   SUPPLIER_FAQS,
 } from './site-content';
+import { PRODUCT_TAGLINE, PRODUCT_JOURNEY_STATEMENT } from '@/lib/brand';
 
 /**
  * The public copy, checked against the product it describes.
@@ -86,7 +87,13 @@ describe('what the home page says the product is', () => {
     // headline.
     expect(HERO.tagline.toLowerCase()).toMatch(/identity[- ]protected/);
     expect(HERO.tagline.toLowerCase()).toMatch(/competitive|sourcing/);
+    expect(HERO.tagline).toBe('Identity-Protected Competitive Sourcing');
     expect(HERO.title.toLowerCase()).toMatch(/procure smarter/i);
+  });
+
+  it('verifies distinct primary tagline and supporting journey statement', () => {
+    expect(PRODUCT_TAGLINE).toBe('Identity-Protected Competitive Sourcing');
+    expect(PRODUCT_JOURNEY_STATEMENT).toBe('Request. Compare. Decide.');
   });
 
   it('opens with one question rather than a procurement vocabulary lesson', () => {
