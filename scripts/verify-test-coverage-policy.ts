@@ -171,7 +171,12 @@ function checkCoverageAppendRule(): string[] {
       if (process.env.GITHUB_BASE_REF) {
         diffCommand = `git diff --name-only origin/${process.env.GITHUB_BASE_REF}...HEAD`;
       } else if (process.env.CI) {
-        diffCommand = 'git diff --name-only HEAD~1 HEAD';
+        try {
+          execSync('git rev-parse --verify HEAD~1', { stdio: 'ignore' });
+          diffCommand = 'git diff --name-only HEAD~1 HEAD';
+        } catch {
+          diffCommand = 'git status --porcelain';
+        }
       }
 
       const output = execSync(diffCommand, { encoding: 'utf8' }).trim();

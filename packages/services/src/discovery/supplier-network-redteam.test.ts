@@ -732,10 +732,12 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
       limits: { maxDaily: 5, maxMonthly: 50 },
     });
 
+    const reservationTime = new Date('2026-09-21T12:00:00Z');
+
     // 20 concurrent reservation requests against 5 daily quota units
     const attempts = await Promise.all(
       Array.from({ length: 20 }, (_, idx) =>
-        quotaGuard.acquireReservation(new Date('2026-09-21T12:00:00Z')),
+        quotaGuard.acquireReservation(reservationTime),
       ),
     );
 
@@ -744,7 +746,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
 
     expect(allowed).toHaveLength(5);
     expect(denied).toHaveLength(15);
-    const usage = await quotaGuard.getUsage();
+    const usage = await quotaGuard.getUsage(reservationTime);
     expect(usage.dailyCount).toBe(5);
   });
 

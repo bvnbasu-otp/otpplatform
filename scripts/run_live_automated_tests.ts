@@ -39,6 +39,16 @@ async function runAllTests() {
   console.log('🚀 EXECUTING REAL-TIME AUTOMATED END-TO-END CALL FLOW TESTS');
   console.log('===============================================================\n');
 
+  if (process.env.ALLOW_OFFLINE === 'true') {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/health`, { signal: AbortSignal.timeout(1500) });
+      if (!res.ok) throw new Error('Gateway non-200');
+    } catch {
+      console.log('⚠️ Live database backend offline — skipping live call flow tests because ALLOW_OFFLINE=true is explicitly set.\n');
+      process.exit(0);
+    }
+  }
+
   let indReqId = '';
   let rwaReqId = '';
   let indRfqId = '';

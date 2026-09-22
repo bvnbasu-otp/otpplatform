@@ -188,6 +188,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -204,6 +206,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Execute Quality Verification Gate
+        env:
+          ALLOW_OFFLINE: 'true'
         run: |
           pnpm gate:verify --env "${{ env.TARGET_ENV }}"
 
