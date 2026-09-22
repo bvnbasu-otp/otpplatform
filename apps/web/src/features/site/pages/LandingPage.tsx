@@ -17,6 +17,9 @@ export function LandingPage() {
         {/* SECTION 3: BUYERS & SUPPLIERS */}
         <BuyersAndSuppliersSection />
 
+        {/* SECTION 3.5: INSTITUTIONAL TRUST & THE GeM ANALOGY */}
+        <InstitutionalTrustSection />
+
         {/* SECTION 4: PRICING */}
         <PricingSection />
 
@@ -273,7 +276,7 @@ function HowItWorksSection() {
       num: '03',
       icon: '📊',
       title: 'Proposal Comparison & Evaluation',
-      desc: 'Compare price, delivery TAT, warranty, and merit scores under anonymous aliases.',
+      desc: 'Compare price, delivery TAT, warranty, and merit scores under identity-protected sealed comparison.',
     },
     {
       num: '04',
@@ -464,6 +467,95 @@ function BuyersAndSuppliersSection() {
 }
 
 // =============================================================================
+// SECTION 3.5: INSTITUTIONAL TRUST & THE GeM ANALOGY
+// =============================================================================
+function InstitutionalTrustSection() {
+  return (
+    <section className="px-4 sm:px-6">
+      <div className="mx-auto max-w-5xl">
+        <div className="rounded-3xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card p-6 sm:p-8 shadow-xs space-y-5">
+          {/* Section Header */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-4">
+            <div className="space-y-1">
+              <span className="rounded-full bg-primary/10 text-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+                Inspired by GeM
+              </span>
+              <h3 className="text-lg sm:text-2xl font-extrabold text-foreground">
+                Inspired by the transparency of GeM. Built for everyday procurement.
+              </h3>
+            </div>
+            <span className="text-xs font-semibold text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-xl">
+              🏛️ Transparent Sourcing Standard
+            </span>
+          </div>
+
+          {/* Supporting Copy */}
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            India&apos;s Government e-Marketplace (GeM) brought structured digital procurement to government organizations, with a strong focus on transparency, efficiency and auditability. OTP brings similar procurement principles to everyday organizational buying — helping housing societies, RWAs, MSMEs and other organizations collect competitive proposals, compare offers, make governed decisions and maintain a clear purchase record.
+          </p>
+
+          {/* Compact Callout for Committee Members */}
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5 space-y-3">
+            <div className="text-xs sm:text-sm font-bold text-foreground">
+              A simple way to think about OTP
+            </div>
+            <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
+              If GeM made government procurement easier to manage online, OTP brings a similar digital procurement experience to housing societies, RWAs and businesses.
+            </p>
+            <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2 pt-1 text-[11px] font-bold text-primary">
+              <span className="bg-background border rounded-lg px-2.5 py-1 shadow-2xs">Request</span>
+              <span className="text-muted-foreground">→</span>
+              <span className="bg-background border rounded-lg px-2.5 py-1 shadow-2xs">Compare</span>
+              <span className="text-muted-foreground">→</span>
+              <span className="bg-background border rounded-lg px-2.5 py-1 shadow-2xs">Decide</span>
+              <span className="text-muted-foreground">→</span>
+              <span className="bg-background border rounded-lg px-2.5 py-1 shadow-2xs">Purchase</span>
+              <span className="text-muted-foreground">→</span>
+              <span className="bg-background border rounded-lg px-2.5 py-1 shadow-2xs">Track</span>
+            </div>
+          </div>
+
+          {/* Three Pillars */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 text-xs">
+            <div className="rounded-2xl border bg-card p-4 space-y-2">
+              <div className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                <span>🔒</span> Sealed Proposals
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Suppliers can submit competitive proposals for buyers to compare through a structured process.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border bg-card p-4 space-y-2">
+              <div className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                <span>🗳️</span> Governed Decisions
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Committees and authorized decision-makers can review offers, participate in decisions and keep a clear record of the outcome.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border bg-card p-4 space-y-2">
+              <div className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                <span>📜</span> End-to-End Audit Trail
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                From requirement to proposal comparison, decision and purchase order, OTP keeps the procurement journey organized and traceable.
+              </p>
+            </div>
+          </div>
+
+          {/* Trust & Independence Disclaimer */}
+          <div className="pt-2 border-t border-border/40 text-[10px] text-muted-foreground/80 text-center sm:text-left">
+            OTP is an independent procurement platform and is not affiliated with or endorsed by the Government of India or GeM.
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// =============================================================================
 // SECTION 4: PRICING
 // =============================================================================
 function PricingSection() {
@@ -625,7 +717,7 @@ function PricingSection() {
 
         {/* PROCUREMENT REWARD CALLOUT */}
         <div className="mt-3 text-center text-xs text-muted-foreground font-medium">
-          🎁 Buyers can earn a <span className="font-bold text-foreground">0.1% OTP Procurement Reward</span> on eligible completed transactions.
+          🎁 Eligible buyers earn an <span className="font-bold text-foreground">OTP Transaction Benefit</span> on completed purchases toward future subscriptions.
         </div>
       </div>
     </section>
@@ -649,7 +741,7 @@ function FaqSection() {
     },
     {
       q: 'How does identity protection work?',
-      a: 'Supplier and buyer identities are replaced with cryptographic aliases during quoting and evaluation to eliminate bias, favoritism, and kickbacks. Real identities are revealed only upon award.',
+      a: 'Supplier and buyer identities are sealed during quoting and evaluation to eliminate bias and favoritism. Real identities are revealed only upon award.',
     },
     {
       q: 'How do suppliers participate?',
@@ -664,8 +756,12 @@ function FaqSection() {
       a: 'Suppliers pay zero upfront lead fees or listing charges. The 0.5% success fee applies only after a purchase order is awarded and confirmed.',
     },
     {
+      q: 'How is OTP similar to GeM?',
+      a: "GeM is India's Government e-Marketplace for digital procurement by government organizations. OTP is an independent platform designed for housing societies, RWAs, MSMEs and other organizations. The similarity is in the procurement experience: structured requirements, competitive proposals, transparent comparison, governed decisions and an end-to-end purchase record. OTP is not affiliated with, endorsed by, or operated by GeM or the Government of India.",
+    },
+    {
       q: 'Can I use OTP for my RWA / MSME procurement?',
-      a: 'Yes. OTP provides committee voting rooms, quorum governance, and statutory audit exports specifically designed for RWAs, housing societies, and MSMEs.',
+      a: 'Yes. OTP provides committee voting rooms, quorum governance, and organized procurement records specifically designed for RWAs, housing societies, and MSMEs.',
     },
   ];
 

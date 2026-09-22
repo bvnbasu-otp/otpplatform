@@ -484,6 +484,24 @@ describe('copy that would contradict the engine', () => {
   });
 });
 
+describe('GeM analogy & institutional positioning compliance', () => {
+  it('includes the GeM positioning analogy without claiming affiliation or endorsement', () => {
+    const gemFaq = BUYER_FAQS.find((f) => /GeM/i.test(f.question));
+    expect(gemFaq).toBeDefined();
+    expect(gemFaq!.answer).toMatch(/Government e-Marketplace/i);
+    expect(gemFaq!.answer).toMatch(/independent platform/i);
+    expect(gemFaq!.answer).toMatch(/not affiliated with, endorsed by, or operated by GeM/i);
+  });
+
+  it('avoids overclaiming government equivalence, L1 certainty or tender exclusivity', () => {
+    expect(ALL_PROSE).not.toMatch(/all government tenders are posted on GeM/i);
+    expect(ALL_PROSE).not.toMatch(/lowest bidder always wins/i);
+    expect(ALL_PROSE).not.toMatch(/L1 always wins/i);
+    expect(ALL_PROSE).not.toMatch(/official GeM partner/i);
+    expect(ALL_PROSE).not.toMatch(/endorsed by the Government/i);
+  });
+});
+
 function numeric(amount: string): number {
   return Number(amount.replace(/[^0-9.]/g, ''));
 }

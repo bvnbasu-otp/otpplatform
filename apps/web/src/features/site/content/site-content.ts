@@ -249,7 +249,7 @@ export const CONTRASTS = {
     'Prevents predatory pricing: buyer identity is protected',
     'Assures full GST & ITC compliance upon award',
     'One consistent scoring formula for every quote',
-    'Votes carry a recorded reason and immutable audit trail',
+    'Votes carry a recorded reason and end-to-end audit trail',
   ],
 };
 
@@ -449,6 +449,11 @@ export const GENERAL_FAQS: FaqEntry[] = [
 
 export const BUYER_FAQS: FaqEntry[] = [
   {
+    question: 'How is OTP similar to GeM?',
+    answer:
+      "GeM is India's Government e-Marketplace for digital procurement by government organizations. OTP is an independent platform designed for housing societies, RWAs, MSMEs and other organizations. The similarity is in the procurement experience: structured requirements, competitive proposals, transparent comparison, governed decisions and an end-to-end purchase record. OTP is not affiliated with, endorsed by, or operated by GeM or the Government of India.",
+  },
+  {
     question: 'How is a supplier actually hidden from us?',
     answer:
       "Each enquiry has its own random salt. A supplier's alias is a hash of that salt and their identity, so the same firm is \"Supplier K7P4\" on one enquiry and \"Supplier A3F9\" on the next, with no way to link the two. Your comparison screen reads from a view that has no company name, contact or tax ID in it at all — the columns are not hidden by the interface, they are not in the data the interface receives.",
@@ -471,7 +476,7 @@ export const BUYER_FAQS: FaqEntry[] = [
   {
     question: 'How does the Evaluation & Voting Room work?',
     answer:
-      'Members you assign to that enquiry see the anonymous, scored comparison and record a vote with a reason. Votes are weighted by your organisation type, tallied automatically in real time, and appended to an immutable audit log that cannot be edited or deleted.',
+      'Members you assign to that enquiry see the sealed, scored comparison and record a vote with a reason. Votes are weighted by your organisation type, tallied automatically in real time, and appended to an end-to-end audit log that cannot be edited or deleted.',
   },
   {
     question: 'When do we learn who won?',

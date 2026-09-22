@@ -20,7 +20,7 @@ describe('Demo Persona Switcher Component Tests', () => {
     }
   });
 
-  it('correctly maps Buyer to Sunrise RWA and Supplier to SunPower Tech', () => {
+  it('correctly maps Buyer to Durga Rainbow RWA and Supplier to SunPower Tech', () => {
     const buyer = DEMO_PERSONAS.find((p) => p.id === 'buyer');
     const supplier = DEMO_PERSONAS.find((p) => p.id === 'supplier');
 

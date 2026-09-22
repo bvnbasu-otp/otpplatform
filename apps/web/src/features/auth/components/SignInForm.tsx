@@ -28,7 +28,7 @@ interface DemoPersona {
 }
 
 const DEMO_BUYERS: DemoPersona[] = [
-  { name: 'Ramesh (Sunrise RWA)', email: 'secretary@sunrise.test', role: 'Community Secretary', badge: 'Community' },
+  { name: 'Ramesh (Durga Rainbow RWA)', email: 'secretary@sunrise.test', role: 'Community Secretary', badge: 'Community' },
   { name: 'K. Murugesan', email: 'owner@kovaiprecision.test', role: 'MSME Owner', badge: 'MSME' },
   { name: 'S. Rangarajan', email: 'procurement@srilakshmi.test', role: 'Enterprise Lead', badge: 'Enterprise' },
   { name: 'Bharathi Selvan', email: 'bharathi@agrotrade.test', role: 'Individual Buyer', badge: 'Individual' },

@@ -21,7 +21,7 @@ export const DEMO_PERSONAS: PersonaOption[] = [
     id: 'buyer',
     title: 'Buyer (Community Lead)',
     shortLabel: 'Buyer',
-    roleDescription: 'Sunrise RWA Management Committee',
+    roleDescription: 'Durga Rainbow Flat Owner Welfare Association Management Committee',
     icon: '🏢',
     email: 'secretary@sunrise.test',
     scenario: '10 kW Solar & CCTV Procurement Pipeline',

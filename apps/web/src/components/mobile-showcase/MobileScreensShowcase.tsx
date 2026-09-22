@@ -716,8 +716,8 @@ function ScreenBuyerCockpit({ onNewRequirement }: { onNewRequirement: () => void
             🏢
           </div>
           <div>
-            <h4 className="text-xs font-bold text-foreground">Palm Meadows RWA</h4>
-            <span className="text-[10px] text-muted-foreground">Whitefield, Bengaluru · 450 Units</span>
+            <h4 className="text-xs font-bold text-foreground">Durga Rainbow Flat Owner Welfare Association</h4>
+            <span className="text-[10px] text-muted-foreground">Mahadevapura, Bengaluru · 141 Units</span>
           </div>
         </div>
         <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold">
@@ -1288,7 +1288,7 @@ function ScreenSupplierHub({ onNext }: { onNext: () => void }) {
         </div>
         <div>
           <h5 className="text-xs font-bold text-foreground">10 HP Submersible Motor Rewind</h5>
-          <p className="text-[10px] text-muted-foreground">Palm Meadows RWA · Requires 6-month warranty</p>
+          <p className="text-[10px] text-muted-foreground">Durga Rainbow RWA, Mahadevapura · Requires 6-month warranty</p>
         </div>
 
         <div className="grid grid-cols-2 gap-1.5 text-[10px] bg-muted/30 p-2 rounded-xl">
@@ -1488,9 +1488,9 @@ function ScreenSupplierPoSignoff({ onNext }: { onNext: () => void }) {
           Client Entity &amp; Site Details:
         </span>
         <div className="space-y-0.5">
-          <h6 className="font-bold text-foreground">Palm Meadows Residents Welfare Association</h6>
+          <h6 className="font-bold text-foreground">Durga Rainbow Flat Owner Welfare Association</h6>
           <p className="text-[10px] text-muted-foreground font-mono">GSTIN: 29AAAAA0000A1Z5</p>
-          <p className="text-[10px] text-muted-foreground">📍 Pump House #2, Phase 1, Whitefield, Bengaluru</p>
+          <p className="text-[10px] text-muted-foreground">📍 Pump House #2, Durga Rainbow, Mahadevapura, Bengaluru</p>
           <p className="text-[10px] text-primary font-semibold">📞 Site Incharge: +91 98450 11223</p>
         </div>
       </div>

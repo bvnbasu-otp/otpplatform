@@ -1,64 +1,54 @@
-export type SubscriptionTierId = 'TIER_1_MSME' | 'TIER_2_ENTERPRISE';
-export type BillingCycle = 'MONTHLY' | 'YEARLY';
-export type SubscriptionStatus = 'ACTIVE' | 'EXPIRED' | 'TRIAL' | 'GRACE';
+import {
+  type SubscriptionTierId,
+  type BillingCycle,
+  type BillingMode,
+  type SubscriptionStatus,
+  type SubscriptionPlanDefinition,
+  SUBSCRIPTION_TIERS,
+  resolveTierForOrgType,
+  calculateGst,
+  computeSubscriptionPricing,
+  evaluateRfqEntitlement,
+  getCalendarMonthWindow,
+  resolveBillingMode,
+  WHY_5_RFQS_EXPLANATION,
+  SUPPLIER_FEE_POLICY,
+  BUYER_REWARD_POLICY,
+  PILOT_COHORT_COPY,
+  ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
+  DEFAULT_GST_RATE_PERCENT,
+  OTP_GST_RATE,
+  DEFAULT_SUPPLIER_PLATFORM_FEE_RATE,
+  STANDARD_MONTHLY_RFQ_ALLOWANCE,
+  ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
+} from '@otp/domain';
 
-export interface SubscriptionPlanDefinition {
-  tierId: SubscriptionTierId;
-  name: string;
-  tagline: string;
-  targetOrgTypes: string[];
-  targetAudience: string;
-  monthlyPrice: number;
-  monthlyDurationDays: number;
-  yearlyPrice: number;
-  yearlyDurationDays: number;
-  yearlySavings: number;
-  features: string[];
-  popular?: boolean;
-}
+export type {
+  SubscriptionTierId,
+  BillingCycle,
+  BillingMode,
+  SubscriptionStatus,
+  SubscriptionPlanDefinition,
+};
 
-export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefinition> = {
-  TIER_1_MSME: {
-    tierId: 'TIER_1_MSME',
-    name: 'Tier 1 — Individual & MSME',
-    tagline: 'For Property Owners, MSMEs & Small Business Buyers',
-    targetOrgTypes: ['INDIVIDUAL', 'MSME'],
-    targetAudience: 'Individuals, Proprietary Firms & MSMEs',
-    monthlyPrice: 99,
-    monthlyDurationDays: 30,
-    yearlyPrice: 999,
-    yearlyDurationDays: 365,
-    yearlySavings: 189,
-    features: [
-      'Unlimited requirement creation & fast-track express intake',
-      'Anonymous identity-protected supplier quoting & comparison',
-      'Automated Indian GST tax slab calculations (0%, 5%, 12%, 18%, 28%)',
-      'Access to 104+ verified PAN-India & direct suppliers',
-      'Real-time WhatsApp & Email instant status alerts',
-      'Tamper-proof append-only procurement audit trail',
-    ],
-  },
-  TIER_2_ENTERPRISE: {
-    tierId: 'TIER_2_ENTERPRISE',
-    name: 'Tier 2 — RWA & Institutions',
-    tagline: 'For Housing Societies, Enterprises & Institutional Committees',
-    targetOrgTypes: ['COMMUNITY', 'ENTERPRISE', 'INSTITUTION'],
-    targetAudience: 'RWAs, Apartment Societies, Colleges, Trusts & Enterprises',
-    monthlyPrice: 1000,
-    monthlyDurationDays: 30,
-    yearlyPrice: 10000,
-    yearlyDurationDays: 365,
-    yearlySavings: 2000,
-    popular: true,
-    features: [
-      'Everything in Tier 1 for your entire procurement organization',
-      'Multi-member Committee Voting Room (Secretary, Treasurer, President)',
-      'Weighted voting power & configurable quorum rules (>= 2)',
-      'Custom technical & commercial scoring rubrics',
-      'Formal Purchase Order (PO) generation & multi-stage sign-offs',
-      'Complete statutory audit trail export & executive compliance reports',
-    ],
-  },
+export {
+  SUBSCRIPTION_TIERS,
+  resolveTierForOrgType,
+  calculateGst,
+  computeSubscriptionPricing,
+  evaluateRfqEntitlement,
+  getCalendarMonthWindow,
+  resolveBillingMode,
+  WHY_5_RFQS_EXPLANATION,
+  SUPPLIER_FEE_POLICY,
+  BUYER_REWARD_POLICY,
+  PILOT_COHORT_COPY,
+  ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
+  DEFAULT_GST_RATE_PERCENT,
+  OTP_GST_RATE,
+  DEFAULT_SUPPLIER_PLATFORM_FEE_RATE,
+  STANDARD_MONTHLY_RFQ_ALLOWANCE,
+  ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
 };
 
 export interface OrganizationSubscription {
@@ -77,32 +67,26 @@ export interface OrganizationSubscription {
   paymentReference?: string;
 }
 
-/** Resolves which subscription tier applies to a given org_type */
-export function resolveTierForOrgType(orgType?: string): SubscriptionTierId {
-  if (!orgType) return 'TIER_1_MSME';
-  const normalized = orgType.toUpperCase();
-  if (['COMMUNITY', 'ENTERPRISE', 'INSTITUTION', 'TRUST', 'RWA', 'GOVERNMENT'].includes(normalized)) {
-    return 'TIER_2_ENTERPRISE';
-  }
-  return 'TIER_1_MSME';
-}
-
 /** Computes price and validity based on tier and billing cycle */
 export function computeSubscriptionFee(tierId: SubscriptionTierId, cycle: BillingCycle) {
-  const tier = SUBSCRIPTION_TIERS[tierId];
-  if (cycle === 'YEARLY') {
-    return {
-      amount: tier.yearlyPrice,
-      durationDays: tier.yearlyDurationDays,
-      label: `₹${tier.yearlyPrice.toLocaleString('en-IN')} / 365 days`,
-      savings: tier.yearlySavings,
-    };
-  }
+  const tier = SUBSCRIPTION_TIERS[tierId] || SUBSCRIPTION_TIERS.INDIVIDUAL;
+  const isYearly = cycle === 'YEARLY';
+  const baseAmount = isYearly ? tier.yearlyPrice : tier.monthlyPrice;
+  const durationDays = isYearly ? tier.yearlyDurationDays : tier.monthlyDurationDays;
+  const savings = isYearly ? tier.yearlySavings : 0;
+  const gst = calculateGst(baseAmount);
+
   return {
-    amount: tier.monthlyPrice,
-    durationDays: tier.monthlyDurationDays,
-    label: `₹${tier.monthlyPrice.toLocaleString('en-IN')} / 30 days`,
-    savings: 0,
+    amount: baseAmount,
+    basePrice: gst.basePrice,
+    gstAmount: gst.gstAmount,
+    totalAmount: gst.totalAmount,
+    durationDays,
+    monthlyRfqQuota: isYearly ? tier.yearlyMonthlyRfqs : tier.monthlyRfqs,
+    label: isYearly
+      ? `₹${baseAmount.toLocaleString('en-IN')} / 365 days`
+      : `₹${baseAmount.toLocaleString('en-IN')} / 30 days`,
+    savings,
   };
 }
 
@@ -185,4 +169,3 @@ export interface ApplyWalletCreditsResult {
   message?: string;
   error?: string;
 }
-

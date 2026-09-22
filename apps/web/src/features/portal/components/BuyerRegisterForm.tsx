@@ -207,7 +207,7 @@ export function BuyerRegisterForm({
                   ? 'e.g. Apex Industrial Infrastructure Ltd'
                   : buyerType === 'INSTITUTION'
                   ? 'e.g. St. Jude Healthcare & Research Trust'
-                  : 'Sunrise Residency Owners Association'
+                  : 'Durga Rainbow Flat Owner Welfare Association'
               }
               autoComplete="organization"
               aria-describedby={describedBy}

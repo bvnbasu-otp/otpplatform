@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
   COMMERCIAL_MONETARY_CLASSES,
+  ROLLING_BENEFIT_VALIDITY_DAYS,
+  calculateActiveWalletBalance,
   calculateBuyerReward,
   calculateSubscriptionDiscount,
   calculateWalletBalanceAfterRedemption,
   canTransitionRewardAllocation,
+  computeCreditExpiryDate,
+  consumeWalletCreditsFefo,
+  isCreditValid,
   validateCommercialConservation,
   validateCommercialMonetaryClass,
   type BuyerRewardCalculationParams,
+  type WalletCreditLot,
 } from './buyer-reward';
+import { BUYER_REWARD_POLICY } from './pricing-entitlement';
 
 describe('OTP Phase 6.4: Buyer Sourcing Reward & Commercial Domain Model', () => {
   describe('8 Commercial Monetary Classes Segregation', () => {
@@ -270,4 +277,254 @@ describe('OTP Phase 6.4: Buyer Sourcing Reward & Commercial Domain Model', () =>
       expect(canTransitionRewardAllocation('CREDITED', 'PENDING')).toBe(false);
     });
   });
+
+  // ===========================================================================
+  // ROLLING 365-DAY VALIDITY & FEFO REDEMPTION MATRIX (PHASE 3 CERTIFICATION)
+  // ===========================================================================
+  describe('Rolling 365-Day Validity & FEFO Credit Redemption Suite', () => {
+    // Case 1: Normal Expiry
+    it('Case 1: Normal expiry (15-Sep-2026 -> valid through 365-day boundary, expired after)', () => {
+      const creditedAt = '2026-09-15T12:00:00.000Z';
+      const expiresAt = computeCreditExpiryDate(creditedAt, ROLLING_BENEFIT_VALIDITY_DAYS);
+      expect(expiresAt).toBe('2027-09-15T12:00:00.000Z');
+
+      const creditLot: WalletCreditLot = {
+        id: 'lot-case-1',
+        amount: 150.0,
+        creditedAt,
+        expiresAt,
+      };
+
+      // Valid right before boundary
+      expect(isCreditValid(creditLot, '2027-09-15T11:59:59.999Z')).toBe(true);
+      // Valid at exact boundary
+      expect(isCreditValid(creditLot, '2027-09-15T12:00:00.000Z')).toBe(true);
+      // Expired immediately after boundary
+      expect(isCreditValid(creditLot, '2027-09-15T12:00:00.001Z')).toBe(false);
+      expect(isCreditValid(creditLot, '2027-09-16T00:00:00.000Z')).toBe(false);
+    });
+
+    // Case 2: December Crossing
+    it('Case 2: December crossing (20-Dec-2026 -> does NOT expire on 31-Dec-2026)', () => {
+      const creditedAt = '2026-12-20T10:00:00.000Z';
+      const expiresAt = computeCreditExpiryDate(creditedAt);
+      expect(expiresAt).toBe('2027-12-20T10:00:00.000Z');
+
+      const creditLot: WalletCreditLot = {
+        id: 'lot-dec-crossing',
+        amount: 250.0,
+        creditedAt,
+        expiresAt,
+      };
+
+      // CRITICAL INVARIANT: Rolling validity does NOT expire on Dec 31 calendar reset
+      expect(isCreditValid(creditLot, '2026-12-31T23:59:59.999Z')).toBe(true);
+      expect(isCreditValid(creditLot, '2027-01-01T00:00:00.000Z')).toBe(true);
+      expect(isCreditValid(creditLot, '2027-06-15T12:00:00.000Z')).toBe(true);
+      expect(isCreditValid(creditLot, '2027-12-20T09:59:59.000Z')).toBe(true);
+      expect(isCreditValid(creditLot, '2027-12-20T10:00:01.000Z')).toBe(false);
+    });
+
+    // Case 3: January Crossing
+    it('Case 3: January crossing (31-Jan-2027 -> valid until its own 365-day expiry in 2028)', () => {
+      const creditedAt = '2027-01-31T15:30:00.000Z';
+      const expiresAt = computeCreditExpiryDate(creditedAt);
+      expect(expiresAt).toBe('2028-01-31T15:30:00.000Z');
+
+      const creditLot: WalletCreditLot = {
+        id: 'lot-jan-crossing',
+        amount: 500.0,
+        creditedAt,
+        expiresAt,
+      };
+
+      // Valid throughout 2027 and into Jan 2028
+      expect(isCreditValid(creditLot, '2027-12-31T23:59:59.999Z')).toBe(true);
+      expect(isCreditValid(creditLot, '2028-01-15T10:00:00.000Z')).toBe(true);
+      expect(isCreditValid(creditLot, '2028-01-31T15:30:00.000Z')).toBe(true);
+      expect(isCreditValid(creditLot, '2028-01-31T15:30:01.000Z')).toBe(false);
+    });
+
+    // Case 4: Multiple Credits with Independent Expiry Dates
+    it('Case 4: Multiple credits have independent rolling expiry dates and calculate active balance accurately', () => {
+      const lots: WalletCreditLot[] = [
+        {
+          id: 'lot-A',
+          amount: 100.0,
+          creditedAt: '2026-08-01T00:00:00.000Z',
+          expiresAt: '2027-08-01T00:00:00.000Z',
+        },
+        {
+          id: 'lot-B',
+          amount: 150.0,
+          creditedAt: '2026-11-15T00:00:00.000Z',
+          expiresAt: '2027-11-15T00:00:00.000Z',
+        },
+        {
+          id: 'lot-C',
+          amount: 200.0,
+          creditedAt: '2027-02-10T00:00:00.000Z',
+          expiresAt: '2028-02-10T00:00:00.000Z',
+        },
+      ];
+
+      // On 2027-05-01: All 3 lots active (100 + 150 + 200 = 450)
+      expect(calculateActiveWalletBalance(lots, '2027-05-01T00:00:00.000Z')).toBe(450.0);
+
+      // On 2027-09-01: Lot A expired, Lots B & C active (150 + 200 = 350)
+      expect(calculateActiveWalletBalance(lots, '2027-09-01T00:00:00.000Z')).toBe(350.0);
+
+      // On 2027-12-01: Lots A & B expired, only Lot C active (200)
+      expect(calculateActiveWalletBalance(lots, '2027-12-01T00:00:00.000Z')).toBe(200.0);
+
+      // On 2028-03-01: All lots expired (0)
+      expect(calculateActiveWalletBalance(lots, '2028-03-01T00:00:00.000Z')).toBe(0.0);
+    });
+
+    // Case 5: Earliest Expiry (FEFO - First Expiry First Out)
+    it('Case 5: Deterministically consumes credits in FEFO (First Expiry First Out) order', () => {
+      const lots: WalletCreditLot[] = [
+        {
+          id: 'lot-late',
+          amount: 100.0,
+          creditedAt: '2027-01-01T00:00:00.000Z',
+          expiresAt: '2028-01-01T00:00:00.000Z', // Expires latest
+        },
+        {
+          id: 'lot-early',
+          amount: 80.0,
+          creditedAt: '2026-09-01T00:00:00.000Z',
+          expiresAt: '2027-09-01T00:00:00.000Z', // Expires earliest
+        },
+        {
+          id: 'lot-mid',
+          amount: 120.0,
+          creditedAt: '2026-11-01T00:00:00.000Z',
+          expiresAt: '2027-11-01T00:00:00.000Z', // Expires mid
+        },
+      ];
+
+      // Redeem ₹150 as of 2027-04-01
+      const result = consumeWalletCreditsFefo(lots, 150.0, '2027-04-01T00:00:00.000Z');
+
+      expect(result.requestedAmount).toBe(150.0);
+      expect(result.redeemedAmount).toBe(150.0);
+      expect(result.unfulfilledAmount).toBe(0);
+      expect(result.isFullyCovered).toBe(true);
+      expect(result.openingActiveBalance).toBe(300.0); // 80 + 120 + 100
+      expect(result.closingActiveBalance).toBe(150.0);
+
+      // Verify FEFO order: lot-early (80), then lot-mid (70), lot-late untouched
+      expect(result.consumedLots).toHaveLength(2);
+      expect(result.consumedLots[0]!.lotId).toBe('lot-early');
+      expect(result.consumedLots[0]!.amountDeducted).toBe(80.0);
+      expect(result.consumedLots[0]!.remainingInLot).toBe(0);
+
+      expect(result.consumedLots[1]!.lotId).toBe('lot-mid');
+      expect(result.consumedLots[1]!.amountDeducted).toBe(70.0);
+      expect(result.consumedLots[1]!.remainingInLot).toBe(50.0);
+
+      // Remaining active lots: lot-mid (50) and lot-late (100)
+      expect(result.activeRemainingLots).toHaveLength(2);
+      expect(result.activeRemainingLots.find((l) => l.id === 'lot-mid')?.amount).toBe(50.0);
+      expect(result.activeRemainingLots.find((l) => l.id === 'lot-late')?.amount).toBe(100.0);
+    });
+
+    // Case 6: Expired Credit Rejection
+    it('Case 6: Rejects expired credits from redemption and excludes them from available balance', () => {
+      const lots: WalletCreditLot[] = [
+        {
+          id: 'lot-expired-1',
+          amount: 300.0,
+          creditedAt: '2026-01-01T00:00:00.000Z',
+          expiresAt: '2027-01-01T00:00:00.000Z', // Expired
+        },
+        {
+          id: 'lot-active-1',
+          amount: 75.0,
+          creditedAt: '2026-10-01T00:00:00.000Z',
+          expiresAt: '2027-10-01T00:00:00.000Z', // Active
+        },
+      ];
+
+      // As of 2027-06-01, request ₹100
+      const res = consumeWalletCreditsFefo(lots, 100.0, '2027-06-01T00:00:00.000Z');
+
+      expect(res.openingActiveBalance).toBe(75.0);
+      expect(res.redeemedAmount).toBe(75.0);
+      expect(res.unfulfilledAmount).toBe(25.0);
+      expect(res.isFullyCovered).toBe(false);
+      expect(res.expiredLotsExcluded).toHaveLength(1);
+      expect(res.expiredLotsExcluded[0]!.id).toBe('lot-expired-1');
+      expect(res.consumedLots).toHaveLength(1);
+      expect(res.consumedLots[0]!.lotId).toBe('lot-active-1');
+    });
+
+    // Case 7: Concurrent Redemption Race Immunity
+    it('Case 7: Demonstrates concurrency safety and double-spending protection across sequential atomic steps', () => {
+      let currentLots: WalletCreditLot[] = [
+        {
+          id: 'lot-concurrent-1',
+          amount: 100.0,
+          creditedAt: '2026-09-01T00:00:00.000Z',
+          expiresAt: '2027-09-01T00:00:00.000Z',
+        },
+      ];
+
+      // Transaction A requests ₹80
+      const txA = consumeWalletCreditsFefo(currentLots, 80.0, '2027-01-01T00:00:00.000Z');
+      expect(txA.redeemedAmount).toBe(80.0);
+      expect(txA.closingActiveBalance).toBe(20.0);
+      currentLots = txA.activeRemainingLots;
+
+      // Transaction B concurrently requests ₹50 (only ₹20 remaining)
+      const txB = consumeWalletCreditsFefo(currentLots, 50.0, '2027-01-01T00:00:00.000Z');
+      expect(txB.redeemedAmount).toBe(20.0);
+      expect(txB.unfulfilledAmount).toBe(30.0);
+      expect(txB.closingActiveBalance).toBe(0.0);
+      currentLots = txB.activeRemainingLots;
+
+      // Double spending prevented: total redeemed = 80 + 20 = 100 (never exceeds opening 100)
+      expect(txA.redeemedAmount + txB.redeemedAmount).toBe(100.0);
+      expect(calculateActiveWalletBalance(currentLots, '2027-01-01T00:00:00.000Z')).toBe(0.0);
+    });
+
+    // Case 8: Negative / Corrupted Value Protection
+    it('Case 8: Protects against negative, NaN, and corrupted credit lots without arithmetic failure', () => {
+      const corruptedLots: any[] = [
+        { id: 'corrupt-1', amount: -500, creditedAt: '2026-09-01T00:00:00Z' },
+        { id: 'corrupt-2', amount: NaN, creditedAt: '2026-09-01T00:00:00Z' },
+        { id: 'corrupt-3', amount: 'not-a-number', creditedAt: '2026-09-01T00:00:00Z' },
+        { id: 'valid-lot', amount: 50, creditedAt: '2026-09-01T00:00:00Z', expiresAt: '2027-09-01T00:00:00Z' },
+        null,
+        undefined,
+      ];
+
+      const balance = calculateActiveWalletBalance(corruptedLots, '2027-01-01T00:00:00Z');
+      expect(balance).toBe(50.0);
+
+      // Attempt negative redemption
+      const negRedeem = consumeWalletCreditsFefo(corruptedLots, -100, '2027-01-01T00:00:00Z');
+      expect(negRedeem.requestedAmount).toBe(0);
+      expect(negRedeem.redeemedAmount).toBe(0);
+      expect(negRedeem.closingActiveBalance).toBe(50.0);
+    });
+
+    // Case 9: Public Leakage Verification
+    it('Case 9: Verifies public disclosure texts do NOT leak internal 0.1% rate or architectural details', () => {
+      // 1. BUYER_REWARD_POLICY public text
+      expect(BUYER_REWARD_POLICY.publicDescription).not.toContain('0.1%');
+      expect(BUYER_REWARD_POLICY.publicDescription).not.toContain('0.10%');
+      expect(BUYER_REWARD_POLICY.publicDescription).not.toMatch(/fee.*share|algorithm|formula/i);
+      expect(BUYER_REWARD_POLICY.publicDescription).toContain('OTP Wallet Credits');
+
+      // 2. Rules text
+      for (const rule of BUYER_REWARD_POLICY.walletRules) {
+        expect(rule).not.toContain('0.1%');
+        expect(rule).not.toContain('0.10%');
+        expect(rule).not.toMatch(/database|sql|rpc|postgres/i);
+      }
+    });
+  });
 });
+

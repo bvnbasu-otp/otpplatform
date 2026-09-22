@@ -24,17 +24,17 @@ describe('Bilateral Identity Reveal & GST Tax Compliance on Purchase Orders', ()
     supplierEmail: 'sales@sunpower.example.com',
     // Buyer Revealed Legal & Tax Details (for GST ITC benefits)
     buyerOrgId: 'org-buyer-55',
-    buyerOrgName: 'Palm Meadows Residents Welfare Association',
+    buyerOrgName: 'Durga Rainbow Flat Owner Welfare Association',
     buyerOrgType: 'RWA',
     buyerGstin: '29AABCP9876Q1Z2',
     buyerContactPerson: 'Suresh Narayanan (President)',
     buyerContactPhone: '+91 99887 76655',
-    buyerContactEmail: 'president@palmmeadows.example.com',
+    buyerContactEmail: 'president@durgarainbow.example.com',
     buyerAddress: {
-      street: 'Phase 2 Clubhouse, Palm Meadows',
+      street: 'Clubhouse, Durga Rainbow, Mahadevapura',
       city: 'Bengaluru',
       state: 'Karnataka',
-      pincode: '560066',
+      pincode: '560048',
     },
     buyerCity: 'Bengaluru',
   };
@@ -42,7 +42,7 @@ describe('Bilateral Identity Reveal & GST Tax Compliance on Purchase Orders', ()
   it('reveals Buyer GSTIN and legal entity to Supplier on PO for statutory ITC claims', () => {
     expect(sampleMutualRevealPO.buyerGstin).toBeDefined();
     expect(sampleMutualRevealPO.buyerGstin).toBe('29AABCP9876Q1Z2');
-    expect(sampleMutualRevealPO.buyerOrgName).toBe('Palm Meadows Residents Welfare Association');
+    expect(sampleMutualRevealPO.buyerOrgName).toBe('Durga Rainbow Flat Owner Welfare Association');
     expect(sampleMutualRevealPO.buyerOrgType).toBe('RWA');
     expect(sampleMutualRevealPO.buyerContactPerson).toContain('Suresh Narayanan');
   });

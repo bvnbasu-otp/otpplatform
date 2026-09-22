@@ -71,7 +71,7 @@ const authSeedFile = existsSync(resolve(root, 'supabase/seeds/02_demo_durga_rain
   ? 'seeds/02_demo_durga_rainbow/auth.sql'
   : 'seed_demo_auth.sql';
 
-console.log(`\n🌱 Seeding OTP demo (${mode}) — Durga Rainbow Community\n`);
+console.log(`\n🌱 Seeding OTP demo (${mode}) — Durga Rainbow Flat Owner Welfare Association\n`);
 
 try {
   applySql(authSeedFile);

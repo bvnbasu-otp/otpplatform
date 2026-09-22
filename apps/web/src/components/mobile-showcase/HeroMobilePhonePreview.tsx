@@ -23,7 +23,7 @@ export function HeroMobilePhonePreview() {
           <div className="flex items-center justify-between border-b border-border/60 pb-2">
             <div>
               <span className="text-[9px] font-bold text-muted-foreground block uppercase tracking-wider">
-                Palm Meadows RWA · RFQ #0842
+                Durga Rainbow RWA, Mahadevapura · RFQ #0842
               </span>
               <h5 className="text-xs font-bold text-foreground">
                 10 HP Borewell Motor Rewind

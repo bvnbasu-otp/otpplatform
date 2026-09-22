@@ -4,6 +4,7 @@ import {
   computeSubscriptionFee,
   generateSubscriptionPaymentRef,
   resolveTierForOrgType,
+  calculateGst,
   type BillingCycle,
   type SubscriptionTierId,
 } from '../types';
@@ -23,6 +24,13 @@ interface SubscriptionPaymentModalProps {
   initialCycle?: BillingCycle;
   onSuccess?: (newExpiresAt: string) => void;
 }
+
+const AVAILABLE_TIERS: { id: SubscriptionTierId; label: string; priceMonthly: number }[] = [
+  { id: 'INDIVIDUAL', label: 'Individual (₹99)', priceMonthly: 99 },
+  { id: 'RWA', label: 'RWA / Society (₹499)', priceMonthly: 499 },
+  { id: 'MSME', label: 'MSME (₹999)', priceMonthly: 999 },
+  { id: 'ENTERPRISE', label: 'Enterprise (₹4,999)', priceMonthly: 4999 },
+];
 
 export function SubscriptionPaymentModal({
   isOpen,
@@ -46,7 +54,7 @@ export function SubscriptionPaymentModal({
   // Wallet credits state
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [applyCredits, setApplyCredits] = useState<boolean>(true);
-  const [isLoadingWallet, setIsLoadingWallet] = useState<boolean>(false);
+  const [, setIsLoadingWallet] = useState<boolean>(false);
 
   useEffect(() => {
     if (!isOpen || !organizationId) return;
@@ -73,15 +81,17 @@ export function SubscriptionPaymentModal({
 
   if (!isOpen) return null;
 
-  const plan = SUBSCRIPTION_TIERS[selectedTier];
+  const plan = SUBSCRIPTION_TIERS[selectedTier] || SUBSCRIPTION_TIERS.INDIVIDUAL;
   const fee = computeSubscriptionFee(selectedTier, selectedCycle);
+  const gstBreakdown = calculateGst(fee.amount);
+  const totalPayableWithGst = gstBreakdown.totalAmount;
   const dummyUpiId = 'pay@otp';
   const paymentRef = useMemo(() => generateSubscriptionPaymentRef(), [isOpen]);
 
-  // Wallet discount calculations
-  const creditsToApply = applyCredits ? Math.min(fee.amount, walletBalance) : 0;
-  const cashPayable = Math.max(0, fee.amount - creditsToApply);
-  const isFullyCoveredByWallet = creditsToApply >= fee.amount;
+  // Wallet discount calculations applied against total payable with GST
+  const creditsToApply = applyCredits ? Math.min(totalPayableWithGst, walletBalance) : 0;
+  const cashPayable = Math.max(0, Math.round((totalPayableWithGst - creditsToApply) * 100) / 100);
+  const isFullyCoveredByWallet = creditsToApply >= totalPayableWithGst;
 
   const handleCopyUpi = () => {
     navigator.clipboard.writeText(dummyUpiId);
@@ -117,8 +127,7 @@ export function SubscriptionPaymentModal({
 
       // 2. If remaining cash payable exists
       if (cashPayable > 0) {
-        // Realistic verification delay for UPI
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 800));
 
         const paymentResult = await processSubscriptionPayment({
           organizationId,
@@ -158,7 +167,7 @@ export function SubscriptionPaymentModal({
               <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2.5 py-0.5 text-xs font-bold border border-emerald-300 dark:border-emerald-700">
                 ⚡ Prepaid Subscription
               </span>
-              <span className="text-xs text-muted-foreground font-mono">Zero Commission</span>
+              <span className="text-xs text-muted-foreground font-mono">Calendar Month Entitlement</span>
             </div>
             <h2 className="text-xl font-bold mt-1 text-foreground">
               {isSuccess ? 'Payment Verified & Plan Activated!' : 'Recharge / Renew Platform Plan'}
@@ -170,7 +179,7 @@ export function SubscriptionPaymentModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer"
             aria-label="Close"
           >
             ✕
@@ -186,7 +195,7 @@ export function SubscriptionPaymentModal({
             <div>
               <h3 className="text-lg font-bold text-foreground">Prepaid Plan Successfully Active!</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                Your organization now has full platform access to create requirements, invite verified suppliers, and execute tenders.
+                Your organization now has active calendar-month sourcing access with {fee.monthlyRfqQuota} RFQs per month.
               </p>
             </div>
 
@@ -194,6 +203,14 @@ export function SubscriptionPaymentModal({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Plan:</span>
                 <span className="font-bold text-foreground">{plan.name} ({selectedCycle})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Monthly Quota:</span>
+                <span className="font-bold text-foreground">{fee.monthlyRfqQuota} RFQs / month</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Base + 18% GST:</span>
+                <span className="font-mono text-foreground">₹{gstBreakdown.basePrice} + ₹{gstBreakdown.gstAmount} = ₹{totalPayableWithGst}</span>
               </div>
               {creditsToApply > 0 && (
                 <div className="flex justify-between text-amber-700 dark:text-amber-400">
@@ -210,7 +227,7 @@ export function SubscriptionPaymentModal({
                 <span className="font-mono text-foreground">{paymentRef}</span>
               </div>
               <div className="flex justify-between border-t border-emerald-200 dark:border-emerald-800/60 pt-1.5">
-                <span className="text-muted-foreground font-semibold">Active Valid Until:</span>
+                <span className="text-muted-foreground font-semibold">Valid Until:</span>
                 <span className="font-bold text-foreground">
                   {successExpiresAt ? new Date(successExpiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : `${fee.durationDays} days`}
                 </span>
@@ -231,11 +248,32 @@ export function SubscriptionPaymentModal({
             {/* Step 1: Select Tier & Billing Cycle */}
             <div className="space-y-3">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
-                1. Select Billing Cycle
+                1. Select Billing Cycle &amp; Tier
               </label>
 
+              {/* Tier Selection Pills */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                {AVAILABLE_TIERS.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setSelectedTier(t.id)}
+                    className={`rounded-lg px-2.5 py-2 text-xs font-bold transition border text-center ${
+                      selectedTier === t.id
+                        ? 'border-primary bg-primary/10 text-foreground shadow-2xs'
+                        : 'border-muted bg-card text-muted-foreground hover:bg-muted/40'
+                    }`}
+                  >
+                    <div>{t.label.split(' (')[0]}</div>
+                    <div className="text-[10px] font-normal text-muted-foreground mt-0.5">
+                      ₹{selectedCycle === 'MONTHLY' ? SUBSCRIPTION_TIERS[t.id]?.monthlyPrice : SUBSCRIPTION_TIERS[t.id]?.yearlyPrice}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
               {/* Monthly vs Yearly Switcher */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setSelectedCycle('MONTHLY')}
@@ -246,10 +284,10 @@ export function SubscriptionPaymentModal({
                   }`}
                 >
                   <div className="font-bold text-sm text-foreground">Monthly Plan</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">30 Days Validity</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">5 RFQs / Calendar Month</div>
                   <div className="text-base font-black text-foreground mt-2">
-                    ₹{SUBSCRIPTION_TIERS[selectedTier].monthlyPrice.toLocaleString('en-IN')}
-                    <span className="text-[11px] font-normal text-muted-foreground"> / 30d</span>
+                    ₹{SUBSCRIPTION_TIERS[selectedTier]?.monthlyPrice.toLocaleString('en-IN')}
+                    <span className="text-[11px] font-normal text-muted-foreground"> + 18% GST</span>
                   </div>
                 </button>
 
@@ -263,36 +301,23 @@ export function SubscriptionPaymentModal({
                   }`}
                 >
                   <span className="absolute top-2 right-2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.2 border border-emerald-300 dark:border-emerald-700">
-                    Save ₹{SUBSCRIPTION_TIERS[selectedTier].yearlySavings.toLocaleString('en-IN')}
+                    6 RFQs/mo (Annual Bonus)
                   </span>
                   <div className="font-bold text-sm text-foreground">Yearly Plan</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">365 Days Validity</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Save ₹{SUBSCRIPTION_TIERS[selectedTier]?.yearlySavings.toLocaleString('en-IN')}</div>
                   <div className="text-base font-black text-foreground mt-2">
-                    ₹{SUBSCRIPTION_TIERS[selectedTier].yearlyPrice.toLocaleString('en-IN')}
-                    <span className="text-[11px] font-normal text-muted-foreground"> / 365d</span>
+                    ₹{SUBSCRIPTION_TIERS[selectedTier]?.yearlyPrice.toLocaleString('en-IN')}
+                    <span className="text-[11px] font-normal text-muted-foreground"> + 18% GST</span>
                   </div>
                 </button>
               </div>
 
-              {/* Tier Toggle if needed */}
-              <div className="flex items-center justify-between text-xs rounded-xl bg-muted/40 p-2 border">
-                <span className="text-muted-foreground">Plan Tier:</span>
-                <div className="flex gap-1.5">
-                  {(['TIER_1_MSME', 'TIER_2_ENTERPRISE'] as SubscriptionTierId[]).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setSelectedTier(t)}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
-                        selectedTier === t
-                          ? 'bg-card text-foreground shadow-xs'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {t === 'TIER_1_MSME' ? 'Tier 1 (MSME / ₹99)' : 'Tier 2 (RWA / ₹1,000)'}
-                    </button>
-                  ))}
-                </div>
+              {/* Entitlement Summary Bar */}
+              <div className="rounded-lg border bg-muted/20 p-2.5 text-xs flex items-center justify-between">
+                <span className="text-muted-foreground">Monthly Entitlement:</span>
+                <span className="font-bold text-foreground">
+                  {fee.monthlyRfqQuota} RFQs / month {selectedCycle === 'YEARLY' ? '(Includes 1 Bonus RFQ/mo)' : ''}
+                </span>
               </div>
             </div>
 
@@ -336,7 +361,7 @@ export function SubscriptionPaymentModal({
                   100% Covered by OTP Wallet Credits!
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Your available wallet balance (₹{walletBalance.toLocaleString('en-IN')}) completely covers the subscription fee of ₹{fee.amount.toLocaleString('en-IN')}. No external UPI payment required.
+                  Your available wallet balance (₹{walletBalance.toLocaleString('en-IN')}) completely covers the total fee of ₹{totalPayableWithGst.toLocaleString('en-IN')} (Base ₹{gstBreakdown.basePrice} + GST ₹{gstBreakdown.gstAmount}). No external UPI payment required.
                 </p>
               </div>
             ) : (
@@ -382,24 +407,27 @@ export function SubscriptionPaymentModal({
                     <button
                       type="button"
                       onClick={handleCopyUpi}
-                      className="rounded-lg border bg-background hover:bg-muted px-2.5 py-1.5 text-xs font-semibold transition text-foreground"
+                      className="rounded-lg border bg-background hover:bg-muted px-2.5 py-1.5 text-xs font-semibold transition text-foreground cursor-pointer"
                     >
                       {copiedUpi ? '✓ Copied' : 'Copy'}
                     </button>
                   </div>
 
                   <div className="text-xs text-muted-foreground space-y-1 pt-1">
-                    <div>
-                      Cash Payable via UPI:{' '}
+                    <div className="flex items-baseline gap-2">
+                      <span>Total Payable:</span>
                       <strong className="text-foreground text-sm font-black">
                         ₹{cashPayable.toLocaleString('en-IN')}
                       </strong>
-                      {creditsToApply > 0 && (
-                        <span className="text-[11px] text-amber-600 dark:text-amber-400 font-normal">
-                          {' '}(after ₹{creditsToApply} wallet credit)
-                        </span>
-                      )}
+                      <span className="text-[10px] font-mono text-muted-foreground">
+                        (Base ₹{gstBreakdown.basePrice} + 18% GST ₹{gstBreakdown.gstAmount})
+                      </span>
                     </div>
+                    {creditsToApply > 0 && (
+                      <div className="text-[11px] text-amber-600 dark:text-amber-400">
+                        ₹{creditsToApply} applied from OTP Wallet
+                      </div>
+                    )}
                     <div>Duration: <strong className="text-foreground">{fee.durationDays} Days ({selectedCycle})</strong></div>
                     <div className="text-[11px] text-muted-foreground italic">
                       Supported apps: GPay, PhonePe, Paytm, BHIM, Cred, Amazon Pay

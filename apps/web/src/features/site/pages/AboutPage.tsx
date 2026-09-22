@@ -49,7 +49,7 @@ export function AboutPage() {
             </span>
             <h2 className="text-sm font-bold text-foreground">Direct Settlement</h2>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              0% platform commission, zero lead fees. Buyers contract and pay suppliers directly with immutable audit trails.
+              0% platform commission, zero lead fees. Buyers contract and pay suppliers directly with end-to-end audit trails.
             </p>
           </div>
         </div>
@@ -70,6 +70,50 @@ export function AboutPage() {
               <h3 className="font-bold text-foreground">For MSMEs &amp; Facility Managers</h3>
               <p className="text-muted-foreground text-[11px]">
                 Slashes procurement turnaround from weeks to 30 minutes. Instant voice intake broadcasts RFQs across WhatsApp and local supplier networks with auto-split GST.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Real-World Case Study: Durga Rainbow RWA */}
+        <div className="mt-8 rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card p-5 sm:p-6 space-y-4 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
+            <div>
+              <span className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                Case Study · Housing Society Governance
+              </span>
+              <h2 className="mt-1 text-base sm:text-lg font-bold text-foreground">
+                Durga Rainbow Flat Owner Welfare Association, Mahadevapura
+              </h2>
+            </div>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              141 Residential Units · Bengaluru
+            </span>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3 text-xs leading-relaxed">
+            <div className="space-y-1">
+              <h3 className="font-bold text-foreground flex items-center gap-1.5">
+                <span>⚠️</span> Sourcing Challenge
+              </h3>
+              <p className="text-muted-foreground text-[11px]">
+                Urgent requirement for a 10 HP submersible borewell motor rewinding with a tight 3-day turnaround, needing committee consensus without allegations of vendor favoritism.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-bold text-foreground flex items-center gap-1.5">
+                <span>🛡️</span> OTP Solution
+              </h3>
+              <p className="text-muted-foreground text-[11px]">
+                1-Tap broadcast to verified local engineering suppliers with identity-protected sealed comparison, automated GST breakdown, and digital committee quorum voting.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-bold text-foreground flex items-center gap-1.5">
+                <span>🏆</span> Governance Outcome
+              </h3>
+              <p className="text-muted-foreground text-[11px]">
+                Procurement completed in 48 hours with 100% audit compliance, transparent price discovery, and mutual identity reveal upon digital PO issuance.
               </p>
             </div>
           </div>

@@ -68,8 +68,8 @@ export function MobileMultiDeviceGallery() {
               >
                 <div className="p-3 space-y-2.5 text-left text-foreground">
                   <div className="rounded-xl bg-primary/10 border border-primary/20 p-2 text-[10px]">
-                    <span className="font-bold block text-primary">🏢 Palm Meadows RWA</span>
-                    <span className="text-muted-foreground">Whitefield, Bengaluru</span>
+                    <span className="font-bold block text-primary">🏢 Durga Rainbow RWA</span>
+                    <span className="text-muted-foreground">Mahadevapura, Bengaluru</span>
                   </div>
                   <div className="rounded-xl border bg-card p-2 space-y-1">
                     <span className="text-[10px] font-bold">⚡ What do you need?</span>
@@ -330,7 +330,7 @@ export function MobileMultiDeviceGallery() {
                       <span className="text-muted-foreground">4.2 km away</span>
                     </div>
                     <span className="text-[10px] font-bold block">10 HP Submersible Motor</span>
-                    <div className="text-[8px] text-muted-foreground">Palm Meadows RWA</div>
+                    <div className="text-[8px] text-muted-foreground">Durga Rainbow RWA, Mahadevapura</div>
                     <div className="w-full bg-primary text-white text-[9px] font-bold py-1 rounded text-center">
                       Quote (30 Min) →
                     </div>
@@ -411,7 +411,7 @@ export function MobileMultiDeviceGallery() {
                     <span className="text-[8px] text-white/80 block">Total: ₹9,676 (Incl. GST)</span>
                   </div>
                   <div className="rounded border bg-card p-1.5 text-[9px] space-y-0.5">
-                    <span className="font-bold block">Palm Meadows RWA</span>
+                    <span className="font-bold block">Durga Rainbow Flat Owner Welfare Association</span>
                     <span className="text-[8px] text-muted-foreground block">GSTIN: 29AAAAA0000A1Z5</span>
                   </div>
                   <div className="w-full bg-emerald-600 text-white text-[9px] font-bold py-1.5 rounded text-center">

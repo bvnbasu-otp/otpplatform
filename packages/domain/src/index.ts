@@ -69,3 +69,4 @@ export * from './accounting/ledger-balance';
 export * from './accounting/journal-posting-rules';
 export * from './accounting/tally-journal-exporter';
 export * from './accounting/zoho-journal-exporter';
+export * from './types/pricing-entitlement';

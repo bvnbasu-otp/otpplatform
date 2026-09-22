@@ -174,7 +174,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Quorum meters, 1-tap decision chips &amp; exportable statutory audit log</span>
+                  <span>Quorum meters, 1-tap decision chips &amp; organized records for committee review</span>
                 </li>
               </ul>
             </div>

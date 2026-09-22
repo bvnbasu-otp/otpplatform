@@ -122,5 +122,5 @@ export const DEMO_QUOTES = {
   },
 } as const;
 
-export const DEMO_ORG_NAME = 'Durga Rainbow Community';
+export const DEMO_ORG_NAME = 'Durga Rainbow Flat Owner Welfare Association';
 export const DEMO_REQUIREMENT_TITLE = '10 HP Borewell Motor Winding';

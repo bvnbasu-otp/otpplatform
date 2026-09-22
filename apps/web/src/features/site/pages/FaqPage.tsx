@@ -76,7 +76,7 @@ export function FaqPage() {
             How OTP Works &amp; FAQ
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed">
-            Understand the complete 6-stage commercial procurement lifecycle, cryptographic alias protection, multi-channel vendor reach, and direct settlement rules.
+            Understand the complete 6-stage commercial procurement lifecycle, identity-protected sealed comparison, multi-channel vendor reach, and direct settlement rules.
           </p>
         </div>
 
@@ -330,7 +330,7 @@ export function FaqPage() {
                     04. Technical Architecture, Governance &amp; Direct Settlement Rules
                   </h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Direct bilateral settlement, milestone releases, transparent platform fee, immutable audit logging.
+                    Direct bilateral settlement, milestone releases, transparent platform fee, end-to-end audit logging.
                   </p>
                 </div>
               </div>
