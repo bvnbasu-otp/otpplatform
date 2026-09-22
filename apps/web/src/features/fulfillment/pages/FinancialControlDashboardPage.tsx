@@ -92,7 +92,7 @@ export const FinancialControlDashboardPage: React.FC<
   // Active sub-tab
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'GENERAL_LEDGER' | 'SETTLEMENT_RECON' | 'EXCEPTION_QUEUE' | 'BANK_RECON' | 'ERP_MANIFESTS'>('OVERVIEW');
 
-  // Phase 5D: General Ledger & Double-Entry State
+  // General Ledger & Double-Entry State
   const [ledgerAccounts, setLedgerAccounts] = useState<LedgerAccount[]>([]);
   const [accountingPeriods, setAccountingPeriods] = useState<AccountingPeriod[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
@@ -303,7 +303,7 @@ export const FinancialControlDashboardPage: React.FC<
           organizationId: orgId,
           generatedAt: new Date().toISOString(),
           environment: 'PRODUCTION',
-          schemaVersion: '5C.6',
+          schemaVersion: '1.0',
         },
         summary: summaryRes.ok ? summaryRes.summary : (summary as any),
         purchaseOrders: (posRes.data || []).map((p: any) => ({
@@ -596,7 +596,7 @@ export const FinancialControlDashboardPage: React.FC<
   if (loading) {
     return (
       <div className="p-8 text-center text-sm text-muted-foreground animate-pulse">
-        Loading Financial Observability Radar &amp; General Ledger (Phase 5D)…
+        Loading Financial Observability Radar &amp; General Ledger…
       </div>
     );
   }
@@ -610,7 +610,7 @@ export const FinancialControlDashboardPage: React.FC<
             <span>🛡️</span> Financial Observability &amp; Statutory Reconciliation Radar
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Real-time procurement commitment tracking, duplicate export guard &amp; settlement execution controls (Phase 5C.6)
+            Real-time procurement commitment tracking, duplicate export guard &amp; settlement execution controls
           </p>
         </div>
 
@@ -727,60 +727,82 @@ export const FinancialControlDashboardPage: React.FC<
       )}
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border flex-wrap">
+      <div
+        role="tablist"
+        aria-label="Financial Control Dashboard Sections"
+        className="flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border overflow-x-auto scrollbar-thin scroll-smooth no-print min-w-0"
+      >
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'OVERVIEW'}
           onClick={() => setActiveTab('OVERVIEW')}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'OVERVIEW' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          📊 Overview &amp; Aging
+          <span>📊</span>
+          <span>Overview &amp; Aging</span>
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'GENERAL_LEDGER'}
           onClick={() => setActiveTab('GENERAL_LEDGER')}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'GENERAL_LEDGER' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          📖 General Ledger &amp; Double-Entry ({journalEntries.length})
+          <span>📖</span>
+          <span>General Ledger &amp; Double-Entry ({journalEntries.length})</span>
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'SETTLEMENT_RECON'}
           onClick={() => setActiveTab('SETTLEMENT_RECON')}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'SETTLEMENT_RECON' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          ⚖️ Settlement Reconciliations ({settlementRecs.length})
+          <span>⚖️</span>
+          <span>Settlement Reconciliations ({settlementRecs.length})</span>
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'EXCEPTION_QUEUE'}
           onClick={() => setActiveTab('EXCEPTION_QUEUE')}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'EXCEPTION_QUEUE' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          🚨 Financial Exceptions ({exceptions.filter((e) => e.status !== 'RESOLVED').length} Open)
+          <span>🚨</span>
+          <span>Financial Exceptions ({exceptions.filter((e) => e.status !== 'RESOLVED').length} Open)</span>
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'BANK_RECON'}
           onClick={() => setActiveTab('BANK_RECON')}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'BANK_RECON' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          🏦 Bank Remittance Advice ({bankRecords.length})
+          <span>🏦</span>
+          <span>Bank Remittance Advice ({bankRecords.length})</span>
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'ERP_MANIFESTS'}
           onClick={() => setActiveTab('ERP_MANIFESTS')}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'ERP_MANIFESTS' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          📑 ERP Export Registry ({manifests.length})
+          <span>📑</span>
+          <span>ERP Export Registry ({manifests.length})</span>
         </button>
       </div>
 
@@ -824,7 +846,7 @@ export const FinancialControlDashboardPage: React.FC<
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div>
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <span>⏱️</span> Financial Aging Observability Matrix (Phase 5C.6)
+                  <span>⏱️</span> Financial Aging Observability Matrix
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   Temporal risk stratification across unpaid invoices, unallocated advances, and disputed exceptions
@@ -936,7 +958,7 @@ export const FinancialControlDashboardPage: React.FC<
         </div>
       )}
 
-      {/* TAB 2: GENERAL LEDGER & DOUBLE-ENTRY JOURNALS (Phase 5D) */}
+      {/* TAB 2: GENERAL LEDGER & DOUBLE-ENTRY JOURNALS */}
       {activeTab === 'GENERAL_LEDGER' && (
         <div className="space-y-6">
           {/* Trial Balance & Period Controls Header */}
@@ -1149,7 +1171,7 @@ export const FinancialControlDashboardPage: React.FC<
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                Settlement Reconciliation Read Model (Phase 5C.6)
+                Settlement Reconciliation Read Model
               </h3>
               <p className="text-xs text-muted-foreground">
                 Authoritative conservation ledger tracking Invoice Gross, TDS, Platform Fee, and Supplier Net Settlement
@@ -1244,7 +1266,7 @@ export const FinancialControlDashboardPage: React.FC<
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                Financial Exception Queue (Phase 5C.6)
+                Financial Exception Queue
               </h3>
               <p className="text-xs text-muted-foreground">
                 Immutable audit queue of settlement discrepancies with multi-stage event forensics
@@ -1824,7 +1846,7 @@ export const FinancialControlDashboardPage: React.FC<
         </div>
       )}
 
-      {/* Journal Lines Drawer / Modal (Phase 5D) */}
+      {/* Journal Lines Drawer / Modal */}
       {selectedJournalForDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-card border border-border rounded-xl shadow-2xl max-w-2xl w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1907,7 +1929,7 @@ export const FinancialControlDashboardPage: React.FC<
         </div>
       )}
 
-      {/* Journal Reversal Modal (Phase 5D) */}
+      {/* Journal Reversal Modal */}
       {reversingJournal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-5 space-y-4">
@@ -1970,7 +1992,7 @@ export const FinancialControlDashboardPage: React.FC<
         </div>
       )}
 
-      {/* Period Close / Reopen Modal (Phase 5D) */}
+      {/* Period Close / Reopen Modal */}
       {managingPeriod && periodAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-5 space-y-4">

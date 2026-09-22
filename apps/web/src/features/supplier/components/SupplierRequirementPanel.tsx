@@ -58,7 +58,7 @@ export interface SupplierRequirementPanelProps {
 }
 
 /**
- * Screen 6: Supplier RFQ Opportunity Detail & Requirement Panel (Phase 3.2)
+ * Screen 6: Supplier RFQ Opportunity Detail & Requirement Panel
  * Core Job: "What is this requirement, what do I need to know, and what is expected?"
  * Answers:
  * 1. What is needed? (Scope & description with expandable summary)

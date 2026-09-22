@@ -13,10 +13,12 @@ export {
   canVoteSomewhere,
   isReadOnly,
   hasMultipleRoles,
+  hasMultipleOrganizations,
   fetchRoleCatalog,
   fetchRoleContext,
   chooseMyRole,
   switchActiveRole,
+  switchActiveOrganization,
   SIGNED_OUT_CONTEXT,
 } from './api/roles';
 export type {

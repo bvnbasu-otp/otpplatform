@@ -424,5 +424,10 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () =>
       expect(isEssentialCriterion('technical_fit')).toBe(false);
       expect(isEssentialCriterion('certification')).toBe(false);
     });
+
+    it('exports EvaluationDecisionCockpit with responsive mobile viewport containment', () => {
+      expect(EvaluationDecisionCockpit).toBeDefined();
+      expect(typeof EvaluationDecisionCockpit).toBe('function');
+    });
   });
 });

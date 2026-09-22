@@ -122,6 +122,18 @@ describe('Auth Feature & Portal Role Resolution', () => {
 
     const role2 = await resolvePortalRole('prof-heuristic-2', false, 'contact01@otpdemo.test');
     expect(role2).toBe('supplier');
+
+    const role3 = await resolvePortalRole('prof-heuristic-3', false, 'furniture01@otpdemo.test');
+    expect(role3).toBe('supplier');
+
+    const role4 = await resolvePortalRole('prof-heuristic-4', false, 'cctv02@otpdemo.test');
+    expect(role4).toBe('supplier');
+
+    const role5 = await resolvePortalRole('prof-heuristic-5', false, 'water03@otpdemo.test');
+    expect(role5).toBe('supplier');
+
+    const role6 = await resolvePortalRole('prof-heuristic-6', false, 'gas01@otpdemo.test');
+    expect(role6).toBe('supplier');
   });
 
   it('resolves portal role as unknown when neither supplier nor buyer org member', async () => {

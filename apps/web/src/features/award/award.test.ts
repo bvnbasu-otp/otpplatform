@@ -184,4 +184,11 @@ describe('Atomic Award, Reveal & PO Preconditions Validation', () => {
 
     expect(isLockEligible).toBe(true);
   });
+
+  it('exports lockAward, lockAndRevealAwardAtomic, and unlockAwardDecision from award feature index', async () => {
+    const { lockAward, lockAndRevealAwardAtomic, unlockAwardDecision } = await import('./index');
+    expect(lockAward).toBeDefined();
+    expect(lockAndRevealAwardAtomic).toBeDefined();
+    expect(unlockAwardDecision).toBeDefined();
+  });
 });

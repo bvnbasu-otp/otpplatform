@@ -187,7 +187,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
   return (
     <div
-      className="zero-scroll-container p-3 sm:p-4 max-w-5xl mx-auto w-full overflow-x-hidden space-y-3.5 pb-36 text-foreground relative"
+      className="zero-scroll-container p-3 sm:p-4 max-w-5xl mx-auto w-full overflow-x-hidden space-y-3.5 pb-40 sm:pb-36 pb-[calc(10rem+env(safe-area-inset-bottom,0px))] text-foreground relative"
       data-testid="discover-suppliers-page"
     >
       {/* 15-Stage Linear Pipeline Navigator */}

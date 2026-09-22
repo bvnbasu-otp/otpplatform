@@ -40,6 +40,32 @@ describe('OTP Error Translator Layer (POL-03)', () => {
 
     const details = translateErrorDetails(raw);
     expect(details.code).toBe('ADV-5C2-INV-OVERALLOC');
+
+    const rawOveralloc = 'ADV-5C2-PAY-OVERALLOC: Advance allocation exceeds payment balance';
+    expect(translateError(rawOveralloc)).toContain('unallocated balance on this advance payment');
+    expect(translateError(rawOveralloc)).not.toContain('ADV-5C2-PAY-OVERALLOC');
+
+    const rawInvalidAmt = 'ADV-5C2-INVALID-AMOUNT: Amount must be positive';
+    expect(translateError(rawInvalidAmt)).toContain('Advance allocation amount must be strictly greater than ₹0.00');
+
+    const rawMismatch = 'ADV-5C2-PO-MISMATCH: Advance payment and invoice belong to different POs';
+    expect(translateError(rawMismatch)).toContain('The advance payment and invoice belong to different Purchase Orders');
+    const detailsMismatch = translateErrorDetails(rawMismatch);
+    expect(detailsMismatch.actionHint).toContain('Advance funds can only be allocated within the same Purchase Order');
+  });
+
+  it('translates credit/debit notes and TDS withholding errors', () => {
+    const rawCdn = 'CDN-5C3-EXCEEDS-BALANCE: Note amount exceeds ceiling';
+    expect(translateError(rawCdn)).toContain('debit note amount exceeds the permissible invoice balance ceiling');
+
+    const rawTds = 'TDS-5C4-UNAUTHORIZED: Only buyer org owner can apply TDS';
+    expect(translateError(rawTds)).toContain('Only buyer organization Owners or Managers can apply statutory TDS withholding');
+
+    const rawCo = 'CO-5C4-UNAUTHORIZED: Only manager can commit variation';
+    expect(translateError(rawCo)).toContain('Only buyer organization Owners or Managers can commit Purchase Order change orders');
+
+    const rawFee = 'FEE-5C5-UNAUTHORIZED: Platform fee permissions';
+    expect(translateError(rawFee)).toContain('You do not have permission to acknowledge or modify platform fee allocations');
   });
 
   it('translates payment non-payable errors', () => {

@@ -1,5 +1,6 @@
 export { CommitteeVotePage } from './pages/CommitteeVotePage';
 export { WeightedTallyTable } from './components/WeightedTallyTable';
+export { MultiTierApprovalGatePanel } from './components/MultiTierApprovalGatePanel';
 export {
   currentVoteIds,
   formatVoteChoice,

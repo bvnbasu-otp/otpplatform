@@ -43,7 +43,7 @@ const mockEvaluations: QuoteEvaluation[] = [
   },
 ];
 
-describe('CriterionBreakdownTable Component (Phase C.6 Explainable Scoring)', () => {
+describe('CriterionBreakdownTable Component (Explainable Scoring)', () => {
   it('instantiates cleanly with evaluations and criteria', () => {
     const onRecompute = vi.fn();
     const element = React.createElement(CriterionBreakdownTable, {

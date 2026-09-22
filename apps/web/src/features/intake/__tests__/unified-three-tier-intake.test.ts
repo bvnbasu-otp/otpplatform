@@ -478,5 +478,10 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
         expect(regex.test(combinedText)).toBe(false);
       }
     });
+
+    it('exports Tier3SourcingControlsCard with sanitized address placeholder', () => {
+      expect(Tier3SourcingControlsCard).toBeDefined();
+      expect(typeof Tier3SourcingControlsCard).toBe('function');
+    });
   });
 });

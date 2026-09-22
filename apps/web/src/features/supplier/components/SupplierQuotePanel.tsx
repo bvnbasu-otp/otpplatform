@@ -1,7 +1,9 @@
+import { Link } from 'react-router-dom';
 import type { SupplierQuote } from '../types/supplier-quote';
 
 export interface SupplierQuotePanelProps {
   quote: SupplierQuote;
+  canRevise?: boolean;
 }
 
 function formatInr(n: number | null | undefined) {
@@ -17,7 +19,7 @@ function formatInr(n: number | null | undefined) {
   }
 }
 
-export function SupplierQuotePanel({ quote }: SupplierQuotePanelProps) {
+export function SupplierQuotePanel({ quote, canRevise = false }: SupplierQuotePanelProps) {
   const s = quote.snapshot;
 
   return (
@@ -36,6 +38,16 @@ export function SupplierQuotePanel({ quote }: SupplierQuotePanelProps) {
           <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-2.5 py-0.5 text-xs font-black">
             v{quote.currentVersion} {quote.status}
           </span>
+          {canRevise && (
+            <Link
+              to={`/supplier/rfq/${quote.rfqId}/quote`}
+              className="rounded-xl bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition min-h-[36px] inline-flex items-center gap-1"
+              data-testid="revise-quote-panel-btn"
+            >
+              <span>⚡</span>
+              <span>Revise Quote</span>
+            </Link>
+          )}
         </div>
       </div>
 

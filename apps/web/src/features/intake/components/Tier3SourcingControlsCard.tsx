@@ -348,7 +348,7 @@ export function Tier3SourcingControlsCard({
                 {({ id }) => (
                   <Input
                     id={id}
-                    placeholder="e.g. Unit 4B, Phase 2 Industrial Corridor"
+                    placeholder="e.g. Unit 4B, Electronic City Industrial Corridor"
                     value={line1}
                     onChange={(e) => onLine1Change(e.target.value)}
                   />

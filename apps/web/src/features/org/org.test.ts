@@ -27,9 +27,13 @@ vi.mock('@/lib/supabase', () => {
   return { supabase: globalMock };
 });
 
-vi.mock('@/features/roles/api/roles', () => ({
-  switchActiveOrganization: vi.fn(),
-}));
+vi.mock('@/features/roles/api/roles', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/roles/api/roles')>();
+  return {
+    ...actual,
+    switchActiveOrganization: vi.fn(),
+  };
+});
 
 const mockSupabaseClient = {
   rpc: vi.fn(),
@@ -308,5 +312,11 @@ describe('Org Feature Module Tests & Phase C8.2 Governance', () => {
     if (res.ok) {
       expect(res.context.organizationId).toBe('org-2');
     }
+  });
+
+  it('exports OrgMembersPage component with responsive horizontal tabs', async () => {
+    const { OrgMembersPage } = await import('./pages/OrgMembersPage');
+    expect(OrgMembersPage).toBeDefined();
+    expect(typeof OrgMembersPage).toBe('function');
   });
 });

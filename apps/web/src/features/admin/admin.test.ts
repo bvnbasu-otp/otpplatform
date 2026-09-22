@@ -529,4 +529,12 @@ describe('Super Admin & Ops Console Data Layer', () => {
     expect(visibleActiveUsers).toHaveLength(1);
     expect(visibleActiveUsers[0]?.id).toBe('usr-1');
   });
+
+  it('exports MASTER_MODULE_INVENTORY with canonical phase-free descriptors', () => {
+    expect(MASTER_MODULE_INVENTORY.length).toBeGreaterThan(0);
+    const webUi = MASTER_MODULE_INVENTORY.find((m) => m.id === 'MOD-WEB-UI');
+    expect(webUi).toBeDefined();
+    expect(webUi?.description).not.toContain('Phase 3.1');
+    expect(webUi?.description).not.toContain('Phase 2.5');
+  });
 });

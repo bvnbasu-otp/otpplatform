@@ -38,7 +38,7 @@ export interface PurchaseOrderSummary {
   isSettled?: boolean;
   invoiceStatus?: string;
   paymentStatus?: string;
-  // Phase 5B Statutory GST Metadata & Tax Totals
+  // Statutory GST Metadata & Tax Totals
   placeOfSupplyStateCode?: string | null;
   placeOfSupplyBasis?: string | null;
   taxSnapshot?: Record<string, unknown> | null;

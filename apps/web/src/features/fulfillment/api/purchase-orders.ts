@@ -217,7 +217,7 @@ function mapPo(row: PoRow): PurchaseOrderSummary {
     isSettled,
     invoiceStatus: inv?.status,
     paymentStatus: pay?.status,
-    // Statutory GST & Tax Attributes (Phase 5B)
+    // Statutory GST & Tax Attributes
     placeOfSupplyStateCode: row.place_of_supply_state_code,
     placeOfSupplyBasis: row.place_of_supply_basis,
     taxSnapshot: row.tax_snapshot,

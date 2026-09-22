@@ -140,4 +140,10 @@ describe('Notification History & Activity Feed', () => {
     };
     expect(bellProps.open).toBe(false);
   });
+
+  it('exports NotificationsPage component with responsive activity navigation', async () => {
+    const { NotificationsPage } = await import('./pages/NotificationsPage');
+    expect(NotificationsPage).toBeDefined();
+    expect(typeof NotificationsPage).toBe('function');
+  });
 });

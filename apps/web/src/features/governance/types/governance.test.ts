@@ -146,4 +146,10 @@ describe('4-Pillar candidate quote structure and quorum metrics', () => {
     expect(WeightedTallyTable).toBeDefined();
     expect(typeof WeightedTallyTable).toBe('function');
   });
+
+  it('exports MultiTierApprovalGatePanel from governance feature index', async () => {
+    const { MultiTierApprovalGatePanel } = await import('../index');
+    expect(MultiTierApprovalGatePanel).toBeDefined();
+    expect(typeof MultiTierApprovalGatePanel).toBe('function');
+  });
 });

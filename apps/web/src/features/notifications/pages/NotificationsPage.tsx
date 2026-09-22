@@ -335,14 +335,14 @@ export function NotificationsPage({
         <div
           role="tablist"
           aria-label="Activity Feed Mode"
-          className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1 border border-border/80"
+          className="flex items-center gap-1.5 rounded-xl bg-muted/60 p-1 border border-border/80 overflow-x-auto scrollbar-thin scroll-smooth no-print min-w-0"
         >
           <button
             type="button"
             role="tab"
             aria-selected={activeMainTab === 'notifications'}
             onClick={() => handleTabChange('notifications')}
-            className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
               activeMainTab === 'notifications'
                 ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground'
@@ -361,7 +361,7 @@ export function NotificationsPage({
             role="tab"
             aria-selected={activeMainTab === 'audit'}
             onClick={() => handleTabChange('audit')}
-            className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
               activeMainTab === 'audit'
                 ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground'

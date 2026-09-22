@@ -520,21 +520,21 @@ export function ProfilePage() {
         <div
           role="tablist"
           aria-label="Profile Settings Section"
-          className="grid grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1 border border-border/80"
+          className="flex items-center gap-1.5 rounded-xl bg-muted/60 p-1 border border-border/80 overflow-x-auto scrollbar-thin scroll-smooth no-print min-w-0"
         >
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'profile'}
             onClick={() => handleTabSwitch('profile')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
               activeTab === 'profile'
                 ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span>👤</span>
-            <span className="truncate">Profile</span>
+            <span>Profile</span>
           </button>
 
           <button
@@ -542,14 +542,14 @@ export function ProfilePage() {
             role="tab"
             aria-selected={activeTab === 'team'}
             onClick={() => handleTabSwitch('team')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
               activeTab === 'team'
                 ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span>🏢</span>
-            <span className="truncate">Team ({members.length || 1})</span>
+            <span>Team ({members.length || 1})</span>
           </button>
 
           <button
@@ -557,14 +557,14 @@ export function ProfilePage() {
             role="tab"
             aria-selected={activeTab === 'preferences'}
             onClick={() => handleTabSwitch('preferences')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
               activeTab === 'preferences'
                 ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span>⚙️</span>
-            <span className="truncate">Preferences</span>
+            <span>Preferences</span>
           </button>
         </div>
       </header>

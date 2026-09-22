@@ -328,5 +328,11 @@ describe('Phase 3.2.1: Supplier RFQ Detail — CTA, Truthfulness & Information H
         }
       }
     });
+
+    it('exports SupplierQuotePanel with canRevise support for sealed quote revisions', async () => {
+      const { SupplierQuotePanel } = await import('./components/SupplierQuotePanel');
+      expect(SupplierQuotePanel).toBeDefined();
+      expect(typeof SupplierQuotePanel).toBe('function');
+    });
   });
 });

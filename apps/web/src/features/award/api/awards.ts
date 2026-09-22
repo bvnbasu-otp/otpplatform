@@ -199,7 +199,7 @@ export interface UnmaskedSupplierResult {
 }
 
 /**
- * Phase 1 Governance: Atomically commits the intent to award, records buyer attestation,
+ * Atomically commits the intent to award, records buyer attestation,
  * creates the Purchase Order draft, and unmasks the verified supplier identity.
  */
 export async function confirmIntentToAwardAndUnmask(

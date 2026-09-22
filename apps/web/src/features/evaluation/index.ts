@@ -12,6 +12,8 @@ export { CriterionBreakdownTable } from './components/CriterionBreakdownTable';
 export type { CriterionBreakdownTableProps } from './components/CriterionBreakdownTable';
 export { EvaluationCriteriaEditor } from './components/EvaluationCriteriaEditor';
 export type { EvaluationCriteriaEditorProps } from './components/EvaluationCriteriaEditor';
+export { EvaluationApprovalRouteBanner } from './components/EvaluationApprovalRouteBanner';
+export type { EvaluationApprovalRouteBannerProps } from './components/EvaluationApprovalRouteBanner';
 export { EvaluationDecisionCockpit } from './components/EvaluationDecisionCockpit';
 export type { EvaluationDecisionCockpitProps, CockpitTab } from './components/EvaluationDecisionCockpit';
 export { MobileVotingCard, DEFAULT_RATIONALE_CHIPS } from './components/MobileVotingCard';

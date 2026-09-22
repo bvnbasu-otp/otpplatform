@@ -937,7 +937,7 @@ export function PurchaseOrderDetailPage({
       )}
 
       {/* Screen Tabs for 10/11/12/13 Multi-Screen Scopes (POL-02 Mobile-Hardened 320px+) */}
-      <div className="mt-3 flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border overflow-x-auto no-scrollbar scroll-smooth no-print min-w-0" role="tablist" aria-label="Purchase Order Sections">
+      <div className="mt-3 flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border overflow-x-auto scrollbar-thin scroll-smooth no-print min-w-0" role="tablist" aria-label="Purchase Order Sections">
         <button
           type="button"
           role="tab"
@@ -996,7 +996,7 @@ export function PurchaseOrderDetailPage({
       </div>
 
       {/* Main Content Area */}
-      <div className="mt-3 space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      <div className="mt-3 space-y-4 pb-32 sm:pb-28 pb-[calc(8rem+env(safe-area-inset-bottom,0px))]">
         {/* TAB 1: OVERVIEW & LEDGER */}
         {activeTab === 'OVERVIEW' && (
           <div className="space-y-4">
@@ -1023,7 +1023,7 @@ export function PurchaseOrderDetailPage({
                     <div>
                       <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <span>📦</span>
-                        <span>Commercial Contract Scope &amp; Line Items (Phase 5B)</span>
+                        <span>Commercial Contract Scope &amp; Line Items</span>
                       </h3>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
                         Itemized Bill of Quantities (BoQ) with statutory GST splitting and Place of Supply resolution.
@@ -1147,14 +1147,14 @@ export function PurchaseOrderDetailPage({
               );
             })()}
 
-            {/* PO Cumulative Financial Settlement & Reconciliation Summary Card (Phase 5C.2) */}
+            {/* PO Cumulative Financial Settlement & Reconciliation Summary Card */}
             {settlementSummary && (
               <div className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3" data-testid="po-settlement-summary-card">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
                   <div>
                     <h3 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
                       <span>⚖️</span>
-                      <span>Cumulative Financial Reconciliation &amp; Settlement (Phase 5C.2)</span>
+                      <span>Cumulative Financial Reconciliation &amp; Settlement</span>
                     </h3>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                       Multi-invoice balance due, advance remittance tracking, and completion settlement integrity.
@@ -1248,10 +1248,10 @@ export function PurchaseOrderDetailPage({
                   </div>
                 )}
 
-                {/* Phase 5C.3 Dual-Rail ERP Payment Vouchers & Multi-PO Settlement Actions */}
+                {/* Dual-Rail ERP Payment Vouchers & Multi-PO Settlement Actions */}
                 <div className="border-t border-border/60 pt-3 flex flex-wrap items-center justify-between gap-2 no-print">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="font-bold text-foreground">ERP Payment Vouchers (Phase 5C.3):</span>
+                    <span className="font-bold text-foreground">ERP Payment Vouchers:</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
@@ -1300,7 +1300,7 @@ export function PurchaseOrderDetailPage({
                   </div>
                 </div>
 
-                {/* Credit & Debit Notes (Phase 5C.3) */}
+                {/* Credit & Debit Notes */}
                 {creditDebitNotes.length > 0 && (
                   <div className="border-t border-border/60 pt-3 space-y-2">
                     <div className="flex items-center justify-between text-xs font-bold text-foreground">
@@ -1328,7 +1328,7 @@ export function PurchaseOrderDetailPage({
                   </div>
                 )}
 
-                {/* PO Change Orders / Variations (Phase 5C.4) */}
+                {/* PO Change Orders / Variations */}
                 <div className="border-t border-border/60 pt-3 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-foreground">
                     <span className="flex items-center gap-1.5">
@@ -1380,7 +1380,7 @@ export function PurchaseOrderDetailPage({
             )}
 
             {/* Auto Create Work Order if missing */}
-            {!workOrder && (
+            {!workOrder ? (
               <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2 no-print">
                 <p className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">Work Execution &amp; Progress</p>
                 <p className="text-xs text-muted-foreground">
@@ -1393,6 +1393,24 @@ export function PurchaseOrderDetailPage({
                   className="min-h-[44px] rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
                 >
                   {busy ? 'Initializing…' : 'Initialize Work Order Progress →'}
+                </button>
+              </div>
+            ) : (
+              /* Step Progression CTA to Milestones */
+              <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
+                <div className="text-xs">
+                  <span className="font-extrabold text-foreground block">Next Fulfillment Step:</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Track deliverable execution progress (0% → 100%) and sign off on milestone inspections.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('MILESTONES')}
+                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
+                  data-testid="continue-to-milestones-btn"
+                >
+                  Continue to Milestones ({workOrder?.progressPercent || 0}%) →
                 </button>
               </div>
             )}
@@ -1430,6 +1448,24 @@ export function PurchaseOrderDetailPage({
                   role={role}
                   onAccepted={() => void load()}
                 />
+
+                {/* Step Progression CTA to Invoicing */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
+                  <div className="text-xs">
+                    <span className="font-extrabold text-foreground block">Next Fulfillment Step:</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Review itemized GST tax invoices generated against completed delivery milestones.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('INVOICE')}
+                    className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
+                    data-testid="continue-to-invoice-btn"
+                  >
+                    Continue to Invoices →
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -1437,20 +1473,51 @@ export function PurchaseOrderDetailPage({
 
         {/* TAB 3: INVOICE (SCREEN 12 FOCUS) */}
         {activeTab === 'INVOICE' && (
-          <div>
+          <div className="space-y-4">
             {!workOrder ? (
-              <div className="rounded-2xl border bg-card p-4 text-center text-xs text-muted-foreground">
-                Please initialize milestones to access invoicing.
+              <div className="rounded-2xl border bg-card p-5 text-center space-y-3">
+                <span className="text-2xl block">🧾</span>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Work Order execution not yet initialized. Initialize milestone progress tracking to enable statutory GST invoicing.
+                </p>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleCreateWorkOrder()}
+                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
+                >
+                  {busy ? 'Initializing…' : 'Initialize Milestones & Invoicing →'}
+                </button>
               </div>
             ) : (
-              <InvoicePaymentPanel
-                workOrderId={workOrder.id}
-                supplierId={order.supplierId}
-                role={role}
-                poAmount={order.totalAmount}
-                deliveryAccepted={Boolean(workOrder.buyerAcceptedAt)}
-                onUpdated={() => void load()}
-              />
+              <>
+                <InvoicePaymentPanel
+                  workOrderId={workOrder.id}
+                  supplierId={order.supplierId}
+                  role={role}
+                  poAmount={order.totalAmount}
+                  deliveryAccepted={Boolean(workOrder.buyerAcceptedAt)}
+                  onUpdated={() => void load()}
+                />
+
+                {/* Step Progression CTA to Payment Settlement */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
+                  <div className="text-xs">
+                    <span className="font-extrabold text-foreground block">Next Fulfillment Step:</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Manage disbursements, unallocated advance settlements, and ERP accounting exports.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('PAYMENT')}
+                    className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
+                    data-testid="continue-to-payment-btn"
+                  >
+                    Continue to Settlement →
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -1459,8 +1526,19 @@ export function PurchaseOrderDetailPage({
         {activeTab === 'PAYMENT' && (
           <div>
             {!workOrder ? (
-              <div className="rounded-2xl border bg-card p-4 text-center text-xs text-muted-foreground">
-                Please initialize milestones to access payment settlement.
+              <div className="rounded-2xl border bg-card p-5 text-center space-y-3">
+                <span className="text-2xl block">💳</span>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Work Order execution not yet initialized. Initialize milestone progress tracking to access payment settlement.
+                </p>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleCreateWorkOrder()}
+                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
+                >
+                  {busy ? 'Initializing…' : 'Initialize Milestones & Payment Settlement →'}
+                </button>
               </div>
             ) : (
               <InvoicePaymentPanel
@@ -1519,7 +1597,7 @@ export function PurchaseOrderDetailPage({
         </div>
       </div>
 
-      {/* PO Completion Guard & Confirmation Dialog Modal (Phase 5C.2) */}
+      {/* PO Completion Guard & Confirmation Dialog Modal */}
       {showCompletionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="w-full max-w-lg rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
@@ -1647,7 +1725,7 @@ export function PurchaseOrderDetailPage({
         </div>
       )}
 
-      {/* PO Change Order Modal (Phase 5C.4) */}
+      {/* PO Change Order Modal */}
       <ChangeOrderModal
         isOpen={showChangeOrderModal}
         onClose={() => setShowChangeOrderModal(false)}

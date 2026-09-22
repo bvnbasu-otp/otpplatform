@@ -428,7 +428,7 @@ export function OrgMembersPage() {
         <div
           role="tablist"
           aria-label="Governance Workbench Navigation"
-          className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl bg-muted/60 p-1 border border-border/80"
+          className="flex items-center gap-1.5 rounded-xl bg-muted/60 p-1 border border-border/80 overflow-x-auto scrollbar-thin scroll-smooth no-print min-w-0"
         >
           <button
             type="button"
@@ -436,14 +436,14 @@ export function OrgMembersPage() {
             aria-selected={activeTab === 'members'}
             onClick={() => setActiveTab('members')}
             data-testid="tab-team-members"
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
               activeTab === 'members'
                 ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span>👥</span>
-            <span className="truncate">Team ({members.length})</span>
+            <span>Team ({members.length})</span>
           </button>
 
           <button
@@ -452,14 +452,14 @@ export function OrgMembersPage() {
             aria-selected={activeTab === 'invitations'}
             onClick={() => setActiveTab('invitations')}
             data-testid="tab-invitations"
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
               activeTab === 'invitations'
                 ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span>✉️</span>
-            <span className="truncate">Invitations ({pendingInvCount})</span>
+            <span>Invitations ({pendingInvCount})</span>
           </button>
 
           <button
@@ -468,14 +468,14 @@ export function OrgMembersPage() {
             aria-selected={activeTab === 'delegations'}
             onClick={() => setActiveTab('delegations')}
             data-testid="tab-delegations"
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
               activeTab === 'delegations'
                 ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span>🛡️</span>
-            <span className="truncate">Delegations ({activeDelCount})</span>
+            <span>Delegations ({activeDelCount})</span>
           </button>
 
           <button
@@ -484,14 +484,14 @@ export function OrgMembersPage() {
             aria-selected={activeTab === 'thresholds'}
             onClick={() => setActiveTab('thresholds')}
             data-testid="tab-thresholds"
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold transition-all min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
               activeTab === 'thresholds'
                 ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span>⚖️</span>
-            <span className="truncate">Spend Thresholds</span>
+            <span>Spend Thresholds</span>
           </button>
         </div>
       </header>
@@ -1342,3 +1342,5 @@ export function OrgMembersPage() {
     </div>
   );
 }
+
+

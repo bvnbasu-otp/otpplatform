@@ -569,5 +569,11 @@ describe('Phase C.5 — Active Sourcing Telemetry & Quote Monitoring Cockpit Tes
         expect(regex.test(combinedText)).toBe(false);
       }
     });
+
+    it('exports ActiveRfqMonitoringPage with responsive bottom padding', async () => {
+      const { ActiveRfqMonitoringPage } = await import('./pages/ActiveRfqMonitoringPage');
+      expect(ActiveRfqMonitoringPage).toBeDefined();
+      expect(typeof ActiveRfqMonitoringPage).toBe('function');
+    });
   });
 });

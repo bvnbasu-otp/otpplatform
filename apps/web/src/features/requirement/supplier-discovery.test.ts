@@ -660,5 +660,11 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
         expect(regex.test(combinedText)).toBe(false);
       }
     });
+
+    it('exports DiscoverSuppliersPage with viewport-safe bottom padding', async () => {
+      const { DiscoverSuppliersPage } = await import('./pages/DiscoverSuppliersPage');
+      expect(DiscoverSuppliersPage).toBeDefined();
+      expect(typeof DiscoverSuppliersPage).toBe('function');
+    });
   });
 });

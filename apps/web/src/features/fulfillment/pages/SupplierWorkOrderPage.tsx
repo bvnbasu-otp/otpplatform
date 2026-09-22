@@ -135,41 +135,54 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
       {success && <p className="mt-2 text-xs font-bold text-emerald-700 rounded-xl bg-emerald-50 p-2.5 border border-emerald-200">{success}</p>}
 
       {/* Screen 11 Navigation Sub-Tabs */}
-      <div className="mt-3 flex items-center gap-1 rounded-xl bg-muted/40 p-1 border overflow-x-auto">
+      <div
+        role="tablist"
+        aria-label="Work Order Sections"
+        className="mt-3 flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border overflow-x-auto scrollbar-thin scroll-smooth no-print min-w-0"
+      >
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'MILESTONES'}
           onClick={() => setActiveTab('MILESTONES')}
-          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'MILESTONES'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          🛠️ Delivery Milestones ({workOrder.progressPercent}%)
+          <span>🛠️</span>
+          <span>Delivery Milestones ({workOrder.progressPercent}%)</span>
         </button>
 
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'INSPECTION'}
           onClick={() => setActiveTab('INSPECTION')}
-          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'INSPECTION'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          🔍 Inspection Status
+          <span>🔍</span>
+          <span>Inspection Status</span>
         </button>
 
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'INVOICING'}
           onClick={() => setActiveTab('INVOICING')}
-          className={`flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'INVOICING'
               ? 'bg-card text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          🧾 Invoicing &amp; Payment
+          <span>🧾</span>
+          <span>Invoicing &amp; Payment</span>
         </button>
       </div>
 

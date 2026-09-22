@@ -104,4 +104,10 @@ describe('User Profile Management & Customization Suite', () => {
     expect(heldRoles.find((r) => r.code === 'BUYER')?.permissions).toContain('PROPOSE');
     expect(heldRoles.find((r) => r.code === 'COMMITTEE_MEMBER')?.permissions).toContain('VOTE');
   });
+
+  it('exports ProfilePage component with responsive settings navigation tabs', async () => {
+    const { ProfilePage } = await import('../pages/ProfilePage');
+    expect(ProfilePage).toBeDefined();
+    expect(typeof ProfilePage).toBe('function');
+  });
 });

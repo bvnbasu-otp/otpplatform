@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { EvaluationApprovalRouteBanner } from './EvaluationApprovalRouteBanner';
 import type { ApprovalRouteEvaluation } from '@otp/domain';
 
-describe('EvaluationApprovalRouteBanner Component (Phase C8.3)', () => {
+describe('EvaluationApprovalRouteBanner Component', () => {
   const sampleEvaluation: ApprovalRouteEvaluation = {
     requiredApprovalLevel: 'TIER_2_DEPT_HEAD',
     requiredTierLevels: ['TIER_1_MANAGER', 'TIER_2_DEPT_HEAD'],

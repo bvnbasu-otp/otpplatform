@@ -103,7 +103,7 @@ export function RfqClarificationPage({ rfqId }: { rfqId: string }) {
       <div className="rounded-2xl border bg-card px-3.5 py-3 shadow-2xs shrink-0 flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="rounded-xl bg-blue-100 dark:bg-blue-950/60 px-2.5 py-1 text-[11px] font-black text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
-            Phase 4 · Clarification &amp; Q&amp;A
+            💬 Clarification &amp; Q&amp;A
           </span>
           <div className="min-w-0">
             <h1 className="text-xs sm:text-sm font-black text-foreground truncate">

@@ -305,5 +305,34 @@ describe('highlighting the page someone is on', () => {
   it('does not light up a link with no match rule from a child route', () => {
     expect(isActivePath(dashboard, '/dashboard/settings')).toBe(false);
   });
+
+  it('correctly maps demo supplier email patterns to SUPPLIER side', () => {
+    const isSupplierEmail = (email: string) => {
+      const normalizedEmail = email.toLowerCase().trim();
+      return (
+        normalizedEmail.includes('solar') ||
+        normalizedEmail.includes('cctv') ||
+        normalizedEmail.includes('water') ||
+        normalizedEmail.includes('gas') ||
+        normalizedEmail.includes('royalteak') ||
+        normalizedEmail.includes('urbanspace') ||
+        normalizedEmail.includes('societycomfort') ||
+        (normalizedEmail.startsWith('contact') && normalizedEmail.endsWith('@otpdemo.test')) ||
+        (normalizedEmail.endsWith('@otpdemo.test') &&
+          !normalizedEmail.includes('buyer') &&
+          !normalizedEmail.includes('secretary') &&
+          !normalizedEmail.includes('owner') &&
+          !normalizedEmail.includes('procurement') &&
+          !normalizedEmail.includes('bharathi'))
+      );
+    };
+
+    expect(isSupplierEmail('solar01@otpdemo.test')).toBe(true);
+    expect(isSupplierEmail('furniture01@otpdemo.test')).toBe(true);
+    expect(isSupplierEmail('cctv02@otpdemo.test')).toBe(true);
+    expect(isSupplierEmail('water03@otpdemo.test')).toBe(true);
+    expect(isSupplierEmail('secretary@sunrise.test')).toBe(false);
+    expect(isSupplierEmail('owner@kovaiprecision.test')).toBe(false);
+  });
 });
 

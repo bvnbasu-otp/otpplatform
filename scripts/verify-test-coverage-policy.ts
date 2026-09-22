@@ -186,7 +186,7 @@ function checkCoverageAppendRule(): string[] {
 
       const changedFiles = output
         .split('\n')
-        .map(l => l.replace(/^[MADRCU?!]{1,2}\s+/, '').trim())
+        .map(l => l.replace(/^\s*[MADRCU?!]{1,2}\s+/, '').trim())
         .filter(f => f.length > 0);
 
       // Separate source files and test files

@@ -202,7 +202,8 @@ export async function resolvePortalRole(
       normalized.includes('royalteak') ||
       normalized.includes('urbanspace') ||
       normalized.includes('societycomfort') ||
-      (normalized.startsWith('contact') && normalized.endsWith('@otpdemo.test'))
+      (normalized.startsWith('contact') && normalized.endsWith('@otpdemo.test')) ||
+      (normalized.endsWith('@otpdemo.test') && !normalized.includes('buyer') && !normalized.includes('secretary') && !normalized.includes('owner') && !normalized.includes('procurement') && !normalized.includes('bharathi'))
     ) {
       return 'supplier';
     }

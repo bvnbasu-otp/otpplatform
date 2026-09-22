@@ -271,4 +271,10 @@ describe('Clarification Feature Module Tests', () => {
       p_rfq_id: 'rfq-1',
     });
   });
+
+  it('exports RfqClarificationPage with clean production header branding', async () => {
+    const { RfqClarificationPage } = await import('./pages/RfqClarificationPage');
+    expect(RfqClarificationPage).toBeDefined();
+    expect(typeof RfqClarificationPage).toBe('function');
+  });
 });

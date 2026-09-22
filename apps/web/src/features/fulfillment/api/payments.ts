@@ -149,7 +149,7 @@ export async function fetchInvoiceAllocations(invoiceId: string): Promise<
 
 /**
  * Records a payment against a Purchase Order or Invoice.
- * In Phase 5C.1 (Mode A), this creates the authoritative Payment entity (unallocated if no direct invoice).
+ * Creates the authoritative Payment entity (unallocated if no direct invoice).
  */
 export async function recordPayment(
   amount: number,
@@ -192,7 +192,7 @@ export async function recordPayment(
 /**
  * Executes true database-level atomic payment recording and invoice allocation.
  *
- * CRITICAL ATOMIC GUARANTEE (Phase 5C.1-H2 / H2-01):
+ * CRITICAL ATOMIC GUARANTEE:
  * - Invokes public.record_invoice_payment_atomic(...) RPC.
  * - Entire payment creation, invoice row lock (SELECT FOR UPDATE), eligibility check,
  *   allocation record insertion, invoice paid_amount / balance_due synchronization,
@@ -427,7 +427,7 @@ export async function recordPaymentAllocation(
 /**
  * Verifies a recorded payment and applies controlled progressive settlement.
  *
- * CRITICAL DEFECT FIX (Phase 5C.1):
+ * CRITICAL DEFECT FIX:
  * - In a progressive invoicing workflow, verifying a milestone or partial payment
  *   MUST NOT unconditionally complete the parent Purchase Order, Work Order, or Requirement.
  * - Parent execution objects only transition to COMPLETED when:
@@ -565,7 +565,7 @@ export async function verifyPayment(paymentId: string): Promise<
 }
 
 /**
- * Retrieves the Authoritative PO Cumulative Financial Settlement Summary (Phase 5C.2).
+ * Retrieves the Authoritative PO Cumulative Financial Settlement Summary.
  * Tries the high-performance PostgreSQL RPC public.get_po_settlement_summary(poId) first,
  * with pure domain calculator fallback for client/test resilience.
  */
@@ -662,7 +662,7 @@ export async function getPoSettlementSummary(
 }
 
 /**
- * Allocates available funds from an existing unallocated advance payment to an approved invoice (Phase 5C.2).
+ * Allocates available funds from an existing unallocated advance payment to an approved invoice.
  * Tries the PostgreSQL RPC public.allocate_advance_payment_atomic(...) first with fail-closed production safety.
  */
 export async function allocateAdvancePayment(
@@ -758,7 +758,7 @@ export async function allocateAdvancePayment(
 }
 
 /**
- * Generates an immutable, structured settlement certificate for a Purchase Order (Phase 5C.2).
+ * Generates an immutable, structured settlement certificate for a Purchase Order.
  */
 export async function generatePoSettlementCertificate(
   poId: string,
@@ -850,7 +850,7 @@ export async function generatePoSettlementCertificate(
 }
 
 /**
- * Exports a payment and its allocations into statutory Tally XML payment voucher format (Phase 5C.3).
+ * Exports a payment and its allocations into statutory Tally XML payment voucher format.
  */
 export async function exportTallyPaymentVoucherXml(
   paymentId: string,
@@ -937,7 +937,7 @@ export async function exportTallyPaymentVoucherXml(
 }
 
 /**
- * Exports a payment and its allocations into Zoho Books JSON receipt format (Phase 5C.3).
+ * Exports a payment and its allocations into Zoho Books JSON receipt format.
  */
 export async function exportZohoPaymentReceiptJson(
   paymentId: string,
@@ -1025,7 +1025,7 @@ export async function exportZohoPaymentReceiptJson(
 }
 
 /**
- * Atomically reverses a payment allocation and synchronizes parent invoice & payment state (Phase 5C.3).
+ * Atomically reverses a payment allocation and synchronizes parent invoice & payment state.
  */
 export async function reversePaymentAllocation(params: {
   allocationId: string;
@@ -1113,7 +1113,7 @@ export async function reversePaymentAllocation(params: {
 }
 
 /**
- * Issues a statutory Credit or Debit Note against an invoice (Phase 5C.3).
+ * Issues a statutory Credit or Debit Note against an invoice.
  */
 export async function issueCreditDebitNote(params: {
   organizationId: string;
@@ -1219,7 +1219,7 @@ export async function issueCreditDebitNote(params: {
 }
 
 /**
- * Fetches Credit / Debit notes for a specific invoice (Phase 5C.3).
+ * Fetches Credit / Debit notes for a specific invoice.
  */
 export async function fetchCreditDebitNotesByInvoice(
   invoiceId: string,
@@ -1250,7 +1250,7 @@ export async function fetchCreditDebitNotesByInvoice(
 }
 
 /**
- * Fetches Credit / Debit notes for a specific Purchase Order (Phase 5C.3).
+ * Fetches Credit / Debit notes for a specific Purchase Order.
  */
 export async function fetchCreditDebitNotesByPo(
   poId: string,
@@ -1281,7 +1281,7 @@ export async function fetchCreditDebitNotesByPo(
 }
 
 /**
- * Fetches Multi-PO Cumulative Vendor Settlement Statement (Phase 5C.3).
+ * Fetches Multi-PO Cumulative Vendor Settlement Statement.
  */
 export async function fetchVendorSettlementStatement(
   organizationId: string,
@@ -1408,7 +1408,9 @@ export async function fetchVendorSettlementStatement(
 }
 
 // ===========================================================================
-// Phase 5C.4 — Statutory TDS, Change Orders, Bank Reconciliation & Observability API
+// -----------------------------------------------------------------------------
+// Statutory TDS, Change Orders, Bank Reconciliation & Observability API
+// -----------------------------------------------------------------------------
 // ===========================================================================
 
 export interface TdsDeductionRecord {
@@ -1830,7 +1832,7 @@ export async function syncPoSettlementReconciliationsRpc(params: {
 }
 
 // -----------------------------------------------------------------------------
-// Phase 5D: General Ledger & Double-Entry Accounting APIs & RPCs
+// General Ledger & Double-Entry Accounting APIs & RPCs
 // -----------------------------------------------------------------------------
 
 export async function fetchLedgerAccountsApi(

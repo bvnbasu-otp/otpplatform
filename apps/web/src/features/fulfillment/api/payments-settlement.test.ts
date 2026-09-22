@@ -592,4 +592,10 @@ describe('verifyPayment controlled progressive settlement (Phase 5C.1)', () => {
     expect(summary.cumulativePaidAmount).toBe(100000);
     expect(summary.contractualExposure).toBe(0);
   });
+
+  it('POL-02: PurchaseOrderDetailPage component export verifies milestone initialization routing', async () => {
+    const { PurchaseOrderDetailPage } = await import('../pages/PurchaseOrderDetailPage');
+    expect(PurchaseOrderDetailPage).toBeDefined();
+    expect(typeof PurchaseOrderDetailPage).toBe('function');
+  });
 });

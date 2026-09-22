@@ -344,7 +344,8 @@ export function SignInForm({
       normalizedEmail.includes('royalteak') ||
       normalizedEmail.includes('urbanspace') ||
       normalizedEmail.includes('societycomfort') ||
-      (normalizedEmail.startsWith('contact') && normalizedEmail.endsWith('@otpdemo.test'));
+      (normalizedEmail.startsWith('contact') && normalizedEmail.endsWith('@otpdemo.test')) ||
+      (normalizedEmail.endsWith('@otpdemo.test') && !normalizedEmail.includes('buyer') && !normalizedEmail.includes('secretary') && !normalizedEmail.includes('owner') && !normalizedEmail.includes('procurement') && !normalizedEmail.includes('bharathi'));
 
     if (validRedirect) {
       navigate(validRedirect, { replace: true });

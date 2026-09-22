@@ -120,6 +120,14 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
         variant: 'primary',
       };
     }
+    if (quote && (rfqOpen || inClarification)) {
+      return {
+        label: `Revise Sealed Quote (v${quote.currentVersion + 1})`,
+        to: `/supplier/rfq/${rfqId}/quote`,
+        icon: '⚡',
+        variant: 'primary',
+      };
+    }
     if (quote) {
       return {
         label: 'View Submitted Quote',
@@ -218,7 +226,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
           {/* Read-Only Submitted Quote State (if quote exists) */}
           {quote && (
             <div id="submitted-quote" className="space-y-4">
-              <SupplierQuotePanel quote={quote} />
+              <SupplierQuotePanel quote={quote} canRevise={Boolean(rfqOpen || inClarification)} />
             </div>
           )}
 

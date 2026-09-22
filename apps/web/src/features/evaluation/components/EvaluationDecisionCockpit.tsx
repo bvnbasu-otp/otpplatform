@@ -457,7 +457,7 @@ export function EvaluationDecisionCockpit({
       />
 
       {/* Main Content Area */}
-      <div className="zero-scroll-pane mt-2 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] space-y-4">
+      <div className="zero-scroll-pane mt-2 pb-36 sm:pb-28 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] space-y-4">
         {/* Requirement Summary & Market Context Header */}
         <QuoteComparisonSummaryHeader
           rfqTitle={effectiveTitle}
@@ -526,12 +526,18 @@ export function EvaluationDecisionCockpit({
           </div>
         )}
 
-        {/* Canonical 4 Cockpit Navigation Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-2xl border border-border bg-muted/30">
+        {/* Canonical 4 Cockpit Navigation Tabs (Mobile-Hardened Horizontal Scroll) */}
+        <div
+          className="flex items-center gap-1.5 p-1 rounded-2xl border border-border bg-muted/30 overflow-x-auto scrollbar-thin scroll-smooth no-print min-w-0"
+          role="tablist"
+          aria-label="Evaluation Cockpit Sections"
+        >
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'quotes'}
             onClick={() => handleTabChange('quotes')}
-            className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
               activeTab === 'quotes'
                 ? 'bg-card text-foreground shadow-xs border border-border'
                 : 'text-muted-foreground hover:text-foreground'
@@ -539,13 +545,15 @@ export function EvaluationDecisionCockpit({
             data-testid="cockpit-tab-quotes"
           >
             <span>⚖️</span>
-            <span className="truncate">1. Review Offers ({quotes.length})</span>
+            <span>1. Review Offers ({quotes.length})</span>
           </button>
 
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'qa'}
             onClick={() => handleTabChange('qa')}
-            className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
               activeTab === 'qa'
                 ? 'bg-card text-foreground shadow-xs border border-border'
                 : 'text-muted-foreground hover:text-foreground'
@@ -553,7 +561,7 @@ export function EvaluationDecisionCockpit({
             data-testid="cockpit-tab-qa"
           >
             <span>💬</span>
-            <span className="truncate">2. Questions &amp; Answers</span>
+            <span>2. Questions &amp; Answers</span>
             {qaMessages.length > 0 && (
               <span className="rounded-full bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-black">
                 {qaMessages.length}
@@ -563,8 +571,10 @@ export function EvaluationDecisionCockpit({
 
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'vote'}
             onClick={() => handleTabChange('vote')}
-            className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
               activeTab === 'vote'
                 ? 'bg-card text-foreground shadow-xs border border-border'
                 : 'text-muted-foreground hover:text-foreground'
@@ -572,13 +582,15 @@ export function EvaluationDecisionCockpit({
             data-testid="cockpit-tab-vote"
           >
             <span>🗳️</span>
-            <span className="truncate">3. Cast Vote {quorumMet ? '✓' : ''}</span>
+            <span>3. Cast Vote {quorumMet ? '✓' : ''}</span>
           </button>
 
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'award'}
             onClick={() => handleTabChange('award')}
-            className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-extrabold transition min-h-[44px] mobile-touch-target ${
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
               activeTab === 'award'
                 ? 'bg-card text-foreground shadow-xs border border-border'
                 : 'text-muted-foreground hover:text-foreground'
@@ -586,7 +598,7 @@ export function EvaluationDecisionCockpit({
             data-testid="cockpit-tab-award"
           >
             <span>🏆</span>
-            <span className="truncate">4. Decision &amp; Award {isAwarded ? '✓' : ''}</span>
+            <span>4. Decision &amp; Award {isAwarded ? '✓' : ''}</span>
           </button>
         </div>
 
@@ -600,7 +612,7 @@ export function EvaluationDecisionCockpit({
                   4-Pillar Offer Comparison Matrix
                 </span>
                 <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">
-                  🔒 Zero-Bias Sealed Protocol
+                  🔒 Identity-Protected Sealed Protocol
                 </span>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -704,6 +716,33 @@ export function EvaluationDecisionCockpit({
                 </div>
               )}
             </div>
+
+            {/* Explicit Tab 1 Step Progression CTA */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
+              <div className="text-xs">
+                <span className="font-extrabold text-foreground block">Next Workflow Step:</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Review anonymous supplier clarification threads or proceed directly to committee voting.
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('qa')}
+                  className="min-h-[44px] rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-bold text-foreground hover:bg-muted transition mobile-touch-target"
+                >
+                  💬 Open Q&amp;A Thread
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('vote')}
+                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
+                  data-testid="continue-to-vote-tab-btn"
+                >
+                  Proceed to Cast Vote →
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -804,6 +843,24 @@ export function EvaluationDecisionCockpit({
                 </div>
               )}
             </div>
+
+            {/* Explicit Tab 2 Step Progression CTA */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
+              <div className="text-xs">
+                <span className="font-extrabold text-foreground block">Next Workflow Step:</span>
+                <span className="text-[11px] text-muted-foreground">
+                  With specifications clarified, proceed to submit your evaluation and committee vote.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleTabChange('vote')}
+                className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
+                data-testid="continue-from-qa-to-vote-tab-btn"
+              >
+                Proceed to Cast Vote →
+              </button>
+            </div>
           </div>
         )}
 
@@ -827,6 +884,24 @@ export function EvaluationDecisionCockpit({
                 setHasMyVote(true);
               }}
             />
+
+            {/* Explicit Tab 3 Step Progression CTA */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
+              <div className="text-xs">
+                <span className="font-extrabold text-foreground block">Next Workflow Step:</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Consensus recorded. Advance to dynamic spend approval routing, justification audit, and atomic contract award.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleTabChange('award')}
+                className="min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-black text-white shadow-xs transition mobile-touch-target"
+                data-testid="continue-from-vote-to-award-tab-btn"
+              >
+                Proceed to Decision &amp; Award →
+              </button>
+            </div>
           </div>
         )}
 

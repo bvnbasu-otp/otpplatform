@@ -64,7 +64,7 @@ export function PoActionButtons({
           </div>
         </div>
 
-        {/* Phase 5C.5 Commercial Fee Disclosure */}
+        {/* Commercial Fee Disclosure */}
         <div className="rounded-lg border bg-card p-3 space-y-2 text-xs">
           <div className="flex items-center justify-between border-b pb-1.5">
             <span className="font-bold text-foreground flex items-center gap-1">

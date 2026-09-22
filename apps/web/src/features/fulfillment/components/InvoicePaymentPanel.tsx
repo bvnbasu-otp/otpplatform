@@ -572,7 +572,7 @@ export function InvoicePaymentPanel({
             <div className="flex items-center gap-2">
               <span className="text-sm">📊</span>
               <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
-                Progressive Invoicing &amp; Settlement Ledger (Phase 5C.1)
+                Progressive Invoicing &amp; Settlement Ledger
               </h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -882,7 +882,7 @@ export function InvoicePaymentPanel({
                 </div>
               </div>
 
-              {/* Credit & Debit Notes / Financial Adjustments (Phase 5C.3) */}
+              {/* Credit & Debit Notes / Financial Adjustments */}
               <div className="rounded-xl border bg-muted/10 p-3 space-y-2 text-xs">
                 <div className="flex items-center justify-between border-b pb-1.5">
                   <span className="font-bold text-foreground text-[11px] flex items-center gap-1.5">
@@ -946,7 +946,7 @@ export function InvoicePaymentPanel({
               </div>
             )}
 
-            {/* Statutory TDS & Form 16A Withholding Panel (Phase 5C.4) */}
+            {/* Statutory TDS & Form 16A Withholding Panel */}
             {(activeInvoice.status === 'APPROVED' || activeInvoice.status === 'PARTIALLY_PAID' || activeInvoice.status === 'PAID') && (
               <div className="pt-2">
                 <TdsWithholdingPanel
@@ -1036,7 +1036,7 @@ export function InvoicePaymentPanel({
         {/* State: Buyer payment entry form (when invoice approved or partially paid with balance due) */}
         {activeInvoice && (activeInvoice.status === 'APPROVED' || activeInvoice.status === 'PARTIALLY_PAID') && activeBalDue > 0 && role === 'buyer' && (
           <div className="space-y-4 pt-1">
-            {/* Advance Allocation Option (Phase 5C.2): If unallocated advances exist for PO */}
+            {/* Advance Allocation Option */}
             {(() => {
               const availableAdvances = poPayments.filter((p) => p.unallocatedAmount > 0);
               if (availableAdvances.length === 0) return null;
@@ -1046,7 +1046,7 @@ export function InvoicePaymentPanel({
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
                       <span>💡</span>
-                      <span>Option A: Settle from Existing Unallocated Advance (Phase 5C.2)</span>
+                      <span>Option A: Settle from Existing Unallocated Advance</span>
                     </span>
                     <span className="rounded-full bg-blue-600 text-white px-2 py-0.5 text-[9px] font-bold">
                       {availableAdvances.length} Advance{availableAdvances.length > 1 ? 's' : ''} Available
@@ -1258,11 +1258,11 @@ export function InvoicePaymentPanel({
           </div>
         )}
 
-        {/* Payment Allocations & Reversals Lifecycle (Phase 5C.3) */}
+        {/* Payment Allocations & Reversals Lifecycle */}
         {allocations.length > 0 && (
           <div className="rounded-xl border bg-card p-3 space-y-2 text-xs">
             <span className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground block">
-              Payment Allocations &amp; Settlement Reversals (Phase 5C.3)
+              Payment Allocations &amp; Settlement Reversals
             </span>
             <div className="space-y-1.5">
               {allocations.map((alloc) => (
@@ -1336,7 +1336,7 @@ export function InvoicePaymentPanel({
             <div className="flex items-center justify-between border-b pb-2.5">
               <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
                 <span>📤</span>
-                <span>Submit Statutory GST Progressive Invoice (Phase 5B)</span>
+                <span>Submit Statutory GST Progressive Invoice</span>
               </h3>
               <button
                 type="button"
@@ -1505,14 +1505,14 @@ export function InvoicePaymentPanel({
         </div>
       )}
 
-      {/* Payment Allocation Reversal Confirmation Modal (Phase 5C.3) */}
+      {/* Payment Allocation Reversal Confirmation Modal */}
       {showReversalModal && reversalTargetAlloc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-2.5">
               <h3 className="text-sm font-black text-foreground flex items-center gap-1.5 text-red-600">
                 <span>↩</span>
-                <span>Reverse Payment Allocation (Phase 5C.3)</span>
+                <span>Reverse Payment Allocation</span>
               </h3>
               <button
                 type="button"
@@ -1573,14 +1573,14 @@ export function InvoicePaymentPanel({
         </div>
       )}
 
-      {/* Credit / Debit Note Issuance Modal (Phase 5C.3) */}
+      {/* Credit / Debit Note Issuance Modal */}
       {showCreditDebitModal && activeInvoice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-2.5">
               <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
                 <span>📑</span>
-                <span>Issue Financial Adjustment Note (Phase 5C.3)</span>
+                <span>Issue Financial Adjustment Note</span>
               </h3>
               <button
                 type="button"
