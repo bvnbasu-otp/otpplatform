@@ -5,6 +5,7 @@ import {
   fetchCurrentProfile,
   SUPERADMIN_EMAILS,
 } from '@/features/auth/user-role';
+import { SignInForm } from '@/features/auth/components/SignInForm';
 import { supabase } from '@/lib/supabase';
 import { createSupabaseQueryMock } from '@/lib/supabase-query-mock';
 
@@ -173,5 +174,31 @@ describe('Auth Feature & Portal Role Resolution', () => {
 
     const profile = await fetchCurrentProfile();
     expect(profile).toBeNull();
+  });
+});
+
+describe('SignInForm Component & Demo Personas', () => {
+  it('exports SignInForm authentication component', () => {
+    expect(SignInForm).toBeDefined();
+    expect(typeof SignInForm).toBe('function');
+  });
+
+  it('correctly maps demo community secretary to buyer portal role', async () => {
+    const mockFrom = vi.fn().mockImplementation((table: string) => {
+      if (table === 'supplier_users') {
+        return createMockQueryBuilder([]);
+      }
+      if (table === 'organization_members') {
+        return createMockQueryBuilder([
+          { id: 'om-ramesh', organization_id: 'org-durga-rainbow', profile_id: 'prof-ramesh' },
+        ]);
+      }
+      return createMockQueryBuilder([]);
+    });
+    vi.mocked(supabase.from).mockImplementation(mockFrom as any);
+
+    // Ramesh (Durga Rainbow RWA secretary demo account)
+    const role = await resolvePortalRole('prof-ramesh', false, 'secretary@sunrise.test');
+    expect(role).toBe('buyer');
   });
 });

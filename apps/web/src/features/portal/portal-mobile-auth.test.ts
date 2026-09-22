@@ -87,6 +87,7 @@ describe('Phase 3 Public Experience & Authentication Screens (Screens 31–40)',
       expect(LoginPage).toBeDefined();
       expect(SignupPage).toBeDefined();
       expect(BuyerRegisterForm).toBeDefined();
+      expect(typeof BuyerRegisterForm).toBe('function');
       expect(SupplierRegisterForm).toBeDefined();
       expect(GstinAutofillField).toBeDefined();
       expect(SignupSuccess).toBeDefined();

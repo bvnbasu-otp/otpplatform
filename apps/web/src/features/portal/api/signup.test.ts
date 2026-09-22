@@ -58,6 +58,9 @@ describe('buyer organisation and role normalisation', () => {
 
   it('preserves registered organisation name for MSME and other enterprise categories', () => {
     expect(resolveBuyerOrganisation('MSME', 'Acme Precision Tools')).toBe('Acme Precision Tools');
+    expect(resolveBuyerOrganisation('COMMUNITY', 'Durga Rainbow Flat Owner Welfare Association')).toBe(
+      'Durga Rainbow Flat Owner Welfare Association',
+    );
     expect(resolveBuyerOrganisation('COMMUNITY', 'Greenview Heights RWA')).toBe('Greenview Heights RWA');
     expect(resolveBuyerOrganisation('ENTERPRISE', 'Apex Global Corp')).toBe('Apex Global Corp');
     expect(resolveBuyerOrganisation('INSTITUTION', 'St. Jude Medical Trust')).toBe('St. Jude Medical Trust');
