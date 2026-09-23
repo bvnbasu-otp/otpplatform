@@ -126,6 +126,65 @@ function derivePoLineItems(totalAmount: number, title?: string): PoLineItem[] {
     ];
   }
 
+  if (lower.includes('clean') || lower.includes('saniti') || lower.includes('disinfect') || lower.includes('housekeep')) {
+    const item1 = Math.round(base * 0.45);
+    const item2 = Math.round(base * 0.35);
+    const item3 = base - (item1 + item2);
+    return [
+      {
+        id: 'li-1',
+        name: 'Deep Surface Scrubbing, High-Pressure Wash & Sanitization',
+        description: 'Comprehensive mechanical scrubbing, disinfection, and chemical treatment for commercial facility',
+        hsnCode: '998533',
+        quantity: 1,
+        unit: 'Job',
+        rate: item1,
+        amount: item1,
+        gstRate: 18,
+        gstAmount: Math.round(item1 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item1 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item1 * 0.09),
+        total: Math.round(item1 * 1.18),
+      },
+      {
+        id: 'li-2',
+        name: 'Eco-Friendly Chemical Supplies, Consumables & PPE Kit',
+        description: 'Diversey/Ecolab certified disinfectant solution, microfiber scrubbers, and operator safety gear',
+        hsnCode: '998533',
+        quantity: 1,
+        unit: 'Lot',
+        rate: item2,
+        amount: item2,
+        gstRate: 18,
+        gstAmount: Math.round(item2 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item2 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item2 * 0.09),
+        total: Math.round(item2 * 1.18),
+      },
+      {
+        id: 'li-3',
+        name: 'Waste Management, Air Disinfection & Quality Clearance Sign-off',
+        description: 'Debris removal, indoor air misting, and supervisor inspection clearance certificate',
+        hsnCode: '998533',
+        quantity: 1,
+        unit: 'Job',
+        rate: item3,
+        amount: item3,
+        gstRate: 18,
+        gstAmount: Math.round(item3 * 0.18),
+        cgstRate: 9,
+        cgstAmount: Math.round(item3 * 0.09),
+        sgstRate: 9,
+        sgstAmount: Math.round(item3 * 0.09),
+        total: Math.round(item3 * 1.18),
+      },
+    ];
+  }
+
   if (lower.includes('motor') || lower.includes('pump') || lower.includes('borewell')) {
     const item1 = Math.round(base * 0.45);
     const item2 = Math.round(base * 0.25);
@@ -440,6 +499,12 @@ export function PurchaseOrderDetailPage({
   async function handleConfirmCompletion() {
     const cleanId = (poId || '').trim();
     if (!cleanId) return;
+    if (!settlementSummary || !settlementSummary.isFullySettled) {
+      setError('Cannot complete Purchase Order: all issued invoices must be 100% settled first.');
+      setShowCompletionModal(false);
+      setActiveTab('PAYMENT');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -903,12 +968,12 @@ export function PurchaseOrderDetailPage({
         </div>
 
         {/* Action Buttons Row: Print / PDF, WhatsApp Share & PO Workflow */}
-        <div className="pt-1 border-t flex flex-wrap items-center justify-between gap-2 no-print">
-          <div className="flex items-center gap-1.5">
+        <div className="pt-3 border-t flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 no-print">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handlePrint}
-              className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-bold text-foreground hover:bg-muted transition mobile-touch-target"
+              className="flex-1 sm:flex-initial min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-bold text-foreground hover:bg-muted transition mobile-touch-target"
             >
               <span>🖨️</span>
               <span>Print / PDF</span>
@@ -916,20 +981,22 @@ export function PurchaseOrderDetailPage({
             <button
               type="button"
               onClick={handleShareWhatsApp}
-              className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 px-3.5 py-2 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition mobile-touch-target"
+              className="flex-1 sm:flex-initial min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 px-3.5 py-2 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition mobile-touch-target"
             >
               <span>📲</span>
-              <span>WhatsApp Share</span>
+              <span>WhatsApp</span>
             </button>
           </div>
 
-          <PoActionButtons
-            status={order.status}
-            role={role}
-            onAction={(n) => void handlePoAction(n)}
-            disabled={busy}
-            poTotalAmount={order.totalAmount}
-          />
+          <div className="flex items-center justify-end">
+            <PoActionButtons
+              status={order.status}
+              role={role}
+              onAction={(n) => void handlePoAction(n)}
+              disabled={busy}
+              poTotalAmount={order.totalAmount}
+            />
+          </div>
         </div>
       </div>
 
@@ -951,20 +1018,21 @@ export function PurchaseOrderDetailPage({
         </div>
       )}
 
-      {/* Screen Tabs for 10/11/12/13 Multi-Screen Scopes (POL-02 Mobile-Hardened 320px+) */}
-      <div className="mt-3 flex items-center gap-2 rounded-xl bg-muted/30 p-1.5 border overflow-x-auto scrollbar-none no-scrollbar min-w-0" role="tablist" aria-label="Purchase Order Sections">
+      {/* Screen Tabs: Clean 2x2 grid on mobile, 4-col grid on desktop */}
+      <div className="mt-3.5 grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-2xl bg-muted/40 p-1.5 border border-border/80" role="tablist" aria-label="Purchase Order Sections">
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'OVERVIEW'}
           onClick={() => setActiveTab('OVERVIEW')}
-          className={`shrink-0 whitespace-nowrap min-h-[44px] rounded-lg px-3.5 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`w-full min-h-[44px] rounded-xl px-3 py-2 text-xs font-black transition mobile-touch-target text-center flex items-center justify-center gap-1.5 ${
             activeTab === 'OVERVIEW'
               ? 'bg-primary text-primary-foreground shadow-xs'
               : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
           }`}
         >
-          📄 PO &amp; Ledger
+          <span>📄</span>
+          <span>PO &amp; Ledger</span>
         </button>
 
         <button
@@ -972,13 +1040,14 @@ export function PurchaseOrderDetailPage({
           role="tab"
           aria-selected={activeTab === 'MILESTONES'}
           onClick={() => setActiveTab('MILESTONES')}
-          className={`shrink-0 whitespace-nowrap min-h-[44px] rounded-lg px-3.5 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`w-full min-h-[44px] rounded-xl px-3 py-2 text-xs font-black transition mobile-touch-target text-center flex items-center justify-center gap-1.5 ${
             activeTab === 'MILESTONES'
               ? 'bg-primary text-primary-foreground shadow-xs'
               : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
           }`}
         >
-          🛠️ Milestones ({workOrder?.progressPercent || 0}%)
+          <span>🛠️</span>
+          <span>Milestones ({workOrder?.progressPercent || 0}%)</span>
         </button>
 
         <button
@@ -986,13 +1055,14 @@ export function PurchaseOrderDetailPage({
           role="tab"
           aria-selected={activeTab === 'INVOICE'}
           onClick={() => setActiveTab('INVOICE')}
-          className={`shrink-0 whitespace-nowrap min-h-[44px] rounded-lg px-3.5 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`w-full min-h-[44px] rounded-xl px-3 py-2 text-xs font-black transition mobile-touch-target text-center flex items-center justify-center gap-1.5 ${
             activeTab === 'INVOICE'
               ? 'bg-primary text-primary-foreground shadow-xs'
               : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
           }`}
         >
-          🧾 Invoice
+          <span>🧾</span>
+          <span>Invoice</span>
         </button>
 
         <button
@@ -1000,13 +1070,14 @@ export function PurchaseOrderDetailPage({
           role="tab"
           aria-selected={activeTab === 'PAYMENT'}
           onClick={() => setActiveTab('PAYMENT')}
-          className={`shrink-0 whitespace-nowrap min-h-[44px] rounded-lg px-3.5 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`w-full min-h-[44px] rounded-xl px-3 py-2 text-xs font-black transition mobile-touch-target text-center flex items-center justify-center gap-1.5 ${
             activeTab === 'PAYMENT'
               ? 'bg-primary text-primary-foreground shadow-xs'
               : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
           }`}
         >
-          💳 Settlement
+          <span>💳</span>
+          <span>Settlement</span>
         </button>
       </div>
 
@@ -1620,7 +1691,7 @@ export function PurchaseOrderDetailPage({
               </button>
             </div>
 
-            {settlementSummary && !settlementSummary.isFullySettled ? (
+            {!settlementSummary || !settlementSummary.isFullySettled ? (
               <div className="space-y-3">
                 <div className="p-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 text-xs text-amber-800 dark:text-amber-200 space-y-1">
                   <p className="font-bold flex items-center gap-1.5">
@@ -1632,43 +1703,45 @@ export function PurchaseOrderDetailPage({
                   </p>
                 </div>
 
-                <div className="rounded-xl border bg-muted/20 p-3 space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Authorized Commitment:</span>
-                    <span className="font-mono font-bold text-foreground">
-                      {formatMoney(settlementSummary.poAuthorizedTotal, order.currency)}
-                    </span>
+                {settlementSummary && (
+                  <div className="rounded-xl border bg-muted/20 p-3 space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Authorized Commitment:</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatMoney(settlementSummary.poAuthorizedTotal, order.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Invoiced:</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatMoney(settlementSummary.cumulativeInvoicedAmount, order.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Settled (Paid):</span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatMoney(settlementSummary.cumulativePaidAmount, order.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1.5">
+                      <span className="font-bold text-foreground">Outstanding Invoice Balance:</span>
+                      <span className="font-mono font-black text-primary">
+                        {formatMoney(settlementSummary.invoicedOutstandingAmount, order.currency)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Invoiced:</span>
-                    <span className="font-mono font-bold text-foreground">
-                      {formatMoney(settlementSummary.cumulativeInvoicedAmount, order.currency)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Settled (Paid):</span>
-                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                      {formatMoney(settlementSummary.cumulativePaidAmount, order.currency)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t pt-1.5">
-                    <span className="font-bold text-foreground">Outstanding Invoice Balance:</span>
-                    <span className="font-mono font-black text-primary">
-                      {formatMoney(settlementSummary.invoicedOutstandingAmount, order.currency)}
-                    </span>
-                  </div>
-                </div>
+                )}
 
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => {
                       setShowCompletionModal(false);
-                      setActiveTab('INVOICE');
+                      setActiveTab('PAYMENT');
                     }}
-                    className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                    className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 mobile-touch-target"
                   >
-                    Go to Invoicing &amp; Payment →
+                    Go to Invoicing &amp; Settlement →
                   </button>
                 </div>
               </div>

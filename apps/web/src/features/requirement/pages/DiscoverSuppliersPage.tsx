@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchSupplierNetworkSummary } from '@/features/procurement-os/api/fetch-procurement-os';
-import { SupplierNetworkPanel } from '@/features/procurement-os/components/SupplierNetworkPanel';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
 import type { SupplierNetworkSummary } from '@otp/domain';
 import {
@@ -436,17 +435,6 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           ))
         )}
       </section>
-
-      {/* Multi-Channel Distribution Breakdown */}
-      {rfqId && networks.length > 0 && (
-        <div className="mt-2">
-          <SupplierNetworkPanel
-            networks={networks}
-            totalInvited={invitationCount}
-            error={null}
-          />
-        </div>
-      )}
 
       {/* Direct Invite Modal */}
       {rfqId && (

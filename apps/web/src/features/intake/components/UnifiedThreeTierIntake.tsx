@@ -111,10 +111,11 @@ export function UnifiedThreeTierIntake({
     draft?.quality.sampleRequired ?? false,
   );
   const [qualityNotes, setQualityNotes] = useState<string>(draft?.quality.notes ?? '');
-  const [isTier2Expanded, setIsTier2Expanded] = useState(false);
+  const [isStage1Expanded, setIsStage1Expanded] = useState(true);
+  const [isStage2Expanded, setIsStage2Expanded] = useState(false);
+  const [isStage3Expanded, setIsStage3Expanded] = useState(false);
 
-  // Form State: Tier 3
-  const [isTier3Expanded, setIsTier3Expanded] = useState(false);
+  // Form State: Stage 3 Sourcing Controls
   const [sourcingMode, setSourcingMode] = useState<SourcingMode>(
     draft?.sourcing.sourcingMode ?? 'IDENTITY_PROTECTED',
   );
@@ -415,6 +416,34 @@ export function UnifiedThreeTierIntake({
     if (errorKeys.length > 0) {
       const firstError = validationErrors[errorKeys[0]!];
       setValidationError(firstError || 'Please complete all required fields.');
+
+      // Auto-expand the relevant stage accordion on validation error
+      const stage1Fields = [
+        'text',
+        'title',
+        'subcategoryId',
+        'requirementMode',
+        'deliveryCity',
+        'deliveryPincode',
+        'requiredByDays',
+        'requiredByDate',
+      ];
+      if (errorKeys.some((k) => stage1Fields.includes(k))) {
+        setIsStage1Expanded(true);
+      }
+      if (
+        errorKeys.some(
+          (k) =>
+            ['quantity', 'unit'].includes(k) ||
+            requiredAttributes.some((a) => a.code === k),
+        )
+      ) {
+        setIsStage2Expanded(true);
+      }
+      if (errorKeys.some((k) => ['minQuotes', 'deadlineDays'].includes(k))) {
+        setIsStage3Expanded(true);
+      }
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -567,9 +596,11 @@ export function UnifiedThreeTierIntake({
         onParse={handleParse}
         onClearInput={handleClear}
         onOpenTemplates={() => setIsTemplatesModalOpen(true)}
+        isExpanded={isStage1Expanded}
+        onToggleExpand={() => setIsStage1Expanded(!isStage1Expanded)}
       />
 
-      {/* Tier 2: Precision Scope (Add Precision - Progressive Accordion) */}
+      {/* Stage 2: Technical Specifications & BoQ */}
       <Tier2PrecisionScopeCard
         quantity={quantity}
         unit={unit}
@@ -583,8 +614,8 @@ export function UnifiedThreeTierIntake({
         qualityNotes={qualityNotes}
         requirementId={draft?.requirementId ?? null}
         isBusy={isSaving}
-        isExpanded={isTier2Expanded}
-        onToggleExpand={() => setIsTier2Expanded(!isTier2Expanded)}
+        isExpanded={isStage2Expanded}
+        onToggleExpand={() => setIsStage2Expanded(!isStage2Expanded)}
         errors={errors}
         onQuantityChange={setQuantity}
         onUnitChange={setUnit}
@@ -596,7 +627,7 @@ export function UnifiedThreeTierIntake({
         onQualityNotesChange={setQualityNotes}
       />
 
-      {/* Tier 3: Sourcing Controls (Progressive Disclosure Accordion) */}
+      {/* Stage 3: Sourcing & Evaluation Controls */}
       <Tier3SourcingControlsCard
         sourcingMode={sourcingMode}
         minQuotes={minQuotes}
@@ -609,11 +640,11 @@ export function UnifiedThreeTierIntake({
         siteNotes={siteNotes}
         line1={line1}
         isFullGovernance={isFullGovernance}
-        isExpanded={isTier3Expanded}
+        isExpanded={isStage3Expanded}
         errors={errors}
         categoryCode={subcategory?.categoryCode}
         subcategoryCode={subcategory?.code}
-        onToggleExpand={() => setIsTier3Expanded(!isTier3Expanded)}
+        onToggleExpand={() => setIsStage3Expanded(!isStage3Expanded)}
         onSourcingModeChange={setSourcingMode}
         onMinQuotesChange={setMinQuotes}
         onDeadlineDaysChange={setDeadlineDays}

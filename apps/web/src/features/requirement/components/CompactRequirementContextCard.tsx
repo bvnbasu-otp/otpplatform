@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import type { CompactRequirementContext } from '../types/discovery';
 
 interface CompactRequirementContextCardProps {
@@ -7,7 +6,6 @@ interface CompactRequirementContextCardProps {
 
 export function CompactRequirementContextCard({ context }: CompactRequirementContextCardProps) {
   const {
-    requirementId,
     requirementTitle,
     categoryName,
     deliveryCity,
@@ -45,14 +43,6 @@ export function CompactRequirementContextCard({ context }: CompactRequirementCon
             {requirementTitle || 'Procurement Requirement'}
           </h1>
         </div>
-
-        <Link
-          to={`/requirements/${requirementId}`}
-          className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-lg border bg-muted/30 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target shrink-0"
-          title="Return to Requirement Specifications"
-        >
-          <span>Edit Spec ✎</span>
-        </Link>
       </div>
 
       {/* Quick Spec Pills */}

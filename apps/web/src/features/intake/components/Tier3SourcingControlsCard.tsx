@@ -153,11 +153,11 @@ export function Tier3SourcingControlsCard({
               3
             </span>
             <span className="font-extrabold text-sm sm:text-base text-foreground">
-              Tier 3 — Sourcing Controls (Progressive Disclosure Accordion)
+              Stage 3 — Sourcing &amp; Evaluation Controls
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Badge tone="neutral">⚙️ Optional Sourcing Controls</Badge>
+            <Badge tone="neutral">⚙️ Sourcing Controls</Badge>
             <span className="text-xs font-bold text-primary">
               {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
             </span>

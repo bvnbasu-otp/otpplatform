@@ -32,10 +32,7 @@ export function SupplierMilestoneStepper({
 }: SupplierMilestoneStepperProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [attachmentNote, setAttachmentNote] = useState<string>('');
-  const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; size: string; time: string }>>([
-    { name: 'Initial_Dispatch_Consignment_Lorry_Receipt.pdf', size: '240 KB', time: 'Yesterday, 4:30 PM' },
-    { name: 'Site_Staging_Inspection_Photo.jpg', size: '1.8 MB', time: 'Today, 11:15 AM' },
-  ]);
+  const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; size: string; time: string }>>([]);
   const [showAttachModal, setShowAttachModal] = useState(false);
 
   const currentPercent = workOrder.progressPercent || 0;
@@ -307,29 +304,35 @@ export function SupplierMilestoneStepper({
         </div>
 
         {/* Evidence List */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-          {attachedFiles.map((f, idx) => (
-            <div
-              key={idx}
-              className="rounded-xl border border-border/80 bg-muted/20 p-2.5 flex items-center justify-between gap-2 text-xs"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-base shrink-0">📄</span>
-                <div className="min-w-0">
-                  <p className="font-semibold text-foreground truncate">{f.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{f.size} · {f.time}</p>
+        {attachedFiles.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-4 text-center text-xs text-muted-foreground">
+            No milestone execution evidence or dispatch receipts uploaded yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            {attachedFiles.map((f, idx) => (
+              <div
+                key={idx}
+                className="rounded-xl border border-border/80 bg-muted/20 p-2.5 flex items-center justify-between gap-2 text-xs"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-base shrink-0">📄</span>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground truncate">{f.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{f.size} · {f.time}</p>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPhoto(f.name)}
+                  className="text-xs font-bold text-primary hover:underline shrink-0 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target"
+                >
+                  View
+                </button>
               </div>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPhoto(f.name)}
-                      className="text-xs font-bold text-primary hover:underline shrink-0 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center mobile-touch-target"
-                    >
-                      View
-                    </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modal / Dialog for New Evidence Upload */}

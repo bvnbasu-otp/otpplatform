@@ -101,10 +101,11 @@ export function ProcurementStageNavigator({
           <div className="flex items-center gap-1.5 min-w-0">
             <Link
               to={resolvedBackUrl}
-              className="flex items-center gap-1 font-semibold text-muted-foreground hover:text-primary transition shrink-0 min-h-[32px] mobile-touch-target"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted px-2.5 py-1.5 text-xs font-bold text-foreground hover:text-primary transition shrink-0 min-h-[44px] mobile-touch-target shadow-2xs"
             >
-              <span>←</span>
-              <span className="hidden sm:inline">{backToLabel}</span>
+              <span className="text-sm">←</span>
+              <span>Back</span>
+              <span className="hidden md:inline font-normal text-muted-foreground">({backToLabel})</span>
             </Link>
             <span className="text-muted-foreground/40 shrink-0">/</span>
             <span className="font-bold text-foreground truncate max-w-[100px] xs:max-w-[150px] sm:max-w-xs text-xs">

@@ -41,6 +41,8 @@ export interface Tier1TellOtpCardProps {
   onParse: (text: string) => Promise<ParsedRequirement>;
   onClearInput?: () => void;
   onOpenTemplates?: () => void;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 const SUGGESTION_CHIPS = [
@@ -150,6 +152,8 @@ export function Tier1TellOtpCard({
   onParse,
   onClearInput,
   onOpenTemplates,
+  isExpanded = true,
+  onToggleExpand,
 }: Tier1TellOtpCardProps) {
   const [showVoiceDictation, setShowVoiceDictation] = useState(false);
   const { isLocating, locationError, requestCurrentLocation } = useDeviceCapabilities();
@@ -157,6 +161,11 @@ export function Tier1TellOtpCard({
   const subcategories = useMemo(
     () => taxonomy.subcategories.filter((s) => s.categoryId === categoryId),
     [taxonomy.subcategories, categoryId],
+  );
+
+  const activeSubcategory = useMemo(
+    () => taxonomy.subcategories.find((s) => s.id === subcategoryId),
+    [taxonomy.subcategories, subcategoryId],
   );
 
   const confidence = parsed?.confidence ?? null;
@@ -193,22 +202,68 @@ export function Tier1TellOtpCard({
   return (
     <Card
       title={
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary font-black text-xs">
-              1
-            </span>
-            <span className="font-extrabold text-sm sm:text-base text-foreground">
-              Tier 1 — Tell OTP (Know Now &amp; Natural Language)
-            </span>
+        onToggleExpand ? (
+          <button
+            type="button"
+            className="flex w-full flex-wrap items-center justify-between gap-2 cursor-pointer select-none text-left p-0 border-0 bg-transparent"
+            onClick={onToggleExpand}
+            aria-expanded={isExpanded}
+            aria-controls="stage-1-scope-body"
+          >
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary font-black text-xs">
+                1
+              </span>
+              <span className="font-extrabold text-sm sm:text-base text-foreground">
+                Stage 1 — Requirement Scope &amp; Logistics
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge tone="info">⚡ Essential Sourcing Basis</Badge>
+              <span className="text-xs font-bold text-primary">
+                {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
+              </span>
+            </div>
+          </button>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary font-black text-xs">
+                1
+              </span>
+              <span className="font-extrabold text-sm sm:text-base text-foreground">
+                Stage 1 — Requirement Scope &amp; Logistics
+              </span>
+            </div>
+            <Badge tone="info">⚡ Essential Sourcing Basis</Badge>
           </div>
-          <Badge tone="info">⚡ Essential Sourcing Basis</Badge>
-        </div>
+        )
       }
       description="Describe what you need in plain words or voice. Our AI automatically extracts vertical categories, location, turnaround time, and technical parameters."
       data-testid="tier-1-tell-otp-card"
     >
-      <div className="space-y-4">
+      {!isExpanded ? (
+        <div
+          className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-3 text-center cursor-pointer hover:bg-muted/40 transition mobile-touch-target"
+          onClick={onToggleExpand}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onToggleExpand?.();
+            }
+          }}
+        >
+          <p className="text-xs font-semibold text-foreground">
+            {title ? <strong className="text-primary mr-1.5">{title}</strong> : <span>Scope: </span>}
+            {activeSubcategory ? ` · ${activeSubcategory.name}` : ''}
+            {city ? ` · 📍 ${city} ${pincode ? `(${pincode})` : ''}` : ''}
+            <span className="text-primary font-bold ml-1.5 underline">Customize Scope &amp; Logistics ▼</span>
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4" id="stage-1-scope-body">
         {/* 1. Natural Language Prompt + Voice & Templates Controls */}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -676,6 +731,7 @@ export function Tier1TellOtpCard({
           </div>
         </div>
       </div>
-    </Card>
+    )}
+  </Card>
   );
 }

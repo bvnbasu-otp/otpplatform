@@ -42,6 +42,17 @@ function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+const SUBCATEGORY_KEYWORD_AUGMENTATIONS: Record<string, string[]> = {
+  housekeeping_cleaning: [
+    'sanitization',
+    'sanitisation',
+    'disinfection',
+    'commercial cleaning',
+    'facility cleaning',
+    'deep cleaning',
+  ],
+};
+
 /**
  * Score each subcategory by the total length of its keywords found in the text.
  * Longer phrases carry more weight than generic ones, so "winding has burnt"
@@ -52,7 +63,9 @@ function classify(text: string, taxonomy: TaxonomySnapshot): Classification {
 
   const scored = taxonomy.subcategories
     .map((subcategory) => {
-      const hits = subcategory.matchKeywords.filter(
+      const extra = SUBCATEGORY_KEYWORD_AUGMENTATIONS[subcategory.code] ?? [];
+      const allKeywords = Array.from(new Set([...subcategory.matchKeywords, ...extra]));
+      const hits = allKeywords.filter(
         (keyword) => keyword.length > 0 && haystack.includes(keyword.toLowerCase()),
       );
       return {

@@ -5,10 +5,8 @@ import { useAuth } from '@/features/auth';
 import {
   SubscriptionPaymentModal,
   SubscriptionExpiryBanner,
-  OtpWalletCreditsWidget,
   validateOrganizationSourcingAccess,
 } from '@/features/subscription';
-import { fastTrackExpressIntake } from '@/features/intake/api/fast-track-intake';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { formatDateIST } from '@/lib/date-utils';
 import type { OrganizationRequirementSummary } from '@/features/requirement/api/requirements';
@@ -76,7 +74,7 @@ export function DashboardPage() {
       const accessCheck = await validateOrganizationSourcingAccess(targetOrgId);
       if (!accessCheck.hasAccess) {
         setIsSubmittingExpress(false);
-        setExpressError(accessCheck.reason || 'Sourcing credits exhausted. Please renew subscription to create fast-track RFQs.');
+        setExpressError(accessCheck.reason || 'Sourcing credits exhausted. Please renew subscription to create RFQs.');
         setIsPaymentModalOpen(true);
         return;
       }
@@ -86,15 +84,10 @@ export function DashboardPage() {
       return;
     }
 
-    const result = await fastTrackExpressIntake(textToSubmit);
-    if (!result.ok || !result.rfqId) {
-      setExpressError(result.error || 'Failed to auto-generate RFQ quotes.');
-      setIsSubmittingExpress(false);
-      return;
-    }
-
     setIsExpressModalOpen(false);
-    navigate(`/rfq/${result.rfqId}/quotes`);
+    setIsSubmittingExpress(false);
+    // Route to intake wizard so buyer can inspect, validate, and customize specifications before publishing
+    navigate(`/intake?q=${encodeURIComponent(textToSubmit)}`);
   };
 
   return (
@@ -122,14 +115,6 @@ export function DashboardPage() {
         <SubscriptionExpiryBanner
           subscription={subscription}
           onRenewClick={() => setIsPaymentModalOpen(true)}
-        />
-      )}
-
-      {/* OTP Wallet & Sourcing Rewards Widget */}
-      {org?.organizationId && (
-        <OtpWalletCreditsWidget
-          organizationId={org.organizationId}
-          onApplyRenewal={() => setIsPaymentModalOpen(true)}
         />
       )}
 

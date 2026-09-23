@@ -143,7 +143,7 @@ describe('Buyer Home - Action Required Derivation & Priorities', () => {
     expect(action).not.toBeNull();
     expect(action?.priority).toBe('P1');
     expect(action?.actionLabel).toBe('Continue Draft →');
-    expect(action?.actionUrl).toBe('/requirements/req-draft-01');
+    expect(action?.actionUrl).toBe('/intake?draft=req-draft-01');
   });
 
   it('returns null action for fully settled orders', () => {

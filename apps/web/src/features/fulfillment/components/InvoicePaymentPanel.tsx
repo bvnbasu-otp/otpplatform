@@ -106,7 +106,6 @@ export function InvoicePaymentPanel({
       setActiveInvoice(latest);
       if (latest) {
         const bal = latest.balanceDue ?? (latest.status === 'PAID' ? 0 : latest.amount);
-        setPayAmountInput(String(bal > 0 ? bal : latest.amount));
         const [payRes, allocRes, noteRes, tdsRes] = await Promise.all([
           fetchPaymentByInvoice(latest.id),
           fetchInvoiceAllocations(latest.id),
@@ -116,7 +115,11 @@ export function InvoicePaymentPanel({
         if (payRes.ok) setPayment(payRes.payment);
         if (allocRes.ok) setAllocations(allocRes.allocations);
         if (noteRes.ok) setInvoiceNotes(noteRes.notes);
-        if (tdsRes.ok) setTdsDeductions(tdsRes.deductions);
+        const deductions = tdsRes.ok ? tdsRes.deductions : [];
+        if (tdsRes.ok) setTdsDeductions(deductions);
+        const totalTds = deductions.reduce((sum, d) => sum + (d.tdsAmount || 0), 0);
+        const netBal = Math.max(0, bal - totalTds);
+        setPayAmountInput(String(netBal > 0 ? netBal : (latest.amount - totalTds > 0 ? latest.amount - totalTds : '')));
 
         if (latest.purchaseOrderId) {
           const poPayRes = await fetchPaymentsByPo(latest.purchaseOrderId);
@@ -125,7 +128,7 @@ export function InvoicePaymentPanel({
             const firstUnalloc = poPayRes.payments.find((p) => p.unallocatedAmount > 0);
             if (firstUnalloc) {
               setSelectedAdvancePaymentId(firstUnalloc.id);
-              const maxAlloc = Math.min(firstUnalloc.unallocatedAmount, bal > 0 ? bal : latest.amount);
+              const maxAlloc = Math.min(firstUnalloc.unallocatedAmount, netBal > 0 ? netBal : latest.amount);
               setAdvanceAllocAmountInput(String(maxAlloc));
             }
           }
@@ -180,13 +183,23 @@ export function InvoicePaymentPanel({
   const handleSelectInvoice = async (inv: InvoiceSummary) => {
     setActiveInvoice(inv);
     const bal = inv.balanceDue ?? (inv.status === 'PAID' ? 0 : inv.amount);
-    setPayAmountInput(String(bal > 0 ? bal : inv.amount));
-    const payRes = await fetchPaymentByInvoice(inv.id);
-    if (payRes.ok) {
-      setPayment(payRes.payment);
-    } else {
-      setPayment(null);
-    }
+    const [payRes, allocRes, noteRes, tdsRes] = await Promise.all([
+      fetchPaymentByInvoice(inv.id),
+      fetchInvoiceAllocations(inv.id),
+      fetchCreditDebitNotesByInvoice(inv.id),
+      fetchTdsDeductionsByInvoice(inv.id),
+    ]);
+    if (payRes.ok) setPayment(payRes.payment);
+    else setPayment(null);
+    if (allocRes.ok) setAllocations(allocRes.allocations);
+    else setAllocations([]);
+    if (noteRes.ok) setInvoiceNotes(noteRes.notes);
+    else setInvoiceNotes([]);
+    const deductions = tdsRes.ok ? tdsRes.deductions : [];
+    setTdsDeductions(deductions);
+    const totalTds = deductions.reduce((sum, d) => sum + (d.tdsAmount || 0), 0);
+    const netBal = Math.max(0, bal - totalTds);
+    setPayAmountInput(String(netBal > 0 ? netBal : (inv.amount - totalTds > 0 ? inv.amount - totalTds : '')));
 
     if (inv.purchaseOrderId) {
       const poPayRes = await fetchPaymentsByPo(inv.purchaseOrderId);
@@ -195,7 +208,7 @@ export function InvoicePaymentPanel({
         const firstUnalloc = poPayRes.payments.find((p) => p.unallocatedAmount > 0);
         if (firstUnalloc) {
           setSelectedAdvancePaymentId(firstUnalloc.id);
-          const maxAlloc = Math.min(firstUnalloc.unallocatedAmount, bal > 0 ? bal : inv.amount);
+          const maxAlloc = Math.min(firstUnalloc.unallocatedAmount, netBal > 0 ? netBal : inv.amount);
           setAdvanceAllocAmountInput(String(maxAlloc));
         }
       }
@@ -317,8 +330,14 @@ export function InvoicePaymentPanel({
     }
 
     const currentBalDue = activeInvoice.balanceDue ?? (activeInvoice.status === 'PAID' ? 0 : activeInvoice.amount);
-    if (payAmt > currentBalDue) {
-      setError(`Payment amount ₹${payAmt} exceeds invoice balance due of ₹${currentBalDue}`);
+    const totalTds = tdsDeductions.reduce((sum, d) => sum + (d.tdsAmount || 0), 0);
+    const maxPayable = totalTds > 0 ? Math.max(0, currentBalDue - totalTds) : currentBalDue;
+    if (payAmt > maxPayable) {
+      setError(
+        totalTds > 0
+          ? `Payment amount ₹${payAmt} exceeds net payout due of ₹${maxPayable} (Invoice balance ₹${currentBalDue} minus ₹${totalTds} TDS withheld)`
+          : `Payment amount ₹${payAmt} exceeds invoice balance due of ₹${currentBalDue}`,
+      );
       return;
     }
 
@@ -514,6 +533,8 @@ export function InvoicePaymentPanel({
   const activeBalDue = activeInvoice?.balanceDue ?? (activeInvoice?.status === 'PAID' ? 0 : activeInvoice?.amount ?? 0);
   const activePaidAmt = activeInvoice?.paidAmount ?? (activeInvoice?.status === 'PAID' ? activeInvoice.amount : 0);
   const payableAmount = activeBalDue > 0 ? activeBalDue : effectiveAmount;
+  const totalTdsDeducted = tdsDeductions.reduce((sum, d) => sum + (d.tdsAmount || 0), 0);
+  const netSettlementPayable = Math.max(0, activeBalDue - totalTdsDeducted);
 
   const baseAmount = activeInvoice?.taxableTotal ?? Math.round(effectiveAmount / 1.18);
   const cgstAmount = activeInvoice?.cgstTotal ?? (activeInvoice?.igstTotal ? 0 : Math.round((effectiveAmount - baseAmount) / 2));
@@ -1158,12 +1179,22 @@ export function InvoicePaymentPanel({
                       required
                       value={payAmountInput}
                       onChange={(e) => setPayAmountInput(e.target.value)}
-                      placeholder={`Max: ₹${activeBalDue}`}
+                      placeholder={`Max: ₹${netSettlementPayable > 0 ? netSettlementPayable : activeBalDue}`}
                       className="w-full rounded-xl border bg-background px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[44px]"
                     />
-                    <span className="text-[10px] text-muted-foreground block mt-0.5">
-                      Balance Due: <strong className="text-primary">{formatMoney(activeBalDue, 'INR')}</strong>
-                    </span>
+                    <div className="flex flex-wrap items-center justify-between text-[10px] text-muted-foreground mt-1 gap-1">
+                      <span>
+                        Balance Due: <strong className="text-foreground">{formatMoney(activeBalDue, 'INR')}</strong>
+                      </span>
+                      {totalTdsDeducted > 0 && (
+                        <span>
+                          Less TDS Withheld: <strong className="text-amber-600 dark:text-amber-400">-{formatMoney(totalTdsDeducted, 'INR')}</strong>
+                        </span>
+                      )}
+                      <span>
+                        Net Payout Due: <strong className="text-emerald-700 dark:text-emerald-400">{formatMoney(netSettlementPayable, 'INR')}</strong>
+                      </span>
+                    </div>
                   </div>
 
                   <div>
@@ -1192,7 +1223,7 @@ export function InvoicePaymentPanel({
                   <span>
                     {busy
                       ? 'Recording Settlement…'
-                      : `Record Direct Payment (${formatMoney(Number(payAmountInput) || activeBalDue, activeInvoice.currency)}) →`}
+                      : `Record Direct Payment (${formatMoney(Number(payAmountInput) || (netSettlementPayable > 0 ? netSettlementPayable : activeBalDue), activeInvoice.currency)}) →`}
                   </span>
                 </button>
               </form>

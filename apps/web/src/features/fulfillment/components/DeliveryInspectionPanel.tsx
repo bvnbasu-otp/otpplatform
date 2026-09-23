@@ -33,10 +33,7 @@ export function DeliveryInspectionPanel({
 }: DeliveryInspectionPanelProps) {
   const [rating, setRating] = useState<number>(workOrder.rating ?? 5);
   const [hoverRating, setHoverRating] = useState<number>(0);
-  const [selectedObservations, setSelectedObservations] = useState<string[]>([
-    'Full physical quantity & packaging verified intact on-site',
-    'Technical specification & material compliance verified',
-  ]);
+  const [selectedObservations, setSelectedObservations] = useState<string[]>([]);
   const [notes, setNotes] = useState(workOrder.reviewText ?? workOrder.inspectionNotes ?? '');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);

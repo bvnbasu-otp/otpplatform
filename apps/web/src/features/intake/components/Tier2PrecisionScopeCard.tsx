@@ -65,6 +65,28 @@ export function Tier2PrecisionScopeCard({
   onQualityNotesChange,
 }: Tier2PrecisionScopeCardProps) {
   const [showOptionalSpecs, setShowOptionalSpecs] = useState(optionalAttributes.length <= 2);
+  const [customKey, setCustomKey] = useState('');
+  const [customVal, setCustomVal] = useState('');
+  const [showAddCustom, setShowAddCustom] = useState(false);
+
+  const standardCodes = new Set([
+    ...requiredAttributes.map((a) => a.code),
+    ...optionalAttributes.map((a) => a.code),
+  ]);
+  const customEntries = Object.entries(attributes).filter(
+    ([code, val]) => !standardCodes.has(code) && val !== null && val !== undefined && val !== '',
+  );
+
+  const handleAddCustomSpec = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanKey = customKey.trim();
+    const cleanVal = customVal.trim();
+    if (!cleanKey || !cleanVal) return;
+    onAttributeChange(cleanKey, cleanVal);
+    setCustomKey('');
+    setCustomVal('');
+    setShowAddCustom(false);
+  };
 
   return (
     <Card
@@ -82,11 +104,11 @@ export function Tier2PrecisionScopeCard({
                 2
               </span>
               <span className="font-extrabold text-sm sm:text-base text-foreground">
-                Tier 2 — Precision Scope (Optional Technical Specs)
+                Stage 2 — Technical Specifications &amp; BoQ
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge tone="neutral">📐 Technical Precision</Badge>
+              <Badge tone="neutral">📐 Technical Specifications</Badge>
               <span className="text-xs font-bold text-primary">
                 {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
               </span>
@@ -99,10 +121,10 @@ export function Tier2PrecisionScopeCard({
                 2
               </span>
               <span className="font-extrabold text-sm sm:text-base text-foreground">
-                Tier 2 — Precision Scope (Add Precision)
+                Stage 2 — Technical Specifications &amp; BoQ
               </span>
             </div>
-            <Badge tone="neutral">📐 Technical Precision</Badge>
+            <Badge tone="neutral">📐 Technical Specifications</Badge>
           </div>
         )
       }
@@ -241,6 +263,98 @@ export function Tier2PrecisionScopeCard({
             )}
           </div>
         )}
+
+        {/* Custom Specifications & Technical Parameters */}
+        <div className="rounded-xl border bg-card/60 p-3.5 space-y-3 transition-all">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-foreground">
+                ✨ Custom Specifications &amp; Parameters
+              </span>
+              {customEntries.length > 0 && (
+                <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">
+                  {customEntries.length} custom
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddCustom(!showAddCustom)}
+              className="text-xs font-bold text-primary hover:underline px-1 py-0.5"
+            >
+              {showAddCustom ? 'Cancel ✕' : '+ Add Custom Spec'}
+            </button>
+          </div>
+
+          {customEntries.length > 0 && (
+            <div className="grid gap-2 sm:grid-cols-2 pt-1">
+              {customEntries.map(([code, val]) => (
+                <div
+                  key={code}
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg border bg-muted/20 text-xs"
+                >
+                  <div className="min-w-0">
+                    <span className="font-semibold text-foreground block truncate">{code}</span>
+                    <span className="text-[11px] text-muted-foreground truncate block">
+                      {Array.isArray(val) ? val.join(', ') : String(val)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onAttributeChange(code, null)}
+                    className="text-xs text-rose-500 hover:text-rose-700 font-bold p-1 rounded"
+                    title="Remove custom specification"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {showAddCustom && (
+            <form onSubmit={handleAddCustomSpec} className="p-3 rounded-lg border bg-muted/30 space-y-2 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-foreground mb-1">
+                    Specification Name
+                  </label>
+                  <Input
+                    placeholder="e.g. Facility Type, Chemical Grade..."
+                    value={customKey}
+                    onChange={(e) => setCustomKey(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-foreground mb-1">
+                    Target Value / Requirement
+                  </label>
+                  <Input
+                    placeholder="e.g. Commercial Office, Diversey Eco..."
+                    value={customVal}
+                    onChange={(e) => setCustomVal(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustom(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!customKey.trim() || !customVal.trim()}
+                  className="rounded-lg bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 shadow-2xs hover:bg-primary/90 disabled:opacity-50"
+                >
+                  Add Specification
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
 
         {/* 4. Quality & Warranty Standards */}
         <div className="space-y-3 pt-2 border-t border-border/60">

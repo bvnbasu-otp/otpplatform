@@ -74,7 +74,7 @@ export function deriveBuyerActionItem(req: OrganizationRequirementSummary): Buye
         statusIcon: '📝',
         whyText: 'Specification draft saved · Submit to publish RFQ',
         actionLabel: 'Continue Draft →',
-        actionUrl: `/requirements/${req.id}`,
+        actionUrl: `/intake?draft=${req.id}`,
         priority: 'P1',
         priorityTag: 'Draft Ready',
         coreState,

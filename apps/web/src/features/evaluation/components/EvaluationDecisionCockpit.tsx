@@ -499,29 +499,8 @@ export function EvaluationDecisionCockpit({
                 💬 Sourcing &amp; Quoting Window Open ({quotes.length} Quotes Received)
               </span>
               <p className="text-[11px] text-amber-800 dark:text-amber-300">
-                Suppliers have submitted identity-protected offers. You can close quoting to start evaluation and voting.
+                Suppliers have submitted identity-protected offers. Review commercial proposals below or close quoting to start evaluation and voting.
               </p>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleCloseAndEvaluate()}
-                className="rounded-xl bg-primary px-3.5 py-2 text-xs font-extrabold text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition min-h-[44px] mobile-touch-target"
-                data-testid="close-quoting-evaluate-button"
-              >
-                {busy ? 'Opening Evaluation…' : 'Close Quoting & Start Evaluation →'}
-              </button>
-              {quotes.length > 0 && (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void handleWaiveAndEvaluate()}
-                  className="rounded-xl border border-amber-400 dark:border-amber-700 bg-card px-3 py-2 text-xs font-extrabold text-amber-950 dark:text-amber-200 hover:bg-amber-100 disabled:opacity-50 transition min-h-[44px] mobile-touch-target"
-                >
-                  ⚡ Fast-Track
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -819,23 +798,6 @@ export function EvaluationDecisionCockpit({
               )}
             </div>
 
-            {/* Explicit Tab 2 Step Progression CTA */}
-            <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
-              <div className="text-xs">
-                <span className="font-extrabold text-foreground block">Next Workflow Step:</span>
-                <span className="text-[11px] text-muted-foreground">
-                  With specifications clarified, proceed to submit your evaluation and committee vote.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleTabChange('vote')}
-                className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
-                data-testid="continue-from-qa-to-vote-tab-btn"
-              >
-                Proceed to Cast Vote →
-              </button>
-            </div>
           </div>
         )}
 
@@ -859,24 +821,6 @@ export function EvaluationDecisionCockpit({
                 setHasMyVote(true);
               }}
             />
-
-            {/* Explicit Tab 3 Step Progression CTA */}
-            <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
-              <div className="text-xs">
-                <span className="font-extrabold text-foreground block">Next Workflow Step:</span>
-                <span className="text-[11px] text-muted-foreground">
-                  Consensus recorded. Advance to dynamic spend approval routing, justification audit, and atomic contract award.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleTabChange('award')}
-                className="min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-black text-white shadow-xs transition mobile-touch-target"
-                data-testid="continue-from-vote-to-award-tab-btn"
-              >
-                Proceed to Decision &amp; Award →
-              </button>
-            </div>
           </div>
         )}
 

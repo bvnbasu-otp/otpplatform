@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import type { RfqReviewRequirement } from '../types/rfq-review';
 
 interface RfqScopeSummaryCardProps {
@@ -7,7 +6,6 @@ interface RfqScopeSummaryCardProps {
 
 export function RfqScopeSummaryCard({ requirement }: RfqScopeSummaryCardProps) {
   const {
-    id,
     title,
     description,
     categoryName,
@@ -56,14 +54,6 @@ export function RfqScopeSummaryCard({ requirement }: RfqScopeSummaryCardProps) {
             {title}
           </h2>
         </div>
-
-        <Link
-          to={`/requirements/${id}`}
-          className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-lg border bg-muted/30 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target shrink-0"
-          title="Edit Requirement Specifications"
-        >
-          <span>Edit Spec ✎</span>
-        </Link>
       </div>
 
       {description && (
