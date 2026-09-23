@@ -213,9 +213,13 @@ export function Tier1TellOtpCard({
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <span>✨</span> Describe what you need:
+              <span>✨</span> Speak or Type Requirement:
             </span>
             <div className="flex items-center gap-2">
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                AI Parser Ready
+              </span>
               {onOpenTemplates && (
                 <button
                   type="button"
@@ -223,7 +227,7 @@ export function Tier1TellOtpCard({
                   className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted border border-border/80 px-2.5 py-1 rounded-lg transition min-h-[36px]"
                 >
                   <span>📚</span>
-                  <span>Templates &amp; Case Studies</span>
+                  <span>Templates</span>
                 </button>
               )}
               <button
@@ -231,7 +235,7 @@ export function Tier1TellOtpCard({
                 onClick={() => setShowVoiceDictation(!showVoiceDictation)}
                 className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline min-h-[36px] py-1 px-1.5"
               >
-                <span>{showVoiceDictation ? '✕ Close Voice' : '🎙️ Voice Dictate'}</span>
+                <span>{showVoiceDictation ? '✕ Close' : '🎙️ Voice'}</span>
               </button>
             </div>
           </div>
@@ -440,27 +444,34 @@ export function Tier1TellOtpCard({
           <Field label="Delivery / Service City" error={errors.deliveryCity} required className="sm:col-span-2">
             {({ id, describedBy, invalid }) => (
               <div className="space-y-2">
-                {/* 1-Tap City Pills & GPS Location Auto-Detect */}
+                {/* 1-Tap City Pills & GPS Location Auto-Detect (Screen 03) */}
                 <div className="flex gap-1.5 items-center justify-between overflow-x-auto pb-1.5 sm:pb-0 no-scrollbar sm:flex-wrap">
                   <div className="flex gap-1.5 items-center overflow-x-auto no-scrollbar">
-                    <span className="text-[11px] font-semibold text-muted-foreground mr-1 shrink-0">
-                      ⚡ Quick City:
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mr-1 shrink-0">
+                      DELIVERY LOCATION (1-TAP):
                     </span>
-                    {POPULAR_CITIES.map((c) => {
+                    {['Bengaluru', 'Chennai', 'Coimbatore', 'Hyderabad', 'Mumbai'].map((c) => {
                       const isSelected = city.toLowerCase() === c.toLowerCase() ||
                         (c === 'Bangalore' && city.toLowerCase() === 'bengaluru');
                       return (
                         <button
                           key={c}
                           type="button"
-                          onClick={() => onCityChange(c === 'Bangalore' ? 'Bengaluru' : c)}
-                          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition active:scale-95 min-h-[38px] shrink-0 mobile-touch-target shadow-2xs whitespace-nowrap ${
+                          onClick={() => {
+                            onCityChange(c === 'Bangalore' ? 'Bengaluru' : c);
+                            if (c === 'Bengaluru') onPincodeChange('560001');
+                            else if (c === 'Chennai') onPincodeChange('600001');
+                            else if (c === 'Coimbatore') onPincodeChange('641001');
+                            else if (c === 'Hyderabad') onPincodeChange('500001');
+                            else if (c === 'Mumbai') onPincodeChange('400001');
+                          }}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-bold transition active:scale-95 min-h-[38px] shrink-0 mobile-touch-target shadow-2xs whitespace-nowrap ${
                             isSelected
                               ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                               : 'border-border bg-card text-foreground hover:border-primary/60 hover:bg-muted'
                           }`}
                         >
-                          {c}
+                          {c}{isSelected ? ' ✓' : ''}
                         </button>
                       );
                     })}
@@ -500,6 +511,25 @@ export function Tier1TellOtpCard({
               </div>
             )}
           </Field>
+
+          {/* Scoring Weights (Auto-Optimized): Standard Merit (Screen 03) */}
+          <div className="rounded-xl border bg-muted/25 p-3 space-y-2 sm:col-span-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-foreground">Scoring Weights (Auto-Optimized):</span>
+              <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">Standard Merit</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold">
+              <div className="rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 p-2">
+                💰 Price 40%
+              </div>
+              <div className="rounded-lg bg-blue-500/10 text-blue-800 dark:text-blue-300 border border-blue-300/60 p-2">
+                🚚 Speed 35%
+              </div>
+              <div className="rounded-lg bg-purple-500/10 text-purple-800 dark:text-purple-300 border border-purple-300/60 p-2">
+                🛡️ SLA 25%
+              </div>
+            </div>
+          </div>
 
           <Field label="Postal PIN Code" error={errors.deliveryPincode} required help="6-digit postal PIN for freight & local supplier distance calculation.">
             {({ id, describedBy, invalid }) => (

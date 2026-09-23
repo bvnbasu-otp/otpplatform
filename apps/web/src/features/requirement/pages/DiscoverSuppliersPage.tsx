@@ -486,14 +486,13 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {isQuotingActive ? (
+            {rfqId ? (
               <Link
-                to={rfqId ? `/rfq/${rfqId}/market-intelligence` : `/requirements/${requirementId}/market-intelligence`}
+                to={`/rfq/${rfqId}/quotes`}
                 className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
-                data-testid="continue-to-market-intelligence-cta"
+                data-testid="continue-to-quotes-cta"
               >
-                <span>Market Intelligence</span>
-                <span>→</span>
+                <span>View Incoming Sealed Quotes →</span>
               </Link>
             ) : (
               <Link
@@ -501,7 +500,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
                 data-testid="continue-to-rfq-review-cta"
               >
-                <span>Continue to RFQ Review ({selectedIds.size} Selected) →</span>
+                <span>View Incoming Sealed Quotes →</span>
               </Link>
             )}
           </div>

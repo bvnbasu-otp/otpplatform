@@ -112,7 +112,7 @@ export function SupplierRadarPulseBanner({
 
   return (
     <section
-      className="rounded-xl bg-slate-900 dark:bg-slate-950 text-white p-3.5 space-y-3 relative overflow-hidden border border-slate-800 shadow-md"
+      className="rounded-xl bg-slate-900 dark:bg-slate-950 text-white p-3.5 space-y-3 relative overflow-hidden border border-slate-800 shadow-md min-h-[140px] flex flex-col justify-between"
       data-testid="supplier-radar-pulse-banner"
       aria-label="Supplier Discovery Radar"
     >

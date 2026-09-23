@@ -1,7 +1,7 @@
 import React, { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { OtpLogo } from '@/components/ui/OtpLogo';
-import { PRODUCT_NAME } from '@/lib/brand';
+import { PRODUCT_NAME, PRODUCT_PLATFORM_SUBTITLE } from '@/lib/brand';
 
 export interface MobileSimulatorFrameProps {
   children: ReactNode;
@@ -9,6 +9,21 @@ export interface MobileSimulatorFrameProps {
 
 export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
   const [currentTime, setCurrentTime] = useState('9:41');
+  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('otp_view_mode');
+      if (saved === 'mobile' || saved === 'desktop') return saved;
+      return 'desktop';
+    }
+    return 'desktop';
+  });
+
+  const handleModeChange = (mode: 'desktop' | 'mobile') => {
+    setViewMode(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('otp_view_mode', mode);
+    }
+  };
 
   useEffect(() => {
     function updateClock() {
@@ -48,64 +63,116 @@ export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
           </Link>
           <span className="text-slate-600">|</span>
           <span className="text-slate-400 font-medium hidden md:inline">
-            Identity-Protected Procurement Platform
+            {PRODUCT_PLATFORM_SUBTITLE}
           </span>
         </div>
 
-        {/* Dimension & Live Cockpit Badge */}
-        <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-full shadow-inner">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="font-mono text-[11px] font-bold text-slate-200">
-            Procurement Cockpit
-          </span>
+        {/* Dimension & Live Cockpit Badge + View Mode Toggle */}
+        <div className="flex items-center gap-2.5">
+          {/* Responsive Desktop / Mobile Preview Mode Toggle */}
+          <div className="flex items-center rounded-lg bg-slate-900 border border-slate-800 p-0.5 text-[11px] font-bold">
+            <button
+              type="button"
+              onClick={() => handleModeChange('desktop')}
+              className={`px-2.5 py-1 rounded-md transition ${
+                viewMode === 'desktop'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Responsive Desktop View"
+            >
+              🖥️ Desktop
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeChange('mobile')}
+              className={`px-2.5 py-1 rounded-md transition ${
+                viewMode === 'mobile'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Mobile Device Preview"
+            >
+              📱 Mobile
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-full shadow-inner">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="font-mono text-[11px] font-bold text-slate-200">
+              Procurement Cockpit
+            </span>
+          </div>
         </div>
       </header>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 3. CENTERED MOBILE PHONE CONTAINER (COCKPIT)                       */}
+      {/* 3. APPLICATION CONTAINER (DESKTOP FLUID OR CENTERED MOBILE SHELL)  */}
       {/* ------------------------------------------------------------------ */}
-      <div className="relative w-full sm:max-w-[430px] sm:w-[412px] h-full sm:h-[93vh] sm:max-h-[915px] sm:my-auto flex flex-col z-20">
-        {/* Physical Titanium Shell Outer Border & Shadow (Desktop Only) */}
-        <div className="relative w-full h-full sm:rounded-[42px] sm:border-[6px] sm:border-slate-800/90 sm:bg-slate-900 sm:shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.1)_inset] flex flex-col overflow-hidden sm:ring-1 sm:ring-white/10">
-          
-          {/* Simulated Outer Side Buttons (Desktop Only) */}
-          <div className="hidden sm:block absolute -left-[8px] top-[100px] w-[3px] h-[32px] bg-slate-700 rounded-l-sm pointer-events-none" />
-          <div className="hidden sm:block absolute -left-[8px] top-[145px] w-[3px] h-[48px] bg-slate-700 rounded-l-sm pointer-events-none" />
-          <div className="hidden sm:block absolute -right-[8px] top-[120px] w-[3px] h-[60px] bg-slate-700 rounded-r-sm pointer-events-none" />
+      <div
+        className={`relative w-full h-full sm:h-[94vh] sm:my-auto flex flex-col z-20 transition-all duration-300 ${
+          viewMode === 'desktop'
+            ? 'sm:max-w-6xl'
+            : 'sm:max-w-[430px] sm:w-[412px] sm:max-h-[915px]'
+        }`}
+      >
+        {/* Physical Titanium Shell Outer Border & Shadow (Applied in Mobile Mode) */}
+        <div
+          className={`relative w-full h-full flex flex-col overflow-hidden sm:ring-1 sm:ring-white/10 ${
+            viewMode === 'desktop'
+              ? 'sm:rounded-2xl sm:border sm:border-slate-800/80 sm:bg-slate-900/90 sm:shadow-2xl'
+              : 'sm:rounded-[42px] sm:border-[6px] sm:border-slate-800/90 sm:bg-slate-900 sm:shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.1)_inset]'
+          }`}
+        >
+          {/* Simulated Outer Side Buttons (Mobile Mode Only) */}
+          {viewMode === 'mobile' && (
+            <>
+              <div className="hidden sm:block absolute -left-[8px] top-[100px] w-[3px] h-[32px] bg-slate-700 rounded-l-sm pointer-events-none" />
+              <div className="hidden sm:block absolute -left-[8px] top-[145px] w-[3px] h-[48px] bg-slate-700 rounded-l-sm pointer-events-none" />
+              <div className="hidden sm:block absolute -right-[8px] top-[120px] w-[3px] h-[60px] bg-slate-700 rounded-r-sm pointer-events-none" />
+            </>
+          )}
 
           {/* Inner Screen Display Viewport */}
-          <div className="relative w-full h-full bg-background flex flex-col overflow-hidden sm:rounded-[36px] sm:transform-gpu sm:[transform:translate3d(0,0,0)] [contain:paint]">
-            
-            {/* Top Hardware Dynamic Island & Status Bar (Desktop Only) */}
-            <div className="hidden sm:flex shrink-0 h-8 w-full px-5 pt-1.5 items-center justify-between text-[11px] font-semibold text-foreground z-40 bg-background/95 backdrop-blur-xs select-none border-b border-border/40">
-              <span className="tabular-nums font-bold text-xs">{currentTime}</span>
+          <div
+            className={`relative w-full h-full bg-background flex flex-col overflow-hidden sm:transform-gpu sm:[transform:translate3d(0,0,0)] [contain:paint] ${
+              viewMode === 'desktop' ? 'sm:rounded-2xl' : 'sm:rounded-[36px]'
+            }`}
+          >
+            {/* Top Hardware Dynamic Island & Status Bar (Mobile Mode Only) */}
+            {viewMode === 'mobile' && (
+              <div className="hidden sm:flex shrink-0 h-8 w-full px-5 pt-1.5 items-center justify-between text-[11px] font-semibold text-foreground z-40 bg-background/95 backdrop-blur-xs select-none border-b border-border/40">
+                <span className="tabular-nums font-bold text-xs">{currentTime}</span>
 
-              {/* Dynamic Island Capsule */}
-              <div className="flex items-center gap-1.5 px-3 py-0.5 bg-black text-white rounded-full text-[9px] font-medium shadow-xs border border-white/10">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="tracking-tight text-[10px] font-bold">OTP Active</span>
-              </div>
+                {/* Dynamic Island Capsule */}
+                <div className="flex items-center gap-1.5 px-3 py-0.5 bg-black text-white rounded-full text-[9px] font-medium shadow-xs border border-white/10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="tracking-tight text-[10px] font-bold">OTP Active</span>
+                </div>
 
-              {/* Status Icons: 5G & Battery */}
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="text-[10px]">5G</span>
-                <span className="text-[10px]">📶</span>
-                <span className="text-[10px] font-mono font-bold">🔋</span>
+                {/* Status Icons: 5G & Battery */}
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="text-[10px]">5G</span>
+                  <span className="text-[10px]">📶</span>
+                  <span className="text-[10px] font-mono font-bold">🔋</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Application Inside Viewport */}
             <div className="relative w-full h-full flex-1 min-h-0 flex flex-col overflow-hidden sm:transform-gpu sm:[transform:translate3d(0,0,0)] [contain:paint]">
               {children}
             </div>
 
-            {/* Bottom iOS Home Indicator Pill (Desktop Only) */}
-            <div className="hidden sm:flex shrink-0 h-4 w-full items-center justify-center bg-card pb-0.5 select-none pointer-events-none border-t border-border/30">
-              <div className="w-28 h-1 bg-muted-foreground/30 rounded-full" />
-            </div>
+            {/* Bottom iOS Home Indicator Pill (Mobile Mode Only) */}
+            {viewMode === 'mobile' && (
+              <div className="hidden sm:flex shrink-0 h-4 w-full items-center justify-center bg-card pb-0.5 select-none pointer-events-none border-t border-border/30">
+                <div className="w-28 h-1 bg-muted-foreground/30 rounded-full" />
+              </div>
+            )}
           </div>
         </div>
       </div>

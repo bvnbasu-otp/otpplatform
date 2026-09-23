@@ -441,7 +441,7 @@ export function EvaluationDecisionCockpit({
 
   return (
     <div
-      className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden relative"
+      className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden min-h-full flex flex-col justify-between relative"
       data-testid="evaluation-decision-cockpit"
     >
       {/* 1. 7-State Golden Path Stepper Header */}
@@ -528,7 +528,7 @@ export function EvaluationDecisionCockpit({
 
         {/* Canonical 4 Cockpit Navigation Tabs (Mobile-Hardened Horizontal Scroll) */}
         <div
-          className="flex items-center gap-1.5 p-1 rounded-2xl border border-border bg-muted/30 overflow-x-auto scrollbar-thin scroll-smooth no-print min-w-0"
+          className="flex items-center gap-2 p-1.5 rounded-2xl border border-border bg-muted/30 overflow-x-auto scrollbar-none no-scrollbar min-w-0"
           role="tablist"
           aria-label="Evaluation Cockpit Sections"
         >
@@ -537,10 +537,10 @@ export function EvaluationDecisionCockpit({
             role="tab"
             aria-selected={activeTab === 'quotes'}
             onClick={() => handleTabChange('quotes')}
-            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
+            className={`shrink-0 whitespace-nowrap min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl text-xs font-black transition mobile-touch-target ${
               activeTab === 'quotes'
-                ? 'bg-card text-foreground shadow-xs border border-border'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground shadow-xs border border-primary'
+                : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
             }`}
             data-testid="cockpit-tab-quotes"
           >
@@ -553,10 +553,10 @@ export function EvaluationDecisionCockpit({
             role="tab"
             aria-selected={activeTab === 'qa'}
             onClick={() => handleTabChange('qa')}
-            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
+            className={`shrink-0 whitespace-nowrap min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl text-xs font-black transition mobile-touch-target ${
               activeTab === 'qa'
-                ? 'bg-card text-foreground shadow-xs border border-border'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground shadow-xs border border-primary'
+                : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
             }`}
             data-testid="cockpit-tab-qa"
           >
@@ -574,10 +574,10 @@ export function EvaluationDecisionCockpit({
             role="tab"
             aria-selected={activeTab === 'vote'}
             onClick={() => handleTabChange('vote')}
-            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
+            className={`shrink-0 whitespace-nowrap min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl text-xs font-black transition mobile-touch-target ${
               activeTab === 'vote'
-                ? 'bg-card text-foreground shadow-xs border border-border'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground shadow-xs border border-primary'
+                : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
             }`}
             data-testid="cockpit-tab-vote"
           >
@@ -590,10 +590,10 @@ export function EvaluationDecisionCockpit({
             role="tab"
             aria-selected={activeTab === 'award'}
             onClick={() => handleTabChange('award')}
-            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl text-xs font-extrabold transition mobile-touch-target ${
+            className={`shrink-0 whitespace-nowrap min-h-[44px] inline-flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl text-xs font-black transition mobile-touch-target ${
               activeTab === 'award'
-                ? 'bg-card text-foreground shadow-xs border border-border'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground shadow-xs border border-primary'
+                : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
             }`}
             data-testid="cockpit-tab-award"
           >
@@ -627,18 +627,19 @@ export function EvaluationDecisionCockpit({
                   data-testid="toggle-market-context-btn"
                 >
                   <span>📊</span>
-                  <span>{showMarketContext ? 'Hide Market Context' : 'Market Context'}</span>
+                  <span>{showMarketContext ? 'Market Context: On' : 'Market Context: Off'}</span>
                 </button>
 
                 <button
                   type="button"
                   disabled={isSimulatingQuotes}
                   onClick={() => void handleSimulateQuotes()}
-                  className="rounded-lg border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/20 transition flex items-center gap-1 min-h-[36px] mobile-touch-target"
+                  className="rounded-lg border border-dashed border-amber-500/60 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition flex items-center gap-1 min-h-[36px] mobile-touch-target"
                   data-testid="simulate-quotes-header-btn"
+                  title="Demo Utility: Generate simulated quotes for testing"
                 >
                   <span>⚡</span>
-                  <span>{isSimulatingQuotes ? 'Simulating…' : 'Simulate 4 Demo Quotes'}</span>
+                  <span>{isSimulatingQuotes ? 'Simulating…' : 'Demo: Simulate Quotes'}</span>
                 </button>
                 <button
                   type="button"
@@ -1121,7 +1122,7 @@ export function EvaluationDecisionCockpit({
 
       {/* 2. SINGLE OBVIOUS PRIMARY ACTION (Sticky Bottom Action Dock) */}
       <aside
-        className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
+        className="sticky bottom-0 left-0 right-0 z-40 mt-auto bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
         data-testid="cockpit-sticky-bottom-bar"
         aria-label="Evaluation Cockpit Primary Action Dock"
       >

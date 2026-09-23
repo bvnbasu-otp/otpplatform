@@ -86,6 +86,7 @@ export interface SupplierActiveQuoteItem {
   rfqStatus: string;
   actionUrl: string;
   submittedDate?: string | null;
+  rank?: number;
 }
 
 export interface HomeActivityEvent {

@@ -115,8 +115,7 @@ export function PoActionButtons({
             onClick={() => onAction('ACCEPTED')}
             className="min-h-[44px] rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-40 transition flex items-center gap-1.5 mobile-touch-target"
           >
-            <span>{disabled ? 'Accepting PO…' : '⚡ Accept Purchase Order & Acknowledge Terms'}</span>
-            <span>→</span>
+            <span>{disabled ? 'Accepting PO…' : '⚡ Accept PO & Commit Delivery →'}</span>
           </button>
         </div>
       </div>

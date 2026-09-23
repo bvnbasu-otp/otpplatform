@@ -34,34 +34,40 @@ export function SupplierIdentityShieldBanner({
 
   return (
     <section
-      className="rounded-2xl border-2 border-purple-500/30 bg-gradient-to-b from-card via-card to-purple-500/5 p-4 sm:p-5 shadow-sm space-y-4 text-left"
+      className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-sm space-y-3 text-left"
       data-testid="supplier-identity-shield-banner"
     >
-      {/* Top Banner Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-500/10 text-purple-700 dark:text-purple-300 text-base font-bold shadow-2xs">
-            🛡️
-          </span>
-          <div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-black text-foreground tracking-tight">
-                Supplier Sourcing Hub
-              </h2>
-              <span className="rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-800 px-2 py-0.5 text-[10px] font-extrabold shrink-0">
-                Identity-Protected Guarantee
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Quote competitively without identity exposure. All proposals remain cryptographically sealed until buyer award lock.
-            </p>
+      {/* 1. Verified Supplier Header (Screen 05) */}
+      <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-sm shrink-0">
+            ⚡
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-xs sm:text-sm font-bold text-foreground truncate">
+              Sri Vinayaka Works
+            </h4>
+            <span className="text-[10px] text-muted-foreground block truncate">
+              Whitefield · Rewinding &amp; Pumps
+            </span>
           </div>
         </div>
+        <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold shrink-0 flex items-center gap-1">
+          <span>⭐</span>
+          <span>4.9 Verified</span>
+        </span>
+      </div>
 
-        {/* Cryptographic Seal Badge */}
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 px-2.5 py-1 text-[10px] font-bold shrink-0 shadow-2xs">
-          <span>🔒</span>
-          <span>SHA-256 Sealed Sourcing</span>
+      {/* 2. Quick Filter Chips (Screen 05) */}
+      <div className="flex flex-wrap gap-1.5 pt-0.5">
+        <span className="rounded-lg bg-primary text-primary-foreground px-2.5 py-1 text-[11px] font-bold shadow-2xs">
+          📍 &lt; 10 km
+        </span>
+        <span className="rounded-lg bg-card border border-border/80 text-foreground px-2.5 py-1 text-[11px] font-semibold">
+          ⚡ 5-25 HP
+        </span>
+        <span className="rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-300 px-2.5 py-1 text-[11px] font-bold">
+          🟢 Live RFQs ({opportunitiesCount || 2})
         </span>
       </div>
 

@@ -199,7 +199,7 @@ export function SupplierQuoteSubmitPage({ rfqId: propRfqId }: { rfqId?: string }
 
   return (
     <div
-      className="p-3 sm:p-4 max-w-4xl mx-auto w-full space-y-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden"
+      className="p-3 sm:p-4 max-w-2xl mx-auto w-full space-y-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden"
       data-testid="supplier-quote-submit-page"
     >
       {/* 1. Header with Breadcrumb Back Navigation */}
@@ -218,11 +218,11 @@ export function SupplierQuoteSubmitPage({ rfqId: propRfqId }: { rfqId?: string }
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className="rounded-full bg-muted/80 px-2.5 py-1 text-[10px] font-bold text-muted-foreground">
-            Alias: {rfq.anonymousLabel}
-          </span>
           <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 text-[10px] font-black">
-            {existingQuote ? `v${existingQuote.currentVersion} Quoted` : '⚡ Quote Entry'}
+            🔒 {rfq.anonymousLabel}
+          </span>
+          <span className="rounded-full bg-muted/80 px-2 py-1 text-[10px] font-bold text-muted-foreground">
+            {existingQuote ? `v${existingQuote.currentVersion} Quoted` : '⚡ 30-Min Entry'}
           </span>
         </div>
       </header>

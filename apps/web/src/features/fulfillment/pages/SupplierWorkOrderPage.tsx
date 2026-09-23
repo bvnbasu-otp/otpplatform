@@ -107,7 +107,7 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
   }
 
   return (
-    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden" data-testid="supplier-work-order-page">
+    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-2xl mx-auto w-full overflow-x-hidden space-y-3" data-testid="supplier-work-order-page">
       {/* Top Header */}
       <header className="rounded-2xl border bg-card p-3.5 shadow-2xs shrink-0 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -131,10 +131,23 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
         </div>
       </header>
 
-      {error && <p className="mt-2 text-xs font-bold text-red-600 rounded-xl bg-red-50 p-2.5 border border-red-200">⚠️ {error}</p>}
-      {success && <p className="mt-2 text-xs font-bold text-emerald-700 rounded-xl bg-emerald-50 p-2.5 border border-emerald-200">{success}</p>}
+      {/* Tender Awarded Banner */}
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-4 space-y-2 shadow-md">
+        <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full inline-block">
+          🏆 Tender Awarded to You
+        </span>
+        <h2 className="text-base sm:text-lg font-black leading-snug">
+          {workOrder.title}
+        </h2>
+        <p className="text-xs text-white/90">
+          PO Number: {workOrder.poNumber || 'Official PO Issued'} · Delivery Commitment Active
+        </p>
+      </div>
 
-      {/* Screen 11 Navigation Sub-Tabs */}
+      {error && <p className="text-xs font-bold text-red-600 rounded-xl bg-red-50 p-2.5 border border-red-200">⚠️ {error}</p>}
+      {success && <p className="text-xs font-bold text-emerald-700 rounded-xl bg-emerald-50 p-2.5 border border-emerald-200">{success}</p>}
+
+      {/* Work Order Navigation Sub-Tabs */}
       <div
         role="tablist"
         aria-label="Work Order Sections"

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { formatDateTimeIST } from '@/lib/date-utils';
+import { translateError } from '@/lib/error-translator';
 import { acceptDeliveryInspection } from '../api/work-orders';
 import type { WorkOrderSummary } from '../types/fulfillment';
 
@@ -126,7 +127,7 @@ export function DeliveryInspectionPanel({
     const result = await acceptDeliveryInspection(workOrder.id, rating, finalNotes);
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError(translateError(result.error));
       return;
     }
     setSuccess('✓ 100% Delivery & quality inspection successfully acknowledged! Rating submitted to supplier performance score.');

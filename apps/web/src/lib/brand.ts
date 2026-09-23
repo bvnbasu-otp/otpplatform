@@ -4,6 +4,7 @@ export const PRODUCT_NAME = 'OTP';
 export const PRODUCT_FULL_NAME = 'Open Trade & Procurement';
 
 export const PRODUCT_TAGLINE = 'Identity-Protected Competitive Sourcing';
+export const PRODUCT_PLATFORM_SUBTITLE = 'Neutral Sourcing & Governance Platform';
 export const PRODUCT_JOURNEY_STATEMENT = 'Request. Compare. Decide.';
 
 export const PRODUCT_CONCEPT =

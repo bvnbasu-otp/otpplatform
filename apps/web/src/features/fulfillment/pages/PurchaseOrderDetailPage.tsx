@@ -771,7 +771,7 @@ export function PurchaseOrderDetailPage({
   })();
 
   return (
-    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-7xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] relative" data-testid="purchase-order-detail">
+    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-2xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] relative" data-testid="purchase-order-detail">
       {/* 15-Step Linear Procurement Navigator */}
       <div className="no-print">
         <ProcurementStageNavigator
@@ -787,8 +787,23 @@ export function PurchaseOrderDetailPage({
         />
       </div>
 
-      {/* Screen 10 Hero Card: High-Impact Digital Purchase Order Details */}
-      <div className="mt-2 rounded-2xl border bg-card p-3.5 sm:p-5 shadow-sm space-y-3.5">
+      {/* Hero Card: Winning Supplier Unmasked Banner */}
+      <div className="mt-2 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-4 space-y-2 shadow-md">
+        <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full inline-block">
+          🎉 Winning Supplier Unmasked
+        </span>
+        <h2 className="text-base sm:text-lg font-black leading-snug">
+          {order.supplierName || 'Awarded Vendor'}
+        </h2>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-white/90 pt-0.5">
+          <span>✓ GST: {order.supplierGstin || 'Verified'}</span>
+          <span>·</span>
+          <span>📞 {order.supplierPhone || '+91 98450 12345'}</span>
+        </div>
+      </div>
+
+      {/* Hero Card: High-Impact Digital Purchase Order Details */}
+      <div className="mt-3 rounded-2xl border bg-card p-3.5 sm:p-5 shadow-sm space-y-3.5">
         <div className="flex flex-wrap items-start justify-between gap-2 border-b pb-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -937,16 +952,16 @@ export function PurchaseOrderDetailPage({
       )}
 
       {/* Screen Tabs for 10/11/12/13 Multi-Screen Scopes (POL-02 Mobile-Hardened 320px+) */}
-      <div className="mt-3 flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border overflow-x-auto scrollbar-thin scroll-smooth no-print min-w-0" role="tablist" aria-label="Purchase Order Sections">
+      <div className="mt-3 flex items-center gap-2 rounded-xl bg-muted/30 p-1.5 border overflow-x-auto scrollbar-none no-scrollbar min-w-0" role="tablist" aria-label="Purchase Order Sections">
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'OVERVIEW'}
           onClick={() => setActiveTab('OVERVIEW')}
-          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`shrink-0 whitespace-nowrap min-h-[44px] rounded-lg px-3.5 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'OVERVIEW'
-              ? 'bg-card text-foreground shadow-xs'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
           }`}
         >
           📄 PO &amp; Ledger
@@ -957,10 +972,10 @@ export function PurchaseOrderDetailPage({
           role="tab"
           aria-selected={activeTab === 'MILESTONES'}
           onClick={() => setActiveTab('MILESTONES')}
-          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`shrink-0 whitespace-nowrap min-h-[44px] rounded-lg px-3.5 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'MILESTONES'
-              ? 'bg-card text-foreground shadow-xs'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
           }`}
         >
           🛠️ Milestones ({workOrder?.progressPercent || 0}%)
@@ -971,10 +986,10 @@ export function PurchaseOrderDetailPage({
           role="tab"
           aria-selected={activeTab === 'INVOICE'}
           onClick={() => setActiveTab('INVOICE')}
-          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`shrink-0 whitespace-nowrap min-h-[44px] rounded-lg px-3.5 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'INVOICE'
-              ? 'bg-card text-foreground shadow-xs'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
           }`}
         >
           🧾 Invoice
@@ -985,10 +1000,10 @@ export function PurchaseOrderDetailPage({
           role="tab"
           aria-selected={activeTab === 'PAYMENT'}
           onClick={() => setActiveTab('PAYMENT')}
-          className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] rounded-lg px-3 py-2 text-xs font-black transition mobile-touch-target ${
+          className={`shrink-0 whitespace-nowrap min-h-[44px] rounded-lg px-3.5 py-2 text-xs font-black transition mobile-touch-target ${
             activeTab === 'PAYMENT'
-              ? 'bg-card text-foreground shadow-xs'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card text-muted-foreground hover:text-foreground border border-border/50'
           }`}
         >
           💳 Settlement

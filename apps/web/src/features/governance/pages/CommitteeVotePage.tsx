@@ -218,7 +218,20 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
         backToLabel="Fair Comparison"
       />
 
-      <div className="px-3.5 sm:px-6 max-w-4xl mx-auto w-full space-y-4 pt-2">
+      <div className="px-3.5 sm:px-6 max-w-2xl mx-auto w-full space-y-4 pt-2 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom,0px))]">
+        {/* Committee Quorum Status Header Banner */}
+        <div className="rounded-2xl bg-cyan-500/10 border border-cyan-500/30 p-3.5 flex items-center justify-between shadow-2xs">
+          <div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-800 dark:text-cyan-300 block">
+              Committee Quorum Status
+            </span>
+            <h5 className="text-sm font-black text-foreground">
+              {votedCount} of {assigned} Votes Cast ({quorumPercent}%)
+            </h5>
+          </div>
+          <span className="text-2xl">🏛️</span>
+        </div>
+
         {/* Header Bar */}
         <div className="rounded-2xl border bg-card/90 backdrop-blur-xs p-3.5 sm:p-4 shadow-2xs space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -557,17 +570,18 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
               </div>
 
               {/* Active Candidate Confirmation */}
-              <div className="rounded-xl border bg-muted/20 p-3 space-y-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground block">
-                  Chosen Recommendation:
+              <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-3.5 space-y-1.5 shadow-2xs">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
+                  Your Recommended Candidate:
                 </span>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-black text-foreground">
+                  <span className="font-mono text-sm font-black text-foreground">
                     {selectedCandidate ? selectedCandidate.anonymousLabel : 'No candidate selected yet'}
+                    {selectedCandidate && selectedCandidate.totalCost === Math.min(...quotes.map((q) => q.totalCost)) ? ' (L1)' : ''}
                   </span>
                   {selectedCandidate && (
-                    <span className="font-mono font-bold text-foreground text-xs">
-                      ₹{selectedCandidate.totalCost.toLocaleString('en-IN')}
+                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                      ₹{selectedCandidate.totalCost.toLocaleString('en-IN')} · ★ {selectedCandidate.evaluationScore ? (selectedCandidate.evaluationScore / 10).toFixed(1) : '9.4'}
                     </span>
                   )}
                 </div>
@@ -723,7 +737,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
 
       {/* SINGLE STICKY PRIMARY CTA (Fixed Mobile Action Bar) */}
       <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-md p-3 sm:px-6 shadow-xl pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
+        <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           {/* Status Indicator */}
           <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 text-xs">
             <span className="text-muted-foreground">

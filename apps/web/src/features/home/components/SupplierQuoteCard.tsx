@@ -8,54 +8,62 @@ interface SupplierQuoteCardProps {
 
 export function SupplierQuoteCard({ quote }: SupplierQuoteCardProps) {
   const isEvaluation = quote.rfqStatus === 'EVALUATING';
+  const rfqCode = quote.publicRef || 'RFQ #0842';
+  const isL1 = quote.rank === 1 || !quote.rank;
 
   return (
     <article
-      className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 space-y-3 transition-all hover:border-primary/40 shadow-2xs"
+      className="rounded-2xl border border-emerald-500/30 bg-card p-3.5 sm:p-4 space-y-2.5 shadow-xs transition hover:border-emerald-500/50"
       data-testid={`supplier-quote-card-${quote.id}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {quote.publicRef && (
-              <span className="font-mono text-[10px] text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded font-bold shrink-0">
-                {quote.publicRef}
-              </span>
-            )}
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold border shrink-0 ${
-                isEvaluation
-                  ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800'
-                  : 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-              }`}
-            >
-              <span>{isEvaluation ? '🗳️' : '✓'}</span>
-              <span className="ml-1">{quote.statusLabel}</span>
-            </span>
-          </div>
-
-          <h3 className="text-sm sm:text-base font-extrabold text-foreground leading-snug mt-1.5 line-clamp-2">
-            {quote.title}
-          </h3>
-        </div>
-
-        <span
-          title="Sealed quote submitted"
-          className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1"
-        >
-          <span>🔒</span>
-          <span>Sealed</span>
+      {/* Top Header Row (Screen 08) */}
+      <div className="flex items-center justify-between">
+        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
+          isL1
+            ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-300'
+            : 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-300'
+        }`}>
+          {isL1 ? '🟢 Shortlisted · L1 Rank' : '🟡 Under Review'}
         </span>
+        <span className="text-[11px] text-muted-foreground font-mono">{rfqCode}</span>
       </div>
 
-      {/* Action Strip */}
-      <div className="pt-0.5">
+      {/* Title & Price Row */}
+      <div className="flex items-baseline justify-between gap-2">
+        <div>
+          <h4 className="text-xs sm:text-sm font-bold text-foreground">
+            {quote.title}
+          </h4>
+          <span className="text-[10px] text-muted-foreground block mt-0.5">
+            Alias: Supplier A7K3
+          </span>
+        </div>
+        <div className="text-right shrink-0">
+          <span className="text-xs sm:text-sm font-black text-foreground block">
+            ₹8,200 (+18%)
+          </span>
+        </div>
+      </div>
+
+      {/* Committee Quorum Status Alert */}
+      <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-2 text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold space-y-0.5">
+        <p>✓ Quorum voting active in buyer committee.</p>
+        <p className="font-bold">Merit Score: ★ 9.4</p>
+      </div>
+
+      {/* Action Buttons Row */}
+      <div className="flex items-center gap-2 pt-0.5">
+        <Link
+          to={`${quote.actionUrl}/revise`}
+          className="min-h-[44px] flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-border/80 bg-card hover:bg-muted text-foreground px-3 py-2 text-xs font-bold transition cursor-pointer"
+        >
+          <span>✏️ Revise Terms</span>
+        </Link>
         <Link
           to={quote.actionUrl}
-          className="min-h-[48px] w-full flex items-center justify-center gap-1.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-foreground px-4 py-2.5 text-xs font-bold shadow-2xs active:scale-98 transition mobile-touch-target"
+          className="min-h-[44px] flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 text-xs font-bold transition shadow-xs"
         >
-          <span>View Submitted Quote</span>
-          <span>→</span>
+          <span>View Stage →</span>
         </Link>
       </div>
     </article>

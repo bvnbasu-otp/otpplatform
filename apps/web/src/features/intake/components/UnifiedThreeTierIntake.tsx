@@ -506,30 +506,17 @@ export function UnifiedThreeTierIntake({
 
   return (
     <div className="space-y-4" data-testid="unified-three-tier-intake">
-      {/* 0. Form Progress Summary Header */}
-      <div className="rounded-xl border bg-card/80 p-3 shadow-2xs flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs font-extrabold border border-primary/20">
-            Progressive Intake
-          </span>
-          <span className="text-xs font-semibold text-muted-foreground">
-            3-Tier Procurement Flow
-          </span>
+      {/* Screen 03: Wizard Step Progress Bar */}
+      <div className="rounded-2xl border border-border/80 bg-card p-3.5 space-y-2 shadow-2xs">
+        <div className="flex items-center justify-between text-xs font-bold">
+          <span className="text-primary font-black">Step 1 of 3: Scope &amp; Logistics</span>
+          <span className="text-muted-foreground font-semibold">{isTier1Complete ? '100%' : '65%'} Auto-Filled</span>
         </div>
-
-        <div className="flex items-center gap-2 text-xs">
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold border ${isTier1Complete ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-muted text-muted-foreground border-border'}`}>
-            <span>{isTier1Complete ? '✓' : '1'}</span>
-            <span>Tell OTP</span>
-          </span>
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold border ${isTier2Complete ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-muted text-muted-foreground border-border'}`}>
-            <span>{isTier2Complete ? '✓' : '2'}</span>
-            <span>Precision Scope</span>
-          </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold border bg-muted text-muted-foreground border-border">
-            <span>⚙️</span>
-            <span>Sourcing Controls</span>
-          </span>
+        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+          <div
+            className="bg-primary h-full rounded-full transition-all duration-300"
+            style={{ width: isTier1Complete ? '100%' : '65%' }}
+          />
         </div>
       </div>
 
@@ -681,7 +668,7 @@ export function UnifiedThreeTierIntake({
             className="min-h-[48px] font-extrabold text-sm shadow-md mobile-touch-target w-full sm:w-auto"
             data-testid="publish-requirement-btn"
           >
-            🚀 Review &amp; Launch Request →
+            Publish Sealed RFQ →
           </Button>
         </div>
       </div>

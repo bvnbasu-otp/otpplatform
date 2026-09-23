@@ -48,6 +48,7 @@ export function DashboardPage() {
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedRequirement, setSelectedRequirement] = useState<OrganizationRequirementSummary | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'action' | 'active' | 'settled'>('all');
   const [isExpressModalOpen, setIsExpressModalOpen] = useState(false);
   const [expressQuery, setExpressQuery] = useState('');
   const [isSubmittingExpress, setIsSubmittingExpress] = useState(false);
@@ -137,13 +138,17 @@ export function DashboardPage() {
         />
       )}
 
-      {/* 2. Interactive Sourcing Cockpit: Voice & Text Intake + Template Chips + Live KPI Grid */}
+      {/* 2. Interactive Sourcing Cockpit: Voice & Text Intake + Template Chips + Live KPI Grid (Screen 06) */}
       <BuyerSourcingCockpitCard
         onExpressSubmit={(query) => handleExpressSubmit(query)}
         activeRfqsCount={activeProcurements.length}
         pendingVotesCount={actionRequiredItems.length}
         settledOrdersCount={stats.settled || 0}
         isExpressSubmitting={isSubmittingExpress}
+        organizationName={org?.organizationName || (context.organizationName ? context.organizationName : 'Palm Meadows RWA')}
+        organizationDetails={context.organizationName ? `${context.organizationName} · 450 Units` : 'Whitefield, Bengaluru · 450 Units'}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
       />
 
       {/* Loading State */}
@@ -177,10 +182,10 @@ export function DashboardPage() {
           actionUrl="/requirements/new"
         />
       ) : (
-        /* Standard Procurement Cockpit Hierarchy */
+        /* Standard Procurement Cockpit Hierarchy filtered by Glance Bar */
         <div className="space-y-4">
           {/* LEVEL 1: Action Required (Highest Priority) */}
-          {actionRequiredItems.length > 0 && (
+          {(activeFilter === 'all' || activeFilter === 'action') && actionRequiredItems.length > 0 && (
             <HomeSection
               title="Action Required"
               icon="⚡"
@@ -201,34 +206,36 @@ export function DashboardPage() {
           )}
 
           {/* LEVEL 2: Active Procurement (Ongoing Tenders) */}
-          <HomeSection
-            title="Active Procurement"
-            icon="🟢"
-            count={activeProcurements.length}
-            actionText={stats.total > activeProcurements.length ? `All (${stats.total})` : undefined}
-            actionUrl="/purchase-orders"
-          >
-            {activeProcurements.length === 0 ? (
-              <div className="py-6 text-center bg-card rounded-2xl border border-border/70 p-4 space-y-1 text-xs text-muted-foreground">
-                <span className="text-xl block">✓</span>
-                <p className="font-semibold text-foreground">No active procurements right now.</p>
-                <p>All previous procurements have been completed and settled.</p>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {activeProcurements.map((procurement) => (
-                  <BuyerProcurementCard
-                    key={procurement.id}
-                    procurement={procurement}
-                    onInspect={() => setSelectedRequirement(procurement.requirement)}
-                  />
-                ))}
-              </div>
-            )}
-          </HomeSection>
+          {(activeFilter === 'all' || activeFilter === 'active') && (
+            <HomeSection
+              title="Active Procurement"
+              icon="🟢"
+              count={activeProcurements.length}
+              actionText={stats.total > activeProcurements.length ? `All (${stats.total})` : undefined}
+              actionUrl="/purchase-orders"
+            >
+              {activeProcurements.length === 0 ? (
+                <div className="py-6 text-center bg-card rounded-2xl border border-border/70 p-4 space-y-1 text-xs text-muted-foreground">
+                  <span className="text-xl block">✓</span>
+                  <p className="font-semibold text-foreground">No active procurements right now.</p>
+                  <p>All previous procurements have been completed and settled.</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {activeProcurements.map((procurement) => (
+                    <BuyerProcurementCard
+                      key={procurement.id}
+                      procurement={procurement}
+                      onInspect={() => setSelectedRequirement(procurement.requirement)}
+                    />
+                  ))}
+                </div>
+              )}
+            </HomeSection>
+          )}
 
           {/* LEVEL 3: Recent Activity / Settled */}
-          {recentActivity.length > 0 && (
+          {(activeFilter === 'all' || activeFilter === 'settled') && recentActivity.length > 0 && (
             <HomeSection
               title="Recent Activity"
               icon="🕒"

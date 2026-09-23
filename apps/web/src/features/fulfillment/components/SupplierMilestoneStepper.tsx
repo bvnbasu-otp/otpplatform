@@ -198,7 +198,7 @@ export function SupplierMilestoneStepper({
         )}
       </div>
 
-      {/* Vertical Visual Milestone Stepper (Screen 11 Core Job) */}
+      {/* Vertical Visual Milestone Stepper */}
       <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-4">
         <div className="flex items-center justify-between border-b pb-2">
           <div>
@@ -299,10 +299,10 @@ export function SupplierMilestoneStepper({
           <button
             type="button"
             onClick={() => setShowAttachModal(true)}
-            className="min-h-[44px] rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-98 transition flex items-center gap-1.5 mobile-touch-target"
+            className="min-h-[44px] rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 active:scale-98 transition flex items-center gap-1.5 mobile-touch-target"
           >
-            <span>+</span>
-            <span>Attach Evidence</span>
+            <span>📸</span>
+            <span>Mark Ready for Delivery &amp; Upload Slip →</span>
           </button>
         </div>
 
