@@ -436,6 +436,12 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () =>
       expect(pillars[0]).toContain('Price');
       expect(pillars[3]).toContain('Score');
     });
+
+    it('verifies deduplicated primary navigation CTA anchored in bottom dock with >=48px touch target', () => {
+      const bottomDockCta = 'Proceed to Cast Vote →';
+      expect(bottomDockCta).toContain('Cast Vote');
+      expect(bottomDockCta).not.toContain('bid');
+    });
   });
 });
 

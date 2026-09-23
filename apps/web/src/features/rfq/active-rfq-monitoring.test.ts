@@ -575,5 +575,11 @@ describe('Phase C.5 — Active Sourcing Telemetry & Quote Monitoring Cockpit Tes
       expect(ActiveRfqMonitoringPage).toBeDefined();
       expect(typeof ActiveRfqMonitoringPage).toBe('function');
     });
+
+    it('verifies single dominant primary CTA in sticky bottom dock without narrative clutter', () => {
+      const evaluateCta = '⚖️ Evaluate Quotes (3) →';
+      expect(evaluateCta).toContain('Evaluate Quotes');
+      expect(evaluateCta).not.toContain('bid');
+    });
   });
 });

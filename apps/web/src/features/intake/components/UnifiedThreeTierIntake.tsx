@@ -111,6 +111,7 @@ export function UnifiedThreeTierIntake({
     draft?.quality.sampleRequired ?? false,
   );
   const [qualityNotes, setQualityNotes] = useState<string>(draft?.quality.notes ?? '');
+  const [isTier2Expanded, setIsTier2Expanded] = useState(false);
 
   // Form State: Tier 3
   const [isTier3Expanded, setIsTier3Expanded] = useState(false);
@@ -506,13 +507,14 @@ export function UnifiedThreeTierIntake({
 
   return (
     <div className="space-y-4" data-testid="unified-three-tier-intake">
-      {/* Screen 03: Wizard Step Progress Bar */}
-      <div className="rounded-2xl border border-border/80 bg-card p-3.5 space-y-2 shadow-2xs">
-        <div className="flex items-center justify-between text-xs font-bold">
-          <span className="text-primary font-black">Step 1 of 3: Scope &amp; Logistics</span>
-          <span className="text-muted-foreground font-semibold">{isTier1Complete ? '100%' : '65%'} Auto-Filled</span>
+      {/* Wizard Step Progress Bar */}
+      <div className="rounded-xl border border-border/80 bg-card px-3 py-2 flex items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-2 text-xs font-bold shrink-0">
+          <span className="text-primary font-black">Step 1: Scope &amp; Logistics</span>
+          <span className="text-muted-foreground/60">·</span>
+          <span className="text-[11px] text-muted-foreground font-semibold">{isTier1Complete ? '100%' : '65%'} Complete</span>
         </div>
-        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+        <div className="flex-1 max-w-xs bg-muted rounded-full h-1.5 overflow-hidden">
           <div
             className="bg-primary h-full rounded-full transition-all duration-300"
             style={{ width: isTier1Complete ? '100%' : '65%' }}
@@ -567,7 +569,7 @@ export function UnifiedThreeTierIntake({
         onOpenTemplates={() => setIsTemplatesModalOpen(true)}
       />
 
-      {/* Tier 2: Precision Scope (Add Precision) */}
+      {/* Tier 2: Precision Scope (Add Precision - Progressive Accordion) */}
       <Tier2PrecisionScopeCard
         quantity={quantity}
         unit={unit}
@@ -581,6 +583,8 @@ export function UnifiedThreeTierIntake({
         qualityNotes={qualityNotes}
         requirementId={draft?.requirementId ?? null}
         isBusy={isSaving}
+        isExpanded={isTier2Expanded}
+        onToggleExpand={() => setIsTier2Expanded(!isTier2Expanded)}
         errors={errors}
         onQuantityChange={setQuantity}
         onUnitChange={setUnit}
@@ -627,18 +631,8 @@ export function UnifiedThreeTierIntake({
         onSelectTemplate={handleSelectTemplate}
       />
 
-      {/* Sourcing Broadcast Info Callout */}
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-xs text-foreground space-y-1">
-        <div className="flex items-center gap-1.5 font-bold text-primary">
-          <span>🚀</span> What happens when you publish:
-        </div>
-        <p className="text-muted-foreground leading-relaxed text-[11px]">
-          Your requirement is instantly broadcast to verified, matched suppliers in your target city and category. Suppliers submit sealed, identity-protected quotes with responses expected within 30 minutes.
-        </p>
-      </div>
-
-      {/* Sticky Bottom Action Bar with Safe Inset & Dominant Primary CTA */}
-      <div className="sticky bottom-0 z-30 -mx-3 sm:mx-0 p-3 bg-card/95 backdrop-blur-md border-t sm:border sm:rounded-2xl shadow-lg space-y-2">
+      {/* Sticky Bottom Action Bar with Dominant Primary CTA */}
+      <div className="sticky bottom-0 z-30 -mx-3 sm:mx-0 p-2.5 sm:p-3 bg-card/95 backdrop-blur-md border-t sm:border sm:rounded-2xl shadow-lg space-y-2">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <div className="flex items-center justify-between sm:justify-start gap-2">
             <Button

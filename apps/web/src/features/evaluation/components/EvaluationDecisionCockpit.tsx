@@ -718,32 +718,6 @@ export function EvaluationDecisionCockpit({
               )}
             </div>
 
-            {/* Explicit Tab 1 Step Progression CTA */}
-            <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
-              <div className="text-xs">
-                <span className="font-extrabold text-foreground block">Next Workflow Step:</span>
-                <span className="text-[11px] text-muted-foreground">
-                  Review anonymous supplier clarification threads or proceed directly to committee voting.
-                </span>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('qa')}
-                  className="min-h-[44px] rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-bold text-foreground hover:bg-muted transition mobile-touch-target"
-                >
-                  💬 Open Q&amp;A Thread
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('vote')}
-                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
-                  data-testid="continue-to-vote-tab-btn"
-                >
-                  Proceed to Cast Vote →
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
@@ -1177,7 +1151,7 @@ export function EvaluationDecisionCockpit({
                 type="button"
                 disabled={busy}
                 onClick={() => void handleCloseAndEvaluate()}
-                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 disabled:opacity-50 transition mobile-touch-target"
+                className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 disabled:opacity-50 transition mobile-touch-target"
                 data-testid="close-quoting-evaluate-button"
               >
                 <span>💬</span>
@@ -1187,7 +1161,7 @@ export function EvaluationDecisionCockpit({
               <button
                 type="button"
                 onClick={() => handleTabChange('vote')}
-                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
+                className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
                 data-testid="proceed-to-vote-button"
               >
                 <span>🗳️</span>
@@ -1197,7 +1171,7 @@ export function EvaluationDecisionCockpit({
               <button
                 type="button"
                 onClick={() => handleTabChange('vote')}
-                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
+                className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
                 data-testid="proceed-from-qa-to-vote-button"
               >
                 <span>🗳️</span>
@@ -1207,7 +1181,7 @@ export function EvaluationDecisionCockpit({
               <button
                 type="button"
                 onClick={() => handleTabChange('award')}
-                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-emerald-800 active:scale-98 transition mobile-touch-target"
+                className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-emerald-800 active:scale-98 transition mobile-touch-target"
                 data-testid="proceed-to-award-tab-button"
               >
                 <span>🏆</span>
@@ -1218,7 +1192,7 @@ export function EvaluationDecisionCockpit({
                 type="button"
                 onClick={() => setShowAwardModal(true)}
                 disabled={isAwarding || !selectedQuote}
-                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-emerald-700 active:scale-98 disabled:opacity-50 transition mobile-touch-target"
+                className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-emerald-700 active:scale-98 disabled:opacity-50 transition mobile-touch-target"
                 data-testid="execute-award-primary-button"
               >
                 <span>🔒</span>

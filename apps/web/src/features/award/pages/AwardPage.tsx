@@ -449,27 +449,8 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 </div>
               </div>
 
-              {/* Direct Next Action Buttons */}
+              {/* Secondary Utilities Row */}
               <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                {existingPoId ? (
-                  <Link
-                    to={`/purchase-orders/${existingPoId}`}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition min-h-[44px]"
-                    data-testid="award-po-link"
-                  >
-                    <span>📄</span>
-                    <span>View Digital Purchase Order →</span>
-                  </Link>
-                ) : (
-                  <Link
-                    to={`/rfq/${rfqId}/reveal`}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition min-h-[44px]"
-                    data-testid="award-create-po-link"
-                  >
-                    <span>📄</span>
-                    <span>Generate Purchase Order →</span>
-                  </Link>
-                )}
 
                 <button
                   type="button"
@@ -854,14 +835,16 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
               existingPoId ? (
                 <Link
                   to={`/purchase-orders/${existingPoId}`}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition min-h-[44px]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition min-h-[48px]"
+                  data-testid="award-po-link"
                 >
                   <span>📄 View Digital Purchase Order →</span>
                 </Link>
               ) : (
                 <Link
                   to={`/rfq/${rfqId}/reveal`}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition min-h-[44px]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition min-h-[48px]"
+                  data-testid="award-create-po-link"
                 >
                   <span>📄 Generate Purchase Order →</span>
                 </Link>
@@ -871,7 +854,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 type="button"
                 disabled={busy}
                 onClick={() => void handleDirectRevealAndIssuePo()}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 dark:bg-emerald-600 px-6 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-emerald-800 active:scale-[0.98] disabled:opacity-50 transition min-h-[44px]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 dark:bg-emerald-600 px-6 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-emerald-800 active:scale-[0.98] disabled:opacity-50 transition min-h-[48px]"
               >
                 <span>🏆</span>
                 <span>{busy ? 'Unmasking…' : 'Confirm Award & Issue Purchase Order →'}</span>
@@ -880,7 +863,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
               <button
                 type="button"
                 disabled={true}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600/70 text-white px-6 py-3 text-xs sm:text-sm font-black shadow-md cursor-not-allowed opacity-90 min-h-[44px]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600/70 text-white px-6 py-3 text-xs sm:text-sm font-black shadow-md cursor-not-allowed opacity-90 min-h-[48px]"
                 data-testid="lock-award-button-locked"
                 title={lockEligibility.reason}
               >
@@ -892,7 +875,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 type="button"
                 disabled={busy || !selectedQuote || !confirmedAward}
                 onClick={() => void handleLockAward()}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[44px]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[48px]"
                 data-testid="lock-award-button"
               >
                 <span>🔒</span>

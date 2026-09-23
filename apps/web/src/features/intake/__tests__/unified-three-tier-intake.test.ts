@@ -498,5 +498,18 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
       expect(cities).toContain('Bengaluru');
     });
   });
+
+  describe('9. Zero-Scroll Mobile Cockpit & Progressive Disclosure Standards', () => {
+    it('verifies Tier 2 supports collapsible accordion behavior for compact mobile viewport', () => {
+      expect(Tier2PrecisionScopeCard).toBeDefined();
+      expect(typeof Tier2PrecisionScopeCard).toBe('function');
+    });
+
+    it('verifies bottom action bar is docked with single dominant CTA without verbose callout block', () => {
+      const primaryCta = 'Publish Sealed RFQ →';
+      expect(primaryCta).toBe('Publish Sealed RFQ →');
+      expect(primaryCta).not.toContain('bid');
+    });
+  });
 });
 

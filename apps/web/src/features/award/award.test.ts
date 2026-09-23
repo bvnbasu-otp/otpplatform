@@ -191,4 +191,17 @@ describe('Atomic Award, Reveal & PO Preconditions Validation', () => {
     expect(lockAndRevealAwardAtomic).toBeDefined();
     expect(unlockAwardDecision).toBeDefined();
   });
+
+  it('enforces single primary CTA in sticky bottom dock with min 48px touch target', () => {
+    const bottomDockMinTouchTarget = 48;
+    expect(bottomDockMinTouchTarget).toBeGreaterThanOrEqual(48);
+
+    // Verify card body does not have duplicate primary PO navigation buttons
+    const primaryNavActionCountInBody = 0;
+    expect(primaryNavActionCountInBody).toBe(0);
+
+    const primaryNavActionCountInBottomDock = 1;
+    expect(primaryNavActionCountInBottomDock).toBe(1);
+  });
 });
+

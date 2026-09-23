@@ -17,7 +17,9 @@ export interface Tier2PrecisionScopeCardProps {
   qualityNotes: string;
   requirementId: string | null;
   isBusy: boolean;
+  isExpanded?: boolean;
   errors: Record<string, string>;
+  onToggleExpand?: () => void;
   onQuantityChange: (qty: number | null) => void;
   onUnitChange: (unit: string) => void;
   onAttributeChange: (code: string, value: AttributeValue | null) => void;
@@ -50,7 +52,9 @@ export function Tier2PrecisionScopeCard({
   qualityNotes,
   requirementId,
   isBusy,
+  isExpanded = true,
   errors,
+  onToggleExpand,
   onQuantityChange,
   onUnitChange,
   onAttributeChange,
@@ -65,22 +69,67 @@ export function Tier2PrecisionScopeCard({
   return (
     <Card
       title={
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary font-black text-xs">
-              2
-            </span>
-            <span className="font-extrabold text-sm sm:text-base text-foreground">
-              Tier 2 — Precision Scope (Add Precision)
-            </span>
+        onToggleExpand ? (
+          <button
+            type="button"
+            className="flex w-full flex-wrap items-center justify-between gap-2 cursor-pointer select-none text-left p-0 border-0 bg-transparent"
+            onClick={onToggleExpand}
+            aria-expanded={isExpanded}
+            aria-controls="tier-2-precision-scope-body"
+          >
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary font-black text-xs">
+                2
+              </span>
+              <span className="font-extrabold text-sm sm:text-base text-foreground">
+                Tier 2 — Precision Scope (Optional Technical Specs)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge tone="neutral">📐 Technical Precision</Badge>
+              <span className="text-xs font-bold text-primary">
+                {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
+              </span>
+            </div>
+          </button>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary font-black text-xs">
+                2
+              </span>
+              <span className="font-extrabold text-sm sm:text-base text-foreground">
+                Tier 2 — Precision Scope (Add Precision)
+              </span>
+            </div>
+            <Badge tone="neutral">📐 Technical Precision</Badge>
           </div>
-          <Badge tone="neutral">📐 Technical Precision</Badge>
-        </div>
+        )
       }
       description="Refine quantities, technical parameters, warranty milestones, and upload drawings or BoQ spreadsheets."
       data-testid="tier-2-precision-scope-card"
     >
-      <div className="space-y-4">
+      {!isExpanded ? (
+        <div
+          className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-3 text-center cursor-pointer hover:bg-muted/40 transition mobile-touch-target"
+          onClick={onToggleExpand}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onToggleExpand?.();
+            }
+          }}
+        >
+          <p className="text-xs font-semibold text-foreground">
+            Quantity: <span className="text-primary font-bold">{quantity ?? 1} {unit}</span>
+            {warrantyMonths ? ` · 🛡️ ${warrantyMonths} Mo Warranty` : ''}
+            <span className="text-primary font-bold ml-1.5 underline">Customize Specs, BoQ &amp; Drawings ▼</span>
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4" id="tier-2-precision-scope-body">
         {/* 1. Quantity & Unit of Measure */}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Quantity" error={errors.quantity} help="Specify exact unit count or leave as 1 for turnkey services">
@@ -307,6 +356,7 @@ export function Tier2PrecisionScopeCard({
           )}
         </div>
       </div>
+      )}
     </Card>
   );
 }

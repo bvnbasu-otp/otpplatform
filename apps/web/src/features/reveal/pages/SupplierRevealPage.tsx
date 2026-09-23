@@ -361,29 +361,8 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
               </div>
             </div>
 
-            {/* Direct Action Row */}
+            {/* Secondary Utilities Row */}
             <div className="flex flex-wrap items-center gap-2.5 pt-1">
-              {existingPoId ? (
-                <Link
-                  to={`/purchase-orders/${existingPoId}`}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition min-h-[44px]"
-                  data-testid="view-po-link"
-                >
-                  <span>📄</span>
-                  <span>View Purchase Order →</span>
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void handleCreatePo()}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[44px]"
-                  data-testid="create-po-button"
-                >
-                  <span>📄</span>
-                  <span>{busy ? 'Creating PO…' : 'Generate Purchase Order →'}</span>
-                </button>
-              )}
 
               <button
                 type="button"
@@ -551,7 +530,8 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
               existingPoId ? (
                 <Link
                   to={`/purchase-orders/${existingPoId}`}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition min-h-[44px]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] transition min-h-[48px]"
+                  data-testid="view-po-link"
                 >
                   <span>📄 View Digital Purchase Order →</span>
                 </Link>
@@ -560,7 +540,8 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                   type="button"
                   disabled={busy}
                   onClick={() => void handleCreatePo()}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[44px]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[48px]"
+                  data-testid="create-po-button"
                 >
                   <span>📄 Generate Purchase Order →</span>
                 </button>
@@ -570,7 +551,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                 type="button"
                 disabled={busy || !commitmentChecked}
                 onClick={() => void handleReveal()}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[44px]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[48px]"
               >
                 <span>🔓</span>
                 <span>{busy ? 'Unmasking…' : 'Confirm Intent & Unmask Supplier →'}</span>

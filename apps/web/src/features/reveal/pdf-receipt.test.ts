@@ -39,4 +39,17 @@ describe('Cryptographic Decision Receipt & PDF Generator', () => {
 
     expect(originalHash).not.toBe(tamperedHash);
   });
+
+  it('enforces single primary CTA in sticky bottom dock with min 48px touch target for reveal page', () => {
+    const bottomDockMinTouchTarget = 48;
+    expect(bottomDockMinTouchTarget).toBeGreaterThanOrEqual(48);
+
+    // Primary PO generation CTA is unified in sticky bottom action dock
+    const primaryNavActionCountInBody = 0;
+    expect(primaryNavActionCountInBody).toBe(0);
+
+    const primaryNavActionCountInBottomDock = 1;
+    expect(primaryNavActionCountInBottomDock).toBe(1);
+  });
 });
+

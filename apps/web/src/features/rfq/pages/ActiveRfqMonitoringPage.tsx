@@ -9,7 +9,6 @@ import { ActiveRfqProgressCard } from '../components/ActiveRfqProgressCard';
 import { ActiveRfqSupplierResponsesList } from '../components/ActiveRfqSupplierResponsesList';
 import { ActiveRfqExtendDeadlineModal } from '../components/ActiveRfqExtendDeadlineModal';
 import { ActiveRfqScopeAccordion } from '../components/ActiveRfqScopeAccordion';
-import { ActiveRfqWhatHappensNextCard } from '../components/ActiveRfqWhatHappensNextCard';
 import { CancelRfqModal } from '../components/CancelRfqModal';
 import { simulateQuotesForRfq } from '../api/simulate-quotes';
 
@@ -180,13 +179,6 @@ export function ActiveRfqMonitoringPage({
         attachmentsCount={attachmentsCount}
       />
 
-      {/* 6. What Happens Next Card */}
-      <ActiveRfqWhatHappensNextCard
-        rfqId={rfq.id}
-        governance={governance}
-        isQuorumMet={metrics.isQuorumMet}
-      />
-
       {/* Extend Deadline Modal */}
       <ActiveRfqExtendDeadlineModal
         rfqId={rfq.id}
@@ -204,7 +196,7 @@ export function ActiveRfqMonitoringPage({
         onCancelled={handleRfqCancelled}
       />
 
-      {/* Sticky Bottom Action Bar */}
+      {/* Sticky Bottom Action Bar with Single Dominant Primary CTA */}
       <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center justify-between w-full sm:w-auto gap-2">
@@ -222,44 +214,33 @@ export function ActiveRfqMonitoringPage({
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => void loadData(true)}
-              disabled={isRefreshing}
-              className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-lg border bg-muted/40 p-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target"
-              title="Refresh live quote feed"
-              aria-label="Refresh live quote feed"
-            >
-              <span>{isRefreshing ? '🔄…' : '🔄'}</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <Link
+                to={`/rfq/${rfq.id}/clarification`}
+                className="min-h-[44px] inline-flex items-center gap-1 rounded-lg border bg-muted/40 px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition mobile-touch-target"
+                title="Open Clarification Q&A"
+              >
+                <span>💬 Q&amp;A</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => void loadData(true)}
+                disabled={isRefreshing}
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg border bg-muted/40 p-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target"
+                title="Refresh live quote feed"
+                aria-label="Refresh live quote feed"
+              >
+                <span>{isRefreshing ? '🔄…' : '🔄'}</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            {/* Secondary Actions */}
-            <button
-              type="button"
-              disabled={isSimulating}
-              onClick={() => void handleSimulateQuotes()}
-              className="min-h-[48px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary/10 px-3.5 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition mobile-touch-target"
-              title="Inject simulated supplier quotes for testing"
-              data-testid="simulate-quotes-monitoring-btn"
-            >
-              <span>⚡</span>
-              <span>{isSimulating ? 'Simulating…' : 'Simulate 4 Demo Quotes'}</span>
-            </button>
-
-            <Link
-              to={`/rfq/${rfq.id}/clarification`}
-              className="min-h-[48px] inline-flex items-center justify-center rounded-xl border bg-muted/40 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition mobile-touch-target"
-            >
-              <span>Q&amp;A Thread 💬</span>
-            </Link>
-
-            {/* Dominant Primary Action */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* Single Dominant Primary Action */}
             {metrics.quotesCount > 0 ? (
               <Link
                 to={`/rfq/${rfq.id}/evaluation`}
-                className="min-h-[48px] flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
+                className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
                 data-testid="evaluate-quotes-primary-cta"
               >
                 <span>⚖️ Evaluate Quotes ({metrics.quotesCount}) →</span>
@@ -267,7 +248,7 @@ export function ActiveRfqMonitoringPage({
             ) : (
               <Link
                 to={`/rfq/${rfq.id}/market-intelligence`}
-                className="min-h-[48px] flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
+                className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
                 data-testid="market-intelligence-primary-cta"
               >
                 <span>Market Intelligence →</span>

@@ -454,48 +454,13 @@ export function SupplierRequirementPanel({
         )}
       </section>
 
-      {/* 8. SUPPLIER REQUIREMENTS & ELIGIBILITY */}
-      <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-2.5">
-        <h2 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
-          <span>🛡️</span> Supplier Requirements &amp; Eligibility
-        </h2>
-        <div className="rounded-xl bg-muted/30 border border-border/60 p-3 space-y-1 text-xs">
-          <div className="flex items-center gap-1.5 font-bold text-foreground">
-            <span>📋</span>
-            <span>Eligibility Requirements</span>
-          </div>
-          <p className="text-muted-foreground text-[11px] leading-relaxed">
-            Standard category capability requirements and transparent quotation terms apply. Quoting is subject to category authorization.
-          </p>
-        </div>
-      </section>
-
-      {/* 9. WHAT HAPPENS AFTER YOU RESPOND: 3-STEP TRANSPARENCY OVERVIEW */}
-      <section className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
-        <h2 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
-          <span>ℹ️</span> What Happens After You Respond
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-          <div className="rounded-xl bg-muted/20 p-3 border border-border/60 space-y-1">
-            <span className="font-bold text-primary block">1. Protected Quoting</span>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Your quote remains protected from competing suppliers. Pricing and terms are evaluated anonymously.
-            </p>
-          </div>
-          <div className="rounded-xl bg-muted/20 p-3 border border-border/60 space-y-1">
-            <span className="font-bold text-primary block">2. Objective Evaluation</span>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Quotes are evaluated on price, turnaround, and warranty parameters.
-            </p>
-          </div>
-          <div className="rounded-xl bg-muted/20 p-3 border border-border/60 space-y-1">
-            <span className="font-bold text-primary block">3. Award &amp; Direct PO</span>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Selected supplier is awarded, mutual contact identities are revealed, and formal PO is issued.
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* 8. SUPPLIER VERIFICATION & PROTECTED EVALUATION */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 rounded-xl bg-muted/20 border border-border/60 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5 font-medium text-foreground">
+          <span>🛡️</span> Standard category authorization &amp; identity-protected evaluation apply
+        </span>
+        <span className="text-[11px] font-semibold text-primary shrink-0">Verified Commercial Scope</span>
+      </div>
     </div>
   );
 }

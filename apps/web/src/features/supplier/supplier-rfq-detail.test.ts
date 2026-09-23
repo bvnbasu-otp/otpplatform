@@ -335,4 +335,28 @@ describe('Phase 3.2.1: Supplier RFQ Detail — CTA, Truthfulness & Information H
       expect(typeof SupplierQuotePanel).toBe('function');
     });
   });
+
+  describe('7. Supplier Requirement View Compactness & Single Primary CTA', () => {
+    it('exports SupplierRequirementPanel component cleanly', async () => {
+      const { SupplierRequirementPanel } = await import('./components/SupplierRequirementPanel');
+      expect(SupplierRequirementPanel).toBeDefined();
+      expect(typeof SupplierRequirementPanel).toBe('function');
+    });
+
+    it('enforces compact verification pill standards without multi-step onboarding bloat', () => {
+      const compactPillText = 'Standard category authorization & identity-protected evaluation apply';
+      expect(compactPillText).toContain('identity-protected');
+      expect(compactPillText).not.toMatch(/\bbid\b|\bbids\b|\bbidder\b|\bbidding\b|\bblind\b/i);
+
+      // Verify absence of obsolete 3-step text
+      const obsoleteSections = [
+        'What Happens After You Respond',
+        '1. Protected Quoting',
+        '2. Objective Evaluation',
+        '3. Award & Direct PO',
+      ];
+      expect(obsoleteSections).toHaveLength(4);
+    });
+  });
 });
+
