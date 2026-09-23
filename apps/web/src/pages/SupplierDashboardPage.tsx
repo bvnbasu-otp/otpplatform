@@ -1,19 +1,14 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import { SupplierCapabilityModal } from '@/features/supplier';
 import {
   useSupplierHomeData,
   HomeContextBar,
-  HomeSection,
   SupplierIdentityShieldBanner,
   SupplierOpportunityCard,
   SupplierActionCard,
   SupplierQuoteCard,
-  SupplierOrdersSummaryCard,
-  HomeActivityTimeline,
-  HomeEmptyState,
   HomeSkeleton,
 } from '@/features/home';
 
@@ -29,7 +24,6 @@ export function SupplierDashboardPage() {
     actionRequiredItems,
     activeQuotes,
     ordersSummary,
-    recentActivity,
     isLoading,
     error,
     refresh,
@@ -102,110 +96,49 @@ export function SupplierDashboardPage() {
           </button>
         </div>
       ) : (
-        /* Supplier Opportunity Cockpit Hierarchy */
-        <div className="space-y-4">
-          {/* LEVEL 1: New Opportunities (Primary Supplier Priority) */}
-          <HomeSection
-            title="New Opportunities"
-            icon="📢"
-            count={newOpportunities.length}
-            badge={newOpportunities.length > 0 ? 'RFQs' : undefined}
-            badgeColor="bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950/80 dark:text-purple-300 dark:border-purple-800"
-          >
-            {newOpportunities.length === 0 ? (
-              <HomeEmptyState
-                icon="🎯"
-                title="No new opportunities yet"
-                description="When buyers broadcast RFQs matching your categories, new sealed opportunities will appear here."
-                actionLabel="Update Radar Capabilities"
-                actionOnClick={() => setIsCapabilityModalOpen(true)}
-              />
-            ) : (
-              <div className="space-y-2.5">
-                {newOpportunities.map((opp) => (
-                  <SupplierOpportunityCard key={opp.id} opportunity={opp} />
-                ))}
-              </div>
-            )}
-          </HomeSection>
-
-          {/* LEVEL 2: Action Required (PO acceptances, Closing deadlines) */}
+        /* Streamlined Supplier Opportunity Cards */
+        <div className="space-y-3">
+          {/* Action Required Items */}
           {actionRequiredItems.length > 0 && (
-            <HomeSection
-              title="Action Required"
-              icon="⚡"
-              count={actionRequiredItems.length}
-              badge="Action Needed"
-              badgeColor="bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800"
-            >
+            <div className="space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5 px-1">
+                <span>⚡</span> Action Needed ({actionRequiredItems.length})
+              </span>
               <div className="space-y-2.5">
                 {actionRequiredItems.map((action) => (
                   <SupplierActionCard key={action.id} action={action} />
                 ))}
               </div>
-            </HomeSection>
+            </div>
           )}
 
-          {/* LEVEL 3: Active Quotes (Under Evaluation / Submitted) */}
+          {/* New Opportunities */}
+          {newOpportunities.length > 0 && (
+            <div className="space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1.5 px-1">
+                <span>📢</span> New Opportunities ({newOpportunities.length})
+              </span>
+              <div className="space-y-2.5">
+                {newOpportunities.map((opp) => (
+                  <SupplierOpportunityCard key={opp.id} opportunity={opp} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Active Quotes */}
           {activeQuotes.length > 0 && (
-            <HomeSection
-              title="Active Quotes"
-              icon="⚡"
-              count={activeQuotes.length}
-            >
+            <div className="space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 flex items-center gap-1.5 px-1">
+                <span>⚡</span> Active Quotes ({activeQuotes.length})
+              </span>
               <div className="space-y-2.5">
                 {activeQuotes.map((quote) => (
                   <SupplierQuoteCard key={quote.id} quote={quote} />
                 ))}
               </div>
-            </HomeSection>
-          )}
-
-          {/* LEVEL 4: Orders / Business Summary */}
-          <HomeSection
-            title="Orders &amp; Business"
-            icon="💼"
-            actionText="View Orders →"
-            actionUrl="/supplier/purchase-orders"
-          >
-            <SupplierOrdersSummaryCard
-              activeCount={ordersSummary.activeCount}
-              totalAmount={ordersSummary.totalAmount}
-              pendingAcceptanceCount={ordersSummary.pendingAcceptanceCount}
-              completedCount={ordersSummary.completedCount}
-              ratingAvg={ordersSummary.ratingAvg}
-            />
-          </HomeSection>
-
-          {/* LEVEL 5: Recent Activity */}
-          {recentActivity.length > 0 && (
-            <HomeSection
-              title="Recent Activity"
-              icon="🕒"
-            >
-              <HomeActivityTimeline events={recentActivity} />
-            </HomeSection>
-          )}
-
-          {/* Radar Scope Summary & Capability Quick Trigger */}
-          <div className="pt-1 flex items-center justify-between gap-2 bg-purple-500/5 border border-purple-500/20 rounded-2xl p-3">
-            <div className="min-w-0 flex-1">
-              <span className="text-xs font-bold text-purple-950 dark:text-purple-300 block truncate">
-                Discovery Radar · {profile.categories.length} {profile.categories.length === 1 ? 'Category' : 'Categories'}
-              </span>
-              <span className="text-[11px] text-muted-foreground block truncate">
-                📍 {profile.isPanIndia ? 'Pan-India matching' : `${profile.radiusKm} km radius (${profile.baseCity})`}
-              </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsCapabilityModalOpen(true)}
-              data-testid="dashboard-supplier-capabilities-btn"
-              className="min-h-[48px] inline-flex items-center justify-center gap-1 rounded-xl bg-card border border-purple-300 dark:border-purple-800 hover:bg-muted text-purple-900 dark:text-purple-300 px-4 py-2.5 text-xs font-bold shadow-2xs active:scale-95 transition shrink-0 cursor-pointer mobile-touch-target"
-            >
-              <span>⚙️ Edit Scope</span>
-            </button>
-          </div>
+          )}
         </div>
       )}
 

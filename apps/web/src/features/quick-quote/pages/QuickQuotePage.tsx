@@ -474,8 +474,7 @@ function QuickQuoteForm({
         className="w-full min-h-[50px] rounded-xl bg-primary px-4 py-3 text-base font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-50 transition active:scale-[0.98] flex items-center justify-center gap-2 mobile-touch-target"
         data-testid="submit-quick-quote-btn"
       >
-        <span>⚡</span>
-        <span>{isSubmitting ? 'Sending Sealed Quote…' : 'Submit Sealed Quote to Buyer'}</span>
+        <span>{isSubmitting ? 'Transmitting Sealed Quote…' : '🔒 Seal & Transmit Quote →'}</span>
       </button>
 
       <p className="text-[10px] text-center text-muted-foreground leading-tight px-1">

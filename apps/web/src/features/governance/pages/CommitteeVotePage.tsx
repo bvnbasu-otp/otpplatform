@@ -488,25 +488,20 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                     </div>
                   </div>
 
-                  {/* Card Bottom Selection Control */}
-                  <div className="flex items-center justify-between pt-1">
+                  {/* Card Bottom Selection Indicator */}
+                  <div className="flex items-center justify-between pt-1 border-t border-border/40">
                     <span className="text-[11px] font-medium text-muted-foreground">
-                      {isSelected ? '✓ Candidate highlighted for your ballot' : 'Tap to choose this candidate'}
+                      {isSelected ? '✓ Candidate highlighted for your ballot' : 'Tap card to choose'}
                     </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectQuote(q.quoteId);
-                      }}
-                      className={`rounded-xl px-3 py-1.5 text-xs font-bold transition min-h-[44px] min-w-[120px] ${
+                    <span
+                      className={`inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-xs font-bold transition ${
                         isSelected
-                          ? 'bg-primary text-primary-foreground shadow-xs'
-                          : 'border border-primary/40 text-primary hover:bg-primary/10'
+                          ? 'bg-primary text-primary-foreground shadow-2xs'
+                          : 'border border-primary/40 text-primary'
                       }`}
                     >
                       {isSelected ? '✓ Selected' : 'Select'}
-                    </button>
+                    </span>
                   </div>
                 </div>
               );

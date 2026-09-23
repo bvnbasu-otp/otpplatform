@@ -24,7 +24,7 @@ export const GST_SLABS = [
 
 export function QuoteForm({
   initial,
-  submitLabel = 'Submit Sealed Quote',
+  submitLabel = '🔒 Seal & Transmit Quote →',
   onSubmit,
   disabled,
   quoteId,
@@ -502,8 +502,7 @@ export function QuoteForm({
           className="w-full min-h-[48px] rounded-xl bg-emerald-700 hover:bg-emerald-800 px-4 py-3 text-sm font-extrabold text-white shadow-md transition disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98 mobile-touch-target"
           data-testid="submit-sealed-quote-btn"
         >
-          <span>🔒</span>
-          <span>{isSubmitting ? 'Submitting Sealed Quote…' : (submitLabel === 'Submit Sealed Quote' ? '🔒 Seal & Transmit Quote →' : submitLabel)}</span>
+          <span>{isSubmitting ? 'Submitting Sealed Quote…' : submitLabel}</span>
         </button>
       </div>
 

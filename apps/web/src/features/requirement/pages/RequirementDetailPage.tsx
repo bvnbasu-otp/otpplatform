@@ -96,13 +96,6 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
             </p>
           </div>
         </div>
-        <Link
-          to={`/requirements/${requirementId}/discover`}
-          className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition shrink-0 mobile-touch-target"
-        >
-          <span>Send Sourcing Enquiry</span>
-          <span>→</span>
-        </Link>
       </div>
 
       {pilot && (

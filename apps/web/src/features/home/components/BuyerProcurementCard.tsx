@@ -63,22 +63,11 @@ export function BuyerProcurementCard({ procurement, onInspect }: BuyerProcuremen
         </div>
       </div>
 
-      {/* Action Strip: Min 48px touch targets */}
-      <div className="flex items-center gap-2 pt-0.5">
-        {onInspect && (
-          <button
-            type="button"
-            onClick={onInspect}
-            className="min-h-[48px] rounded-xl border border-border/80 bg-card px-3.5 py-2.5 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95 transition shadow-2xs shrink-0 flex items-center justify-center gap-1 cursor-pointer"
-          >
-            <span>ℹ️</span>
-            <span>Details</span>
-          </button>
-        )}
-
+      {/* Single Primary Action: Min 48px touch target */}
+      <div className="pt-0.5">
         <Link
           to={procurement.actionUrl}
-          className={`min-h-[48px] flex-1 flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-extrabold shadow-sm active:scale-98 transition ${
+          className={`w-full min-h-[48px] flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-extrabold shadow-sm active:scale-98 transition ${
             procurement.isActionRequired
               ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20'
               : 'border border-border/80 bg-card hover:bg-muted text-foreground'

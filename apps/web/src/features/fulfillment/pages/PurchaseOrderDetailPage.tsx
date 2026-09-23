@@ -1582,18 +1582,8 @@ export function PurchaseOrderDetailPage({
             </span>
           </div>
 
-          {/* Action Button Pair with Touch Targets >= 44px */}
+          {/* Single Primary Action: Min 48px touch target */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleSharePo}
-              className="flex-1 sm:flex-initial min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-extrabold text-foreground shadow-xs hover:bg-muted active:scale-98 transition mobile-touch-target"
-              title="Share PO Details"
-            >
-              <span>📥</span>
-              <span>Download / Share</span>
-            </button>
-
             <button
               type="button"
               onClick={() => {
@@ -1603,10 +1593,10 @@ export function PurchaseOrderDetailPage({
                   setActiveTab('MILESTONES');
                 }
               }}
-              className="flex-1 sm:flex-initial min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
+              className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
             >
               <span>⚡</span>
-              <span>Update Milestones</span>
+              <span>Update Milestones →</span>
             </button>
           </div>
         </div>

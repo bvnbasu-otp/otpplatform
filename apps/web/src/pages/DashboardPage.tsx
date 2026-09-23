@@ -15,12 +15,9 @@ import type { OrganizationRequirementSummary } from '@/features/requirement/api/
 import {
   useBuyerHomeData,
   HomeContextBar,
-  HomeSection,
   BuyerActionCard,
   BuyerProcurementCard,
   BuyerSourcingCockpitCard,
-  HomeActivityTimeline,
-  HomeEmptyState,
   HomeSkeleton,
 } from '@/features/home';
 
@@ -32,10 +29,8 @@ export function DashboardPage() {
   const {
     org,
     subscription,
-    requirements,
     actionRequiredItems,
     activeProcurements,
-    recentActivity,
     stats,
     isLoading,
     error,
@@ -172,27 +167,15 @@ export function DashboardPage() {
             <span>↻ Retry</span>
           </button>
         </div>
-      ) : requirements.length === 0 ? (
-        /* Brand New Buyer / Empty State (adhering to Section 24) */
-        <HomeEmptyState
-          icon="📦"
-          title="Nothing here yet"
-          description="Post your first procurement requirement to get sealed, competitive quotes from verified suppliers."
-          actionLabel="Start your first requirement"
-          actionUrl="/requirements/new"
-        />
       ) : (
-        /* Standard Procurement Cockpit Hierarchy filtered by Glance Bar */
-        <div className="space-y-4">
-          {/* LEVEL 1: Action Required (Highest Priority) */}
+        /* Actionable and Active Cards filtered by Glance Bar */
+        <div className="space-y-3">
+          {/* Action Required Items (Highest Priority) */}
           {(activeFilter === 'all' || activeFilter === 'action') && actionRequiredItems.length > 0 && (
-            <HomeSection
-              title="Action Required"
-              icon="⚡"
-              count={actionRequiredItems.length}
-              badge="High Priority"
-              badgeColor="bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800"
-            >
+            <div className="space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5 px-1">
+                <span>⚡</span> Action Needed ({actionRequiredItems.length})
+              </span>
               <div className="space-y-2.5">
                 {actionRequiredItems.map((action) => (
                   <BuyerActionCard
@@ -202,67 +185,26 @@ export function DashboardPage() {
                   />
                 ))}
               </div>
-            </HomeSection>
-          )}
-
-          {/* LEVEL 2: Active Procurement (Ongoing Tenders) */}
-          {(activeFilter === 'all' || activeFilter === 'active') && (
-            <HomeSection
-              title="Active Procurement"
-              icon="🟢"
-              count={activeProcurements.length}
-              actionText={stats.total > activeProcurements.length ? `All (${stats.total})` : undefined}
-              actionUrl="/purchase-orders"
-            >
-              {activeProcurements.length === 0 ? (
-                <div className="py-6 text-center bg-card rounded-2xl border border-border/70 p-4 space-y-1 text-xs text-muted-foreground">
-                  <span className="text-xl block">✓</span>
-                  <p className="font-semibold text-foreground">No active procurements right now.</p>
-                  <p>All previous procurements have been completed and settled.</p>
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {activeProcurements.map((procurement) => (
-                    <BuyerProcurementCard
-                      key={procurement.id}
-                      procurement={procurement}
-                      onInspect={() => setSelectedRequirement(procurement.requirement)}
-                    />
-                  ))}
-                </div>
-              )}
-            </HomeSection>
-          )}
-
-          {/* LEVEL 3: Recent Activity / Settled */}
-          {(activeFilter === 'all' || activeFilter === 'settled') && recentActivity.length > 0 && (
-            <HomeSection
-              title="Recent Activity"
-              icon="🕒"
-              actionText="View Orders Ledger →"
-              actionUrl="/purchase-orders"
-            >
-              <HomeActivityTimeline events={recentActivity} />
-            </HomeSection>
-          )}
-
-          {/* LEVEL 4: Discoverability CTA (Compact Secondary Entry Point) */}
-          <div className="pt-1 flex items-center justify-between gap-2 bg-muted/20 border border-border/70 rounded-2xl p-3">
-            <div className="min-w-0 flex-1">
-              <span className="text-xs font-bold text-foreground block truncate">
-                Need to procure materials or services?
-              </span>
-              <span className="text-[11px] text-muted-foreground block truncate">
-                Launch sealed RFQs with identity protection
-              </span>
             </div>
-            <Link
-              to="/requirements/new"
-              className="min-h-[48px] inline-flex items-center justify-center gap-1 rounded-xl bg-card border border-border/80 hover:bg-muted text-foreground px-4 py-2.5 text-xs font-bold shadow-2xs active:scale-95 transition shrink-0 mobile-touch-target"
-            >
-              <span>+ Start Requirement</span>
-            </Link>
-          </div>
+          )}
+
+          {/* Active Tenders (Ongoing) */}
+          {(activeFilter === 'all' || activeFilter === 'active') && activeProcurements.length > 0 && (
+            <div className="space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 px-1">
+                <span>🟢</span> Active Tenders ({activeProcurements.length})
+              </span>
+              <div className="space-y-2.5">
+                {activeProcurements.map((procurement) => (
+                  <BuyerProcurementCard
+                    key={procurement.id}
+                    procurement={procurement}
+                    onInspect={() => setSelectedRequirement(procurement.requirement)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

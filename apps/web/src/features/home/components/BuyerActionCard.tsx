@@ -39,20 +39,11 @@ export function BuyerActionCard({ action, onInspect }: BuyerActionCardProps) {
         <span className="font-bold text-emerald-600 dark:text-emerald-400">L1: ₹8,200</span>
       </div>
 
-      {/* Action Button Strip */}
-      <div className="flex items-center gap-2 pt-0.5">
-        {onInspect && (
-          <button
-            type="button"
-            onClick={onInspect}
-            className="min-h-[44px] rounded-xl border border-border/80 bg-muted/30 px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer"
-          >
-            Details
-          </button>
-        )}
+      {/* Single Primary Action: Min 48px touch target */}
+      <div className="pt-0.5">
         <Link
           to={action.actionUrl}
-          className="min-h-[48px] flex-1 rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition text-center flex items-center justify-center gap-1.5"
+          className="w-full min-h-[48px] rounded-xl bg-primary py-2.5 text-xs font-extrabold text-primary-foreground shadow-xs hover:bg-primary/90 transition text-center flex items-center justify-center gap-1.5 active:scale-98"
         >
           <span>{action.actionLabel.toLowerCase().includes('vote') ? '🗳️ Review & Cast Vote →' : `${action.actionLabel} →`}</span>
         </Link>

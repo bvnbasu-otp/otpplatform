@@ -56,9 +56,9 @@ describe('Phase 1 Cockpit - Responsive & Touch Standards', () => {
         { id: 'settled', label: '⚪ Settled', count: 8 },
       ];
       expect(glancePills.length).toBe(3);
-      expect(glancePills[0].label).toContain('Active');
-      expect(glancePills[1].label).toContain('Action');
-      expect(glancePills[2].label).toContain('Settled');
+      expect(glancePills[0]?.label).toContain('Active');
+      expect(glancePills[1]?.label).toContain('Action');
+      expect(glancePills[2]?.label).toContain('Settled');
     });
 
     it('verifies 4-category quick-selection chips', () => {
