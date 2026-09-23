@@ -172,51 +172,51 @@ export function SupplierRadarPulseBanner({
 
       {/* Sourcing Channel Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 relative z-10">
-        {/* OTP Network */}
+        {/* WhatsApp Direct Quoting */}
         <div className="rounded-lg border border-slate-800 bg-slate-800/60 p-2 flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-sm">🏢</span>
+            <span className="text-sm">💬</span>
             <div className="min-w-0">
-              <span className="text-[11px] font-bold text-slate-100 block truncate">OTP Network</span>
+              <span className="text-[11px] font-bold text-slate-100 block truncate">WhatsApp Direct Quoting</span>
               <span className="text-[9px] text-slate-400">
-                {otpCount > 0 ? `${otpCount} Verified Vendors` : 'Verified Vendors'}
+                {otpCount > 0 ? `${otpCount} Direct Links` : 'Direct Quoting'}
               </span>
             </div>
           </div>
           <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/40 shrink-0">
-            {otpCount > 0 ? `${otpCount} Active` : '✓ Active'}
+            {otpCount > 0 ? `${otpCount} Sent` : '✓ Sent'}
           </span>
         </div>
 
-        {/* ONDC Protocol */}
+        {/* ONDC Sourcing Protocol */}
         <div className="rounded-lg border border-slate-800 bg-slate-800/60 p-2 flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-sm">🌐</span>
             <div className="min-w-0">
-              <span className="text-[11px] font-bold text-slate-100 block truncate">ONDC Protocol</span>
+              <span className="text-[11px] font-bold text-slate-100 block truncate">ONDC Sourcing Protocol</span>
               <span className="text-[9px] text-slate-400">
-                {ondcCount > 0 ? `${ondcCount} Discovered` : 'Open B2B Network'}
+                {ondcCount > 0 ? `${ondcCount} Discovered` : 'Open B2B Protocol'}
               </span>
             </div>
           </div>
           <span className="text-[10px] font-bold text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-800/40 shrink-0">
-            {ondcCount > 0 ? `${ondcCount} Connected` : '✓ Connected'}
+            {ondcCount > 0 ? `${ondcCount} Synced` : '✓ Synced'}
           </span>
         </div>
 
-        {/* Local Registry */}
+        {/* Supplier PWA Instant Alerts */}
         <div className="rounded-lg border border-slate-800 bg-slate-800/60 p-2 flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-sm">📍</span>
+            <span className="text-sm">⚡</span>
             <div className="min-w-0">
-              <span className="text-[11px] font-bold text-slate-100 block truncate">Local Registry</span>
+              <span className="text-[11px] font-bold text-slate-100 block truncate">Supplier PWA Instant Alerts</span>
               <span className="text-[9px] text-slate-400">
-                {localCount > 0 ? `${localCount} Regional` : 'Direct & Regional'}
+                {localCount > 0 ? `${localCount} Active Nearby` : 'Instant Push Alerts'}
               </span>
             </div>
           </div>
           <span className="text-[10px] font-bold text-purple-400 bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-800/40 shrink-0">
-            {localCount > 0 ? `${localCount} Matched` : '✓ Matched'}
+            {localCount > 0 ? `${localCount} Pushed` : '✓ Pushed'}
           </span>
         </div>
       </div>

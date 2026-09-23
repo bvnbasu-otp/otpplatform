@@ -164,12 +164,12 @@ export function MobileBottomNav() {
               )}
             </div>
 
-            {/* TAB 4: AUDIT (Canonical entry for Buyer, Supplier, Admin) */}
+            {/* TAB 4: QUOTES / AUDIT (Canonical entry for Buyer, Supplier, Admin) */}
             <NavLink
-              to="/audit"
+              to={isSupplier ? '/supplier/quotes' : '/audit'}
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
-                  isActive || pathname.startsWith('/audit')
+                  isActive || pathname.startsWith('/audit') || (isSupplier && pathname.startsWith('/supplier/quotes'))
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
                 }`
@@ -177,7 +177,7 @@ export function MobileBottomNav() {
             >
               <span className="text-lg leading-none">🛡️</span>
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">
-                Audit
+                {isSupplier ? 'Quotes' : 'Audit'}
               </span>
             </NavLink>
 

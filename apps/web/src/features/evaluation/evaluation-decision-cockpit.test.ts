@@ -438,8 +438,8 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () =>
     });
 
     it('verifies deduplicated primary navigation CTA anchored in bottom dock with >=48px touch target', () => {
-      const bottomDockCta = 'Proceed to Cast Vote →';
-      expect(bottomDockCta).toContain('Cast Vote');
+      const bottomDockCta = 'Proceed to Committee Decision Room →';
+      expect(bottomDockCta).toContain('Decision Room');
       expect(bottomDockCta).not.toContain('bid');
     });
   });

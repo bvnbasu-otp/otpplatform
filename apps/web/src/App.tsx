@@ -9,6 +9,7 @@ import { EvaluationDecisionCockpitPage } from '@/features/evaluation';
 import { SupplierRfqPage } from '@/features/supplier/pages/SupplierRfqPage';
 import { SupplierQuoteSubmitPage } from '@/features/supplier/pages/SupplierQuoteSubmitPage';
 import { SupplierCapabilitiesPage } from '@/features/supplier/pages/SupplierCapabilitiesPage';
+import { SupplierQuotesPage } from '@/features/supplier';
 import {
   FinancialControlDashboardPage,
   PurchaseOrderDetailPage,
@@ -380,6 +381,16 @@ export function App() {
             <Route path="/supplier/capabilities" element={<SupplierCapabilitiesPage />} />
             <Route path="/supplier/onboarding" element={<SupplierCapabilitiesPage />} />
             <Route path="/supplier/dashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/supplier/quotes"
+              element={
+                <ProtectedRoute allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}>
+                  <SupplierQuotesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/supplier/opportunities" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/quotes" element={<Navigate to="/dashboard" replace />} />
             <Route
               path="/purchase-orders"
               element={

@@ -95,20 +95,22 @@ export function DashboardPage() {
       className="w-full max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 py-3 space-y-4 overflow-x-hidden min-w-0 max-w-full"
       data-testid="buyer-dashboard"
     >
-      {/* 1. Compact Context Header: Greeting, Org, Role, Attention Indicator */}
-      <HomeContextBar
-        greeting={timeGreeting}
-        name={greetingName}
-        organizationName={org?.organizationName}
-        roleLabel="Buyer"
-        actionCount={actionRequiredItems.length}
-        activeCount={activeProcurements.length}
-        isLoading={isLoading}
-        onRefresh={refresh}
-        subscriptionExpired={subscription?.isExpired}
-        freeCredits={subscription?.freeRfqCredits}
-        onRenewClick={() => setIsPaymentModalOpen(true)}
-      />
+      {/* 1. Compact Context Header: Greeting, Org, Role, Attention Indicator (Desktop only for zero-scroll mobile visual contract) */}
+      <div className="hidden md:block">
+        <HomeContextBar
+          greeting={timeGreeting}
+          name={greetingName}
+          organizationName={org?.organizationName}
+          roleLabel="Buyer"
+          actionCount={actionRequiredItems.length}
+          activeCount={activeProcurements.length}
+          isLoading={isLoading}
+          onRefresh={refresh}
+          subscriptionExpired={subscription?.isExpired}
+          freeCredits={subscription?.freeRfqCredits}
+          onRenewClick={() => setIsPaymentModalOpen(true)}
+        />
+      </div>
 
       {/* Subscription Expiry & Starter Credit Banner */}
       {subscription && (

@@ -1029,7 +1029,7 @@ export function EvaluationDecisionCockpit({
                     data-testid="lock-award-button"
                   >
                     <span>🔒</span>
-                    <span>Confirm Award &amp; Reveal Winner (Atomic PO Creation)</span>
+                    <span>Lock Award &amp; Unmask Winner →</span>
                   </button>
                 </div>
               </div>
@@ -1109,7 +1109,7 @@ export function EvaluationDecisionCockpit({
                 data-testid="proceed-to-vote-button"
               >
                 <span>🗳️</span>
-                <span>Proceed to Cast Vote →</span>
+                <span>Proceed to Committee Decision Room →</span>
               </button>
             ) : activeTab === 'qa' ? (
               <button
@@ -1119,7 +1119,7 @@ export function EvaluationDecisionCockpit({
                 data-testid="proceed-from-qa-to-vote-button"
               >
                 <span>🗳️</span>
-                <span>Proceed to Cast Vote →</span>
+                <span>Proceed to Committee Decision Room →</span>
               </button>
             ) : activeTab === 'vote' ? (
               <button
@@ -1140,7 +1140,7 @@ export function EvaluationDecisionCockpit({
                 data-testid="execute-award-primary-button"
               >
                 <span>🔒</span>
-                <span>Confirm Award &amp; Reveal Winner →</span>
+                <span>Lock Award &amp; Unmask Winner →</span>
               </button>
             )}
           </div>
@@ -1193,7 +1193,7 @@ export function EvaluationDecisionCockpit({
                 data-testid="modal-confirm-atomic-award"
               >
                 <span>{isAwarding ? '⏳' : '🔒'}</span>
-                <span>{isAwarding ? 'Executing Atomic Award…' : 'Execute Award & Generate PO'}</span>
+                <span>{isAwarding ? 'Executing Atomic Award…' : 'Lock Award & Unmask Winner →'}</span>
               </button>
 
               <button

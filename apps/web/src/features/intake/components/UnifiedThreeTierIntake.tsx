@@ -536,12 +536,14 @@ export function UnifiedThreeTierIntake({
 
   return (
     <div className="space-y-4" data-testid="unified-three-tier-intake">
-      {/* Wizard Step Progress Bar */}
+      {/* Wizard Step Progress Bar (Screen 03) */}
       <div className="rounded-xl border border-border/80 bg-card px-3 py-2 flex items-center justify-between gap-3 shadow-2xs">
         <div className="flex items-center gap-2 text-xs font-bold shrink-0">
-          <span className="text-primary font-black">Step 1: Scope &amp; Logistics</span>
+          <span className="text-primary font-black">Step 1 of 3: Scope &amp; Logistics</span>
           <span className="text-muted-foreground/60">·</span>
-          <span className="text-[11px] text-muted-foreground font-semibold">{isTier1Complete ? '100%' : '65%'} Complete</span>
+          <span className="text-[11px] text-muted-foreground font-semibold">
+            {isTier1Complete ? '100% Complete' : '65% Auto-Filled'}
+          </span>
         </div>
         <div className="flex-1 max-w-xs bg-muted rounded-full h-1.5 overflow-hidden">
           <div
