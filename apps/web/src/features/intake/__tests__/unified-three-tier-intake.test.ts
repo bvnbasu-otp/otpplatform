@@ -8,6 +8,7 @@ import {
 import {
   UnifiedThreeTierIntake,
   Tier1TellOtpCard,
+  PAYMENT_PRESETS,
   Tier2PrecisionScopeCard,
   Tier3SourcingControlsCard,
   type ProcurementTemplate,
@@ -509,6 +510,17 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
       const primaryCta = 'Publish Sealed RFQ →';
       expect(primaryCta).toBe('Publish Sealed RFQ →');
       expect(primaryCta).not.toContain('bid');
+    });
+
+    it('verifies payment presets have valid stage distributions summing to 100%', () => {
+      expect(PAYMENT_PRESETS.length).toBeGreaterThanOrEqual(3);
+      for (const preset of PAYMENT_PRESETS) {
+        expect(preset.id).toBeDefined();
+        expect(preset.label).toBeDefined();
+        expect(preset.splits.length).toBeGreaterThan(0);
+        const totalPct = preset.splits.reduce((sum, s) => sum + s.pct, 0);
+        expect(totalPct).toBe(100);
+      }
     });
   });
 });

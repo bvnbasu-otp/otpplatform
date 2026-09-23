@@ -24,6 +24,7 @@ export interface Tier1TellOtpCardProps {
   days: number | null;
   date: string;
   budgetAmount: number | null;
+  paymentTerms?: string | null;
   taxonomy: TaxonomySnapshot;
   parsed: ParsedRequirement | null;
   isParsing: boolean;
@@ -38,6 +39,7 @@ export interface Tier1TellOtpCardProps {
   onFulfilmentChange: (fulfilment: FulfilmentMode) => void;
   onTimingChange: (timing: RequiredByMode, days?: number | null, date?: string | null) => void;
   onBudgetChange: (amount: number | null) => void;
+  onPaymentTermsChange?: (terms: string | null) => void;
   onParse: (text: string) => Promise<ParsedRequirement>;
   onClearInput?: () => void;
   onOpenTemplates?: () => void;
@@ -114,6 +116,51 @@ const BUDGET_PRESETS = [
   { label: '₹25L+', amount: 5000000 },
 ];
 
+export interface PaymentPreset {
+  id: string;
+  label: string;
+  sublabel: string;
+  description: string;
+  value: string;
+  splits: Array<{ label: string; pct: number }>;
+}
+
+export const PAYMENT_PRESETS: PaymentPreset[] = [
+  {
+    id: 'SINGLE',
+    label: '1️⃣ Single Payment',
+    sublabel: '100% on delivery / completion',
+    description: 'Full payment released upon delivery inspection and mutual acceptance sign-off.',
+    value: '100% on delivery',
+    splits: [{ label: '100% On Delivery & Sign-off', pct: 100 }],
+  },
+  {
+    id: 'THREE_SPLIT',
+    label: '3️⃣ 3-Stage Split',
+    sublabel: '30% Advance · 50% Delivery · 20% Sign-off',
+    description: 'Balanced cash flow with mobilization advance, delivery payout, and final warranty sign-off.',
+    value: '30% Advance, 50% on Delivery, 20% on Acceptance',
+    splits: [
+      { label: 'Stage 1: Mobilization Advance', pct: 30 },
+      { label: 'Stage 2: Material Dispatch & Delivery', pct: 50 },
+      { label: 'Stage 3: Testing & Final Acceptance', pct: 20 },
+    ],
+  },
+  {
+    id: 'MILESTONES',
+    label: '📊 Milestone-Based',
+    sublabel: '4 Milestones (25% / 25% / 25% / 25%)',
+    description: 'Progressive milestone disbursements released in 25% increments as work scope completes.',
+    value: '25% Kickoff, 25% Dispatch, 25% Installation, 25% Sign-off',
+    splits: [
+      { label: 'Milestone 1: Kickoff & Mobilization', pct: 25 },
+      { label: 'Milestone 2: Dispatch & In-Transit', pct: 25 },
+      { label: 'Milestone 3: Installation & Inspection', pct: 25 },
+      { label: 'Milestone 4: Final Sign-off & Warranty', pct: 25 },
+    ],
+  },
+];
+
 const FULFILMENT_OPTIONS = [
   { value: 'SUPPLIER_DELIVERY', label: 'Supplier delivers to our site' },
   { value: 'BUYER_PICKUP', label: 'Buyer pickup / collection' },
@@ -135,6 +182,7 @@ export function Tier1TellOtpCard({
   days,
   date,
   budgetAmount,
+  paymentTerms = '100% on delivery',
   taxonomy,
   parsed,
   isParsing,
@@ -149,6 +197,7 @@ export function Tier1TellOtpCard({
   onFulfilmentChange,
   onTimingChange,
   onBudgetChange,
+  onPaymentTermsChange,
   onParse,
   onClearInput,
   onOpenTemplates,
@@ -156,6 +205,7 @@ export function Tier1TellOtpCard({
   onToggleExpand,
 }: Tier1TellOtpCardProps) {
   const [showVoiceDictation, setShowVoiceDictation] = useState(false);
+  const [isCustomTerms, setIsCustomTerms] = useState(false);
   const { isLocating, locationError, requestCurrentLocation } = useDeviceCapabilities();
 
   const subcategories = useMemo(
@@ -167,6 +217,18 @@ export function Tier1TellOtpCard({
     () => taxonomy.subcategories.find((s) => s.id === subcategoryId),
     [taxonomy.subcategories, subcategoryId],
   );
+
+  const activePreset = useMemo(() => {
+    return (
+      PAYMENT_PRESETS.find(
+        (p) =>
+          p.value === paymentTerms ||
+          (p.id === 'THREE_SPLIT' && paymentTerms?.includes('30%')) ||
+          (p.id === 'MILESTONES' && paymentTerms?.includes('25%')) ||
+          (!paymentTerms && p.id === 'SINGLE'),
+      ) || null
+    );
+  }, [paymentTerms]);
 
   const confidence = parsed?.confidence ?? null;
 

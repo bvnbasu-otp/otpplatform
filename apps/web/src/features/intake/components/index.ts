@@ -10,8 +10,8 @@ export type { TemplatesAndExamplesModalProps, ProcurementTemplate, ProcurementEx
 // Unified 3-Tier Progressive Intake Components
 export { UnifiedThreeTierIntake } from './UnifiedThreeTierIntake';
 export type { UnifiedThreeTierIntakeProps } from './UnifiedThreeTierIntake';
-export { Tier1TellOtpCard } from './Tier1TellOtpCard';
-export type { Tier1TellOtpCardProps } from './Tier1TellOtpCard';
+export { Tier1TellOtpCard, PAYMENT_PRESETS } from './Tier1TellOtpCard';
+export type { Tier1TellOtpCardProps, PaymentPreset } from './Tier1TellOtpCard';
 export { Tier2PrecisionScopeCard } from './Tier2PrecisionScopeCard';
 export type { Tier2PrecisionScopeCardProps } from './Tier2PrecisionScopeCard';
 export { Tier3SourcingControlsCard } from './Tier3SourcingControlsCard';

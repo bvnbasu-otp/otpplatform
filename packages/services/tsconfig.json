@@ -1,8 +1,11 @@
 {
   "extends": "../config/typescript/base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@otp/domain": ["../domain/src/index.ts"],
+      "@otp/database": ["../database/src/index.ts"]
+    },
     "lib": ["ES2022", "DOM"],
     "types": ["node"]
   },
