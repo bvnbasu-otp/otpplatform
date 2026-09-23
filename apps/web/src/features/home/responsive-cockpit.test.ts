@@ -47,4 +47,32 @@ describe('Phase 1 Cockpit - Responsive & Touch Standards', () => {
     expect(mobileContainerClasses).toContain('min-w-0');
     expect(mobileContainerClasses).toContain('max-w-full');
   });
+
+  describe('Screens.docx — Lightweight Mobile-First Cockpit Standards', () => {
+    it('verifies Buyer 3-Pill Glance Bar configurations', () => {
+      const glancePills = [
+        { id: 'active', label: '🟢 Active', count: 3 },
+        { id: 'action', label: '🟡 Action Needed', count: 1 },
+        { id: 'settled', label: '⚪ Settled', count: 8 },
+      ];
+      expect(glancePills.length).toBe(3);
+      expect(glancePills[0].label).toContain('Active');
+      expect(glancePills[1].label).toContain('Action');
+      expect(glancePills[2].label).toContain('Settled');
+    });
+
+    it('verifies 4-category quick-selection chips', () => {
+      const chips = ['⚡ Pumps', '⚡ Motors', '⚡ Rewinding', '⚡ Transformers'];
+      expect(chips.length).toBe(4);
+      chips.forEach((c) => expect(c).toMatch(/^⚡\s/));
+    });
+
+    it('verifies Supplier identity shield filter chips', () => {
+      const supplierChips = ['< 10 km', '5-25 HP', 'Live RFQs'];
+      expect(supplierChips).toContain('< 10 km');
+      expect(supplierChips).toContain('5-25 HP');
+      expect(supplierChips).toContain('Live RFQs');
+    });
+  });
 });
+

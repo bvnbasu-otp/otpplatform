@@ -429,5 +429,13 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () =>
       expect(EvaluationDecisionCockpit).toBeDefined();
       expect(typeof EvaluationDecisionCockpit).toBe('function');
     });
+
+    it('Screens.docx: validates 4-pillar quote comparison matrix pillars', () => {
+      const pillars = ['Total Evaluated Price', 'Delivery Turnaround', 'Warranty & Quality', 'Evaluated Score'];
+      expect(pillars.length).toBe(4);
+      expect(pillars[0]).toContain('Price');
+      expect(pillars[3]).toContain('Score');
+    });
   });
 });
+

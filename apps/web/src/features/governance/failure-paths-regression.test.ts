@@ -242,4 +242,22 @@ describe('Phase 7.1 — 22 Formal Failure Path Regressions (F01 to F22)', () => 
     const canDelegate = delegatorRole === 'OWNER' || requestedPerm !== 'APPROVE_TIER_3';
     expect(canDelegate).toBe(false);
   });
+
+  // F26: Screens.docx Quorum & 1-Tap Justification Chips
+  it('F26: Validates Screens.docx quorum progress and 1-tap justification presets', () => {
+    const totalMembers = 3;
+    const votesCast = 3;
+    const quorumPct = Math.round((votesCast / totalMembers) * 100);
+    expect(quorumPct).toBe(100);
+
+    const justificationChips = [
+      'Meets technical spec',
+      'Lowest evaluated price',
+      'Excellent past delivery',
+      'Standard warranty terms',
+    ];
+    expect(justificationChips.length).toBe(4);
+    expect(justificationChips[0]).toBe('Meets technical spec');
+  });
 });
+

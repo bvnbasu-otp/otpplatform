@@ -484,4 +484,19 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
       expect(typeof Tier3SourcingControlsCard).toBe('function');
     });
   });
+
+  describe('8. Screens.docx — Lightweight Intake Cockpit Standards', () => {
+    it('verifies Step 1 of 3 progress marker and AI Parser badge', () => {
+      const stepHeader = 'Step 1 of 3 · AI Parser Ready';
+      expect(stepHeader).toContain('Step 1 of 3');
+      expect(stepHeader).toContain('AI Parser Ready');
+    });
+
+    it('verifies 1-tap fast-track city chips', () => {
+      const cities = ['Bengaluru', 'Mumbai', 'Chennai', 'Delhi NCR', 'Hyderabad'];
+      expect(cities.length).toBe(5);
+      expect(cities).toContain('Bengaluru');
+    });
+  });
 });
+

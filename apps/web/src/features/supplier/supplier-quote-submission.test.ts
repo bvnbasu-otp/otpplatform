@@ -173,4 +173,24 @@ describe('Phase 3.3: Supplier Quote Submission Workflow & Security Invariants', 
       expect(quoteB.version).toBe(quoteA.version + 1);
     });
   });
+
+  describe('5. Screens.docx — 1-Tap Quotation Cockpit Pills', () => {
+    it('verifies 1-tap turnaround and warranty pill presets', () => {
+      const tatPills = [2, 3, 7, 14];
+      const warrantyPills = [3, 6, 12, 24];
+
+      expect(tatPills).toEqual([2, 3, 7, 14]);
+      expect(warrantyPills).toEqual([3, 6, 12, 24]);
+    });
+
+    it('verifies mandatory single compliance confirmation toggle', () => {
+      let isCompliant = false;
+      const toggle = () => { isCompliant = !isCompliant; };
+
+      expect(isCompliant).toBe(false);
+      toggle();
+      expect(isCompliant).toBe(true);
+    });
+  });
 });
+

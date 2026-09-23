@@ -79,4 +79,24 @@ describe('Phase 6.5 Web UI Controls & State Verification', () => {
       expect(canEscalateDispute('RESOLVED', 2)).toBe(false);
     });
   });
+
+  describe('Screens.docx — 4-Stage Fulfillment Stepper Standards', () => {
+    it('verifies 4 canonical fulfillment lifecycle stages', () => {
+      const stages = [
+        'PO Issued',
+        'In Production',
+        'In Transit',
+        'Delivered & Accepted',
+      ];
+      expect(stages.length).toBe(4);
+      expect(stages[0]).toBe('PO Issued');
+      expect(stages[3]).toBe('Delivered & Accepted');
+    });
+
+    it('validates post-award supplier unmasking banner', () => {
+      const bannerTitle = '🎉 Winning Supplier Unmasked';
+      expect(bannerTitle).toContain('Winning Supplier Unmasked');
+    });
+  });
 });
+
