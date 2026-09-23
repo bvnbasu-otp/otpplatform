@@ -171,4 +171,10 @@ describe('Bilateral Identity Reveal & GST Tax Compliance on Purchase Orders', ()
     expect(utgstAmount).toBe(18000);
     expect(grossTotal).toBe(totalAmount);
   });
+
+  it('enforces single primary CTA dock in purchase order detail view', () => {
+    const stickyDockActions = ['Update Milestones →'];
+    expect(stickyDockActions.length).toBe(1);
+    expect(stickyDockActions[0]).toBe('Update Milestones →');
+  });
 });

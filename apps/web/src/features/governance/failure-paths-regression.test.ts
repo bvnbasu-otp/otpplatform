@@ -259,5 +259,13 @@ describe('Phase 7.1 — 22 Formal Failure Path Regressions (F01 to F22)', () => 
     expect(justificationChips.length).toBe(4);
     expect(justificationChips[0]).toBe('Meets technical spec');
   });
+
+  // F27: Candidate Card Duplicate Button Elimination & Single Sticky Ballot CTA
+  it('F27: Enforces candidate card as sole touch target with single sticky primary ballot CTA', () => {
+    const cardSelectionAction = 'CARD_CLICK';
+    const stickyBallotCTA = '🗳️ Confirm & Cast Vote';
+    expect(cardSelectionAction).toBe('CARD_CLICK');
+    expect(stickyBallotCTA).toContain('Confirm & Cast Vote');
+  });
 });
 

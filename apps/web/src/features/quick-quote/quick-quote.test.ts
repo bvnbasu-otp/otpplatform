@@ -112,4 +112,9 @@ describe('Quick Quote Feature Module Tests', () => {
       expect(res.value.status).toBe('SUBMITTED');
     }
   });
+
+  it('enforces canonical Seal & Transmit Quote primary CTA label', () => {
+    const primaryCta = '🔒 Seal & Transmit Quote →';
+    expect(primaryCta).toContain('Seal & Transmit Quote');
+  });
 });

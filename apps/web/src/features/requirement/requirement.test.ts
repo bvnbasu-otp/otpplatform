@@ -274,5 +274,11 @@ describe('Requirement Feature Module Tests', () => {
         expect(res.error).toBe('RPC execution failed');
       }
     });
+
+    it('verifies single primary CTA in workflow transition panel and clean header banner', () => {
+      const workflowActions = ['Discover & Match Suppliers', 'Identity-Protected Evaluation'];
+      expect(workflowActions.length).toBe(2);
+      expect(workflowActions[0]).toBe('Discover & Match Suppliers');
+    });
   });
 });

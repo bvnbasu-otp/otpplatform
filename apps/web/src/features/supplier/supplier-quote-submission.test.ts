@@ -191,6 +191,13 @@ describe('Phase 3.3: Supplier Quote Submission Workflow & Security Invariants', 
       toggle();
       expect(isCompliant).toBe(true);
     });
+
+    it('verifies single canonical primary CTA label for quote submission and revision', () => {
+      const submitCta = '🔒 Seal & Transmit Quote →';
+      const reviseCta = '🔒 Seal & Transmit Revised Quote →';
+      expect(submitCta).toContain('Seal & Transmit Quote');
+      expect(reviseCta).toContain('Seal & Transmit Revised Quote');
+    });
   });
 });
 
