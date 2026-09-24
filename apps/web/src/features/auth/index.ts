@@ -6,3 +6,5 @@ export { usePortalRole } from './use-portal-role';
 export { usePresenceHeartbeat } from './usePresenceHeartbeat';
 export { fetchCurrentProfile, resolvePortalRole } from './user-role';
 export type { PortalRole, UserProfile } from './user-role';
+export * from './canonical-auth';
+export * from './use-canonical-auth';

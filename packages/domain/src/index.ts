@@ -12,6 +12,7 @@ export * from './gis/location-intelligence-port';
 export * from './types/supplier-network-engine';
 export * from './confidence/discovery-confidence-engine';
 export * from './identity/canonical-identity-resolver';
+export * from './identity/authorization-chain';
 export * from './intelligence/capability-evidence';
 export * from './intelligence/capacity-headroom';
 export * from './intelligence/performance-intelligence';
