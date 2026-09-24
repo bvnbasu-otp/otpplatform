@@ -58,6 +58,9 @@ The platform has achieved **Phase 7.1 Final Closure & Independent Re-Certificati
 The platform technical documentation is organized into 15 canonical specifications in [`docs/`](./00-DOCUMENTATION-INDEX.md), supported by the Standalone Operations Runbook and the Historical QA Archive:
 
 ### 1. Fundamentals, Positioning & Governance
+- [**00. Reconstruct Product Constitution v1.0 (Freeze Draft)**](./RECONSTRUCT-PRODUCT-CONSTITUTION-v1.0.md)  
+  *Supreme Product Definition, Core Product Invariant ("OTP does the procurement work. The customer makes the decision."), 3 Buyer Personas (Individual, RWA, MSME — Enterprise explicitly excluded), Universal Governance & Succession, 2-Stage Supplier Lifecycle, Address Snapshots, Financial Architecture, Truthful Verifications, and Reconstruction Rules.*
+
 - [**01. Platform Overview & Product Constitution**](./01-PLATFORM-OVERVIEW.md)  
   *Mission, Core Principles, Identity-Protected Sourcing Philosophy, Canonical Vocabulary Standard, Intellectual Property & Proprietary Innovations, Series-6 Monotonic Workflow Architecture.*
 
