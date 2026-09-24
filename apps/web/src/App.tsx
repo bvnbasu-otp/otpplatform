@@ -9,7 +9,7 @@ import { EvaluationDecisionCockpitPage } from '@/features/evaluation';
 import { SupplierRfqPage } from '@/features/supplier/pages/SupplierRfqPage';
 import { SupplierQuoteSubmitPage } from '@/features/supplier/pages/SupplierQuoteSubmitPage';
 import { SupplierCapabilitiesPage } from '@/features/supplier/pages/SupplierCapabilitiesPage';
-import { SupplierQuotesPage } from '@/features/supplier';
+import { SupplierQuotesPage, SupplierAwardOnboardingPage } from '@/features/supplier';
 import {
   FinancialControlDashboardPage,
   PurchaseOrderDetailPage,
@@ -284,6 +284,8 @@ export function App() {
             off a phone screen.
           */}
           <Route path="/q/:token" element={<QuickQuotePage />} />
+          <Route path="/supplier/award-onboarding/:token" element={<SupplierAwardOnboardingPage />} />
+          <Route path="/supplier/award-onboarding" element={<SupplierAwardOnboardingPage />} />
           {/*
             Organization invitation acceptance route: accessible unauthenticated
             (renders preview & sign-in redirect) and authenticated (1-click join).

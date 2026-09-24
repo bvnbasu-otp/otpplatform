@@ -13,6 +13,7 @@ import {
   type TaxonomySnapshot,
 } from '@otp/domain';
 import { Badge, Button } from '@/components/ui';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth';
 import { useRoleContext } from '@/features/roles';
 import type { DraftPatch } from '../api/draft';
@@ -146,6 +147,26 @@ export function UnifiedThreeTierIntake({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
+
+  // Auto-inherit primary address from user profile / address book if city/pincode not already in draft
+  useEffect(() => {
+    async function inheritPrimaryAddress() {
+      if (!user?.id) return;
+      try {
+        const { data } = await supabase.rpc('get_buyer_addresses');
+        if (data && data.ok && Array.isArray(data.addresses) && data.addresses.length > 0) {
+          const primary = data.addresses.find((a: any) => a.is_primary) || data.addresses[0];
+          if (primary) {
+            if (!city && primary.city) setCity(primary.city);
+            if (!pincode && primary.pincode) setPincode(primary.pincode);
+          }
+        }
+      } catch {
+        // Non-blocking fallback
+      }
+    }
+    inheritPrimaryAddress();
+  }, [user?.id, city, pincode]);
 
   // Sync state if draft loads later
   useEffect(() => {

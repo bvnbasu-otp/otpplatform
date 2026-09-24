@@ -2,6 +2,7 @@ export { SupplierRfqPage } from './pages/SupplierRfqPage';
 export { SupplierQuoteSubmitPage } from './pages/SupplierQuoteSubmitPage';
 export { SupplierCapabilitiesPage } from './pages/SupplierCapabilitiesPage';
 export { SupplierQuotesPage } from './pages/SupplierQuotesPage';
+export { SupplierAwardOnboardingPage } from './pages/SupplierAwardOnboardingPage';
 export { SupplierInvitationList } from './components/SupplierInvitationList';
 export { SupplierRequirementPanel } from './components/SupplierRequirementPanel';
 export { QuoteForm } from './components/QuoteForm';

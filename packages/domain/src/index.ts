@@ -70,3 +70,7 @@ export * from './accounting/journal-posting-rules';
 export * from './accounting/tally-journal-exporter';
 export * from './accounting/zoho-journal-exporter';
 export * from './types/pricing-entitlement';
+export * from './types/buyer-address';
+export * from './types/buyer-persona';
+export * from './types/supplier-award-onboarding';
+

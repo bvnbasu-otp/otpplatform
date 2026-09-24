@@ -33,3 +33,5 @@ export type BlindViewRepositories = IdentityProtectedViewRepositories;
 export interface RfqRevealStatusReader {
   getRevealStatus(rfqId: string): Promise<'PROTECTED' | 'REVEALED' | 'BLIND' | null>;
 }
+
+export type { BuyerAddressRepository } from './supabase-buyer-address-repository';

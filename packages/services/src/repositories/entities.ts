@@ -60,6 +60,8 @@ export interface Rfq {
   evaluationDeadline?: string;
   buyerAnonymousToSuppliers: boolean;
   minQuotesRequired: number;
+  deliveryAddressSnapshot?: Record<string, unknown> | null;
+  billingAddressSnapshot?: Record<string, unknown> | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -160,6 +162,8 @@ export interface PurchaseOrder {
   placeOfSupplyStateCode?: string;
   placeOfSupplyBasis?: string;
   taxSnapshot?: Record<string, unknown> | null;
+  deliveryAddressSnapshot?: Record<string, unknown> | null;
+  billingAddressSnapshot?: Record<string, unknown> | null;
   taxableTotal?: number;
   cgstTotal?: number;
   sgstTotal?: number;
@@ -312,9 +316,43 @@ export interface Supplier {
   status: string;
   categories: string[];
   gstin?: string;
+  pan?: string;
+  legalBusinessName?: string;
+  tradeName?: string;
+  lifecycleState?: string;
+  verificationStatus?: string;
+  registeredAddress?: Record<string, unknown>;
+  contactPerson?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  onboardingClaimTokenHash?: string;
+  verifiedAt?: string;
+  verificationNotes?: string;
   capabilities?: Record<string, unknown>;
   ratingAvg?: number;
   serviceArea?: Record<string, unknown>;
+}
+
+export interface BuyerAddressEntity {
+  id: string;
+  profileId?: string;
+  organizationId?: string;
+  label: string;
+  line1: string;
+  line2?: string;
+  landmark?: string;
+  city: string;
+  state: string;
+  stateCode?: string;
+  pincode: string;
+  country: string;
+  contactPerson?: string;
+  contactPhone?: string;
+  isPrimary: boolean;
+  addressType: 'DELIVERY' | 'BILLING' | 'BOTH' | 'REGISTERED' | 'SITE';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ProcurementPerformanceRecord {

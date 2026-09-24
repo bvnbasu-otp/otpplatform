@@ -7,6 +7,9 @@ import {
   validateInvoiceAmountAgainstPo,
   type InvoiceStatus,
   type InvoiceType,
+  checkSupplierExecutionGate,
+  SupplierLifecycleState,
+  TruthfulVerificationStatus,
 } from '@otp/domain';
 import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
@@ -75,6 +78,27 @@ export class InvoiceService {
 
     const supplierAccess = requireSupplierAccess(actor, wo.supplierId);
     if (!supplierAccess.ok) return supplierAccess;
+
+    const supplier = await this.repos.suppliers.findById(wo.supplierId);
+    if (supplier) {
+      const gate = checkSupplierExecutionGate({
+        id: supplier.id,
+        lifecycleState:
+          (supplier.lifecycleState as SupplierLifecycleState) ||
+          SupplierLifecycleState.VERIFIED,
+        verificationStatus:
+          (supplier.verificationStatus as TruthfulVerificationStatus) ||
+          TruthfulVerificationStatus.VERIFIED,
+      });
+      if (!gate.allowed) {
+        return err(
+          new ValidationError(
+            gate.error ||
+              'Supplier must complete onboarding and verification before submitting invoices',
+          ),
+        );
+      }
+    }
 
     if (amount <= 0) return err(new ValidationError('Invoice amount must be positive'));
 

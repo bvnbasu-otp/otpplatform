@@ -23,3 +23,5 @@ export { SupabaseRevealedQuoteRepository } from './supabase-revealed-quote-repos
 export { SupabaseBlindInvitationRepository } from './supabase-blind-invitation-repository';
 export { SupabaseManagerInvitationRepository } from './supabase-manager-invitation-repository';
 export { SupabaseRfqRevealStatusReader } from './supabase-rfq-reveal-status-reader';
+export { SupabaseBuyerAddressRepository } from './supabase-buyer-address-repository';
+export type { BuyerAddressRepository } from './supabase-buyer-address-repository';

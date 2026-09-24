@@ -9,6 +9,9 @@ import {
   canTransitionPurchaseOrder,
   determinePlaceOfSupply,
   validateChangeOrderCommitment,
+  checkSupplierExecutionGate,
+  SupplierLifecycleState,
+  TruthfulVerificationStatus,
   type CalculatedLineItemTax,
   type ChangeOrderStatus,
   type ChangeOrderType,
@@ -62,6 +65,18 @@ export class PurchaseOrderService {
 
     const quote = await this.repos.quotes.findById(award.quoteId);
     if (!quote) return err(new ValidationError('Awarded quote not found'));
+
+    const supplier = await this.repos.suppliers.findById(quote.supplierId);
+    if (supplier) {
+      const gate = checkSupplierExecutionGate({
+        id: supplier.id,
+        lifecycleState: (supplier.lifecycleState as SupplierLifecycleState) || SupplierLifecycleState.VERIFIED,
+        verificationStatus: (supplier.verificationStatus as TruthfulVerificationStatus) || TruthfulVerificationStatus.VERIFIED,
+      });
+      if (!gate.allowed) {
+        return err(new ValidationError(gate.error || 'Supplier must complete onboarding and verification before PO creation'));
+      }
+    }
 
     const versions = await this.repos.quoteVersions.findByQuoteId(quote.id);
     const latest = versions.find((v) => v.version === quote.currentVersion);
@@ -140,6 +155,8 @@ export class PurchaseOrderService {
       utgstTotal: taxBreakdown.utgstTotal,
       igstTotal: taxBreakdown.igstTotal,
       taxSnapshot: taxSnapshot as unknown as Record<string, unknown>,
+      deliveryAddressSnapshot: rfq.deliveryAddressSnapshot ?? null,
+      billingAddressSnapshot: rfq.billingAddressSnapshot ?? null,
       createdAt: now,
       updatedAt: now,
     };
@@ -212,6 +229,18 @@ export class PurchaseOrderService {
     if (toStatus === 'ACCEPTED') {
       const supplierAccess = requireSupplierAccess(actor, po.supplierId);
       if (!supplierAccess.ok) return supplierAccess;
+
+      const supplier = await this.repos.suppliers.findById(po.supplierId);
+      if (supplier) {
+        const gate = checkSupplierExecutionGate({
+          id: supplier.id,
+          lifecycleState: (supplier.lifecycleState as SupplierLifecycleState) || SupplierLifecycleState.VERIFIED,
+          verificationStatus: (supplier.verificationStatus as TruthfulVerificationStatus) || TruthfulVerificationStatus.VERIFIED,
+        });
+        if (!gate.allowed) {
+          return err(new ValidationError(gate.error || 'Supplier must complete verification before PO acceptance'));
+        }
+      }
     } else {
       const access = requireOrgAccess(actor, po.organizationId, [
         'OWNER',

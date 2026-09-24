@@ -1,4 +1,9 @@
-import { canTransitionRfq, canTransitionRequirement } from '@otp/domain';
+import {
+  canTransitionRfq,
+  canTransitionRequirement,
+  SupplierLifecycleState,
+  TruthfulVerificationStatus,
+} from '@otp/domain';
 import type { ApprovalPolicyService } from '../interfaces/approval-policy-service';
 import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
@@ -115,6 +120,22 @@ export class AwardService {
         status: 'AWARDED',
         updatedAt: now,
       });
+    }
+
+    const winningSupplier = await this.repos.suppliers.findById(quote.supplierId);
+    if (winningSupplier && this.repos.suppliers.save) {
+      if (
+        !winningSupplier.lifecycleState ||
+        winningSupplier.lifecycleState === SupplierLifecycleState.QUOTE_PARTICIPANT
+      ) {
+        await this.repos.suppliers.save({
+          ...winningSupplier,
+          lifecycleState: SupplierLifecycleState.ONBOARDING_REQUIRED,
+          verificationStatus:
+            winningSupplier.verificationStatus ||
+            TruthfulVerificationStatus.NOT_PROVIDED,
+        });
+      }
     }
 
     await auditLog(

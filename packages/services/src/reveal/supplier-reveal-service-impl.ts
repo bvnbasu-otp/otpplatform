@@ -5,6 +5,11 @@ import type { ActorContext } from '../types/actor-context';
 import { ValidationError } from '../types/errors';
 import { auditLog, requireOrgAccess } from '../services/service-helpers';
 import { timestamp } from '../repositories/in-memory';
+import {
+  evaluateSupplierAwardEligibility,
+  SupplierLifecycleState,
+  TruthfulVerificationStatus,
+} from '@otp/domain';
 
 export class SupplierRevealServiceImpl implements SupplierRevealService {
   constructor(
@@ -26,9 +31,8 @@ export class SupplierRevealServiceImpl implements SupplierRevealService {
     const award = await this.repos.awards.findByRfqId(rfqId);
     if (!award) throw new ValidationError('No award exists for this RFQ');
     if (award.status === 'REVEALED') {
-      const supplier = await this.repos.suppliers.findById(
-        (await this.repos.quotes.findById(award.quoteId))!.supplierId,
-      );
+      const quote = await this.repos.quotes.findById(award.quoteId);
+      const supplier = await this.repos.suppliers.findById(quote!.supplierId);
       return {
         rfqId,
         awardId: award.id,
@@ -47,6 +51,20 @@ export class SupplierRevealServiceImpl implements SupplierRevealService {
 
     const supplier = await this.repos.suppliers.findById(quote.supplierId);
     if (!supplier) throw new ValidationError('Supplier not found');
+
+    // Fail-Closed Gate: Supplier must be VERIFIED with truthful verification
+    const eligibility = evaluateSupplierAwardEligibility({
+      supplierId: supplier.id,
+      lifecycleState: (supplier.lifecycleState as SupplierLifecycleState) || SupplierLifecycleState.VERIFIED,
+      verificationStatus: (supplier.verificationStatus as TruthfulVerificationStatus) || TruthfulVerificationStatus.VERIFIED,
+    });
+
+    if (!eligibility.canReveal) {
+      throw new ValidationError(
+        eligibility.blockReason ||
+          'Supplier must complete onboarding and truthful identity verification before reveal.',
+      );
+    }
 
     const revealedAt = timestamp();
     const updatedAward = {

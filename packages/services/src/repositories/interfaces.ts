@@ -3,6 +3,7 @@ import type {
   ApprovalInstance,
   Award,
   BankReconciliationRecordEntity,
+  BuyerAddressEntity,
   BuyerRewardAllocationEntity,
   BuyerRewardPolicyEntity,
   CoiDeclaration,
@@ -165,6 +166,19 @@ export interface PaymentAllocationRepository {
 export interface SupplierRepository {
   findById(id: string): Promise<Supplier | null>;
   findActiveByCategory(category: string): Promise<Supplier[]>;
+  save?(supplier: Supplier): Promise<Supplier>;
+  findByGstin?(gstin: string): Promise<Supplier | null>;
+  findByPan?(pan: string): Promise<Supplier | null>;
+  findByTokenHash?(tokenHash: string): Promise<Supplier | null>;
+}
+
+export interface BuyerAddressRepository {
+  findById(id: string): Promise<BuyerAddressEntity | null>;
+  findByOrganizationId(organizationId: string): Promise<BuyerAddressEntity[]>;
+  findByProfileId(profileId: string): Promise<BuyerAddressEntity[]>;
+  findPrimary(profileId?: string, organizationId?: string): Promise<BuyerAddressEntity | null>;
+  save(address: BuyerAddressEntity): Promise<BuyerAddressEntity>;
+  delete(id: string): Promise<void>;
 }
 
 export interface PerformanceRepository {
@@ -488,6 +502,7 @@ export interface Repositories {
   procurementContracts?: ProcurementContractRepository;
   organizationDelegations?: OrganizationDelegationRepository;
   rfqApprovalRouteEvaluations?: RfqApprovalRouteEvaluationRepository;
+  buyerAddresses?: BuyerAddressRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

@@ -3,6 +3,7 @@ import type {
   ApprovalInstance,
   Award,
   BankReconciliationRecordEntity,
+  BuyerAddressEntity,
   CoiDeclaration,
   CommitteeVote,
   CreditDebitNoteEntity,
@@ -118,6 +119,7 @@ export class InMemoryRepositories {
   procurementContracts = new Map<string, ProcurementContractEntity>();
   organizationDelegations = new Map<string, OrganizationDelegationEntity>();
   rfqApprovalRouteEvaluations = new Map<string, RfqApprovalRouteEvaluationEntity>();
+  buyerAddresses = new Map<string, BuyerAddressEntity>();
   suppliers = new Map<string, Supplier>();
 
   performance = new Map<string, ProcurementPerformanceRecord>();
@@ -1126,6 +1128,80 @@ export class InMemoryRepositories {
         [...store.values()].filter(
           (s) => s.status === 'ACTIVE' && s.categories.includes(category),
         ),
+      save: async (supplier: Supplier) => {
+        store.set(supplier.id, supplier);
+        return supplier;
+      },
+      findByGstin: async (gstin: string) =>
+        [...store.values()].find(
+          (s) => s.gstin?.toUpperCase() === gstin.toUpperCase(),
+        ) ?? null,
+      findByPan: async (pan: string) =>
+        [...store.values()].find(
+          (s) => s.pan?.toUpperCase() === pan.toUpperCase(),
+        ) ?? null,
+      findByTokenHash: async (tokenHash: string) =>
+        [...store.values()].find(
+          (s) => s.onboardingClaimTokenHash === tokenHash,
+        ) ?? null,
+    };
+  }
+
+  get buyerAddressesRepo(): Repositories['buyerAddresses'] {
+    const store = this.buyerAddresses;
+    return {
+      findById: async (id) => store.get(id) ?? null,
+      findByOrganizationId: async (organizationId) =>
+        [...store.values()].filter(
+          (a) => a.organizationId === organizationId && a.isActive,
+        ),
+      findByProfileId: async (profileId) =>
+        [...store.values()].filter(
+          (a) => a.profileId === profileId && a.isActive,
+        ),
+      findPrimary: async (profileId, organizationId) => {
+        if (organizationId) {
+          return (
+            [...store.values()].find(
+              (a) =>
+                a.organizationId === organizationId && a.isPrimary && a.isActive,
+            ) ?? null
+          );
+        }
+        if (profileId) {
+          return (
+            [...store.values()].find(
+              (a) => a.profileId === profileId && a.isPrimary && a.isActive,
+            ) ?? null
+          );
+        }
+        return null;
+      },
+      save: async (address: BuyerAddressEntity) => {
+        if (address.isPrimary) {
+          // Unset any existing primary address for the same profile/org
+          for (const [k, existing] of store.entries()) {
+            if (
+              existing.id !== address.id &&
+              ((address.organizationId &&
+                existing.organizationId === address.organizationId) ||
+                (address.profileId &&
+                  existing.profileId === address.profileId)) &&
+              existing.isPrimary
+            ) {
+              store.set(k, { ...existing, isPrimary: false });
+            }
+          }
+        }
+        store.set(address.id, address);
+        return address;
+      },
+      delete: async (id: string) => {
+        const item = store.get(id);
+        if (item) {
+          store.set(id, { ...item, isActive: false });
+        }
+      },
     };
   }
 
@@ -1193,13 +1269,19 @@ export class InMemoryRepositories {
       procurementContracts: this.procurementContractsRepo,
       organizationDelegations: this.organizationDelegationsRepo,
       rfqApprovalRouteEvaluations: this.rfqApprovalRouteEvaluationsRepo,
+      buyerAddresses: this.buyerAddressesRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };
   }
 
   seedSupplier(supplier: Supplier): void {
-    this.suppliers.set(supplier.id, supplier);
+    const enriched: Supplier = {
+      lifecycleState: 'VERIFIED',
+      verificationStatus: 'VERIFIED',
+      ...supplier,
+    };
+    this.suppliers.set(supplier.id, enriched);
   }
 }
 

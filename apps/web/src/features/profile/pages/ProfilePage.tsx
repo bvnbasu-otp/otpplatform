@@ -21,6 +21,9 @@ import {
   fetchOrganizationSubscription,
   type OrganizationSubscription,
 } from '@/features/subscription';
+import { AddressBookManager } from '../components/AddressBookManager';
+import { CommitteeTeamBuilder } from '@/features/org/components/CommitteeTeamBuilder';
+import { resolveBuyerPersona } from '@otp/domain';
 
 const ROLE_OPTIONS = [
   { value: 'COMMITTEE_MEMBER', label: 'Committee Member — evaluates & votes on RFQs' },
@@ -44,8 +47,14 @@ export function ProfilePage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'preferences'>(
-    tabParam === 'team' ? 'team' : tabParam === 'preferences' ? 'preferences' : 'profile'
+  const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'team' | 'preferences'>(
+    tabParam === 'addresses'
+      ? 'addresses'
+      : tabParam === 'team'
+      ? 'team'
+      : tabParam === 'preferences'
+      ? 'preferences'
+      : 'profile'
   );
 
   const [loading, setLoading] = useState(true);
@@ -171,7 +180,7 @@ export function ProfilePage() {
     } else if (tabParam === 'profile') setActiveTab('profile');
   }, [tabParam, searchParams]);
 
-  const handleTabSwitch = (tab: 'profile' | 'team' | 'preferences') => {
+  const handleTabSwitch = (tab: 'profile' | 'addresses' | 'team' | 'preferences') => {
     setActiveTab(tab);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -179,6 +188,9 @@ export function ProfilePage() {
       return next;
     });
   };
+
+  const activeOrgSummary = context.organizations.find((o) => o.id === context.organizationId);
+  const currentOrgType = activeOrgSummary?.orgType || null;
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -540,6 +552,21 @@ export function ProfilePage() {
           <button
             type="button"
             role="tab"
+            aria-selected={activeTab === 'addresses'}
+            onClick={() => handleTabSwitch('addresses')}
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
+              activeTab === 'addresses'
+                ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>📍</span>
+            <span>Address Book</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
             aria-selected={activeTab === 'team'}
             onClick={() => handleTabSwitch('team')}
             className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
@@ -548,8 +575,8 @@ export function ProfilePage() {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <span>🏢</span>
-            <span>Team ({members.length || 1})</span>
+            <span>{resolveBuyerPersona(currentOrgType) === 'RWA' ? '🏛️' : '🏢'}</span>
+            <span>{resolveBuyerPersona(currentOrgType) === 'RWA' ? 'Committee' : 'Team'} ({members.length || 1})</span>
           </button>
 
           <button
@@ -915,6 +942,16 @@ export function ProfilePage() {
       </div>
       )}
 
+      {/* 2. TAB: ADDRESS BOOK */}
+      {activeTab === 'addresses' && (
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-xs space-y-6">
+          <AddressBookManager
+            organizationId={context.organizationId || null}
+            persona={resolveBuyerPersona(currentOrgType)}
+          />
+        </section>
+      )}
+
       {/* 3. TAB 2: WORKSPACE & TEAM MEMBERS */}
       {activeTab === 'team' && (
         <div className="space-y-3">
@@ -1016,6 +1053,17 @@ export function ProfilePage() {
               </div>
             )}
           </div>
+
+          {/* Committee / Team Builder */}
+          {context.organizationId && (
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
+              <CommitteeTeamBuilder
+                organizationId={context.organizationId}
+                persona={resolveBuyerPersona(currentOrgType)}
+                organizationName={orgName}
+              />
+            </div>
+          )}
 
           {/* Team Invitation Card (if Manager/Owner) */}
           {canManageTeam && (

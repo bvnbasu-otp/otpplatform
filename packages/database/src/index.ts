@@ -36,6 +36,8 @@ export { mapBlindInvitationRow } from './mappers/blind-invitation-mapper';
 export type { BlindInvitation } from './mappers/blind-invitation-mapper';
 export { mapManagerInvitationRow } from './mappers/manager-invitation-mapper';
 export type { ManagerInvitation } from './mappers/manager-invitation-mapper';
+export { mapBuyerAddressRow, buyerAddressToRecord } from './mappers/buyer-address-mapper';
+export type { BuyerAddressRow } from './mappers/buyer-address-mapper';
 
 export type {
   IdentityProtectedQuoteRepository,
@@ -44,6 +46,7 @@ export type {
   ManagerInvitationRepository,
   IdentityProtectedViewRepositories,
   RfqRevealStatusReader,
+  BuyerAddressRepository,
   // Legacy aliases
   BlindQuoteRepository,
   BlindInvitationRepository,
@@ -58,4 +61,5 @@ export {
   SupabaseBlindInvitationRepository,
   SupabaseManagerInvitationRepository,
   SupabaseRfqRevealStatusReader,
+  SupabaseBuyerAddressRepository,
 } from './repositories/index';

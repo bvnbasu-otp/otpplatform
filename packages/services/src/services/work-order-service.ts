@@ -1,4 +1,9 @@
-import type { WorkOrderStatus } from '@otp/domain';
+import {
+  type WorkOrderStatus,
+  checkSupplierExecutionGate,
+  SupplierLifecycleState,
+  TruthfulVerificationStatus,
+} from '@otp/domain';
 import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
 import type { WorkOrder } from '../repositories/entities';
@@ -137,6 +142,27 @@ export class WorkOrderService {
 
     const supplierAccess = requireSupplierAccess(actor, wo.supplierId);
     if (!supplierAccess.ok) return supplierAccess;
+
+    const supplier = await this.repos.suppliers.findById(wo.supplierId);
+    if (supplier) {
+      const gate = checkSupplierExecutionGate({
+        id: supplier.id,
+        lifecycleState:
+          (supplier.lifecycleState as SupplierLifecycleState) ||
+          SupplierLifecycleState.VERIFIED,
+        verificationStatus:
+          (supplier.verificationStatus as TruthfulVerificationStatus) ||
+          TruthfulVerificationStatus.VERIFIED,
+      });
+      if (!gate.allowed) {
+        return err(
+          new ValidationError(
+            gate.error ||
+              'Supplier must be verified before executing work order milestones',
+          ),
+        );
+      }
+    }
 
     if (progressPercent < 0 || progressPercent > 100) {
       return err(new ValidationError('Progress must be between 0 and 100'));

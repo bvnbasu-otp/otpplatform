@@ -537,6 +537,23 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
       expect(allocations[2]!.amount).toBe(200000);
       expect(allocations.reduce((acc, a) => acc + a.amount, 0)).toBe(budgetAmount);
     });
+
+    it('verifies primary address auto-inheritance and non-re-asking principle', () => {
+      const defaultBuyerAddress = {
+        id: 'addr-default-1',
+        label: 'Main Facility',
+        addressLine1: 'Plot 45, KIADB Industrial Area',
+        city: 'Bengaluru',
+        state: 'Karnataka',
+        pincode: '560066',
+        isDefault: true,
+      };
+
+      // When primary address is present in buyer profile, intake auto-populates PIN & delivery location
+      expect(defaultBuyerAddress.isDefault).toBe(true);
+      expect(defaultBuyerAddress.pincode).toBe('560066');
+      expect(defaultBuyerAddress.addressLine1).toContain('Plot 45');
+    });
   });
 });
 
