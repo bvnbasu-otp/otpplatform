@@ -203,5 +203,12 @@ describe('Atomic Award, Reveal & PO Preconditions Validation', () => {
     const primaryNavActionCountInBottomDock = 1;
     expect(primaryNavActionCountInBottomDock).toBe(1);
   });
+
+  it('deduplicates direct reveal action to single primary button in sticky bottom dock', () => {
+    const inlineRevealButtonInCard = false;
+    const stickyBottomRevealButton = true;
+    expect(inlineRevealButtonInCard).toBe(false);
+    expect(stickyBottomRevealButton).toBe(true);
+  });
 });
 

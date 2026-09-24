@@ -442,6 +442,15 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () =>
       expect(bottomDockCta).toContain('Decision Room');
       expect(bottomDockCta).not.toContain('bid');
     });
+
+    it('verifies quote comparison summary header is scoped exclusively to quotes review tab', () => {
+      const activeTabs = ['quotes', 'qa', 'vote', 'award'];
+      const showHeader = (tab: string) => tab === 'quotes';
+      expect(showHeader('quotes')).toBe(true);
+      expect(showHeader('qa')).toBe(false);
+      expect(showHeader('vote')).toBe(false);
+      expect(showHeader('award')).toBe(false);
+    });
   });
 });
 

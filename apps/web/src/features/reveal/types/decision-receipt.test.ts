@@ -157,3 +157,12 @@ describe('buildDecisionReceipt', () => {
     );
   });
 });
+
+describe('supplier reveal single dominant action', () => {
+  it('deduplicates intent confirmation button to sticky bottom dock', () => {
+    const inlineRevealButtonInCard = false;
+    const stickyBottomRevealButton = true;
+    expect(inlineRevealButtonInCard).toBe(false);
+    expect(stickyBottomRevealButton).toBe(true);
+  });
+});

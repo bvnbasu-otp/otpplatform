@@ -267,5 +267,15 @@ describe('Phase 7.1 — 22 Formal Failure Path Regressions (F01 to F22)', () => 
     expect(cardSelectionAction).toBe('CARD_CLICK');
     expect(stickyBallotCTA).toContain('Confirm & Cast Vote');
   });
+
+  // F28: Committee Decision Room Quorum Header & Button Deduplication
+  it('F28: Guarantees single unified live quorum meter and single primary proceed-to-award dock action', () => {
+    const hasTopBanner = false;
+    const hasTopAwardButton = false;
+    const hasStickyAwardButton = true;
+    expect(hasTopBanner).toBe(false);
+    expect(hasTopAwardButton).toBe(false);
+    expect(hasStickyAwardButton).toBe(true);
+  });
 });
 

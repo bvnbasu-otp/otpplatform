@@ -522,6 +522,21 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
         expect(totalPct).toBe(100);
       }
     });
+
+    it('verifies dynamic rupee allocation breakdown calculation across payment presets', () => {
+      const budgetAmount = 1000000; // ₹10,00,000
+      const threeSplit = PAYMENT_PRESETS.find((p) => p.id === 'THREE_SPLIT');
+      expect(threeSplit).toBeDefined();
+      const allocations = threeSplit!.splits.map((s) => ({
+        label: s.label,
+        pct: s.pct,
+        amount: Math.round((budgetAmount * s.pct) / 100),
+      }));
+      expect(allocations[0]!.amount).toBe(300000);
+      expect(allocations[1]!.amount).toBe(500000);
+      expect(allocations[2]!.amount).toBe(200000);
+      expect(allocations.reduce((acc, a) => acc + a.amount, 0)).toBe(budgetAmount);
+    });
   });
 });
 
