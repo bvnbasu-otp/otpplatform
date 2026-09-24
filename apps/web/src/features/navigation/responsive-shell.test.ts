@@ -80,7 +80,7 @@ describe('OTP Phase 0: Responsive, Touch Target & Accessibility Validation', () 
 
     it('verifies bottom padding formula for safe-area insets', () => {
       const bottomNavHeight = 56; // 14 Tailwind units (h-14 = 3.5rem = 56px)
-      const contentBottomPadding = 'calc(5rem + env(safe-area-inset-bottom, 0px))';
+      const contentBottomPadding = 'calc(6.5rem + env(safe-area-inset-bottom, 0px))';
       
       expect(bottomNavHeight).toBe(56);
       expect(contentBottomPadding).toContain('safe-area-inset-bottom');

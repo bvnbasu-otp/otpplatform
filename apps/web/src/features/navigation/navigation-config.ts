@@ -200,7 +200,7 @@ export function getCanonicalHeaderMenuSections(context: RoleContext): HeaderMenu
   } else if (context.side === 'SUPPLIER') {
     workspaceItems.push({ label: 'Capabilities & Catalog', to: '/supplier/capabilities', icon: '📡' });
   } else {
-    workspaceItems.push({ label: 'New Requirement', to: '/requirements/new', icon: '⚡' });
+    workspaceItems.push({ label: 'New Requirement', to: '/intake', icon: '⚡' });
   }
 
   return [

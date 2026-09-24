@@ -71,7 +71,7 @@ describe('routes anyone can reach without an account', () => {
 describe('routes that need a session', () => {
   const GUARDED = [
     '/dashboard',
-    '/requirements/new',
+    '/intake',
     '/rfq/:rfqId/identity-protected-comparison',
     '/rfq/:rfqId/clarification',
     '/rfq/:rfqId/committee',

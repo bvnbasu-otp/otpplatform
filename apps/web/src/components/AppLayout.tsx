@@ -35,7 +35,7 @@ export function AppLayout() {
         {/* Main Content Viewport with Safe Bottom Padding */}
         <main
           className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col relative ${
-            isWorkflowRoute ? 'pb-0' : 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]'
+            isWorkflowRoute ? 'pb-0' : 'pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]'
           }`}
         >
           <ErrorBoundary>
