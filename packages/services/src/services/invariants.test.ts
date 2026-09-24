@@ -290,12 +290,14 @@ describe('Phase 3.5 Domain State Machines', () => {
     expect(canTransitionPurchaseOrder('ACCEPTED', 'IN_PROGRESS')).toBe(true);
     expect(canTransitionPurchaseOrder('IN_PROGRESS', 'COMPLETED')).toBe(true);
 
-    // Valid cancellation paths from intermediate states
+    // Valid cancellation paths from intermediate states (pre-acceptance only)
     expect(canTransitionPurchaseOrder('DRAFT', 'CANCELLED')).toBe(true);
     expect(canTransitionPurchaseOrder('PENDING_APPROVAL', 'CANCELLED')).toBe(true);
     expect(canTransitionPurchaseOrder('APPROVED', 'CANCELLED')).toBe(true);
     expect(canTransitionPurchaseOrder('ISSUED', 'CANCELLED')).toBe(true);
-    expect(canTransitionPurchaseOrder('ACCEPTED', 'CANCELLED')).toBe(true);
+
+    // Post-acceptance cancellation is strictly blocked
+    expect(canTransitionPurchaseOrder('ACCEPTED', 'CANCELLED')).toBe(false);
 
     // Invalid transitions and illegal forward jumps
     expect(canTransitionPurchaseOrder('DRAFT', 'ISSUED')).toBe(false);

@@ -167,7 +167,7 @@ export class PaymentService {
 
       poId = po.id;
 
-      const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
+      const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER']);
       if (!access.ok) return access;
 
       // Calculate existing allocations on invoice
@@ -267,7 +267,7 @@ export class PaymentService {
     const po = await this.repos.purchaseOrders.findById(poId);
     if (!po) return err(new ValidationError('Purchase order not found'));
 
-    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER']);
     if (!access.ok) return access;
 
     let totalAllocated = 0;
@@ -492,7 +492,7 @@ export class PaymentService {
     const po = await this.repos.purchaseOrders.findById(wo.purchaseOrderId);
     if (!po) return err(new ValidationError('Purchase order not found'));
 
-    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER']);
     if (!access.ok) return access;
 
     const existingPaymentAllocs = await this.repos.paymentAllocations.findByPaymentId(payment.id);
@@ -663,7 +663,7 @@ export class PaymentService {
     const po = await this.repos.purchaseOrders.findById(wo.purchaseOrderId);
     if (!po) return err(new ValidationError('Purchase order not found'));
 
-    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER']);
     if (!access.ok) return access;
 
     const payment = await this.repos.payments.findById(allocation.paymentId);
@@ -821,7 +821,7 @@ export class PaymentService {
     const po = await this.repos.purchaseOrders.findById(poId);
     if (!po) return err(new NotFoundError('Purchase order not found'));
 
-    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER']);
     if (!access.ok) return access;
 
     if (invoice.status !== 'APPROVED' && invoice.status !== 'PARTIALLY_PAID') {
@@ -2867,7 +2867,7 @@ export class PaymentService {
     if (!po) return err(new NotFoundError('Purchase order not found'));
 
     if (!actor.isPlatformAdmin) {
-      const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
+      const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER']);
       if (!access.ok) return access;
     }
 

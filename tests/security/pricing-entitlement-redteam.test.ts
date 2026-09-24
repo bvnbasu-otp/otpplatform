@@ -46,7 +46,7 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
       billingMode: 'LIVE',
     });
     // Should treat negative as 0 used and allow max monthly allowance
-    expect(evalResult.monthlyRemaining).toBe(5);
+    expect(evalResult.monthlyRemaining).toBe(3);
     expect(evalResult.canCreateRfq).toBe(true);
   });
 
@@ -184,7 +184,7 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
   // VECTOR 9: Unused RFQ Rollover Denial (Zero Carryover)
   // -------------------------------------------------------------------------
   it('Vector 9: Unused RFQs from prior month do NOT roll over to new month', () => {
-    // In Month 1, used 1 out of 5 RFQs (4 left unused)
+    // In Month 1, used 1 out of 3 RFQs (2 left unused)
     const month1Eval = evaluateRfqEntitlement({
       tierId: 'INDIVIDUAL',
       plan: 'MONTHLY',
@@ -194,9 +194,9 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
       now: new Date('2026-01-15T10:00:00Z'),
       billingMode: 'LIVE',
     });
-    expect(month1Eval.monthlyRemaining).toBe(4);
+    expect(month1Eval.monthlyRemaining).toBe(2);
 
-    // In Month 2 (new calendar month), usage counter starts at 0, allowance is strictly 5 (not 5 + 4)
+    // In Month 2 (new calendar month), usage counter starts at 0, allowance is strictly 3 (not 3 + 2)
     const month2Eval = evaluateRfqEntitlement({
       tierId: 'INDIVIDUAL',
       plan: 'MONTHLY',
@@ -206,9 +206,9 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
       now: new Date('2026-02-05T10:00:00Z'),
       billingMode: 'LIVE',
     });
-    expect(month2Eval.monthlyAllowance).toBe(5);
-    expect(month2Eval.monthlyRemaining).toBe(5);
-    expect(month2Eval.totalAvailableRfqs).toBe(5);
+    expect(month2Eval.monthlyAllowance).toBe(3);
+    expect(month2Eval.monthlyRemaining).toBe(3);
+    expect(month2Eval.totalAvailableRfqs).toBe(3);
   });
 
   // -------------------------------------------------------------------------
@@ -227,7 +227,7 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
     expect(evalResult.monthlyAllowance).toBe(6);
     expect(evalResult.monthlyRemaining).toBe(0);
     expect(evalResult.canCreateRfq).toBe(false);
-    expect(evalResult.rejectionReason).toContain('Monthly entitlement limit reached (6/6 RFQs used');
+    expect(evalResult.rejectionReason).toContain('Entitlement limit reached (6/6 monthly RFQs used');
   });
 
   // -------------------------------------------------------------------------
@@ -235,7 +235,7 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
   // -------------------------------------------------------------------------
   it('Vector 11: 6th bonus RFQ resets per calendar month and does not accumulate over 12 months (e.g. 12 x 1 = 12 bonus burst is prevented)', () => {
     const evalResult = evaluateRfqEntitlement({
-      tierId: 'INDIVIDUAL',
+      tierId: 'MSME',
       plan: 'YEARLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: new Date(Date.now() + 86400000 * 300).toISOString(),

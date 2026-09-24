@@ -287,6 +287,9 @@ describe('Requirement Feature Module Tests', () => {
 
       const res = await fetchOrganizationRequirements(null);
       expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.requirements).toEqual([]);
+      }
     });
   });
 });

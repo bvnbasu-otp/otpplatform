@@ -492,7 +492,10 @@ export function evaluateRfqEntitlement(
   const tier = SUBSCRIPTION_TIERS[params.tierId] || SUBSCRIPTION_TIERS.INDIVIDUAL;
 
   const isBonusApplied = isYearly && Boolean(tier.quarterlyBonusRfqs || tier.yearlyMonthlyRfqs > tier.monthlyRfqs);
-  const monthlyAllowance = tier.monthlyRfqs;
+  const monthlyAllowance =
+    isYearly && tier.yearlyMonthlyRfqs > tier.monthlyRfqs
+      ? tier.yearlyMonthlyRfqs
+      : tier.monthlyRfqs;
 
   const usedThisMonth = Math.max(0, Math.floor(Number(params.rfqsUsedInCurrentMonth || 0)));
   const monthlyRemaining = Math.max(0, monthlyAllowance - usedThisMonth);

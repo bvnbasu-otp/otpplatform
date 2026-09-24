@@ -247,9 +247,9 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
         now: '2026-09-15T12:00:00Z',
       });
 
-      expect(res.monthlyAllowance).toBe(5);
+      expect(res.monthlyAllowance).toBe(6);
       expect(res.rfqsUsedInCurrentMonth).toBe(4);
-      expect(res.monthlyRemaining).toBe(1);
+      expect(res.monthlyRemaining).toBe(2);
       expect(res.canCreateRfq).toBe(true);
       expect(res.isBonusApplied).toBe(true);
     });

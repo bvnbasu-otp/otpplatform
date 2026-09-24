@@ -230,7 +230,14 @@ export async function fetchOrganizationRequirements(organizationId?: string | nu
       { p_organization_id: organizationId },
     );
 
-    if (!countError && rpcRows) {
+    if (countError) {
+      return {
+        ok: false,
+        error: (countError as { message?: string })?.message || 'Failed to load quote counts',
+      };
+    }
+
+    if (rpcRows) {
       quoteCountByRfq = new Map<string, number>(
         (rpcRows ?? []).map((row: { rfq_id: string; quotes_count: number }) => [
           row.rfq_id,
