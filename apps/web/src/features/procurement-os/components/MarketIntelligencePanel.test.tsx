@@ -71,4 +71,16 @@ describe('MarketIntelligencePanel (Phase C8.3.1)', () => {
     expect(element.props.isLoading).toBe(true);
     expect(element.props.intelligence).toBeNull();
   });
+
+  it('exposes honest fallback ladder with regional baseline active when live API is unconfigured', () => {
+    const element = React.createElement(MarketIntelligencePanel, {
+      intelligence: staticIntelligence,
+    });
+
+    expect(element).toBeDefined();
+    expect(element.props.intelligence?.sourceType).toBe('STATIC_REFERENCE');
+    // Ensure no false claims of live stream
+    expect(element.props.intelligence?.sourceType).not.toBe('LIVE_API');
+    expect(element.props.intelligence?.sampleSize).toBe(34);
+  });
 });

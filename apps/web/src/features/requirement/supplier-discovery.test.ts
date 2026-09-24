@@ -321,9 +321,9 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
       expect(vEmail.error).toMatch(/email address/i);
     });
 
-    it('allows inviting known supplier by phone with idempotency', async () => {
+    it('allows inviting known supplier by phone with idempotency and returns magic quote token', async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
-        data: { ok: true, reused: false },
+        data: { ok: true, reused: false, token: 'mock-magic-token-xyz123' },
         error: null,
       } as any);
 
@@ -331,12 +331,15 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
       expect(res.ok).toBe(true);
       if (res.ok) {
         expect(res.reused).toBe(false);
+        expect(res.token).toBe('mock-magic-token-xyz123');
+        expect(res.quickQuotePath).toBe('/q/mock-magic-token-xyz123');
+        expect(res.quickQuoteUrl).toContain('/q/mock-magic-token-xyz123');
       }
     });
 
-    it('handles duplicate / idempotent repeat invitations gracefully (reused: true)', async () => {
+    it('handles duplicate / idempotent repeat invitations gracefully (reused: true) and returns token', async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
-        data: { ok: true, reused: true },
+        data: { ok: true, reused: true, token: 'existing-magic-token-456' },
         error: null,
       } as any);
 
@@ -344,6 +347,8 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
       expect(res.ok).toBe(true);
       if (res.ok) {
         expect(res.reused).toBe(true);
+        expect(res.token).toBe('existing-magic-token-456');
+        expect(res.quickQuotePath).toBe('/q/existing-magic-token-456');
       }
     });
 
@@ -672,6 +677,13 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
       const totalDiscovered = 14;
       expect(channels.length).toBe(3);
       expect(totalDiscovered).toBe(14);
+    });
+
+    it('verifies unified Request Offers & Broadcast RFQ primary CTA button label', () => {
+      const inactiveRfqCta = '⚡ Request Offers & Broadcast RFQ →';
+      const activeRfqCta = 'View Incoming Sealed Quotes →';
+      expect(inactiveRfqCta).toContain('Request Offers & Broadcast RFQ');
+      expect(activeRfqCta).toContain('View Incoming Sealed Quotes');
     });
   });
 });

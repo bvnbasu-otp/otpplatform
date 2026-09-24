@@ -49,7 +49,7 @@ export function QuoteStickyBottomBar({
 
   return (
     <div
-      className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
+      className="sticky bottom-0 z-40 mt-auto bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
       data-testid="quote-comparison-sticky-bar"
     >
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">

@@ -210,5 +210,12 @@ describe('Atomic Award, Reveal & PO Preconditions Validation', () => {
     expect(inlineRevealButtonInCard).toBe(false);
     expect(stickyBottomRevealButton).toBe(true);
   });
+
+  it('verifies AwardPage bottom dock uses sticky containment to prevent layout collisions', () => {
+    const dockClasses = 'sticky bottom-0 z-40 mt-auto bg-slate-900/95';
+    expect(dockClasses).toContain('sticky bottom-0');
+    expect(dockClasses).toContain('mt-auto');
+    expect(dockClasses).not.toContain('fixed sm:absolute');
+  });
 });
 

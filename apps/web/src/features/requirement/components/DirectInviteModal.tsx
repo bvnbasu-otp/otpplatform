@@ -106,7 +106,12 @@ export function DirectInviteModal({
   const [value, setValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [createdInvite, setCreatedInvite] = useState<{
+    quickQuoteUrl?: string;
+    token?: string;
+    reused: boolean;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Handle escape key to close modal
   useEffect(() => {
@@ -135,7 +140,6 @@ export function DirectInviteModal({
 
     setIsSubmitting(true);
     setError(null);
-    setSuccessMessage(null);
 
     const res = await inviteDirectSupplier(rfqId, kind, validation.normalized);
     setIsSubmitting(false);
@@ -145,20 +149,32 @@ export function DirectInviteModal({
       return;
     }
 
-    if (res.reused) {
-      setSuccessMessage('Supplier was already invited to this RFQ.');
-    } else {
-      setSuccessMessage('Direct supplier invitation dispatched securely!');
-    }
-
+    setCreatedInvite({
+      quickQuoteUrl: res.quickQuoteUrl,
+      token: res.token,
+      reused: res.reused,
+    });
     setValue('');
     onInvited();
-
-    setTimeout(() => {
-      onClose();
-      setSuccessMessage(null);
-    }, 1400);
   }
+
+  const handleCopyLink = async () => {
+    if (!createdInvite?.quickQuoteUrl) return;
+    try {
+      await navigator.clipboard.writeText(createdInvite.quickQuoteUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // fallback
+    }
+  };
+
+  const handleReset = () => {
+    setCreatedInvite(null);
+    setValue('');
+    setError(null);
+    onClose();
+  };
 
   return (
     <div
@@ -229,60 +245,121 @@ export function DirectInviteModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label htmlFor="contact-input" className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
-              {kind === 'PHONE' ? 'Supplier Mobile Number (10 Digits)' : 'Supplier Work Email'}
-            </label>
-            <input
-              id="contact-input"
-              type={kind === 'PHONE' ? 'tel' : 'email'}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={kind === 'PHONE' ? 'e.g. 9876543210 or +91 9876543210' : 'e.g. sales@precisioneng.com'}
-              className="min-h-[48px] w-full rounded-lg border bg-background px-3 py-2 text-base sm:text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary mobile-touch-target"
-              autoFocus
-              autoComplete={kind === 'PHONE' ? 'tel' : 'email'}
-            />
-          </div>
+        {createdInvite ? (
+          <div className="space-y-3.5 animate-in fade-in" data-testid="direct-invite-success">
+            <div className="rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-3 space-y-1">
+              <span className="font-bold text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                <span>✓</span>
+                <span>{createdInvite.reused ? 'Supplier Already Invited' : 'Supplier Invitation Registered'}</span>
+              </span>
+              <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-snug">
+                {createdInvite.reused
+                  ? 'This vendor was previously invited to this RFQ under an identity-protected alias.'
+                  : 'Invitation registered in database. Direct single-use quotation link is generated below.'}
+              </p>
+            </div>
 
-          {error && (
-            <p className="text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-950/40 p-2.5 rounded-lg border border-red-200 dark:border-red-800 animate-in fade-in">
-              {error}
-            </p>
-          )}
+            {/* Truthful gateway notice & Link sharing */}
+            <div className="rounded-xl border bg-muted/20 p-3 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground font-semibold">
+                <span>Direct Quotation Link:</span>
+                <span className="text-[10px] text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-300">
+                  Gateway offline · Share directly
+                </span>
+              </div>
 
-          {successMessage && (
-            <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-800 animate-in fade-in">
-              {successMessage}
-            </p>
-          )}
+              {createdInvite.quickQuoteUrl && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      readOnly
+                      value={createdInvite.quickQuoteUrl}
+                      aria-label="Quotation Link"
+                      className="min-h-[44px] flex-1 rounded-lg border bg-background px-2.5 py-1.5 text-xs font-mono text-foreground focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyLink()}
+                      className="min-h-[44px] px-3.5 py-1.5 rounded-lg bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shrink-0"
+                    >
+                      {copied ? '✓ Copied!' : 'Copy Link'}
+                    </button>
+                  </div>
 
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="min-h-[48px] flex-1 rounded-lg border bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="min-h-[48px] flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target flex items-center justify-center gap-1.5"
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Sending…</span>
-                </>
-              ) : (
-                <span>Send Invitation →</span>
+                  {/* 1-Tap WhatsApp Forward */}
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`Hello, you have been invited to submit a commercial quote on OTP. Submit your quotation here: ${createdInvite.quickQuoteUrl}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-h-[44px] w-full rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 p-2"
+                  >
+                    <span>📲</span>
+                    <span>Forward Link via WhatsApp →</span>
+                  </a>
+                </div>
               )}
-            </button>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="min-h-[44px] w-full rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition"
+              >
+                Done
+              </button>
+            </div>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <label htmlFor="contact-input" className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                {kind === 'PHONE' ? 'Supplier Mobile Number (10 Digits)' : 'Supplier Work Email'}
+              </label>
+              <input
+                id="contact-input"
+                type={kind === 'PHONE' ? 'tel' : 'email'}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={kind === 'PHONE' ? 'e.g. 9876543210 or +91 9876543210' : 'e.g. sales@precisioneng.com'}
+                className="min-h-[48px] w-full rounded-lg border bg-background px-3 py-2 text-base sm:text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary mobile-touch-target"
+                autoFocus
+                autoComplete={kind === 'PHONE' ? 'tel' : 'email'}
+              />
+            </div>
+
+            {error && (
+              <p className="text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-950/40 p-2.5 rounded-lg border border-red-200 dark:border-red-800 animate-in fade-in">
+                {error}
+              </p>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="min-h-[48px] flex-1 rounded-lg border bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition mobile-touch-target"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="min-h-[48px] flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target flex items-center justify-center gap-1.5"
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Inviting…</span>
+                  </>
+                ) : (
+                  <span>Send Invitation →</span>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

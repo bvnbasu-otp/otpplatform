@@ -8,6 +8,7 @@ export interface DeliveryInspectionPanelProps {
   workOrder: WorkOrderSummary;
   role: 'buyer' | 'supplier';
   onAccepted?: () => void;
+  onGoToInvoices?: () => void;
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -30,6 +31,7 @@ export function DeliveryInspectionPanel({
   workOrder,
   role,
   onAccepted,
+  onGoToInvoices,
 }: DeliveryInspectionPanelProps) {
   const [rating, setRating] = useState<number>(workOrder.rating ?? 5);
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -94,6 +96,37 @@ export function DeliveryInspectionPanel({
             </p>
           </div>
         )}
+
+        {/* Contextual What Comes Next Banner */}
+        <div className="rounded-xl border border-emerald-300/80 dark:border-emerald-800 bg-white/80 dark:bg-emerald-950/40 p-3 space-y-2 text-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base">🚀</span>
+              <strong className="text-foreground font-black text-xs">
+                What Comes Next: Commercial Tax Invoicing &amp; Settlement
+              </strong>
+            </div>
+            <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200 text-[10px] font-black px-2 py-0.5 border border-emerald-300">
+              Unlocked
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            {role === 'buyer'
+              ? 'Quality inspection is approved. Official GST tax invoices can now be reviewed, approved, and settled in the Invoice tab.'
+              : 'Quality inspection is approved by buyer. You are now authorized to generate and submit official GST tax invoices for milestone payment release.'}
+          </p>
+          {onGoToInvoices && (
+            <div className="pt-1 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={onGoToInvoices}
+                className="min-h-[40px] rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black px-4 py-2 text-xs flex items-center gap-1.5 shadow-sm transition mobile-touch-target"
+              >
+                <span>Review Invoices &amp; Settlement →</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -253,8 +286,17 @@ export function DeliveryInspectionPanel({
       )}
 
       {success && (
-        <div className="rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-          {success}
+        <div className="rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-3 text-xs font-bold text-emerald-800 dark:text-emerald-300 space-y-2">
+          <div>{success}</div>
+          {onGoToInvoices && (
+            <button
+              type="button"
+              onClick={onGoToInvoices}
+              className="min-h-[40px] rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black px-4 py-2 text-xs flex items-center justify-center gap-1.5 shadow-sm transition w-full mobile-touch-target"
+            >
+              <span>Review Invoices &amp; Settlement →</span>
+            </button>
+          )}
         </div>
       )}
 

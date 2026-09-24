@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchSupplierNetworkSummary } from '@/features/procurement-os/api/fetch-procurement-os';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
 import type { SupplierNetworkSummary } from '@otp/domain';
@@ -23,6 +23,7 @@ interface DiscoverSuppliersPageProps {
 }
 
 export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPageProps) {
+  const navigate = useNavigate();
   const [rfqId, setRfqId] = useState<string | null>(null);
   const [rfqStatus, setRfqStatus] = useState<string | null>(null);
   const [context, setContext] = useState<RequirementRfqContext | null>(null);
@@ -35,6 +36,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   const loadNetworksAndSuppliers = useCallback(async (id: string) => {
     let [netRes, count, supRes] = await Promise.all([
@@ -170,6 +172,28 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
     : filteredSuppliers.length === 0
     ? 'FILTERED_EMPTY'
     : 'MATCHED';
+
+  async function handleBroadcastRfq() {
+    if (!rfqId) return;
+    setIsBroadcasting(true);
+    setError(null);
+    try {
+      if (invitationCount === 0 || suppliers.length === 0) {
+        await discoverAndInvite(rfqId);
+      }
+      const openRes = await openRfq(rfqId);
+      if (!openRes.ok && !openRes.error?.toLowerCase().includes('cannot open rfq from status open')) {
+        setError(openRes.error);
+        setIsBroadcasting(false);
+        return;
+      }
+      navigate(`/rfq/${rfqId}/quotes`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to broadcast RFQ');
+    } finally {
+      setIsBroadcasting(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -449,7 +473,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
       )}
 
       {/* Mobile-First Sticky Bottom Action Bar */}
-      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pb-safe">
+      <div className="sticky bottom-0 z-40 mt-auto bg-background/95 backdrop-blur-md border-t p-3 sm:p-4 shadow-lg pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pb-safe">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center justify-between w-full sm:w-auto gap-2">
             <div className="text-left">
@@ -458,7 +482,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 <span data-testid="selected-suppliers-count">{selectedIds.size} Suppliers Selected</span>
               </div>
               <span className="text-[10px] text-muted-foreground block">
-                {isQuotingActive ? 'Quoting is live • Sealed quotes incoming' : 'Ready to broadcast anonymous requirement'}
+                {isQuotingActive ? 'Quoting is live • Sealed quotes incoming' : 'Ready to broadcast requirement'}
               </span>
             </div>
 
@@ -474,7 +498,18 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {rfqId ? (
+            {rfqId && (rfqStatus === 'DRAFT' || !isQuotingActive) ? (
+              <button
+                type="button"
+                disabled={isBroadcasting}
+                onClick={() => void handleBroadcastRfq()}
+                className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
+                data-testid="broadcast-rfq-cta"
+              >
+                <span>⚡</span>
+                <span>{isBroadcasting ? 'Broadcasting…' : 'Request Offers & Broadcast RFQ →'}</span>
+              </button>
+            ) : rfqId ? (
               <Link
                 to={`/rfq/${rfqId}/quotes`}
                 className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
@@ -488,7 +523,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition mobile-touch-target"
                 data-testid="continue-to-rfq-review-cta"
               >
-                <span>View Incoming Sealed Quotes →</span>
+                <span>Review Requirement &amp; RFQ →</span>
               </Link>
             )}
           </div>

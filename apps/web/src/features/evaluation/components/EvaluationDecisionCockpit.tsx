@@ -860,12 +860,11 @@ export function EvaluationDecisionCockpit({
                         </a>
                       )}
 
-                      <Link
-                        to={existingPoId ? `/purchase-orders/${existingPoId}` : '/purchase-orders'}
-                        className="rounded-xl bg-primary px-4 py-2.5 text-xs font-extrabold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center gap-1.5 min-h-[44px] mobile-touch-target"
-                      >
-                        <span>📄</span> View Purchase Order →
-                      </Link>
+                      {existingPoId && (
+                        <span className="text-[10px] font-mono font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-800">
+                          ✓ PO Generated
+                        </span>
+                      )}
                     </div>
                   </div>
 

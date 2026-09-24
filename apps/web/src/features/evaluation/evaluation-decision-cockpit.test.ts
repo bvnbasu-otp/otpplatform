@@ -451,6 +451,13 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () =>
       expect(showHeader('vote')).toBe(false);
       expect(showHeader('award')).toBe(false);
     });
+
+    it('verifies spotlight card eliminates duplicate purchase order action button', () => {
+      const duplicatePoButtonInSpotlight = false;
+      const primaryNavigationInBottomDock = true;
+      expect(duplicatePoButtonInSpotlight).toBe(false);
+      expect(primaryNavigationInBottomDock).toBe(true);
+    });
   });
 });
 

@@ -254,7 +254,8 @@ export async function inviteDirectSupplier(
   kind: DirectInviteKind,
   value: string,
 ): Promise<
-  { ok: true; reused: boolean } | { ok: false; error: string }
+  | { ok: true; reused: boolean; token?: string; quickQuotePath?: string; quickQuoteUrl?: string }
+  | { ok: false; error: string }
 > {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -269,8 +270,27 @@ export async function inviteDirectSupplier(
 
   if (error) return { ok: false, error: error.message };
 
-  const result = (data ?? {}) as { ok?: boolean; reused?: boolean };
-  return { ok: true, reused: Boolean(result.reused) };
+  const result = (data ?? {}) as {
+    ok?: boolean;
+    reused?: boolean;
+    token?: string;
+    quickQuotePath?: string;
+  };
+  const token = result.token;
+  const quickQuotePath = result.quickQuotePath || (token ? `/q/${token}` : undefined);
+  const origin =
+    typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null'
+      ? window.location.origin
+      : 'https://otp.market';
+  const quickQuoteUrl = quickQuotePath ? `${origin}${quickQuotePath}` : undefined;
+
+  return {
+    ok: true,
+    reused: Boolean(result.reused),
+    token,
+    quickQuotePath,
+    quickQuoteUrl,
+  };
 }
 
 export async function openRfq(rfqId: string): Promise<

@@ -144,6 +144,33 @@ export function MarketIntelligencePanel({
         )}
       </div>
 
+      {/* Fallback Ladder Visual Stepper */}
+      <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 space-y-1.5" data-testid="market-intel-fallback-ladder">
+        <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+          <span>Truthful Pricing Fallback Ladder</span>
+          <span className="font-mono text-[9px] font-semibold text-primary">
+            {isLive ? 'Tier 1: Upstream Live' : isTransacted ? 'Tier 2: Transacted DB' : 'Tier 3: Regional Baseline'}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px]">
+          <div className={`p-2 rounded-lg border flex items-center gap-1.5 ${isLive ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-bold' : 'border-border/60 bg-card/60 text-muted-foreground opacity-60'}`}>
+            <span>{isLive ? '🟢' : '⚪'}</span>
+            <span className="truncate">1. Live API Feed {isLive ? '(Active)' : '(Unconfigured)'}</span>
+          </div>
+          <div className={`p-2 rounded-lg border flex items-center gap-1.5 ${isTransacted ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 font-bold' : 'border-border/60 bg-card/60 text-muted-foreground opacity-60'}`}>
+            <span>{isTransacted ? '🔵' : '⚪'}</span>
+            <span className="truncate">2. Transacted Cache {isTransacted ? '(Active)' : '(Cold)'}</span>
+          </div>
+          <div className={`p-2 rounded-lg border flex items-center gap-1.5 ${!isLive && !isTransacted ? 'border-primary/60 bg-primary/10 text-primary font-bold' : 'border-border/60 bg-card/60 text-muted-foreground opacity-60'}`}>
+            <span>{!isLive && !isTransacted ? '🟢' : '⚪'}</span>
+            <span className="truncate">3. Regional Baseline {!isLive && !isTransacted ? '(Active Baseline)' : ''}</span>
+          </div>
+        </div>
+        <p className="text-[10px] text-muted-foreground leading-snug">
+          Truthful Provenance: Live vendor APIs are unconfigured and platform transacted history is cold for this category. Baseline figures are drawn from calibrated regional manufacturing data to ensure zero algorithmic hallucination.
+        </p>
+      </div>
+
       <dl className="grid gap-2 text-xs grid-cols-2 md:grid-cols-4">
         <div className="rounded-lg border bg-muted/20 p-2.5 space-y-0.5">
           <dt className="font-medium text-muted-foreground flex items-center gap-1 text-[11px]">

@@ -836,7 +836,7 @@ export function PurchaseOrderDetailPage({
   })();
 
   return (
-    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-2xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] relative" data-testid="purchase-order-detail">
+    <div className="zero-scroll-container p-2.5 sm:p-4 max-w-2xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] flex flex-col justify-between" data-testid="purchase-order-detail">
       {/* 15-Step Linear Procurement Navigator */}
       <div className="no-print">
         <ProcurementStageNavigator
@@ -1533,6 +1533,7 @@ export function PurchaseOrderDetailPage({
                   workOrder={workOrder}
                   role={role}
                   onAccepted={() => void load()}
+                  onGoToInvoices={() => setActiveTab('INVOICE')}
                 />
 
                 {/* Step Progression CTA to Invoicing */}
@@ -1640,8 +1641,8 @@ export function PurchaseOrderDetailPage({
         )}
       </div>
 
-      {/* Screen 10 Sticky Bottom Bar: [ 📥 Download PO / Share ] & [ Update Milestone Progress ] */}
-      <div className="fixed sm:absolute bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] no-print">
+      {/* Screen 10 Sticky Bottom Bar: Contextual Fulfillment Navigation */}
+      <div className="sticky bottom-0 z-40 mt-auto bg-card/95 backdrop-blur-md border-t border-border shadow-2xl px-3 sm:px-6 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] no-print">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           {/* Left: Summary Mini Pill */}
           <div className="min-w-0 hidden sm:block">
@@ -1653,22 +1654,76 @@ export function PurchaseOrderDetailPage({
             </span>
           </div>
 
-          {/* Single Primary Action: Min 48px touch target */}
+          {/* Single Contextual Primary Action: Min 48px touch target */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => {
-                if (!workOrder) {
-                  void handleCreateWorkOrder();
-                } else {
-                  setActiveTab('MILESTONES');
-                }
-              }}
-              className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
-            >
-              <span>⚡</span>
-              <span>Update Milestones →</span>
-            </button>
+            {activeTab === 'OVERVIEW' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!workOrder) {
+                    void handleCreateWorkOrder();
+                  } else {
+                    setActiveTab('MILESTONES');
+                  }
+                }}
+                className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
+              >
+                <span>⚡</span>
+                <span>{!workOrder ? 'Initialize Milestones →' : `Continue to Milestones (${workOrder?.progressPercent || 0}%) →`}</span>
+              </button>
+            ) : activeTab === 'MILESTONES' ? (
+              workOrder?.buyerAcceptedAt ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('INVOICE')}
+                  className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-md hover:bg-emerald-700 active:scale-98 transition mobile-touch-target"
+                >
+                  <span>🧾</span>
+                  <span>Review Invoices &amp; Settle →</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.querySelector('[data-testid="delivery-inspection-panel"]') || document.querySelector('[data-testid="supplier-milestone-stepper"]');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
+                >
+                  <span>{workOrder?.progressPercent === 100 ? '🔍' : '🛠️'}</span>
+                  <span>{workOrder?.progressPercent === 100 ? 'Sign Off Inspection (100%) →' : `Milestone Progress (${workOrder?.progressPercent || 0}%)`}</span>
+                </button>
+              )
+            ) : activeTab === 'INVOICE' ? (
+              <button
+                type="button"
+                onClick={() => setActiveTab('PAYMENT')}
+                className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
+              >
+                <span>💳</span>
+                <span>Continue to Settlement →</span>
+              </button>
+            ) : (
+              settlementSummary?.isFullySettled ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCompletionModal(true)}
+                  className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-md hover:bg-emerald-700 active:scale-98 transition mobile-touch-target"
+                >
+                  <span>🏁</span>
+                  <span>Complete Purchase Order →</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('INVOICE')}
+                  className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-muted/60 text-foreground border border-border px-5 py-2.5 text-xs font-bold hover:bg-muted transition mobile-touch-target"
+                >
+                  <span>⚖️</span>
+                  <span>Review Invoices &amp; Balances</span>
+                </button>
+              )
+            )}
           </div>
         </div>
       </div>

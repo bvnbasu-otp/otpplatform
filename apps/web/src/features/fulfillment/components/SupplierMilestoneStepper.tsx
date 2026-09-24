@@ -34,6 +34,7 @@ export function SupplierMilestoneStepper({
   const [attachmentNote, setAttachmentNote] = useState<string>('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; size: string; time: string }>>([]);
   const [showAttachModal, setShowAttachModal] = useState(false);
+  const [markCompleteOnSave, setMarkCompleteOnSave] = useState(true);
 
   const currentPercent = workOrder.progressPercent || 0;
 
@@ -90,6 +91,9 @@ export function SupplierMilestoneStepper({
         time: 'Just now',
       },
     ]);
+    if (markCompleteOnSave && currentPercent < 100) {
+      void onUpdateProgress(100);
+    }
     setAttachmentNote('');
     setShowAttachModal(false);
   };
@@ -366,14 +370,27 @@ export function SupplierMilestoneStepper({
               Attach on-site proof, dispatch bills (LR/e-Way), and calibration test reports.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowAttachModal(true)}
-            className="min-h-[44px] rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 active:scale-98 transition flex items-center gap-1.5 mobile-touch-target"
-          >
-            <span>📸</span>
-            <span>Mark Ready for Delivery &amp; Upload Slip →</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowAttachModal(true)}
+              className="min-h-[44px] rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 active:scale-98 transition flex items-center gap-1.5 mobile-touch-target"
+            >
+              <span>📸</span>
+              <span>Mark Ready for Delivery &amp; Upload Slip →</span>
+            </button>
+            {currentPercent < 100 && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void onUpdateProgress(100)}
+                className="min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3.5 py-2 text-xs shadow-xs transition flex items-center gap-1.5 mobile-touch-target"
+              >
+                <span>📦</span>
+                <span>Confirm Delivery (100%) →</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Evidence List */}
@@ -445,6 +462,18 @@ export function SupplierMilestoneStepper({
                 <p className="text-xs font-bold text-foreground">Tap to take photo or upload document</p>
                 <p className="text-[10px] text-muted-foreground">Supported: JPG, PNG, PDF (Up to 15MB)</p>
               </div>
+
+              <label className="flex items-center gap-2 rounded-xl border border-border/80 bg-muted/20 p-2.5 text-xs cursor-pointer min-h-[44px] mobile-touch-target">
+                <input
+                  type="checkbox"
+                  checked={markCompleteOnSave}
+                  onChange={(e) => setMarkCompleteOnSave(e.target.checked)}
+                  className="h-4 w-4 rounded text-primary focus:ring-primary shrink-0"
+                />
+                <span className="font-semibold text-foreground text-[11px] leading-snug">
+                  ✓ Mark progress at 100% and notify buyer for on-site inspection
+                </span>
+              </label>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button

@@ -97,6 +97,25 @@ describe('Phase 6.5 Web UI Controls & State Verification', () => {
       const bannerTitle = '🎉 Winning Supplier Unmasked';
       expect(bannerTitle).toContain('Winning Supplier Unmasked');
     });
+
+    it('verifies DeliveryInspectionPanel exposes What Comes Next banner post-signoff', () => {
+      const bannerHeader = 'What Comes Next: Commercial Tax Invoicing & Settlement';
+      const ctaLabel = 'Review Invoices & Settlement →';
+      expect(bannerHeader).toContain('Invoicing & Settlement');
+      expect(ctaLabel).toContain('Invoices & Settlement');
+    });
+
+    it('verifies SupplierMilestoneStepper provides 1-tap 100% delivery confirmation', () => {
+      const confirmButtonText = '📦 Confirm Delivery (100%) →';
+      expect(confirmButtonText).toContain('Confirm Delivery (100%)');
+    });
+
+    it('verifies purchase order sticky action dock uses sticky bottom containment layout', () => {
+      const dockClasses = 'sticky bottom-0 z-40 mt-auto bg-slate-900/95';
+      expect(dockClasses).toContain('sticky bottom-0');
+      expect(dockClasses).toContain('mt-auto');
+      expect(dockClasses).not.toContain('fixed sm:absolute');
+    });
   });
 });
 

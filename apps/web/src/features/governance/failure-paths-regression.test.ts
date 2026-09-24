@@ -277,5 +277,13 @@ describe('Phase 7.1 — 22 Formal Failure Path Regressions (F01 to F22)', () => 
     expect(hasTopAwardButton).toBe(false);
     expect(hasStickyAwardButton).toBe(true);
   });
+
+  // F29: Committee Vote Page Sticky Dock Layout Containment
+  it('F29: Guarantees sticky bottom dock uses layout containment without absolute page clipping', () => {
+    const dockClasses = 'sticky bottom-0 z-40 mt-auto bg-slate-900/95';
+    expect(dockClasses).toContain('sticky bottom-0');
+    expect(dockClasses).toContain('mt-auto');
+    expect(dockClasses).not.toContain('fixed sm:absolute');
+  });
 });
 

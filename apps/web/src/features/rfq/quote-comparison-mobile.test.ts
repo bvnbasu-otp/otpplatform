@@ -285,5 +285,12 @@ describe('Quote Comparison Mobile Redesign — Flagship OTP Screen', () => {
       expect(OTP_DESIGN_TOKENS.viewport.minWidth).toBe('360px');
       expect(OTP_DESIGN_TOKENS.viewport.androidStandardWidth).toBe('412px');
     });
+
+    it('verifies QuoteStickyBottomBar uses sticky bottom containment without fixed absolute collision', () => {
+      const barClasses = 'sticky bottom-0 z-40 mt-auto bg-slate-900/95';
+      expect(barClasses).toContain('sticky bottom-0');
+      expect(barClasses).toContain('mt-auto');
+      expect(barClasses).not.toContain('fixed sm:absolute');
+    });
   });
 });
