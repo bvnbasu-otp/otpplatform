@@ -152,7 +152,7 @@ function auditTestCategories(): CategoryResult[] {
  * For every modified or newly added code file, verifies that a matching test file
  * is also created or modified in the same change set.
  */
-function checkCoverageAppendRule(): string[] {
+function checkCoverageAppendRule(strict: boolean = false): string[] {
   const violations: string[] = [];
 
   // Check if git is available
@@ -177,6 +177,16 @@ function checkCoverageAppendRule(): string[] {
         } catch {
           diffCommand = 'git status --porcelain';
         }
+      } else {
+        // Local mode: if files are staged for commit, audit staged files directly
+        try {
+          const staged = execSync('git diff --cached --name-only', { encoding: 'utf8' }).trim();
+          if (staged) {
+            diffCommand = 'git diff --cached --name-only';
+          }
+        } catch {
+          // fallback to porcelain
+        }
       }
 
       const output = execSync(diffCommand, { encoding: 'utf8' }).trim();
@@ -198,6 +208,7 @@ function checkCoverageAppendRule(): string[] {
       });
 
       const changedTestFiles = changedFiles.filter(f => /\.test\.(ts|tsx|js|jsx)$/.test(f));
+      const isStrictAppend = strict || process.env.STRICT_APPEND_RULE === 'true';
 
       // For each changed feature or package source file, check if corresponding tests exist/changed
       for (const src of changedSourceFiles) {
@@ -216,7 +227,7 @@ function checkCoverageAppendRule(): string[] {
             violations.push(
               `Feature '${featureName}' modified in '${src}' but has NO test coverage in 'apps/web/src/features/${featureName}/'.`
             );
-          } else if (process.env.STRICT_APPEND_RULE === 'true' && !hasMatchingTestChange) {
+          } else if (isStrictAppend && !hasMatchingTestChange) {
             violations.push(
               `Code modified in '${src}' without corresponding test update in 'apps/web/src/features/${featureName}/'.`
             );
@@ -226,7 +237,7 @@ function checkCoverageAppendRule(): string[] {
         // Domain package check
         if (src.startsWith('packages/domain/src/')) {
           const hasDomainTestChange = changedTestFiles.some(t => t.startsWith('packages/domain/'));
-          if (process.env.STRICT_APPEND_RULE === 'true' && !hasDomainTestChange) {
+          if (isStrictAppend && !hasDomainTestChange) {
             violations.push(
               `Domain logic modified in '${src}' without corresponding test update in 'packages/domain/'.`
             );
@@ -261,7 +272,7 @@ function checkCoverageAppendRule(): string[] {
 
 export function runPolicyAudit(strict = false): PolicyAuditResult {
   const categories = auditTestCategories();
-  const appendRuleViolations = checkCoverageAppendRule();
+  const appendRuleViolations = checkCoverageAppendRule(strict);
 
   const totalTestFiles = categories.reduce((sum, c) => sum + c.files.length, 0);
   const categoriesPassed = categories.every(c => c.passed);

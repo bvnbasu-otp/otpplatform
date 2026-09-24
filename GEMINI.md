@@ -15,8 +15,9 @@ All code, comments, user interface text, schemas, migrations, test suites, and d
   - Instead of `bidding` ➔ Use **`quoting`**, **`sourcing window`**, **`evaluation`**
 
 ## 3. Database Architecture & Migrations
-- Active migrations live in `supabase/migrations/` (185 applied migrations from `00001` to `00185`).
+- Active migrations live in `supabase/migrations/` (194 contiguous applied migrations from `00001` to `00194`).
 - Never introduce legacy views (`quotes_blind`, `rfqs_supplier_blind`, `my_quote_outcome`). Use canonical `quotes_identity_protected`, `rfqs_supplier_masked`, `my_quote_outcome`.
+- **Supabase Data API Access Specification (October 30 Standard):** Every migration creating a new table in `public` must explicitly include Data API grants at the bottom of the migration (`GRANT SELECT ON public.<table> TO anon; GRANT SELECT, INSERT, UPDATE, DELETE ON public.<table> TO authenticated, service_role;`).
 
 ## 4. Verification & Testing Standards
 - All changes must maintain 100% pass rate across the 12-layer verification gate (`pnpm gate:verify` — 1,514+ automated verifications across 184 active test files).

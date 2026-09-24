@@ -78,6 +78,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # 2. Coverage Policy
 Write-Host "`n[2/3] Auditing test coverage expansion policy & coverage append rule..." -ForegroundColor Yellow
+$env:STRICT_APPEND_RULE = "true"
 Invoke-Task "test:policy" @("--strict")
 if ($LASTEXITCODE -ne 0) {
   Write-Host "[FAIL] Coverage policy violated. Commit rejected." -ForegroundColor Red
