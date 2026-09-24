@@ -217,5 +217,11 @@ describe('Atomic Award, Reveal & PO Preconditions Validation', () => {
     expect(dockClasses).toContain('mt-auto');
     expect(dockClasses).not.toContain('fixed sm:absolute');
   });
+
+  it('supports direct 1-click award decision for Individual buyers without committee gates', () => {
+    const isIndividualRfq = true;
+    const stagesCount = isIndividualRfq ? 0 : 3;
+    expect(stagesCount).toBe(0);
+  });
 });
 

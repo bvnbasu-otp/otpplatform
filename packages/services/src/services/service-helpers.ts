@@ -13,16 +13,53 @@ export const JUSTIFICATION_MIN_LENGTH = 20;
 
 export function requireOrgAccess(
   actor: ActorContext,
-  organizationId: string,
+  organizationId?: string | null,
   roles?: OrganizationMemberRole[],
 ): Result<void, ForbiddenError> {
   if (actor.isPlatformAdmin) return ok(undefined);
+  if (!organizationId) {
+    return err(new ForbiddenError('Resource organizationId is required'));
+  }
   if (actor.organizationId !== organizationId) {
     return err(new ForbiddenError('Organization mismatch'));
   }
   if (roles && !hasOrgRole(actor, roles)) {
     return err(new ForbiddenError('Insufficient role'));
   }
+  return ok(undefined);
+}
+
+/**
+ * Validates access to a buyer resource (Requirement, RFQ, Purchase Order).
+ *
+ * Core Invariants:
+ * 1. For Organization resources (RWA, MSME): verifies actor belongs to target organization and has authorized role.
+ * 2. For Individual buyer resources (organizationId is NULL): verifies actor is the creator (profileId) or Platform Admin.
+ *    Zero committee, delegation, or quorum hurdles apply.
+ */
+export function requireBuyerResourceAccess(
+  actor: ActorContext,
+  resourceOrgId?: string | null,
+  resourceCreatedBy?: string | null,
+  roles?: OrganizationMemberRole[],
+): Result<void, ForbiddenError> {
+  if (actor.isPlatformAdmin) return ok(undefined);
+
+  // If the resource belongs to an organization, check org membership & roles
+  if (resourceOrgId && resourceOrgId.trim() !== '') {
+    return requireOrgAccess(actor, resourceOrgId, roles);
+  }
+
+  // If the resource belongs to an Individual buyer (organizationId is NULL)
+  if (resourceCreatedBy && resourceCreatedBy !== actor.profileId) {
+    return err(
+      new ForbiddenError(
+        'Access denied: personal buyer resource belongs to another user',
+      ),
+    );
+  }
+
+  // Individual buyer operating on their own resource
   return ok(undefined);
 }
 

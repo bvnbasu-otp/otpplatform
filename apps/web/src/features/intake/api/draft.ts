@@ -113,12 +113,12 @@ export async function createDraft(input: CreateDraftInput): Promise<DraftResult>
   if (!profile) return { ok: false, error: 'Not authenticated' };
 
   const org = await fetchUserOrganization();
-  if (!org.ok) return org;
+  const orgId = org.ok ? org.org.organizationId : null;
 
   const { data, error } = await supabase
     .from('requirements')
     .insert({
-      organization_id: org.org.organizationId,
+      organization_id: orgId,
       created_by: profile.profileId,
       // requirement_type is derived from requirement_mode by trigger; the
       // insert needs a value for the NOT NULL column and the understanding

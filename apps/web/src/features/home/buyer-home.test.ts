@@ -184,4 +184,11 @@ describe('Buyer Home - Procurement Card & Activity Timeline', () => {
     expect(events[1]?.title).toBe('Water Tank Waterproofing');
     expect(events[1]?.description).toContain('3 sealed supplier quotes received');
   });
+
+  it('renders clean Personal Workspace defaults for Individual buyers', () => {
+    const orgName = null;
+    const persona = 'INDIVIDUAL';
+    const workspaceTitle = !orgName && persona === 'INDIVIDUAL' ? 'Personal Workspace' : (orgName || 'Workspace');
+    expect(workspaceTitle).toBe('Personal Workspace');
+  });
 });

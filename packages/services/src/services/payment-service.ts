@@ -103,7 +103,7 @@ import type {
 import type { ActorContext } from '../types/actor-context';
 import { ForbiddenError, NotFoundError, ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
-import { auditLog, requireOrgAccess } from './service-helpers';
+import { auditLog, requireBuyerResourceAccess, requireOrgAccess } from './service-helpers';
 import { createId, timestamp } from '../repositories/in-memory';
 
 export interface RecordPaymentOptions {
@@ -167,7 +167,7 @@ export class PaymentService {
 
       poId = po.id;
 
-      const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+      const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
       if (!access.ok) return access;
 
       // Calculate existing allocations on invoice
@@ -267,7 +267,7 @@ export class PaymentService {
     const po = await this.repos.purchaseOrders.findById(poId);
     if (!po) return err(new ValidationError('Purchase order not found'));
 
-    const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
     if (!access.ok) return access;
 
     let totalAllocated = 0;
@@ -492,7 +492,7 @@ export class PaymentService {
     const po = await this.repos.purchaseOrders.findById(wo.purchaseOrderId);
     if (!po) return err(new ValidationError('Purchase order not found'));
 
-    const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
     if (!access.ok) return access;
 
     const existingPaymentAllocs = await this.repos.paymentAllocations.findByPaymentId(payment.id);
@@ -663,7 +663,7 @@ export class PaymentService {
     const po = await this.repos.purchaseOrders.findById(wo.purchaseOrderId);
     if (!po) return err(new ValidationError('Purchase order not found'));
 
-    const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
     if (!access.ok) return access;
 
     const payment = await this.repos.payments.findById(allocation.paymentId);
@@ -821,7 +821,7 @@ export class PaymentService {
     const po = await this.repos.purchaseOrders.findById(poId);
     if (!po) return err(new NotFoundError('Purchase order not found'));
 
-    const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
     if (!access.ok) return access;
 
     if (invoice.status !== 'APPROVED' && invoice.status !== 'PARTIALLY_PAID') {
@@ -963,7 +963,7 @@ export class PaymentService {
         role: actor.isPlatformAdmin ? 'PLATFORM_ADMIN' : 'ORG_MEMBER',
       },
       {
-        id: po.organizationId,
+        id: po.organizationId || '',
       },
       supplier ? { id: supplier.id, name: supplier.businessName, gstin: supplier.gstin } : undefined,
     );
@@ -1566,15 +1566,15 @@ export class PaymentService {
     }
     if (!orgId && poId) {
       const po = await this.repos.purchaseOrders.findById(poId);
-      if (po) orgId = po.organizationId;
+      if (po) orgId = po.organizationId || '';
     }
 
-    // Access control: Buyer OWNER or MANAGER or Platform Admin (RED-17)
+    // Access control: Buyer OWNER, MANAGER, BUYER or Platform Admin
     if (!actor.isPlatformAdmin) {
-      const access = requireOrgAccess(actor, orgId, ['OWNER', 'MANAGER']);
+      const access = requireBuyerResourceAccess(actor, orgId, (invoice as any).createdBy, ['OWNER', 'MANAGER', 'BUYER']);
       if (!access.ok) {
         return err(
-          new ForbiddenError('Unauthorized: Only Buyer OWNER or MANAGER can apply statutory TDS (RED-17/TDS-5C4-UNAUTHORIZED)'),
+          new ForbiddenError('Unauthorized: Only authorized buyer can apply statutory TDS (RED-17/TDS-5C4-UNAUTHORIZED)'),
         );
       }
     }
@@ -2867,7 +2867,7 @@ export class PaymentService {
     if (!po) return err(new NotFoundError('Purchase order not found'));
 
     if (!actor.isPlatformAdmin) {
-      const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+      const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
       if (!access.ok) return access;
     }
 
@@ -2880,7 +2880,7 @@ export class PaymentService {
 
     for (const inv of activeInvoices) {
       const reconRes = await this.executeSettlementReconciliation(actor, {
-        organizationId: po.organizationId,
+        organizationId: po.organizationId || '',
         invoiceId: inv.id,
       });
 

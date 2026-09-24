@@ -1,6 +1,7 @@
 import {
   canTransitionRfq,
   canTransitionRequirement,
+  type RfqPaymentType,
   type RfqStatus,
 } from '@otp/domain';
 import type { AuditService } from '../interfaces/audit-service';
@@ -17,7 +18,7 @@ import {
   auditLog,
   assertTransition,
   nextAnonymousLabel,
-  requireOrgAccess,
+  requireBuyerResourceAccess,
 } from './service-helpers';
 import { createId, timestamp } from '../repositories/in-memory';
 
@@ -25,6 +26,10 @@ export interface CreateRfqInput {
   title: string;
   quoteDeadline?: string;
   evaluationDeadline?: string;
+  paymentType?: RfqPaymentType | null;
+  paymentTerms?: string | null;
+  deliveryAddressSnapshot?: Record<string, unknown> | null;
+  billingAddressSnapshot?: Record<string, unknown> | null;
   buyerAnonymousToSuppliers?: boolean;
   minQuotesRequired?: number;
 }
@@ -44,26 +49,35 @@ export class RFQService {
     const req = await this.repos.requirements.findById(requirementId);
     if (!req) return err(new ValidationError('Requirement not found'));
 
-    const access = requireOrgAccess(actor, req.organizationId, [
-      'OWNER',
-      'MANAGER',
-      'BUYER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      req.organizationId,
+      req.createdBy,
+      ['OWNER', 'MANAGER', 'BUYER'],
+    );
     if (!access.ok) return access;
 
     const existing = await this.repos.rfqs.findByRequirementId(requirementId);
     if (existing) return err(new ValidationError('RFQ already exists for requirement'));
 
     const now = timestamp();
+    const declaredPaymentType =
+      input.paymentType ||
+      ((req.structuredSpecs?.fields?.paymentType as RfqPaymentType | undefined) ?? null);
+
     const rfq: Rfq = {
       id: createId(),
       requirementId,
-      organizationId: req.organizationId,
+      organizationId: req.organizationId || null,
       status: 'DRAFT',
       revealStatus: 'PROTECTED',
       title: input.title,
       quoteDeadline: input.quoteDeadline,
       evaluationDeadline: input.evaluationDeadline,
+      paymentType: declaredPaymentType,
+      paymentTerms: input.paymentTerms ?? null,
+      deliveryAddressSnapshot: input.deliveryAddressSnapshot ?? null,
+      billingAddressSnapshot: input.billingAddressSnapshot ?? null,
       buyerAnonymousToSuppliers: input.buyerAnonymousToSuppliers ?? true,
       minQuotesRequired: input.minQuotesRequired ?? 1,
       createdBy: actor.profileId,
@@ -75,6 +89,8 @@ export class RFQService {
     await auditLog(this.audit, actor, 'rfq', saved.id, 'rfq.created', null, {
       status: saved.status,
       requirementId,
+      organizationId: saved.organizationId,
+      paymentType: saved.paymentType,
     });
 
     if (canTransitionRequirement(req.status, 'RFQ_CREATED')) {
@@ -92,10 +108,12 @@ export class RFQService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER'],
+    );
     if (!access.ok) return access;
 
     const invitations = await this.repos.invitations.findByRfqId(rfqId);
@@ -122,10 +140,12 @@ export class RFQService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER'],
+    );
     if (!access.ok) return access;
 
     const quotes = await this.repos.quotes.findByRfqId(rfqId);
@@ -159,10 +179,12 @@ export class RFQService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER'],
+    );
     if (!access.ok) return access;
 
     const transition = assertTransition(
@@ -183,10 +205,12 @@ export class RFQService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER'],
+    );
     if (!access.ok) return access;
 
     const quotes = await this.repos.quotes.findByRfqId(rfqId);
@@ -225,11 +249,12 @@ export class RFQService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-      'BUYER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER', 'BUYER'],
+    );
     if (!access.ok) return access;
 
     const req = await this.repos.requirements.findById(rfq.requirementId);

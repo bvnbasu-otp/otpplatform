@@ -2,6 +2,7 @@ import {
   canTransitionRequirement,
   type RequirementStatus,
   type RequirementType,
+  type RfqPaymentType,
 } from '@otp/domain';
 import type { RequirementParserService } from '../interfaces/requirement-parser-service';
 import type { AuditService } from '../interfaces/audit-service';
@@ -10,13 +11,19 @@ import type { Requirement } from '../repositories/entities';
 import type { ActorContext } from '../types/actor-context';
 import { ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
-import { auditLog, assertTransition, requireOrgAccess } from './service-helpers';
+import {
+  auditLog,
+  assertTransition,
+  requireBuyerResourceAccess,
+} from './service-helpers';
 import { createId, timestamp } from '../repositories/in-memory';
 
 export interface CreateRequirementInput {
   title: string;
   description?: string;
   requirementType: RequirementType;
+  budgetAmount?: number | null;
+  paymentType?: RfqPaymentType;
   hints?: Record<string, unknown>;
 }
 
@@ -31,41 +38,55 @@ export class RequirementService {
     actor: ActorContext,
     input: CreateRequirementInput,
   ): Promise<Result<Requirement, Error>> {
-    if (!actor.organizationId) {
-      return err(new ValidationError('Organization required'));
-    }
-    const access = requireOrgAccess(actor, actor.organizationId, [
-      'OWNER',
-      'MANAGER',
-      'BUYER',
-    ]);
+    // Check access: For org buyers, require authorized role; for Individual buyers (orgId=null), allow direct creation
+    const access = requireBuyerResourceAccess(
+      actor,
+      actor.organizationId,
+      actor.profileId,
+      ['OWNER', 'MANAGER', 'BUYER'],
+    );
     if (!access.ok) return access;
 
     const now = timestamp();
+    const hints = {
+      ...(input.hints || {}),
+      ...(input.paymentType ? { paymentType: input.paymentType } : {}),
+    };
+
     const structuredSpecs = this.parser.parse({
       description: input.description ?? input.title,
       requirementType: input.requirementType,
-      hints: input.hints,
+      hints,
     });
 
     const requirement: Requirement = {
       id: createId(),
-      organizationId: actor.organizationId,
+      organizationId: actor.organizationId || null,
       createdBy: actor.profileId,
       requirementType: input.requirementType,
       status: 'DRAFT',
       title: input.title,
       description: input.description,
+      budgetAmount: input.budgetAmount ?? null,
       structuredSpecs,
       createdAt: now,
       updatedAt: now,
     };
 
     const saved = await this.repos.requirements.save(requirement);
-    await auditLog(this.audit, actor, 'requirement', saved.id, 'requirement.created', null, {
-      status: saved.status,
-      title: saved.title,
-    });
+    await auditLog(
+      this.audit,
+      actor,
+      'requirement',
+      saved.id,
+      'requirement.created',
+      null,
+      {
+        status: saved.status,
+        title: saved.title,
+        organizationId: saved.organizationId,
+      },
+    );
     return ok(saved);
   }
 
@@ -76,11 +97,12 @@ export class RequirementService {
     const req = await this.repos.requirements.findById(requirementId);
     if (!req) return err(new ValidationError('Requirement not found'));
 
-    const access = requireOrgAccess(actor, req.organizationId, [
-      'OWNER',
-      'MANAGER',
-      'BUYER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      req.organizationId,
+      req.createdBy,
+      ['OWNER', 'MANAGER', 'BUYER'],
+    );
     if (!access.ok) return access;
 
     const transition = assertTransition(
@@ -103,10 +125,12 @@ export class RequirementService {
     const req = await this.repos.requirements.findById(requirementId);
     if (!req) return err(new ValidationError('Requirement not found'));
 
-    const access = requireOrgAccess(actor, req.organizationId, [
-      'OWNER',
-      'MANAGER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      req.organizationId,
+      req.createdBy,
+      ['OWNER', 'MANAGER', 'BUYER'],
+    );
     if (!access.ok) return access;
 
     const transition = assertTransition(

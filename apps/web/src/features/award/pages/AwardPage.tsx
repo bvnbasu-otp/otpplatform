@@ -41,6 +41,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
   const [stages, setStages] = useState<RfqApprovalStage[]>([]);
   const [delegations, setDelegations] = useState<OrganizationDelegation[]>([]);
   const [rfqCreatorId, setRfqCreatorId] = useState<string>('');
+  const [rfqOrgId, setRfqOrgId] = useState<string | null>(null);
   const [quotes, setQuotes] = useState<IdentityProtectedQuoteForVote[]>([]);
   const [revealedQuotes, setRevealedQuotes] = useState<RevealedQuoteRow[]>([]);
   const [votes, setVotes] = useState<CommitteeVote[]>([]);
@@ -86,6 +87,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
     if (stagesRes.ok) setStages(stagesRes.stages);
     if (rfqDataRes.data) {
       setRfqCreatorId(rfqDataRes.data.created_by);
+      setRfqOrgId(rfqDataRes.data.organization_id || null);
       if (rfqDataRes.data.organization_id) {
         const delRes = await fetchUserActiveDelegations(rfqDataRes.data.organization_id);
         if (delRes.ok) setDelegations(delRes.delegations);
@@ -301,8 +303,8 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
         rfqId={rfqId}
         poId={existingPoId}
         role="buyer"
-        backToUrl={`/rfq/${rfqId}/committee`}
-        backToLabel="Committee Voting"
+        backToUrl={rfqOrgId ? `/rfq/${rfqId}/committee` : `/rfq/${rfqId}/quotes`}
+        backToLabel={rfqOrgId ? 'Committee Voting' : 'Offer Comparison'}
       />
 
       <div className="px-3.5 sm:px-6 max-w-4xl mx-auto w-full space-y-4 pt-2">
@@ -585,10 +587,12 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
               <div className="flex items-center justify-between border-b pb-2">
                 <div>
                   <h2 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                    1. Winning Candidate Review
+                    1. Winning Candidate Review (4-Pillars Comparison)
                   </h2>
                   <p className="text-[11px] text-muted-foreground">
-                    Pulled directly from committee voting consensus — verify candidate metrics before locking.
+                    {rfqOrgId
+                      ? 'Pulled directly from committee voting consensus — verify candidate metrics before locking.'
+                      : 'Compare candidate offers on Landed Cost, TAT, Warranty, and Merit Score.'}
                   </p>
                 </div>
               </div>
@@ -655,8 +659,8 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 })}
               </div>
 
-              {/* Threshold / Consensus Override Warning Banner */}
-              {summary?.leader?.quoteId && selectedQuote && selectedQuote !== summary.leader.quoteId && (
+              {/* Threshold / Consensus Override Warning Banner (Organizations only) */}
+              {Boolean(rfqOrgId) && summary?.leader?.quoteId && selectedQuote && selectedQuote !== summary.leader.quoteId && (
                 <div
                   role="alert"
                   className="rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50/90 dark:bg-amber-950/50 p-3.5 text-xs text-amber-900 dark:text-amber-200 shadow-2xs space-y-1"
@@ -672,8 +676,8 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 </div>
               )}
 
-              {/* Split Vote Advisory */}
-              {weightDisagreesWithHeadCount(tally) && (
+              {/* Split Vote Advisory (Organizations only) */}
+              {Boolean(rfqOrgId) && weightDisagreesWithHeadCount(tally) && (
                 <div
                   className="rounded-xl border border-amber-300/80 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200 shadow-2xs space-y-1"
                   data-testid="split-vote-advisory"
@@ -695,14 +699,16 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                     htmlFor="award-justification"
                     className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1"
                   >
-                    <span>📋</span> Consensus Rationale &amp; Award Justification (Editable Template)
+                    <span>📋</span> {rfqOrgId ? 'Consensus Rationale & Award Justification' : 'Award Justification & Selection Rationale'}
                   </label>
-                  <Link
-                    to={`/rfq/${rfqId}/committee`}
-                    className="min-h-[44px] inline-flex items-center text-[11px] font-bold text-primary hover:underline mobile-touch-target"
-                  >
-                    ↺ View Voting Room
-                  </Link>
+                  {Boolean(rfqOrgId) && (
+                    <Link
+                      to={`/rfq/${rfqId}/committee`}
+                      className="min-h-[44px] inline-flex items-center text-[11px] font-bold text-primary hover:underline mobile-touch-target"
+                    >
+                      ↺ View Voting Room
+                    </Link>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -716,8 +722,8 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                     data-testid="award-justification-input"
                   />
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
-                    <span>✓ Pre-filled from committee consensus votes · Review &amp; edit before locking</span>
-                    <span className="italic">Editable template</span>
+                    <span>{rfqOrgId ? '✓ Pre-filled from committee consensus votes · Review & edit before locking' : '✓ Pre-filled based on evaluated score and commercial value'}</span>
+                    <span className="italic">Editable</span>
                   </div>
                 </div>
               </div>
@@ -744,8 +750,8 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
           </section>
         )}
 
-        {/* Multi-Tier Spend Approval & Delegation Signoff Chain */}
-        {stages.length > 0 && (
+        {/* Multi-Tier Spend Approval & Delegation Signoff Chain (Organizations only) */}
+        {Boolean(rfqOrgId) && stages.length > 0 && (
           <MultiTierApprovalGatePanel
             stages={stages}
             procurementAmount={winningQuote?.totalCost ?? 0}
@@ -759,50 +765,52 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
           />
         )}
 
-        {/* Standings & Governance Collapsible Section */}
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={() => setShowStandings(!showStandings)}
-            className="w-full flex items-center justify-between rounded-xl border bg-card p-3 text-xs font-bold text-muted-foreground hover:text-foreground transition min-h-[44px]"
-          >
-            <span>📊 View Consensus Standings &amp; Vote Breakdown</span>
-            <span>{showStandings ? '▲' : '▼'}</span>
-          </button>
+        {/* Standings & Governance Collapsible Section (Organizations only) */}
+        {Boolean(rfqOrgId) && (
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowStandings(!showStandings)}
+              className="w-full flex items-center justify-between rounded-xl border bg-card p-3 text-xs font-bold text-muted-foreground hover:text-foreground transition min-h-[44px]"
+            >
+              <span>📊 View Consensus Standings &amp; Vote Breakdown</span>
+              <span>{showStandings ? '▲' : '▼'}</span>
+            </button>
 
-          {showStandings && (
-            <div className="mt-2 space-y-3 animate-in fade-in">
-              <section className="rounded-2xl border bg-card p-3.5 shadow-2xs" data-testid="votes-summary">
-                <WeightedTallyTable
-                  tally={tally}
-                  summary={summary}
-                  highlightQuoteId={award?.quoteId ?? selectedQuote}
-                />
-              </section>
-
-              {approval && (
-                <section className="rounded-2xl border bg-card p-3.5 shadow-2xs space-y-2" data-testid="approval-section">
-                  <h3 className="font-bold text-xs text-foreground uppercase tracking-wider text-muted-foreground">
-                    Legacy Governance Approval Gate
-                  </h3>
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Status: <strong>{approval.status}</strong></span>
-                    {approval.status === 'PENDING' && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void handleApprove()}
-                        className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 min-h-[44px]"
-                      >
-                        Grant Approval
-                      </button>
-                    )}
-                  </div>
+            {showStandings && (
+              <div className="mt-2 space-y-3 animate-in fade-in">
+                <section className="rounded-2xl border bg-card p-3.5 shadow-2xs" data-testid="votes-summary">
+                  <WeightedTallyTable
+                    tally={tally}
+                    summary={summary}
+                    highlightQuoteId={award?.quoteId ?? selectedQuote}
+                  />
                 </section>
-              )}
-            </div>
-          )}
-        </div>
+
+                {approval && (
+                  <section className="rounded-2xl border bg-card p-3.5 shadow-2xs space-y-2" data-testid="approval-section">
+                    <h3 className="font-bold text-xs text-foreground uppercase tracking-wider text-muted-foreground">
+                      Legacy Governance Approval Gate
+                    </h3>
+                    <div className="flex items-center justify-between text-xs">
+                      <span>Status: <strong>{approval.status}</strong></span>
+                      {approval.status === 'PENDING' && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleApprove()}
+                          className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 min-h-[44px]"
+                        >
+                          Grant Approval
+                        </button>
+                      )}
+                    </div>
+                  </section>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* STICKY BOTTOM ACTION BAR */}

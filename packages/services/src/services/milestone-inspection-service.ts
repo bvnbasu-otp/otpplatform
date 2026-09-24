@@ -17,7 +17,7 @@ import type {
 import type { ActorContext } from '../types/actor-context';
 import { ForbiddenError, NotFoundError, ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
-import { auditLog, requireOrgAccess } from './service-helpers';
+import { auditLog, requireBuyerResourceAccess, requireOrgAccess } from './service-helpers';
 import { createId, timestamp } from '../repositories/in-memory';
 
 export interface SubmitInspectionItemInput {
@@ -88,7 +88,7 @@ export class MilestoneInspectionService {
     const po = await this.repos.purchaseOrders.findById(wo.purchaseOrderId);
     if (!po) return err(new NotFoundError('Associated purchase order not found'));
 
-    const orgAccess = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER', 'BUYER']);
+    const orgAccess = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
     if (!orgAccess.ok && !actor.isPlatformAdmin) {
       return orgAccess;
     }
@@ -123,7 +123,7 @@ export class MilestoneInspectionService {
       id: inspectionId,
       workOrderId: input.workOrderId,
       milestoneId: input.milestoneId,
-      organizationId: po.organizationId,
+      organizationId: po.organizationId || '',
       inspectorId: actor.profileId,
       inspectionType: input.inspectionType,
       status: 'SUBMITTED',

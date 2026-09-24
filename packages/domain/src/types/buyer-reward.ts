@@ -44,6 +44,60 @@ export const COMMERCIAL_MONETARY_CLASSES: readonly CommercialMonetaryClass[] = [
   'SUPPLIER_SETTLEMENT',
 ] as const;
 
+export type WalletCreditCategory =
+  | 'CASHBACK'
+  | 'REFERRAL_BONUS'
+  | 'SHARE_IN_SUCCESS';
+
+export const WALLET_CREDIT_CATEGORIES: readonly WalletCreditCategory[] = [
+  'CASHBACK',
+  'REFERRAL_BONUS',
+  'SHARE_IN_SUCCESS',
+] as const;
+
+export interface IndividualBuyerWalletSummary {
+  profileId?: string | null;
+  organizationId?: string | null;
+  totalCredits: number;
+  cashbackCredits: number;
+  referralCredits: number;
+  shareInSuccessCredits: number;
+  status: WalletStatus;
+  isGmvSeparated: true;
+  formattedTotalCredits: string;
+}
+
+/**
+ * Builds an Individual Buyer Wallet summary segregating Cashback, Referral Bonus, and Share in Success.
+ * Invariant: Wallet credits are non-cash incentive credits applied only to platform subscription renewals
+ * and RFQ top-ups, strictly separated from procurement GMV.
+ */
+export function buildIndividualBuyerWalletSummary(params: {
+  profileId?: string | null;
+  organizationId?: string | null;
+  cashbackCredits?: number;
+  referralCredits?: number;
+  shareInSuccessCredits?: number;
+  status?: WalletStatus;
+}): IndividualBuyerWalletSummary {
+  const cashback = Math.max(0, Math.round(Number(params.cashbackCredits || 0) * 100) / 100);
+  const referral = Math.max(0, Math.round(Number(params.referralCredits || 0) * 100) / 100);
+  const shareInSuccess = Math.max(0, Math.round(Number(params.shareInSuccessCredits || 0) * 100) / 100);
+  const total = Math.round((cashback + referral + shareInSuccess) * 100) / 100;
+
+  return {
+    profileId: params.profileId ?? null,
+    organizationId: params.organizationId ?? null,
+    totalCredits: total,
+    cashbackCredits: cashback,
+    referralCredits: referral,
+    shareInSuccessCredits: shareInSuccess,
+    status: params.status || 'ACTIVE',
+    isGmvSeparated: true,
+    formattedTotalCredits: `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  };
+}
+
 export type WalletStatus = 'ACTIVE' | 'FROZEN' | 'SUSPENDED';
 
 export type WalletTransactionType =

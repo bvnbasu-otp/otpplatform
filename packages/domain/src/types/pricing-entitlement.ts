@@ -34,7 +34,8 @@ export interface SubscriptionPlanDefinition {
   monthlyRfqs: number; // Standard monthly RFQ entitlement
   yearlyPrice: number;
   yearlyDurationDays: number;
-  yearlyMonthlyRfqs: number; // 6 RFQs/mo (5 standard + 1 bonus)
+  yearlyMonthlyRfqs: number; // Standard monthly RFQs on yearly plan
+  quarterlyBonusRfqs?: number; // E.g. 1 additional RFQ per quarter on annual plan (expires at quarter end, non-accumulating)
   yearlySavings: number;
   additionalRfqPrice: number; // ₹149 per additional RFQ top-up
   features: string[];
@@ -45,6 +46,7 @@ export const ADDITIONAL_RFQ_TOPUP_BASE_PRICE = 149;
 export const DEFAULT_GST_RATE_PERCENT = 18.0;
 export const OTP_GST_RATE = DEFAULT_GST_RATE_PERCENT; // Authoritative OTP Platform Tax Configuration (18% GST)
 export const DEFAULT_SUPPLIER_PLATFORM_FEE_RATE = 0.5; // 0.50%
+export const INDIVIDUAL_MONTHLY_RFQ_ALLOWANCE = 3; // 3 RFQs per month for Individual Buyers
 export const STANDARD_MONTHLY_RFQ_ALLOWANCE = 5;
 export const ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE = 6; // 5 + 1 bonus
 
@@ -116,25 +118,28 @@ export function calculateSupplierPlatformFeeWithGst(
 export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefinition> = {
   INDIVIDUAL: {
     tierId: 'INDIVIDUAL',
-    name: 'Individual & Sole Proprietor',
-    tagline: 'For independent property owners, solo buyers & facility managers',
+    name: 'Individual Buyer',
+    tagline: 'For independent property owners, solo buyers & personal procurement',
     targetOrgTypes: ['INDIVIDUAL'],
-    targetAudience: 'Independent buyers, property owners & sole proprietors',
+    targetAudience: 'Independent buyers, property owners & personal purchasers',
     monthlyPrice: 99,
     monthlyDurationDays: 30,
-    monthlyRfqs: STANDARD_MONTHLY_RFQ_ALLOWANCE,
+    monthlyRfqs: INDIVIDUAL_MONTHLY_RFQ_ALLOWANCE, // 3 RFQs/month
     yearlyPrice: 999,
     yearlyDurationDays: 365,
-    yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
+    yearlyMonthlyRfqs: INDIVIDUAL_MONTHLY_RFQ_ALLOWANCE, // 3 normal monthly RFQs
+    quarterlyBonusRfqs: 1, // +1 additional RFQ per quarter (expires at quarter end, does not accumulate)
     yearlySavings: 189, // (99 * 12) - 999 = 1188 - 999 = 189
     additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
     features: [
-      '5 High-intent RFQs included per calendar month (6 RFQs/mo on annual plan)',
-      'Protected supplier quoting & fair comparison matrix',
+      '3 High-intent RFQs included per calendar month',
+      '1 Bonus RFQ per quarter on annual plan (non-accumulating, quarterly expiry)',
+      '1-Click direct award decision & zero committee overhead',
+      'Protected supplier quoting & 4-pillar comparison matrix',
       'Automated GST tax invoice & PO generation upon award',
       'Direct supplier interaction & bilateral settlement',
-      'Instant notifications for quote updates & clarifications',
-      'Immutable statutory procurement audit trail',
+      'Personal delivery address book & instant notifications',
+      'OTP Wallet rewards (Cashback, Referral Bonus, Share in Success)',
     ],
   },
   RWA: {
@@ -390,6 +395,42 @@ export function getCalendarMonthWindow(dateInput: Date | string = new Date()): C
 }
 
 /**
+ * Calendar Quarter Window Helper
+ */
+export interface CalendarQuarterWindow {
+  year: number;
+  quarter: 1 | 2 | 3 | 4;
+  startIso: string;
+  endIso: string;
+  label: string;
+}
+
+/**
+ * Resolves the calendar quarter window (Q1: Jan-Mar, Q2: Apr-Jun, Q3: Jul-Sep, Q4: Oct-Dec).
+ * Invariant: Quarterly bonuses expire at quarter-end, do NOT accumulate, and cannot carry forward.
+ */
+export function getCalendarQuarterWindow(
+  dateInput: Date | string = new Date(),
+): CalendarQuarterWindow {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth(); // 0-11
+  const quarter = (Math.floor(month / 3) + 1) as 1 | 2 | 3 | 4;
+
+  const startMonth = (quarter - 1) * 3;
+  const start = new Date(Date.UTC(year, startMonth, 1, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(year, startMonth + 3, 0, 23, 59, 59, 999));
+
+  return {
+    year,
+    quarter,
+    startIso: start.toISOString(),
+    endIso: end.toISOString(),
+    label: `Q${quarter} ${year}`,
+  };
+}
+
+/**
  * RFQ Entitlement Evaluation Parameters & Result
  */
 export interface RfqEntitlementEvaluationParams {
@@ -398,15 +439,19 @@ export interface RfqEntitlementEvaluationParams {
   subscriptionStatus?: SubscriptionStatus;
   subscriptionExpiresAt?: string | null;
   rfqsUsedInCurrentMonth: number;
+  quarterlyBonusUsedInCurrentQuarter?: number;
   additionalPurchasedCredits?: number;
   billingMode?: BillingMode;
   now?: Date | string;
 }
 
 export interface RfqEntitlementEvaluationResult {
-  monthlyAllowance: number; // 5 (monthly) or 6 (yearly with annual bonus)
+  monthlyAllowance: number; // 3 (individual) or 5 (standard)
   rfqsUsedInCurrentMonth: number;
   monthlyRemaining: number;
+  quarterlyBonusAllowance: number; // e.g. 1 per quarter on annual plan
+  quarterlyBonusUsedInCurrentQuarter: number;
+  quarterlyBonusRemaining: number;
   additionalPurchasedCredits: number;
   totalAvailableRfqs: number;
   canCreateRfq: boolean;
@@ -414,59 +459,89 @@ export interface RfqEntitlementEvaluationResult {
   isBonusApplied: boolean;
   billingMode: BillingMode;
   calendarMonth: CalendarMonthWindow;
+  calendarQuarter: CalendarQuarterWindow;
   rejectionReason?: string;
 }
 
 /**
- * Evaluates whether a buyer can publish an RFQ based on calendar-month entitlement and top-up credits.
+ * Evaluates whether a buyer can publish an RFQ based on calendar-month entitlement,
+ * quarterly bonus allowance (for annual plans), and top-up credits.
+ *
  * Invariants:
  * - Monthly allowance resets at calendar month boundary (1st of month).
  * - Unused monthly allowance does not roll over.
- * - Annual subscribers receive 6 RFQs/month (5 standard + 1 bonus).
- * - Additional purchased credits (top-ups) never expire at month boundaries.
+ * - Annual subscribers receive standard monthly RFQs (e.g. 3 for Individual) + 1 quarterly bonus RFQ per quarter.
+ * - The quarterly bonus expires strictly at the end of the calendar quarter, does NOT accumulate, and cannot carry forward.
+ * - Additional purchased credits (top-ups) never expire at month/quarter boundaries.
  * - In PILOT_FREE mode, active entitlement is granted without requiring money collection.
  */
 export function evaluateRfqEntitlement(
   params: RfqEntitlementEvaluationParams,
 ): RfqEntitlementEvaluationResult {
-  const now = params.now ? (typeof params.now === 'string' ? new Date(params.now) : params.now) : new Date();
+  const now =
+    params.now
+      ? typeof params.now === 'string'
+        ? new Date(params.now)
+        : params.now
+      : new Date();
   const calendarMonth = getCalendarMonthWindow(now);
+  const calendarQuarter = getCalendarQuarterWindow(now);
   const mode = resolveBillingMode(params.billingMode);
   const plan = params.plan || 'MONTHLY';
   const isYearly = plan === 'YEARLY';
   const tier = SUBSCRIPTION_TIERS[params.tierId] || SUBSCRIPTION_TIERS.INDIVIDUAL;
 
-  const isBonusApplied = isYearly;
-  const monthlyAllowance = isYearly ? tier.yearlyMonthlyRfqs : tier.monthlyRfqs;
+  const isBonusApplied = isYearly && Boolean(tier.quarterlyBonusRfqs || tier.yearlyMonthlyRfqs > tier.monthlyRfqs);
+  const monthlyAllowance = tier.monthlyRfqs;
 
   const usedThisMonth = Math.max(0, Math.floor(Number(params.rfqsUsedInCurrentMonth || 0)));
   const monthlyRemaining = Math.max(0, monthlyAllowance - usedThisMonth);
-  const additionalCredits = Math.max(0, Math.floor(Number(params.additionalPurchasedCredits || 0)));
+
+  // Quarterly bonus calculation for annual subscribers
+  const quarterlyBonusAllowance = isYearly ? (tier.quarterlyBonusRfqs ?? 0) : 0;
+  const quarterlyUsed = Math.max(
+    0,
+    Math.floor(Number(params.quarterlyBonusUsedInCurrentQuarter || 0)),
+  );
+  const quarterlyBonusRemaining = Math.max(0, quarterlyBonusAllowance - quarterlyUsed);
+
+  const additionalCredits = Math.max(
+    0,
+    Math.floor(Number(params.additionalPurchasedCredits || 0)),
+  );
 
   // Check subscription active status
-  const expiresAt = params.subscriptionExpiresAt ? new Date(params.subscriptionExpiresAt) : null;
+  const expiresAt = params.subscriptionExpiresAt
+    ? new Date(params.subscriptionExpiresAt)
+    : null;
   const isExpired = expiresAt ? expiresAt.getTime() < now.getTime() : false;
   const isStatusActive = (params.subscriptionStatus || 'ACTIVE') === 'ACTIVE';
-  
+
   // In PILOT_FREE mode, subscription is always considered active for pilot cohort
-  const isSubscriptionActive = mode === 'PILOT_FREE' || (!isExpired && isStatusActive);
+  const isSubscriptionActive =
+    mode === 'PILOT_FREE' || (!isExpired && isStatusActive);
 
   let totalAvailableRfqs = 0;
   let canCreateRfq = false;
   let rejectionReason: string | undefined;
 
   if (isSubscriptionActive) {
-    totalAvailableRfqs = monthlyRemaining + additionalCredits;
+    totalAvailableRfqs = monthlyRemaining + quarterlyBonusRemaining + additionalCredits;
     canCreateRfq = totalAvailableRfqs > 0;
     if (!canCreateRfq) {
-      rejectionReason = `Monthly entitlement limit reached (${usedThisMonth}/${monthlyAllowance} RFQs used in ${calendarMonth.label}). Recharge an additional RFQ top-up (₹149 + GST) or wait for calendar month reset.`;
+      rejectionReason = `Entitlement limit reached (${usedThisMonth}/${monthlyAllowance} monthly RFQs used in ${calendarMonth.label}${
+        quarterlyBonusAllowance > 0
+          ? `, quarterly bonus ${quarterlyUsed}/${quarterlyBonusAllowance} used in ${calendarQuarter.label}`
+          : ''
+      }). Recharge an additional RFQ top-up (₹149 + GST) or wait for reset.`;
     }
   } else {
     // If subscription is expired, can only use purchased additional credits
     totalAvailableRfqs = additionalCredits;
     canCreateRfq = additionalCredits > 0;
     if (!canCreateRfq) {
-      rejectionReason = 'Prepaid subscription plan has expired. Please renew your plan or purchase an additional RFQ credit to continue.';
+      rejectionReason =
+        'Prepaid subscription plan has expired. Please renew your plan or purchase an additional RFQ credit to continue.';
     }
   }
 
@@ -474,6 +549,9 @@ export function evaluateRfqEntitlement(
     monthlyAllowance,
     rfqsUsedInCurrentMonth: usedThisMonth,
     monthlyRemaining,
+    quarterlyBonusAllowance,
+    quarterlyBonusUsedInCurrentQuarter: quarterlyUsed,
+    quarterlyBonusRemaining,
     additionalPurchasedCredits: additionalCredits,
     totalAvailableRfqs,
     canCreateRfq,
@@ -481,8 +559,19 @@ export function evaluateRfqEntitlement(
     isBonusApplied,
     billingMode: mode,
     calendarMonth,
+    calendarQuarter,
     rejectionReason,
   };
+}
+
+/**
+ * Retrieves authoritative Subscription Plan Definition & Policy.
+ * Guarantees that clients and services consume configuration rather than hardcoding.
+ */
+export function getSubscriptionEntitlementPolicy(
+  tierId: SubscriptionTierId = 'INDIVIDUAL',
+): SubscriptionPlanDefinition {
+  return SUBSCRIPTION_TIERS[tierId] || SUBSCRIPTION_TIERS.INDIVIDUAL;
 }
 
 /**

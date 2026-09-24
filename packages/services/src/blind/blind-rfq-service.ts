@@ -11,7 +11,7 @@ import type { Repositories } from '../repositories/interfaces';
 import type { ActorContext } from '../types/actor-context';
 import { ForbiddenError, ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
-import { auditLog, requireOrgAccess } from '../services/service-helpers';
+import { auditLog, requireBuyerResourceAccess, requireOrgAccess } from '../services/service-helpers';
 import { identityProtectedQuoteToRecord } from './blind-payload';
 
 /**
@@ -32,7 +32,7 @@ export class IdentityProtectedRfqService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
+    const access = requireBuyerResourceAccess(actor, rfq.organizationId, rfq.createdBy, [
       'OWNER',
       'MANAGER',
       'BUYER',
@@ -67,7 +67,7 @@ export class IdentityProtectedRfqService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
+    const access = requireBuyerResourceAccess(actor, rfq.organizationId, rfq.createdBy, [
       'OWNER',
       'MANAGER',
       'BUYER',
@@ -96,10 +96,11 @@ export class IdentityProtectedRfqService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
+    const access = requireBuyerResourceAccess(actor, rfq.organizationId, rfq.createdBy, [
       'COMMITTEE_MEMBER',
       'MANAGER',
       'OWNER',
+      'BUYER',
     ]);
     if (!access.ok) return access;
 
@@ -124,9 +125,10 @@ export class IdentityProtectedRfqService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
+    const access = requireBuyerResourceAccess(actor, rfq.organizationId, rfq.createdBy, [
       'OWNER',
       'MANAGER',
+      'BUYER',
     ]);
     if (!access.ok) return access;
 

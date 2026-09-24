@@ -13,6 +13,7 @@ import { ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
 import {
   auditLog,
+  requireBuyerResourceAccess,
   requireOrgAccess,
   validateJustification,
 } from './service-helpers';
@@ -37,10 +38,11 @@ export class AwardService {
       return err(new ValidationError('RFQ must be in EVALUATING status'));
     }
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
+    const access = requireBuyerResourceAccess(actor, rfq.organizationId, rfq.createdBy, [
       'OWNER',
       'MANAGER',
       'APPROVER',
+      'BUYER',
     ]);
     if (!access.ok) return access;
 

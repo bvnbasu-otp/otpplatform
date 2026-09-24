@@ -3,7 +3,7 @@ import type { AuditService } from '../interfaces/audit-service';
 import type { Repositories } from '../repositories/interfaces';
 import type { ActorContext } from '../types/actor-context';
 import { ValidationError } from '../types/errors';
-import { auditLog, requireOrgAccess } from '../services/service-helpers';
+import { auditLog, requireBuyerResourceAccess, requireOrgAccess } from '../services/service-helpers';
 import { timestamp } from '../repositories/in-memory';
 import {
   evaluateSupplierAwardEligibility,
@@ -21,10 +21,11 @@ export class SupplierRevealServiceImpl implements SupplierRevealService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) throw new ValidationError('RFQ not found');
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
+    const access = requireBuyerResourceAccess(actor, rfq.organizationId, rfq.createdBy, [
       'OWNER',
       'MANAGER',
       'APPROVER',
+      'BUYER',
     ]);
     if (!access.ok) throw access.error;
 

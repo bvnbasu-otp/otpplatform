@@ -35,6 +35,15 @@ export const RfqStatus = {
 
 export type RfqStatus = (typeof RfqStatus)[keyof typeof RfqStatus];
 
+export const RfqPaymentType = {
+  SINGLE_PAYMENT: 'SINGLE_PAYMENT',
+  THREE_PART_PAYMENT: 'THREE_PART_PAYMENT',
+  MILESTONE_BASED: 'MILESTONE_BASED',
+} as const;
+
+export type RfqPaymentType =
+  (typeof RfqPaymentType)[keyof typeof RfqPaymentType];
+
 export const RfqRevealStatus = {
   PROTECTED: 'PROTECTED',
   REVEALED: 'REVEALED',

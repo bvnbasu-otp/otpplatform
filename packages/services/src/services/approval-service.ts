@@ -10,7 +10,7 @@ import type {
 import type { ActorContext } from '../types/actor-context';
 import { ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
-import { auditLog, requireOrgAccess } from './service-helpers';
+import { auditLog, requireBuyerResourceAccess, requireOrgAccess } from './service-helpers';
 import { createId, timestamp } from '../repositories/in-memory';
 
 export class ApprovalService {
@@ -30,10 +30,12 @@ export class ApprovalService {
       return err(new ValidationError('RFQ must be in EVALUATING status'));
     }
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER', 'BUYER'],
+    );
     if (!access.ok) return access;
 
     const existing = await this.repos.approvals.findByRfqId(rfqId);
@@ -68,11 +70,12 @@ export class ApprovalService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-      'APPROVER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER', 'APPROVER', 'BUYER'],
+    );
     if (!access.ok) return access;
 
     const instance = await this.repos.approvals.findByRfqId(rfqId);
@@ -116,11 +119,12 @@ export class ApprovalService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-      'APPROVER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER', 'APPROVER', 'BUYER'],
+    );
     if (!access.ok) return access;
 
     const instance = await this.repos.approvals.findByRfqId(rfqId);

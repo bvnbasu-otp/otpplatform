@@ -127,8 +127,12 @@ export function DashboardPage() {
         pendingVotesCount={actionRequiredItems.length}
         settledOrdersCount={stats.settled || 0}
         isExpressSubmitting={isSubmittingExpress}
-        organizationName={org?.organizationName || (context.organizationName ? context.organizationName : 'Palm Meadows RWA')}
-        organizationDetails={context.organizationName ? `${context.organizationName} · 450 Units` : 'Whitefield, Bengaluru · 450 Units'}
+        organizationName={org?.organizationName || context.organizationName || 'Personal Workspace'}
+        organizationDetails={
+          context.organizationName
+            ? `${context.organizationName} · Active Member`
+            : 'Independent Buyer · Personal Procurement'
+        }
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
       />
@@ -175,11 +179,11 @@ export function DashboardPage() {
             </div>
           )}
 
-          {/* Active Tenders (Ongoing) */}
+          {/* Active Purchases (Ongoing) */}
           {(activeFilter === 'all' || activeFilter === 'active') && activeProcurements.length > 0 && (
             <div className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 px-1">
-                <span>🟢</span> Active Tenders ({activeProcurements.length})
+                <span>🟢</span> Active Purchases ({activeProcurements.length})
               </span>
               <div className="space-y-2.5">
                 {activeProcurements.map((procurement) => (

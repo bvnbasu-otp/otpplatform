@@ -64,14 +64,14 @@ export function BuyerSourcingCockpitCard({
       <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-            🏢
+            👤
           </div>
           <div className="min-w-0">
             <h4 className="text-xs sm:text-sm font-bold text-foreground truncate">
-              {organizationName || 'Palm Meadows RWA'}
+              {organizationName || 'Personal Workspace'}
             </h4>
             <span className="text-[10px] text-muted-foreground block truncate">
-              {organizationDetails || 'Whitefield, Bengaluru · 450 Units'}
+              {organizationDetails || 'Independent Buyer · Personal Procurement'}
             </span>
           </div>
         </div>

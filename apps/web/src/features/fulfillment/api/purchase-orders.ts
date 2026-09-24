@@ -628,3 +628,43 @@ export async function fetchPoInvoicingSummary(poId: string): Promise<{
     },
   };
 }
+
+export async function cancelPurchaseOrder(
+  poId: string,
+  reason: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const cleanId = (poId || '').trim();
+  if (!cleanId) return { ok: false, error: 'Purchase order identifier is required' };
+  if (!reason || reason.trim().length < 5) {
+    return { ok: false, error: 'A valid cancellation reason is required (minimum 5 characters).' };
+  }
+
+  const { data: po, error: poErr } = await supabase
+    .from('purchase_orders')
+    .select('id, status')
+    .eq('id', cleanId)
+    .maybeSingle();
+
+  if (poErr) return { ok: false, error: poErr.message };
+  if (!po) return { ok: false, error: 'Purchase order not found' };
+
+  if (po.status === 'ACCEPTED' || po.status === 'COMPLETED' || po.status === 'DELIVERED') {
+    return {
+      ok: false,
+      error: `Purchase order cannot be cancelled after supplier acceptance (current status: ${po.status}).`,
+    };
+  }
+
+  const { error: updateErr } = await supabase
+    .from('purchase_orders')
+    .update({
+      status: 'CANCELLED',
+      cancellation_reason: reason.trim(),
+      cancelled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', cleanId);
+
+  if (updateErr) return { ok: false, error: updateErr.message };
+  return { ok: true };
+}

@@ -12,6 +12,7 @@ import { ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
 import {
   auditLog,
+  requireBuyerResourceAccess,
   requireOrgAccess,
   requireSupplierAccess,
 } from './service-helpers';
@@ -31,9 +32,10 @@ export class WorkOrderService {
     const po = await this.repos.purchaseOrders.findById(purchaseOrderId);
     if (!po) return err(new ValidationError('Purchase order not found'));
 
-    const access = requireOrgAccess(actor, po.organizationId, [
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, [
       'OWNER',
       'MANAGER',
+      'BUYER',
     ]);
     if (!access.ok) return access;
 

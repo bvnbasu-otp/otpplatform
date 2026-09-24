@@ -9,6 +9,7 @@ import type {
   QuoteStatus,
   RequirementStatus,
   RequirementType,
+  RfqPaymentType,
   RfqRevealStatus,
   RfqStatus,
   VoteChoice,
@@ -37,7 +38,7 @@ import type { StructuredSpecs } from '../interfaces/requirement-parser-service';
 
 export interface Requirement {
   id: string;
-  organizationId: string;
+  organizationId?: string | null;
   createdBy: string;
   requirementType: RequirementType;
   status: RequirementStatus;
@@ -52,12 +53,14 @@ export interface Requirement {
 export interface Rfq {
   id: string;
   requirementId: string;
-  organizationId: string;
+  organizationId?: string | null;
   status: RfqStatus;
   revealStatus: RfqRevealStatus;
   title: string;
   quoteDeadline?: string;
   evaluationDeadline?: string;
+  paymentType?: RfqPaymentType | null;
+  paymentTerms?: string | null;
   buyerAnonymousToSuppliers: boolean;
   minQuotesRequired: number;
   deliveryAddressSnapshot?: Record<string, unknown> | null;
@@ -153,12 +156,16 @@ export interface PurchaseOrder {
   id: string;
   awardId: string;
   rfqId: string;
-  organizationId: string;
+  organizationId?: string | null;
+  createdBy?: string | null;
   supplierId: string;
   poNumber: string;
   status: PurchaseOrderStatus;
   totalAmount: number;
   currency: string;
+  cancellationReason?: string | null;
+  cancelledAt?: string | null;
+  cancelledBy?: string | null;
   placeOfSupplyStateCode?: string;
   placeOfSupplyBasis?: string;
   taxSnapshot?: Record<string, unknown> | null;

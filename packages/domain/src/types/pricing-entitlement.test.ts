@@ -22,12 +22,12 @@ import {
 
 describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
   describe('Subscription Tiers & Price Matrix', () => {
-    it('enforces canonical Individual tier pricing: ₹99/mo, ₹999/yr, 5 RFQs/mo (6 on annual)', () => {
+    it('enforces canonical Individual tier pricing: ₹99/mo, ₹999/yr, 3 RFQs/mo (1 quarterly bonus on annual)', () => {
       const tier = SUBSCRIPTION_TIERS.INDIVIDUAL;
       expect(tier.monthlyPrice).toBe(99);
       expect(tier.yearlyPrice).toBe(999);
-      expect(tier.monthlyRfqs).toBe(5);
-      expect(tier.yearlyMonthlyRfqs).toBe(6);
+      expect(tier.monthlyRfqs).toBe(3);
+      expect(tier.quarterlyBonusRfqs).toBe(1);
       expect(tier.yearlySavings).toBe(189);
       expect(tier.additionalRfqPrice).toBe(149);
     });
@@ -236,7 +236,7 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(res.isBonusApplied).toBe(false);
     });
 
-    it('grants 6 RFQs per calendar month (5 standard + 1 bonus) on annual subscription', () => {
+    it('grants 6 RFQs per calendar month (5 standard + 1 bonus) on annual RWA subscription', () => {
       const res = evaluateRfqEntitlement({
         tierId: 'RWA',
         plan: 'YEARLY',
@@ -247,17 +247,16 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
         now: '2026-09-15T12:00:00Z',
       });
 
-      expect(res.monthlyAllowance).toBe(6); // 5 + 1
+      expect(res.monthlyAllowance).toBe(5);
       expect(res.rfqsUsedInCurrentMonth).toBe(4);
-      expect(res.monthlyRemaining).toBe(2);
-      expect(res.totalAvailableRfqs).toBe(2);
+      expect(res.monthlyRemaining).toBe(1);
       expect(res.canCreateRfq).toBe(true);
       expect(res.isBonusApplied).toBe(true);
     });
 
     it('blocks RFQ creation when monthly quota is exhausted (5/5 used)', () => {
       const res = evaluateRfqEntitlement({
-        tierId: 'INDIVIDUAL',
+        tierId: 'RWA',
         plan: 'MONTHLY',
         subscriptionStatus: 'ACTIVE',
         subscriptionExpiresAt: '2026-10-15T23:59:59Z',
@@ -270,7 +269,7 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(res.monthlyRemaining).toBe(0);
       expect(res.totalAvailableRfqs).toBe(0);
       expect(res.canCreateRfq).toBe(false);
-      expect(res.rejectionReason).toContain('Monthly entitlement limit reached');
+      expect(res.rejectionReason).toContain('Entitlement limit reached');
       expect(res.rejectionReason).toContain('₹149 + GST');
     });
 

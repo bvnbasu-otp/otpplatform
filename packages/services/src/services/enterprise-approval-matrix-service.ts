@@ -99,7 +99,7 @@ export class EnterpriseApprovalMatrixService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) throw new NotFoundError(`RFQ ${rfqId} not found`);
 
-    let policy = await this.repos.organizationApprovalPolicies?.findByOrganizationId(rfq.organizationId);
+    let policy = rfq.organizationId ? await this.repos.organizationApprovalPolicies?.findByOrganizationId(rfq.organizationId) : null;
     const tiers: ApprovalTierPolicyConfig[] = (policy?.tiers as unknown as ApprovalTierPolicyConfig[]) || [...DEFAULT_ENTERPRISE_APPROVAL_TIERS];
 
     const requiredTiers = resolveRequiredApprovalTiers(procurementAmount, tiers);
@@ -108,7 +108,7 @@ export class EnterpriseApprovalMatrixService {
     const stages: RfqApprovalStage[] = requiredTiers.map((tierConfig, idx) => ({
       id: crypto.randomUUID(),
       rfqId,
-      organizationId: rfq.organizationId,
+      organizationId: rfq.organizationId || '',
       tierLevel: tierConfig.tierLevel,
       stageOrder: idx + 1,
       status: 'PENDING',
@@ -149,15 +149,16 @@ export class EnterpriseApprovalMatrixService {
       throw new ForbiddenError(`Actor organization ${actor.organizationId} does not match RFQ organization ${rfq.organizationId}`);
     }
 
-    const existingPolicy = await this.repos.organizationApprovalPolicies?.findByOrganizationId(rfq.organizationId);
+    const existingPolicy = rfq.organizationId ? await this.repos.organizationApprovalPolicies?.findByOrganizationId(rfq.organizationId) : null;
     const policy: OrganizationApprovalPolicy = existingPolicy
       ? {
           ...existingPolicy,
+          organizationId: existingPolicy.organizationId || '',
           tiers: existingPolicy.tiers as any,
         }
       : {
           id: 'default',
-          organizationId: rfq.organizationId,
+          organizationId: rfq.organizationId || '',
           policyName: 'Default Policy',
           isActive: true,
           tiers: [...DEFAULT_ENTERPRISE_APPROVAL_TIERS],
@@ -206,7 +207,7 @@ export class EnterpriseApprovalMatrixService {
 
     const executionRequest: ApprovalExecutionRequest = {
       rfqId: params.rfqId,
-      organizationId: rfq.organizationId,
+      organizationId: rfq.organizationId || '',
       tierLevel: params.tierLevel,
       stageOrder: targetStage.stageOrder,
       actorProfileId: actor.profileId,
@@ -435,12 +436,12 @@ export class EnterpriseApprovalMatrixService {
     const rfq = await this.repos.rfqs.findById(params.rfqId);
     if (!rfq) throw new NotFoundError(`RFQ ${params.rfqId} not found`);
 
-    const policy = await this.repos.organizationApprovalPolicies?.findByOrganizationId(rfq.organizationId);
+    const policy = rfq.organizationId ? await this.repos.organizationApprovalPolicies?.findByOrganizationId(rfq.organizationId) : null;
 
     const evaluation = evaluateApprovalRoute(
       {
         rfqId: params.rfqId,
-        organizationId: rfq.organizationId,
+        organizationId: rfq.organizationId || '',
         estimatedOrAwardedAmount: params.procurementAmount,
         creatorProfileId: rfq.createdBy,
         actorProfileId: actor.profileId,

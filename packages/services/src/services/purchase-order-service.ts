@@ -7,6 +7,7 @@ import {
   calculatePoSettlementSummary,
   canTransitionChangeOrder,
   canTransitionPurchaseOrder,
+  validatePurchaseOrderCancellation,
   determinePlaceOfSupply,
   validateChangeOrderCommitment,
   checkSupplierExecutionGate,
@@ -32,6 +33,7 @@ import { err, ok, type Result } from '../types/result';
 import {
   auditLog,
   assertTransition,
+  requireBuyerResourceAccess,
   requireOrgAccess,
   requireSupplierAccess,
 } from './service-helpers';
@@ -57,10 +59,12 @@ export class PurchaseOrderService {
     const rfq = await this.repos.rfqs.findById(award.rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER', 'BUYER'],
+    );
     if (!access.ok) return access;
 
     const quote = await this.repos.quotes.findById(award.quoteId);
@@ -141,7 +145,8 @@ export class PurchaseOrderService {
       id: createId(),
       awardId,
       rfqId: award.rfqId,
-      organizationId: rfq.organizationId,
+      organizationId: rfq.organizationId || null,
+      createdBy: actor.profileId,
       supplierId: quote.supplierId,
       poNumber: `PO-${now.slice(0, 10)}-${createId().slice(0, 8)}`,
       status: 'DRAFT',
@@ -242,10 +247,12 @@ export class PurchaseOrderService {
         }
       }
     } else {
-      const access = requireOrgAccess(actor, po.organizationId, [
-        'OWNER',
-        'MANAGER',
-      ]);
+      const access = requireBuyerResourceAccess(
+        actor,
+        po.organizationId,
+        po.createdBy,
+        ['OWNER', 'MANAGER', 'BUYER'],
+      );
       if (!access.ok) return access;
     }
 
@@ -355,6 +362,75 @@ export class PurchaseOrderService {
   }
 
   /**
+   * Cancels a Purchase Order prior to supplier acceptance.
+   *
+   * Core Directives (Directive 10):
+   * 1. An Individual buyer (or authorized procurement lead) can cancel a PO BEFORE supplier acceptance,
+   *    even if supplier identity has already been revealed, provided a valid cancellation reason is given.
+   * 2. Cancellation is strictly blocked after supplier acceptance.
+   */
+  async cancelPurchaseOrder(
+    actor: ActorContext,
+    poId: string,
+    input: { reason: string },
+  ): Promise<Result<PurchaseOrder, Error>> {
+    const po = await this.repos.purchaseOrders.findById(poId);
+    if (!po) return err(new NotFoundError('Purchase order not found'));
+
+    // Check buyer access
+    const access = requireBuyerResourceAccess(
+      actor,
+      po.organizationId,
+      po.createdBy,
+      ['OWNER', 'MANAGER', 'BUYER'],
+    );
+    if (!access.ok) return access;
+
+    // Validate cancellation eligibility using domain validator
+    const validation = validatePurchaseOrderCancellation({
+      currentStatus: po.status,
+      cancellationReason: input.reason,
+      supplierAcceptedAt: po.acknowledgedAt,
+    });
+
+    if (!validation.canCancel) {
+      return err(
+        new ValidationError(
+          validation.rejectionReason || 'Purchase Order cannot be cancelled',
+        ),
+      );
+    }
+
+    const now = timestamp();
+    const before = { status: po.status };
+    const updated: PurchaseOrder = {
+      ...po,
+      status: 'CANCELLED',
+      cancellationReason: validation.reason,
+      cancelledAt: now,
+      cancelledBy: actor.profileId,
+      updatedAt: now,
+    };
+
+    const saved = await this.repos.purchaseOrders.save(updated);
+    await auditLog(
+      this.audit,
+      actor,
+      'purchase_order',
+      saved.id,
+      'purchase_order.cancelled',
+      before,
+      {
+        status: saved.status,
+        reason: validation.reason,
+        cancelledAt: now,
+      },
+    );
+
+    return ok(saved);
+  }
+
+  /**
    * Creates a formal PO Change Order / Variation request (Phase 5C.4).
    */
   async createPoChangeOrder(
@@ -389,10 +465,10 @@ export class PurchaseOrderService {
     }
 
     if (!actor.isPlatformAdmin) {
-      const access = requireOrgAccess(actor, po.organizationId, ['OWNER', 'MANAGER']);
+      const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, ['OWNER', 'MANAGER', 'BUYER']);
       if (!access.ok) {
         return err(
-          new ForbiddenError('Unauthorized: Only Buyer OWNER or MANAGER can create PO change orders'),
+          new ForbiddenError('Unauthorized: Only authorized buyer can create PO change orders'),
         );
       }
     }
@@ -442,7 +518,7 @@ export class PurchaseOrderService {
 
     const changeOrder: PoChangeOrderEntity = {
       id: changeOrderId,
-      organizationId: po.organizationId,
+      organizationId: po.organizationId || '',
       purchaseOrderId: po.id,
       changeOrderNumber,
       sequence,

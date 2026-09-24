@@ -280,5 +280,13 @@ describe('Requirement Feature Module Tests', () => {
       expect(workflowActions.length).toBe(2);
       expect(workflowActions[0]).toBe('Discover & Match Suppliers');
     });
+
+    it('queries individual buyer requirements where organization_id IS NULL when organizationId is not passed', async () => {
+      const mockChain = createSupabaseQueryMock({ data: [], error: null });
+      vi.mocked(supabase.from).mockImplementation(() => mockChain);
+
+      const res = await fetchOrganizationRequirements(null);
+      expect(res.ok).toBe(true);
+    });
   });
 });

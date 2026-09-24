@@ -13,14 +13,14 @@ import {
 } from './types';
 
 describe('Subscription Pricing & Tier Rules', () => {
-  it('enforces exact Individual tier pricing (₹99/mo, ₹999/yr, 5 RFQs/mo [6 on annual])', () => {
+  it('enforces exact Individual tier pricing (₹99/mo, ₹999/yr, 3 RFQs/mo [1 bonus per quarter on annual])', () => {
     const individual = SUBSCRIPTION_TIERS.INDIVIDUAL;
     expect(individual.monthlyPrice).toBe(99);
     expect(individual.monthlyDurationDays).toBe(30);
-    expect(individual.monthlyRfqs).toBe(5);
+    expect(individual.monthlyRfqs).toBe(3);
     expect(individual.yearlyPrice).toBe(999);
     expect(individual.yearlyDurationDays).toBe(365);
-    expect(individual.yearlyMonthlyRfqs).toBe(6);
+    expect(individual.quarterlyBonusRfqs).toBe(1);
     expect(individual.yearlySavings).toBe(189);
     expect(individual.additionalRfqPrice).toBe(149);
   });
@@ -76,12 +76,12 @@ describe('Subscription Pricing & Tier Rules', () => {
     const indMonthly = computeSubscriptionFee('INDIVIDUAL', 'MONTHLY');
     expect(indMonthly.amount).toBe(99);
     expect(indMonthly.durationDays).toBe(30);
-    expect(indMonthly.monthlyRfqQuota).toBe(5);
+    expect(indMonthly.monthlyRfqQuota).toBe(3);
 
     const indYearly = computeSubscriptionFee('INDIVIDUAL', 'YEARLY');
     expect(indYearly.amount).toBe(999);
     expect(indYearly.durationDays).toBe(365);
-    expect(indYearly.monthlyRfqQuota).toBe(6); // 5 + 1 bonus
+    expect(indYearly.monthlyRfqQuota).toBe(3);
     expect(indYearly.savings).toBe(189);
 
     const rwaMonthly = computeSubscriptionFee('RWA', 'MONTHLY');
@@ -145,7 +145,7 @@ describe('Prepaid Subscription Lifecycle & Renewal Reminders', () => {
 describe('Calendar Month RFQ Entitlement Engine', () => {
   it('correctly evaluates RFQ creation allowance and limits', () => {
     const activeMonthly = evaluateRfqEntitlement({
-      tierId: 'INDIVIDUAL',
+      tierId: 'RWA',
       plan: 'MONTHLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: '2026-10-31T23:59:59Z',
@@ -158,7 +158,7 @@ describe('Calendar Month RFQ Entitlement Engine', () => {
     expect(activeMonthly.canCreateRfq).toBe(true);
 
     const activeYearly = evaluateRfqEntitlement({
-      tierId: 'INDIVIDUAL',
+      tierId: 'RWA',
       plan: 'YEARLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: '2027-08-31T23:59:59Z',
@@ -166,8 +166,8 @@ describe('Calendar Month RFQ Entitlement Engine', () => {
       billingMode: 'LIVE',
       now: '2026-09-22T08:00:00Z',
     });
-    expect(activeYearly.monthlyAllowance).toBe(6);
-    expect(activeYearly.monthlyRemaining).toBe(3);
+    expect(activeYearly.monthlyAllowance).toBe(5);
+    expect(activeYearly.monthlyRemaining).toBe(2);
     expect(activeYearly.isBonusApplied).toBe(true);
   });
 });
@@ -229,5 +229,9 @@ describe('Cryptographically Secure Payment Reference Generation (FIX-01)', () =>
     const { SubscriptionPaymentModal } = await import('./components/SubscriptionPaymentModal');
     expect(SubscriptionPaymentModal).toBeDefined();
     expect(typeof SubscriptionPaymentModal).toBe('function');
+
+    const { OtpWalletCreditsWidget } = await import('./components/OtpWalletCreditsWidget');
+    expect(OtpWalletCreditsWidget).toBeDefined();
+    expect(typeof OtpWalletCreditsWidget).toBe('function');
   });
 });

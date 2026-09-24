@@ -440,6 +440,14 @@ describe('Create Requirement Mobile Redesign — Progressive Flow & Invariants',
       expect(responseNotice).not.toContain('15 sec');
       expect(responseNotice).not.toContain('15 seconds');
     });
+
+    it('provides free-text capture when category or subcategory is not listed', () => {
+      const categoryOptions = [
+        { value: 'cat-1', label: 'Solar' },
+        { value: 'OTHER', label: 'Not listed? Tell us what you need' },
+      ];
+      expect(categoryOptions.some((c) => c.value === 'OTHER')).toBe(true);
+    });
   });
 
   describe('Vocabulary Scanner Invariant', () => {

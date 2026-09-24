@@ -20,7 +20,7 @@ import type {
 import type { ActorContext } from '../types/actor-context';
 import { ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
-import { auditLog, requireOrgAccess, requireSupplierAccess } from './service-helpers';
+import { auditLog, requireBuyerResourceAccess, requireOrgAccess, requireSupplierAccess } from './service-helpers';
 import { createId, timestamp } from '../repositories/in-memory';
 
 export interface SubmitInvoiceLineItemInput {
@@ -307,10 +307,11 @@ export class InvoiceService {
     const po = await this.repos.purchaseOrders.findById(wo.purchaseOrderId);
     if (!po) return err(new ValidationError('Purchase order not found'));
 
-    const access = requireOrgAccess(actor, po.organizationId, [
+    const access = requireBuyerResourceAccess(actor, po.organizationId, po.createdBy, [
       'OWNER',
       'MANAGER',
       'APPROVER',
+      'BUYER',
     ]);
     if (!access.ok) return access;
 

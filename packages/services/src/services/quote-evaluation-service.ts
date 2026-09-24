@@ -5,7 +5,7 @@ import type { Repositories } from '../repositories/interfaces';
 import type { ActorContext } from '../types/actor-context';
 import { ValidationError } from '../types/errors';
 import { err, ok, type Result } from '../types/result';
-import { auditLog, requireOrgAccess } from './service-helpers';
+import { auditLog, requireBuyerResourceAccess, requireOrgAccess } from './service-helpers';
 import { timestamp } from '../repositories/in-memory';
 
 export class QuoteEvaluationAppService {
@@ -22,9 +22,10 @@ export class QuoteEvaluationAppService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
+    const access = requireBuyerResourceAccess(actor, rfq.organizationId, rfq.createdBy, [
       'OWNER',
       'MANAGER',
+      'BUYER',
     ]);
     if (!access.ok) return access;
 

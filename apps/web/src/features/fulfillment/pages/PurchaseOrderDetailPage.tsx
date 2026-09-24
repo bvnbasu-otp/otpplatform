@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { PurchaseOrderStatus, PoSettlementSummary, PoSettlementCertificate, CreditDebitNote, PoChangeOrder } from '@otp/domain';
 import {
+  cancelPurchaseOrder,
   fetchPoInvoicingSummary,
   fetchPoLineItems,
   fetchPurchaseOrder,
@@ -357,6 +358,10 @@ export function PurchaseOrderDetailPage({
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [downloadingCert, setDownloadingCert] = useState(false);
 
+  const [showCancellationModal, setShowCancellationModal] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [cancellingPo, setCancellingPo] = useState(false);
+
   const requestedStage = searchParams.get('stage')?.toUpperCase();
 
   const load = useCallback(async () => {
@@ -691,6 +696,38 @@ export function PurchaseOrderDetailPage({
     }
   }
 
+  async function handleConfirmCancelPo() {
+    if (!order) return;
+    if (!cancellationReason || cancellationReason.trim().length < 5) {
+      setError('Please enter a cancellation reason of at least 5 characters.');
+      return;
+    }
+    setCancellingPo(true);
+    setError(null);
+    try {
+      const res = await cancelPurchaseOrder(order.id, cancellationReason);
+      if (!res.ok) {
+        setError(translateError(res.error));
+        return;
+      }
+      setShowCancellationModal(false);
+      setCancellationReason('');
+      setSuccess('Purchase Order successfully cancelled prior to supplier acceptance.');
+      await load();
+    } catch (err: unknown) {
+      setError(translateError(err instanceof Error ? err.message : 'Failed to cancel Purchase Order'));
+    } finally {
+      setCancellingPo(false);
+    }
+  }
+
+  const canBuyerCancel =
+    role === 'buyer' &&
+    (order?.status === 'DRAFT' ||
+      order?.status === 'PENDING_APPROVAL' ||
+      order?.status === 'APPROVED' ||
+      order?.status === 'ISSUED');
+
   const handleSharePo = async () => {
     if (!order) return;
     const shareText = `Digital Purchase Order ${order.poNumber} — Total ${formatMoney(order.totalAmount, order.currency)} issued to ${order.supplierName || 'Awarded Vendor'}. View & track on OTP.`;
@@ -986,6 +1023,16 @@ export function PurchaseOrderDetailPage({
               <span>📲</span>
               <span>WhatsApp</span>
             </button>
+            {canBuyerCancel && (
+              <button
+                type="button"
+                onClick={() => setShowCancellationModal(true)}
+                className="flex-1 sm:flex-initial min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50/70 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition mobile-touch-target"
+              >
+                <span>🚫</span>
+                <span>Cancel PO</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center justify-end">
@@ -999,6 +1046,60 @@ export function PurchaseOrderDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Pre-acceptance PO Cancellation Modal */}
+      {showCancellationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <span>🚫</span> Cancel Purchase Order
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowCancellationModal(false)}
+                className="text-muted-foreground hover:text-foreground text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              As an authorized buyer, you can cancel this Purchase Order before supplier acceptance without penalty. Please provide a mandatory reason for cancellation:
+            </p>
+
+            <div>
+              <textarea
+                rows={3}
+                required
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                placeholder="e.g. Scope revised, site requirements changed, or budget deferred..."
+                className="w-full rounded-xl border border-border bg-background p-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-rose-500 focus:outline-hidden"
+              />
+              <span className="text-[10px] text-muted-foreground">Minimum 5 characters</span>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button
+                type="button"
+                onClick={() => setShowCancellationModal(false)}
+                className="min-h-[44px] rounded-xl border border-border px-4 py-2 text-xs font-semibold hover:bg-muted"
+              >
+                Keep PO Active
+              </button>
+              <button
+                type="button"
+                disabled={cancellingPo || cancellationReason.trim().length < 5}
+                onClick={() => void handleConfirmCancelPo()}
+                className="min-h-[44px] rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50"
+              >
+                {cancellingPo ? 'Cancelling…' : 'Confirm Cancel PO'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mt-2 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-bold text-red-700 dark:text-red-300 no-print">

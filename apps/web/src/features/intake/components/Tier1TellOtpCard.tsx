@@ -514,10 +514,13 @@ export function Tier1TellOtpCard({
                 aria-describedby={describedBy}
                 invalid={invalid}
                 placeholder="Select category"
-                options={taxonomy.categories.map((c) => ({
-                  value: c.id,
-                  label: c.name,
-                }))}
+                options={[
+                  ...taxonomy.categories.map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                  })),
+                  { value: 'OTHER', label: 'Not listed? Tell us what you need' },
+                ]}
                 value={categoryId}
                 onChange={(e) => handleCategorySelect(e.target.value)}
               />
@@ -531,10 +534,13 @@ export function Tier1TellOtpCard({
                 aria-describedby={describedBy}
                 invalid={invalid}
                 placeholder="Select specific vertical"
-                options={(subcategories.length > 0
-                  ? subcategories
-                  : taxonomy.subcategories
-                ).map((s) => ({ value: s.id, label: s.name }))}
+                options={[
+                  ...(subcategories.length > 0
+                    ? subcategories
+                    : taxonomy.subcategories
+                  ).map((s) => ({ value: s.id, label: s.name })),
+                  { value: 'OTHER', label: 'Not listed? (Custom Specification)' },
+                ]}
                 value={subcategoryId}
                 onChange={(e) => handleSubcategorySelect(e.target.value)}
               />

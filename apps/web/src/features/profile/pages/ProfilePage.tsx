@@ -191,6 +191,13 @@ export function ProfilePage() {
 
   const activeOrgSummary = context.organizations.find((o) => o.id === context.organizationId);
   const currentOrgType = activeOrgSummary?.orgType || null;
+  const isIndividual = !context.organizationId || resolveBuyerPersona(context.buyerType || currentOrgType) === 'INDIVIDUAL';
+
+  useEffect(() => {
+    if (isIndividual && activeTab === 'team') {
+      setActiveTab('profile');
+    }
+  }, [isIndividual, activeTab]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -564,20 +571,22 @@ export function ProfilePage() {
             <span>Address Book</span>
           </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'team'}
-            onClick={() => handleTabSwitch('team')}
-            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
-              activeTab === 'team'
-                ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <span>{resolveBuyerPersona(currentOrgType) === 'RWA' ? '🏛️' : '🏢'}</span>
-            <span>{resolveBuyerPersona(currentOrgType) === 'RWA' ? 'Committee' : 'Team'} ({members.length || 1})</span>
-          </button>
+          {!isIndividual && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'team'}
+              onClick={() => handleTabSwitch('team')}
+              className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
+                activeTab === 'team'
+                  ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>{resolveBuyerPersona(currentOrgType) === 'RWA' ? '🏛️' : '🏢'}</span>
+              <span>{resolveBuyerPersona(currentOrgType) === 'RWA' ? 'Committee' : 'Team'} ({members.length || 1})</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -612,20 +621,39 @@ export function ProfilePage() {
       {activeTab === 'profile' && (
         <div className="space-y-3">
           {/* Subscription Expiry & Starter Credit Banner */}
-          {subscription && (
+          {subscription ? (
             <SubscriptionExpiryBanner
               subscription={subscription}
               onRenewClick={() => setIsPaymentModalOpen(true)}
             />
-          )}
+          ) : isIndividual ? (
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">👤</span>
+                  <div>
+                    <h3 className="text-xs font-bold text-foreground">Individual Buyer Tier</h3>
+                    <p className="text-[11px] text-muted-foreground">Direct 1-click procurement • Zero committee overhead</p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-black">
+                  ACTIVE
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+                <span className="font-semibold text-foreground">Sourcing Entitlement:</span>
+                <span>3 RFQs / month</span>
+                <span>•</span>
+                <span>1 Bonus RFQ / quarter</span>
+              </div>
+            </div>
+          ) : null}
 
           {/* OTP Wallet Credits Widget */}
-          {orgId && (
-            <OtpWalletCreditsWidget
-              organizationId={orgId}
-              onApplyRenewal={() => setIsPaymentModalOpen(true)}
-            />
-          )}
+          <OtpWalletCreditsWidget
+            organizationId={orgId || undefined}
+            onApplyRenewal={() => setIsPaymentModalOpen(true)}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
           {/* Identity & Avatar Card (4 cols) */}

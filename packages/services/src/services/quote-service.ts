@@ -13,6 +13,7 @@ import { err, ok, type Result } from '../types/result';
 import {
   auditLog,
   assertTransition,
+  requireBuyerResourceAccess,
   requireOrgAccess,
   requireSupplierAccess,
 } from './service-helpers';
@@ -203,13 +204,12 @@ export class QuoteService {
     const rfq = await this.repos.rfqs.findById(rfqId);
     if (!rfq) return err(new ValidationError('RFQ not found'));
 
-    const access = requireOrgAccess(actor, rfq.organizationId, [
-      'OWNER',
-      'MANAGER',
-      'BUYER',
-      'APPROVER',
-      'COMMITTEE_MEMBER',
-    ]);
+    const access = requireBuyerResourceAccess(
+      actor,
+      rfq.organizationId,
+      rfq.createdBy,
+      ['OWNER', 'MANAGER', 'BUYER', 'APPROVER', 'COMMITTEE_MEMBER'],
+    );
     if (!access.ok) return access;
 
     const quotes = await this.repos.quotes.findByRfqId(rfqId);

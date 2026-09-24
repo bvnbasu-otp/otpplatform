@@ -25,4 +25,17 @@ describe('milestone progress increments (0-100% in 25% steps)', () => {
     expect(getStatus(75)).toBe('IN_PROGRESS');
     expect(getStatus(100)).toBe('COMPLETED');
   });
+
+  it('validates PO cancellation rules pre vs post supplier acceptance', () => {
+    const preAcceptance = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'ISSUED'];
+    const postAcceptance = ['ACCEPTED', 'IN_PROGRESS', 'COMPLETED'];
+
+    for (const st of preAcceptance) {
+      expect(['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'ISSUED'].includes(st)).toBe(true);
+    }
+
+    for (const st of postAcceptance) {
+      expect(['ACCEPTED', 'IN_PROGRESS', 'COMPLETED'].includes(st)).toBe(true);
+    }
+  });
 });

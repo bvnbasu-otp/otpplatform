@@ -172,10 +172,16 @@ export interface OrganizationRequirementSummary {
   isSettled: boolean;
 }
 
-export async function fetchOrganizationRequirements(organizationId: string): Promise<
+export async function fetchOrganizationRequirements(organizationId?: string | null): Promise<
   { ok: true; requirements: OrganizationRequirementSummary[] } | { ok: false; error: string }
 > {
-  const { data, error } = await supabase
+  let authUserId: string | undefined;
+  try {
+    const authRes = await supabase.auth?.getUser?.();
+    authUserId = authRes?.data?.user?.id;
+  } catch {}
+
+  let query = supabase
     .from('requirements')
     .select(`
       id,
@@ -201,27 +207,38 @@ export async function fetchOrganizationRequirements(organizationId: string): Pro
         )
       )
     `)
-    .eq('organization_id', organizationId)
     .order('created_at', { ascending: false });
+
+  if (organizationId && organizationId.trim() !== '') {
+    query = query.eq('organization_id', organizationId);
+  } else if (authUserId) {
+    query = query.is('organization_id', null).eq('created_by', authUserId);
+  }
+
+  const { data, error } = await query;
 
   if (error) return { ok: false, error: (error as { message?: string })?.message || 'Failed to load requirements' };
 
   // Buyers cannot SELECT the base `quotes` table (identity protection), so an
   // embedded `rfqs(quotes(id))` above would silently resolve to an empty array
   // under RLS. This RPC counts quotes server-side and works at every phase.
-  const { data: rpcRows, error: countError } = await supabase.rpc(
-    'organization_rfq_quote_counts',
-    { p_organization_id: organizationId },
-  );
+  let quoteCountByRfq = new Map<string, number>();
 
-  if (countError) return { ok: false, error: (countError as { message?: string })?.message || 'Failed to count quotes' };
+  if (organizationId && organizationId.trim() !== '') {
+    const { data: rpcRows, error: countError } = await supabase.rpc(
+      'organization_rfq_quote_counts',
+      { p_organization_id: organizationId },
+    );
 
-  const quoteCountByRfq = new Map<string, number>(
-    (rpcRows ?? []).map((row: { rfq_id: string; quotes_count: number }) => [
-      row.rfq_id,
-      row.quotes_count,
-    ]),
-  );
+    if (!countError && rpcRows) {
+      quoteCountByRfq = new Map<string, number>(
+        (rpcRows ?? []).map((row: { rfq_id: string; quotes_count: number }) => [
+          row.rfq_id,
+          row.quotes_count,
+        ]),
+      );
+    }
+  }
 
   const requirements: OrganizationRequirementSummary[] = (data ?? []).map((row) => {
     const rfqList = Array.isArray(row.rfqs) ? row.rfqs : row.rfqs ? [row.rfqs] : [];
