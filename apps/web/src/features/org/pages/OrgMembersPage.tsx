@@ -13,6 +13,7 @@ import {
   updateTeamMemberRole,
   type OrgMember,
 } from '../api/org-members';
+import { OrgRoleSuccessionTimeline } from '../components/OrgRoleSuccessionTimeline';
 import {
   DELEGATION_PERMISSIONS,
   DEFAULT_ENTERPRISE_APPROVAL_TIERS,
@@ -83,7 +84,7 @@ const PERMISSION_LABELS: Record<DelegationPermission, { title: string; subtitle:
 
 export function OrgMembersPage() {
   const { context, switchOrg, refresh } = useRoleContext();
-  const [activeTab, setActiveTab] = useState<'members' | 'invitations' | 'delegations' | 'thresholds'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'roles' | 'invitations' | 'delegations' | 'thresholds'>('members');
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [invitations, setInvitations] = useState<OrganizationInvitation[]>([]);
   const [delegations, setDelegations] = useState<OrganizationDelegation[]>([]);
@@ -449,6 +450,22 @@ export function OrgMembersPage() {
           <button
             type="button"
             role="tab"
+            aria-selected={activeTab === 'roles'}
+            onClick={() => setActiveTab('roles')}
+            data-testid="tab-roles"
+            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
+              activeTab === 'roles'
+                ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>🏛️</span>
+            <span>Succession & Lifecycle</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
             aria-selected={activeTab === 'invitations'}
             onClick={() => setActiveTab('invitations')}
             data-testid="tab-invitations"
@@ -752,6 +769,22 @@ export function OrgMembersPage() {
             )}
           </section>
         </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* TAB: ROLE SUCCESSION, ROTATION & ANNUAL TERM LIFECYCLE            */}
+      {/* ================================================================= */}
+      {activeTab === 'roles' && (
+        <OrgRoleSuccessionTimeline
+          organizationId={orgId}
+          organizationName={orgName}
+          canManage={canManage}
+          members={members}
+          onNotification={(msg) => {
+            setActionSuccess(`✓ ${msg}`);
+            void loadData(orgId);
+          }}
+        />
       )}
 
       {/* ================================================================= */}

@@ -35,3 +35,4 @@ export interface RfqRevealStatusReader {
 }
 
 export type { BuyerAddressRepository } from './supabase-buyer-address-repository';
+export type { OrgRoleLifecycleRepository } from './supabase-org-role-lifecycle-repository';

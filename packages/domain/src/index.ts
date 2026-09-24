@@ -57,6 +57,7 @@ export * from './types/buyer-governance';
 export * from './types/threshold-routing';
 export * from './types/market-intelligence';
 export * from './types/approval-execution';
+export * from './types/org-role-lifecycle';
 export * from './accounting/tally-xml-exporter';
 export * from './accounting/zoho-json-exporter';
 export * from './accounting/tally-payment-voucher';

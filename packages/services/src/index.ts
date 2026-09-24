@@ -56,6 +56,7 @@ export * from './services/procurement-contract-operations-service';
 export * from './services/market-intelligence-service';
 export * from './services/buyer-address-service';
 export * from './services/supplier-award-onboarding-service';
+export * from './services/org-role-lifecycle-service';
 export * from './services/service-helpers';
 
 export * from './factory/create-otp-services';

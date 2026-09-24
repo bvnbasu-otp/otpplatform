@@ -53,6 +53,8 @@ import type {
   ProcurementContractEntity,
   OrganizationDelegationEntity,
   RfqApprovalRouteEvaluationEntity,
+  OrgRoleAssignmentEntity,
+  OrgGovernanceActionAuditEntity,
 } from './entities';
 
 
@@ -450,6 +452,19 @@ export interface RfqApprovalRouteEvaluationRepository {
   save(evaluation: RfqApprovalRouteEvaluationEntity): Promise<RfqApprovalRouteEvaluationEntity>;
 }
 
+export interface OrgRoleAssignmentRepository {
+  findById(id: string): Promise<OrgRoleAssignmentEntity | null>;
+  findByOrganizationId(organizationId: string, roleId?: string): Promise<OrgRoleAssignmentEntity[]>;
+  findActiveRoleHolder(organizationId: string, roleId: string, atTime?: Date): Promise<OrgRoleAssignmentEntity | null>;
+  save(assignment: OrgRoleAssignmentEntity): Promise<OrgRoleAssignmentEntity>;
+}
+
+export interface OrgGovernanceActionAuditRepository {
+  findById(id: string): Promise<OrgGovernanceActionAuditEntity | null>;
+  findByOrganizationId(organizationId: string, limit?: number): Promise<OrgGovernanceActionAuditEntity[]>;
+  save(audit: OrgGovernanceActionAuditEntity): Promise<OrgGovernanceActionAuditEntity>;
+}
+
 export interface Repositories {
   requirements: RequirementRepository;
   rfqs: RfqRepository;
@@ -503,6 +518,8 @@ export interface Repositories {
   organizationDelegations?: OrganizationDelegationRepository;
   rfqApprovalRouteEvaluations?: RfqApprovalRouteEvaluationRepository;
   buyerAddresses?: BuyerAddressRepository;
+  orgRoleAssignments?: OrgRoleAssignmentRepository;
+  orgGovernanceAudits?: OrgGovernanceActionAuditRepository;
   suppliers: SupplierRepository;
   performance: PerformanceRepository;
 }

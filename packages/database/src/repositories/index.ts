@@ -25,3 +25,5 @@ export { SupabaseManagerInvitationRepository } from './supabase-manager-invitati
 export { SupabaseRfqRevealStatusReader } from './supabase-rfq-reveal-status-reader';
 export { SupabaseBuyerAddressRepository } from './supabase-buyer-address-repository';
 export type { BuyerAddressRepository } from './supabase-buyer-address-repository';
+export { SupabaseOrgRoleLifecycleRepository } from './supabase-org-role-lifecycle-repository';
+export type { OrgRoleLifecycleRepository } from './supabase-org-role-lifecycle-repository';

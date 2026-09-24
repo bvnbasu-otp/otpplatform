@@ -54,6 +54,8 @@ import type {
   ProcurementContractEntity,
   OrganizationDelegationEntity,
   RfqApprovalRouteEvaluationEntity,
+  OrgRoleAssignmentEntity,
+  OrgGovernanceActionAuditEntity,
 } from './entities';
 
 function id(): string {
@@ -120,6 +122,8 @@ export class InMemoryRepositories {
   organizationDelegations = new Map<string, OrganizationDelegationEntity>();
   rfqApprovalRouteEvaluations = new Map<string, RfqApprovalRouteEvaluationEntity>();
   buyerAddresses = new Map<string, BuyerAddressEntity>();
+  orgRoleAssignments = new Map<string, OrgRoleAssignmentEntity>();
+  orgGovernanceAudits = new Map<string, OrgGovernanceActionAuditEntity>();
   suppliers = new Map<string, Supplier>();
 
   performance = new Map<string, ProcurementPerformanceRecord>();
@@ -1205,6 +1209,56 @@ export class InMemoryRepositories {
     };
   }
 
+  get orgRoleAssignmentsRepo(): Repositories['orgRoleAssignments'] {
+    const store = this.orgRoleAssignments;
+    return {
+      findById: async (id: string) => store.get(id) ?? null,
+      findByOrganizationId: async (orgId: string, roleId?: string) => {
+        return Array.from(store.values()).filter(
+          (a) => a.organizationId === orgId && (!roleId || a.roleId === roleId)
+        );
+      },
+      findActiveRoleHolder: async (orgId: string, roleId: string, atTime = new Date()) => {
+        const timeMs = atTime.getTime();
+        return (
+          Array.from(store.values()).find((a) => {
+            if (a.organizationId !== orgId || a.roleId !== roleId || a.status !== 'ACTIVE' || !a.personId) {
+              return false;
+            }
+            const from = new Date(a.effectiveFrom).getTime();
+            if (timeMs < from) return false;
+            if (a.effectiveTo) {
+              const to = new Date(a.effectiveTo).getTime();
+              if (timeMs >= to) return false;
+            }
+            return true;
+          }) ?? null
+        );
+      },
+      save: async (assignment: OrgRoleAssignmentEntity) => {
+        store.set(assignment.id, { ...assignment });
+        return assignment;
+      },
+    };
+  }
+
+  get orgGovernanceAuditsRepo(): Repositories['orgGovernanceAudits'] {
+    const store = this.orgGovernanceAudits;
+    return {
+      findById: async (id: string) => store.get(id) ?? null,
+      findByOrganizationId: async (orgId: string, limit = 50) => {
+        return Array.from(store.values())
+          .filter((a) => a.organizationId === orgId)
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, limit);
+      },
+      save: async (audit: OrgGovernanceActionAuditEntity) => {
+        store.set(audit.id, { ...audit });
+        return audit;
+      },
+    };
+  }
+
   get performanceRepo(): Repositories['performance'] {
     const store = this.performance;
     return {
@@ -1270,6 +1324,8 @@ export class InMemoryRepositories {
       organizationDelegations: this.organizationDelegationsRepo,
       rfqApprovalRouteEvaluations: this.rfqApprovalRouteEvaluationsRepo,
       buyerAddresses: this.buyerAddressesRepo,
+      orgRoleAssignments: this.orgRoleAssignmentsRepo,
+      orgGovernanceAudits: this.orgGovernanceAuditsRepo,
       suppliers: this.suppliersRepo,
       performance: this.performanceRepo,
     };

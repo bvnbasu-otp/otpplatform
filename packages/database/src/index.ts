@@ -38,6 +38,8 @@ export { mapManagerInvitationRow } from './mappers/manager-invitation-mapper';
 export type { ManagerInvitation } from './mappers/manager-invitation-mapper';
 export { mapBuyerAddressRow, buyerAddressToRecord } from './mappers/buyer-address-mapper';
 export type { BuyerAddressRow } from './mappers/buyer-address-mapper';
+export { mapOrgRoleAssignmentRow, mapOrgGovernanceActionAuditRow } from './mappers/org-role-lifecycle-mapper';
+export type { OrgRoleAssignmentRow, OrgGovernanceActionAuditRow } from './mappers/org-role-lifecycle-mapper';
 
 export type {
   IdentityProtectedQuoteRepository,
@@ -47,6 +49,7 @@ export type {
   IdentityProtectedViewRepositories,
   RfqRevealStatusReader,
   BuyerAddressRepository,
+  OrgRoleLifecycleRepository,
   // Legacy aliases
   BlindQuoteRepository,
   BlindInvitationRepository,
@@ -62,4 +65,5 @@ export {
   SupabaseManagerInvitationRepository,
   SupabaseRfqRevealStatusReader,
   SupabaseBuyerAddressRepository,
+  SupabaseOrgRoleLifecycleRepository,
 } from './repositories/index';

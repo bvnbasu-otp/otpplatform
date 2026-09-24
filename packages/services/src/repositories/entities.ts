@@ -1022,6 +1022,43 @@ export interface RfqApprovalRouteEvaluationEntity {
   createdAt: string;
 }
 
+export interface OrgRoleAssignmentEntity {
+  id: string;
+  organizationId: string;
+  personId?: string | null;
+  roleId: string;
+  roleName: string;
+  roleCategory: string;
+  responsibilityScope: string;
+  authorityScope: Record<string, unknown>;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  status: 'ACTIVE' | 'REVOKED' | 'EXPIRED' | 'SUPERSEDED' | 'VACANT';
+  appointedBy?: string | null;
+  appointmentEvent: string;
+  predecessorAssignmentId?: string | null;
+  removalEvent?: string | null;
+  removalReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrgGovernanceActionAuditEntity {
+  id: string;
+  actorPersonId: string;
+  organizationId: string;
+  roleAssignmentId?: string | null;
+  roleAtTime: string;
+  responsibilityAtTime: string;
+  authorityAtTime: Record<string, unknown>;
+  action: string;
+  entityType: string;
+  entityId: string;
+  transactionId?: string | null;
+  payload: Record<string, unknown>;
+  timestamp: string;
+}
+
 export interface ProcurementContractEntity {
   id: string;
   contractNumber: string;
@@ -1044,6 +1081,7 @@ export interface ProcurementContractEntity {
   createdAt: string;
   updatedAt: string;
 }
+
 
 
 

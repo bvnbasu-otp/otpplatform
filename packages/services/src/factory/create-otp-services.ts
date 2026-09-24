@@ -43,6 +43,7 @@ import { ProcurementContractOperationsService } from '../services/procurement-co
 import { MarketIntelligenceService } from '../services/market-intelligence-service';
 import { BuyerAddressService } from '../services/buyer-address-service';
 import { SupplierAwardOnboardingService } from '../services/supplier-award-onboarding-service';
+import { OrgRoleLifecycleService } from '../services/org-role-lifecycle-service';
 import { IdentityProtectedRfqService } from '../blind/blind-rfq-service';
 import { createInMemoryBlindViewPorts } from '../blind/in-memory-blind-view-ports';
 import type { BlindViewPorts } from '../interfaces/blind-view-ports';
@@ -74,6 +75,7 @@ export interface OtpServices {
   marketIntelligence: MarketIntelligenceService;
   buyerAddresses: BuyerAddressService;
   supplierAwardOnboarding: SupplierAwardOnboardingService;
+  orgRoleLifecycle: OrgRoleLifecycleService;
   supplierReveal: SupplierRevealServiceImpl;
   approvalPolicy: DefaultApprovalPolicyService;
   supplierNetworkEngine: SupplierNetworkEngine;
@@ -158,6 +160,7 @@ export function createOtpServices(
   const marketIntelligence = new MarketIntelligenceService(repos, audit);
   const buyerAddresses = new BuyerAddressService(repos, audit);
   const supplierAwardOnboarding = new SupplierAwardOnboardingService(repos, audit);
+  const orgRoleLifecycle = new OrgRoleLifecycleService(repos, audit);
   const blindViewPorts = blindViews ?? createInMemoryBlindViewPorts(repos);
   const blindRfq = new IdentityProtectedRfqService(repos, blindViewPorts, auditInner);
 
@@ -188,6 +191,7 @@ export function createOtpServices(
     marketIntelligence,
     buyerAddresses,
     supplierAwardOnboarding,
+    orgRoleLifecycle,
     supplierReveal,
     approvalPolicy,
     supplierNetworkEngine: sneEngine,
