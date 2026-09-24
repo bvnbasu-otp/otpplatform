@@ -11,6 +11,7 @@ interface BuyerSourcingCockpitCardProps {
   isExpressSubmitting?: boolean;
   organizationName?: string;
   organizationDetails?: string;
+  orgRole?: string | null;
   activeFilter?: 'all' | 'action' | 'active' | 'settled';
   onFilterChange?: (filter: 'all' | 'action' | 'active' | 'settled') => void;
 }
@@ -23,11 +24,29 @@ export function BuyerSourcingCockpitCard({
   isExpressSubmitting = false,
   organizationName,
   organizationDetails,
+  orgRole,
   activeFilter = 'all',
   onFilterChange,
 }: BuyerSourcingCockpitCardProps) {
   const navigate = useNavigate();
   const [promptText, setPromptText] = useState('');
+
+  const isEstateManager = orgRole === 'ESTATE_MANAGER' || orgRole === 'MANAGER';
+  const isPresident = orgRole === 'PRESIDENT';
+  const isSecretary = orgRole === 'SECRETARY';
+  const isTreasurer = orgRole === 'TREASURER';
+
+  const roleLabel = isPresident
+    ? 'President (Executive Governance)'
+    : isSecretary
+    ? 'Secretary (Secretarial & Notices)'
+    : isTreasurer
+    ? 'Treasurer (Financial Signoffs)'
+    : isEstateManager
+    ? 'Estate Manager (Operational Procurement & Inspection)'
+    : orgRole
+    ? `Officer (${orgRole})`
+    : 'Independent Buyer · Personal Procurement';
 
   const handleStartRequirement = (customQuery?: string) => {
     const textToUse = (customQuery ?? promptText).trim();
@@ -71,7 +90,7 @@ export function BuyerSourcingCockpitCard({
               {organizationName || 'Personal Workspace'}
             </h4>
             <span className="text-[10px] text-muted-foreground block truncate">
-              {organizationDetails || 'Independent Buyer · Personal Procurement'}
+              {organizationDetails || roleLabel}
             </span>
           </div>
         </div>
@@ -79,6 +98,18 @@ export function BuyerSourcingCockpitCard({
           🟢 Verified
         </span>
       </div>
+
+      {isEstateManager && (
+        <div className="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/70 dark:bg-blue-950/40 p-2.5 text-xs flex items-center justify-between text-blue-950 dark:text-blue-200">
+          <div className="flex items-center gap-1.5">
+            <span>🏢</span>
+            <span className="font-semibold">Estate Manager Mode: Operational drafting &amp; inspection enabled.</span>
+          </div>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-200 dark:bg-blue-900">
+            canVote: false
+          </span>
+        </div>
+      )}
 
       {/* 2. High-Impact Sourcing Prompt Card (Screen 06) */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-card to-primary/5 border border-primary/20 p-3 sm:p-3.5 space-y-2.5 shadow-2xs">

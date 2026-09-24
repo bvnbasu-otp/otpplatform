@@ -75,4 +75,5 @@ export * from './types/pricing-entitlement';
 export * from './types/buyer-address';
 export * from './types/buyer-persona';
 export * from './types/supplier-award-onboarding';
+export * from './types/rwa-governance';
 

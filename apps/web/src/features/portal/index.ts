@@ -6,6 +6,8 @@ export { PortalFooter } from './components/PortalFooter';
 export { BuyerRegisterForm } from './components/BuyerRegisterForm';
 export { SupplierRegisterForm } from './components/SupplierRegisterForm';
 export { GstinAutofillField } from './components/GstinAutofillField';
+export { PanAutofillField } from './components/PanAutofillField';
+export { RwaRegistrationAgreementModal } from './components/RwaRegistrationAgreementModal';
 export { SignupSuccess } from './components/SignupSuccess';
 export { QuickRegisterModal } from './components/QuickRegisterModal';
 export { VerificationChoice } from './components/VerificationChoice';

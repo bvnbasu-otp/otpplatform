@@ -25,6 +25,8 @@ import {
   BuyerRegisterForm,
   SupplierRegisterForm,
   GstinAutofillField,
+  PanAutofillField,
+  RwaRegistrationAgreementModal,
   SignupSuccess,
   QuickRegisterModal,
   BUYER_COPY,
@@ -90,6 +92,8 @@ describe('Phase 3 Public Experience & Authentication Screens (Screens 31–40)',
       expect(typeof BuyerRegisterForm).toBe('function');
       expect(SupplierRegisterForm).toBeDefined();
       expect(GstinAutofillField).toBeDefined();
+      expect(PanAutofillField).toBeDefined();
+      expect(RwaRegistrationAgreementModal).toBeDefined();
       expect(SignupSuccess).toBeDefined();
       expect(QuickRegisterModal).toBeDefined();
     });

@@ -4,6 +4,8 @@ import { Button } from '@/components/ui';
 import { PortalField, useFormText, usePortalControl } from './FormDensity';
 import { RoleChoiceField } from './RoleChoiceField';
 import { GstinAutofillField } from './GstinAutofillField';
+import { PanAutofillField } from './PanAutofillField';
+import { RwaRegistrationAgreementModal } from './RwaRegistrationAgreementModal';
 import {
   submitSignupRequest,
   sendWhatsAppNotification,
@@ -58,6 +60,11 @@ export function BuyerRegisterForm({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [pan, setPan] = useState('');
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
+  const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
+
+  const isRwa = buyerType === 'COMMUNITY';
   const isIndividual = buyerType === 'INDIVIDUAL';
 
   function handleBuyerTypeChange(selectedType: string) {
@@ -81,7 +88,8 @@ export function BuyerRegisterForm({
     Boolean(lastName.trim()) &&
     Boolean(buyerType) &&
     Boolean(email.trim()) &&
-    Boolean(phone.trim());
+    Boolean(phone.trim()) &&
+    (!isRwa || agreementAccepted);
   // Role is deliberately absent from the completeness check: the dropdown hides
   // itself if the catalogue cannot be read, and a hidden required field is a
   // form that cannot be submitted for reasons nobody can see.
@@ -278,10 +286,61 @@ export function BuyerRegisterForm({
                 if (!isIndividual && details.legalName) {
                   setOrganisation(details.legalName);
                 }
+                if (details.pan) {
+                  setPan(details.pan);
+                }
               }}
             />
           )}
         </PortalField>
+
+        {isRwa && (
+          <PortalField
+            label="Permanent Account Number (PAN)"
+            hint="optional"
+            help="Registered PAN of the Association or Society for statutory compliance."
+          >
+            {({ id, describedBy, invalid }) => (
+              <PanAutofillField
+                id={id}
+                value={pan}
+                onChange={setPan}
+                describedBy={describedBy}
+                className={control(invalid)}
+              />
+            )}
+          </PortalField>
+        )}
+
+        {isRwa && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2 text-xs" data-testid="rwa-agreement-prompt">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-foreground flex items-center gap-1.5">
+                <span>📜</span> RWA Organization Agreement
+              </span>
+              {agreementAccepted ? (
+                <span className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-extrabold border border-emerald-300">
+                  ✓ Accepted
+                </span>
+              ) : (
+                <span className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 text-[10px] font-extrabold border border-amber-300">
+                  Mandatory for Society
+                </span>
+              )}
+            </div>
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
+              Review and electronically accept the OTP RWA Institutional Agreement detailing non-personal liability, committee voting rules, and annual officer term limits.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full text-xs font-bold"
+              onClick={() => setIsAgreementModalOpen(true)}
+            >
+              {agreementAccepted ? 'View / Download Accepted Agreement' : 'Review & Accept RWA Agreement →'}
+            </Button>
+          </div>
+        )}
 
         <PortalField label="Work email" required>
           {({ id, invalid }) => (
@@ -356,6 +415,18 @@ export function BuyerRegisterForm({
           Sign in
         </button>
       </p>
+
+      {isRwa && (
+        <RwaRegistrationAgreementModal
+          isOpen={isAgreementModalOpen}
+          onClose={() => setIsAgreementModalOpen(false)}
+          onAccept={() => setAgreementAccepted(true)}
+          organizationName={organisation || 'Residential Welfare Association'}
+          authorizedOfficerName={`${firstName} ${lastName}`.trim() || 'Authorized Officer'}
+          authorizedOfficerRole={roleCode || 'SECRETARY'}
+          panOrGstin={taxId || pan || undefined}
+        />
+      )}
     </div>
   );
 }

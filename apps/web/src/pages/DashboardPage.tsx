@@ -100,8 +100,18 @@ export function DashboardPage() {
         <HomeContextBar
           greeting={timeGreeting}
           name={greetingName}
-          organizationName={org?.organizationName}
-          roleLabel="Buyer"
+          organizationName={org?.organizationName || context.organizationName || undefined}
+          roleLabel={
+            context.orgRole === 'PRESIDENT'
+              ? 'President'
+              : context.orgRole === 'SECRETARY'
+              ? 'Secretary'
+              : context.orgRole === 'TREASURER'
+              ? 'Treasurer'
+              : context.orgRole === 'ESTATE_MANAGER' || context.orgRole === 'MANAGER'
+              ? 'Estate Manager'
+              : context.orgRole || 'Buyer'
+          }
           actionCount={actionRequiredItems.length}
           activeCount={activeProcurements.length}
           isLoading={isLoading}
@@ -133,6 +143,7 @@ export function DashboardPage() {
             ? `${context.organizationName} · Active Member`
             : 'Independent Buyer · Personal Procurement'
         }
+        orgRole={context.orgRole}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
       />
