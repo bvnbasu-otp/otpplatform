@@ -10,6 +10,10 @@ import {
 export function PricingPage() {
   const [cycle, setCycle] = useState<BillingCycle>('MONTHLY');
 
+  const indTier = SUBSCRIPTION_TIERS.INDIVIDUAL;
+  const rwaTier = SUBSCRIPTION_TIERS.RWA;
+  const msmeTier = SUBSCRIPTION_TIERS.MSME;
+
   return (
     <SiteLayout>
       <div className="mx-auto max-w-5xl px-4 py-10 sm:py-14 overflow-x-hidden">
@@ -19,13 +23,13 @@ export function PricingPage() {
             <span className="rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 px-3 py-1 text-xs font-bold border border-emerald-500/30">
               ⚡ Predictable Prepaid Access
             </span>
-            <span className="text-[10px] text-muted-foreground font-medium">Last updated: 21 September 2026</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Institutional Procurement OS</span>
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
             Simple, Transparent Pricing
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            30-day or 365-day prepaid access for buyers. Suppliers quote <strong>100% free forever</strong> with zero commissions.
+            30-day or 365-day prepaid access for buyers. Suppliers quote <strong>100% free forever</strong> with zero listing fees.
           </p>
 
           {/* Billing Cycle Switcher */}
@@ -33,7 +37,7 @@ export function PricingPage() {
             <button
               type="button"
               onClick={() => setCycle('MONTHLY')}
-              className={`rounded-lg px-4 py-1.5 font-bold transition ${
+              className={`rounded-lg px-4 py-1.5 font-bold transition cursor-pointer ${
                 cycle === 'MONTHLY'
                   ? 'bg-card text-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -44,7 +48,7 @@ export function PricingPage() {
             <button
               type="button"
               onClick={() => setCycle('YEARLY')}
-              className={`rounded-lg px-4 py-1.5 font-bold transition flex items-center gap-1.5 ${
+              className={`rounded-lg px-4 py-1.5 font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 cycle === 'YEARLY'
                   ? 'bg-card text-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -58,9 +62,9 @@ export function PricingPage() {
           </div>
         </div>
 
-        {/* Clean 3-Card Structure: Individual, RWA/MSME, Enterprise */}
+        {/* Clean 3-Card Structure: Individual, RWA, MSME */}
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          {/* Card 1: Individual / Single Buyer */}
+          {/* Card 1: Individual Buyer */}
           <section className="rounded-2xl border bg-card p-5 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
@@ -70,18 +74,18 @@ export function PricingPage() {
                 <span className="text-[10px] text-muted-foreground font-mono">Solo Buyers</span>
               </div>
               <h2 className="text-lg font-bold mt-2 text-foreground">
-                Individual &amp; Sole Proprietor
+                Individual Buyer
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                For independent property owners and solo facility managers.
+                For independent property owners, solo buyers &amp; personal procurement.
               </p>
 
-              <div className="mt-4 pb-4 border-b">
+              <div className="mt-4 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
                     ₹{cycle === 'MONTHLY'
-                      ? SUBSCRIPTION_TIERS.TIER_1_MSME.monthlyPrice.toLocaleString('en-IN')
-                      : SUBSCRIPTION_TIERS.TIER_1_MSME.yearlyPrice.toLocaleString('en-IN')}
+                      ? indTier.monthlyPrice.toLocaleString('en-IN')
+                      : indTier.yearlyPrice.toLocaleString('en-IN')}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
@@ -89,7 +93,7 @@ export function PricingPage() {
                 </div>
                 {cycle === 'YEARLY' && (
                   <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                    ✓ Saves ₹{SUBSCRIPTION_TIERS.TIER_1_MSME.yearlySavings.toLocaleString('en-IN')} vs Monthly
+                    ✓ Saves ₹{indTier.yearlySavings.toLocaleString('en-IN')} vs Monthly
                   </span>
                 )}
               </div>
@@ -97,19 +101,25 @@ export function PricingPage() {
               <ul className="mt-4 space-y-2.5 text-xs text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Limits:</strong> First RFQ free · 1 active RFQ at a time</span>
+                  <span><strong>Allowance:</strong> 3 High-intent RFQs/month included</span>
+                </li>
+                {cycle === 'YEARLY' && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                    <span><strong>Bonus:</strong> +1 Bonus RFQ per calendar quarter</span>
+                  </li>
+                )}
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span><strong>Decision:</strong> 1-Click direct award &amp; zero committee overhead</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Channel Access:</strong> WhatsApp &amp; SMS direct vendor dispatch</span>
+                  <span><strong>Evaluation:</strong> 4-Pillar sealed quotation comparison</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Top-Ups:</strong> ₹149 per additional RFQ top-up</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Identity-protected evaluation &amp; instant GST PO execution</span>
+                  <span><strong>Top-Ups:</strong> ₹{indTier.additionalRfqPrice} per additional RFQ</span>
                 </li>
               </ul>
             </div>
@@ -117,36 +127,38 @@ export function PricingPage() {
             <div className="mt-6 pt-2">
               <Link
                 to="/signup?side=buyer"
-                className="w-full block text-center rounded-xl bg-primary text-primary-foreground font-bold px-4 py-2 text-xs hover:opacity-90 transition shadow-2xs"
+                className="w-full block text-center rounded-xl bg-primary text-primary-foreground font-bold px-4 py-2 text-xs hover:opacity-90 transition shadow-2xs min-h-[44px] flex items-center justify-center"
               >
                 Register as Individual
               </Link>
             </div>
           </section>
 
-          {/* Card 2: RWA & MSME (Most Popular) */}
+          {/* Card 2: RWA & Housing Society (Most Popular) */}
           <section className="rounded-2xl border-2 border-primary bg-card p-5 flex flex-col justify-between shadow-md relative">
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold uppercase px-3 py-0.5 tracking-wider shadow-2xs">
-              Most Popular for RWAs &amp; MSMEs
+              Most Popular for Societies
             </span>
             <div>
               <div className="flex items-center justify-between">
                 <span className="rounded-md bg-purple-500/10 text-purple-800 dark:text-purple-300 text-[10px] font-bold px-2 py-0.5">
-                  RWA / MSME
+                  RWA &amp; Society
                 </span>
-                <span className="text-[10px] text-muted-foreground font-mono">Committee Mode</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Committee Governance</span>
               </div>
               <h2 className="text-lg font-bold mt-2 text-foreground">
-                RWA, Society &amp; MSME
+                RWA &amp; Housing Society
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Democratic voting &amp; multi-member committee governance.
+                Democratic voting, quorum tracking &amp; 365-day annual officer terms.
               </p>
 
-              <div className="mt-4 pb-4 border-b">
+              <div className="mt-4 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
-                    ₹{cycle === 'MONTHLY' ? '999' : '9,999'}
+                    ₹{cycle === 'MONTHLY'
+                      ? rwaTier.monthlyPrice.toLocaleString('en-IN')
+                      : rwaTier.yearlyPrice.toLocaleString('en-IN')}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
@@ -154,7 +166,7 @@ export function PricingPage() {
                 </div>
                 {cycle === 'YEARLY' && (
                   <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                    ✓ Saves ₹1,989 vs Monthly
+                    ✓ Saves ₹{rwaTier.yearlySavings.toLocaleString('en-IN')} vs Monthly
                   </span>
                 )}
               </div>
@@ -162,19 +174,19 @@ export function PricingPage() {
               <ul className="mt-4 space-y-2.5 text-xs text-foreground/90">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Limits:</strong> Includes 5 RFQs/month · 5 committee voter seats</span>
+                  <span><strong>Allowance:</strong> {cycle === 'YEARLY' ? '6 RFQs/month (Annual Bonus)' : '5 RFQs/month'} included</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Channel Access:</strong> WhatsApp, SMS, Verified Registry &amp; Direct Invites</span>
+                  <span><strong>Roles:</strong> President, Secretary, Treasurer, Estate Manager, Committee</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Top-Ups:</strong> ₹149 per additional RFQ top-up</span>
+                  <span><strong>Voting Room:</strong> Sealed ballots, quorum meters ($\ge 2$), COI clearance</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Quorum meters, 1-tap decision chips &amp; organized records for committee review</span>
+                  <span><strong>Compliance:</strong> Immutable AGM audit logs &amp; legal society records</span>
                 </li>
               </ul>
             </div>
@@ -182,59 +194,63 @@ export function PricingPage() {
             <div className="mt-6 pt-2">
               <Link
                 to="/signup?side=buyer"
-                className="w-full block text-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs transition shadow-xs"
+                className="w-full block text-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs transition shadow-xs min-h-[44px] flex items-center justify-center"
               >
-                Register as RWA / MSME
+                Register as RWA / Society
               </Link>
             </div>
           </section>
 
-          {/* Card 3: Enterprise & Multi-Branch Institutions */}
+          {/* Card 3: MSME & Commercial Business */}
           <section className="rounded-2xl border bg-card p-5 flex flex-col justify-between shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
                 <span className="rounded-md bg-indigo-500/10 text-indigo-800 dark:text-indigo-300 text-[10px] font-bold px-2 py-0.5">
-                  Enterprise
+                  MSME Business
                 </span>
-                <span className="text-[10px] text-muted-foreground font-mono">Custom SLA</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Spend Governance</span>
               </div>
               <h2 className="text-lg font-bold mt-2 text-foreground">
-                Enterprise &amp; Institutional
+                MSME &amp; Commercial
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                For manufacturing plants, developer chains &amp; educational trusts.
+                For workshops, plants, service firms &amp; commercial teams.
               </p>
 
-              <div className="mt-4 pb-4 border-b">
+              <div className="mt-4 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-foreground">
-                    Custom Bulk
+                  <span className="text-3xl font-black text-foreground">
+                    ₹{cycle === 'MONTHLY'
+                      ? msmeTier.monthlyPrice.toLocaleString('en-IN')
+                      : msmeTier.yearlyPrice.toLocaleString('en-IN')}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    / Annual Billing
+                    / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
                   </span>
                 </div>
-                <span className="text-[10px] font-semibold text-primary mt-1 block">
-                  ✓ Dedicated SLA, SSO &amp; ERP Connectors
-                </span>
+                {cycle === 'YEARLY' && (
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
+                    ✓ Saves ₹{msmeTier.yearlySavings.toLocaleString('en-IN')} vs Monthly
+                  </span>
+                )}
               </div>
 
               <ul className="mt-4 space-y-2.5 text-xs text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Limits:</strong> Unlimited active RFQs · Unlimited committee roles</span>
+                  <span><strong>Allowance:</strong> {cycle === 'YEARLY' ? '6 RFQs/month (Annual Bonus)' : '5 RFQs/month'} included</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Channel Access:</strong> WhatsApp, SMS, Registry, ONDC &amp; Custom API</span>
+                  <span><strong>Governance:</strong> Primary Owner, Manager &amp; Delegated spend proxies</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Security:</strong> Enterprise SSO, SAML &amp; dedicated account manager</span>
+                  <span><strong>Controls:</strong> Strict Anti-Self-Approval (PA-09) &amp; spend caps</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span>Multi-organization hierarchies &amp; legal compliance reports</span>
+                  <span><strong>Integration:</strong> GST split, Tally / Zoho ERP export &amp; double-entry ledger</span>
                 </li>
               </ul>
             </div>
@@ -242,16 +258,16 @@ export function PricingPage() {
             <div className="mt-6 pt-2">
               <Link
                 to="/signup?side=buyer"
-                className="w-full block text-center rounded-xl bg-primary text-primary-foreground font-bold px-4 py-2 text-xs hover:opacity-90 transition shadow-2xs"
+                className="w-full block text-center rounded-xl bg-primary text-primary-foreground font-bold px-4 py-2 text-xs hover:opacity-90 transition shadow-2xs min-h-[44px] flex items-center justify-center"
               >
-                Contact Enterprise Sales
+                Register as MSME Business
               </Link>
             </div>
           </section>
         </div>
 
         {/* Product-Led Buyer Rewards Banner */}
-        <div className="mt-8 rounded-2xl border bg-gradient-to-r from-amber-500/10 via-primary/10 to-amber-500/10 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+        <div className="mt-8 rounded-2xl border border-border bg-gradient-to-r from-amber-500/10 via-primary/10 to-amber-500/10 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xl font-bold">
               🎁
@@ -270,7 +286,7 @@ export function PricingPage() {
           </div>
           <Link
             to="/dashboard"
-            className="shrink-0 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs"
+            className="shrink-0 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs min-h-[44px] flex items-center justify-center"
           >
             View Wallet Balance →
           </Link>
@@ -290,23 +306,16 @@ export function PricingPage() {
                 </span>
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Free registration, discovery, and quote submission. Simple 0.5% Platform Fulfillment Fee only on confirmed Purchase Order awards.
+                Free registration, discovery, and quote submission. Simple 0.50% Platform Fulfillment Fee only on confirmed Purchase Order awards.
               </p>
             </div>
           </div>
           <Link
             to="/signup?side=supplier"
-            className="shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs"
+            className="shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs min-h-[44px] flex items-center justify-center"
           >
-            Quote as a Supplier →
+            Register as Supplier (Free) →
           </Link>
-        </div>
-
-        {/* Minimal Governance Note */}
-        <div className="mt-8 rounded-xl border border-dashed p-4 bg-muted/20 text-center max-w-2xl mx-auto text-xs text-muted-foreground">
-          <p>
-            <strong>Direct Settlement Guarantee:</strong> {PRODUCT_NAME} facilitates neutral, identity-protected evaluation. Buyers settle directly with awarded vendors via RTGS/NEFT/UPI with zero intermediary fund lockup.
-          </p>
         </div>
       </div>
     </SiteLayout>

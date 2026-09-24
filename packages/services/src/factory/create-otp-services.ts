@@ -39,6 +39,7 @@ import { MilestoneInspectionService } from '../services/milestone-inspection-ser
 import { DisputeResolutionService } from '../services/dispute-resolution-service';
 import { VendorMasterIntelligenceService } from '../services/vendor-master-intelligence-service';
 import { EnterpriseApprovalMatrixService } from '../services/enterprise-approval-matrix-service';
+import { SpendApprovalGovernanceService } from '../services/spend-approval-governance-service';
 import { ProcurementContractOperationsService } from '../services/procurement-contract-operations-service';
 import { MarketIntelligenceService } from '../services/market-intelligence-service';
 import { BuyerAddressService } from '../services/buyer-address-service';
@@ -71,6 +72,7 @@ export interface OtpServices {
   disputeResolution: DisputeResolutionService;
   vendorIntelligence: VendorMasterIntelligenceService;
   enterpriseApprovalMatrix: EnterpriseApprovalMatrixService;
+  spendApprovalGovernance: SpendApprovalGovernanceService;
   contractOperations: ProcurementContractOperationsService;
   marketIntelligence: MarketIntelligenceService;
   buyerAddresses: BuyerAddressService;
@@ -156,6 +158,7 @@ export function createOtpServices(
   const disputeResolution = new DisputeResolutionService(repos, audit);
   const vendorIntelligence = new VendorMasterIntelligenceService(repos, audit);
   const enterpriseApprovalMatrix = new EnterpriseApprovalMatrixService(repos, audit);
+  const spendApprovalGovernance = new SpendApprovalGovernanceService(repos, audit);
   const contractOperations = new ProcurementContractOperationsService(repos, audit);
   const marketIntelligence = new MarketIntelligenceService(repos, audit);
   const buyerAddresses = new BuyerAddressService(repos, audit);
@@ -187,6 +190,7 @@ export function createOtpServices(
     disputeResolution,
     vendorIntelligence,
     enterpriseApprovalMatrix,
+    spendApprovalGovernance,
     contractOperations,
     marketIntelligence,
     buyerAddresses,

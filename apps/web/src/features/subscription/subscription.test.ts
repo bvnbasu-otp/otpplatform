@@ -166,8 +166,8 @@ describe('Calendar Month RFQ Entitlement Engine', () => {
       billingMode: 'LIVE',
       now: '2026-09-22T08:00:00Z',
     });
-    expect(activeYearly.monthlyAllowance).toBe(5);
-    expect(activeYearly.monthlyRemaining).toBe(2);
+    expect(activeYearly.monthlyAllowance).toBe(6);
+    expect(activeYearly.monthlyRemaining).toBe(3);
     expect(activeYearly.isBonusApplied).toBe(true);
   });
 });

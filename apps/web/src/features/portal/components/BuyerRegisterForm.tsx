@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { validateGstin, type GstTaxpayerInfo } from '@otp/domain';
+import { validateGstin, type GstTaxpayerInfo, type MsmeBusinessType, MSME_BUSINESS_TYPES } from '@otp/domain';
 import { Button } from '@/components/ui';
 import { PortalField, useFormText, usePortalControl } from './FormDensity';
 import { RoleChoiceField } from './RoleChoiceField';
 import { GstinAutofillField } from './GstinAutofillField';
 import { PanAutofillField } from './PanAutofillField';
 import { RwaRegistrationAgreementModal } from './RwaRegistrationAgreementModal';
+import { MsmeRegistrationAgreementModal } from './MsmeRegistrationAgreementModal';
 import {
   submitSignupRequest,
   sendWhatsAppNotification,
@@ -20,18 +21,16 @@ import { VerificationChoice } from './VerificationChoice';
 /**
  * Registering an organisation.
  *
- * Buyer type is asked for because it decides how the platform behaves for this
- * account: an individual decides alone, a residents' association decides by
- * committee and each of its members carries the weight of many households. It
- * is the one question here whose answer changes the product.
+ * Buyer contexts are:
+ * 1. INDIVIDUAL (Buying for Myself / Solo Property)
+ * 2. MSME (Business / Commercial Enterprise)
+ * 3. COMMUNITY (Residential Welfare Association / Housing Society)
  */
 
 const BUYER_TYPES = [
-  { value: 'INDIVIDUAL', label: 'Buying for Myself' },
-  { value: 'MSME', label: 'Business Or MSME' },
-  { value: 'COMMUNITY', label: 'Residential Welfare Association OR Society' },
-  { value: 'ENTERPRISE', label: 'Enterprise with a Procurement Committee' },
-  { value: 'INSTITUTION', label: 'Institutions or Trusts with a Committee' },
+  { value: 'INDIVIDUAL', label: 'Buying for Myself (Individual)' },
+  { value: 'MSME', label: 'Business / MSME Enterprise' },
+  { value: 'COMMUNITY', label: 'Residential Welfare Association (RWA) / Society' },
 ];
 
 export function BuyerRegisterForm({
@@ -65,10 +64,13 @@ export function BuyerRegisterForm({
   const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
 
   const isRwa = buyerType === 'COMMUNITY';
+  const isMsme = buyerType === 'MSME';
   const isIndividual = buyerType === 'INDIVIDUAL';
+  const [msmeBusinessType, setMsmeBusinessType] = useState<MsmeBusinessType>('PROPRIETORSHIP');
 
   function handleBuyerTypeChange(selectedType: string) {
     setBuyerType(selectedType);
+    setAgreementAccepted(false);
     if (selectedType === 'INDIVIDUAL') {
       setOrganisation('Self');
       setRoleCode('PROPERTY_OWNER');
@@ -89,7 +91,8 @@ export function BuyerRegisterForm({
     Boolean(buyerType) &&
     Boolean(email.trim()) &&
     Boolean(phone.trim()) &&
-    (!isRwa || agreementAccepted);
+    (!isRwa || agreementAccepted) &&
+    (!isMsme || agreementAccepted);
   // Role is deliberately absent from the completeness check: the dropdown hides
   // itself if the catalogue cannot be read, and a hidden required field is a
   // form that cannot be submitted for reasons nobody can see.
@@ -294,11 +297,33 @@ export function BuyerRegisterForm({
           )}
         </PortalField>
 
-        {isRwa && (
+        {isMsme && (
+          <PortalField
+            label="Business Constitution Type"
+            help="Select the statutory legal structure of your enterprise."
+          >
+            {({ id, invalid }) => (
+              <select
+                id={id}
+                value={msmeBusinessType}
+                onChange={(e) => setMsmeBusinessType(e.target.value as MsmeBusinessType)}
+                className={control(invalid)}
+              >
+                {MSME_BUSINESS_TYPES.map((bt) => (
+                  <option key={bt} value={bt}>
+                    {bt.replace(/_/g, ' ')}
+                  </option>
+                ))}
+              </select>
+            )}
+          </PortalField>
+        )}
+
+        {(isRwa || isMsme) && (
           <PortalField
             label="Permanent Account Number (PAN)"
             hint="optional"
-            help="Registered PAN of the Association or Society for statutory compliance."
+            help={isMsme ? "Business or Proprietor's PAN for statutory verification." : "Registered PAN of the Association or Society for statutory compliance."}
           >
             {({ id, describedBy, invalid }) => (
               <PanAutofillField
@@ -333,11 +358,41 @@ export function BuyerRegisterForm({
             </p>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               className="w-full text-xs font-bold"
               onClick={() => setIsAgreementModalOpen(true)}
             >
               {agreementAccepted ? 'View / Download Accepted Agreement' : 'Review & Accept RWA Agreement →'}
+            </Button>
+          </div>
+        )}
+
+        {isMsme && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2 text-xs" data-testid="msme-agreement-prompt">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-foreground flex items-center gap-1.5">
+                <span>📜</span> MSME Institutional Agreement
+              </span>
+              {agreementAccepted ? (
+                <span className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-extrabold border border-emerald-300">
+                  ✓ Accepted
+                </span>
+              ) : (
+                <span className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 text-[10px] font-extrabold border border-amber-300">
+                  Mandatory for Business
+                </span>
+              )}
+            </div>
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
+              Review and electronically accept the OTP MSME Procurement OS Agreement detailing Primary authority, spend delegations, anti-self-approval, and 0.50% supplier fee disclosure.
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full text-xs font-bold"
+              onClick={() => setIsAgreementModalOpen(true)}
+            >
+              {agreementAccepted ? 'View / Download Accepted Agreement' : 'Review & Accept MSME Agreement →'}
             </Button>
           </div>
         )}
@@ -425,6 +480,21 @@ export function BuyerRegisterForm({
           authorizedOfficerName={`${firstName} ${lastName}`.trim() || 'Authorized Officer'}
           authorizedOfficerRole={roleCode || 'SECRETARY'}
           panOrGstin={taxId || pan || undefined}
+        />
+      )}
+
+      {isMsme && (
+        <MsmeRegistrationAgreementModal
+          isOpen={isAgreementModalOpen}
+          onClose={() => setIsAgreementModalOpen(false)}
+          onAccept={() => setAgreementAccepted(true)}
+          businessName={organisation || 'Commercial Enterprise'}
+          businessType={msmeBusinessType}
+          primaryOfficerName={`${firstName} ${lastName}`.trim() || 'Primary Administrator'}
+          primaryOfficerEmail={email}
+          primaryOfficerPhone={phone}
+          gstin={taxId || undefined}
+          pan={pan || undefined}
         />
       )}
     </div>

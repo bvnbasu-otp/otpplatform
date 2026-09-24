@@ -31,10 +31,14 @@ export function BuyerSourcingCockpitCard({
   const navigate = useNavigate();
   const [promptText, setPromptText] = useState('');
 
-  const isEstateManager = orgRole === 'ESTATE_MANAGER' || orgRole === 'MANAGER';
+  const isEstateManager = orgRole === 'ESTATE_MANAGER';
   const isPresident = orgRole === 'PRESIDENT';
   const isSecretary = orgRole === 'SECRETARY';
   const isTreasurer = orgRole === 'TREASURER';
+  const isPrimary = orgRole === 'PRIMARY' || orgRole === 'OWNER' || orgRole === 'DIRECTOR';
+  const isMsmeManager = orgRole === 'MANAGER' || orgRole === 'OPERATIONS_MANAGER' || orgRole === 'PROCUREMENT_LEAD';
+  const isDelegate = orgRole === 'DELEGATE';
+  const isMember = orgRole === 'MEMBER' || orgRole === 'BUYER';
 
   const roleLabel = isPresident
     ? 'President (Executive Governance)'
@@ -44,6 +48,14 @@ export function BuyerSourcingCockpitCard({
     ? 'Treasurer (Financial Signoffs)'
     : isEstateManager
     ? 'Estate Manager (Operational Procurement & Inspection)'
+    : isPrimary
+    ? 'Primary Administrator (Full Spend Authority)'
+    : isMsmeManager
+    ? 'Operations Manager (Spend Sign-off up to Cap)'
+    : isDelegate
+    ? 'Delegated Lead (Spend Proxy Authority)'
+    : isMember
+    ? 'Team Member (Operational Participation)'
     : orgRole
     ? `Officer (${orgRole})`
     : 'Independent Buyer · Personal Procurement';

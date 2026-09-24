@@ -52,6 +52,7 @@ export * from './services/milestone-inspection-service';
 export * from './services/dispute-resolution-service';
 export * from './services/vendor-master-intelligence-service';
 export * from './services/enterprise-approval-matrix-service';
+export * from './services/spend-approval-governance-service';
 export * from './services/procurement-contract-operations-service';
 export * from './services/market-intelligence-service';
 export * from './services/buyer-address-service';
