@@ -321,6 +321,8 @@ export function Tier1TellOtpCard({
             {title ? <strong className="text-primary mr-1.5">{title}</strong> : <span>Scope: </span>}
             {activeSubcategory ? ` · ${activeSubcategory.name}` : ''}
             {city ? ` · 📍 ${city} ${pincode ? `(${pincode})` : ''}` : ''}
+            {budgetAmount ? ` · ₹${budgetAmount.toLocaleString('en-IN')}` : ''}
+            {paymentTerms ? ` · 💳 ${paymentTerms}` : ''}
             <span className="text-primary font-bold ml-1.5 underline">Customize Scope &amp; Logistics ▼</span>
           </p>
         </div>
@@ -790,6 +792,113 @@ export function Tier1TellOtpCard({
                 onValueChange={onBudgetChange}
               />
             </div>
+          </div>
+
+          {/* 5. Payment Structure & Terms */}
+          <div className="space-y-2.5 pt-3 border-t border-border/40">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <span>💳 Payment Structure &amp; Schedule</span>
+                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
+                  Cash Flow Terms
+                </span>
+              </label>
+              <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[200px]">
+                {paymentTerms || '100% on delivery'}
+              </span>
+            </div>
+
+            {/* Presets Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {PAYMENT_PRESETS.map((preset) => {
+                const isSelected =
+                  paymentTerms === preset.value ||
+                  (!paymentTerms && preset.id === 'SINGLE') ||
+                  (preset.id === 'THREE_SPLIT' && paymentTerms?.includes('30%')) ||
+                  (preset.id === 'MILESTONES' && paymentTerms?.includes('25%'));
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      onPaymentTermsChange?.(preset.value);
+                      setIsCustomTerms(false);
+                    }}
+                    className={`rounded-2xl border p-3 text-left transition flex flex-col justify-between space-y-1.5 min-h-[72px] mobile-touch-target ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 dark:bg-primary/20 shadow-2xs'
+                        : 'border-border bg-card hover:bg-muted/40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-bold text-foreground">{preset.label}</span>
+                      {isSelected && (
+                        <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground leading-tight">
+                      {preset.sublabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Payment Terms Toggle Button */}
+            <div className="flex items-center justify-between pt-0.5">
+              <button
+                type="button"
+                onClick={() => setIsCustomTerms(!isCustomTerms)}
+                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
+              >
+                <span>✏️</span>
+                <span>{isCustomTerms ? 'Hide Custom Terms' : 'Need custom payment split or credit terms?'}</span>
+              </button>
+            </div>
+
+            {/* Custom Terms Text Input */}
+            {isCustomTerms && (
+              <div className="pt-1">
+                <input
+                  type="text"
+                  placeholder="e.g. 20% advance, 70% delivery, 10% 30-day retention"
+                  value={paymentTerms || ''}
+                  onChange={(e) => onPaymentTermsChange?.(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
+                />
+              </div>
+            )}
+
+            {/* Dynamic Rupee Split Breakdown Table (When Preset is Selected) */}
+            {activePreset && activePreset.splits.length > 0 && (
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5 space-y-1.5 text-xs animate-in fade-in-50">
+                <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  <span>Payment Schedule Stages:</span>
+                  <span>{budgetAmount ? `Allocated from ₹${budgetAmount.toLocaleString('en-IN')}` : 'Percentage Split'}</span>
+                </div>
+                <div className="space-y-1">
+                  {activePreset.splits.map((s, idx) => {
+                    const splitRupees = budgetAmount ? Math.round((budgetAmount * s.pct) / 100) : null;
+                    return (
+                      <div key={idx} className="flex items-center justify-between text-[11px] py-0.5 border-b border-border/30 last:border-0">
+                        <span className="text-foreground font-medium flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          <span>{s.label}</span>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-muted-foreground">{s.pct}%</span>
+                          {splitRupees !== null && (
+                            <span className="font-mono font-bold text-foreground">
+                              ₹{splitRupees.toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

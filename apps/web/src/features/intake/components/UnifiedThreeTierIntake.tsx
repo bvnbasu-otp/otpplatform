@@ -91,6 +91,9 @@ export function UnifiedThreeTierIntake({
   const [budgetAmount, setBudgetAmount] = useState<number | null>(
     draft?.commercial.budgetAmount ?? null,
   );
+  const [paymentTerms, setPaymentTerms] = useState<string | null>(
+    draft?.commercial.paymentTerms ?? '100% on delivery',
+  );
 
   // Form State: Tier 2
   const [quantity, setQuantity] = useState<number | null>(draft?.quantity ?? 1);
@@ -160,6 +163,9 @@ export function UnifiedThreeTierIntake({
       if (draft.requiredByDate) setDate(draft.requiredByDate);
       if (draft.commercial.budgetAmount !== null && draft.commercial.budgetAmount !== undefined) {
         setBudgetAmount(draft.commercial.budgetAmount);
+      }
+      if (draft.commercial.paymentTerms) {
+        setPaymentTerms(draft.commercial.paymentTerms);
       }
       if (draft.quantity !== null && draft.quantity !== undefined) setQuantity(draft.quantity);
       if (draft.unit) setUnit(draft.unit);
@@ -346,6 +352,7 @@ export function UnifiedThreeTierIntake({
     setDays(7);
     setDate('');
     setBudgetAmount(null);
+    setPaymentTerms('100% on delivery');
     setQuantity(1);
     setUnit('UNITS');
     setAttributes({});
@@ -469,6 +476,7 @@ export function UnifiedThreeTierIntake({
       },
       commercial: {
         budgetAmount,
+        paymentTerms,
         priceIncludesTransport: true,
         priceIncludesGst: true,
       },
@@ -577,6 +585,7 @@ export function UnifiedThreeTierIntake({
         days={days}
         date={date}
         budgetAmount={budgetAmount}
+        paymentTerms={paymentTerms}
         taxonomy={taxonomy}
         parsed={parsed}
         isParsing={isParsing}
@@ -595,6 +604,7 @@ export function UnifiedThreeTierIntake({
           if (dt !== undefined) setDate(dt ?? '');
         }}
         onBudgetChange={setBudgetAmount}
+        onPaymentTermsChange={setPaymentTerms}
         onParse={handleParse}
         onClearInput={handleClear}
         onOpenTemplates={() => setIsTemplatesModalOpen(true)}

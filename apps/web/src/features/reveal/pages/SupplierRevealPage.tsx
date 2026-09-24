@@ -280,18 +280,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
               </span>
             </label>
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <button
-                type="button"
-                disabled={busy || !commitmentChecked}
-                onClick={() => void handleReveal()}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[44px]"
-                data-testid="reveal-button"
-              >
-                <span>🔓</span>
-                <span>{busy ? 'Unmasking Supplier…' : 'Confirm Intent & Unmask Supplier →'}</span>
-              </button>
-            </div>
+
           </section>
         )}
 
@@ -552,6 +541,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                 disabled={busy || !commitmentChecked}
                 onClick={() => void handleReveal()}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[48px]"
+                data-testid="reveal-button"
               >
                 <span>🔓</span>
                 <span>{busy ? 'Unmasking…' : 'Confirm Intent & Unmask Supplier →'}</span>

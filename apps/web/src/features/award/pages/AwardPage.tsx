@@ -566,17 +566,6 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => void handleDirectRevealAndIssuePo()}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 dark:bg-emerald-600 px-5 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-emerald-800 active:scale-[0.98] disabled:opacity-50 transition min-h-[44px]"
-                    data-testid="direct-reveal-button"
-                  >
-                    <span>🏆</span>
-                    <span>{busy ? 'Unmasking Supplier…' : 'Confirm Award & Issue Purchase Order →'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={busy}
                     onClick={() => void handleUnlockAward()}
                     className="inline-flex items-center justify-center gap-1 rounded-xl border bg-card px-3 py-3 text-xs font-semibold text-muted-foreground hover:bg-muted transition min-h-[44px]"
                   >
@@ -855,6 +844,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 disabled={busy}
                 onClick={() => void handleDirectRevealAndIssuePo()}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 dark:bg-emerald-600 px-6 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-emerald-800 active:scale-[0.98] disabled:opacity-50 transition min-h-[48px]"
+                data-testid="direct-reveal-button"
               >
                 <span>🏆</span>
                 <span>{busy ? 'Unmasking…' : 'Confirm Award & Issue Purchase Order →'}</span>

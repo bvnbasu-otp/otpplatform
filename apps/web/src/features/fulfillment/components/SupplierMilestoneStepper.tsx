@@ -110,42 +110,115 @@ export function SupplierMilestoneStepper({
           <StatusBadge status={workOrder.status} />
         </div>
 
-        {/* Progress bar */}
-        <div className="h-3 overflow-hidden rounded-full bg-muted border">
-          <div
-            className={`h-full transition-all duration-500 ${
-              currentPercent >= 100
-                ? 'bg-emerald-600'
-                : currentPercent >= 75
-                ? 'bg-lime-500'
-                : currentPercent >= 50
-                ? 'bg-blue-600'
-                : currentPercent >= 25
-                ? 'bg-amber-500'
-                : 'bg-slate-300'
-            }`}
-            style={{ width: `${Math.min(100, Math.max(0, currentPercent))}%` }}
-          />
+        {/* Interactive 0-100% (25% increments) Stepped Progress Bar */}
+        <div className="space-y-2">
+          <div className="relative pt-2 pb-1">
+            {/* Background Track */}
+            <div className="h-3 w-full rounded-full bg-muted border overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 rounded-full ${
+                  currentPercent >= 100
+                    ? 'bg-emerald-600'
+                    : currentPercent >= 75
+                    ? 'bg-lime-500'
+                    : currentPercent >= 50
+                    ? 'bg-blue-600'
+                    : currentPercent >= 25
+                    ? 'bg-amber-500'
+                    : 'bg-slate-300'
+                }`}
+                style={{ width: `${Math.min(100, Math.max(0, currentPercent))}%` }}
+              />
+            </div>
+
+            {/* 5 Step Checkpoint Markers (0%, 25%, 50%, 75%, 100%) */}
+            <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between px-0.5 pointer-events-none">
+              {[0, 25, 50, 75, 100].map((step) => {
+                const isPassed = currentPercent >= step;
+                const isCurrent = currentPercent === step;
+                return (
+                  <button
+                    key={step}
+                    type="button"
+                    disabled={busy || workOrder.status === 'COMPLETED'}
+                    onClick={() => onUpdateProgress(step)}
+                    title={`Record progress at ${step}%`}
+                    aria-label={`Record progress at ${step}%`}
+                    className={`pointer-events-auto w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer shadow-xs focus:outline-hidden focus:ring-2 focus:ring-primary ${
+                      isCurrent
+                        ? 'border-primary bg-background ring-2 ring-primary/40 scale-110'
+                        : isPassed
+                        ? 'border-emerald-600 bg-emerald-600 text-white'
+                        : 'border-muted-foreground/30 bg-card hover:border-primary/60'
+                    } ${busy || workOrder.status === 'COMPLETED' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    {isPassed && step > 0 ? (
+                      <span className="text-[10px] font-black leading-none">✓</span>
+                    ) : (
+                      <span className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Stepped Scale Labels (0%, 25%, 50%, 75%, 100%) */}
+          <div className="flex justify-between text-[11px] font-bold text-muted-foreground px-0.5">
+            {[
+              { val: 0, label: '0% Start' },
+              { val: 25, label: '25% M1' },
+              { val: 50, label: '50% M2' },
+              { val: 75, label: '75% M3' },
+              { val: 100, label: '100% Done' },
+            ].map((s) => (
+              <button
+                key={s.val}
+                type="button"
+                disabled={busy || workOrder.status === 'COMPLETED'}
+                onClick={() => onUpdateProgress(s.val)}
+                className={`transition hover:text-foreground text-center ${
+                  currentPercent === s.val ? 'text-primary font-black scale-105' : ''
+                } ${busy || workOrder.status === 'COMPLETED' ? 'cursor-default' : 'cursor-pointer'}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Supplier 1-Tap Quick Action Progress Bar */}
-        {role === 'supplier' && workOrder.status !== 'COMPLETED' && (
+        {/* 1-Tap Quick Action Progress Bar Buttons (0%, 25%, 50%, 75%, 100%) */}
+        {workOrder.status !== 'COMPLETED' && (
           <div className="pt-2 border-t space-y-2">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">
-              Update Execution Milestone:
+              Record Execution Milestone (25% increments):
             </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onUpdateProgress(0)}
+                className={`min-h-[44px] rounded-xl px-2 py-2 text-xs font-bold transition flex flex-col items-center justify-center border mobile-touch-target ${
+                  currentPercent === 0
+                    ? 'bg-slate-700 text-white border-slate-800 shadow-xs'
+                    : 'bg-muted/40 border-border text-foreground hover:bg-muted'
+                }`}
+              >
+                <span>0% Pending</span>
+                <span className="text-[10px] opacity-70">Kickoff</span>
+              </button>
+
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => onUpdateProgress(25)}
-                className={`min-h-[44px] rounded-xl px-2.5 py-2 text-xs font-bold transition flex flex-col items-center justify-center border mobile-touch-target ${
+                className={`min-h-[44px] rounded-xl px-2 py-2 text-xs font-bold transition flex flex-col items-center justify-center border mobile-touch-target ${
                   currentPercent === 25
                     ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
                     : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100'
                 }`}
               >
-                <span>25% Kickoff</span>
+                <span>25% Mobilize</span>
                 <span className="text-[10px] opacity-80">M1 (20% ₹)</span>
               </button>
 
@@ -153,7 +226,7 @@ export function SupplierMilestoneStepper({
                 type="button"
                 disabled={busy}
                 onClick={() => onUpdateProgress(50)}
-                className={`min-h-[44px] rounded-xl px-2.5 py-2 text-xs font-bold transition flex flex-col items-center justify-center border mobile-touch-target ${
+                className={`min-h-[44px] rounded-xl px-2 py-2 text-xs font-bold transition flex flex-col items-center justify-center border mobile-touch-target ${
                   currentPercent === 50
                     ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
                     : 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-200 hover:bg-blue-100'
@@ -167,7 +240,7 @@ export function SupplierMilestoneStepper({
                 type="button"
                 disabled={busy}
                 onClick={() => onUpdateProgress(75)}
-                className={`min-h-[44px] rounded-xl px-2.5 py-2 text-xs font-bold transition flex flex-col items-center justify-center border mobile-touch-target ${
+                className={`min-h-[44px] rounded-xl px-2 py-2 text-xs font-bold transition flex flex-col items-center justify-center border mobile-touch-target ${
                   currentPercent === 75
                     ? 'bg-lime-600 text-white border-lime-700 shadow-xs'
                     : 'bg-lime-50 dark:bg-lime-950/40 border-lime-300 dark:border-lime-800 text-lime-900 dark:text-lime-200 hover:bg-lime-100'
@@ -181,7 +254,7 @@ export function SupplierMilestoneStepper({
                 type="button"
                 disabled={busy}
                 onClick={() => onUpdateProgress(100)}
-                className={`min-h-[44px] rounded-xl px-2.5 py-2 text-xs font-black transition flex flex-col items-center justify-center border mobile-touch-target ${
+                className={`min-h-[44px] rounded-xl px-2 py-2 text-xs font-black transition flex flex-col items-center justify-center border mobile-touch-target ${
                   currentPercent >= 100
                     ? 'bg-emerald-700 text-white border-emerald-800 shadow-xs'
                     : 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-700'

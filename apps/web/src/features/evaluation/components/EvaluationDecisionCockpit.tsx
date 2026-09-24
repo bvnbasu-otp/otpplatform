@@ -458,19 +458,6 @@ export function EvaluationDecisionCockpit({
 
       {/* Main Content Area */}
       <div className="zero-scroll-pane mt-2 pb-36 sm:pb-28 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] space-y-4">
-        {/* Requirement Summary & Market Context Header */}
-        <QuoteComparisonSummaryHeader
-          rfqTitle={effectiveTitle}
-          location={location}
-          budgetTarget={lowestPriceQuote?.totalCost ? Math.round(lowestPriceQuote.totalCost * 1.15) : null}
-          quotesCount={quotes.length}
-          minQuotesRequired={minQuotesRequired}
-          rfqStatus={rfqStatus}
-          lowestPrice={lowestPriceQuote?.totalCost}
-          fastestTat={fastestDeliveryQuote?.deliveryDays}
-          longestWarranty={longestWarrantyQuote?.warrantyMonths}
-          highestScore={topRatedQuote?.evaluationScore}
-        />
 
         {/* Action Error / Success Feedback */}
         {error && (
@@ -584,6 +571,20 @@ export function EvaluationDecisionCockpit({
         {/* TAB 1: 4-PILLAR OFFER COMPARISON MATRIX (Review Offers) */}
         {activeTab === 'quotes' && (
           <div className="space-y-4 animate-in fade-in-50" data-testid="cockpit-panel-quotes">
+            {/* Requirement Summary & Market Context Header */}
+            <QuoteComparisonSummaryHeader
+              rfqTitle={effectiveTitle}
+              location={location}
+              budgetTarget={lowestPriceQuote?.totalCost ? Math.round(lowestPriceQuote.totalCost * 1.15) : null}
+              quotesCount={quotes.length}
+              minQuotesRequired={minQuotesRequired}
+              rfqStatus={rfqStatus}
+              lowestPrice={lowestPriceQuote?.totalCost}
+              fastestTat={fastestDeliveryQuote?.deliveryDays}
+              longestWarranty={longestWarrantyQuote?.warrantyMonths}
+              highestScore={topRatedQuote?.evaluationScore}
+            />
+
             {/* 4-Pillar Offers Header & Fast Actions */}
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-2">
@@ -1019,19 +1020,6 @@ export function EvaluationDecisionCockpit({
                   />
                 </div>
 
-                {/* Execution Button */}
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAwardModal(true)}
-                    disabled={isAwarding || !selectedQuote}
-                    className="w-full min-h-[50px] rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white shadow-lg hover:bg-emerald-700 active:scale-98 disabled:opacity-50 transition flex items-center justify-center gap-2 mobile-touch-target"
-                    data-testid="lock-award-button"
-                  >
-                    <span>🔒</span>
-                    <span>Lock Award &amp; Unmask Winner →</span>
-                  </button>
-                </div>
               </div>
             )}
           </div>
@@ -1137,7 +1125,7 @@ export function EvaluationDecisionCockpit({
                 onClick={() => setShowAwardModal(true)}
                 disabled={isAwarding || !selectedQuote}
                 className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-emerald-700 active:scale-98 disabled:opacity-50 transition mobile-touch-target"
-                data-testid="execute-award-primary-button"
+                data-testid="lock-award-button"
               >
                 <span>🔒</span>
                 <span>Lock Award &amp; Unmask Winner →</span>

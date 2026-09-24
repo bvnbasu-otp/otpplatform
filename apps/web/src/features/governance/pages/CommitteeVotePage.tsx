@@ -219,19 +219,6 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       />
 
       <div className="px-3.5 sm:px-6 max-w-2xl mx-auto w-full space-y-4 pt-2 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom,0px))]">
-        {/* Committee Quorum Status Header Banner */}
-        <div className="rounded-2xl bg-cyan-500/10 border border-cyan-500/30 p-3.5 flex items-center justify-between shadow-2xs">
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-800 dark:text-cyan-300 block">
-              Committee Quorum Status
-            </span>
-            <h5 className="text-sm font-black text-foreground">
-              {votedCount} of {assigned} Votes Cast ({quorumPercent}%)
-            </h5>
-          </div>
-          <span className="text-2xl">🏛️</span>
-        </div>
-
         {/* Header Bar */}
         <div className="rounded-2xl border bg-card/90 backdrop-blur-xs p-3.5 sm:p-4 shadow-2xs space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -249,17 +236,6 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                 {isSoloBuyer ? '⚡ Direct Solo Authority' : '🏛️ Multi-Member Governance'}
               </span>
             </div>
-
-            {(summary?.quorumMet || votes.length > 0 || myVote) && (
-              <Link
-                to={`/rfq/${rfqId}/award`}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 dark:bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 active:scale-[0.98] transition min-h-[44px]"
-                data-testid="proceed-to-award-button"
-              >
-                <span>Proceed to Award</span>
-                <span>→</span>
-              </Link>
-            )}
           </div>
 
           <div>
