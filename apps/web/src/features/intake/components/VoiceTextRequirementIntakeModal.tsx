@@ -31,9 +31,9 @@ export function VoiceTextRequirementIntakeModal({
     const textToSubmit = (customText ?? promptText).trim();
     if (textToSubmit) {
       sessionStorage.setItem(REQUIREMENT_PROMPT_KEY, textToSubmit);
-      navigate(`/requirements/new?q=${encodeURIComponent(textToSubmit)}`);
+      navigate(`/intake?q=${encodeURIComponent(textToSubmit)}`);
     } else {
-      navigate('/requirements/new');
+      navigate('/intake');
     }
     onClose();
   };

@@ -19,6 +19,7 @@ import {
 import { createId, timestamp } from '../repositories/in-memory';
 
 export interface CreateRequirementInput {
+  idempotencyKey?: string;
   title: string;
   description?: string;
   requirementType: RequirementType;

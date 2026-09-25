@@ -79,6 +79,7 @@ export * from './types/rwa-governance';
 export * from './types/msme-governance';
 export * from './types/supplier-lifecycle-tier';
 export * from './types/supplier-network-refresh';
+export * from './types/requirement-intake';
 export * from './standards/indian-procurement-standards';
 
 

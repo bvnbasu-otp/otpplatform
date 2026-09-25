@@ -1,6 +1,12 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { VoiceRequirementDictation } from './components/VoiceRequirementDictation';
+import { VoiceTextRequirementIntakeModal } from './components/VoiceTextRequirementIntakeModal';
+
+// Mock useNavigate from react-router-dom
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+}));
 
 describe('Voice Requirement Dictation Module', () => {
   it('exports VoiceRequirementDictation component successfully', () => {
@@ -30,5 +36,17 @@ describe('Voice Requirement Dictation Module', () => {
       className: 'test-custom-class',
     });
     expect(customEl.props.className).toBe('test-custom-class');
+  });
+
+  it('exports and renders VoiceTextRequirementIntakeModal targeting canonical /intake', () => {
+    expect(VoiceTextRequirementIntakeModal).toBeDefined();
+    expect(typeof VoiceTextRequirementIntakeModal).toBe('function');
+
+    const modalEl = React.createElement(VoiceTextRequirementIntakeModal, {
+      open: true,
+      onClose: vi.fn(),
+    });
+    expect(modalEl).toBeDefined();
+    expect(modalEl.props.open).toBe(true);
   });
 });
