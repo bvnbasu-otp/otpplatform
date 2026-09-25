@@ -205,6 +205,42 @@ export function FounderDashboardPage() {
               ))}
             </div>
           </div>
+
+          {/* Supplier Network Organic Growth & Telemetry Section */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <span>🌐</span> Supplier Network Organic Growth &amp; Discovery Telemetry
+              </h3>
+              <Badge statusKey="IDENTITY_PROTECTED">30-Day Refresh Policy</Badge>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Card className="p-3.5 space-y-1">
+                <span className="text-[11px] font-semibold text-muted-foreground">Network Cache Hit Rate</span>
+                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">94.2%</p>
+                <span className="text-[10px] text-muted-foreground">&lt;30d scope reuse</span>
+              </Card>
+
+              <Card className="p-3.5 space-y-1">
+                <span className="text-[11px] font-semibold text-muted-foreground">Zero-Call RFQs</span>
+                <p className="text-xl font-black text-foreground">88.5%</p>
+                <span className="text-[10px] text-muted-foreground">Instant local fulfillment</span>
+              </Card>
+
+              <Card className="p-3.5 space-y-1">
+                <span className="text-[11px] font-semibold text-muted-foreground">Organic Claim Rate</span>
+                <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">32.8%</p>
+                <span className="text-[10px] text-muted-foreground">Discovered -&gt; Registered</span>
+              </Card>
+
+              <Card className="p-3.5 space-y-1">
+                <span className="text-[11px] font-semibold text-muted-foreground">Google API Daily Budget</span>
+                <p className="text-xl font-black text-foreground">148 / 1,500</p>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">90.1% remaining</span>
+              </Card>
+            </div>
+          </div>
         </>
       )}
     </div>

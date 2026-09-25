@@ -11,6 +11,7 @@ describe('MSME Registration & Agreement Components', () => {
     const element = React.createElement(MsmeRegistrationAgreementModal, {
       isOpen: true,
       onClose: handleClose,
+      onAccept: handleAccept,
       businessName: 'Apex Auto Components LLP',
       businessType: 'LLP',
       gstin: '29AABCA1234F1Z5',
@@ -19,9 +20,6 @@ describe('MSME Registration & Agreement Components', () => {
       primaryOfficerEmail: 'vikram@apexauto.in',
       primaryOfficerPhone: '+91 98765 43210',
       registeredAddress: 'Plot 45, Peenya Industrial Area, Bengaluru, KA 560058',
-      operationalAddress: 'Plot 45, Peenya Industrial Area, Bengaluru, KA 560058',
-      isAccepted: false,
-      onAcceptChange: handleAccept,
     });
 
     expect(element).toBeDefined();
@@ -34,9 +32,11 @@ describe('MSME Registration & Agreement Components', () => {
 
   it('instantiates BuyerRegisterForm with callback handler', () => {
     const handleSuccess = vi.fn();
+    const handleSignIn = vi.fn();
 
     const element = React.createElement(BuyerRegisterForm, {
       onSuccess: handleSuccess,
+      onSignIn: handleSignIn,
     });
 
     expect(element).toBeDefined();

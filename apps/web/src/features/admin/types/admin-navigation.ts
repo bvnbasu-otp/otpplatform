@@ -14,6 +14,7 @@ export type AdminTab =
   | 'ANNOUNCEMENTS'
   | 'USERS'
   | 'ORGS_SUPPLIERS'
+  | 'SUPPLIER_NETWORK'
   | 'APPROVALS';
 
 export type AdminCategoryKey =
@@ -265,6 +266,15 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
         description: 'Tenant organizations, verified suppliers, GSTINs & enterprise registries',
         categoryKey: 'USERS_ORGS',
         badge: () => 'Registry',
+      },
+      {
+        key: 'SUPPLIER_NETWORK',
+        title: 'Prepare Supplier Network & Discovery Console',
+        shortTitle: 'Supplier Network',
+        icon: '🌐',
+        description: '30-day location pre-warm, coverage density, quota budgets and external discovery',
+        categoryKey: 'USERS_ORGS',
+        badge: () => '30d Policy',
       },
       {
         key: 'APPROVALS',

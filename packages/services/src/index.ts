@@ -81,5 +81,7 @@ export * from './gst/gst-verification-service';
 export * from './security/cors-policy';
 export * from './notifications/email-dispatcher';
 export * from './notifications/notification-queue-worker';
+export * from './services/managed-supplier-network-service';
+
 
 

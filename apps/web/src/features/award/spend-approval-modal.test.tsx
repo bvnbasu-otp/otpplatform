@@ -68,6 +68,6 @@ describe('SpendApprovalModal (MSME Spend Governance Component)', () => {
     expect(element).toBeDefined();
     expect(element.props.actorRole).toBe('DELEGATE');
     expect(element.props.activeDelegations).toHaveLength(1);
-    expect(element.props.activeDelegations?.[0].id).toBe('del-101');
+    expect(element.props.activeDelegations?.[0]?.id).toBe('del-101');
   });
 });

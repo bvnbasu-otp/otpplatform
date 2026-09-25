@@ -498,12 +498,17 @@ describe('Super Admin & Ops Console Data Layer', () => {
 
   it('validates Super Admin Category and Module navigation definitions', () => {
     expect(ADMIN_CATEGORIES).toHaveLength(7);
-    expect(ALL_ADMIN_MODULES.length).toBeGreaterThanOrEqual(14);
+    expect(ALL_ADMIN_MODULES.length).toBeGreaterThanOrEqual(15);
 
     const testModule = ALL_ADMIN_MODULES.find((m) => m.key === 'TESTS');
     expect(testModule).toBeDefined();
     expect(testModule?.categoryKey).toBe('TESTS_OPS');
     expect(testModule?.title).toContain('Test Suite Runner');
+
+    const networkModule = ALL_ADMIN_MODULES.find((m) => m.key === 'SUPPLIER_NETWORK');
+    expect(networkModule).toBeDefined();
+    expect(networkModule?.categoryKey).toBe('USERS_ORGS');
+    expect(networkModule?.title).toContain('Prepare Supplier Network');
   });
 
   it('validates soft-delete and hard-delete user filtering logic for Superadmin roster', () => {

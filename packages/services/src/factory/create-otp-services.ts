@@ -40,6 +40,7 @@ import { DisputeResolutionService } from '../services/dispute-resolution-service
 import { VendorMasterIntelligenceService } from '../services/vendor-master-intelligence-service';
 import { EnterpriseApprovalMatrixService } from '../services/enterprise-approval-matrix-service';
 import { SpendApprovalGovernanceService } from '../services/spend-approval-governance-service';
+import { ManagedSupplierNetworkService } from '../services/managed-supplier-network-service';
 import { ProcurementContractOperationsService } from '../services/procurement-contract-operations-service';
 import { MarketIntelligenceService } from '../services/market-intelligence-service';
 import { BuyerAddressService } from '../services/buyer-address-service';
@@ -81,6 +82,7 @@ export interface OtpServices {
   supplierReveal: SupplierRevealServiceImpl;
   approvalPolicy: DefaultApprovalPolicyService;
   supplierNetworkEngine: SupplierNetworkEngine;
+  managedSupplierNetwork: ManagedSupplierNetworkService;
 }
 
 export function createOtpServices(
@@ -164,7 +166,9 @@ export function createOtpServices(
   const buyerAddresses = new BuyerAddressService(repos, audit);
   const supplierAwardOnboarding = new SupplierAwardOnboardingService(repos, audit);
   const orgRoleLifecycle = new OrgRoleLifecycleService(repos, audit);
+  const managedSupplierNetwork = new ManagedSupplierNetworkService(repos, audit);
   const blindViewPorts = blindViews ?? createInMemoryBlindViewPorts(repos);
+
   const blindRfq = new IdentityProtectedRfqService(repos, blindViewPorts, auditInner);
 
   return {
@@ -199,5 +203,6 @@ export function createOtpServices(
     supplierReveal,
     approvalPolicy,
     supplierNetworkEngine: sneEngine,
+    managedSupplierNetwork,
   };
 }

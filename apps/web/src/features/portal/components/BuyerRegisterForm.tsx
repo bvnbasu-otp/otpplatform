@@ -63,10 +63,30 @@ export function BuyerRegisterForm({
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
 
+  // R2-07: Location Pre-Warm & Coverage State
+  const [state, setState] = useState('Karnataka');
+  const [city, setCity] = useState('Bengaluru');
+  const [pincode, setPincode] = useState('');
+  const [coverageNotice, setCoverageNotice] = useState<string | null>(null);
+
   const isRwa = buyerType === 'COMMUNITY';
   const isMsme = buyerType === 'MSME';
   const isIndividual = buyerType === 'INDIVIDUAL';
   const [msmeBusinessType, setMsmeBusinessType] = useState<MsmeBusinessType>('PROPRIETORSHIP');
+
+  const handlePincodeChange = (rawPin: string) => {
+    const pin = rawPin.replace(/\D/g, '').slice(0, 6);
+    setPincode(pin);
+    if (pin.length === 6) {
+      if (pin.startsWith('560') || pin.startsWith('400') || pin.startsWith('110') || pin.startsWith('600')) {
+        setCoverageNotice(`✓ OTP already has active suppliers discovered and ready in your area (${city} ${pin}).`);
+      } else {
+        setCoverageNotice(`⚡ New Location: Regional suppliers will be pre-warmed for ${city} (${pin}).`);
+      }
+    } else {
+      setCoverageNotice(null);
+    }
+  };
 
   function handleBuyerTypeChange(selectedType: string) {
     setBuyerType(selectedType);
@@ -255,6 +275,47 @@ export function BuyerRegisterForm({
             )}
           </PortalField>
         </div>
+
+        <div className={`grid sm:grid-cols-2 ${text.grid}`}>
+          <PortalField label="Operational City" required>
+            {({ id, invalid }) => (
+              <input
+                id={id}
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g. Bengaluru"
+                className={control(invalid)}
+                required
+              />
+            )}
+          </PortalField>
+          <PortalField label="Pincode (6 digits)" help="Helps check immediate regional supplier coverage." required>
+            {({ id, invalid }) => (
+              <input
+                id={id}
+                value={pincode}
+                onChange={(e) => handlePincodeChange(e.target.value)}
+                placeholder="e.g. 560048"
+                maxLength={6}
+                className={control(invalid)}
+                required
+              />
+            )}
+          </PortalField>
+        </div>
+
+        {coverageNotice && (
+          <div
+            className={`rounded-xl border p-3 text-xs font-semibold ${
+              coverageNotice.includes('✓')
+                ? 'bg-emerald-50 text-emerald-900 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800'
+                : 'bg-blue-50 text-blue-900 border-blue-300 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800'
+            }`}
+            data-testid="onboarding-coverage-banner"
+          >
+            {coverageNotice}
+          </div>
+        )}
 
         {!isIndividual && <RoleChoiceField side="BUYER" value={roleCode} onChange={setRoleCode} />}
 

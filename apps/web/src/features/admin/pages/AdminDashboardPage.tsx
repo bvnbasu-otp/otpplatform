@@ -19,6 +19,7 @@ import { AdminUsersActivityPanel } from '../components/AdminUsersActivityPanel';
 import { AdminBackupRestorePanel } from '../components/AdminBackupRestorePanel';
 import { AdminBuyerTroubleshooter } from '../components/AdminBuyerTroubleshooter';
 import { AdminSellerTroubleshooter } from '../components/AdminSellerTroubleshooter';
+import { AdminSupplierNetworkConsole } from '../components/AdminSupplierNetworkConsole';
 import { AdminQueryTerminal } from '../components/AdminQueryTerminal';
 import { AdminAnnouncementsPanel } from '../components/AdminAnnouncementsPanel';
 import { NotificationsPage } from '@/features/notifications';
@@ -106,8 +107,17 @@ export function AdminDashboardPage() {
     ) {
       return 'APPROVALS';
     }
-    if (rawTab === 'USERS' || rawTab === 'USER' || rawTab === 'ROSTER' || rawTab === 'USERS_ORGS' || rawTab === 'SUPPLIER_NETWORK') {
+    if (rawTab === 'USERS' || rawTab === 'USER' || rawTab === 'ROSTER' || rawTab === 'USERS_ORGS') {
       return 'USERS';
+    }
+    if (
+      rawTab === 'SUPPLIER_NETWORK' ||
+      rawTab === 'SUPPLIER-NETWORK' ||
+      rawTab === 'PREPARE_NETWORK' ||
+      rawTab === 'PREPARE-NETWORK' ||
+      rawTab === 'DISCOVERY_CONSOLE'
+    ) {
+      return 'SUPPLIER_NETWORK';
     }
     if (rawTab === 'TICKETS' || rawTab === 'SUPPORT' || rawTab === 'DISPUTES' || rawTab === 'DISPUTE' || rawTab === 'GOVERNANCE') {
       return 'TICKETS';
@@ -728,6 +738,12 @@ export function AdminDashboardPage() {
                   if (sub === 'USERS') setTab('USERS');
                   else if (sub === 'REGISTRATIONS') setTab('APPROVALS');
                 }}
+              />
+            )}
+
+            {activeTab === 'SUPPLIER_NETWORK' && (
+              <AdminSupplierNetworkConsole
+                onRefreshTelemetry={refreshAllData}
               />
             )}
 
