@@ -29,6 +29,7 @@ export * from './transitions';
 export * from './taxonomy/types';
 export * from './taxonomy/units';
 export * from './taxonomy/taxonomy-cache';
+export * from './taxonomy/canonical-taxonomy';
 export * from './parser/requirement-parser-port';
 export * from './parser/extractors';
 export * from './parser/rule-based-requirement-parser';

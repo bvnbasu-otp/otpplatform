@@ -20,6 +20,7 @@ import { AdminBackupRestorePanel } from '../components/AdminBackupRestorePanel';
 import { AdminBuyerTroubleshooter } from '../components/AdminBuyerTroubleshooter';
 import { AdminSellerTroubleshooter } from '../components/AdminSellerTroubleshooter';
 import { AdminSupplierNetworkConsole } from '../components/AdminSupplierNetworkConsole';
+import { AdminTaxonomyManager } from '../components/AdminTaxonomyManager';
 import { AdminQueryTerminal } from '../components/AdminQueryTerminal';
 import { AdminAnnouncementsPanel } from '../components/AdminAnnouncementsPanel';
 import { NotificationsPage } from '@/features/notifications';
@@ -118,6 +119,15 @@ export function AdminDashboardPage() {
       rawTab === 'DISCOVERY_CONSOLE'
     ) {
       return 'SUPPLIER_NETWORK';
+    }
+    if (
+      rawTab === 'TAXONOMY' ||
+      rawTab === 'TAXONOMY_MANAGER' ||
+      rawTab === 'TAXONOMY-MANAGER' ||
+      rawTab === 'CATEGORIES' ||
+      rawTab === 'CLUSTERS'
+    ) {
+      return 'TAXONOMY';
     }
     if (rawTab === 'TICKETS' || rawTab === 'SUPPORT' || rawTab === 'DISPUTES' || rawTab === 'DISPUTE' || rawTab === 'GOVERNANCE') {
       return 'TICKETS';
@@ -745,6 +755,10 @@ export function AdminDashboardPage() {
               <AdminSupplierNetworkConsole
                 onRefreshTelemetry={refreshAllData}
               />
+            )}
+
+            {activeTab === 'TAXONOMY' && (
+              <AdminTaxonomyManager />
             )}
 
             {activeTab === 'APPROVALS' && (

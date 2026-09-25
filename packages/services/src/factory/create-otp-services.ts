@@ -47,6 +47,7 @@ import { BuyerAddressService } from '../services/buyer-address-service';
 import { SupplierAwardOnboardingService } from '../services/supplier-award-onboarding-service';
 import { SupplierLifecycleService } from '../services/supplier-lifecycle-service';
 import { OrgRoleLifecycleService } from '../services/org-role-lifecycle-service';
+import { CanonicalTaxonomyService } from '../services/canonical-taxonomy-service';
 import { TrackService } from '../services/track-service';
 import { IdentityProtectedRfqService } from '../blind/blind-rfq-service';
 import { createInMemoryBlindViewPorts } from '../blind/in-memory-blind-view-ports';
@@ -86,6 +87,7 @@ export interface OtpServices {
   approvalPolicy: DefaultApprovalPolicyService;
   supplierNetworkEngine: SupplierNetworkEngine;
   managedSupplierNetwork: ManagedSupplierNetworkService;
+  taxonomy: CanonicalTaxonomyService;
   track: TrackService;
 }
 
@@ -172,6 +174,7 @@ export function createOtpServices(
   const supplierLifecycle = new SupplierLifecycleService(repos, audit);
   const orgRoleLifecycle = new OrgRoleLifecycleService(repos, audit);
   const managedSupplierNetwork = new ManagedSupplierNetworkService(repos, audit);
+  const taxonomy = new CanonicalTaxonomyService(repos, audit);
   const blindViewPorts = blindViews ?? createInMemoryBlindViewPorts(repos);
 
   const blindRfq = new IdentityProtectedRfqService(repos, blindViewPorts, auditInner);
@@ -212,6 +215,7 @@ export function createOtpServices(
     approvalPolicy,
     supplierNetworkEngine: sneEngine,
     managedSupplierNetwork,
+    taxonomy,
     track,
   };
 }

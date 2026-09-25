@@ -15,6 +15,7 @@ export type AdminTab =
   | 'USERS'
   | 'ORGS_SUPPLIERS'
   | 'SUPPLIER_NETWORK'
+  | 'TAXONOMY'
   | 'APPROVALS';
 
 export type AdminCategoryKey =
@@ -275,6 +276,15 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
         description: '30-day location pre-warm, coverage density, quota budgets and external discovery',
         categoryKey: 'USERS_ORGS',
         badge: () => '30d Policy',
+      },
+      {
+        key: 'TAXONOMY',
+        title: 'Canonical Taxonomy & Regional Engine',
+        shortTitle: 'Taxonomy Engine',
+        icon: '🏷️',
+        description: 'Context-scoped sourcing hierarchy, 5 procurement types & regional industrial clusters',
+        categoryKey: 'USERS_ORGS',
+        badge: () => 'v1.3.0',
       },
       {
         key: 'APPROVALS',
