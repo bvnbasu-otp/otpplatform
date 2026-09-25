@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { SiteLayout } from '@/features/site';
+import { SiteLayout } from '@/features/site/components/SiteLayout';
 import { BuyerRegisterForm } from '../components/BuyerRegisterForm';
 import { FormDensityProvider } from '../components/FormDensity';
 import { BUYER_GLYPHS, SUPPLIER_GLYPHS } from '../components/PortalGlyphs';

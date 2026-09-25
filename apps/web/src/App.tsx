@@ -1,47 +1,14 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AuthProvider, RequireAuth, ProtectedRoute } from '@/features/auth';
-import { LegalPage, LoginPage, ResetPasswordPage, SignupPage } from '@/features/portal';
-import { AboutPage, FaqPage, LandingPage, PricingPage } from '@/features/site';
+import { LoginPage, ResetPasswordPage, SignupPage } from '@/features/portal';
+import { LandingPage } from '@/features/site';
 import { RequireRole, RoleProvider, useRoleContext } from '@/features/roles';
-import { QuickQuotePage } from '@/features/quick-quote';
-import { RfqIdentityProtectedComparisonPage } from '@/features/rfq';
-import { EvaluationDecisionCockpitPage } from '@/features/evaluation';
-import { SupplierRfqPage } from '@/features/supplier/pages/SupplierRfqPage';
-import { SupplierQuoteSubmitPage } from '@/features/supplier/pages/SupplierQuoteSubmitPage';
-import { SupplierCapabilitiesPage } from '@/features/supplier/pages/SupplierCapabilitiesPage';
-import { SupplierQuotesPage, SupplierAwardOnboardingPage } from '@/features/supplier';
-import {
-  FinancialControlDashboardPage,
-  PurchaseOrderDetailPage,
-  PurchaseOrdersPage,
-  SupplierWorkOrderPage,
-} from '@/features/fulfillment';
-import { CommitteeVotePage } from '@/features/governance';
-import { AwardPage } from '@/features/award';
-import { SupplierRevealPage } from '@/features/reveal';
-import { AuditLogPage } from '@/features/audit';
-import { SupplierPerformancePage } from '@/features/performance';
-import { RequirementDetailPage } from '@/features/requirement/pages/RequirementDetailPage';
-import { RequirementIntakePage } from '@/features/intake';
-import { DiscoverSuppliersPage } from '@/features/requirement/pages/DiscoverSuppliersPage';
-import { RfqReviewPublishPage } from '@/features/requirement/pages/RfqReviewPublishPage';
-import { ActiveRfqMonitoringPage } from '@/features/rfq';
-import { MarketIntelligenceStepPage } from '@/features/procurement-os';
-import { RfqClarificationPage } from '@/features/clarification';
-import { DemoWalkthroughPanel } from '@/features/demo/DemoWalkthroughPanel';
-import { DemoModeProvider } from '@/features/demo/DemoModeProvider';
-import { DemoDashboardPage } from '@/features/demo/pages/DemoDashboardPage';
+import { HomePage } from '@/pages/HomePage';
 import { PilotProvider } from '@/features/pilots/PilotProvider';
+import { DemoModeProvider } from '@/features/demo/DemoModeProvider';
 import { AppLayout } from '@/components/AppLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { NotificationsPage } from '@/features/notifications';
-import { AdminDashboardPage } from '@/features/admin';
-import { ProfilePage } from '@/features/profile';
-import { OrgMembersPage, InviteAcceptancePage } from '@/features/org';
-import { HomePage } from '@/pages/HomePage';
-import { MaintenancePage } from '@/pages/MaintenancePage';
-import { MobileShowcasePage } from '@/pages/MobileShowcasePage';
-import { FounderDashboardPage } from '@/features/founder/pages/FounderDashboardPage';
 import { AnnouncementBanner } from '@/features/announcements/components/AnnouncementBanner';
 import { getPilotByRfqId } from '@/lib/pilots';
 import {
@@ -51,6 +18,58 @@ import {
   RestoredSessionBanner,
 } from '@/features/maintenance';
 import { ThemeProvider, ThemePersonaSync } from '@/features/theme';
+
+// ============================================================================
+// ROUTE-LEVEL LAZY LOADING & SUSPENSE CHUNKING (R2-22 RELEASE HARDENING)
+// ============================================================================
+
+const LegalPage = lazy(() => import('@/features/portal').then((m) => ({ default: m.LegalPage })));
+const AboutPage = lazy(() => import('@/features/site').then((m) => ({ default: m.AboutPage })));
+const FaqPage = lazy(() => import('@/features/site').then((m) => ({ default: m.FaqPage })));
+const PricingPage = lazy(() => import('@/features/site').then((m) => ({ default: m.PricingPage })));
+const QuickQuotePage = lazy(() => import('@/features/quick-quote').then((m) => ({ default: m.QuickQuotePage })));
+const EvaluationDecisionCockpitPage = lazy(() => import('@/features/evaluation').then((m) => ({ default: m.EvaluationDecisionCockpitPage })));
+const SupplierRfqPage = lazy(() => import('@/features/supplier/pages/SupplierRfqPage').then((m) => ({ default: m.SupplierRfqPage })));
+const SupplierQuoteSubmitPage = lazy(() => import('@/features/supplier/pages/SupplierQuoteSubmitPage').then((m) => ({ default: m.SupplierQuoteSubmitPage })));
+const SupplierCapabilitiesPage = lazy(() => import('@/features/supplier/pages/SupplierCapabilitiesPage').then((m) => ({ default: m.SupplierCapabilitiesPage })));
+const SupplierQuotesPage = lazy(() => import('@/features/supplier').then((m) => ({ default: m.SupplierQuotesPage })));
+const SupplierAwardOnboardingPage = lazy(() => import('@/features/supplier').then((m) => ({ default: m.SupplierAwardOnboardingPage })));
+const FinancialControlDashboardPage = lazy(() => import('@/features/fulfillment').then((m) => ({ default: m.FinancialControlDashboardPage })));
+const PurchaseOrderDetailPage = lazy(() => import('@/features/fulfillment').then((m) => ({ default: m.PurchaseOrderDetailPage })));
+const PurchaseOrdersPage = lazy(() => import('@/features/fulfillment').then((m) => ({ default: m.PurchaseOrdersPage })));
+const SupplierWorkOrderPage = lazy(() => import('@/features/fulfillment').then((m) => ({ default: m.SupplierWorkOrderPage })));
+const CommitteeVotePage = lazy(() => import('@/features/governance').then((m) => ({ default: m.CommitteeVotePage })));
+const AwardPage = lazy(() => import('@/features/award').then((m) => ({ default: m.AwardPage })));
+const SupplierRevealPage = lazy(() => import('@/features/reveal').then((m) => ({ default: m.SupplierRevealPage })));
+const AuditLogPage = lazy(() => import('@/features/audit').then((m) => ({ default: m.AuditLogPage })));
+const SupplierPerformancePage = lazy(() => import('@/features/performance').then((m) => ({ default: m.SupplierPerformancePage })));
+const RequirementDetailPage = lazy(() => import('@/features/requirement/pages/RequirementDetailPage').then((m) => ({ default: m.RequirementDetailPage })));
+const RequirementIntakePage = lazy(() => import('@/features/intake').then((m) => ({ default: m.RequirementIntakePage })));
+const DiscoverSuppliersPage = lazy(() => import('@/features/requirement/pages/DiscoverSuppliersPage').then((m) => ({ default: m.DiscoverSuppliersPage })));
+const RfqReviewPublishPage = lazy(() => import('@/features/requirement/pages/RfqReviewPublishPage').then((m) => ({ default: m.RfqReviewPublishPage })));
+const ActiveRfqMonitoringPage = lazy(() => import('@/features/rfq').then((m) => ({ default: m.ActiveRfqMonitoringPage })));
+const MarketIntelligenceStepPage = lazy(() => import('@/features/procurement-os').then((m) => ({ default: m.MarketIntelligenceStepPage })));
+const RfqClarificationPage = lazy(() => import('@/features/clarification').then((m) => ({ default: m.RfqClarificationPage })));
+const DemoDashboardPage = lazy(() => import('@/features/demo/pages/DemoDashboardPage').then((m) => ({ default: m.DemoDashboardPage })));
+const NotificationsPage = lazy(() => import('@/features/notifications').then((m) => ({ default: m.NotificationsPage })));
+const AdminDashboardPage = lazy(() => import('@/features/admin').then((m) => ({ default: m.AdminDashboardPage })));
+const ProfilePage = lazy(() => import('@/features/profile').then((m) => ({ default: m.ProfilePage })));
+const OrgMembersPage = lazy(() => import('@/features/org').then((m) => ({ default: m.OrgMembersPage })));
+const InviteAcceptancePage = lazy(() => import('@/features/org').then((m) => ({ default: m.InviteAcceptancePage })));
+const MaintenancePage = lazy(() => import('@/pages/MaintenancePage').then((m) => ({ default: m.MaintenancePage })));
+const MobileShowcasePage = lazy(() => import('@/pages/MobileShowcasePage').then((m) => ({ default: m.MobileShowcasePage })));
+const FounderDashboardPage = lazy(() => import('@/features/founder/pages/FounderDashboardPage').then((m) => ({ default: m.FounderDashboardPage })));
+
+function RouteLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[40vh] p-8" data-testid="route-loading-fallback">
+      <div className="flex flex-col items-center gap-2.5 text-muted-foreground text-xs">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <span className="font-semibold text-[11px]">Loading view…</span>
+      </div>
+    </div>
+  );
+}
 
 function sanitizeRouteParam(raw: string | undefined): string | null {
   if (!raw) return null;
@@ -247,6 +266,7 @@ export function App() {
                   <MaintenanceBanner />
                   <AnnouncementBanner />
                   <MaintenanceGlobalGuard>
+                    <Suspense fallback={<RouteLoadingFallback />}>
                     <Routes>
           {/*
             The public site. / is marketing rather than the workspace, because
@@ -548,6 +568,7 @@ export function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
             </MaintenanceGlobalGuard>
           </MaintenanceProvider>
         </PilotProvider>

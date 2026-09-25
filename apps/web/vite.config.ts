@@ -51,18 +51,30 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    chunkSizeWarningLimit: 1500,
+    chunkSizeWarningLimit: 1000,
     emptyOutDir: true,
     rollupOptions: {
       external: ['@sentry/browser'],
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+          const normalized = id.replace(/\\/g, '/');
+          if (normalized.includes('node_modules')) {
+            if (
+              normalized.includes('/react/') ||
+              normalized.includes('/react-dom/') ||
+              normalized.includes('/react-router/') ||
+              normalized.includes('/react-router-dom/')
+            ) {
               return 'vendor-react';
             }
-            if (id.includes('@supabase')) {
+            if (normalized.includes('/@supabase/')) {
               return 'vendor-supabase';
+            }
+            if (normalized.includes('/lucide-react/')) {
+              return 'vendor-icons';
+            }
+            if (normalized.includes('/recharts/') || normalized.includes('/d3-') || normalized.includes('/victory/')) {
+              return 'vendor-charts';
             }
             return 'vendor';
           }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { SignInForm } from '@/features/auth/components/SignInForm';
-import { SiteLayout } from '@/features/site';
+import { SiteLayout } from '@/features/site/components/SiteLayout';
 import { useMaintenance } from '@/features/maintenance';
 
 /**

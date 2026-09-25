@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MobileScreensShowcase } from '@/components/mobile-showcase/MobileScreensShowcase';
 import { MobileMultiDeviceGallery } from '@/components/mobile-showcase/MobileMultiDeviceGallery';
-import { SiteLayout } from '@/features/site';
+import { SiteLayout } from '@/features/site/components/SiteLayout';
 
 export function MobileShowcasePage() {
   const [viewMode, setViewMode] = useState<'interactive' | 'gallery'>('interactive');

@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { PLATFORM_DISCLAIMER, PRODUCT_FULL_NAME, PRODUCT_NAME } from '@/lib/brand';
-import { SiteLayout } from '@/features/site';
+import { SiteLayout } from '@/features/site/components/SiteLayout';
 
 /**
  * Terms, privacy and the disclaimer, reachable without a session.

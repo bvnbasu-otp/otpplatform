@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
-import { SiteLayout } from '@/features/site';
+import { SiteLayout } from '@/features/site/components/SiteLayout';
 import { Button, Field, controlClasses } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 

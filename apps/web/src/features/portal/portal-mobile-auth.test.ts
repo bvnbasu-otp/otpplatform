@@ -129,7 +129,13 @@ describe('Phase 3 Public Experience & Authentication Screens (Screens 31–40)',
       expect(PricingPage).toBeDefined();
       expect(FaqPage).toBeDefined();
       expect(ResetPasswordPage).toBeDefined();
+      expect(typeof ResetPasswordPage).toBe('function');
       expect(LegalPage).toBeDefined();
+      expect(typeof LegalPage).toBe('function');
+      expect(LoginPage).toBeDefined();
+      expect(typeof LoginPage).toBe('function');
+      expect(SignupPage).toBeDefined();
+      expect(typeof SignupPage).toBe('function');
     });
 
     it('configures transparent prepaid subscription tiers with annual discounts', () => {
