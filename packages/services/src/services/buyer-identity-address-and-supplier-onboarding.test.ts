@@ -62,11 +62,11 @@ describe('Buyer Identity + Address + RWA/MSME Organization + Committee/Team + Su
   });
 
   describe('1. Buyer Persona & Address Book Governance', () => {
-    it('correctly resolves buyer personas', () => {
+    it('correctly resolves buyer personas and rejects ENTERPRISE (fail-closed)', () => {
       expect(resolveBuyerPersona('RWA')).toBe('RWA');
       expect(resolveBuyerPersona('MSME')).toBe('MSME');
       expect(resolveBuyerPersona('HOUSING_SOCIETY')).toBe('RWA');
-      expect(resolveBuyerPersona('ENTERPRISE')).toBe('MSME');
+      expect(() => resolveBuyerPersona('ENTERPRISE')).toThrow();
       expect(resolveBuyerPersona(null)).toBe('INDIVIDUAL');
     });
 

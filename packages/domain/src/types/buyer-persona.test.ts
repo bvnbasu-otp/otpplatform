@@ -3,6 +3,8 @@ import {
   BUYER_PERSONA_CONFIGS,
   canTransitionMemberClaimState,
   resolveBuyerPersona,
+  tryResolveBuyerPersona,
+  UnsupportedPersonaError,
   type OrgMemberClaimState,
 } from './buyer-persona';
 
@@ -37,14 +39,32 @@ describe('Buyer Persona Matrix & Governance Taxonomy', () => {
     expect(canTransitionMemberClaimState('INVITED', 'PROFILE_COMPLETE')).toBe(false);
   });
 
-  it('resolves persona from organization type codes', () => {
+  it('resolves canonical personas from valid organization type codes', () => {
     expect(resolveBuyerPersona('INDIVIDUAL')).toBe('INDIVIDUAL');
     expect(resolveBuyerPersona('COMMUNITY')).toBe('RWA');
     expect(resolveBuyerPersona('RESIDENTIAL_RWA')).toBe('RWA');
     expect(resolveBuyerPersona('RWA')).toBe('RWA');
+    expect(resolveBuyerPersona('HOUSING_SOCIETY')).toBe('RWA');
     expect(resolveBuyerPersona('MSME')).toBe('MSME');
-    expect(resolveBuyerPersona('ENTERPRISE')).toBe('MSME');
-    expect(resolveBuyerPersona('INSTITUTION')).toBe('MSME');
+    expect(resolveBuyerPersona('BUSINESS')).toBe('MSME');
     expect(resolveBuyerPersona(null)).toBe('INDIVIDUAL');
+    expect(resolveBuyerPersona(undefined)).toBe('INDIVIDUAL');
+    expect(resolveBuyerPersona('')).toBe('INDIVIDUAL');
+  });
+
+  it('fails closed on retired ENTERPRISE and unmapped personas (never normalizes to MSME)', () => {
+    expect(() => resolveBuyerPersona('ENTERPRISE')).toThrow(UnsupportedPersonaError);
+    expect(() => resolveBuyerPersona('enterprise')).toThrow(UnsupportedPersonaError);
+    expect(() => resolveBuyerPersona('Enterprise')).toThrow(UnsupportedPersonaError);
+    expect(() => resolveBuyerPersona(' ENTERPRISE ')).toThrow(UnsupportedPersonaError);
+    expect(() => resolveBuyerPersona('enterprise_user')).toThrow(UnsupportedPersonaError);
+    expect(() => resolveBuyerPersona('enterprise_buyer')).toThrow(UnsupportedPersonaError);
+    expect(() => resolveBuyerPersona('commercial_enterprise')).toThrow(UnsupportedPersonaError);
+    expect(() => resolveBuyerPersona('INSTITUTION')).toThrow(UnsupportedPersonaError);
+
+    // tryResolveBuyerPersona returns null safely on failure
+    expect(tryResolveBuyerPersona('ENTERPRISE')).toBeNull();
+    expect(tryResolveBuyerPersona('MSME')).toBe('MSME');
+    expect(tryResolveBuyerPersona('INDIVIDUAL')).toBe('INDIVIDUAL');
   });
 });

@@ -4,7 +4,6 @@ import type {
   AuthorizationContext,
   OrgRoleAssignment,
   OrganizationDelegation,
-  resolveBuyerPersona,
 } from '@otp/domain';
 
 export interface ActorContext {

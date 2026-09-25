@@ -260,4 +260,49 @@ describe('Web Canonical Authorization Resolver (Presentation Layer)', () => {
     expect(auth.persona).toBe('PLATFORM_ADMIN');
     expect(auth.canApproveSpend(99999999).allowed).toBe(true);
   });
+
+  // ---------------------------------------------------------------------------
+  // 5. Retired Enterprise Persona Claims (Fail-Closed, Never Normalizes to MSME)
+  // ---------------------------------------------------------------------------
+  it('rejects retired Enterprise persona claims and fails closed (ENT-FIX-08)', () => {
+    const enterpriseContext: RoleContext = {
+      signedIn: true,
+      profileId: 'usr-attacker-001',
+      side: 'BUYER',
+      isPlatformAdmin: false,
+      isFounder: false,
+      needsOnboarding: false,
+      activeRole: {
+        code: 'OWNER',
+        side: 'BUYER',
+        label: 'Enterprise Owner',
+        description: 'Attempted Enterprise claim',
+        permissions: ['READ', 'WRITE', 'PROPOSE', 'APPROVE', 'AWARD'],
+      },
+      roles: [],
+      organizations: [],
+      orgRole: 'OWNER',
+      organizationId: 'org-enterprise-fake',
+      organizationName: 'Fake Enterprise Org',
+      buyerType: 'ENTERPRISE',
+      committeeRfqCount: 0,
+      supplierId: null,
+      fullName: 'Attacker Corp',
+      title: 'Enterprise Owner',
+      avatarUrl: null,
+      email: 'attacker@enterprise.fake',
+      phone: null,
+    };
+
+    const auth = evaluateWebAuthorization(enterpriseContext);
+    expect(auth.isMsmeContext).toBe(false);
+    expect(auth.isIndividualBuyer).toBe(false);
+    expect(auth.isRwaContext).toBe(false);
+    expect(auth.canCreateRfq).toBe(false);
+    expect(auth.canIssuePo).toBe(false);
+    expect(auth.canReleasePayment).toBe(false);
+    expect(auth.canVote).toBe(false);
+    expect(auth.canApproveSpend(1000).allowed).toBe(false);
+    expect(auth.canApproveSpend(1000).reason).toContain('Enterprise persona is retired and unsupported');
+  });
 });

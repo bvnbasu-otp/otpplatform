@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   resolveBuyerPersona,
+  tryResolveBuyerPersona,
+  UnsupportedPersonaError,
   isAddressValid,
   createAddressSnapshot,
   createDeliveryAddressSnapshot,
@@ -13,13 +15,14 @@ import {
 } from '@otp/domain';
 
 describe('Address Book & Buyer Persona UX Module Tests', () => {
-  it('resolves buyer persona correctly across organization types', () => {
+  it('resolves buyer persona correctly across organization types and fails closed on ENTERPRISE', () => {
     expect(resolveBuyerPersona('INDIVIDUAL')).toBe('INDIVIDUAL');
     expect(resolveBuyerPersona('RWA')).toBe('RWA');
     expect(resolveBuyerPersona('COMMUNITY')).toBe('RWA');
     expect(resolveBuyerPersona('HOUSING_SOCIETY')).toBe('RWA');
     expect(resolveBuyerPersona('MSME')).toBe('MSME');
-    expect(resolveBuyerPersona('ENTERPRISE')).toBe('MSME');
+    expect(() => resolveBuyerPersona('ENTERPRISE')).toThrow(UnsupportedPersonaError);
+    expect(tryResolveBuyerPersona('ENTERPRISE')).toBeNull();
     expect(resolveBuyerPersona(null)).toBe('INDIVIDUAL');
     expect(resolveBuyerPersona(undefined)).toBe('INDIVIDUAL');
   });

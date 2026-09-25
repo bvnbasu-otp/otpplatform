@@ -61,29 +61,36 @@ export function evaluateWebAuthorization(context: RoleContext): WebAuthorization
 
   // Resolve Persona
   let persona: WebAuthorizationPersona = 'INDIVIDUAL';
-  const orgTypeUpper = (context.buyerType || '').toUpperCase();
-  const sideUpper = (context.side || '').toUpperCase();
+  const orgTypeUpper = (context.buyerType || '').toUpperCase().trim();
+  const sideUpper = (context.side || '').toUpperCase().trim();
+  const roleCode = (context.activeRole?.code || context.orgRole || '').toUpperCase().trim();
 
-  if (isAdmin && !context.organizationId) {
+  const isEnterprise =
+    orgTypeUpper.includes('ENTERPRISE') ||
+    roleCode.includes('ENTERPRISE');
+
+  if (isEnterprise) {
+    // Fail closed: Retired enterprise persona claims are rejected and NEVER converted into MSME
+    persona = 'INDIVIDUAL';
+  } else if (isAdmin && !context.organizationId) {
     persona = 'PLATFORM_ADMIN';
   } else if (sideUpper === 'SUPPLIER') {
     persona = 'SUPPLIER';
-  } else if (['RWA', 'COMMUNITY', 'RESIDENTIAL_RWA', 'HOUSING_SOCIETY'].includes(orgTypeUpper)) {
+  } else if (['RWA', 'COMMUNITY', 'RESIDENTIAL_RWA', 'HOUSING_SOCIETY', 'SOCIETY'].includes(orgTypeUpper)) {
     persona = 'RWA';
-  } else if (['MSME', 'ENTERPRISE', 'INSTITUTION', 'COMMERCIAL'].includes(orgTypeUpper)) {
+  } else if (['MSME', 'BUSINESS', 'PROPRIETORSHIP', 'PARTNERSHIP', 'PVT_LTD'].includes(orgTypeUpper)) {
     persona = 'MSME';
-  } else if (!context.organizationId || orgTypeUpper === 'INDIVIDUAL') {
+  } else if (!context.organizationId || orgTypeUpper === 'INDIVIDUAL' || orgTypeUpper === 'PERSONAL' || orgTypeUpper === 'SOLO') {
     persona = 'INDIVIDUAL';
   } else {
-    persona = 'MSME';
+    persona = 'INDIVIDUAL';
   }
 
-  const isIndividualBuyer = persona === 'INDIVIDUAL';
-  const isRwaContext = persona === 'RWA';
-  const isMsmeContext = persona === 'MSME';
-  const isSupplier = persona === 'SUPPLIER';
+  const isIndividualBuyer = persona === 'INDIVIDUAL' && !isEnterprise && (!context.organizationId || orgTypeUpper === 'INDIVIDUAL' || orgTypeUpper === 'PERSONAL' || orgTypeUpper === 'SOLO');
+  const isRwaContext = persona === 'RWA' && !isEnterprise;
+  const isMsmeContext = persona === 'MSME' && !isEnterprise;
+  const isSupplier = persona === 'SUPPLIER' && !isEnterprise;
 
-  const roleCode = (context.activeRole?.code || context.orgRole || '').toUpperCase();
   const isOwner = roleCode === 'OWNER' || roleCode === 'PRIMARY_OWNER' || roleCode === 'PRESIDENT' || isFounder || isAdmin;
   const isManager = roleCode === 'MANAGER' || roleCode === 'ESTATE_MANAGER' || roleCode === 'VICE_PRESIDENT' || roleCode === 'SECRETARY';
   const isEstateManager = roleCode === 'ESTATE_MANAGER';
@@ -116,13 +123,17 @@ export function evaluateWebAuthorization(context: RoleContext): WebAuthorization
   const canVote = isRwaContext ? (isRwaCommittee && !isRwaEstateManager) : false;
 
   // PO & Payment Authority
-  const canIssuePo = isOwner || isManager || isIndividualBuyer || (context.activeRole?.permissions?.includes('AWARD') ?? false);
-  const canReleasePayment = isOwner || roleCode === 'TREASURER' || isIndividualBuyer;
-  const canManageMembers = isOwner || isManager || isAdmin;
-  const canCreateRfq = true; // All authenticated buyer personas can initiate intake/RFQ
+  const canIssuePo = !isEnterprise && (isOwner || isManager || isIndividualBuyer || (context.activeRole?.permissions?.includes('AWARD') ?? false));
+  const canReleasePayment = !isEnterprise && (isOwner || roleCode === 'TREASURER' || isIndividualBuyer);
+  const canManageMembers = !isEnterprise && (isOwner || isManager || isAdmin);
+  const canCreateRfq = !isEnterprise; // All authenticated canonical buyer personas can initiate intake/RFQ
 
   // Spend Approval Checker with Anti-Self-Approval and Spend Cap
   const canApproveSpend = (amount?: number | null, creatorPersonId?: string | null): { allowed: boolean; reason: string } => {
+    if (isEnterprise) {
+      return { allowed: false, reason: 'Enterprise persona is retired and unsupported (FAIL_CLOSED).' };
+    }
+
     if (isAdmin) {
       return { allowed: true, reason: 'Platform Admin override.' };
     }

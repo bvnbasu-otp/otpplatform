@@ -757,6 +757,18 @@ export function validateContextSwitch(
   currentContext: AuthorizationContext,
   targetContext: AuthorizationContext
 ): ContextSwitchResult {
+  // 0. Target persona must be one of the supported canonical personas
+  const validPersonas: AuthorizationPersona[] = ['INDIVIDUAL', 'RWA', 'MSME', 'SUPPLIER', 'PLATFORM_ADMIN'];
+  if (!validPersonas.includes(targetContext.persona)) {
+    return {
+      valid: false,
+      reason: `Cannot switch to unsupported or retired persona '${targetContext.persona}'. Context switch failed closed.`,
+      fromPersona: currentContext.persona,
+      toPersona: targetContext.persona,
+      targetOrganizationId: targetContext.organizationId,
+    };
+  }
+
   // 1. Biological person MUST remain identical across context switches
   if (currentContext.personId !== targetContext.personId) {
     return {

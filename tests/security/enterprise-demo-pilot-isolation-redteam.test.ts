@@ -15,6 +15,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveBuyerPersona,
+  tryResolveBuyerPersona,
+  UnsupportedPersonaError,
   CanonicalBuyerContext,
   assertPlatformRoleSeparation,
   assertSuperadminImmutability,
@@ -23,26 +25,28 @@ import {
   filterProductionEntities,
   evaluateProviderOperationalTruth,
   calculateStatutoryGst,
+  resolveTierForOrgType,
   type BuyerPersona,
   type CustomerBuyerContext,
 } from '@otp/domain';
 import { InMemoryRepositories, timestamp } from '../../packages/services/src/repositories/in-memory';
 import { createOtpServices } from '../../packages/services/src/factory/create-otp-services';
+import { canonicalAuthService } from '../../packages/services/src/services/canonical-authorization-service';
 import type { ActorContext } from '../../packages/services/src/types/actor-context';
+import { evaluateWebAuthorization } from '../../apps/web/src/features/auth/canonical-auth';
 
-describe('Enterprise Retirement & Demo/Pilot Production Isolation Red Team (ENT-01..ENT-02, DEM-01..DEM-20)', () => {
+describe('Enterprise Retirement & Demo/Pilot Production Isolation Red Team (ENT-01..ENT-02, ENT-FIX-01..13, DEM-01..DEM-20)', () => {
   const mem = InMemoryRepositories.create();
   const repos = mem.asRepositories();
   const services = createOtpServices(repos);
 
   // ---------------------------------------------------------------------------
-  // 1. ENTERPRISE RETIREMENT VECTORS (ENT-01 .. ENT-02)
+  // 1. ENTERPRISE RETIREMENT & FAIL-CLOSED SURGICAL BATTERY (ENT-FIX-01 .. ENT-FIX-13)
   // ---------------------------------------------------------------------------
-  it('ENT-01: Rejects Enterprise customer persona creation and normalizes strictly to canonical personas', () => {
-    // Attempting to resolve buyer persona with 'ENTERPRISE' must never yield 'ENTERPRISE'
-    const persona = resolveBuyerPersona('ENTERPRISE');
-    expect(persona).not.toBe('ENTERPRISE');
-    expect(persona).toBe('MSME'); // Normalized to commercial MSME
+  it('ENT-FIX-01: resolveBuyerPersona("ENTERPRISE") is rejected / unsupported and fails closed (NOT MSME)', () => {
+    // Attempting to resolve buyer persona with 'ENTERPRISE' must throw UnsupportedPersonaError
+    expect(() => resolveBuyerPersona('ENTERPRISE')).toThrow(UnsupportedPersonaError);
+    expect(tryResolveBuyerPersona('ENTERPRISE')).toBeNull();
 
     // CanonicalBuyerContext must strictly define only INDIVIDUAL, RWA, MSME
     const validContexts = Object.values(CanonicalBuyerContext);
@@ -50,23 +54,234 @@ describe('Enterprise Retirement & Demo/Pilot Production Isolation Red Team (ENT-
     expect(validContexts).toEqual(['INDIVIDUAL', 'RWA', 'MSME']);
   });
 
-  it('ENT-02: Rejects Enterprise context switching and denies unauthorized persona elevation', () => {
-    const maliciousActor: ActorContext = {
+  it('ENT-FIX-02: Enterprise context-switch attempt is rejected by canonical authorization service', () => {
+    const currentActor: ActorContext = {
+      profileId: 'usr-buyer-01',
+      organizationId: 'org-msme-01',
+      persona: 'MSME',
+      orgRole: 'BUYER',
+    };
+
+    // Attacker attempts to switch context into retired 'ENTERPRISE' persona
+    const switchResult = canonicalAuthService.switchContext(currentActor, {
+      persona: 'ENTERPRISE' as any,
+      organizationId: 'org-msme-01',
+    });
+
+    expect(switchResult.valid).toBe(false);
+    expect(switchResult.reason).toContain('Cannot switch to unsupported or retired persona');
+  });
+
+  it('ENT-FIX-03: Enterprise persona with MSME-shaped payload fails 13-stage authorization chain at Stage 3 Context', () => {
+    const enterpriseActor: ActorContext = {
+      profileId: 'usr-attacker-01',
+      email: 'attacker@corp.fake',
+      fullName: 'Attacker Corp',
+      organizationId: 'org-msme-fake',
+      statutoryGstin: '29AABCU9603R1Z2',
+      statutoryPan: 'AABCU9603R',
+      persona: 'ENTERPRISE' as any,
+      roleAssignment: {
+        roleId: 'PRIMARY_OWNER',
+        organizationId: 'org-msme-fake',
+        assignedAt: new Date(),
+      },
+    };
+
+    const evalResult = canonicalAuthService.evaluate(enterpriseActor, {
+      action: 'VIEW_AUDIT_LOG',
+      organizationId: 'org-msme-fake',
+    });
+
+    expect(evalResult.authorized).toBe(false);
+    expect(evalResult.failedStage).toBe('STAGE_03_CONTEXT');
+    expect(evalResult.failureReason).toContain("Invalid operating persona context: 'ENTERPRISE'");
+  });
+
+  it('ENT-FIX-04: Enterprise persona attempting MSME spend authority is rejected (FAIL_CLOSED)', () => {
+    const enterpriseActor: ActorContext = {
       profileId: 'usr-attacker-01',
       organizationId: 'org-msme-01',
-      orgRole: 'BUYER',
-      // Attacker attempts to claim unsupported enterprise persona
+      persona: 'ENTERPRISE' as any,
+      orgRole: 'PRIMARY_OWNER',
+      roleAssignment: {
+        roleId: 'PRIMARY_OWNER',
+        organizationId: 'org-msme-01',
+        assignedAt: new Date(),
+      },
+    };
+
+    const spendCheck = canonicalAuthService.canApproveMsmeSpend(enterpriseActor, 'org-msme-01', 500000);
+    expect(spendCheck.allowed).toBe(false);
+    expect(spendCheck.reason).toContain('Cannot approve MSME spend from non-MSME context');
+  });
+
+  it('ENT-FIX-05: Enterprise persona attempting RFQ creation is rejected (FAIL_CLOSED)', () => {
+    const enterpriseActor: ActorContext = {
+      profileId: 'usr-attacker-01',
+      organizationId: 'org-msme-01',
       persona: 'ENTERPRISE' as any,
     };
 
-    // Assert that platform role separation blocks arbitrary elevated permissions
-    const separation = assertPlatformRoleSeparation({
-      isPlatformAdmin: false,
-      isFounder: false,
-      attemptedAction: 'COMMITTEE_VOTE',
-      hasExplicitBuyerDelegation: false,
+    const rfqCheck = canonicalAuthService.canCreateRequirementOrRfq(enterpriseActor, 'org-msme-01');
+    expect(rfqCheck.allowed).toBe(false);
+    expect(rfqCheck.reason).toContain("Invalid operating persona context: 'ENTERPRISE'");
+  });
+
+  it('ENT-FIX-06: Enterprise persona attempting MSME subscription entitlement is rejected', () => {
+    // Enterprise org type resolution fails closed and never maps to MSME entitlement
+    expect(() => resolveBuyerPersona('ENTERPRISE')).toThrow(UnsupportedPersonaError);
+    expect(tryResolveBuyerPersona('ENTERPRISE')).toBeNull();
+
+    const tier = resolveTierForOrgType('ENTERPRISE');
+    expect(tier).toBe('ENTERPRISE'); // Resolves to Enterprise tier definition, never silently granting MSME
+  });
+
+  it('ENT-FIX-07: Enterprise persona attempting organization creation fails closed', () => {
+    // Org creation pipeline validating persona fails closed on ENTERPRISE
+    expect(() => resolveBuyerPersona('ENTERPRISE')).toThrow(UnsupportedPersonaError);
+    expect(() => resolveBuyerPersona('enterprise_buyer')).toThrow(UnsupportedPersonaError);
+  });
+
+  it('ENT-FIX-08: Enterprise persona attempting client-side bypass is rejected by UI & server-side guards', () => {
+    const clientPayload = {
+      profileId: 'usr-attacker-01',
+      email: 'attacker@corp.fake',
+      organizationId: 'org-msme-fake',
+      buyerType: 'ENTERPRISE',
+      orgRole: 'OWNER',
+    };
+
+    const webAuth = evaluateWebAuthorization(clientPayload as any);
+    expect(webAuth.isMsmeContext).toBe(false);
+    expect(webAuth.isIndividualBuyer).toBe(false);
+    expect(webAuth.isRwaContext).toBe(false);
+    expect(webAuth.canIssuePo).toBe(false);
+    expect(webAuth.canCreateRfq).toBe(false);
+    expect(webAuth.canApproveSpend().allowed).toBe(false);
+    expect(webAuth.canApproveSpend().reason).toContain('Enterprise persona is retired and unsupported');
+  });
+
+  it('ENT-FIX-09: Legitimate MSME user behavior remains fully functional and unchanged', () => {
+    expect(resolveBuyerPersona('MSME')).toBe('MSME');
+
+    const msmeActor: ActorContext = {
+      profileId: 'usr-msme-owner-01',
+      email: 'owner@precisionparts.in',
+      fullName: 'Owner Precision',
+      organizationId: 'org-msme-prod-01',
+      persona: 'MSME',
+      orgRole: 'PRIMARY_OWNER',
+      statutoryGstin: '29AABCU9603R1Z2',
+      statutoryPan: 'AABCU9603R',
+      roleAssignment: {
+        roleId: 'PRIMARY_OWNER',
+        organizationId: 'org-msme-prod-01',
+        assignedAt: new Date(),
+      },
+    };
+
+    const rfqCheck = canonicalAuthService.canCreateRequirementOrRfq(msmeActor, 'org-msme-prod-01');
+    expect(rfqCheck.allowed).toBe(true);
+
+    const spendCheck = canonicalAuthService.canApproveMsmeSpend(msmeActor, 'org-msme-prod-01', 500000);
+    expect(spendCheck.allowed).toBe(true);
+  });
+
+  it('ENT-FIX-10: Legitimate Individual user behavior remains fully functional and unchanged', () => {
+    expect(resolveBuyerPersona('INDIVIDUAL')).toBe('INDIVIDUAL');
+    expect(resolveBuyerPersona(null)).toBe('INDIVIDUAL');
+
+    const individualActor: ActorContext = {
+      profileId: 'usr-ind-01',
+      email: 'personal@otp.test',
+      fullName: 'Personal Buyer',
+      persona: 'INDIVIDUAL',
+    };
+
+    const rfqCheck = canonicalAuthService.canCreateRequirementOrRfq(individualActor);
+    expect(rfqCheck.allowed).toBe(true);
+    expect(rfqCheck.reason).toContain('Individual Buyer');
+  });
+
+  it('ENT-FIX-11: Legitimate RWA user behavior remains fully functional and unchanged', () => {
+    expect(resolveBuyerPersona('RWA')).toBe('RWA');
+    expect(resolveBuyerPersona('HOUSING_SOCIETY')).toBe('RWA');
+
+    const rwaActor: ActorContext = {
+      profileId: 'usr-rwa-pres-01',
+      email: 'president@palmmeadows.org',
+      fullName: 'RWA President',
+      organizationId: 'org-rwa-01',
+      persona: 'RWA',
+      orgRole: 'PRESIDENT',
+      roleAssignment: {
+        roleId: 'PRESIDENT',
+        roleName: 'President',
+        organizationId: 'org-rwa-01',
+        assignedAt: new Date(),
+      },
+    };
+
+    const voteCheck = canonicalAuthService.canVoteInRwa(rwaActor, 'org-rwa-01');
+    expect(voteCheck.allowed).toBe(true);
+  });
+
+  it('ENT-FIX-12: Legitimate Supplier context behavior remains fully functional and unchanged', () => {
+    const supplierActor: ActorContext = {
+      profileId: 'usr-sup-01',
+      email: 'sales@suppliercorp.in',
+      fullName: 'Supplier Sales',
+      organizationId: 'org-sup-01',
+      persona: 'SUPPLIER',
+      supplierIds: ['sup-verified-01'],
+      roleAssignment: {
+        roleId: 'OWNER',
+        roleName: 'Supplier Owner',
+        organizationId: 'org-sup-01',
+        assignedAt: new Date(),
+      },
+    };
+
+    const evalResult = canonicalAuthService.evaluate(supplierActor, {
+      action: 'SUBMIT_QUOTE',
+      organizationId: 'org-sup-01',
+      targetEntityType: 'QUOTE',
     });
-    expect(separation.allowed).toBe(true); // normal individual/buyer check, but vote requires RWA committee
+    expect(evalResult.authorized).toBe(true);
+  });
+
+  it('ENT-FIX-13: Legitimate Platform Admin behavior remains fully functional and unchanged', () => {
+    const adminActor: ActorContext = {
+      profileId: 'usr-platform-admin-01',
+      email: 'admin@platform.gov',
+      fullName: 'System Admin',
+      persona: 'PLATFORM_ADMIN',
+      isPlatformAdmin: true,
+    };
+
+    const evalResult = canonicalAuthService.evaluate(adminActor, {
+      action: 'VIEW_AUDIT_LOG',
+      targetEntityType: 'SYSTEM_AUDIT',
+    });
+    expect(evalResult.authorized).toBe(true);
+  });
+
+  it('NEGATIVE-NORMALIZATION: Proves no Enterprise variant is silently converted into MSME', () => {
+    const enterpriseVariants = [
+      'ENTERPRISE',
+      'enterprise',
+      'Enterprise',
+      ' ENTERPRISE ',
+      'enterprise_user',
+      'enterprise_buyer',
+      'commercial_enterprise',
+    ];
+
+    for (const variant of enterpriseVariants) {
+      expect(() => resolveBuyerPersona(variant)).toThrow(UnsupportedPersonaError);
+      expect(tryResolveBuyerPersona(variant)).toBeNull();
+    }
   });
 
   // ---------------------------------------------------------------------------

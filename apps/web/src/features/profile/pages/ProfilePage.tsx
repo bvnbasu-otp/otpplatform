@@ -23,7 +23,7 @@ import {
 } from '@/features/subscription';
 import { AddressBookManager } from '../components/AddressBookManager';
 import { CommitteeTeamBuilder } from '@/features/org/components/CommitteeTeamBuilder';
-import { resolveBuyerPersona } from '@otp/domain';
+import { tryResolveBuyerPersona } from '@otp/domain';
 
 const ROLE_OPTIONS = [
   { value: 'COMMITTEE_MEMBER', label: 'Committee Member — evaluates & votes on RFQs' },
@@ -191,7 +191,7 @@ export function ProfilePage() {
 
   const activeOrgSummary = context.organizations.find((o) => o.id === context.organizationId);
   const currentOrgType = activeOrgSummary?.orgType || null;
-  const isIndividual = !context.organizationId || resolveBuyerPersona(context.buyerType || currentOrgType) === 'INDIVIDUAL';
+  const isIndividual = !context.organizationId || (tryResolveBuyerPersona(context.buyerType || currentOrgType) ?? 'INDIVIDUAL') === 'INDIVIDUAL';
 
   useEffect(() => {
     if (isIndividual && activeTab === 'team') {
@@ -583,8 +583,8 @@ export function ProfilePage() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>{resolveBuyerPersona(currentOrgType) === 'RWA' ? '🏛️' : '🏢'}</span>
-              <span>{resolveBuyerPersona(currentOrgType) === 'RWA' ? 'Committee' : 'Team'} ({members.length || 1})</span>
+              <span>{(tryResolveBuyerPersona(currentOrgType) ?? 'MSME') === 'RWA' ? '🏛️' : '🏢'}</span>
+              <span>{(tryResolveBuyerPersona(currentOrgType) ?? 'MSME') === 'RWA' ? 'Committee' : 'Team'} ({members.length || 1})</span>
             </button>
           )}
 
@@ -975,7 +975,7 @@ export function ProfilePage() {
         <section className="rounded-2xl border border-border bg-card p-5 shadow-xs space-y-6">
           <AddressBookManager
             organizationId={context.organizationId || null}
-            persona={resolveBuyerPersona(currentOrgType)}
+            persona={tryResolveBuyerPersona(currentOrgType) ?? 'INDIVIDUAL'}
           />
         </section>
       )}
@@ -1087,7 +1087,7 @@ export function ProfilePage() {
             <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
               <CommitteeTeamBuilder
                 organizationId={context.organizationId}
-                persona={resolveBuyerPersona(currentOrgType)}
+                persona={tryResolveBuyerPersona(currentOrgType) ?? 'MSME'}
                 organizationName={orgName}
               />
             </div>

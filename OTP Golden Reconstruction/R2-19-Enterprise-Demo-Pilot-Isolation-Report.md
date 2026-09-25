@@ -61,8 +61,8 @@ Documented in `OTP Golden Reconstruction/R2-19-Enterprise-Demo-Pilot-Isolation-G
 
 * **Routes:** Zero customer-facing Enterprise routes exist.
 * **UI & Navigation:** Zero Enterprise buyer signup, onboarding, or committee navigation exists.
-* **Domain Contexts:** Canonical buyer contexts are strictly `INDIVIDUAL`, `RWA`, and `MSME`. `resolveBuyerPersona('ENTERPRISE')` normalizes safely to commercial `MSME`.
-* **Authorization:** `AuthorizationPersona` defines strictly `'INDIVIDUAL' | 'RWA' | 'MSME' | 'SUPPLIER' | 'PLATFORM_ADMIN'`. Any attempted Enterprise persona claim is rejected.
+* **Domain Contexts:** Canonical buyer contexts are strictly `INDIVIDUAL`, `RWA`, and `MSME`. `resolveBuyerPersona('ENTERPRISE')` strictly fails closed and throws `UnsupportedPersonaError` (never normalizes to `MSME`).
+* **Authorization:** `AuthorizationPersona` defines strictly `'INDIVIDUAL' | 'RWA' | 'MSME' | 'SUPPLIER' | 'PLATFORM_ADMIN'`. Any attempted Enterprise persona claim is rejected (FAIL_CLOSED).
 
 ---
 
@@ -214,8 +214,70 @@ Database Mutations  : 0
 
 ---
 
-## 17. Final Verdict
+## 18. R2-19 Surgical Correction — Enterprise Persona Fail-Closed
+
+### Core Invariant
+> **ENTERPRISE is retired and unsupported. An Enterprise persona claim is rejected and is never normalized into MSME.**
+
+### 1. Original Behavior
+In the initial R2-19 implementation, `resolveBuyerPersona('ENTERPRISE')` normalized safely to commercial `MSME`.
+
+### 2. Why It Was Incorrect
+Enterprise is a retired customer persona. Normalizing an unsupported `ENTERPRISE` persona claim into `MSME` allowed arbitrary unmapped client inputs to be converted into an authorized commercial context without following the canonical authorization chain:
+`Person → Identity → Context → Organization → Eligibility → Membership → Role → Responsibility → Delegation → Authority → Transaction → Effective Date → Audit Attribution`.
+Failing closed is mandatory for security boundary integrity.
+
+### 3. Corrected Behavior
+- `resolveBuyerPersona('ENTERPRISE')` and all case/whitespace/composite variants (`ENTERPRISE`, `enterprise`, `Enterprise`, ` ENTERPRISE `, `enterprise_user`, `enterprise_buyer`, `commercial_enterprise`) throw `UnsupportedPersonaError` and strictly fail closed.
+- `tryResolveBuyerPersona` returns `null` for unsupported personas without throwing.
+- Canonical context switching (`validateContextSwitch` and `CanonicalAuthorizationService.switchContext`) rejects switching to retired or unsupported personas.
+- 13-stage authorization engine rejects unsupported persona claims at `STAGE_03_CONTEXT`.
+- UI presentation resolver (`evaluateWebAuthorization`) sets `isMsmeContext: false`, `isIndividualBuyer: false`, and denies PO issuance, spend approvals, and RFQ creation on Enterprise claims.
+
+### 4. Affected Files
+1. `packages/domain/src/types/buyer-persona.ts` (Introduced `UnsupportedPersonaError`, `tryResolveBuyerPersona`, updated `resolveBuyerPersona` to fail closed)
+2. `packages/domain/src/identity/authorization-chain.ts` (Added target persona validity check to `validateContextSwitch`)
+3. `packages/services/src/types/actor-context.ts` (Cleaned up persona type resolution)
+4. `packages/services/src/services/canonical-authorization-service.ts` (Preserved claimed persona in MSME spend evaluations to trigger Stage 3 context rejection)
+5. `apps/web/src/features/auth/canonical-auth.ts` (Enforced fail-closed web authorization state on Enterprise inputs)
+6. `apps/web/src/features/profile/pages/ProfilePage.tsx` (Migrated to safe `tryResolveBuyerPersona`)
+7. `packages/domain/src/types/buyer-persona.test.ts` (Updated to verify fail-closed behavior)
+8. `apps/web/src/features/profile/address-book-and-persona.test.ts` (Updated to verify fail-closed behavior)
+9. `packages/services/src/services/buyer-identity-address-and-supplier-onboarding.test.ts` (Updated to verify fail-closed behavior)
+10. `tests/security/enterprise-demo-pilot-isolation-redteam.test.ts` (Implemented ENT-FIX-01 through ENT-FIX-13 and negative normalization tests)
+
+### 5. Tests Added / Changed
+- **ENT-FIX-01:** `resolveBuyerPersona("ENTERPRISE")` $\rightarrow$ Rejected / unsupported (`UnsupportedPersonaError`).
+- **ENT-FIX-02:** Enterprise context-switch attempt $\rightarrow$ Rejected.
+- **ENT-FIX-03:** Enterprise persona with MSME-shaped payload $\rightarrow$ Stage 3 context rejection.
+- **ENT-FIX-04:** Enterprise persona attempting MSME spend authority $\rightarrow$ Rejected.
+- **ENT-FIX-05:** Enterprise persona attempting RFQ creation $\rightarrow$ Rejected.
+- **ENT-FIX-06:** Enterprise persona attempting MSME subscription entitlement $\rightarrow$ Rejected.
+- **ENT-FIX-07:** Enterprise persona attempting organization creation $\rightarrow$ Rejected.
+- **ENT-FIX-08:** Enterprise persona attempting client-side bypass $\rightarrow$ Server & UI guard rejection.
+- **ENT-FIX-09:** Legitimate MSME user $\rightarrow$ Behavior fully unchanged.
+- **ENT-FIX-10:** Legitimate Individual user $\rightarrow$ Behavior fully unchanged.
+- **ENT-FIX-11:** Legitimate RWA user $\rightarrow$ Behavior fully unchanged.
+- **ENT-FIX-12:** Supplier context $\rightarrow$ Behavior fully unchanged.
+- **ENT-FIX-13:** Platform Admin $\rightarrow$ Behavior fully unchanged.
+- **NEGATIVE-NORMALIZATION:** Verified `ENTERPRISE`, `enterprise`, `Enterprise`, ` ENTERPRISE `, `enterprise_user`, `enterprise_buyer`, `commercial_enterprise` are all rejected.
+
+### 6. Regression Result
+All 34 tests in `tests/security/enterprise-demo-pilot-isolation-redteam.test.ts` pass cleanly (100% PASS).
+
+### 7. Protected Assets Result
+`PA-01` through `PA-10`: **10/10 PASS**.
+
+### 8. Migration Result
+- Migration Ceiling: `00197_universal_org_role_lifecycle_succession_and_audit.sql`
+- Migrations Created: `0`
+- Schema Mutations: `0`
+
+---
+
+## 19. Final Verdict
 
 ```text
-R2-19 CLOSED — READY FOR R2-20
+R2-19 SURGICAL FIX PASSED — READY FOR CHECKPOINT REVIEW
 ```
+

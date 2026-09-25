@@ -63,6 +63,23 @@ export const BUYER_PERSONA_CONFIGS: Record<BuyerPersona, BuyerPersonaConfigurati
 };
 
 /**
+ * Error thrown when an unsupported or retired buyer persona is requested.
+ */
+export class UnsupportedPersonaError extends Error {
+  public readonly personaName: string;
+
+  constructor(personaName: string, message?: string) {
+    super(
+      message ??
+        `Unsupported or retired buyer persona: '${personaName}'. Supported personas are strictly INDIVIDUAL, RWA, and MSME (FAIL_CLOSED).`,
+    );
+    this.name = 'UnsupportedPersonaError';
+    this.personaName = personaName;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+/**
  * Validates member claim state transitions.
  */
 export function canTransitionMemberClaimState(
@@ -81,12 +98,58 @@ export function canTransitionMemberClaimState(
 
 /**
  * Resolves buyer persona from organization type string.
+ * Strictly enforces canonical personas (INDIVIDUAL, RWA, MSME).
+ * Fails closed on retired ENTERPRISE variants or unknown persona claims.
  */
 export function resolveBuyerPersona(orgType?: string | null): BuyerPersona {
-  if (!orgType) return 'INDIVIDUAL';
-  const upper = orgType.toUpperCase();
-  if (upper === 'INDIVIDUAL') return 'INDIVIDUAL';
-  if (['RWA', 'COMMUNITY', 'RESIDENTIAL_RWA', 'HOUSING_SOCIETY'].includes(upper)) return 'RWA';
-  if (['MSME', 'ENTERPRISE', 'INSTITUTION', 'COMMERCIAL'].includes(upper)) return 'MSME';
-  return 'INDIVIDUAL';
+  if (orgType === null || orgType === undefined || orgType === '') {
+    return 'INDIVIDUAL';
+  }
+
+  const raw = String(orgType);
+  const trimmed = raw.trim();
+  const upper = trimmed.toUpperCase();
+
+  // Explicit Fail-Closed: ENTERPRISE is retired and strictly unsupported
+  if (
+    upper === 'ENTERPRISE' ||
+    upper.includes('ENTERPRISE') ||
+    upper === 'COMMERCIAL_ENTERPRISE' ||
+    upper.startsWith('ENTERPRISE_') ||
+    upper.endsWith('_ENTERPRISE')
+  ) {
+    throw new UnsupportedPersonaError(
+      raw,
+      `Unsupported buyer persona: '${raw}' is retired and cannot be resolved (FAIL_CLOSED).`,
+    );
+  }
+
+  if (['INDIVIDUAL', 'PERSONAL', 'SOLO', 'BUYER'].includes(upper)) {
+    return 'INDIVIDUAL';
+  }
+
+  if (['RWA', 'COMMUNITY', 'RESIDENTIAL_RWA', 'HOUSING_SOCIETY', 'SOCIETY'].includes(upper)) {
+    return 'RWA';
+  }
+
+  if (['MSME', 'BUSINESS', 'PROPRIETORSHIP', 'PARTNERSHIP', 'PVT_LTD'].includes(upper)) {
+    return 'MSME';
+  }
+
+  // Any other unknown/unsupported persona string fails closed
+  throw new UnsupportedPersonaError(
+    raw,
+    `Unsupported buyer persona: '${raw}' is invalid or unsupported (FAIL_CLOSED).`,
+  );
+}
+
+/**
+ * Safely resolves buyer persona from organization type without throwing, returning null on rejection.
+ */
+export function tryResolveBuyerPersona(orgType?: string | null): BuyerPersona | null {
+  try {
+    return resolveBuyerPersona(orgType);
+  } catch {
+    return null;
+  }
 }

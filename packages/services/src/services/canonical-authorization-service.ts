@@ -167,7 +167,7 @@ export class CanonicalAuthorizationService {
     const evalRes = this.evaluate(
       {
         ...actor,
-        persona: 'MSME',
+        persona: actor.persona ?? 'MSME',
         organizationId: orgId,
       },
       actionReq

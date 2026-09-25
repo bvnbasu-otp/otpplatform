@@ -59,3 +59,28 @@
 - **Production Impact:** Bypasses statutory Stage 2 PAN/GSTIN validation.
 - **Correction:** Discovered suppliers are strictly `DISCOVERED_IN_AREA` or `DETAILS_AVAILABLE`.
 - **Code Change Required:** Yes (`packages/services/src/services/managed-supplier-network-service.ts`).
+
+---
+
+## 3. Surgical Finding: R2-19-PERSONA-01
+
+### R2-19-PERSONA-01
+
+**Finding**
+Retired Enterprise persona input is normalized to MSME (`resolveBuyerPersona('ENTERPRISE') -> 'MSME'`).
+
+**Risk**
+An unsupported persona is being reinterpreted and silently elevated rather than rejected, creating potential authority and persona boundary ambiguity.
+
+**Required behavior**
+Fail closed (`resolveBuyerPersona('ENTERPRISE')` throws `UnsupportedPersonaError` and fails closed across all callers).
+
+**Scope**
+Persona resolution / authorization only.
+
+**Migration**
+None.
+
+**Product decision**
+Not required because Enterprise is already retired by product definition. Supported personas are strictly `INDIVIDUAL`, `RWA`, and `MSME`.
+
