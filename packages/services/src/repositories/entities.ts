@@ -33,6 +33,7 @@ import type {
   DisputeSeverity,
   DisputeResolutionCategory,
   DisputeEventType,
+  LocationType,
 } from '@otp/domain';
 import type { StructuredSpecs } from '../interfaces/requirement-parser-service';
 
@@ -345,19 +346,26 @@ export interface BuyerAddressEntity {
   profileId?: string;
   organizationId?: string;
   label: string;
+  locationType?: LocationType;
+  recipientName?: string;
   line1: string;
   line2?: string;
+  locality?: string;
   landmark?: string;
   city: string;
+  district?: string;
   state: string;
   stateCode?: string;
   pincode: string;
   country: string;
+  latitude?: number;
+  longitude?: number;
   contactPerson?: string;
   contactPhone?: string;
   isPrimary: boolean;
   addressType: 'DELIVERY' | 'BILLING' | 'BOTH' | 'REGISTERED' | 'SITE';
   isActive: boolean;
+  gstinStateCode?: string;
   createdAt: string;
   updatedAt: string;
 }

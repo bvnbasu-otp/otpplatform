@@ -230,17 +230,21 @@ export class CanonicalTaxonomyService {
 
     this.nodes.set(newNode.code, newNode);
 
-    await auditLog(this.audit, actor, {
-      action: 'TAXONOMY_NODE_CREATED',
-      entityType: 'taxonomy_node',
-      entityId: newNode.code,
-      details: {
+    await auditLog(
+      this.audit,
+      actor,
+      'taxonomy_node',
+      newNode.code,
+      'TAXONOMY_NODE_CREATED',
+      null,
+      null,
+      {
         code: newNode.code,
         name: newNode.name,
         categoryCode: newNode.categoryCode,
         buyerContexts: newNode.buyerContexts,
       },
-    });
+    );
 
     return { ...newNode };
   }
@@ -266,12 +270,16 @@ export class CanonicalTaxonomyService {
 
     this.nodes.set(code, updated);
 
-    await auditLog(this.audit, actor, {
-      action: 'TAXONOMY_NODE_UPDATED',
-      entityType: 'taxonomy_node',
-      entityId: code,
-      details: { updates },
-    });
+    await auditLog(
+      this.audit,
+      actor,
+      'taxonomy_node',
+      code,
+      'TAXONOMY_NODE_UPDATED',
+      null,
+      null,
+      { updates },
+    );
 
     return { ...updated };
   }
@@ -299,12 +307,16 @@ export class CanonicalTaxonomyService {
 
     this.nodes.set(code, updated);
 
-    await auditLog(this.audit, actor, {
-      action: 'TAXONOMY_NODE_DEPRECATED',
-      entityType: 'taxonomy_node',
-      entityId: code,
-      details: { deprecatedInFavorOf },
-    });
+    await auditLog(
+      this.audit,
+      actor,
+      'taxonomy_node',
+      code,
+      'TAXONOMY_NODE_DEPRECATED',
+      null,
+      null,
+      { deprecatedInFavorOf },
+    );
 
     return { ...updated };
   }
@@ -346,16 +358,20 @@ export class CanonicalTaxonomyService {
     this.nodes.set(targetCode, updatedTarget);
     this.nodes.set(sourceCode, updatedSource);
 
-    await auditLog(this.audit, actor, {
-      action: 'TAXONOMY_NODES_MERGED',
-      entityType: 'taxonomy_node',
-      entityId: sourceCode,
-      details: {
+    await auditLog(
+      this.audit,
+      actor,
+      'taxonomy_node',
+      sourceCode,
+      'TAXONOMY_NODES_MERGED',
+      null,
+      null,
+      {
         sourceCode,
         targetCode,
         targetId: target.id,
       },
-    });
+    );
 
     return { ...updatedTarget };
   }
@@ -424,12 +440,16 @@ export class CanonicalTaxonomyService {
 
     this.unclassifiedQueue.set(id, updated);
 
-    await auditLog(this.audit, actor, {
-      action: 'UNCLASSIFIED_REQUIREMENT_TRIAGED',
-      entityType: 'unclassified_requirement',
-      entityId: id,
-      details: { action, ...options },
-    });
+    await auditLog(
+      this.audit,
+      actor,
+      'unclassified_requirement',
+      id,
+      'UNCLASSIFIED_REQUIREMENT_TRIAGED',
+      null,
+      null,
+      { action, ...options },
+    );
 
     return { ...updated };
   }

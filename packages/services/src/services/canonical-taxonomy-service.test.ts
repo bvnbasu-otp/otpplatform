@@ -30,7 +30,7 @@ describe('CanonicalTaxonomyService', () => {
   };
 
   beforeEach(() => {
-    const repos = InMemoryRepositories.create();
+    const repos = InMemoryRepositories.create().asRepositories();
     audit = new AuditAppService(new InMemoryAuditService());
     service = new CanonicalTaxonomyService(repos, audit);
   });
@@ -206,6 +206,7 @@ describe('CanonicalTaxonomyService', () => {
         rawIntent: 'Looking for industrial boiler refractory brick lining repairs',
         buyerContext: CanonicalBuyerContext.MSME,
         city: 'Coimbatore',
+        suggestedKeywords: ['boiler', 'refractory', 'lining'],
       });
 
       const triaged = await service.triageUnclassifiedRequirement(
