@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { MarketIntelligenceSummary } from '@otp/domain';
+import { CURATED_CPWD_BIS_BENCHMARKS } from '@otp/domain';
 import { getPilotByRfqId } from '@/lib/pilots';
 
 interface BaselineRow {
@@ -71,11 +72,11 @@ function mapBaseline(row: BaselineRow): MarketIntelligenceSummary {
       row.supplier_performance_avg != null ? Number(row.supplier_performance_avg) : null,
     sampleSize: row.sample_size,
     sourceType: 'STATIC_REFERENCE',
-    sourceProviderName: 'OTP Curated Cluster Baselines',
+    sourceProviderName: 'OTP Curated Reference Baselines (CPWD/BIS)',
     freshnessStatus: 'AGING',
     confidenceLevel: 'MEDIUM',
     confidenceScore: 65,
-    confidenceMethodology: `Audited regional baseline from ${row.sample_size} transacted contracts.`,
+    confidenceMethodology: `Audited CPWD/BIS reference baseline from ${row.sample_size} records.`,
   };
 }
 
@@ -161,12 +162,11 @@ export async function fetchMarketIntelligence(
 
   const { data: rfqRow } = await supabase
     .from('rfqs')
-    .select('id, requirement_id')
+    .select('id, requirement_id, title')
     .eq('id', rfqId)
     .maybeSingle();
 
-  let reqTitle = '';
-  let reqBudget: number | null = null;
+  let reqTitle = rfqRow?.title || '';
   let reqCity = '';
 
   if (!intelligence && rfqRow?.requirement_id) {
@@ -177,8 +177,7 @@ export async function fetchMarketIntelligence(
       .maybeSingle();
 
     if (requirementRow) {
-      reqTitle = requirementRow.title || '';
-      reqBudget = requirementRow.budget_amount ? Number(requirementRow.budget_amount) : null;
+      reqTitle = requirementRow.title || reqTitle;
       reqCity = (requirementRow.location as { city?: string })?.city || '';
 
       const snapshot = requirementRow.market_intel_snapshot as SnapshotShape | null;
@@ -197,58 +196,101 @@ export async function fetchMarketIntelligence(
       const lower = reqTitle.toLowerCase();
       if (lower.includes('cctv') || lower.includes('camera') || lower.includes('surveillance') || lower.includes('security')) {
         key = 'cctv_surveillance';
-      } else if (lower.includes('pump') || lower.includes('borewell') || lower.includes('motor')) {
+      } else if (lower.includes('pump') || lower.includes('borewell') || lower.includes('submersible') || lower.includes('motor')) {
         key = 'water_borewell_submersible_pump';
-      } else if (lower.includes('sofa') || lower.includes('furniture') || lower.includes('chair')) {
-        key = 'furniture_fixtures';
-      } else if (lower.includes('yarn') || lower.includes('cotton') || lower.includes('fabric') || lower.includes('textile')) {
-        key = 'cotton_yarn';
-      } else if (lower.includes('panel') || lower.includes('electrical') || lower.includes('switchgear')) {
-        key = 'switchgear_panels';
+      } else if (lower.includes('sofa') || lower.includes('furniture') || lower.includes('chair') || lower.includes('workstation')) {
+        key = 'modular_office_furniture';
+      } else if (lower.includes('genset') || lower.includes('generator') || lower.includes('dg')) {
+        key = 'dg_genset_silent';
+      } else if (lower.includes('solar') || lower.includes('rooftop')) {
+        key = 'rooftop_solar_epc';
+      } else if (lower.includes('purifier') || lower.includes('ro plant') || lower.includes('water treatment')) {
+        key = 'commercial_ro_water_purifier';
+      } else if (lower.includes('fire') || lower.includes('hydrant') || lower.includes('extinguisher')) {
+        key = 'fire_safety_hydrant_extinguisher';
+      } else if (lower.includes('lighting') || lower.includes('street light') || lower.includes('led')) {
+        key = 'led_commercial_street_lighting';
+      } else if (lower.includes('elevator') || lower.includes('lift')) {
+        key = 'elevator_amc_modernization';
+      } else if (lower.includes('paint') || lower.includes('waterproofing')) {
+        key = 'paints_waterproofing_civil';
       } else {
         key = 'general_procurement';
       }
     }
 
-    const { data: baseline } = await supabase
-      .from('market_intelligence_baselines')
-      .select(
-        'category_key, location_city, historical_price_min, historical_price_max, typical_delivery_days_min, typical_delivery_days_max, typical_warranty_months_min, typical_warranty_months_max, supplier_performance_avg, sample_size',
-      )
-      .eq('category_key', key)
-      .order('location_city', { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle();
+    // Try database baseline table
+    try {
+      const { data: baseline } = await supabase
+        .from('market_intelligence_baselines')
+        .select(
+          'category_key, location_city, historical_price_min, historical_price_max, typical_delivery_days_min, typical_delivery_days_max, typical_warranty_months_min, typical_warranty_months_max, supplier_performance_avg, sample_size',
+        )
+        .eq('category_key', key)
+        .order('location_city', { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (baseline) {
-      intelligence = mapBaseline(baseline as BaselineRow);
-      intelligence.matchedKey = key;
-      intelligence.matchedScope = 'category';
-    } else {
-      // Dynamic baseline derived from requirement specs (statistical estimate)
-      const basePrice = reqBudget && reqBudget > 0 ? reqBudget : 25000;
-      intelligence = {
-        categoryKey: key,
-        locationCity: reqCity || 'Regional Market',
-        historicalPriceMin: Math.round(basePrice * 0.8),
-        historicalPriceMax: Math.round(basePrice * 1.15),
-        typicalDeliveryDaysMin: 2,
-        typicalDeliveryDaysMax: 6,
-        typicalWarrantyMonthsMin: 12,
-        typicalWarrantyMonthsMax: 36,
-        supplierPerformanceAvg: 95.8,
-        sampleSize: 620 + reqTitle.length * 15,
-        matchedKey: key,
-        matchedScope: 'category',
-        sourceType: 'ESTIMATED_STATISTICAL',
-        sourceProviderName: 'OTP Requirement Spec Synthesizer',
-        freshnessStatus: 'AGING',
-        confidenceLevel: 'MEDIUM',
-        confidenceScore: 50,
-        confidenceMethodology: 'Statistical baseline derived from requirement specifications and budget parameters.',
-        isFallback: true,
-        fallbackReason: 'Direct cluster data not indexed for exact sub-code; using statistical category synthesis.',
-      };
+      if (baseline) {
+        intelligence = mapBaseline(baseline as BaselineRow);
+        intelligence.matchedKey = key;
+        intelligence.matchedScope = 'category';
+      }
+    } catch {
+      // Graceful fallback to static reference catalog
+    }
+
+    // Curated CPWD / BIS reference catalog fallback
+    if (!intelligence) {
+      const curated = CURATED_CPWD_BIS_BENCHMARKS[key];
+      if (curated) {
+        intelligence = {
+          categoryKey: curated.categoryKey,
+          locationCity: reqCity || 'National Baseline',
+          historicalPriceMin: curated.fairPriceMin,
+          historicalPriceMax: curated.fairPriceMax,
+          typicalDeliveryDaysMin: curated.typicalDeliveryDaysMin,
+          typicalDeliveryDaysMax: curated.typicalDeliveryDaysMax,
+          typicalWarrantyMonthsMin: curated.typicalWarrantyMonthsMin,
+          typicalWarrantyMonthsMax: curated.typicalWarrantyMonthsMax,
+          supplierPerformanceAvg: curated.networkReliabilityScore,
+          sampleSize: curated.sampleSize,
+          matchedKey: curated.categoryKey,
+          matchedScope: 'category',
+          sourceType: 'STATIC_REFERENCE',
+          sourceProviderName: 'OTP Curated Reference Baselines (CPWD/BIS)',
+          freshnessStatus: 'AGING',
+          confidenceLevel: 'MEDIUM',
+          confidenceScore: 65,
+          confidenceMethodology: `Curated Indian Standard (${curated.applicableStandard}) from ${curated.sampleSize} benchmark records.`,
+          isFallback: true,
+          fallbackReason: 'Direct live API unconfigured; using curated CPWD/BIS reference benchmark.',
+        };
+      } else {
+        // Honest UNAVAILABLE fallback — never fabricate random numbers
+        intelligence = {
+          categoryKey: key,
+          locationCity: reqCity || null,
+          historicalPriceMin: null,
+          historicalPriceMax: null,
+          typicalDeliveryDaysMin: null,
+          typicalDeliveryDaysMax: null,
+          typicalWarrantyMonthsMin: null,
+          typicalWarrantyMonthsMax: null,
+          supplierPerformanceAvg: null,
+          sampleSize: 0,
+          matchedKey: key,
+          matchedScope: 'category',
+          sourceType: 'UNAVAILABLE',
+          sourceProviderName: 'NONE',
+          freshnessStatus: 'UNAVAILABLE',
+          confidenceLevel: 'INSUFFICIENT_DATA',
+          confidenceScore: 0,
+          confidenceMethodology: 'Market intelligence data is currently unavailable for this category/geography.',
+          isFallback: true,
+          fallbackReason: 'No live provider or reference baseline exists for this category code.',
+        };
+      }
     }
   }
 
@@ -259,29 +301,33 @@ export async function fetchMarketIntelligence(
     };
   }
 
-  // Calculate live quote range from active quotes
-  const { data: quoteRows } = await supabase
-    .from('quotes')
-    .select('id')
-    .eq('rfq_id', rfqId)
-    .in('status', ['SUBMITTED', 'FINAL', 'SELECTED']);
+  // Calculate live quote range from active quotes (non-destructive context)
+  try {
+    const { data: quoteRows } = await supabase
+      .from('quotes')
+      .select('id')
+      .eq('rfq_id', rfqId)
+      .in('status', ['SUBMITTED', 'FINAL', 'SELECTED']);
 
-  const quoteIds = (quoteRows ?? []).map((q) => q.id);
-  if (quoteIds.length > 0) {
-    const { data: versions } = await supabase
-      .from('quote_versions')
-      .select('snapshot')
-      .in('quote_id', quoteIds);
+    const quoteIds = (quoteRows ?? []).map((q) => q.id);
+    if (quoteIds.length > 0) {
+      const { data: versions } = await supabase
+        .from('quote_versions')
+        .select('snapshot')
+        .in('quote_id', quoteIds);
 
-    const totals = (versions ?? [])
-      .map((v) => (v.snapshot as { totalCost?: number })?.totalCost)
-      .filter((t): t is number => t != null)
-      .map(Number);
+      const totals = (versions ?? [])
+        .map((v) => (v.snapshot as { totalCost?: number })?.totalCost)
+        .filter((t): t is number => t != null)
+        .map(Number);
 
-    if (totals.length > 0) {
-      intelligence.currentQuoteRangeMin = Math.min(...totals);
-      intelligence.currentQuoteRangeMax = Math.max(...totals);
+      if (totals.length > 0) {
+        intelligence.currentQuoteRangeMin = Math.min(...totals);
+        intelligence.currentQuoteRangeMax = Math.max(...totals);
+      }
     }
+  } catch {
+    // Non-blocking quote spread calculation
   }
 
   return { ok: true, intelligence };

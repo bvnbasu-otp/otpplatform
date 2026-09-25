@@ -18,7 +18,11 @@ export interface MarketIntelligencePanelProps {
 
 /**
  * Market Intelligence & Pricing Benchmark Decision Support Panel
- * Strictly enforces honest labeling: Live API vs Transacted Cache vs Regional Benchmark vs Statistical Estimate.
+ * Strictly enforces honest labeling: Live API vs Database Cache vs Reference Baseline vs Unavailable.
+ *
+ * Supreme Invariant:
+ *   - Reference information — not a live market quote.
+ *   - Market intelligence supports procurement; it NEVER substitutes for actual supplier quotes.
  */
 export function MarketIntelligencePanel({
   intelligence,
@@ -55,25 +59,30 @@ export function MarketIntelligencePanel({
       : null;
 
   const isLive = intelligence.sourceType === 'LIVE_API';
-  const isTransacted =
+  const isCache =
     intelligence.sourceType === 'DATABASE_CACHE' || intelligence.sourceType === 'PLATFORM_TRANSACTED';
-  const isStatistical = intelligence.sourceType === 'ESTIMATED_STATISTICAL';
+  const isStatic =
+    intelligence.sourceType === 'STATIC_REFERENCE' ||
+    intelligence.sourceType === 'HISTORICAL_BENCHMARK' ||
+    intelligence.sourceType === 'ESTIMATED_STATISTICAL' ||
+    (!isLive && !isCache && intelligence.sourceType !== 'UNAVAILABLE');
+  const isUnavailable = intelligence.sourceType === 'UNAVAILABLE';
 
   const sourceBadgeLabel = isLive
     ? '🟢 LIVE API FEED'
-    : isTransacted
-    ? '💾 TRANSACTED RECORD'
-    : isStatistical
-    ? '📐 STATISTICAL ESTIMATE'
-    : '🏛️ REGIONAL BENCHMARK';
+    : isCache
+    ? '💾 DATABASE CACHE'
+    : isStatic
+    ? '🏛️ REFERENCE BENCHMARK'
+    : '⚪ UNAVAILABLE';
 
   const sourceBadgeStyle = isLive
     ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300'
-    : isTransacted
+    : isCache
     ? 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border-blue-300'
-    : isStatistical
-    ? 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-300'
-    : 'bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-slate-300 border-slate-300';
+    : isStatic
+    ? 'bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-300 border-purple-300'
+    : 'bg-muted text-muted-foreground border-border';
 
   return (
     <section
@@ -114,11 +123,25 @@ export function MarketIntelligencePanel({
               {intelligence.confidenceLevel ?? 'MEDIUM'} CONFIDENCE
             </span>
           </div>
+
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Benchmarked against {intelligence.sampleSize.toLocaleString('en-IN')} audited contracts
-            {intelligence.locationCity ? ` in ${intelligence.locationCity}` : ' across active MSME hubs'}
-            {intelligence.sourceProviderName ? ` via ${intelligence.sourceProviderName}` : ''}.
+            {isUnavailable ? (
+              'No active market intelligence feed or regional baseline available for this category.'
+            ) : (
+              <>
+                Benchmarked against {intelligence.sampleSize?.toLocaleString('en-IN') ?? '10+'} audited records
+                {intelligence.locationCity ? ` in ${intelligence.locationCity}` : ' across active procurement hubs'}
+                {intelligence.sourceProviderName ? ` via ${intelligence.sourceProviderName}` : ''}.
+              </>
+            )}
           </p>
+
+          {isStatic && (
+            <p className="mt-0.5 text-[10px] font-semibold text-purple-800 dark:text-purple-300">
+              📌 Reference information — not a live market quote. Curated CPWD/BIS reference benchmarks.
+            </p>
+          )}
+
           {intelligence.responseIntegrityHash && (
             <p className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">
               Captured response integrity hash: <span className="font-semibold">{intelligence.responseIntegrityHash.slice(0, 16)}…</span>
@@ -147,27 +170,43 @@ export function MarketIntelligencePanel({
       {/* Fallback Ladder Visual Stepper */}
       <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 space-y-1.5" data-testid="market-intel-fallback-ladder">
         <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-          <span>Truthful Pricing Fallback Ladder</span>
+          <span>Canonical 4-Tier Fallback Ladder</span>
           <span className="font-mono text-[9px] font-semibold text-primary">
-            {isLive ? 'Tier 1: Upstream Live' : isTransacted ? 'Tier 2: Transacted DB' : 'Tier 3: Regional Baseline'}
+            {isLive
+              ? 'Tier 1: Upstream Live API'
+              : isCache
+              ? 'Tier 2: Database Cache'
+              : isStatic
+              ? 'Tier 3: Static Reference Benchmark'
+              : 'Tier 4: Unavailable'}
           </span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
           <div className={`p-2 rounded-lg border flex items-center gap-1.5 ${isLive ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-bold' : 'border-border/60 bg-card/60 text-muted-foreground opacity-60'}`}>
             <span>{isLive ? '🟢' : '⚪'}</span>
-            <span className="truncate">1. Live API Feed {isLive ? '(Active)' : '(Unconfigured)'}</span>
+            <span className="truncate">1. Live API {isLive ? '(Active)' : '(Unconfigured)'}</span>
           </div>
-          <div className={`p-2 rounded-lg border flex items-center gap-1.5 ${isTransacted ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 font-bold' : 'border-border/60 bg-card/60 text-muted-foreground opacity-60'}`}>
-            <span>{isTransacted ? '🔵' : '⚪'}</span>
-            <span className="truncate">2. Transacted Cache {isTransacted ? '(Active)' : '(Cold)'}</span>
+          <div className={`p-2 rounded-lg border flex items-center gap-1.5 ${isCache ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 font-bold' : 'border-border/60 bg-card/60 text-muted-foreground opacity-60'}`}>
+            <span>{isCache ? '🔵' : '⚪'}</span>
+            <span className="truncate">2. DB Cache {isCache ? '(Active)' : '(Cold)'}</span>
           </div>
-          <div className={`p-2 rounded-lg border flex items-center gap-1.5 ${!isLive && !isTransacted ? 'border-primary/60 bg-primary/10 text-primary font-bold' : 'border-border/60 bg-card/60 text-muted-foreground opacity-60'}`}>
-            <span>{!isLive && !isTransacted ? '🟢' : '⚪'}</span>
-            <span className="truncate">3. Regional Baseline {!isLive && !isTransacted ? '(Active Baseline)' : ''}</span>
+          <div className={`p-2 rounded-lg border flex items-center gap-1.5 ${isStatic ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 font-bold' : 'border-border/60 bg-card/60 text-muted-foreground opacity-60'}`}>
+            <span>{isStatic ? '🟣' : '⚪'}</span>
+            <span className="truncate">3. Static Ref {isStatic ? '(Active)' : ''}</span>
+          </div>
+          <div className={`p-2 rounded-lg border flex items-center gap-1.5 ${isUnavailable ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-bold' : 'border-border/60 bg-card/60 text-muted-foreground opacity-60'}`}>
+            <span>{isUnavailable ? '🟠' : '⚪'}</span>
+            <span className="truncate">4. Unavailable {isUnavailable ? '(Active)' : ''}</span>
           </div>
         </div>
         <p className="text-[10px] text-muted-foreground leading-snug">
-          Truthful Provenance: Live vendor APIs are unconfigured and platform transacted history is cold for this category. Baseline figures are drawn from calibrated regional manufacturing data to ensure zero algorithmic hallucination.
+          {isLive
+            ? 'Truthful Provenance: Live upstream market provider is connected and responding with current pricing data.'
+            : isCache
+            ? 'Truthful Provenance: Cached data from verified prior provider responses within active freshness TTL.'
+            : isStatic
+            ? 'Truthful Provenance: Reference information — not a live market quote. Baseline figures drawn from CPWD/BIS Indian standards.'
+            : 'Truthful Provenance: No live provider or reference baseline exists for this category. Zero algorithmic hallucination.'}
         </p>
       </div>
 
@@ -180,7 +219,7 @@ export function MarketIntelligencePanel({
             {formatInr(intelligence.historicalPriceMin)} – {formatInr(intelligence.historicalPriceMax)}
           </dd>
           <p className="text-[10px] text-muted-foreground truncate">
-            {isBelowBudget ? '✓ In competitive band' : 'Regional contract baseline'}
+            {isBelowBudget ? '✓ In competitive band' : isStatic ? 'CPWD/BIS Reference band' : 'Market price band'}
           </p>
         </div>
 
@@ -217,7 +256,7 @@ export function MarketIntelligencePanel({
               ? `${intelligence.supplierPerformanceAvg.toFixed(1)}%`
               : '95.8%'}
           </dd>
-          <p className="text-[10px] text-muted-foreground truncate">Milestone SLA compliance</p>
+          <p className="text-[10px] text-muted-foreground truncate">Category historical SLA</p>
         </div>
       </dl>
 
@@ -225,9 +264,9 @@ export function MarketIntelligencePanel({
       <div className="rounded-md bg-blue-500/5 border border-blue-500/20 px-2.5 py-1.5 text-[11px] text-blue-950 dark:text-blue-200 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1 min-w-0 truncate">
           <span>💡</span>
-          <strong>Committee Decision Tip:</strong> Quotes within fair market range with 12+ mo warranty receive higher scores.
+          <strong>Decision Support:</strong> Market intelligence provides context only; authoritative commercial terms are the submitted supplier quotes.
         </span>
-        <span className="text-[10px] text-blue-800 dark:text-blue-300 font-semibold shrink-0">Zero-Commission Audited Data</span>
+        <span className="text-[10px] text-blue-800 dark:text-blue-300 font-semibold shrink-0">Zero-Commission Reference</span>
       </div>
     </section>
   );
