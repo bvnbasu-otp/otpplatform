@@ -421,6 +421,7 @@ export interface EngineDiscoveryRequest {
   excludedSupplierIds?: string[];
   enabledProviders?: SupplierNetwork[];
   timeoutMs?: number;
+  forceRefresh?: boolean;
 }
 
 export interface EngineDiscoveryResponse {
@@ -430,6 +431,8 @@ export interface EngineDiscoveryResponse {
   totalUniqueCandidates: number;
   durationMs: number;
   hasPartialFailures: boolean;
+  isCached?: boolean;
+  cacheAgeDays?: number;
 }
 
 /** Forbidden PII field names that must NEVER appear on candidate payloads */

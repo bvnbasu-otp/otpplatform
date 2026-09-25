@@ -153,3 +153,122 @@ export class CapabilityEvidenceEvaluator {
     };
   }
 }
+
+/**
+ * Recognized Indian Statutory & Technical Standards.
+ */
+export const IndianStandardType = {
+  BIS: 'BIS', // Bureau of Indian Standards (ISI Mark / IS specifications)
+  CPWD: 'CPWD', // Central Public Works Department Enlistment
+  FSSAI: 'FSSAI', // Food Safety and Standards Authority of India
+  BEE: 'BEE', // Bureau of Energy Efficiency Star Rating
+  ISO: 'ISO', // ISO Quality / Environmental / Safety Certifications
+  OTHER: 'OTHER',
+} as const;
+
+export type IndianStandardType =
+  (typeof IndianStandardType)[keyof typeof IndianStandardType];
+
+export const IndianStandardVerificationStatus = {
+  SELF_DECLARED_CLAIM: 'SELF_DECLARED_CLAIM',
+  INDEPENDENTLY_VERIFIED: 'INDEPENDENTLY_VERIFIED',
+  INVALID_CLAIM: 'INVALID_CLAIM',
+  NOT_APPLICABLE: 'NOT_APPLICABLE',
+} as const;
+
+export type IndianStandardVerificationStatus =
+  (typeof IndianStandardVerificationStatus)[keyof typeof IndianStandardVerificationStatus];
+
+export interface IndianStandardClaimInput {
+  standardType: IndianStandardType;
+  claimText?: string;
+  certificateNumber?: string | null;
+  validUntil?: string | null;
+  isIndependentlyVerified?: boolean;
+  gstin?: string | null;
+}
+
+export interface IndianStandardEvaluationResult {
+  standardType: IndianStandardType;
+  status: IndianStandardVerificationStatus;
+  isCertified: boolean;
+  badgeLabel: string;
+  confidenceScoreContribution: number; // 0 to 10
+  advisory: string;
+}
+
+/**
+ * Indian Standards Classification Intelligence & Anti-Masquerading Engine.
+ *
+ * STRICT INVARIANTS:
+ * 1. Zero tolerance for unverified "Certified" claims.
+ * 2. Self-declared standards (BIS, CPWD, FSSAI, BEE) are explicitly marked as SELF_DECLARED_CLAIM.
+ * 3. Never grant unearned certified badges or merit score boosts without independent verification.
+ */
+export class IndianStandardsClassifier {
+  public static evaluateStandardClaim(
+    input: IndianStandardClaimInput,
+  ): IndianStandardEvaluationResult {
+    const isVerified = Boolean(
+      input.isIndependentlyVerified &&
+      input.certificateNumber &&
+      input.certificateNumber.trim().length >= 4
+    );
+
+    if (isVerified) {
+      return {
+        standardType: input.standardType,
+        status: IndianStandardVerificationStatus.INDEPENDENTLY_VERIFIED,
+        isCertified: true,
+        badgeLabel: `Verified ${input.standardType} Compliance`,
+        confidenceScoreContribution: 10,
+        advisory: `Independently verified ${input.standardType} accreditation (${input.certificateNumber})`,
+      };
+    }
+
+    // Unverified claim: Classified as Self-Declared
+    return {
+      standardType: input.standardType,
+      status: IndianStandardVerificationStatus.SELF_DECLARED_CLAIM,
+      isCertified: false,
+      badgeLabel: `Self-Declared ${input.standardType} Claim`,
+      confidenceScoreContribution: 0,
+      advisory: `Self-declared ${input.standardType} claim — independent certificate verification required before reveal/PO issuance`,
+    };
+  }
+
+  /**
+   * Scans text for Indian standard mentions and evaluates evidence.
+   */
+  public static scanAndClassifyStandards(
+    text: string,
+    verifiedCertificates: { standardType: IndianStandardType; certificateNumber: string }[] = [],
+  ): IndianStandardEvaluationResult[] {
+    const lower = text.toLowerCase();
+    const results: IndianStandardEvaluationResult[] = [];
+
+    const standardDetectors: { type: IndianStandardType; regex: RegExp }[] = [
+      { type: IndianStandardType.BIS, regex: /\b(bis|isi|is\s*\d+|is:\d+|is\s*694|is\s*1554)\b/i },
+      { type: IndianStandardType.CPWD, regex: /\b(cpwd|pwd|mes|central\s*public\s*works)\b/i },
+      { type: IndianStandardType.FSSAI, regex: /\b(fssai|food\s*safety|fssai\s*license)\b/i },
+      { type: IndianStandardType.BEE, regex: /\b(bee|star\s*rating|energy\s*star|\d\s*star\s*rating)\b/i },
+      { type: IndianStandardType.ISO, regex: /\b(iso\s*9001|iso\s*14001|iso\s*45001|iso\s*certified)\b/i },
+    ];
+
+    for (const detector of standardDetectors) {
+      if (detector.regex.test(lower)) {
+        const matchingCert = verifiedCertificates.find((c) => c.standardType === detector.type);
+        results.push(
+          IndianStandardsClassifier.evaluateStandardClaim({
+            standardType: detector.type,
+            claimText: text,
+            certificateNumber: matchingCert?.certificateNumber,
+            isIndependentlyVerified: Boolean(matchingCert),
+          }),
+        );
+      }
+    }
+
+    return results;
+  }
+}

@@ -31,6 +31,21 @@ export type SupplierStatus =
   (typeof SupplierStatus)[keyof typeof SupplierStatus];
 
 /**
+ * Truthful 5-Tier Sourcing Lifecycle:
+ * DISCOVERED_IN_AREA -> DETAILS_AVAILABLE -> OTP_REGISTERED -> OTP_VERIFIED -> GST_VERIFIED
+ */
+export const SupplierDiscoveryLifecycleTier = {
+  DISCOVERED_IN_AREA: 'DISCOVERED_IN_AREA',
+  DETAILS_AVAILABLE: 'DETAILS_AVAILABLE',
+  OTP_REGISTERED: 'OTP_REGISTERED',
+  OTP_VERIFIED: 'OTP_VERIFIED',
+  GST_VERIFIED: 'GST_VERIFIED',
+} as const;
+
+export type SupplierDiscoveryLifecycleTier =
+  (typeof SupplierDiscoveryLifecycleTier)[keyof typeof SupplierDiscoveryLifecycleTier];
+
+/**
  * Canonical 2-Stage Supplier Lifecycle States:
  * Stage 1: Quote Participant (identity-protected competitive quoting)
  * Stage 2: Awarded -> Onboarding & Truthful Verification -> Verified OTP Supplier

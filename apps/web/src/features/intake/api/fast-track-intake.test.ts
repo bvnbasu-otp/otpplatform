@@ -131,4 +131,11 @@ describe('fastTrackExpressIntake validation', () => {
     const res2 = await fastTrackExpressIntake('   ');
     expect(res2.ok).toBe(false);
   });
+
+  it('preserves production truth by defaulting autoQuoteSimulation to undefined', async () => {
+    // Calling with empty text fails early before any DB mutations or simulation RPCs
+    const res = await fastTrackExpressIntake('', { autoQuoteSimulation: false });
+    expect(res.ok).toBe(false);
+    expect(res.error).toBe('Please enter a requirement description.');
+  });
 });

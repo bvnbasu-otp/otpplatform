@@ -14,11 +14,17 @@
 export interface GoogleGisQuotaLimits {
   readonly maxDaily: number;
   readonly maxMonthly: number;
+  readonly emergencyReserve?: number;
+  readonly buyerDemandReserve?: number;
 }
+
+export type QuotaRequestPriority = 'BACKGROUND' | 'BUYER_DEMAND' | 'EMERGENCY';
 
 export const DEFAULT_GOOGLE_GIS_LIMITS: GoogleGisQuotaLimits = {
   maxDaily: 1500,
   maxMonthly: 50000,
+  emergencyReserve: 200,
+  buyerDemandReserve: 300,
 } as const;
 
 export interface GoogleGisQuotaUsage {
@@ -26,11 +32,19 @@ export interface GoogleGisQuotaUsage {
   readonly monthlyCount: number;
   readonly dayKey: string; // YYYY-MM-DD (UTC)
   readonly monthKey: string; // YYYY-MM (UTC)
+  readonly emergencyReserve?: number;
+  readonly buyerDemandReserve?: number;
 }
 
 export interface GoogleGisReservationResult {
   readonly allowed: boolean;
-  readonly reason?: 'DAILY_QUOTA_EXCEEDED' | 'MONTHLY_QUOTA_EXCEEDED' | 'STORE_ERROR' | 'UNCONFIGURED';
+  readonly reason?:
+    | 'DAILY_QUOTA_EXCEEDED'
+    | 'MONTHLY_QUOTA_EXCEEDED'
+    | 'BUYER_RESERVE_DEPLETED'
+    | 'EMERGENCY_RESERVE_DEPLETED'
+    | 'STORE_ERROR'
+    | 'UNCONFIGURED';
   readonly currentUsage: {
     readonly dailyCount: number;
     readonly monthlyCount: number;
@@ -48,7 +62,8 @@ export interface GoogleGisQuotaStore {
   reserveQuota(
     limits: GoogleGisQuotaLimits,
     now?: Date,
-  ): Promise<{ success: boolean; dailyCount: number; monthlyCount: number }>;
+    priority?: QuotaRequestPriority,
+  ): Promise<{ success: boolean; dailyCount: number; monthlyCount: number; reason?: string }>;
 
   /**
    * Get current usage snapshot without incrementing.
@@ -102,18 +117,52 @@ export class InMemoryGoogleGisQuotaStore implements GoogleGisQuotaStore {
   async reserveQuota(
     limits: GoogleGisQuotaLimits,
     now: Date = new Date(),
-  ): Promise<{ success: boolean; dailyCount: number; monthlyCount: number }> {
+    priority: QuotaRequestPriority = 'BACKGROUND',
+  ): Promise<{ success: boolean; dailyCount: number; monthlyCount: number; reason?: string }> {
     // Acquire mutex lock to ensure atomic reservation across asynchronous calls
-    return new Promise<{ success: boolean; dailyCount: number; monthlyCount: number }>((resolve, reject) => {
+    return new Promise<{ success: boolean; dailyCount: number; monthlyCount: number; reason?: string }>((resolve, reject) => {
       this.mutex = this.mutex.then(async () => {
         try {
           this.rollWindows(now);
 
-          if (this.dailyCount >= limits.maxDaily || this.monthlyCount >= limits.maxMonthly) {
+          const emergencyReserve = limits.emergencyReserve ?? (limits.maxDaily >= 1500 ? 200 : 0);
+          const buyerDemandReserve = limits.buyerDemandReserve ?? (limits.maxDaily >= 1500 ? 300 : 0);
+
+          // Priority-based effective daily headroom
+          let effectiveDailyLimit = limits.maxDaily;
+          if (priority === 'BACKGROUND') {
+            effectiveDailyLimit = Math.max(0, limits.maxDaily - emergencyReserve - buyerDemandReserve);
+          } else if (priority === 'BUYER_DEMAND') {
+            effectiveDailyLimit = Math.max(0, limits.maxDaily - emergencyReserve);
+          }
+
+          if (this.monthlyCount >= limits.maxMonthly) {
             resolve({
               success: false,
               dailyCount: this.dailyCount,
               monthlyCount: this.monthlyCount,
+              reason: 'MONTHLY_QUOTA_EXCEEDED',
+            });
+            return;
+          }
+
+          if (this.dailyCount >= limits.maxDaily) {
+            resolve({
+              success: false,
+              dailyCount: this.dailyCount,
+              monthlyCount: this.monthlyCount,
+              reason: 'DAILY_QUOTA_EXCEEDED',
+            });
+            return;
+          }
+
+          if (this.dailyCount >= effectiveDailyLimit) {
+            const reason = priority === 'BACKGROUND' ? 'BUYER_RESERVE_DEPLETED' : 'EMERGENCY_RESERVE_DEPLETED';
+            resolve({
+              success: false,
+              dailyCount: this.dailyCount,
+              monthlyCount: this.monthlyCount,
+              reason,
             });
             return;
           }
@@ -142,6 +191,8 @@ export class InMemoryGoogleGisQuotaStore implements GoogleGisQuotaStore {
           monthlyCount: this.monthlyCount,
           dayKey: this.dayKey,
           monthKey: this.monthKey,
+          emergencyReserve: 200,
+          buyerDemandReserve: 300,
         });
       });
     });
@@ -194,14 +245,22 @@ export class GoogleGisSafetyQuotaGuard {
    * Atomically evaluates and reserves 1 quota unit.
    * Fail-Closed: If store throws or limits are reached, returns allowed: false.
    */
-  async acquireReservation(now: Date = new Date()): Promise<GoogleGisReservationResult> {
+  async acquireReservation(
+    now: Date = new Date(),
+    priority: QuotaRequestPriority = 'BACKGROUND',
+  ): Promise<GoogleGisReservationResult> {
     try {
-      const reservation = await this.store.reserveQuota(this.limits, now);
+      const reservation = await this.store.reserveQuota(this.limits, now, priority);
 
       if (!reservation.success) {
-        const reason = reservation.dailyCount >= this.limits.maxDaily
-          ? 'DAILY_QUOTA_EXCEEDED'
-          : 'MONTHLY_QUOTA_EXCEEDED';
+        let reason: GoogleGisReservationResult['reason'] = 'DAILY_QUOTA_EXCEEDED';
+        if (reservation.reason === 'MONTHLY_QUOTA_EXCEEDED') {
+          reason = 'MONTHLY_QUOTA_EXCEEDED';
+        } else if (reservation.reason === 'BUYER_RESERVE_DEPLETED') {
+          reason = 'BUYER_RESERVE_DEPLETED';
+        } else if (reservation.reason === 'EMERGENCY_RESERVE_DEPLETED') {
+          reason = 'EMERGENCY_RESERVE_DEPLETED';
+        }
 
         return {
           allowed: false,

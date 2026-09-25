@@ -149,8 +149,18 @@ export interface FastTrackIntakeResult {
  * creates the requirement, immediately publishes the RFQ, and triggers
  * the 4 verified supplier quotes in a single automated step.
  */
+export interface FastTrackIntakeOptions {
+  autoQuoteSimulation?: boolean;
+}
+
+/**
+ * Executes the fast-track intake flow.
+ * In production mode, publishes draft, runs discovery, and invites real suppliers.
+ * Synthetic quote generation is strictly firewalled behind explicit demo/pilot test flags.
+ */
 export async function fastTrackExpressIntake(
   queryText: string,
+  options?: FastTrackIntakeOptions,
 ): Promise<FastTrackIntakeResult> {
   const trimmed = queryText.trim();
   if (!trimmed) {
@@ -192,10 +202,12 @@ export async function fastTrackExpressIntake(
     return { ok: false, error: discoverRes.error };
   }
 
-  // 2. Deterministic quote guarantee: ensure pilot quotes exist for immediate evaluation
-  await supabase.rpc('auto_submit_pilot_quotes', {
-    p_rfq_id: publishRes.rfqId,
-  });
+  // 2. Deterministic quote guarantee: ONLY when explicitly requested in demo / pilot walkthroughs
+  if (options?.autoQuoteSimulation) {
+    await supabase.rpc('auto_submit_pilot_quotes', {
+      p_rfq_id: publishRes.rfqId,
+    });
+  }
 
   return {
     ok: true,

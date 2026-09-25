@@ -40,6 +40,11 @@ export interface DispatcherProviderRegistration {
   circuitBreakerCooldownMs?: number;
 }
 
+export interface SourcingDiscoveryCacheOptions {
+  enabled?: boolean;
+  refreshWindowMs?: number; // Configurable refresh window, defaults to 30 days
+}
+
 export interface SupplierNetworkEngineOptions {
   providers?: DispatcherProviderRegistration[];
   locationIntelligence?: LocationIntelligencePort;
@@ -50,6 +55,7 @@ export interface SupplierNetworkEngineOptions {
   defaultRetryBaseDelayMs?: number;
   circuitBreakerThreshold?: number;
   circuitBreakerCooldownMs?: number;
+  cacheOptions?: SourcingDiscoveryCacheOptions;
 }
 
 interface ProviderStats {
@@ -83,6 +89,17 @@ interface ProviderStats {
  * 7. PERFORMANCE & CAPACITY INTELLIGENCE: Cold-start neutrality, bounded headroom ratios,
  *    180-day staleness decay, and closed-loop feedback signals strictly enrich discovery confidence.
  */
+export const DEFAULT_SOURCING_REFRESH_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 Days
+
+interface CachedDiscoveryEntry {
+  category: string;
+  pinCode?: string;
+  candidates: NormalizedSupplierCandidate[];
+  providerSummaries: ProviderExecutionSummary[];
+  cachedAt: number;
+  totalCandidatesDiscovered: number;
+}
+
 export class SupplierNetworkEngine {
   private readonly providers = new Map<SupplierNetwork, DispatcherProviderRegistration>();
   private readonly providerStats = new Map<SupplierNetwork, ProviderStats>();
@@ -94,6 +111,11 @@ export class SupplierNetworkEngine {
   private readonly defaultRetryBaseDelayMs: number;
   private readonly defaultCircuitThreshold: number;
   private readonly defaultCircuitCooldownMs: number;
+  private readonly cacheEnabled: boolean;
+  private readonly cacheRefreshWindowMs: number;
+  private readonly discoveryCache = new Map<string, CachedDiscoveryEntry>();
+  private cacheHits: number = 0;
+  private cacheMisses: number = 0;
 
   constructor(options: SupplierNetworkEngineOptions = {}) {
     this.locationIntelligence =
@@ -105,6 +127,9 @@ export class SupplierNetworkEngine {
     this.defaultRetryBaseDelayMs = options.defaultRetryBaseDelayMs ?? 50;
     this.defaultCircuitThreshold = options.circuitBreakerThreshold ?? 3;
     this.defaultCircuitCooldownMs = options.circuitBreakerCooldownMs ?? 10000;
+    this.cacheEnabled = options.cacheOptions?.enabled ?? true;
+    this.cacheRefreshWindowMs =
+      options.cacheOptions?.refreshWindowMs ?? DEFAULT_SOURCING_REFRESH_WINDOW_MS;
 
     if (options.providers) {
       for (const reg of options.providers) {
@@ -231,13 +256,89 @@ export class SupplierNetworkEngine {
   }
 
   /**
+   * Generates a cache key for discovery requests by category and geographic location/pincode.
+   */
+  private getCacheKey(request: EngineDiscoveryRequest): string {
+    const cat = request.category.toLowerCase().trim();
+    const pin = request.location?.pinCode?.trim() || request.location?.city?.toLowerCase().trim() || 'ALL';
+    return `${cat}::${pin}`;
+  }
+
+  /**
+   * Invalidate discovery cache entries for a category and/or pin code, or clear all.
+   */
+  invalidateDiscoveryCache(category?: string, pinCode?: string): void {
+    if (!category) {
+      this.discoveryCache.clear();
+      return;
+    }
+    const pin = pinCode?.trim() || 'ALL';
+    const key = `${category.toLowerCase().trim()}::${pin}`;
+    this.discoveryCache.delete(key);
+  }
+
+  /**
+   * Get current cache stats for monitoring and telemetry.
+   */
+  getDiscoveryCacheStats(): { size: number; hits: number; misses: number; refreshWindowMs: number } {
+    return {
+      size: this.discoveryCache.size,
+      hits: this.cacheHits,
+      misses: this.cacheMisses,
+      refreshWindowMs: this.cacheRefreshWindowMs,
+    };
+  }
+
+  /**
+   * Interrogate a specific cache entry.
+   */
+  getDiscoveryCacheEntry(category: string, pinCode?: string): CachedDiscoveryEntry | undefined {
+    const pin = pinCode?.trim() || 'ALL';
+    const key = `${category.toLowerCase().trim()}::${pin}`;
+    return this.discoveryCache.get(key);
+  }
+
+  /**
    * Main Orchestration Entry Point: Dispatches discovery requests across all
    * eligible provider adapters with timeout containment, normalization,
    * GIS distance intelligence, dynamic confidence scoring, anti-leak enforcement,
-   * SN.3 canonical identity resolution, and multi-provider deduplication.
+   * SN.3 canonical identity resolution, multi-provider deduplication, and 30-day cache reuse.
    */
   async discoverCandidates(request: EngineDiscoveryRequest): Promise<EngineDiscoveryResponse> {
     const startTime = Date.now();
+    const cacheKey = this.getCacheKey(request);
+
+    // 1. Check 30-Day Configurable Cache
+    if (this.cacheEnabled && !request.forceRefresh) {
+      const cached = this.discoveryCache.get(cacheKey);
+      if (cached && (Date.now() - cached.cachedAt) < this.cacheRefreshWindowMs) {
+        this.cacheHits += 1;
+        const cacheAgeDays = Math.round((Date.now() - cached.cachedAt) / (24 * 60 * 60 * 1000) * 10) / 10;
+        
+        // Filter out any excluded supplier IDs
+        const excludedIds = new Set(request.excludedSupplierIds ?? []);
+        const filtered = cached.candidates.filter(
+          (c) => !c.canonicalSupplierId || !excludedIds.has(c.canonicalSupplierId),
+        );
+        const cappedCandidates =
+          request.maxCandidates && request.maxCandidates > 0
+            ? filtered.slice(0, request.maxCandidates)
+            : filtered;
+
+        return {
+          candidates: cappedCandidates,
+          providerSummaries: cached.providerSummaries,
+          totalCandidatesDiscovered: cached.totalCandidatesDiscovered,
+          totalUniqueCandidates: cappedCandidates.length,
+          durationMs: Date.now() - startTime,
+          hasPartialFailures: false,
+          isCached: true,
+          cacheAgeDays,
+        };
+      }
+    }
+
+    this.cacheMisses += 1;
     const enabledNetworks = request.enabledProviders ?? Array.from(this.providers.keys());
     const excludedIds = new Set(request.excludedSupplierIds ?? []);
 
@@ -303,6 +404,18 @@ export class SupplierNetworkEngine {
       assertCandidateAntiLeak(cand);
     }
 
+    // Save into Sourcing Discovery Cache
+    if (this.cacheEnabled) {
+      this.discoveryCache.set(cacheKey, {
+        category: request.category,
+        pinCode: request.location?.pinCode ?? undefined,
+        candidates: normalizedCandidates,
+        providerSummaries,
+        cachedAt: Date.now(),
+        totalCandidatesDiscovered: rawCandidatesWithNetwork.length,
+      });
+    }
+
     const durationMs = Date.now() - startTime;
 
     return {
@@ -312,6 +425,7 @@ export class SupplierNetworkEngine {
       totalUniqueCandidates: cappedCandidates.length,
       durationMs,
       hasPartialFailures,
+      isCached: false,
     };
   }
 
@@ -513,7 +627,7 @@ export class SupplierNetworkEngine {
     const identityInputs = items.map((item, idx) => ({
       item,
       candidateId: `cand-${item.candidate.network}-${idx}-${item.candidate.externalRef || item.candidate.businessName}`,
-      canonicalSupplierId: item.candidate.canonicalSupplierId,
+      canonicalSupplierId: item.candidate.canonicalSupplierId || (item.candidate as any).supplierId,
       pan: item.candidate.pan,
       gstin: item.candidate.gstin,
       externalRef: item.candidate.externalRef,
@@ -578,7 +692,7 @@ export class SupplierNetworkEngine {
 
       // Match Reasons Sanitization (Anti-Leak)
       const sanitizedReasons = sanitizeCandidateMatchReasons([
-        ...raw.matchReasons,
+        ...(raw.matchReasons ?? []),
         distanceResult.isLocal ? 'location_match' : 'regional_coverage',
         raw.capability?.verificationStatus === 'VERIFIED' ? 'verified_active' : 'active_status',
       ]);
