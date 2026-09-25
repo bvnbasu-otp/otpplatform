@@ -542,4 +542,10 @@ describe('Super Admin & Ops Console Data Layer', () => {
     expect(webUi?.description).not.toContain('Phase 3.1');
     expect(webUi?.description).not.toContain('Phase 2.5');
   });
+
+  it('exports ALL_ADMIN_MODULES with canonical business registry descriptors', () => {
+    const orgModule = ALL_ADMIN_MODULES.find((m) => m.key === 'ORGS_SUPPLIERS');
+    expect(orgModule).toBeDefined();
+    expect(orgModule?.description).toContain('business registries');
+  });
 });

@@ -351,7 +351,7 @@ export function BuyerRegisterForm({
         {isMsme && (
           <PortalField
             label="Business Constitution Type"
-            help="Select the statutory legal structure of your enterprise."
+            help="Select the statutory legal structure of your business."
           >
             {({ id, invalid }) => (
               <select

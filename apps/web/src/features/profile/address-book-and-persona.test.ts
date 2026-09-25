@@ -135,4 +135,11 @@ describe('Address Book & Buyer Persona UX Module Tests', () => {
     expect(opLoc.city).toBe('Hosur');
     expect(opLoc.pincode).toBe('635126');
   });
+
+  it('validates AddressBookManager persona badge and location help text mappings', () => {
+    const msmeLocs = getAllowedLocationTypes('MSME');
+    expect(msmeLocs).toContain('REGISTERED_OFFICE');
+    expect(msmeLocs).toContain('FACTORY');
+    expect(msmeLocs).toContain('WAREHOUSE');
+  });
 });

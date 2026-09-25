@@ -264,7 +264,7 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
         title: 'Organizations & Supplier Registry',
         shortTitle: 'Orgs & Suppliers',
         icon: '🏢',
-        description: 'Tenant organizations, verified suppliers, GSTINs & enterprise registries',
+        description: 'Tenant organizations, verified suppliers, GSTINs & business registries',
         categoryKey: 'USERS_ORGS',
         badge: () => 'Registry',
       },

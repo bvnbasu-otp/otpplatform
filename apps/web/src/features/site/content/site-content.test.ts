@@ -505,6 +505,14 @@ describe('GeM analogy & institutional positioning compliance', () => {
     expect(ALL_PROSE).not.toMatch(/official GeM partner/i);
     expect(ALL_PROSE).not.toMatch(/endorsed by the Government/i);
   });
+
+  it('guarantees clean canonical persona audiences for R2-23 baseline', () => {
+    expect(AUDIENCES).toHaveLength(3);
+    const audienceNames = AUDIENCES.map((a) => a.name);
+    expect(audienceNames).toContain('Individual');
+    expect(audienceNames).toContain('MSME');
+    expect(audienceNames).toContain('Community / RWA');
+  });
 });
 
 function numeric(amount: string): number {

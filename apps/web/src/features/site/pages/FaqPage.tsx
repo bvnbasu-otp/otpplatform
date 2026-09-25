@@ -424,7 +424,7 @@ export function FaqPage() {
           <div className="rounded-2xl border bg-gradient-to-r from-primary/10 via-card to-primary/5 p-6 text-center space-y-3">
             <h3 className="text-sm font-bold text-foreground">Have a specific question about your organisation?</h3>
             <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              Our team helps housing societies, MSMEs, and enterprises configure custom governance weights and supplier invitation channels.
+              Our team helps housing societies and MSMEs configure custom governance weights and supplier invitation channels.
             </p>
             <div className="flex items-center justify-center gap-3 pt-1">
               <Link

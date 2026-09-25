@@ -103,7 +103,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                 <div>
                   <h3 className="font-bold text-foreground mb-1 text-xs">{PRODUCT_NAME} ({PRODUCT_FULL_NAME})</h3>
                   <p>
-                    Identity-protected competitive sourcing for anyone who has to show how a purchasing decision was reached — from a single requirement to governed enterprise procurement.
+                    Identity-protected competitive sourcing for anyone who has to show how a purchasing decision was reached — from personal requirements to governed community and business procurement.
                   </p>
                 </div>
 

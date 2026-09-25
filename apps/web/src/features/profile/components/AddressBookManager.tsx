@@ -304,7 +304,7 @@ export function AddressBookManager({
             {persona === 'RWA'
               ? 'Manage society operational sites (Clubhouse, Sump, STP, Gates). Primary site is auto-inherited during requirement intake.'
               : persona === 'MSME'
-              ? 'Manage multi-location enterprise addresses (Registered GST office, factories, warehouses, delivery points).'
+              ? 'Manage multi-location business addresses (Registered GST office, factories, warehouses, delivery points).'
               : 'Your primary address is automatically selected for 1-click intake.'}
           </p>
         </div>

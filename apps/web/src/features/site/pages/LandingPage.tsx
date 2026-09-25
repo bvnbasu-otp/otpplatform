@@ -737,7 +737,7 @@ function FaqSection() {
     },
     {
       q: 'Who can use OTP?',
-      a: 'Individual buyers, MSMEs, Residential Welfare Associations (RWAs), communities, and enterprises looking for fair, verified vendor sourcing without middleman markups.',
+      a: 'Individual buyers, MSMEs, and Residential Welfare Associations (RWAs) looking for fair, verified vendor sourcing without middleman markups.',
     },
     {
       q: 'How does identity protection work?',
@@ -749,7 +749,7 @@ function FaqSection() {
     },
     {
       q: 'How much does OTP cost?',
-      a: 'Buyers get their first RFQ free, with plans starting at ₹149/RFQ or ₹999/month for RWAs/MSMEs. Suppliers join for free and only pay a 0.5% success fee when they win a transaction.',
+      a: 'Buyers enjoy clear prepaid plans starting at ₹199/month for Individuals, ₹1,499/month for RWAs, and ₹1,999/month for MSMEs (3 RFQs/month included). Suppliers join for free and only pay a 0.50% platform fee upon successful settlement.',
     },
     {
       q: 'When does the supplier pay?',

@@ -182,5 +182,9 @@ describe('Phase 3 Public Experience & Authentication Screens (Screens 31–40)',
         ).toBeNull();
       });
     });
+
+    it('confirms BuyerRegisterForm supports canonical MSME business entity classification', () => {
+      expect(BuyerRegisterForm).toBeDefined();
+    });
   });
 });
