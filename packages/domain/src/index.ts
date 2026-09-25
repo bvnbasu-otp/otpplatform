@@ -81,6 +81,7 @@ export * from './types/supplier-lifecycle-tier';
 export * from './types/supplier-network-refresh';
 export * from './types/requirement-intake';
 export * from './types/decision-receipt';
+export * from './types/track-milestone';
 export * from './standards/indian-procurement-standards';
 
 

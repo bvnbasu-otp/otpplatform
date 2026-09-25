@@ -205,6 +205,13 @@ function ActiveRfqMonitoringRoute() {
   return <ActiveRfqMonitoringPage requirementId={requirementId} rfqId={rfqId} />;
 }
 
+function RfqTrackRoute() {
+  const { rfqId } = useParams<{ rfqId: string }>();
+  const sanitized = sanitizeRouteParam(rfqId);
+  if (!sanitized) return <Navigate to="/dashboard" replace />;
+  return <Navigate to={`/purchase-orders?rfqId=${sanitized}`} replace />;
+}
+
 function RequirementRoute() {
   const { requirementId } = useParams<{ requirementId: string }>();
   if (!requirementId) return <Navigate to="/dashboard" replace />;
@@ -371,6 +378,8 @@ export function App() {
             <Route path="/rfq/:rfqId/committee" element={<CommitteeVoteRoute />} />
             <Route path="/rfq/:rfqId/award" element={<AwardRoute />} />
             <Route path="/rfq/:rfqId/reveal" element={<RevealRoute />} />
+            <Route path="/rfq/:rfqId/track" element={<RfqTrackRoute />} />
+            <Route path="/rfqs/:rfqId/track" element={<RfqTrackRoute />} />
             {/* Route Aliases & Redirects for notification links & deep links */}
             <Route path="/rfq/:rfqId" element={<EvaluationDecisionCockpitPage />} />
             <Route path="/rfqs/:rfqId" element={<EvaluationDecisionCockpitPage />} />
@@ -436,6 +445,8 @@ export function App() {
             {/* Orders & Reports, Purchase Orders, Work Orders Aliases & Deep Links */}
             <Route path="/orders-reports" element={<Navigate to="/purchase-orders" replace />} />
             <Route path="/orders" element={<Navigate to="/purchase-orders" replace />} />
+            <Route path="/orders/:poId" element={<BuyerPoDetailRoute />} />
+            <Route path="/track/:poId" element={<BuyerPoDetailRoute />} />
             <Route path="/reports" element={<Navigate to="/purchase-orders?view=reports" replace />} />
             <Route path="/ledger" element={<Navigate to="/purchase-orders?view=orders" replace />} />
             <Route

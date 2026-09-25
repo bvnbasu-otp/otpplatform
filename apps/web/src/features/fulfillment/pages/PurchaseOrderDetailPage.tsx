@@ -25,6 +25,7 @@ import { createWorkOrder, fetchWorkOrderByPo, updateWorkOrderProgress } from '..
 import { DeliveryInspectionPanel } from '../components/DeliveryInspectionPanel';
 import { InvoicePaymentPanel } from '../components/InvoicePaymentPanel';
 import { SupplierMilestoneStepper } from '../components/SupplierMilestoneStepper';
+import { FivePointMilestoneStepper } from '../components/FivePointMilestoneStepper';
 import { PoActionButtons, StatusBadge } from '../components/FulfillmentStatus';
 import { ChangeOrderModal } from '../components/ChangeOrderModal';
 import { ProcurementStageNavigator, type CoreProcurementState } from '@/features/lifecycle';
@@ -875,7 +876,7 @@ export function PurchaseOrderDetailPage({
   return (
     <div className="zero-scroll-container p-2.5 sm:p-4 max-w-2xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] flex flex-col justify-between" data-testid="purchase-order-detail">
       {/* 15-Step Linear Procurement Navigator */}
-      <div className="no-print">
+      <div className="no-print space-y-2">
         <ProcurementStageNavigator
           currentLinearStep={activeLinearStep}
           currentStage={currentStage}
@@ -886,6 +887,22 @@ export function PurchaseOrderDetailPage({
           role={role}
           backToUrl={listPath}
           backToLabel="All Purchase Orders"
+        />
+        {/* Canonical 5-Point Milestone Stepper */}
+        <FivePointMilestoneStepper
+          params={{
+            rfqId: order.rfqId,
+            poId: order.id,
+            poStatus: order.status,
+            supplierAcceptedAt: order.acknowledgedAt || null,
+            workOrderStatus: workOrder?.status || null,
+            workOrderProgressPercent: workOrder?.progressPercent ?? (order.status === 'COMPLETED' ? 100 : 0),
+            inspectionStatus: workOrder?.buyerAcceptedAt ? 'APPROVED' : null,
+            inspectionPassed: Boolean(workOrder?.buyerAcceptedAt),
+            isSettled: order.status === 'COMPLETED',
+            buyerPersona: order.buyerOrgType?.toUpperCase().includes('RWA') ? 'RWA' : order.buyerOrgType?.toUpperCase().includes('MSME') ? 'MSME' : 'INDIVIDUAL',
+            role,
+          }}
         />
       </div>
 

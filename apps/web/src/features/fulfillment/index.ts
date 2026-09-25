@@ -4,6 +4,7 @@ export { SupplierWorkOrderPage } from './pages/SupplierWorkOrderPage';
 export { FinancialControlDashboardPage } from './pages/FinancialControlDashboardPage';
 export { PurchaseOrderList } from './components/PurchaseOrderList';
 export { SupplierMilestoneStepper } from './components/SupplierMilestoneStepper';
+export { FivePointMilestoneStepper } from './components/FivePointMilestoneStepper';
 export { DeliveryInspectionPanel } from './components/DeliveryInspectionPanel';
 export { InvoicePaymentPanel } from './components/InvoicePaymentPanel';
 export { TdsWithholdingPanel } from './components/TdsWithholdingPanel';

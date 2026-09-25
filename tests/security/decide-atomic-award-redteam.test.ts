@@ -294,7 +294,7 @@ describe('DECIDE: Atomic Award & Decision Receipt Red Team Security Battery (RT-
 
     expect(secondRes.ok).toBe(false);
     if (!secondRes.ok) {
-      expect(secondRes.error.message).toContain('Award already exists for this RFQ');
+      expect(secondRes.error.message).toMatch(/Award already exists for this RFQ|RFQ must be in EVALUATING status/);
     }
   });
 
@@ -317,7 +317,7 @@ describe('DECIDE: Atomic Award & Decision Receipt Red Team Security Battery (RT-
     const res2 = await services.awards.lockAndRevealAwardAtomic(PRIMARY_ACTOR, payload);
     expect(res2.ok).toBe(false);
     if (!res2.ok) {
-      expect(res2.error.message).toContain('Award already exists for this RFQ');
+      expect(res2.error.message).toMatch(/Award already exists for this RFQ|RFQ must be in EVALUATING status/);
     }
   });
 

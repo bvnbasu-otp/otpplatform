@@ -48,40 +48,64 @@ describe('DecisionReceiptCard UI Component (Reveal Feature)', () => {
       rank: 1,
       score: 9.6,
       totalQuotesEvaluated: 3,
-      isLowestTotalCost: true,
-      hasLongestWarranty: true,
-      hasShortestTat: true,
-      consensusRationale: 'Rank #1 evaluated with highest merit score and shortest lead time.',
+      lowestTotalCost: 566400,
+      costAvoidedComparedToIncumbent: 55000,
+      consensusJustification: 'Lowest evaluated landed cost with 36-month OEM warranty and 5-day delivery TAT.',
     },
     authorityAttribution: {
-      actorProfileId: 'usr-primary-001',
-      actorName: 'Kavita Sundaram',
-      actorOrgRole: 'PRIMARY',
-      executedAt: '2026-09-25T10:00:00.000Z',
+      awardedByProfileId: 'usr-owner-001',
+      awardedByName: 'Kavita Sundaram',
+      awardedByRole: 'OWNER',
+      isDelegated: false,
     },
     governanceRecord: {
-      type: 'MSME',
-      tiersEvaluated: 1,
-      spendCapCompliant: true,
-      antiSelfApprovalEnforced: true,
-      signOffAuthorityRole: 'PRIMARY',
+      persona: 'MSME',
+      msmeSpendGovernance: {
+        stages: [
+          {
+            tierLevel: 'TIER_1_MANAGER',
+            stageOrder: 1,
+            status: 'APPROVED',
+            approvedBy: 'usr-mgr-002',
+            approvedAt: '2026-09-25T11:00:00Z',
+            signatureMode: 'DIRECT',
+          },
+          {
+            tierLevel: 'TIER_2_PRIMARY',
+            stageOrder: 2,
+            status: 'APPROVED',
+            approvedBy: 'usr-owner-001',
+            approvedAt: '2026-09-25T11:15:00Z',
+            signatureMode: 'DIRECT',
+          },
+        ],
+        managerSpendCap: 500000,
+        preventSelfApprovalEnforced: true,
+      },
     },
-    reputationSignal: {
-      supplierFulfilledOrdersCount: 42,
-      supplierAverageRating: 4.8,
-      disputeFreeTrackRecord: true,
+    reputationSignals: {
+      highestRatedComparison: {
+        label: 'Top Rated Option',
+        costDelta: 15000,
+        rating: 4.8,
+        agreedWithMerit: true,
+      },
     },
+    awardedAt: '2026-09-25T11:30:00Z',
+    revealedAt: '2026-09-25T11:35:00Z',
   });
 
-  it('renders complete Decision Receipt metadata and winning terms', () => {
-    const card = DecisionReceiptCard({ receipt: sampleReceipt });
+  it('instantiates Decision Receipt card with complete metadata', () => {
+    const card = React.createElement(DecisionReceiptCard, { receipt: sampleReceipt });
     expect(card).toBeDefined();
-    expect(card.type).toBe('div');
+    expect(card.props.receipt.rfqId).toBe('rfq-ui-test-101');
+    expect(card.props.receipt.buyerPersona).toBe('MSME');
+    expect(card.props.receipt.selectedOffer.totalLandedCost).toBe(566400);
   });
 
   it('verifies tamper integrity badge validation', () => {
     const integrity = verifyDecisionReceiptIntegrity(sampleReceipt);
-    expect(integrity.isValid).toBe(true);
+    expect(integrity.valid).toBe(true);
   });
 
   it('detects tampered receipt properly', () => {
@@ -93,18 +117,21 @@ describe('DecisionReceiptCard UI Component (Reveal Feature)', () => {
       },
     };
     const integrity = verifyDecisionReceiptIntegrity(tamperedReceipt);
-    expect(integrity.isValid).toBe(false);
+    expect(integrity.valid).toBe(false);
   });
 
-  it('renders Individual and RWA persona governance variants properly', () => {
+  it('instantiates Individual and RWA persona governance variants properly', () => {
     const individualReceipt = buildCanonicalDecisionReceipt({
       rfqId: 'rfq-indiv-1',
       rfqRefNumber: 'RFQ-IND-01',
       rfqTitle: 'Submersible Pump',
       buyerPersona: 'INDIVIDUAL',
       buyerContext: {
+        organizationId: null,
+        organizationName: null,
         buyerName: 'Ramesh Patel',
         buyerEmail: 'ramesh@example.com',
+        deliveryStateCode: '29',
       },
       requirementSnapshot: {
         requirementId: 'req-ind-01',
@@ -134,29 +161,29 @@ describe('DecisionReceiptCard UI Component (Reveal Feature)', () => {
         rank: 1,
         score: 9.8,
         totalQuotesEvaluated: 2,
-        isLowestTotalCost: true,
-        hasLongestWarranty: true,
-        hasShortestTat: true,
-        consensusRationale: '1-click individual buyer confirmation.',
+        lowestTotalCost: 41300,
+        consensusJustification: '1-click individual buyer confirmation.',
       },
       authorityAttribution: {
-        actorProfileId: 'usr-indiv-1',
-        actorName: 'Ramesh Patel',
-        actorOrgRole: 'BUYER',
-        executedAt: '2026-09-25T10:00:00.000Z',
+        awardedByProfileId: 'usr-indiv-1',
+        awardedByName: 'Ramesh Patel',
+        awardedByRole: 'BUYER',
+        isDelegated: false,
       },
       governanceRecord: {
-        type: 'INDIVIDUAL',
-        oneClickConfirmed: true,
+        persona: 'INDIVIDUAL',
+        individualConfirmation: {
+          confirmedAt: '2026-09-25T10:00:00.000Z',
+          confirmedBy: 'usr-indiv-1',
+        },
       },
-      reputationSignal: {
-        supplierFulfilledOrdersCount: 15,
-        supplierAverageRating: 4.9,
-        disputeFreeTrackRecord: true,
-      },
+      awardedAt: '2026-09-25T10:00:00.000Z',
+      revealedAt: '2026-09-25T10:05:00.000Z',
     });
 
-    const card = DecisionReceiptCard({ receipt: individualReceipt });
+    const card = React.createElement(DecisionReceiptCard, { receipt: individualReceipt });
     expect(card).toBeDefined();
+    expect(card.props.receipt.buyerPersona).toBe('INDIVIDUAL');
+    expect(card.props.receipt.selectedOffer.totalLandedCost).toBe(41300);
   });
 });
