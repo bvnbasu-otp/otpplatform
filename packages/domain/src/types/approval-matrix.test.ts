@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ENTERPRISE_APPROVAL_TIERS,
+  DEFAULT_ORG_APPROVAL_TIERS,
   isRfqFullyApproved,
   resolveRequiredApprovalTiers,
   validateApprovalEligibility,
@@ -27,6 +28,11 @@ describe('OTP Phase 6.6: Multi-Tier Threshold Governance & Enterprise Approval M
       const tiers = resolveRequiredApprovalTiers(250000, samplePolicy.tiers);
       expect(tiers).toHaveLength(1);
       expect(tiers[0]?.tierLevel).toBe('TIER_1_MANAGER');
+    });
+
+    it('exposes DEFAULT_ORG_APPROVAL_TIERS as authoritative tier policy', () => {
+      expect(DEFAULT_ORG_APPROVAL_TIERS).toBeDefined();
+      expect(DEFAULT_ORG_APPROVAL_TIERS.length).toBe(3);
     });
 
     it('resolves Tier 1 + Tier 2 for procurement value ₹5L - ₹25L (e.g. ₹12,00,000)', () => {

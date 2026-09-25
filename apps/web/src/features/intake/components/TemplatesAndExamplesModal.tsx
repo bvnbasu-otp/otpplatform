@@ -20,7 +20,7 @@ export interface ProcurementExample {
   id: string;
   title: string;
   location: string;
-  organizationType: 'COMMUNITY' | 'MSME' | 'ENTERPRISE' | 'INDIVIDUAL';
+  organizationType: 'COMMUNITY' | 'MSME' | 'INDIVIDUAL';
   scenario: string;
   benchmarkPriceRange: string;
   turnaroundDays: number;
@@ -120,10 +120,10 @@ export const CANONICAL_EXAMPLES: ProcurementExample[] = [
   },
   {
     id: 'ex-blr-solar-rooftop',
-    title: '50 kW Commercial Rooftop Solar Installation (Bengaluru)',
+    title: '50 kW Commercial Rooftop Solar Installation (Bengaluru MSME)',
     location: 'Bengaluru, Karnataka (560100)',
-    organizationType: 'ENTERPRISE',
-    scenario: 'A logistics warehouse facility procured a 50 kW on-grid solar photovoltaic plant with net metering approvals.',
+    organizationType: 'MSME',
+    scenario: 'A manufacturing warehouse facility procured a 50 kW on-grid solar photovoltaic plant with net metering approvals.',
     benchmarkPriceRange: '₹22,00,000 – ₹25,50,000',
     turnaroundDays: 21,
     warrantyOffered: '5 Years System Warranty / 25 Years Module SLA',

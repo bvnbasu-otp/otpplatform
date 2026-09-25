@@ -312,16 +312,17 @@ describe('Create Requirement Mobile Redesign — Progressive Flow & Invariants',
       }
     });
 
-    it('distinguishes Fast Track (Individual/MSME) and Full Governance (RWA/Enterprise) appropriately', () => {
+    it('distinguishes Fast Track (Individual/MSME) and Full Governance (RWA) appropriately', () => {
       const isGovernanceRequired = (buyerType: string | null) => {
-        return ['RESIDENTIAL_RWA', 'COMMUNITY', 'ENTERPRISE', 'RWA'].includes(buyerType || '');
+        return ['RESIDENTIAL_RWA', 'COMMUNITY', 'RWA'].includes(buyerType || '');
       };
 
       expect(isGovernanceRequired('INDIVIDUAL')).toBe(false);
       expect(isGovernanceRequired('MSME')).toBe(false);
       expect(isGovernanceRequired(null)).toBe(false);
       expect(isGovernanceRequired('RESIDENTIAL_RWA')).toBe(true);
-      expect(isGovernanceRequired('ENTERPRISE')).toBe(true);
+      expect(isGovernanceRequired('COMMUNITY')).toBe(true);
+      expect(isGovernanceRequired('RWA')).toBe(true);
     });
   });
 

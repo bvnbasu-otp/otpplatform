@@ -319,4 +319,9 @@ describe('Org Feature Module Tests & Phase C8.2 Governance', () => {
     expect(OrgMembersPage).toBeDefined();
     expect(typeof OrgMembersPage).toBe('function');
   });
+
+  it('exports OrgContextSwitcher component and renders canonical org representations', async () => {
+    const { OrgContextSwitcher } = await import('./components/OrgContextSwitcher');
+    expect(OrgContextSwitcher).toBeDefined();
+  });
 });

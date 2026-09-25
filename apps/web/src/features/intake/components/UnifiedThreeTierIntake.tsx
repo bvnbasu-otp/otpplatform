@@ -69,7 +69,7 @@ export function UnifiedThreeTierIntake({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { context } = useRoleContext();
-  const isFullGovernance = ['RESIDENTIAL_RWA', 'COMMUNITY', 'ENTERPRISE', 'RWA'].includes(
+  const isFullGovernance = ['RESIDENTIAL_RWA', 'COMMUNITY', 'RWA'].includes(
     context.buyerType || '',
   );
 

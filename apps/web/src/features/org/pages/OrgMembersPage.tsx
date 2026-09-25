@@ -16,7 +16,7 @@ import {
 import { OrgRoleSuccessionTimeline } from '../components/OrgRoleSuccessionTimeline';
 import {
   DELEGATION_PERMISSIONS,
-  DEFAULT_ENTERPRISE_APPROVAL_TIERS,
+  DEFAULT_ORG_APPROVAL_TIERS,
   type OrganizationInvitation,
   type OrganizationDelegation,
   type DelegationPermission,
@@ -1195,7 +1195,7 @@ export function OrgMembersPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-              {DEFAULT_ENTERPRISE_APPROVAL_TIERS.map((tier, idx) => (
+              {DEFAULT_ORG_APPROVAL_TIERS.map((tier, idx) => (
                 <div
                   key={tier.tierLevel}
                   className="rounded-xl border border-border/70 bg-muted/20 p-3.5 space-y-2 relative overflow-hidden"

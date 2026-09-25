@@ -68,7 +68,7 @@ export interface RfqApprovalStage {
   updatedAt: string;
 }
 
-export const DEFAULT_ENTERPRISE_APPROVAL_TIERS: ReadonlyArray<ApprovalTierPolicyConfig> = Object.freeze([
+export const DEFAULT_ORG_APPROVAL_TIERS: ReadonlyArray<ApprovalTierPolicyConfig> = Object.freeze([
     {
       tierLevel: 'TIER_1_MANAGER',
       tierName: 'Tier 1: Team / Procurement Manager',
@@ -95,13 +95,16 @@ export const DEFAULT_ENTERPRISE_APPROVAL_TIERS: ReadonlyArray<ApprovalTierPolicy
     },
 ]);
 
+/** Backward-compatible alias for default organizational spend approval tiers. */
+export const DEFAULT_ENTERPRISE_APPROVAL_TIERS = DEFAULT_ORG_APPROVAL_TIERS;
+
 /**
  * Resolves which approval tiers are required for a given procurement monetary amount.
  * Returns required tiers in sequential order.
  */
 export function resolveRequiredApprovalTiers(
   amount: number,
-  tiers: ApprovalTierPolicyConfig[] = [...DEFAULT_ENTERPRISE_APPROVAL_TIERS]
+  tiers: ApprovalTierPolicyConfig[] = [...DEFAULT_ORG_APPROVAL_TIERS]
 ): ApprovalTierPolicyConfig[] {
   if (amount < 0) {
     throw new Error('Procurement amount cannot be negative');

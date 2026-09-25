@@ -203,24 +203,18 @@ export function BuyerRegisterForm({
               ? 'Organisation'
               : buyerType === 'MSME'
               ? 'Organisation / Business name'
-              : buyerType === 'ENTERPRISE'
-              ? 'Enterprise name'
-              : buyerType === 'INSTITUTION'
-              ? 'Institution name'
+              : buyerType === 'COMMUNITY'
+              ? 'RWA / Society name'
               : 'Organisation name'
           }
           help={
             isIndividual
               ? 'Personal buyers decide independently with a single direct vote (default: Self).'
               : buyerType === 'MSME'
-              ? 'Registered business name. MSME owners decide awards with a 2-vote weight.'
+              ? 'Registered business name. MSME owners decide awards with sovereign spend authority.'
               : buyerType === 'COMMUNITY'
-              ? 'Residential Welfare Association or Society. Committee votes carry a 3-vote weight.'
-              : buyerType === 'ENTERPRISE'
-              ? 'Registered corporate entity with delegated procurement committee (4-vote weight).'
-              : buyerType === 'INSTITUTION'
-              ? 'Educational, healthcare or charitable trust with committee oversight (3-vote weight).'
-              : 'This sets how approvals and weighted voting power work for your account.'
+              ? 'Residential Welfare Association or Society. Committee votes require democratic quorum.'
+              : 'This sets your buyer organization context for sourcing and procurement.'
           }
           required
         >
@@ -234,10 +228,6 @@ export function BuyerRegisterForm({
                   ? 'Self'
                   : buyerType === 'MSME'
                   ? 'e.g. Acme Precision Engineering / MSME'
-                  : buyerType === 'ENTERPRISE'
-                  ? 'e.g. Apex Industrial Infrastructure Ltd'
-                  : buyerType === 'INSTITUTION'
-                  ? 'e.g. St. Jude Healthcare & Research Trust'
                   : 'Durga Rainbow Flat Owner Welfare Association'
               }
               autoComplete="organization"

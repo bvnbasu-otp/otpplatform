@@ -6,8 +6,7 @@ const ORG_TYPE_ICONS: Record<string, string> = {
   INDIVIDUAL: "👤",
   MSME: "🏭",
   COMMUNITY: "🏘️",
-  ENTERPRISE: "🏢",
-  INSTITUTION: "🏛️",
+  RWA: "🏘️",
 };
 
 /**
