@@ -8,7 +8,6 @@ import type {
 } from '../types/rfq-review';
 import { fetchRequirementAttachments } from '@/features/attachments/api/attachments';
 import { fetchProcurementPolicy } from '@/features/procurement-os/api/fetch-procurement-os';
-import { simulateQuotesForRfq } from '@/features/rfq/api/simulate-quotes';
 
 export type RequirementRfqContext = CompactRequirementContext;
 
@@ -325,9 +324,6 @@ export async function openRfq(rfqId: string): Promise<
     .from('requirements')
     .update({ status: 'QUOTING', updated_at: now })
     .eq('id', rfq.requirement_id);
-
-  // Automatically prime simulated quotes for seamless buyer experience
-  void simulateQuotesForRfq(rfqId);
 
   return { ok: true };
 }
@@ -749,9 +745,6 @@ export async function publishRfq(input: {
   if (!openRes.ok && !openRes.error.includes('already')) {
     return openRes;
   }
-
-  // Ensure 3-5 simulated quotes are populated and available for immediate evaluation
-  await simulateQuotesForRfq(rfqId);
 
   return { ok: true, rfqId, invitedCount: count };
 }

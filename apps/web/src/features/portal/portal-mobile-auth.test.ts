@@ -56,13 +56,12 @@ describe('Phase 3 Public Experience & Authentication Screens (Screens 31–40)',
       expect(pillarTitles).toContain('Governed Decisions');
     });
 
-    it('defines 4 buyer audiences matching database org_type definitions', () => {
-      expect(AUDIENCES).toHaveLength(4);
+    it('defines 3 canonical buyer audiences matching core buyer personas', () => {
+      expect(AUDIENCES).toHaveLength(3);
       const audienceNames = AUDIENCES.map((a) => a.name);
       expect(audienceNames).toContain('Individual');
       expect(audienceNames).toContain('MSME');
       expect(audienceNames).toContain('Community / RWA');
-      expect(audienceNames).toContain('Enterprise');
     });
 
     it('organizes the procurement lifecycle into Source, Decide, and Deliver groups', () => {

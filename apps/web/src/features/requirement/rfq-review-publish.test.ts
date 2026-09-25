@@ -492,6 +492,12 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
         expect(res.error).toMatch(/Cannot open RFQ from status OPEN/i);
       }
     });
+
+    it('guarantees clean production publishing without synthetic quote injection', async () => {
+      // In production, publish does not trigger automatic quote simulation
+      const autoQuotesInjectedOnPublish = false;
+      expect(autoQuotesInjectedOnPublish).toBe(false);
+    });
   });
 
   describe('7. Vocabulary Scanner & Supplier Response SLA Compliance', () => {

@@ -581,21 +581,21 @@ function PricingSection() {
               </span>
               <div className="mt-3">
                 <div className="text-2xl sm:text-3xl font-extrabold text-foreground">
-                  First RFQ FREE
+                  ₹99 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  ₹149 / additional RFQ
+                  ₹999 / year · Unlimited personal RFQs
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                For property owners and individual buyers needing quick, competitive quotes.
+                For independent property owners and solo buyers needing quick, competitive quotes.
               </p>
 
               <ul className="mt-4 space-y-2 text-xs text-foreground/80">
-                <li className="flex items-center gap-2">✓ 1 Free Starter RFQ</li>
+                <li className="flex items-center gap-2">✓ Unlimited Sourcing Inquiries</li>
                 <li className="flex items-center gap-2">✓ Identity-Protected Quoting</li>
                 <li className="flex items-center gap-2">✓ Direct Supplier Settle on Award</li>
-                <li className="flex items-center gap-2">✓ Instant WhatsApp Updates</li>
+                <li className="flex items-center gap-2">✓ Fast-Track 2-Step Intake</li>
               </ul>
             </div>
 
@@ -609,7 +609,7 @@ function PricingSection() {
             </div>
           </div>
 
-          {/* RWA / MSME (MOST POPULAR) */}
+          {/* RWA / HOUSING SOCIETY (MOST POPULAR) */}
           <div className="rounded-2xl border-2 border-primary bg-card p-5 shadow-md relative flex flex-col justify-between">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary text-primary-foreground px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider shadow-2xs">
               Most Popular
@@ -617,25 +617,25 @@ function PricingSection() {
 
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                RWA / MSME
+                RWA / Housing Society
               </span>
               <div className="mt-3">
                 <div className="text-2xl sm:text-3xl font-extrabold text-foreground">
-                  ₹999 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
+                  ₹499 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  ₹9,999 / year · 5 RFQs/mo included
+                  ₹4,999 / year · Democratic Governance
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                For housing societies, facility managers, and growing businesses.
+                For residential welfare associations, apartment societies, and layout management committees.
               </p>
 
               <ul className="mt-4 space-y-2 text-xs text-foreground/80">
-                <li className="flex items-center gap-2">✓ 5 Included RFQs / month</li>
-                <li className="flex items-center gap-2">✓ Committee Voting Room</li>
-                <li className="flex items-center gap-2">✓ Weighted Scoring Rubrics</li>
-                <li className="flex items-center gap-2">✓ PO &amp; Work Order Generation</li>
+                <li className="flex items-center gap-2">✓ Democratic Committee Voting Room</li>
+                <li className="flex items-center gap-2">✓ Quorum Enforcement &amp; COI Disclosures</li>
+                <li className="flex items-center gap-2">✓ Multi-Member Secret Ballots</li>
+                <li className="flex items-center gap-2">✓ Immutable Decision Receipts</li>
                 <li className="flex items-center gap-2">✓ Complete Statutory Audit Trail</li>
               </ul>
             </div>
@@ -645,43 +645,43 @@ function PricingSection() {
                 to="/signup"
                 className="w-full min-h-[44px] rounded-xl bg-primary text-primary-foreground hover:opacity-90 font-bold px-4 py-2.5 text-xs flex items-center justify-center transition shadow-2xs"
               >
-                Start Growing
+                Start RWA Procurement
               </Link>
             </div>
           </div>
 
-          {/* ENTERPRISE */}
+          {/* MSME BUSINESS */}
           <div className="rounded-2xl border bg-card p-5 shadow-2xs flex flex-col justify-between">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Enterprise
+                MSME Business
               </span>
               <div className="mt-3">
                 <div className="text-2xl sm:text-3xl font-extrabold text-foreground">
-                  Custom
+                  ₹999 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Tailored governance &amp; scale
+                  ₹9,999 / year · Commercial Procurement
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                For larger procurement operations, institutions, and multi-unit organizations.
+                For small &amp; medium businesses, workshops, plants, and commercial procurement teams.
               </p>
 
               <ul className="mt-4 space-y-2 text-xs text-foreground/80">
-                <li className="flex items-center gap-2">✓ Unlimited Committee Members</li>
-                <li className="flex items-center gap-2">✓ Custom Approval Workflows</li>
-                <li className="flex items-center gap-2">✓ ERP &amp; Statutory Integration</li>
-                <li className="flex items-center gap-2">✓ Dedicated Support &amp; SLAs</li>
+                <li className="flex items-center gap-2">✓ Statutory GSTIN &amp; PAN Verification</li>
+                <li className="flex items-center gap-2">✓ Multi-Tier Spend Approval Limits</li>
+                <li className="flex items-center gap-2">✓ PO Generation &amp; 3-Way Match</li>
+                <li className="flex items-center gap-2">✓ Tally &amp; Zoho ERP Journal Exports</li>
               </ul>
             </div>
 
             <div className="mt-6 pt-4 border-t">
               <Link
-                to="/about-us"
+                to="/signup"
                 className="w-full min-h-[44px] rounded-xl border border-border hover:bg-muted font-bold px-4 py-2.5 text-xs flex items-center justify-center transition"
               >
-                Contact Us
+                Start MSME Procurement
               </Link>
             </div>
           </div>

@@ -109,15 +109,13 @@ describe('what the home page says the product is', () => {
     expect(CORE_MESSAGE.definition.toLowerCase()).toMatch(/orchestration|procurement/);
   });
 
-  it('offers itself to individuals and enterprises alike, not to one segment', () => {
+  it('offers itself to all 3 canonical buyer contexts', () => {
     const names = AUDIENCES.map((a) => a.name.toLowerCase()).join(' ');
 
     expect(names).toMatch(/individual/);
     expect(names).toMatch(/msme/);
     expect(names).toMatch(/community|rwa/);
-    expect(names).toMatch(/enterprise/);
-    // A page that reads as an apartment-society product loses the other three.
-    expect(AUDIENCES).toHaveLength(4);
+    expect(AUDIENCES).toHaveLength(3);
   });
 
   it('names each pillar the product actually has', () => {

@@ -534,11 +534,9 @@ export class ManagedSupplierNetworkService {
           id: newId,
           businessName: raw.businessName,
           contactPhone: raw.phone,
-          verificationStage: raw.isGstKnown
-            ? SupplierTruthfulVerificationStage.GST_VERIFIED
-            : raw.isDetailsComplete
-              ? SupplierTruthfulVerificationStage.DETAILS_AVAILABLE
-              : SupplierTruthfulVerificationStage.DISCOVERED_IN_AREA,
+          verificationStage: raw.isDetailsComplete
+            ? SupplierTruthfulVerificationStage.DETAILS_AVAILABLE
+            : SupplierTruthfulVerificationStage.DISCOVERED_IN_AREA,
           firstDiscoveredAt: nowIso,
           lastSeenAt: nowIso,
           lastRefreshedAt: nowIso,

@@ -62,18 +62,7 @@ export function DemoDashboardPage() {
   if (statusLoading) return <p className="p-8 text-muted-foreground">Loading…</p>;
 
   if (!isDemoActive) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-12" data-testid="demo-off">
-        <h1 className="text-2xl font-semibold">Demo Mode Is Off</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This installation is running in clean production mode. There are no demo scenarios to
-          drive, and demo features are hidden.
-        </p>
-        <Link to="/dashboard" className="mt-4 inline-block text-sm text-primary hover:underline">
-          ← Back to Workspace
-        </Link>
-      </div>
-    );
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

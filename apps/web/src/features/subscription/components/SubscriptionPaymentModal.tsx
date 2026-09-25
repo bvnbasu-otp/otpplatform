@@ -29,7 +29,6 @@ const AVAILABLE_TIERS: { id: SubscriptionTierId; label: string; priceMonthly: nu
   { id: 'INDIVIDUAL', label: 'Individual (₹99)', priceMonthly: 99 },
   { id: 'RWA', label: 'RWA / Society (₹499)', priceMonthly: 499 },
   { id: 'MSME', label: 'MSME (₹999)', priceMonthly: 999 },
-  { id: 'ENTERPRISE', label: 'Enterprise (₹4,999)', priceMonthly: 4999 },
 ];
 
 export function SubscriptionPaymentModal({

@@ -49,18 +49,14 @@ export interface Audience {
 }
 
 /**
- * The four buyer types, which are org_type values in the database rather than
- * marketing segments. A community running a committee vote and an individual
- * replacing a burnt-out motor use the same engine at different weights.
+ * The three canonical buyer types: Individual, MSME, and Community / RWA.
+ * A community running a committee vote and an individual replacing a
+ * burnt-out motor use the same engine at different governance weights.
  */
 export const AUDIENCES: Audience[] = [
   { name: 'Individual', body: 'Source products and services competitively.' },
   { name: 'MSME', body: 'Buy better without building a large procurement function.' },
   { name: 'Community / RWA', body: 'Run transparent, democratic evaluation & voting.' },
-  {
-    name: 'Enterprise',
-    body: 'Govern sourcing with structured evaluation and auditability.',
-  },
 ];
 
 export interface LifecycleGroup {
@@ -350,9 +346,9 @@ export const GENERAL_FAQS: FaqEntry[] = [
     answer:
       'OTP offers two procurement experiences: **Fast Track (2-step, 3-5 min)** for Individual/MSME buyers '
       + '— just describe what you need with real-time AI parsing, review smart defaults (50km radius, '
-      + 'evaluation weights 60/30/10), and publish. **Full Governance (4-step, 12-15 min)** for RWA/Enterprise '
-      + '— structured intake with technical specs, mandatory committee configuration (min 2 votes for RWA, '
-      + '3 for Enterprise), democratic voting with COI declarations, and detailed manager justification '
+      + 'evaluation weights 60/30/10), and publish. **Full Governance (4-step, 12-15 min)** for RWA / Housing Society '
+      + '— structured intake with technical specs, mandatory committee configuration (min 2 votes for RWA), '
+      + 'democratic voting with COI declarations, and detailed manager justification '
       + '(min 50 characters). Both flows maintain 100% identity protection until award.',
   },
   {
@@ -369,10 +365,9 @@ export const GENERAL_FAQS: FaqEntry[] = [
   {
     question: `Who can use ${PRODUCT_NAME}?`,
     answer:
-      'An individual sourcing a local service, a small business buying components or machinery, a '
-      + 'residential community putting maintenance work out to tender, and an enterprise running '
-      + 'governed procurement. It is the same engine in each case; what changes is how many people '
-      + 'have to approve the decision and how the votes are weighted.',
+      'An individual sourcing a local service, a small business buying components or machinery, or a '
+      + 'residential community putting maintenance work out to tender. It is the same engine in each case; '
+      + 'what changes is how many people have to approve the decision and how the votes are weighted.',
   },
   {
     question: 'How does identity protection actually work?',

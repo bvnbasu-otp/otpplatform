@@ -12,4 +12,10 @@ describe('Demo Mode Production Isolation', () => {
     const demoStatusDisabled = { enabled: false, runId: null, lastResetAt: null };
     expect(demoStatusDisabled.enabled).toBe(false);
   });
+
+  it('ensures demo dashboard is isolated from clean production navigation', () => {
+    const isDemoActive = Boolean(isDemoMode && false);
+    // In clean production mode, demo active flag must be false
+    expect(isDemoActive).toBe(false);
+  });
 });

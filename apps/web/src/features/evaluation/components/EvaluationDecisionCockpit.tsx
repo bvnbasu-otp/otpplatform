@@ -26,6 +26,7 @@ import {
 import { ClarificationThread } from '@/features/clarification/components/ClarificationThread';
 import { openRfq, discoverAndInvite } from '@/features/requirement/api/rfq-lifecycle';
 import { simulateQuotesForRfq } from '@/features/rfq/api/simulate-quotes';
+import { isDemoMode } from '@/features/demo/demo-config';
 import {
   fetchAward,
   lockAndRevealAwardAtomic,
@@ -610,17 +611,19 @@ export function EvaluationDecisionCockpit({
                   <span>{showMarketContext ? 'Market Context: On' : 'Market Context: Off'}</span>
                 </button>
 
-                <button
-                  type="button"
-                  disabled={isSimulatingQuotes}
-                  onClick={() => void handleSimulateQuotes()}
-                  className="rounded-lg border border-dashed border-amber-500/60 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition flex items-center gap-1 min-h-[36px] mobile-touch-target"
-                  data-testid="simulate-quotes-header-btn"
-                  title="Demo Utility: Generate simulated quotes for testing"
-                >
-                  <span>⚡</span>
-                  <span>{isSimulatingQuotes ? 'Simulating…' : 'Demo: Simulate Quotes'}</span>
-                </button>
+                {isDemoMode && (
+                  <button
+                    type="button"
+                    disabled={isSimulatingQuotes}
+                    onClick={() => void handleSimulateQuotes()}
+                    className="rounded-lg border border-dashed border-amber-500/60 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition flex items-center gap-1 min-h-[36px] mobile-touch-target"
+                    data-testid="simulate-quotes-header-btn"
+                    title="Demo Utility: Generate simulated quotes for testing"
+                  >
+                    <span>⚡</span>
+                    <span>{isSimulatingQuotes ? 'Simulating…' : 'Demo: Simulate Quotes'}</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -735,14 +738,16 @@ export function EvaluationDecisionCockpit({
                   <span className="text-2xl">⏳</span>
                   <p className="font-bold text-foreground">No supplier Q&amp;A threads yet.</p>
                   <p className="text-[11px]">When suppliers submit quotes or questions, their masked discussion channels will appear here.</p>
-                  <button
-                    type="button"
-                    disabled={isSimulatingQuotes}
-                    onClick={() => void handleSimulateQuotes()}
-                    className="mt-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition min-h-[44px] mobile-touch-target"
-                  >
-                    ⚡ Simulate Supplier Questions
-                  </button>
+                  {isDemoMode && (
+                    <button
+                      type="button"
+                      disabled={isSimulatingQuotes}
+                      onClick={() => void handleSimulateQuotes()}
+                      className="mt-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition min-h-[44px] mobile-touch-target"
+                    >
+                      ⚡ Simulate Supplier Questions
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">

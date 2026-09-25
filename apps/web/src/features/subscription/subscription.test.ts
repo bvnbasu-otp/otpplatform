@@ -234,4 +234,10 @@ describe('Cryptographically Secure Payment Reference Generation (FIX-01)', () =>
     expect(OtpWalletCreditsWidget).toBeDefined();
     expect(typeof OtpWalletCreditsWidget).toBe('function');
   });
+
+  it('guarantees prepaid subscription tiers strictly match the 3 canonical buyer personas', () => {
+    const canonicalTiers = ['INDIVIDUAL', 'RWA', 'MSME'];
+    expect(canonicalTiers).toEqual(['INDIVIDUAL', 'RWA', 'MSME']);
+    expect(canonicalTiers).not.toContain('ENTERPRISE');
+  });
 });

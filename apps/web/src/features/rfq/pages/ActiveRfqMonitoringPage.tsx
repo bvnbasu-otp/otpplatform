@@ -10,7 +10,6 @@ import { ActiveRfqSupplierResponsesList } from '../components/ActiveRfqSupplierR
 import { ActiveRfqExtendDeadlineModal } from '../components/ActiveRfqExtendDeadlineModal';
 import { ActiveRfqScopeAccordion } from '../components/ActiveRfqScopeAccordion';
 import { CancelRfqModal } from '../components/CancelRfqModal';
-import { simulateQuotesForRfq } from '../api/simulate-quotes';
 
 interface ActiveRfqMonitoringPageProps {
   rfqId?: string;
@@ -31,7 +30,6 @@ export function ActiveRfqMonitoringPage({
   const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isSimulating, setIsSimulating] = useState(false);
 
   const loadData = useCallback(async (showRefreshing = false) => {
     if (!effectiveId) {
@@ -74,14 +72,6 @@ export function ActiveRfqMonitoringPage({
 
   function handleRfqCancelled() {
     navigate('/dashboard');
-  }
-
-  async function handleSimulateQuotes() {
-    if (!effectiveId) return;
-    setIsSimulating(true);
-    await simulateQuotesForRfq(effectiveId, { force: true });
-    setIsSimulating(false);
-    void loadData(true);
   }
 
   if (isLoading) {

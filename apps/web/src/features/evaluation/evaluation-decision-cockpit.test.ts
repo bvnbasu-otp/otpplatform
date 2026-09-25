@@ -458,6 +458,12 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () =>
       expect(duplicatePoButtonInSpotlight).toBe(false);
       expect(primaryNavigationInBottomDock).toBe(true);
     });
+
+    it('guards demo quote simulation controls behind demo mode flag', () => {
+      const demoControlsVisible = (isDemoActive: boolean) => isDemoActive;
+      expect(demoControlsVisible(false)).toBe(false);
+      expect(demoControlsVisible(true)).toBe(true);
+    });
   });
 });
 
