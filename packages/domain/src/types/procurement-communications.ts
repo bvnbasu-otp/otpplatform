@@ -154,6 +154,15 @@ export function redactNotificationPayload(
     'supplier_ifsc',
     'vendor_legal_name',
     'contact_person_name',
+    'buyer_name',
+    'buyer_phone',
+    'buyer_email',
+    'door_number',
+    'flat_number',
+    'competitor_name',
+    'competitor_supplier_id',
+    'competing_quotes',
+    'other_quotes',
   ];
 
   for (const key of sensitiveKeys) {
@@ -389,3 +398,466 @@ export function validateProviderWebhookSignature(
   const expectedSig = computeDeterministicHmac(rawPayload, `${secret}:${timestampMs}`);
   return signature.toLowerCase() === expectedSig.toLowerCase();
 }
+
+// ---------------------------------------------------------------------------
+// STAGE R2-15: TRUTHFUL 8-STATE NOTIFICATION LIFECYCLE & DELIVERY ENGINE
+// ---------------------------------------------------------------------------
+
+export type TruthfulNotificationChannel = 'IN_APP' | 'WHATSAPP' | 'EMAIL' | 'SMS';
+
+export const TRUTHFUL_NOTIFICATION_CHANNELS: readonly TruthfulNotificationChannel[] = [
+  'IN_APP',
+  'WHATSAPP',
+  'EMAIL',
+  'SMS',
+] as const;
+
+export type TruthfulChannelOperationalStatus =
+  | 'LIVE'
+  | 'READY'
+  | 'DISABLED'
+  | 'UNAVAILABLE';
+
+export const TRUTHFUL_CHANNEL_OPERATIONAL_STATUSES: readonly TruthfulChannelOperationalStatus[] = [
+  'LIVE',
+  'READY',
+  'DISABLED',
+  'UNAVAILABLE',
+] as const;
+
+/**
+ * Authoritative 8-State Notification Delivery Lifecycle
+ * CREATED -> DISPATCH_REQUESTED -> PROVIDER_ACCEPTED -> DELIVERED -> OPENED -> CLAIMED
+ * Terminal / Error: FAILED, UNAVAILABLE
+ */
+export type TruthfulNotificationDeliveryState =
+  | 'CREATED'
+  | 'DISPATCH_REQUESTED'
+  | 'PROVIDER_ACCEPTED'
+  | 'DELIVERED'
+  | 'OPENED'
+  | 'CLAIMED'
+  | 'FAILED'
+  | 'UNAVAILABLE';
+
+export const TRUTHFUL_NOTIFICATION_DELIVERY_STATES: readonly TruthfulNotificationDeliveryState[] = [
+  'CREATED',
+  'DISPATCH_REQUESTED',
+  'PROVIDER_ACCEPTED',
+  'DELIVERED',
+  'OPENED',
+  'CLAIMED',
+  'FAILED',
+  'UNAVAILABLE',
+] as const;
+
+/**
+ * Valid state transitions table for Monotonic Progression
+ */
+export const ALLOWED_NOTIFICATION_TRANSITIONS: Record<
+  TruthfulNotificationDeliveryState,
+  readonly TruthfulNotificationDeliveryState[]
+> = {
+  CREATED: ['DISPATCH_REQUESTED', 'UNAVAILABLE', 'FAILED'],
+  DISPATCH_REQUESTED: ['PROVIDER_ACCEPTED', 'DELIVERED', 'FAILED', 'UNAVAILABLE'],
+  PROVIDER_ACCEPTED: ['DELIVERED', 'OPENED', 'CLAIMED', 'FAILED'],
+  DELIVERED: ['OPENED', 'CLAIMED'],
+  OPENED: ['CLAIMED'],
+  CLAIMED: [], // Terminal success
+  FAILED: ['DISPATCH_REQUESTED'], // Retry allowed from worker
+  UNAVAILABLE: [], // Terminal unconfigured
+};
+
+/**
+ * Evaluates whether a state transition is legally permissible
+ */
+export function validateNotificationStateTransition(
+  currentState: TruthfulNotificationDeliveryState,
+  targetState: TruthfulNotificationDeliveryState,
+): { valid: boolean; reason?: string } {
+  if (currentState === targetState) {
+    return { valid: true }; // Idempotent same-state is valid
+  }
+
+  const allowed = ALLOWED_NOTIFICATION_TRANSITIONS[currentState];
+  if (!allowed || !allowed.includes(targetState)) {
+    return {
+      valid: false,
+      reason: `Illegal notification state transition from ${currentState} to ${targetState}`,
+    };
+  }
+
+  return { valid: true };
+}
+
+export type ProcurementJourneyStage =
+  | 'TELL'
+  | 'REVIEW'
+  | 'DECIDE'
+  | 'TRACK'
+  | 'SUPPLIER';
+
+export interface CanonicalNotificationEventMapping {
+  eventType: string;
+  journeyStage: ProcurementJourneyStage;
+  category: NotificationCategory;
+  defaultChannel: TruthfulNotificationChannel;
+  titleTemplate: string;
+  bodyTemplate: string;
+  actionUrlTemplate?: string;
+  actionLabel: string;
+  requiresMasking: boolean;
+  isActionable: boolean;
+}
+
+/**
+ * Authoritative Event Registry across Customer & Supplier Journeys
+ */
+export const CANONICAL_NOTIFICATION_EVENTS: Record<string, CanonicalNotificationEventMapping> = {
+  // --- TELL JOURNEY ---
+  'rfq.created': {
+    eventType: 'rfq.created',
+    journeyStage: 'TELL',
+    category: 'RFQ_INVITATION',
+    defaultChannel: 'IN_APP',
+    titleTemplate: 'Requirement Intake Published: {{rfqNumber}}',
+    bodyTemplate: 'Requirement {{title}} in category {{categoryName}} has been published.',
+    actionUrlTemplate: '/rfq/{{rfqId}}/evaluation',
+    actionLabel: 'View Sourcing Cockpit →',
+    requiresMasking: false,
+    isActionable: true,
+  },
+  'rfq.supplier_invited': {
+    eventType: 'rfq.supplier_invited',
+    journeyStage: 'TELL',
+    category: 'RFQ_INVITATION',
+    defaultChannel: 'WHATSAPP',
+    titleTemplate: 'Quotation Request: {{rfqNumber}}',
+    bodyTemplate: 'You have been invited to quote for {{title}} (Category: {{categoryName}}).',
+    actionUrlTemplate: '/portal/quote?token={{secureToken}}',
+    actionLabel: 'Submit Commercial Quote →',
+    requiresMasking: true, // Pre-award identity protection: mask buyer PII
+    isActionable: true,
+  },
+
+  // --- REVIEW JOURNEY ---
+  'quote.received': {
+    eventType: 'quote.received',
+    journeyStage: 'REVIEW',
+    category: 'QUOTE_SUBMITTED',
+    defaultChannel: 'IN_APP',
+    titleTemplate: 'Quotation Received: {{supplierPseudonym}}',
+    bodyTemplate: 'A quotation was submitted for {{title}} by {{supplierPseudonym}}.',
+    actionUrlTemplate: '/rfq/{{rfqId}}/quotes',
+    actionLabel: 'Review Quotation Matrix →',
+    requiresMasking: true, // Supplier identity masked
+    isActionable: true,
+  },
+  'quote.evaluation_ready': {
+    eventType: 'quote.evaluation_ready',
+    journeyStage: 'REVIEW',
+    category: 'QUOTE_SUBMITTED',
+    defaultChannel: 'IN_APP',
+    titleTemplate: 'Evaluation Cockpit Ready: {{rfqNumber}}',
+    bodyTemplate: 'Target quorum of quotations reached. 4-Pillar evaluation comparison is ready.',
+    actionUrlTemplate: '/rfq/{{rfqId}}/evaluation',
+    actionLabel: 'Open Evaluation Matrix →',
+    requiresMasking: true,
+    isActionable: true,
+  },
+
+  // --- DECIDE JOURNEY ---
+  'governance.vote_requested': {
+    eventType: 'governance.vote_requested',
+    journeyStage: 'DECIDE',
+    category: 'AWARD_DECISION',
+    defaultChannel: 'IN_APP',
+    titleTemplate: 'Committee Vote Requested: {{rfqNumber}}',
+    bodyTemplate: 'Quorum vote required for award decision on {{title}}.',
+    actionUrlTemplate: '/governance/evaluations/{{rfqId}}/vote',
+    actionLabel: 'Cast Committee Vote →',
+    requiresMasking: false,
+    isActionable: true,
+  },
+  'spend.approval_requested': {
+    eventType: 'spend.approval_requested',
+    journeyStage: 'DECIDE',
+    category: 'AWARD_DECISION',
+    defaultChannel: 'IN_APP',
+    titleTemplate: 'Spend Approval Required: {{rfqNumber}}',
+    bodyTemplate: 'Procurement value ₹{{amount}} requires your spend delegation authorization.',
+    actionUrlTemplate: '/governance/evaluations/{{rfqId}}/approval',
+    actionLabel: 'Approve Procurement Spend →',
+    requiresMasking: false,
+    isActionable: true,
+  },
+  'award.contract_awarded': {
+    eventType: 'award.contract_awarded',
+    journeyStage: 'DECIDE',
+    category: 'AWARD_DECISION',
+    defaultChannel: 'EMAIL',
+    titleTemplate: 'Contract Award Decision Confirmed: {{rfqNumber}}',
+    bodyTemplate: 'Formal award decision finalized for {{title}}. Supplier identity unmasked.',
+    actionUrlTemplate: '/rfq/{{rfqId}}/award',
+    actionLabel: 'View Award Decision Receipt →',
+    requiresMasking: false,
+    isActionable: true,
+  },
+
+  // --- TRACK JOURNEY ---
+  'po.issued': {
+    eventType: 'po.issued',
+    journeyStage: 'TRACK',
+    category: 'WORK_ORDER_ISSUED',
+    defaultChannel: 'EMAIL',
+    titleTemplate: 'Purchase Order Issued: {{poNumber}}',
+    bodyTemplate: 'Purchase order #{{poNumber}} issued for amount ₹{{totalAmount}}.',
+    actionUrlTemplate: '/purchase-orders/{{poId}}',
+    actionLabel: 'Track Purchase Order →',
+    requiresMasking: false,
+    isActionable: true,
+  },
+  'milestone.progress_updated': {
+    eventType: 'milestone.progress_updated',
+    journeyStage: 'TRACK',
+    category: 'MILESTONE_SUBMITTED',
+    defaultChannel: 'IN_APP',
+    titleTemplate: 'Milestone Progress: {{milestoneName}}',
+    bodyTemplate: 'Work order progress updated to {{progressPercent}}% for {{title}}.',
+    actionUrlTemplate: '/purchase-orders/{{poId}}',
+    actionLabel: 'View Milestone Progress →',
+    requiresMasking: false,
+    isActionable: true,
+  },
+  'inspection.signoff_completed': {
+    eventType: 'inspection.signoff_completed',
+    journeyStage: 'TRACK',
+    category: 'INSPECTION_COMPLETED',
+    defaultChannel: 'IN_APP',
+    titleTemplate: 'Quality Inspection Signed Off: {{milestoneName}}',
+    bodyTemplate: 'Digital sign-off completed. Deliverables verified for payment release.',
+    actionUrlTemplate: '/purchase-orders/{{poId}}/inspection',
+    actionLabel: 'View Inspection Receipt →',
+    requiresMasking: false,
+    isActionable: true,
+  },
+  'settlement.payment_confirmed': {
+    eventType: 'settlement.payment_confirmed',
+    journeyStage: 'TRACK',
+    category: 'PAYMENT_CONFIRMED',
+    defaultChannel: 'EMAIL',
+    titleTemplate: 'Direct Bank Settlement Confirmed: UTR {{utrNumber}}',
+    bodyTemplate: 'Payment of ₹{{amount}} settled successfully to beneficiary bank account.',
+    actionUrlTemplate: '/purchase-orders/{{poId}}/financials',
+    actionLabel: 'Download Settlement Receipt →',
+    requiresMasking: false,
+    isActionable: true,
+  },
+
+  // --- SUPPLIER JOURNEY ---
+  'supplier.rfq_unawarded': {
+    eventType: 'supplier.rfq_unawarded',
+    journeyStage: 'SUPPLIER',
+    category: 'AWARD_DECISION',
+    defaultChannel: 'WHATSAPP',
+    titleTemplate: 'RFQ Closed: {{rfqNumber}}',
+    bodyTemplate: 'Sourcing enquiry for {{categoryName}} has concluded. Thank you for quoting.',
+    actionLabel: 'View Closed Enquiry →',
+    requiresMasking: true, // Never reveal winner identity or competitor quotes
+    isActionable: false,
+  },
+  'supplier.kyc_verified': {
+    eventType: 'supplier.kyc_verified',
+    journeyStage: 'SUPPLIER',
+    category: 'SYSTEM_ALERT',
+    defaultChannel: 'WHATSAPP',
+    titleTemplate: 'Supplier Verification Approved',
+    bodyTemplate: 'Your GSTIN and bank account verification is complete. You are active on OTP.',
+    actionUrlTemplate: '/portal/profile',
+    actionLabel: 'View Verified Profile →',
+    requiresMasking: false,
+    isActionable: true,
+  },
+};
+
+/**
+ * Builds deterministic idempotency key for notification dispatch
+ * Format: <domain-event-id>:<recipient>:<notification-type>:<channel>
+ */
+export function buildNotificationIdempotencyKey(
+  domainEventId: string,
+  recipient: string,
+  notificationType: string,
+  channel: TruthfulNotificationChannel,
+): string {
+  const cleanEventId = (domainEventId || 'unknown-evt').trim();
+  const cleanRecipient = (recipient || 'anon').trim().toLowerCase();
+  const cleanType = (notificationType || 'default').trim().toUpperCase();
+  const cleanChannel = (channel || 'IN_APP').trim().toUpperCase();
+  return `${cleanEventId}:${cleanRecipient}:${cleanType}:${cleanChannel}`;
+}
+
+/**
+ * Evaluates Channel Operational Status
+ */
+export function evaluateChannelOperationalStatus(
+  channel: TruthfulNotificationChannel,
+  config: {
+    isEnabled?: boolean;
+    hasCredentials?: boolean;
+    isMock?: boolean;
+  },
+): TruthfulChannelOperationalStatus {
+  if (config.isEnabled === false) {
+    return 'DISABLED';
+  }
+  if (channel === 'IN_APP') {
+    return 'LIVE'; // In-app is always natively live
+  }
+  if (!config.hasCredentials && !config.isMock) {
+    return 'UNAVAILABLE';
+  }
+  if (config.isMock) {
+    return 'READY';
+  }
+  return 'LIVE';
+}
+
+export interface TruthfulDeliveryStateRecord {
+  id: string;
+  domainEventId: string;
+  idempotencyKey: string;
+  channel: TruthfulNotificationChannel;
+  channelStatus: TruthfulChannelOperationalStatus;
+  state: TruthfulNotificationDeliveryState;
+  stateHistory: Array<{
+    state: TruthfulNotificationDeliveryState;
+    timestamp: string;
+    evidence?: Record<string, unknown>;
+  }>;
+  recipientAddress: string;
+  recipientUserId?: string | null;
+  organizationId?: string | null;
+  templateCode: string;
+  isIdentityMasked: boolean;
+  providerMessageId?: string | null;
+  providerAcceptedAt?: string | null;
+  deliveredAt?: string | null;
+  openedAt?: string | null;
+  claimedAt?: string | null;
+  failedAt?: string | null;
+  terminalReason?: string | null;
+  retryCount: number;
+  maxRetries: number;
+  nextRetryAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Pure state reducer applying the 8-state transition rules with idempotency
+ */
+export function transitionTruthfulNotificationState(
+  current: TruthfulDeliveryStateRecord,
+  nextState: TruthfulNotificationDeliveryState,
+  evidence?: {
+    timestamp?: string;
+    providerMessageId?: string;
+    terminalReason?: string;
+    evidencePayload?: Record<string, unknown>;
+  },
+): { success: boolean; record: TruthfulDeliveryStateRecord; error?: string } {
+  const validation = validateNotificationStateTransition(current.state, nextState);
+  if (!validation.valid) {
+    return {
+      success: false,
+      record: current,
+      error: validation.reason,
+    };
+  }
+
+  const nowIso = evidence?.timestamp || new Date().toISOString();
+
+  // If same state, return idempotent success without mutating history
+  if (current.state === nextState) {
+    return { success: true, record: current };
+  }
+
+  const updated: TruthfulDeliveryStateRecord = {
+    ...current,
+    state: nextState,
+    updatedAt: nowIso,
+    stateHistory: [
+      ...current.stateHistory,
+      {
+        state: nextState,
+        timestamp: nowIso,
+        evidence: evidence?.evidencePayload,
+      },
+    ],
+  };
+
+  if (evidence?.providerMessageId) {
+    updated.providerMessageId = evidence.providerMessageId;
+  }
+
+  switch (nextState) {
+    case 'PROVIDER_ACCEPTED':
+      updated.providerAcceptedAt = nowIso;
+      break;
+    case 'DELIVERED':
+      updated.deliveredAt = nowIso;
+      break;
+    case 'OPENED':
+      updated.openedAt = nowIso;
+      break;
+    case 'CLAIMED':
+      updated.claimedAt = nowIso;
+      break;
+    case 'FAILED':
+      updated.failedAt = nowIso;
+      updated.terminalReason = evidence?.terminalReason || 'Delivery failure';
+      break;
+    case 'UNAVAILABLE':
+      updated.terminalReason = evidence?.terminalReason || 'Channel unavailable or not configured';
+      break;
+    default:
+      break;
+  }
+
+  return { success: true, record: updated };
+}
+
+/**
+ * Identity Leakage Protection Assertion for Outbound Notification Payloads
+ * Strictly verifies zero leakage of buyer contact info, competing supplier names, or quote amounts.
+ */
+export function assertNotificationContentSafe(
+  payload: Record<string, unknown>,
+  isPreAward: boolean,
+): { isSafe: boolean; violations: string[] } {
+  const violations: string[] = [];
+
+  if (isPreAward) {
+    if (payload.buyer_name || payload.buyer_phone || payload.buyer_email || payload.door_number || payload.flat_number) {
+      violations.push('Pre-award buyer identity/contact leakage detected');
+    }
+    if (payload.competitor_name || payload.competitor_supplier_id || payload.competing_quotes || payload.other_quotes) {
+      violations.push('Competitor supplier identity or quote leakage detected');
+    }
+    if (payload.supplier_legal_name && payload.is_identity_masked !== false) {
+      violations.push('Unmasked supplier legal name in pre-award notification');
+    }
+  }
+
+  // Universal safety checks
+  if (payload.password || payload.api_key || payload.secret || payload.bearer_token) {
+    violations.push('Credential or secret token detected in notification payload');
+  }
+
+  return {
+    isSafe: violations.length === 0,
+    violations,
+  };
+}
+

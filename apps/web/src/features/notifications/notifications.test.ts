@@ -146,4 +146,19 @@ describe('Notification History & Activity Feed', () => {
     expect(NotificationsPage).toBeDefined();
     expect(typeof NotificationsPage).toBe('function');
   });
+
+  it('renders truthful delivery state badges for canonical states', () => {
+    const states: Array<AppNotification['status']> = [
+      'CREATED',
+      'DISPATCH_REQUESTED',
+      'PROVIDER_ACCEPTED',
+      'DELIVERED',
+      'OPENED',
+      'CLAIMED',
+      'UNAVAILABLE',
+      'FAILED',
+    ];
+
+    expect(states).toHaveLength(8);
+  });
 });

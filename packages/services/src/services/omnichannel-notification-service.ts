@@ -97,9 +97,15 @@ export class OmnichannelNotificationService {
     const redactedPayload = redactNotificationPayload(input.payload, shouldMask);
 
     const now = timestamp();
+    // Tenant isolation: if actor belongs to an organization and is not platform admin, enforce actor.organizationId
+    let effectiveOrgId = input.organizationId ?? actor.organizationId ?? null;
+    if (!actor.isPlatformAdmin && actor.organizationId && input.organizationId && input.organizationId !== actor.organizationId) {
+      effectiveOrgId = actor.organizationId; // Prevent cross-tenant spoofing
+    }
+
     const item: NotificationDispatchQueueEntity = {
       id: createId(),
-      organizationId: input.organizationId ?? actor.organizationId ?? null,
+      organizationId: effectiveOrgId,
       recipientUserId: input.recipientUserId ?? null,
       recipientAddress: input.recipientAddress,
       channel: input.channel,

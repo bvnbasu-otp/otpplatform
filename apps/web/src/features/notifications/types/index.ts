@@ -13,7 +13,18 @@ export type NotificationActionType =
   | 'SYSTEM_ALERT'
   | string;
 
-export type NotificationStatus = 'PENDING' | 'SENT' | 'READ' | 'FAILED';
+export type NotificationStatus =
+  | 'PENDING'
+  | 'SENT'
+  | 'READ'
+  | 'FAILED'
+  | 'CREATED'
+  | 'DISPATCH_REQUESTED'
+  | 'PROVIDER_ACCEPTED'
+  | 'DELIVERED'
+  | 'OPENED'
+  | 'CLAIMED'
+  | 'UNAVAILABLE';
 
 export interface AppNotification {
   id: string;
@@ -21,7 +32,7 @@ export interface AppNotification {
   recipient_name?: string | null;
   recipient_email?: string | null;
   recipient_is_admin?: boolean;
-  channel: 'IN_APP' | 'EMAIL';
+  channel: 'IN_APP' | 'EMAIL' | 'WHATSAPP' | 'SMS';
   status: NotificationStatus;
   event_type: string;
   action_type?: NotificationActionType;
@@ -31,6 +42,10 @@ export interface AppNotification {
   payload?: Record<string, any>;
   sent_at?: string | null;
   read_at?: string | null;
+  delivered_at?: string | null;
+  opened_at?: string | null;
+  claimed_at?: string | null;
+  provider_accepted_at?: string | null;
   created_at: string;
   updated_at: string;
   is_demo?: boolean;

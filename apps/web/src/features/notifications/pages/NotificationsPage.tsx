@@ -43,6 +43,68 @@ function formatRelativeTime(dateString?: string | null): string {
   }
 }
 
+function getDeliveryStateBadge(status?: string, channel?: string) {
+  const s = (status || '').toUpperCase();
+  switch (s) {
+    case 'CLAIMED':
+      return {
+        label: 'Claimed',
+        badgeClass: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+        dotClass: 'bg-purple-500',
+      };
+    case 'OPENED':
+    case 'READ':
+      return {
+        label: 'Read / Opened',
+        badgeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+        dotClass: 'bg-emerald-500',
+      };
+    case 'DELIVERED':
+      return {
+        label: 'Delivered',
+        badgeClass: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20',
+        dotClass: 'bg-teal-500',
+      };
+    case 'PROVIDER_ACCEPTED':
+      return {
+        label: 'Provider Accepted',
+        badgeClass: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+        dotClass: 'bg-blue-500',
+      };
+    case 'DISPATCH_REQUESTED':
+      return {
+        label: 'Dispatch Requested',
+        badgeClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20',
+        dotClass: 'bg-sky-500 animate-pulse',
+      };
+    case 'CREATED':
+    case 'PENDING':
+      return {
+        label: 'Created',
+        badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
+        dotClass: 'bg-amber-500',
+      };
+    case 'UNAVAILABLE':
+      return {
+        label: 'Unavailable',
+        badgeClass: 'bg-stone-500/10 text-stone-700 dark:text-stone-300 border-stone-500/20',
+        dotClass: 'bg-stone-500',
+      };
+    case 'FAILED':
+      return {
+        label: 'Delivery Failed',
+        badgeClass: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
+        dotClass: 'bg-rose-500',
+      };
+    default:
+      return {
+        label: status || 'Sent',
+        badgeClass: 'bg-muted text-muted-foreground border-border',
+        dotClass: 'bg-muted-foreground',
+      };
+  }
+}
+
 function getNotificationVisuals(actionType?: string, eventType?: string) {
   const code = (actionType || eventType || '').toUpperCase();
 
@@ -616,6 +678,15 @@ export function NotificationsPage({
                                 Channel: {notif.channel}
                               </span>
                             )}
+                            {(() => {
+                              const badge = getDeliveryStateBadge(notif.status, notif.channel);
+                              return (
+                                <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold border ${badge.badgeClass}`}>
+                                  <span className={`h-1.5 w-1.5 rounded-full ${badge.dotClass}`} />
+                                  {badge.label}
+                                </span>
+                              );
+                            })()}
                           </div>
 
                           {/* 1-Tap Deep Link Button */}

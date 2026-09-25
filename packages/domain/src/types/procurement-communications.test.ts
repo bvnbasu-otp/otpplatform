@@ -11,6 +11,12 @@ import {
   sanitizeLogData,
   validateProviderWebhookSignature,
   type NotificationPreferences,
+  type TruthfulDeliveryStateRecord,
+  validateNotificationStateTransition,
+  transitionTruthfulNotificationState,
+  buildNotificationIdempotencyKey,
+  evaluateChannelOperationalStatus,
+  assertNotificationContentSafe,
 } from './procurement-communications';
 
 describe('Omnichannel Procurement Communications Domain Engine', () => {
@@ -118,4 +124,126 @@ describe('Omnichannel Procurement Communications Domain Engine', () => {
 
     expect(validateProviderWebhookSignature(rawPayload, oldSig, secret, oldTimestamp, 300)).toBe(false);
   });
+
+  describe('Truthful 8-State Delivery Lifecycle & Identity Protection', () => {
+    it('enforces canonical 8-state sequence CREATED -> DISPATCH_REQUESTED -> PROVIDER_ACCEPTED -> DELIVERED -> OPENED -> CLAIMED', () => {
+      const idKey = buildNotificationIdempotencyKey('evt-1001', 'supplier-99', 'RFQ_INVITE', 'WHATSAPP');
+      expect(idKey).toBe('evt-1001:supplier-99:RFQ_INVITE:WHATSAPP');
+
+      let record: TruthfulDeliveryStateRecord = {
+        id: 'notif-state-1',
+        domainEventId: 'evt-1001',
+        idempotencyKey: idKey,
+        channel: 'WHATSAPP',
+        channelStatus: 'LIVE',
+        state: 'CREATED',
+        stateHistory: [{ state: 'CREATED', timestamp: new Date().toISOString() }],
+        recipientAddress: '+919876543210',
+        templateCode: 'tmpl-rfq-invite-wa',
+        isIdentityMasked: true,
+        retryCount: 0,
+        maxRetries: 5,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // 1. CREATED -> DISPATCH_REQUESTED
+      let res = transitionTruthfulNotificationState(record, 'DISPATCH_REQUESTED');
+      expect(res.success).toBe(true);
+      record = res.record;
+      expect(record.state).toBe('DISPATCH_REQUESTED');
+
+      // 2. DISPATCH_REQUESTED -> PROVIDER_ACCEPTED
+      res = transitionTruthfulNotificationState(record, 'PROVIDER_ACCEPTED', {
+        providerMessageId: 'waha-msg-555',
+      });
+      expect(res.success).toBe(true);
+      record = res.record;
+      expect(record.state).toBe('PROVIDER_ACCEPTED');
+      expect(record.providerMessageId).toBe('waha-msg-555');
+
+      // 3. PROVIDER_ACCEPTED -> DELIVERED
+      res = transitionTruthfulNotificationState(record, 'DELIVERED');
+      expect(res.success).toBe(true);
+      record = res.record;
+      expect(record.state).toBe('DELIVERED');
+      expect(record.deliveredAt).toBeDefined();
+
+      // 4. DELIVERED -> OPENED
+      res = transitionTruthfulNotificationState(record, 'OPENED');
+      expect(res.success).toBe(true);
+      record = res.record;
+      expect(record.state).toBe('OPENED');
+      expect(record.openedAt).toBeDefined();
+
+      // 5. OPENED -> CLAIMED
+      res = transitionTruthfulNotificationState(record, 'CLAIMED');
+      expect(res.success).toBe(true);
+      record = res.record;
+      expect(record.state).toBe('CLAIMED');
+      expect(record.claimedAt).toBeDefined();
+    });
+
+    it('rejects illegal state downgrades and illegal state jumps', () => {
+      const record: TruthfulDeliveryStateRecord = {
+        id: 'notif-state-2',
+        domainEventId: 'evt-1002',
+        idempotencyKey: 'evt-1002:user-1:ALERT:IN_APP',
+        channel: 'IN_APP',
+        channelStatus: 'LIVE',
+        state: 'DELIVERED',
+        stateHistory: [],
+        recipientAddress: 'usr-1',
+        templateCode: 'tmpl-alert',
+        isIdentityMasked: false,
+        retryCount: 0,
+        maxRetries: 5,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Downgrade: DELIVERED -> CREATED rejected
+      const downgrade = transitionTruthfulNotificationState(record, 'CREATED');
+      expect(downgrade.success).toBe(false);
+      expect(downgrade.error).toContain('Illegal notification state transition');
+
+      // Illegal skip: CREATED -> OPENED rejected
+      const createdRecord = { ...record, state: 'CREATED' as const };
+      const illegalSkip = transitionTruthfulNotificationState(createdRecord, 'OPENED');
+      expect(illegalSkip.success).toBe(false);
+      expect(illegalSkip.error).toContain('Illegal notification state transition');
+    });
+
+    it('evaluates channel operational status truthfully (LIVE, READY, DISABLED, UNAVAILABLE)', () => {
+      expect(evaluateChannelOperationalStatus('IN_APP', { isEnabled: true })).toBe('LIVE');
+      expect(evaluateChannelOperationalStatus('WHATSAPP', { isEnabled: false })).toBe('DISABLED');
+      expect(evaluateChannelOperationalStatus('SMS', { isEnabled: true, hasCredentials: false })).toBe('UNAVAILABLE');
+      expect(evaluateChannelOperationalStatus('EMAIL', { isEnabled: true, hasCredentials: false, isMock: true })).toBe('READY');
+      expect(evaluateChannelOperationalStatus('EMAIL', { isEnabled: true, hasCredentials: true })).toBe('LIVE');
+    });
+
+    it('asserts pre-award notification payloads prevent buyer identity and competitor quote leaks', () => {
+      const safePayload = {
+        rfq_number: 'RFQ-2026-009',
+        category_name: 'Elevator Maintenance',
+        supplier_pseudonym: 'Supplier A7K3',
+        target_pincode: '560001',
+      };
+      const safeCheck = assertNotificationContentSafe(safePayload, true);
+      expect(safeCheck.isSafe).toBe(true);
+      expect(safeCheck.violations).toHaveLength(0);
+
+      const leakyPayload = {
+        rfq_number: 'RFQ-2026-009',
+        buyer_name: 'Brigade Gateway RWA President',
+        buyer_phone: '+919876543210',
+        competitor_name: 'Otis Elevators India Ltd',
+        competing_quotes: [450000, 480000],
+      };
+      const leakyCheck = assertNotificationContentSafe(leakyPayload, true);
+      expect(leakyCheck.isSafe).toBe(false);
+      expect(leakyCheck.violations.length).toBeGreaterThanOrEqual(2);
+    });
+  });
 });
+
