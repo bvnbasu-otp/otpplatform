@@ -17,6 +17,7 @@ import {
 } from '@/features/governance/types/governance';
 import { revealSupplier, type RevealedWinner } from '@/features/reveal/api/reveal';
 import { fetchRevealedQuotes, type RevealedQuoteRow } from '@/features/reveal/api/fetch-revealed-quotes';
+import { DecisionReceipt } from '@/features/reveal/components/DecisionReceipt';
 import { approve, fetchApproval, requestApproval, fetchRfqApprovalStages, fetchUserActiveDelegations, submitTierApprovalAtomic } from '../api/approval';
 import { fetchAward, lockAward, unlockAwardDecision } from '../api/awards';
 import { CancelRfqModal } from '@/features/rfq/components';
@@ -494,6 +495,9 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 <span>Audit Signature: Cryptographically Sealed</span>
               </div>
             </div>
+
+            {/* Post-Award Cryptographic Decision Receipt */}
+            <DecisionReceipt rfqId={rfqId} winningQuoteId={award.quoteId} showTable={true} />
           </section>
         )}
 

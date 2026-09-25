@@ -80,6 +80,7 @@ export * from './types/msme-governance';
 export * from './types/supplier-lifecycle-tier';
 export * from './types/supplier-network-refresh';
 export * from './types/requirement-intake';
+export * from './types/decision-receipt';
 export * from './standards/indian-procurement-standards';
 
 
