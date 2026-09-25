@@ -159,10 +159,17 @@ export class PaymentService {
 
       currency = invoice.currency;
 
-      const wo = await this.repos.workOrders.findById(invoice.workOrderId);
-      if (!wo) return err(new ValidationError('Work order not found'));
+      let po: PurchaseOrder | null = null;
+      if (invoice.purchaseOrderId) {
+        po = await this.repos.purchaseOrders.findById(invoice.purchaseOrderId);
+      }
+      if (!po && invoice.workOrderId) {
+        const wo = await this.repos.workOrders.findById(invoice.workOrderId);
+        if (wo) {
+          po = await this.repos.purchaseOrders.findById(wo.purchaseOrderId);
+        }
+      }
 
-      const po = await this.repos.purchaseOrders.findById(wo.purchaseOrderId);
       if (!po) return err(new ValidationError('Purchase order not found'));
 
       poId = po.id;

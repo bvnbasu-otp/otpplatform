@@ -177,6 +177,28 @@ export class AccountingService {
   }
 
   /**
+   * Retrieves posted journals for an organization with cross-tenant check.
+   */
+  async getJournalEntries(
+    actor: ActorContext,
+    orgId: string,
+    periodId?: string,
+  ): Promise<Result<JournalEntry[], Error>> {
+    try {
+      this.requireOrgMember(actor, orgId);
+      const journalsRepo = this.repos.journalEntries;
+      if (!journalsRepo) throw new Error('Journal entries repository not configured');
+      let list = await journalsRepo.findByOrganizationId(orgId);
+      if (periodId) {
+        list = list.filter((j) => j.periodId === periodId);
+      }
+      return ok(list);
+    } catch (err: any) {
+      return { ok: false, error: err };
+    }
+  }
+
+  /**
    * Posts a double-entry journal entry atomically.
    */
   async postJournalEntry(
