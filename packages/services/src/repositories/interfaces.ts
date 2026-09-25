@@ -60,12 +60,14 @@ import type {
 
 export interface RequirementRepository {
   findById(id: string): Promise<Requirement | null>;
+  findAll?(): Promise<Requirement[]>;
   save(requirement: Requirement): Promise<Requirement>;
 }
 
 export interface RfqRepository {
   findById(id: string): Promise<Rfq | null>;
   findByRequirementId(requirementId: string): Promise<Rfq | null>;
+  findAll?(): Promise<Rfq[]>;
   save(rfq: Rfq): Promise<Rfq>;
 }
 
@@ -79,6 +81,7 @@ export interface InvitationRepository {
 export interface QuoteRepository {
   findById(id: string): Promise<Quote | null>;
   findByRfqId(rfqId: string): Promise<Quote[]>;
+  findAll?(): Promise<Quote[]>;
   save(quote: Quote): Promise<Quote>;
 }
 
@@ -168,6 +171,7 @@ export interface PaymentAllocationRepository {
 export interface SupplierRepository {
   findById(id: string): Promise<Supplier | null>;
   findActiveByCategory(category: string): Promise<Supplier[]>;
+  findAll?(): Promise<Supplier[]>;
   save?(supplier: Supplier): Promise<Supplier>;
   findByGstin?(gstin: string): Promise<Supplier | null>;
   findByPan?(pan: string): Promise<Supplier | null>;

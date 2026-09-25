@@ -61,6 +61,7 @@ export * from './services/supplier-lifecycle-service';
 export * from './services/org-role-lifecycle-service';
 export * from './services/canonical-taxonomy-service';
 export * from './services/track-service';
+export * from './services/operational-oversight-service';
 export * from './services/canonical-authorization-service';
 export * from './services/service-helpers';
 

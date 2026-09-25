@@ -265,6 +265,7 @@ export class InMemoryRepositories {
     const store = this.requirements;
     return {
       findById: async (id) => store.get(id) ?? null,
+      findAll: async () => [...store.values()],
       save: async (r) => {
         store.set(r.id, r);
         return r;
@@ -278,6 +279,7 @@ export class InMemoryRepositories {
       findById: async (id) => store.get(id) ?? null,
       findByRequirementId: async (reqId) =>
         [...store.values()].find((r) => r.requirementId === reqId) ?? null,
+      findAll: async () => [...store.values()],
       save: async (r) => {
         store.set(r.id, r);
         return r;
@@ -308,6 +310,7 @@ export class InMemoryRepositories {
       findById: async (id) => store.get(id) ?? null,
       findByRfqId: async (rfqId) =>
         [...store.values()].filter((q) => q.rfqId === rfqId),
+      findAll: async () => [...store.values()],
       save: async (q) => {
         store.set(q.id, q);
         return q;
@@ -1128,6 +1131,7 @@ export class InMemoryRepositories {
     const store = this.suppliers;
     return {
       findById: async (id) => store.get(id) ?? null,
+      findAll: async () => [...store.values()],
       findActiveByCategory: async (category) =>
         [...store.values()].filter(
           (s) => s.status === 'ACTIVE' && s.categories.includes(category),

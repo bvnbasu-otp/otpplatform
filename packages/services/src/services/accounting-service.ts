@@ -32,6 +32,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '../types/errors';
+import { ok, type Result } from '../types/result';
 import type { AuditAppService } from './audit-service';
 import { createId, timestamp } from '../repositories/in-memory';
 

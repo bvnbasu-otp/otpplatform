@@ -49,6 +49,7 @@ import { SupplierLifecycleService } from '../services/supplier-lifecycle-service
 import { OrgRoleLifecycleService } from '../services/org-role-lifecycle-service';
 import { CanonicalTaxonomyService } from '../services/canonical-taxonomy-service';
 import { TrackService } from '../services/track-service';
+import { OperationalOversightService } from '../services/operational-oversight-service';
 import { IdentityProtectedRfqService } from '../blind/blind-rfq-service';
 import { createInMemoryBlindViewPorts } from '../blind/in-memory-blind-view-ports';
 import type { BlindViewPorts } from '../interfaces/blind-view-ports';
@@ -89,6 +90,7 @@ export interface OtpServices {
   managedSupplierNetwork: ManagedSupplierNetworkService;
   taxonomy: CanonicalTaxonomyService;
   track: TrackService;
+  oversight: OperationalOversightService;
 }
 
 export function createOtpServices(
@@ -180,6 +182,7 @@ export function createOtpServices(
   const blindRfq = new IdentityProtectedRfqService(repos, blindViewPorts, auditInner);
 
   const track = new TrackService(repos, audit);
+  const oversight = new OperationalOversightService(repos, audit);
 
   return {
     requirements,
@@ -217,5 +220,6 @@ export function createOtpServices(
     managedSupplierNetwork,
     taxonomy,
     track,
+    oversight,
   };
 }
