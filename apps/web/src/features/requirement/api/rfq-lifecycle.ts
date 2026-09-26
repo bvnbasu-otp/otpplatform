@@ -8,6 +8,7 @@ import type {
 } from '../types/rfq-review';
 import { fetchRequirementAttachments } from '@/features/attachments/api/attachments';
 import { fetchProcurementPolicy } from '@/features/procurement-os/api/fetch-procurement-os';
+import { formatDateIST } from '@/lib/date-utils';
 
 export type RequirementRfqContext = CompactRequirementContext;
 
@@ -302,6 +303,8 @@ export async function openRfq(rfqId: string): Promise<
     .maybeSingle();
 
   if (rfqErr || !rfq) return { ok: false, error: rfqErr?.message ?? 'RFQ not found' };
+  // Discovery opens a DRAFT RFQ server-side, and a retry may find it open already.
+  if (rfq.status === 'OPEN') return { ok: true };
   if (rfq.status !== 'DRAFT') {
     return { ok: false, error: `Cannot open RFQ from status ${rfq.status}` };
   }
@@ -313,12 +316,20 @@ export async function openRfq(rfqId: string): Promise<
 
   const now = new Date().toISOString();
 
-  const { error: updateErr } = await supabase
+  const { data: opened, error: updateErr } = await supabase
     .from('rfqs')
     .update({ status: 'OPEN', updated_at: now })
-    .eq('id', rfqId);
+    .eq('id', rfqId)
+    .eq('status', 'DRAFT')
+    .select('id');
 
   if (updateErr) return { ok: false, error: updateErr.message };
+  if (!Array.isArray(opened) || opened.length === 0) {
+    const { data: after } = await supabase.from('rfqs').select('status').eq('id', rfqId).maybeSingle();
+    return after?.status === 'OPEN'
+      ? { ok: true }
+      : { ok: false, error: `Cannot open RFQ from status ${after?.status ?? 'unknown'}` };
+  }
 
   await supabase
     .from('requirements')
@@ -575,7 +586,7 @@ export async function fetchRfqReviewData(
       id: 'deadline',
       label: 'Quote Response Deadline',
       status: 'PASS',
-      message: `Set to ${deadlineDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+      message: `Set to ${formatDateIST(deadlineDate)}`,
     });
   }
 
@@ -716,12 +727,35 @@ export async function fetchRfqReviewData(
   return { ok: true, data: reviewData };
 }
 
-export async function publishRfq(input: {
+type PublishRfqResult = { ok: true; rfqId: string; invitedCount: number } | { ok: false; error: string };
+
+const publishesInFlight = new Map<string, Promise<PublishRfqResult>>();
+
+/**
+ * One deliberate publish: saves deadline and instructions, invites suppliers,
+ * opens the RFQ. Concurrent calls for the same RFQ share one execution, a
+ * failed save stops before anything is published, and re-publishing an RFQ
+ * that is already open succeeds without creating anything new.
+ */
+export function publishRfq(input: {
   rfqId: string;
   requirementId: string;
   quoteDeadline?: string;
   instructions?: string;
-}): Promise<{ ok: true; rfqId: string; invitedCount: number } | { ok: false; error: string }> {
+}): Promise<PublishRfqResult> {
+  const existing = publishesInFlight.get(input.rfqId);
+  if (existing) return existing;
+  const run = runPublishRfq(input).finally(() => publishesInFlight.delete(input.rfqId));
+  publishesInFlight.set(input.rfqId, run);
+  return run;
+}
+
+async function runPublishRfq(input: {
+  rfqId: string;
+  requirementId: string;
+  quoteDeadline?: string;
+  instructions?: string;
+}): Promise<PublishRfqResult> {
   const { rfqId, requirementId, quoteDeadline, instructions } = input;
 
   if (quoteDeadline) {
@@ -730,10 +764,10 @@ export async function publishRfq(input: {
   }
 
   if (instructions !== undefined) {
-    await updateRfqInstructions(requirementId, instructions);
+    const instrRes = await updateRfqInstructions(requirementId, instructions);
+    if (!instrRes.ok) return instrRes;
   }
 
-  // Ensure suppliers are invited
   let count = await fetchInvitationCount(rfqId);
   if (count === 0) {
     const discRes = await discoverAndInvite(rfqId);
@@ -742,9 +776,7 @@ export async function publishRfq(input: {
   }
 
   const openRes = await openRfq(rfqId);
-  if (!openRes.ok && !openRes.error.includes('already')) {
-    return openRes;
-  }
+  if (!openRes.ok) return openRes;
 
   return { ok: true, rfqId, invitedCount: count };
 }

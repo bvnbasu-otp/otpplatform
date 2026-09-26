@@ -8,6 +8,7 @@ import { SignupSuccess } from '../components/SignupSuccess';
 import { SupplierRegisterForm } from '../components/SupplierRegisterForm';
 import type { SignupResult } from '../api/signup';
 import { copyFor, sideFromParam, sideParam, type PortalSide } from '../types/portal';
+import { PRODUCT_NAME, PRODUCT_PLATFORM_SUBTITLE, PRODUCT_TITLE } from '@/lib/brand';
 
 /**
  * Registration, for someone who arrived from the landing page rather than from
@@ -56,6 +57,10 @@ export function SignupPage() {
   return (
     <SiteLayout>
       <div className="mx-auto w-full max-w-md px-3.5 py-6 space-y-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden">
+        <div data-testid="signup-brand">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-action">{PRODUCT_TITLE}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{PRODUCT_PLATFORM_SUBTITLE}</p>
+        </div>
         <div>
           {/*
             Loose, because this page scrolls. The portal's dense setting is
@@ -83,7 +88,7 @@ export function SignupPage() {
                       <div>
                         <span className="font-bold">Referred by {params.get('ref')}</span>
                         <p className="text-[11px] text-muted-foreground">
-                          Welcome! You're signing up with a verified peer invitation.
+                          Welcome! Someone who already uses {PRODUCT_NAME} invited you.
                         </p>
                       </div>
                     </div>

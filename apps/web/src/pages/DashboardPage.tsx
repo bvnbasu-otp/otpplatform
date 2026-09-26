@@ -8,6 +8,7 @@ import {
   validateOrganizationSourcingAccess,
 } from '@/features/subscription';
 import { ReferAndEarnCard } from '@/features/referral';
+import { usePilotAllowance } from '@/features/intake/hooks/use-pilot-allowance';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { formatDateIST } from '@/lib/date-utils';
 import type { OrganizationRequirementSummary } from '@/features/requirement/api/requirements';
@@ -39,6 +40,8 @@ export function DashboardPage() {
     organizationName: context.organizationName,
     orgRole: context.orgRole,
   });
+
+  const pilotAllowance = usePilotAllowance(org?.organizationId || context.organizationId);
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedRequirement, setSelectedRequirement] = useState<OrganizationRequirementSummary | null>(null);
@@ -127,11 +130,8 @@ export function DashboardPage() {
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-950 dark:text-emerald-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-base">🎁</span>
-          <div>
-            <span className="font-extrabold text-foreground">Pilot Allowance:</span>{' '}
-            <span className="font-medium text-emerald-800 dark:text-emerald-300">
-              {subscription?.freeRfqCredits ?? 1} of 3 RFQs remaining this month (₹0 charged in Pilot Mode)
-            </span>
+          <div data-testid="pilot-allowance-label" className="font-medium text-emerald-800 dark:text-emerald-300">
+            {pilotAllowance ? pilotAllowance.label : 'Pilot Allowance: checking this month’s RFQs… (₹0 charged in Pilot Mode)'}
           </div>
         </div>
         <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">

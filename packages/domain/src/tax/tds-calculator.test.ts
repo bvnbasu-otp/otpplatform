@@ -6,9 +6,87 @@ import {
   determineFinancialYear,
   determineTaxLawVersion,
   generateForm16ACertificate,
+  deriveInvoiceTdsBase,
   lookupTdsRate,
+  roundStatutoryTds,
   validatePan,
 } from './tds-calculator';
+
+describe('TDS base excludes separately stated GST (CBDT Circular 23/2017)', () => {
+  const COMPANY_PAN = 'AAACB1234C';
+
+  it('194C company: taxable 1,00,000 + GST 18,000 → TDS 2,000 (not 2,360), net 1,16,000', () => {
+    const r = calculateTds({ invoiceAmount: 118000, gstAmount: 18000, section: '194C', deducteePan: COMPANY_PAN });
+    expect(r.grossAmount).toBe(118000);
+    expect(r.gstExcluded).toBe(18000);
+    expect(r.taxableAmount).toBe(100000);
+    expect(r.tdsRate).toBe(2);
+    expect(r.statutoryTdsAmount).toBe(2000);
+    expect(r.netPayableAfterTds).toBe(116000);
+  });
+
+  it('194J professional 10%: 50,000 + 9,000 GST → TDS 5,000, net 54,000', () => {
+    const r = calculateTds({ invoiceAmount: 59000, gstAmount: 9000, section: '194J_PROF', deducteePan: COMPANY_PAN });
+    expect(r.statutoryTdsAmount).toBe(5000);
+    expect(r.netPayableAfterTds).toBe(54000);
+  });
+
+  it('applies the 194C single-bill threshold to the value excluding GST', () => {
+    // 29,000 + 5,220 GST = 34,220 gross: taxable value is under ₹30,000 and FY total under ₹1,00,000
+    const r = calculateTds({ invoiceAmount: 34220, gstAmount: 5220, section: '194C', deducteePan: COMPANY_PAN });
+    expect(r.rateDetails.thresholdExceeded).toBe(false);
+    expect(r.statutoryTdsAmount).toBe(0);
+    expect(r.netPayableAfterTds).toBe(34220);
+  });
+
+  it('is deterministic: recomputing the same invoice never deducts twice', () => {
+    const input = { invoiceAmount: 118000, gstAmount: 18000, section: '194C' as const, deducteePan: COMPANY_PAN };
+    const a = calculateTds(input);
+    const b = calculateTds(input);
+    expect(b.statutoryTdsAmount).toBe(a.statutoryTdsAmount);
+    expect(b.netPayableAfterTds).toBe(a.netPayableAfterTds);
+  });
+
+  it('without a GST split the whole amount is the base (backward compatible)', () => {
+    const r = calculateTds({ invoiceAmount: 100000, section: '194C', deducteePan: COMPANY_PAN });
+    expect(r.taxableAmount).toBe(100000);
+    expect(r.statutoryTdsAmount).toBe(2000);
+  });
+});
+
+describe('roundStatutoryTds mirrors apply_tds_withholding_atomic (single ROUND, ₹1 floor)', () => {
+  it('rounds once, half away from zero, to whole rupees', () => {
+    expect(roundStatutoryTds(12345, 2)).toBe(247); // 246.90
+    expect(roundStatutoryTds(12325, 2)).toBe(247); // 246.50
+    expect(roundStatutoryTds(12324, 2)).toBe(246); // 246.48
+    expect(roundStatutoryTds(124.755, 2)).toBe(2); // 2.4951 — no double rounding to 2.50 → 3
+  });
+
+  it('applies the ₹1 floor for tiny positive amounts and 0 for zero base or rate', () => {
+    expect(roundStatutoryTds(10, 2)).toBe(1);
+    expect(roundStatutoryTds(0, 2)).toBe(0);
+    expect(roundStatutoryTds(1000, 0)).toBe(0);
+  });
+});
+
+describe('deriveInvoiceTdsBase from persisted invoice columns', () => {
+  it('uses the stored GST split first', () => {
+    expect(deriveInvoiceTdsBase({ amount: 118000, cgstTotal: 9000, sgstTotal: 9000, taxableTotal: 100000 })).toEqual({
+      grossAmount: 118000, gstAmount: 18000, taxableAmount: 100000, gstSeparatelyStated: true,
+    });
+    expect(deriveInvoiceTdsBase({ amount: 118000, igstTotal: 18000 }).taxableAmount).toBe(100000);
+  });
+
+  it('falls back to taxable_total when the split is missing', () => {
+    expect(deriveInvoiceTdsBase({ amount: 118000, taxableTotal: 100000 }).gstAmount).toBe(18000);
+  });
+
+  it('treats invoices without recorded GST as not stating it separately', () => {
+    expect(deriveInvoiceTdsBase({ amount: 50000, taxableTotal: 0 })).toEqual({
+      grossAmount: 50000, gstAmount: 0, taxableAmount: 50000, gstSeparatelyStated: false,
+    });
+  });
+});
 
 describe('Phase 5C.4 — Statutory TDS Calculator & Tax Compliance Engine', () => {
   describe('PAN Validation and Entity Classification', () => {

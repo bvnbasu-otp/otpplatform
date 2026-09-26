@@ -1,4 +1,6 @@
-﻿import { supabase } from '@/lib/supabase';
+﻿import { describeNotificationStatus } from '@otp/domain';
+import { supabase } from '@/lib/supabase';
+import { dispatchWhatsAppText } from '@/features/notifications/lib/outbound-dispatch';
 
 export interface UserProfileDetails {
   id: string;
@@ -146,14 +148,7 @@ export async function requestProfileCredentialOtp(
     });
 
     if (error) {
-      // Fallback in demo/offline mode
-      const mockCode = '123456';
-      return {
-        ok: true,
-        otpCode: mockCode,
-        formattedValue: cleanVal,
-        message: `Verification code generated: ${mockCode}`,
-      };
+      return { ok: false, error: error.message || 'Could not create a verification code. Please try again.' };
     }
 
     const res = data as {
@@ -165,60 +160,55 @@ export async function requestProfileCredentialOtp(
       message?: string;
     };
 
-    if (!res.ok) {
-      if (res.error === 'Authentication required' || !res.error) {
-        const mockCode = '123456';
-        return {
-          ok: true,
-          otpCode: mockCode,
-          formattedValue: cleanVal,
-          message: `Verification code generated: ${mockCode}`,
-        };
-      }
-      return { ok: false, error: res.error || 'Failed to generate verification code' };
+    if (!res?.ok) {
+      return { ok: false, error: res?.error || 'Could not create a verification code. Please sign in again and retry.' };
     }
 
-    // If phone number, attempt dispatch via WAHA WhatsApp gateway if reachable
-    if (credentialType === 'PHONE' && res.credential_value && res.otp_code) {
-      try {
-        const digits = res.credential_value.replace(/\D/g, '');
-        const chatId = `${digits.length === 10 ? '91' + digits : digits}@c.us`;
-        const rawText =
-          `[OTP Platform] Profile Security Verification\n\n` +
-          `Hello ${res.full_name || 'Valued User'},\n` +
-          `Your verification code to link this phone number to your profile is:\n\n` +
-          `*${res.otp_code}*\n\n` +
-          `Valid for 15 minutes. Enter this code in your Profile Settings to verify and activate your phone number.`;
+    const formattedValue = res.credential_value || cleanVal;
+    // The code proves ownership of the phone/email, so it is only ever shown on screen in demo builds.
+    const demoCode = isDemoBuild() ? res.otp_code : undefined;
 
-        await fetch('/waha/api/sendText', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: JSON.stringify({
-            session: 'default',
-            chatId,
-            text: rawText.replace(/\u2014|\u2013/g, '-').replace(/[^\x20-\x7E\r\n\t]/g, ''),
-          }),
-        }).catch(() => null);
-      } catch {
-        // Non-blocking
+    if (credentialType === 'EMAIL') {
+      if (demoCode) {
+        return { ok: true, otpCode: demoCode, formattedValue, message: 'Demo build: the verification code is shown below.' };
       }
+      return {
+        ok: false,
+        error: 'Email verification codes cannot be sent yet in this pilot, so no code was sent. Please verify a phone number instead.',
+      };
     }
 
-    return {
-      ok: true,
-      otpCode: res.otp_code,
-      formattedValue: res.credential_value || cleanVal,
-      message: res.message || 'Verification code sent successfully',
-    };
+    if (!res.otp_code) {
+      return { ok: false, error: 'Could not create a verification code. Please try again.' };
+    }
+
+    const delivery = await dispatchWhatsAppText({
+      phone: formattedValue,
+      idempotencyKey: `profile-credential-otp:${formattedValue}:${res.otp_code}`,
+      text:
+        `OTP profile verification\n\n` +
+        `Hello ${res.full_name || 'there'},\n` +
+        `Your code to link this phone number to your profile is:\n\n` +
+        `*${res.otp_code}*\n\n` +
+        `Valid for 15 minutes. Enter it in your Profile settings.`,
+    });
+    const copy = describeNotificationStatus(delivery, 'VERIFICATION_CODE');
+
+    if (delivery.status === 'FAILED' || delivery.status === 'NOT_ATTEMPTED') {
+      if (demoCode) {
+        return { ok: true, otpCode: demoCode, formattedValue, message: `${copy.message} Demo build: the code is shown below.` };
+      }
+      return { ok: false, error: copy.message };
+    }
+
+    return { ok: true, otpCode: demoCode, formattedValue, message: copy.message };
   } catch {
-    const mockCode = '123456';
-    return {
-      ok: true,
-      otpCode: mockCode,
-      formattedValue: cleanVal,
-      message: `Verification code generated: ${mockCode}`,
-    };
+    return { ok: false, error: 'Could not create a verification code. Please check your connection and try again.' };
   }
+}
+
+function isDemoBuild(): boolean {
+  return import.meta.env.VITE_DEMO_MODE === 'true';
 }
 
 export async function verifyAndUpdateProfileCredential(
@@ -239,28 +229,12 @@ export async function verifyAndUpdateProfileCredential(
     });
 
     if (error) {
-      // Offline fallback: if code is 123456 or matching
-      if (cleanCode === '123456') {
-        return {
-          ok: true,
-          formattedValue: credentialValue.trim(),
-          message: `${credentialType === 'PHONE' ? 'Phone number' : 'Email address'} verified and linked successfully!`,
-        };
-      }
-      return { ok: false, error: error.message };
+      return { ok: false, error: error.message || 'Verification failed. Please try again.' };
     }
 
     const res = data as { ok: boolean; error?: string; message?: string; credential_value?: string };
-    if (!res.ok) {
-      // Check for mock fallback in development
-      if (cleanCode === '123456') {
-        return {
-          ok: true,
-          formattedValue: credentialValue.trim(),
-          message: `${credentialType === 'PHONE' ? 'Phone number' : 'Email address'} verified and linked successfully!`,
-        };
-      }
-      return { ok: false, error: res.error || 'Verification failed. Please check your code.' };
+    if (!res?.ok) {
+      return { ok: false, error: res?.error || 'Verification failed. Please check your code.' };
     }
 
     return {
@@ -269,13 +243,6 @@ export async function verifyAndUpdateProfileCredential(
       message: res.message || `${credentialType === 'PHONE' ? 'Phone number' : 'Email address'} verified and linked!`,
     };
   } catch (err) {
-    if (cleanCode === '123456') {
-      return {
-        ok: true,
-        formattedValue: credentialValue.trim(),
-        message: `${credentialType === 'PHONE' ? 'Phone number' : 'Email address'} verified and linked successfully!`,
-      };
-    }
     return { ok: false, error: err instanceof Error ? err.message : 'Verification failed' };
   }
 }

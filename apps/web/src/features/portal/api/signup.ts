@@ -1,4 +1,10 @@
+import type { NotificationStatusResolution } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
+import {
+  dispatchWhatsAppText,
+  resolveSupabaseEmailDispatch,
+  sanitizeToAscii as sanitizeOutboundAscii,
+} from '@/features/notifications/lib/outbound-dispatch';
 import type { PortalSide } from '../types/portal';
 
 /**
@@ -50,8 +56,12 @@ export interface SignupResult {
   autoApproved?: boolean;
   side?: 'BUYER' | 'SUPPLIER';
   email?: string;
+  /** Only ever what the server returned; never a client-side default. */
   temporaryPassword?: string;
+  /** Only ever what the server returned; never a client-side default. */
   freeRfqCredits?: number;
+  /** Outcome of the registration confirmation message, kept separate from the registration itself. */
+  notification?: NotificationStatusResolution;
 }
 
 export async function fetchServiceCategories(): Promise<
@@ -112,8 +122,9 @@ export async function submitSignupRequest(
       autoApproved: Boolean(row.auto_approved || row.status === 'ONBOARDED'),
       side: (row.side as 'BUYER' | 'SUPPLIER') ?? input.side,
       email: (row.email as string) ?? input.email,
-      temporaryPassword: (row.temporary_password as string) ?? 'Welcome@OTP2026!',
-      freeRfqCredits: typeof row.free_rfq_credits === 'number' ? row.free_rfq_credits : 1,
+      temporaryPassword:
+        typeof row.temporary_password === 'string' && row.temporary_password ? row.temporary_password : undefined,
+      freeRfqCredits: typeof row.free_rfq_credits === 'number' ? row.free_rfq_credits : undefined,
     },
   };
 }
@@ -157,57 +168,43 @@ export function humanizeSignupError(message: string): string {
 export async function sendVerificationCode(
   channel: VerificationChannel,
   contact: { email: string; phone: string },
-): Promise<{ ok: true; sentTo: string; otpCode?: string } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; sentTo: string; delivery: NotificationStatusResolution }
+  | { ok: false; error: string; delivery?: NotificationStatusResolution }
+> {
   if (channel === 'WHATSAPP') {
-    try {
-      const cleanPhone = normalizePhone(contact.phone).replace(/\D/g, '');
-      const chatId = `${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}@c.us`;
+    const cleanPhone = normalizePhone(contact.phone).replace(/\D/g, '');
 
-      // Request OTP from server-side RPC rather than generating client-side Math.random()
-      const { data: rpcData, error: rpcError } = await supabase.rpc('request_profile_verification_otp', {
-        p_phone: cleanPhone,
-      });
-
-      let otpCode: string;
-      if (!rpcError && rpcData?.ok && rpcData?.otp_code) {
-        otpCode = rpcData.otp_code;
-      } else {
-        // Fallback for offline/test environments without Postgres connection
-        otpCode = '123456';
-      }
-
-      // Record resend cooldown timestamp in sessionStorage (NOT plaintext OTP)
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        sessionStorage.setItem(`otp_wa_resend_${cleanPhone}`, String(Date.now() + 60000));
-      }
-
-      const cleanText =
-        `[OTP Platform] Verification Code\n\n` +
-        `Your 6-digit verification code is: *${otpCode}*\n\n` +
-        `Valid for 10 minutes. Enter this code on the registration page to proceed.`;
-
-      const res = await fetch('/waha/api/sendText', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify({
-          session: 'default',
-          chatId,
-          text: sanitizeToAscii(cleanText),
-        }),
-      });
-
-      if (!res.ok) {
-        // WAHA unreachable or offline
-        return { ok: true, sentTo: contact.phone, otpCode };
-      }
-      return { ok: true, sentTo: contact.phone, otpCode };
-    } catch {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('request_profile_verification_otp', {
+      p_phone: cleanPhone,
+    });
+    // No client-side or hard-coded fallback code: without a server-issued code there is nothing to verify.
+    if (rpcError || !rpcData?.ok || !rpcData?.otp_code) {
       return {
         ok: false,
-        error:
-          'WhatsApp Gateway is currently busy. Choose Email and we will send your code there.',
+        error: 'We could not issue a verification code right now. Choose Email or try again shortly.',
       };
     }
+
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      sessionStorage.setItem(`otp_wa_resend_${cleanPhone}`, String(Date.now() + 60000));
+    }
+
+    const delivery = await dispatchWhatsAppText({
+      phone: cleanPhone,
+      text:
+        `[OTP Platform] Verification Code\n\n` +
+        `Your 6-digit verification code is: *${rpcData.otp_code}*\n\n` +
+        `Valid for 10 minutes. Enter this code on the registration page to proceed.`,
+    });
+    if (delivery.status === 'FAILED' || delivery.status === 'NOT_ATTEMPTED') {
+      return {
+        ok: false,
+        delivery,
+        error: 'We could not send the code by WhatsApp. Choose Email and we will send your code there.',
+      };
+    }
+    return { ok: true, sentTo: contact.phone, delivery };
   }
 
   const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
@@ -219,44 +216,29 @@ export async function sendVerificationCode(
     },
   });
 
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, sentTo: contact.email };
+  const delivery = resolveSupabaseEmailDispatch(error);
+  if (error) return { ok: false, error: error.message, delivery };
+  return { ok: true, sentTo: contact.email, delivery };
 }
 
 /** Strictly sanitizes input string to 7-bit ASCII plain text. */
-export function sanitizeToAscii(text: string): string {
-  return text
-    .replace(/\u2014|\u2013/g, '-')
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/[\u201C\u201D]/g, '"')
-    .replace(/\u2022/g, '*')
-    .replace(/\u20B9/g, 'Rs. ')
-    .replace(/[^\x20-\x7E\r\n\t]/g, '')
-    .trim();
-}
+export const sanitizeToAscii = sanitizeOutboundAscii;
 
-/** Sends a direct WhatsApp notification via the local WAHA gateway. */
+/**
+ * Sends a WhatsApp notification via the WAHA gateway and reports the provider's
+ * answer (ACCEPTED / SUBMITTED / FAILED...), never "delivered".
+ */
 export async function sendWhatsAppNotification(
   phone: string,
   text: string,
-): Promise<boolean> {
-  try {
-    const cleanPhone = normalizePhone(phone).replace(/\D/g, '');
-    const chatId = `${cleanPhone}@c.us`;
-    const cleanText = sanitizeToAscii(text);
-    const res = await fetch('/waha/api/sendText', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      body: JSON.stringify({
-        session: 'default',
-        chatId,
-        text: cleanText,
-      }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  options: { idempotencyKey?: string; timeoutMs?: number } = {},
+): Promise<NotificationStatusResolution> {
+  return dispatchWhatsAppText({
+    phone: normalizePhone(phone).replace(/\D/g, ''),
+    text,
+    idempotencyKey: options.idempotencyKey,
+    timeoutMs: options.timeoutMs,
+  });
 }
 
 /** E.164, assuming India when no country code was given. */

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ProcurementContract } from '@otp/domain';
+import { formatDateIST } from '@/lib/date-utils';
 
 export interface TamperEvidentContractViewerProps {
   contract: ProcurementContract;
@@ -55,7 +56,7 @@ export function TamperEvidentContractViewer({
           </span>
           {contract.buyerSignedAt ? (
             <div className="mt-1 text-emerald-600 dark:text-emerald-400">
-              ✓ Signed on {new Date(contract.buyerSignedAt).toLocaleDateString()}
+              ✓ Signed on {formatDateIST(contract.buyerSignedAt)}
               <span className="block text-[10px] font-mono text-slate-500 truncate mt-0.5">
                 Sig: {contract.buyerSignatureHash}
               </span>
@@ -82,7 +83,7 @@ export function TamperEvidentContractViewer({
           </span>
           {contract.supplierSignedAt ? (
             <div className="mt-1 text-emerald-600 dark:text-emerald-400">
-              ✓ Signed on {new Date(contract.supplierSignedAt).toLocaleDateString()}
+              ✓ Signed on {formatDateIST(contract.supplierSignedAt)}
               <span className="block text-[10px] font-mono text-slate-500 truncate mt-0.5">
                 Sig: {contract.supplierSignatureHash}
               </span>

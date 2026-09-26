@@ -9,7 +9,7 @@ import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
-import { AdminQuickActionsSheet, isTransactionalWorkflowRoute } from '@/features/navigation';
+import { AdminQuickActionsSheet, shouldShowGlobalBottomNav } from '@/features/navigation';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -79,15 +79,17 @@ export function MobileBottomNav() {
 
   // Suppress global MobileBottomNav on deep transactional workflow screens
   // so that the page's dedicated primary action dock (e.g. Vote, Award, Sourcing, PO details) has 100% unobstructed, full-width prominence.
-  if (isTransactionalWorkflowRoute(pathname)) {
+  if (!shouldShowGlobalBottomNav(pathname)) {
     return null;
   }
 
   return (
     <>
+      {/* In normal flow as the last flex child of the shell (see scroll-model.ts): it must never be fixed/absolute over <main>. */}
       <nav
         aria-label="Mobile Bottom Navigation"
-        className="fixed sm:absolute bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] shrink-0 select-none"
+        data-testid="mobile-bottom-nav"
+        className="relative z-40 shrink-0 w-full bg-card/95 backdrop-blur-md border-t border-border/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] select-none"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {isAuthenticated && !isPublicRoute ? (

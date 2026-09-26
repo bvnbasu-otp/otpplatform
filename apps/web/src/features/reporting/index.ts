@@ -6,3 +6,7 @@ export * from './components/AnalyticsCards';
 export * from './components/CategorySpendChart';
 export * from './components/DrillDownSection';
 export * from './components/PrintableProcurementReport';
+export * from './components/PrintableProcurementDocument';
+export * from './lib/procurement-document';
+export * from './components/PrintableProcurementDocument';
+export * from './lib/procurement-document';

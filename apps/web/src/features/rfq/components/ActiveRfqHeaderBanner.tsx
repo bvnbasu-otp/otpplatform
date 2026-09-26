@@ -1,4 +1,5 @@
 import type { RfqMonitoringRfqSummary, RfqMonitoringMetrics } from '../types/rfq-monitoring';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 interface ActiveRfqHeaderBannerProps {
   rfq: RfqMonitoringRfqSummary;
@@ -24,13 +25,7 @@ export function ActiveRfqHeaderBanner({
 
   const lifecycleStage = metrics.lifecycleStage || (metrics.isQuorumMet ? 'READY FOR EVALUATION' : isClosed ? 'CLOSED' : 'ACTIVE SOURCING');
 
-  const deadlineDisplay = new Date(rfq.quoteDeadline).toLocaleString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  const deadlineDisplay = formatDateTimeIST(rfq.quoteDeadline);
 
   let healthBadgeClass = 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300';
   if (health.tone === 'ready') {

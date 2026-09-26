@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { getPilotByRequirementId } from '@/lib/pilots';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
+import { useRoleContext } from '@/features/roles';
+import { usePilotAllowance } from '@/features/intake/hooks/use-pilot-allowance';
+import { PilotAllowanceText } from '../components/PilotAllowanceText';
 
 interface RequirementDetail {
   id: string;
@@ -24,6 +27,8 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
   const [isLoading, setIsLoading] = useState(true);
 
   const pilot = getPilotByRequirementId(requirementId);
+  const { context } = useRoleContext();
+  const pilotAllowance = usePilotAllowance(context.organizationId);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,9 +107,9 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
       <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-950 dark:text-emerald-200 shrink-0 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <span>🎁</span>
-          <span>
-            <strong>Pilot Allowance:</strong> 1 of 3 RFQs remaining this month (₹0 charged in Pilot Mode)
-          </span>
+          <strong>
+            <PilotAllowanceText allowance={pilotAllowance} />
+          </strong>
         </div>
         <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
           Pilot Active

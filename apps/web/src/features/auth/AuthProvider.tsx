@@ -8,7 +8,10 @@ import {
   type ReactNode,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
+import type { NotificationStatusResolution } from '@otp/domain';
 import { setRememberDevice, supabase } from '@/lib/supabase';
+import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
+import { requestWhatsAppPasswordReset } from './lib/password-reset-dispatch';
 import { usePresenceHeartbeat } from './usePresenceHeartbeat';
 
 interface AuthContextValue {
@@ -20,9 +23,11 @@ interface AuthContextValue {
   sendSignInCode: (email: string) => Promise<{ error: string | null }>;
   verifySignInCode: (email: string, code: string) => Promise<{ error: string | null }>;
   /** Sends a password recovery email with a reset link and code. */
-  resetPasswordForEmail: (email: string) => Promise<{ error: string | null }>;
+  resetPasswordForEmail: (email: string) => Promise<{ error: string | null; delivery?: NotificationStatusResolution }>;
   /** Requests a 6-digit password reset verification code via WhatsApp. */
-  requestPasswordResetWhatsApp: (identifier: string) => Promise<{ ok: boolean; phone?: string; email?: string; error?: string }>;
+  requestPasswordResetWhatsApp: (
+    identifier: string,
+  ) => Promise<{ ok: boolean; phone?: string; email?: string; error?: string; delivery?: NotificationStatusResolution }>;
   /** Verifies a 6-digit password reset code (from WhatsApp or Email) and sets a new password. */
   verifyPasswordReset: (identifier: string, code: string, newPassword: string) => Promise<{ ok: boolean; error?: string; message?: string }>;
   /** Updates the password for the current authenticated session. */
@@ -118,58 +123,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: redirectUrl,
     });
-    return { error: error?.message ?? null };
+    return { error: error?.message ?? null, delivery: resolveSupabaseEmailDispatch(error) };
   }, []);
 
-  const requestPasswordResetWhatsApp = useCallback(async (identifier: string) => {
-    try {
-      const { data, error } = await supabase.rpc('request_whatsapp_password_reset', {
-        p_identifier: identifier.trim(),
-      });
-      if (error) return { ok: false, error: error.message };
-      const res = data as {
-        ok: boolean;
-        error?: string;
-        phone?: string;
-        email?: string;
-        full_name?: string;
-        otp_code?: string;
-      };
-      if (!res.ok) {
-        return { ok: false, error: res.error || 'User not found' };
-      }
-
-      // Dispatch WhatsApp message via local WAHA proxy
-      if (res.phone && res.otp_code) {
-        const cleanPhone = res.phone.replace(/\D/g, '');
-        const chatId = `${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}@c.us`;
-        const resetLink = `${window.location.origin}/reset-password?identifier=${encodeURIComponent(res.phone)}`;
-
-        const rawText =
-          `[OTP Platform] Password Reset Verification\n\n` +
-          `Hello ${res.full_name || 'User'},\n` +
-          `Your password reset verification code is:\n\n` +
-          `*${res.otp_code}*\n\n` +
-          `Valid for 15 minutes. Enter this code on the password reset screen to set your new password:\n` +
-          `${resetLink}\n\n` +
-          `If you did not request this, you can safely ignore this message.`;
-
-        await fetch('/waha/api/sendText', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: JSON.stringify({
-            session: 'default',
-            chatId,
-            text: rawText.replace(/\u2014|\u2013/g, '-').replace(/[^\x20-\x7E\r\n\t]/g, ''),
-          }),
-        });
-      }
-
-      return { ok: true, phone: res.phone, email: res.email };
-    } catch (err) {
-      return { ok: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  }, []);
+  const requestPasswordResetWhatsApp = useCallback(
+    (identifier: string) => requestWhatsAppPasswordReset(identifier),
+    [],
+  );
 
   const verifyPasswordReset = useCallback(
     async (identifier: string, code: string, newPassword: string) => {

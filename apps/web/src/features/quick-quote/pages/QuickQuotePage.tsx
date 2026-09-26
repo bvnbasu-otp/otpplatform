@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { PLATFORM_DISCLAIMER, PRODUCT_NAME } from '@/lib/brand';
+import { IdentityProtectedShield } from '@/features/supplier/components/IdentityProtectedShield';
+import { PROTECTED_BUYER_LABEL } from '@/features/supplier/lib/identity-shield';
 import {
   describeQuickQuoteFailure,
   fetchQuickQuoteContext,
@@ -133,7 +135,7 @@ export function QuickQuotePage() {
   );
 }
 
-function QuickQuoteForm({
+export function QuickQuoteForm({
   context,
   sessionToken,
   onSubmitted,
@@ -274,7 +276,7 @@ function QuickQuoteForm({
           </div>
           <div>
             <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Buyer:</span>
-            <span className="font-bold text-foreground truncate block">{rfq.buyerDisplay || 'Verified Buyer'}</span>
+            <span className="font-bold text-foreground truncate block">{PROTECTED_BUYER_LABEL}</span>
           </div>
         </div>
       </header>
@@ -477,9 +479,7 @@ function QuickQuoteForm({
         <span>{isSubmitting ? 'Transmitting Sealed Quote…' : '🔒 Seal & Transmit Quote →'}</span>
       </button>
 
-      <p className="text-[10px] text-center text-muted-foreground leading-tight px-1">
-        🔒 Identity protected. Your quote is compared strictly on price, timeline, and SLA without revealing your business name to competitors.
-      </p>
+      <IdentityProtectedShield variant="note" className="text-center px-1" />
     </form>
   );
 }

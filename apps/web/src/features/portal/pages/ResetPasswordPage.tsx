@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { describeNotificationStatus } from '@otp/domain';
 import { useAuth } from '@/features/auth';
 import { SiteLayout } from '@/features/site/components/SiteLayout';
 import { Button, Field, controlClasses } from '@/components/ui';
@@ -151,7 +152,12 @@ export function ResetPasswordPage() {
       }
 
       setCodeIdentifier(res.phone || cleanInput);
-      setRequestNotice(`We sent an 8-digit verification code via WhatsApp to ${res.phone || cleanInput}.`);
+      setRequestNotice(
+        `${describeNotificationStatus(
+          res.delivery ?? { status: 'SUBMITTED', channel: 'WHATSAPP' },
+          'PASSWORD_RESET',
+        ).message} The 8-digit code was requested for ${res.phone || cleanInput}.`,
+      );
       setMode('verify');
     } else {
       const normalizedEmail = cleanInput.toLowerCase();
@@ -163,7 +169,12 @@ export function ResetPasswordPage() {
       }
 
       setCodeIdentifier(normalizedEmail);
-      setRequestNotice(`Password reset email sent to ${normalizedEmail}. Click the link in the email or enter the 8-digit code below.`);
+      setRequestNotice(
+        `${describeNotificationStatus(
+          res.delivery ?? { status: 'SUBMITTED', channel: 'EMAIL' },
+          'PASSWORD_RESET',
+        ).message} It was requested for ${normalizedEmail}; if it arrives, use the link or enter the 8-digit code below.`,
+      );
       setMode('verify');
     }
   };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   calculateTds,
   type TdsSection,
@@ -12,6 +12,8 @@ interface TdsWithholdingPanelProps {
   invoiceId: string;
   invoiceNumber: string;
   invoiceAmount: number;
+  /** GST stated separately on the invoice; excluded from the TDS base. */
+  gstAmount?: number;
   supplierName: string;
   supplierPan?: string | null;
   existingDeductions?: TdsDeductionRecord[];
@@ -24,6 +26,7 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
   invoiceId,
   invoiceNumber,
   invoiceAmount,
+  gstAmount = 0,
   supplierName,
   supplierPan,
   existingDeductions = [],
@@ -39,10 +42,12 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const inFlight = useRef(false);
+  const activeDeduction = existingDeductions.find((d) => d.status !== 'VOIDED') ?? null;
 
-  // Live calculation preview
   const preview: TdsCalculationResult = calculateTds({
     invoiceAmount,
+    gstAmount,
     section,
     deducteePan: panInput,
     isNonFiler206AB: isNonFiler,
@@ -51,7 +56,8 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
   });
 
   const handleApplyTds = async () => {
-    if (!isBuyerUser) return;
+    if (!isBuyerUser || activeDeduction || inFlight.current) return;
+    inFlight.current = true;
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -69,10 +75,12 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
     });
 
     setLoading(false);
+    inFlight.current = false;
     if (!res.ok) {
       setErrorMsg(res.error);
     } else {
-      setSuccessMsg(`Statutory TDS of ₹${preview.statutoryTdsAmount} (${preview.tdsRate}%) applied successfully.`);
+      const recorded = res.tdsAmount ?? preview.statutoryTdsAmount;
+      setSuccessMsg(`TDS of ₹${recorded.toLocaleString('en-IN')} (${preview.tdsRate}%) recorded.`);
       if (onDeductionApplied) onDeductionApplied();
     }
   };
@@ -179,12 +187,32 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
         </div>
       )}
 
+      {isBuyerUser && activeDeduction && (
+        <p className="text-xs text-muted-foreground" data-testid="tds-already-recorded">
+          TDS is already recorded for this invoice. Void the existing record before applying a different deduction.
+        </p>
+      )}
+
       {/* Buyer TDS Deduction Form */}
-      {isBuyerUser && (
-        <div className="bg-muted/40 p-4 rounded-lg border border-border space-y-3">
+      {isBuyerUser && !activeDeduction && (
+        <div className="bg-muted/40 p-4 rounded-lg border border-border space-y-3" data-testid="tds-apply-form">
           <h4 className="text-sm font-semibold text-foreground">
             Apply TDS Withholding on Invoice ₹{invoiceAmount.toLocaleString('en-IN')}
           </h4>
+          <dl className="grid grid-cols-3 gap-2 text-xs" data-testid="tds-base-breakdown">
+            <div>
+              <dt className="text-muted-foreground">Invoice total</dt>
+              <dd className="font-semibold text-foreground">₹{preview.grossAmount.toLocaleString('en-IN')}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">GST (excluded)</dt>
+              <dd className="font-semibold text-foreground">₹{preview.gstExcluded.toLocaleString('en-IN')}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">TDS base</dt>
+              <dd className="font-semibold text-foreground">₹{(Math.round((preview.grossAmount - preview.gstExcluded) * 100) / 100).toLocaleString('en-IN')}</dd>
+            </div>
+          </dl>
 
           {errorMsg && (
             <div className="text-xs p-2.5 bg-destructive/10 text-destructive rounded-md border border-destructive/20 font-medium">
@@ -320,7 +348,7 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
               disabled={loading || preview.statutoryTdsAmount <= 0}
               className="px-4 py-2 bg-primary text-primary-foreground font-semibold text-xs rounded-lg hover:bg-primary/90 transition disabled:opacity-50 min-h-[44px] cursor-pointer"
             >
-              {loading ? 'Recording Statutory TDS...' : 'Apply & Detect TDS'}
+              {loading ? 'Recording TDS...' : 'Apply TDS'}
             </button>
           </div>
         </div>

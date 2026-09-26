@@ -17,6 +17,7 @@ import {
   type VerificationChannel,
 } from '../api/signup';
 import { BUYER_COPY } from '../types/portal';
+import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { VerificationChoice } from './VerificationChoice';
 
 /**
@@ -144,20 +145,23 @@ export function BuyerRegisterForm({
       referralCode: referral.trim() || undefined,
     });
 
-    setBusy(false);
     if (!result.ok) {
+      setBusy(false);
       setError(result.error);
       return;
     }
 
-    if (channel === 'WHATSAPP' && phone.trim()) {
-      void sendWhatsAppNotification(
-        phone,
-        `[OTP Platform] Registration Received\n\nHello ${firstName.trim()},\nYour buyer registration for *${resolvedOrg}* has been received.\n\n*Reference:* ${result.result.reference}\n*Status:* ${result.result.status}\n\nOur operations team will verify your business and activate your account. You will receive an update here on WhatsApp.`,
-      );
-    }
+    const notification =
+      channel === 'WHATSAPP' && phone.trim() && !result.result.alreadySubmitted
+        ? await sendWhatsAppNotification(
+            phone,
+            `[OTP Platform] Registration Received\n\nHello ${firstName.trim()},\nYour buyer registration for *${resolvedOrg}* has been received.\n\n*Reference:* ${result.result.reference}\n*Status:* ${result.result.status}\n\nOur operations team will verify your organisation before your account is activated.`,
+            { idempotencyKey: `registration:${result.result.reference}` },
+          )
+        : undefined;
 
-    onSuccess(result.result);
+    setBusy(false);
+    onSuccess({ ...result.result, notification });
   }
 
   return (
@@ -498,7 +502,7 @@ export function BuyerRegisterForm({
               {referral && (
                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                   <span>✓</span>
-                  <span>Referral applied: 10% platform credit program linked.</span>
+                  <span>{REFERRAL_ATTRIBUTION_NOTE}</span>
                 </p>
               )}
             </div>

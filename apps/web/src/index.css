@@ -377,6 +377,7 @@ body {
   @apply bg-background text-foreground antialiased selection:bg-persona-soft selection:text-persona-brand;
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -505,38 +506,33 @@ html, body {
   touch-action: manipulation;
 }
 
-.zero-scroll-container {
+/*
+ * Scroll model (see components/layout/scroll-model.ts): the shell <main> is the only
+ * scroller and the bottom nav sits in normal flow below it, so pages need no nav
+ * clearance. :where() keeps these defaults at zero specificity so a page's own pb-*
+ * utility (e.g. clearance for its own fixed dock) is never silently overridden.
+ */
+:where(.zero-scroll-container) {
   min-height: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
-  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 1rem;
 }
 
-.zero-scroll-container::after {
-  content: "";
-  display: block;
-  height: 5.5rem; /* 88px guaranteed physical spacer across all procurement OS screens */
-  width: 100%;
-  flex-shrink: 0;
-  pointer-events: none;
-}
-
-.zero-scroll-pane,
-.zero-scroll-container > form,
-.zero-scroll-container > .overflow-y-auto {
+:where(.zero-scroll-pane),
+:where(.zero-scroll-container > form),
+:where(.zero-scroll-container > .overflow-y-auto) {
   flex: 1 1 auto;
   width: 100%;
-  padding-bottom: 6rem; /* safe-area for mobile floating navigation */
+  padding-bottom: 1rem;
 }
 
-@media (min-width: 640px) {
-  .zero-scroll-pane,
-  .zero-scroll-container > form,
-  .zero-scroll-container > .overflow-y-auto {
-    padding-bottom: 4rem; /* pb-16 on desktop/tablet */
-  }
+/* Inside a shell scroller, 100vh is taller than the scroller itself and forces a phantom scroll. */
+[data-scroll-container] .min-h-screen,
+[data-scroll-container] .min-h-dvh {
+  min-height: 100%;
 }
 
 /* Mobile Safe Area & Touch Helpers */

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   attributeSchemaFor,
@@ -13,8 +13,8 @@ import {
   type TaxonomySnapshot,
 } from '@otp/domain';
 import { Badge, Button } from '@/components/ui';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth';
+import { fetchPrimaryDeliveryLocation } from '../api/primary-address';
 import { useRoleContext } from '@/features/roles';
 import type { DraftPatch } from '../api/draft';
 import type { IntakeDraft } from '../types/intake-draft';
@@ -43,7 +43,7 @@ export interface UnifiedThreeTierIntakeProps {
     originalText: string;
     parsed?: DraftPatch;
   }) => Promise<IntakeDraft | null>;
-  onPublish: (sourcingPatch: DraftPatch) => Promise<void>;
+  onPublish: (sourcingPatch: DraftPatch, createdDraft?: IntakeDraft) => Promise<void>;
   onOpenPaymentModal: () => void;
   onClearDraft: () => void;
 }
@@ -148,25 +148,28 @@ export function UnifiedThreeTierIntake({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
 
-  // Auto-inherit primary address from user profile / address book if city/pincode not already in draft
+  // Prefill empty city / PIN from the primary address once per user + org.
+  // Never overwrites a value saved on the draft or typed by the buyer.
+  const prefillKeyRef = useRef<string | null>(null);
+  const prefilledRef = useRef<{ city?: string; pincode?: string }>({});
   useEffect(() => {
-    async function inheritPrimaryAddress() {
-      if (!user?.id) return;
-      try {
-        const { data } = await supabase.rpc('get_buyer_addresses');
-        if (data && data.ok && Array.isArray(data.addresses) && data.addresses.length > 0) {
-          const primary = data.addresses.find((a: any) => a.is_primary) || data.addresses[0];
-          if (primary) {
-            if (!city && primary.city) setCity(primary.city);
-            if (!pincode && primary.pincode) setPincode(primary.pincode);
-          }
-        }
-      } catch {
-        // Non-blocking fallback
-      }
-    }
-    inheritPrimaryAddress();
-  }, [user?.id, city, pincode]);
+    if (!user?.id) return;
+    const key = `${user.id}:${context.organizationId ?? ''}`;
+    if (prefillKeyRef.current === key) return;
+    prefillKeyRef.current = key;
+    if (draft?.deliveryCity || draft?.deliveryPincode) return;
+
+    let cancelled = false;
+    void fetchPrimaryDeliveryLocation(context.organizationId).then((primary) => {
+      if (cancelled || !primary) return;
+      prefilledRef.current = { city: primary.city ?? undefined, pincode: primary.pincode ?? undefined };
+      if (primary.city) setCity((prev) => prev.trim() ? prev : primary.city!);
+      if (primary.pincode) setPincode((prev) => prev.trim() ? prev : primary.pincode!);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, context.organizationId, draft?.deliveryCity, draft?.deliveryPincode]);
 
   // Sync state if draft loads later
   useEffect(() => {
@@ -176,8 +179,12 @@ export function UnifiedThreeTierIntake({
       if (draft.categoryId && !categoryId) setCategoryId(draft.categoryId);
       if (draft.subcategoryId && !subcategoryId) setSubcategoryId(draft.subcategoryId);
       if (draft.requirementMode && !mode) setMode(draft.requirementMode);
-      if (draft.deliveryCity && !city) setCity(draft.deliveryCity);
-      if (draft.deliveryPincode && !pincode) setPincode(draft.deliveryPincode);
+      if (draft.deliveryCity && (!city || city === prefilledRef.current.city)) {
+        setCity(draft.deliveryCity);
+      }
+      if (draft.deliveryPincode && (!pincode || pincode === prefilledRef.current.pincode)) {
+        setPincode(draft.deliveryPincode);
+      }
       if (draft.fulfilmentMode) setFulfilment(draft.fulfilmentMode);
       if (draft.requiredByMode) setTiming(draft.requiredByMode);
       if (draft.requiredByDays !== null && draft.requiredByDays !== undefined) setDays(draft.requiredByDays);
@@ -541,7 +548,7 @@ export function UnifiedThreeTierIntake({
         parsed: payloadPatch,
       });
       if (created) {
-        await onPublish(payloadPatch);
+        await onPublish(payloadPatch, created);
       }
     } else {
       await onPublish(payloadPatch);

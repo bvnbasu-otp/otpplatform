@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
+import type { PilotRfqAllowance } from '@otp/domain';
+import { PilotAllowanceText } from './PilotAllowanceText';
 
 interface RfqPublishConfirmationModalProps {
+  pilotAllowance: PilotRfqAllowance | null;
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
@@ -11,6 +14,7 @@ interface RfqPublishConfirmationModalProps {
 }
 
 export function RfqPublishConfirmationModal({
+  pilotAllowance,
   isOpen,
   onClose,
   onConfirm,
@@ -80,11 +84,8 @@ export function RfqPublishConfirmationModal({
           <div className="space-y-1.5 pt-1 text-[11px]">
             {/* Pilot Allowance & Countdown Badge */}
             <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2 flex items-center justify-between text-emerald-900 dark:text-emerald-200">
-              <span className="font-extrabold flex items-center gap-1">
-                <span>🎁</span> Pilot Allowance:
-              </span>
-              <span className="font-bold">
-                1 of 3 RFQs remaining this month (₹0 charged in Pilot Mode)
+              <span className="font-bold flex items-center gap-1">
+                <span>🎁</span> <PilotAllowanceText allowance={pilotAllowance} />
               </span>
             </div>
 

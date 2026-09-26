@@ -33,6 +33,7 @@ import {
 } from '@otp/domain';
 import type { AwardSummary } from '../api/awards';
 import type { ApprovalSummary } from '../api/approval';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 export function AwardPage({ rfqId }: { rfqId: string }) {
   const navigate = useNavigate();
@@ -491,7 +492,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 &ldquo;{award.justificationText}&rdquo;
               </p>
               <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
-                <span>Award Locked: {award.votesLockedAt ? new Date(award.votesLockedAt).toLocaleString() : 'Recorded'}</span>
+                <span>Award Locked: {award.votesLockedAt ? formatDateTimeIST(award.votesLockedAt) : 'Recorded'}</span>
                 <span>Audit Signature: Cryptographically Sealed</span>
               </div>
             </div>

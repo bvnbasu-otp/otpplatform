@@ -12,6 +12,7 @@ import {
 import { ClarificationCategoryBadge } from './ClarificationCategoryBadge';
 import { ClarificationThread } from './ClarificationThread';
 import { BroadcastAddendumComposer } from './BroadcastAddendumComposer';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 export interface SupplierLabel {
   invitationId: string;
@@ -503,12 +504,7 @@ export function ClarificationWorkbench({
                         )}
                       </div>
                       <span className="text-[10px] text-muted-foreground font-mono">
-                        {new Date(addendum.createdAt).toLocaleDateString('en-IN', {
-                          day: '2-digit',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {formatDateTimeIST(addendum.createdAt)}
                       </span>
                     </div>
 

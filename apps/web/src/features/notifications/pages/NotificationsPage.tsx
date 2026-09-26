@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useNotifications } from '../hooks/useNotifications';
 import { notificationService } from '../services/notificationService';
+import { NOTIFICATION_STATUS_LABEL, mapStoredNotificationStatus } from '@otp/domain';
 import type { AppNotification } from '../types';
 import { fetchAuditEvents } from '@/features/audit/api/fetch-audit-events';
 import { AuditTimeline } from '@/features/audit/components/AuditTimeline';
@@ -66,8 +67,9 @@ function getDeliveryStateBadge(status?: string, channel?: string) {
         dotClass: 'bg-teal-500',
       };
     case 'PROVIDER_ACCEPTED':
+    case 'SENT':
       return {
-        label: 'Provider Accepted',
+        label: NOTIFICATION_STATUS_LABEL[mapStoredNotificationStatus(s)],
         badgeClass: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
         dotClass: 'bg-blue-500',
       };
@@ -98,7 +100,7 @@ function getDeliveryStateBadge(status?: string, channel?: string) {
       };
     default:
       return {
-        label: status || 'Sent',
+        label: NOTIFICATION_STATUS_LABEL[mapStoredNotificationStatus(s)],
         badgeClass: 'bg-muted text-muted-foreground border-border',
         dotClass: 'bg-muted-foreground',
       };

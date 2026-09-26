@@ -8,13 +8,18 @@
  *
  * Two rules govern what belongs here. Every claim is one the platform actually
  * enforces, and where a mechanism is not built yet the copy carries a status
- * rather than an implication. The home page states; it does not explain. The
- * mechanism — salts, views, append-only trails — lives in the FAQ, because a
- * landing page that describes its own implementation is reassuring nobody and
- * boring everybody.
+ * rather than an implication. Public copy is written for customers: it says what
+ * happens to them, never how the system is built. Implementation terms belong in
+ * internal documentation, not on any unauthenticated page, the FAQ included.
  */
 
-import { PRODUCT_NAME } from '@/lib/brand';
+import {
+  PRODUCT_NAME,
+  PRODUCT_PLATFORM_SUBTITLE,
+  PRODUCT_TAGLINE,
+  PRODUCT_TITLE,
+  PUBLIC_JOURNEY_STEPS,
+} from '@/lib/brand';
 
 /**
  * The hero, and with it the product's primary terminology.
@@ -26,13 +31,62 @@ import { PRODUCT_NAME } from '@/lib/brand';
  */
 export const HERO = {
   eyebrow: 'OTP — Open Trade & Procurement',
-  title: 'Procure smarter: get competitive quotes without revealing identities.',
-  tagline: 'Identity-Protected Competitive Sourcing',
-  body:
-    'A transparent platform where buyers and suppliers compete on price, quality, and turnaround while identities stay protected until award.',
+  title: PRODUCT_TITLE,
+  tagline: PRODUCT_TAGLINE,
+  body: PRODUCT_PLATFORM_SUBTITLE,
   prompt: 'What do you need to procure today?',
   promptExample: 'e.g. 10 HP borewell motor winding in Coimbatore within 3 days',
 };
+
+export interface JourneyStep {
+  title: (typeof PUBLIC_JOURNEY_STEPS)[number];
+  body: string;
+}
+
+const JOURNEY_STEP_BODY: Record<(typeof PUBLIC_JOURNEY_STEPS)[number], string> = {
+  Request: 'Describe what you need, in your own words.',
+  Compare: 'Suppliers send quotes. See price, delivery and warranty side by side.',
+  Decide: 'You choose the best offer. Supplier names are shown only after you decide.',
+  Purchase: 'Send the order to the supplier you chose and pay them directly.',
+  Track: 'Follow the work until it is delivered and signed off.',
+};
+
+/**
+ * The one customer journey shown on public pages. Internal workflow stages
+ * (discovery, clarification, voting, reveal…) stay inside the app.
+ */
+export const PUBLIC_JOURNEY: JourneyStep[] = PUBLIC_JOURNEY_STEPS.map((title) => ({
+  title,
+  body: JOURNEY_STEP_BODY[title],
+}));
+
+export interface TrustPrinciple {
+  title: string;
+  body: string;
+}
+
+/**
+ * What a customer can rely on, kept apart from the journey so the steps read as
+ * steps and the promises read as promises.
+ */
+export const TRUST_PRINCIPLES: TrustPrinciple[] = [
+  {
+    title: 'Identity-protected quotes',
+    body: 'Suppliers see your requirement, not your name. You see prices, not supplier names — until you award.',
+  },
+  {
+    title: 'You decide',
+    body: `${PRODUCT_NAME} never picks a supplier for you. You decide — or your committee, if your RWA has set one up.`,
+  },
+  {
+    title: 'A clear record',
+    body: 'Every request, quote and decision is saved with who did it and when, so you can show how a choice was made.',
+  },
+  {
+    title: 'Your money stays with you',
+    body: `You pay the supplier directly. ${PRODUCT_NAME} does not collect, hold or settle payments.`,
+  },
+];
 
 export const CORE_MESSAGE = {
   headline: 'Don’t choose a supplier. Let competition help you choose.',
@@ -190,7 +244,7 @@ export const SUPPLIER_CHANNELS: SupplierChannel[] = [
   {
     name: `${PRODUCT_NAME} supplier registry`,
     status: 'LIVE',
-    description: '104 verified domain suppliers active across 16 industrial & service taxonomies with real-time matching.',
+    description: 'Suppliers who have registered on OTP and told us what they do and where they work.',
     badgeIcon: '✓',
   },
   {
@@ -202,7 +256,7 @@ export const SUPPLIER_CHANNELS: SupplierChannel[] = [
   {
     name: 'WhatsApp and SMS',
     status: 'LIVE',
-    description: 'Zero-app quotation intake, OTPs, and automated RFQ notifications dispatched over self-hosted WAHA WhatsApp gateway.',
+    description: 'Suppliers get the request on WhatsApp or SMS and can reply with a price — no app needed.',
     badgeIcon: '💬',
   },
   {
@@ -320,125 +374,92 @@ export interface FaqEntry {
 /**
  * The questions someone asks before they have decided which side they are on.
  *
- * This is also where the detail the home page no longer carries has gone: how
- * masking works, which channels are real, what the parser actually is. A reader
- * who wants the mechanism should be able to find all of it — just not in a hero.
+ * Answered in the customer's words. Anything that needs a technical term to
+ * explain belongs in internal documentation, not here.
  */
 export const GENERAL_FAQS: FaqEntry[] = [
   {
-    question: `What is ${PRODUCT_NAME} explicitly not?`,
-    answer:
-      'Not apartment/RWA software, not an IndiaMART clone, not an anonymous marketplace, '
-      + 'not an ERP, not an ONDC replacement, not a supplier ad platform.',
-  },
-  {
     question: `What is ${PRODUCT_NAME}?`,
     answer:
-      `${PRODUCT_NAME} is an identity-protected competitive sourcing platform. You describe what you need, `
-      + 'the platform finds suppliers who can do it and invites them to compete anonymously. You evaluate '
-      + 'quotes as scored, aliased cards (Supplier A, B, C) — neither side sees who the other is during '
-      + 'commercial evaluation. The winning supplier\'s identity is revealed only after the award decision '
-      + 'is locked and justified. Then it continues into purchase order, delivery, and invoice — all '
-      + 'attached to the original requirement with full audit trail.',
-  },
-  {
-    question: 'What are Fast Track and Full Governance flows?',
-    answer:
-      'OTP offers two procurement experiences: **Fast Track (2-step, 3-5 min)** for Individual/MSME buyers '
-      + '— just describe what you need with real-time AI parsing, review smart defaults (50km radius, '
-      + 'evaluation weights 60/30/10), and publish. **Full Governance (4-step, 12-15 min)** for RWA / Housing Society '
-      + '— structured intake with technical specs, mandatory committee configuration (min 2 votes for RWA), '
-      + 'democratic voting with COI declarations, and detailed manager justification '
-      + '(min 50 characters). Both flows maintain 100% identity protection until award.',
-  },
-  {
-    question: 'What are the 6 Core Commercial Procurement Lifecycle Stages on OTP Platform?',
-    answer:
-      'Every procurement enquiry on the OTP Platform transitions through 6 chronological stages:\n\n'
-      + '1. **Requirement Intake & Scope** — Commercial and technical specification intake (Express AI or wizard) with smart defaults.\n'
-      + '2. **Supplier Discovery & Quoting** — Multi-pass verified supplier matching, discovery, and anonymous sealed quote submission.\n'
-      + '3. **Proposal Comparison & Evaluation** — Identity-protected comparison matrix, anonymous clarifications, and merit scoring.\n'
-      + '4. **Committee Governance & Voting** — Democratic evaluation room with quorum tracking and audit-stamped voting consensus.\n'
-      + '5. **Award & Controlled Supplier Reveal** — Permanent freeze of evaluation scores, justification recording, and winning supplier identity unmasking.\n'
-      + '6. **Purchase Order, Fulfillment & Direct Settlement** — Purchase Order issuance, live delivery tracking (0–100%), and direct bilateral settlement.',
+      `${PRODUCT_NAME} (Open Trade & Procurement) is an identity-protected competitive sourcing platform. `
+      + 'You describe what you need, suppliers send competing quotes, and you compare them side by side '
+      + 'to make a better buying decision. Neither side sees who the other is until you award the work.',
   },
   {
     question: `Who can use ${PRODUCT_NAME}?`,
     answer:
-      'An individual sourcing a local service, a small business buying components or machinery, or a '
-      + 'residential community putting maintenance work out to tender. It is the same engine in each case; '
-      + 'what changes is how many people have to approve the decision and how the votes are weighted.',
+      'Individuals, small and medium businesses, housing societies and RWAs, and institutions. '
+      + 'Everyone follows the same simple process; what changes is how many people need to approve the decision.',
   },
   {
-    question: 'How does identity protection actually work?',
+    question: `How do I buy something through ${PRODUCT_NAME}?`,
     answer:
-      'Multi-layered protection: **(1) Comparison screens** — buyer evaluation screens never receive a '
-      + 'supplier\'s business name, phone, email, or other identifying fields; those are withheld at the '
-      + 'source, not just hidden in the interface. **(2) Filename Sanitization** — the server generates neutral '
-      + 'names ("Document 1", "Photo 2") stripping original filenames. **(3) Metadata Stripping** — '
-      + 'photos/PDFs/voice notes are processed to remove EXIF GPS, camera info, author names, company '
-      + 'metadata (in development). **(4) Social Media Redaction** — LinkedIn, Twitter, Instagram, Facebook '
-      + 'links are automatically removed from clarification messages. **(5) Anonymous Aliases** — each RFQ '
-      + 'generates unique supplier labels (A, B, C) using cryptographic salts. Identity is revealed only, '
-      + 'irreversibly, after the award decision is locked.',
+      'Register, then raise a request: say what you need, where and by when, in your own words. '
+      + 'Suitable suppliers are invited to quote, their quotes come back to you side by side, and you choose. '
+      + 'You then send the purchase order to that supplier and track the work until it is done.',
   },
   {
-    question: 'How are suppliers discovered?',
+    question: 'How do suppliers take part?',
     answer:
-      'From the requirement. The category decides which capabilities are needed, and candidates are '
-      + 'ranked on holding those capabilities, having declared enough spare capacity for the job, '
-      + 'and covering the delivery location — with on-time record and dispute rate as softer '
-      + 'signals. The buyer picks who to invite from that ranking; nobody is invited because they '
-      + 'paid for placement.',
+      'Suppliers register once and say what they do and where they work. When a request matches, they are '
+      + 'invited to quote — on the website, or through the WhatsApp and SMS channel if they prefer their phone. '
+      + 'Buyers can also invite suppliers they already know. Every supplier quotes under the same rules and deadline.',
   },
   {
-    question: 'Can a buyer invite known or existing vendors directly?',
+    question: 'How are suppliers discovered for my request?',
     answer:
-      'Yes. The Direct suppliers channel allows buyers to invite trusted vendors or known contractors directly by entering their mobile phone number or email address, or sharing a secure invitation link. Invited Direct suppliers can review the requirement specifications and submit an identity-protected quote into the same evaluation room under identical competitive rules, without their identity leaking to evaluators prior to award.',
+      'From your request. OTP looks at the kind of work and where it needs to be done, and suggests suppliers '
+      + 'from the OTP supplier registry who have said they do that work in that area and have room to take it on. '
+      + 'Their record on past jobs counts too. You choose who to invite — no supplier can pay to be placed higher.',
   },
   {
-    question: 'Can a supplier take part without registering first?',
+    question: 'How are quotes compared?',
     answer:
-      'That is what the WhatsApp and SMS messaging channel enables today. An invited supplier can '
-      + 'receive the enquiry directly on WhatsApp, reply with an indicative price and delivery schedule '
-      + 'which our parsing engine records into the RFQ, and access a single-use secure link to finalize '
-      + `line-item details. Every notice flows through the platform’s self-hosted WAHA WhatsApp gateway—`
-      + 'suppliers never see the buyer’s contact info and buyers never see the supplier’s until an award is locked.',
+      'Every quote is shown in the same format — price, delivery time and warranty — with a score based on '
+      + 'weights you choose before quoting opens. The lowest price does not automatically win: a slightly dearer '
+      + 'quote with faster delivery and a longer warranty can score higher. Supplier names are hidden while you compare.',
   },
   {
-    question: 'Can ONDC or BNI suppliers take part?',
+    question: 'How is identity protected?',
     answer:
-      'Not yet. ONDC has a documented adapter shape behind a feature flag that is off by '
-      + 'default, and BNI and local associations are modelled as supplier sources with stub '
-      + 'adapters — none of the three is connected to a real network, so no supplier is '
-      + 'reachable through them today. The design intent is that one requirement can be put '
-      + 'to several supplier networks at once; the honest current position is that the local '
-      + 'registry, direct suppliers by phone/email, and WhatsApp messaging are the channels that '
-      + 'work end to end.',
+      'While quotes are collected and compared, suppliers do not see who the buyer is, and the buyer sees '
+      + 'suppliers only as labels such as “Supplier A7K3”. Names, phone numbers and company details are withheld, '
+      + 'not just covered up on screen. Only when you award the work are you and the chosen supplier introduced. '
+      + 'Suppliers who were not chosen stay masked permanently.',
   },
   {
-    question: 'What happens after the award?',
+    question: 'Who makes the decision, and how does approval work?',
     answer:
-      'The purchase order is raised against the awarded quote, a work order tracks the job as it '
-      + 'progresses, invoices are raised against work that has been signed off, and payments and '
-      + 'supplier performance are recorded for the next round. All of it stays attached to the '
-      + 'enquiry that started it, so the order can always be read back to the quote that won.',
+      `You do. ${PRODUCT_NAME} never chooses a supplier for you. An individual or business decides alone, or with `
+      + 'the approvers they add. Housing societies and RWAs that have set up a committee vote on the comparison, '
+      + 'each member records a reason, and the award follows the committee’s decision.',
+  },
+  {
+    question: 'What happens after the award, and how do I track my order?',
+    answer:
+      `You send a purchase order to the chosen supplier from within ${PRODUCT_NAME}. The supplier updates progress `
+      + 'as the work goes on, you sign off when it is done, and the invoice is recorded against the same order. '
+      + 'Everything stays linked to your original request, so you can always see where an order stands.',
+  },
+  {
+    question: 'What does Pilot Mode mean?',
+    answer:
+      `${PRODUCT_NAME} is currently running as a pilot. During the pilot no payments are processed through `
+      + `${PRODUCT_NAME} and nothing is charged: plans cost ₹0 and the supplier fee is waived. The prices on the `
+      + 'pricing page show what will apply after the pilot.',
   },
   {
     question: `How does ${PRODUCT_NAME} make money?`,
     answer:
-      'A subscription on the buying side. Suppliers are not charged to register, to be invited or to '
-      + 'win, and there are no lead fees — a platform that takes a cut of the supplier’s margin has '
-      + 'a stake in who wins, and this one must not. There is no billing system behind the pricing '
-      + 'page yet, so nothing is charged while we onboard the first cohort.',
+      'Through a subscription paid by buyers, shown on the pricing page. Suppliers are not charged to register, '
+      + 'to be invited or to quote, and there are no lead fees. After the pilot, a small fee applies only to orders '
+      + 'a supplier wins; during the pilot it is waived and nothing is charged to anyone.',
   },
   {
-    question: 'Does the platform use AI to read my requirement?',
+    question: `Does ${PRODUCT_NAME} use AI to read my request?`,
     answer:
-      'No, and it is worth being exact about this. Free text is parsed into a structured requirement '
-      + 'by rules built on the category taxonomy — keywords, quantities, units, locations and dates — '
-      + 'not by a language model. It shows you what it understood and lets you correct it, precisely '
-      + 'because a rule-based reading of a sentence is often incomplete.',
+      'No. Your words are turned into a structured request using fixed rules that look for the type of work, '
+      + 'quantities, units, place and dates. It shows you what it understood so you can correct anything it missed.',
   },
 ];
 
@@ -449,86 +470,114 @@ export const BUYER_FAQS: FaqEntry[] = [
       "GeM is India's Government e-Marketplace for digital procurement by government organizations. OTP is an independent platform designed for housing societies, RWAs, MSMEs and other organizations. The similarity is in the procurement experience: structured requirements, competitive proposals, transparent comparison, governed decisions and an end-to-end purchase record. OTP is not affiliated with, endorsed by, or operated by GeM or the Government of India.",
   },
   {
-    question: 'How is a supplier actually hidden from us?',
+    question: 'Can I invite suppliers I already work with?',
     answer:
-      "Each enquiry has its own random salt. A supplier's alias is a hash of that salt and their identity, so the same firm is \"Supplier K7P4\" on one enquiry and \"Supplier A3F9\" on the next, with no way to link the two. Your comparison screen reads from a view that has no company name, contact or tax ID in it at all — the columns are not hidden by the interface, they are not in the data the interface receives.",
+      'Yes. With the Direct suppliers option you can invite a contractor or vendor you already know by phone '
+      + 'number, email or a shared link. They quote on the same request, under the same rules and deadline as '
+      + 'everyone else, and appear to you under a label like any other supplier until you award.',
+  },
+  {
+    question: 'How is a supplier hidden from us?',
+    answer:
+      'Each supplier appears under a label, such as “Supplier K7P4”, that changes from one request to the next, '
+      + 'so you cannot recognise the same firm across requests. Company names, contact details and tax numbers '
+      + 'are not sent to your comparison screen at all — they are withheld, not just covered up.',
   },
   {
     question: 'Can we see reliability without seeing who it is?',
     answer:
-      'Yes, and this is the compromise worth understanding. Ratings, on-time performance and job counts are shown in bands — half a star, five percent, “20–49 jobs” — rather than exact figures. An exact 4.37 rating would be as identifying as a name.',
+      'Yes. Ratings, on-time record and number of jobs are shown in bands — half a star, five percent, '
+      + '“20–49 jobs” — rather than exact figures, because an exact 4.37 rating would be as recognisable as a name.',
   },
   {
-    question: 'Who sets the scoring formula, and can it be changed mid-round?',
+    question: 'Who sets the scoring formula, and can it be changed midway?',
     answer:
-      'You do, before quoting opens. The weights across price, turnaround, compliance and any custom criteria are recorded against the enquiry, and every quote is scored with the version in force when it was evaluated. Changing weights after quotes are in is visible in the audit trail, which is the point.',
+      'You do, before quoting opens. You choose how much price, delivery time, warranty and any other criteria '
+      + 'count, and every quote is scored the same way. If the weights are changed after quotes arrive, that '
+      + 'change is recorded where everyone involved can see it.',
   },
   {
     question: 'What happens if a quote arrives after the deadline?',
     answer:
-      'It is refused. The deadline is enforced when the quote is written, on every route in — the web form, the WhatsApp reply, the API. There is no “accept late” button, because a deadline that can be waived quietly is not a deadline.',
+      'It is refused. The deadline is enforced automatically on every quote, whether it comes through the '
+      + 'website or WhatsApp, and there is no button to accept a late quote — a deadline that can be quietly '
+      + 'waived is not a deadline.',
   },
   {
-    question: 'How does the Evaluation & Voting Room work?',
+    question: 'How does committee voting work?',
     answer:
-      'Members you assign to that enquiry see the sealed, scored comparison and record a vote with a reason. Votes are weighted by your organisation type, tallied automatically in real time, and appended to an end-to-end audit log that cannot be edited or deleted.',
+      'Members you add to the request see the same scored comparison, with supplier names hidden, and each '
+      + 'records a vote with a reason. Votes are counted automatically and kept on record, and they cannot be '
+      + 'edited or deleted afterwards.',
   },
   {
     question: 'When do we learn who won?',
     answer:
-      'When you lock the award. At that moment the winning supplier’s verified contact details and company credentials are released to you, and yours to them, so contracting can start. Everyone else stays anonymous forever.',
+      'When you confirm the award. At that moment the winning supplier’s contact and company details are '
+      + 'shared with you, and yours with them, so you can agree terms. Everyone else stays anonymous forever.',
   },
   {
     question: `Does ${PRODUCT_NAME} handle the money?`,
     answer:
-      'No. You contract and settle directly with the supplier. The platform records purchase orders, work orders, sign-offs, invoices and approvals so there is an audit trail — but no payment passes through us, and we do not guarantee one.',
-  },
-  {
-    question: 'How do buyers navigate the 6 commercial procurement lifecycle stages?',
-    answer:
-      'Buyers progress smoothly through: (1) Requirement Intake & Scope, (2) Supplier Discovery & Quoting, (3) Proposal Comparison & Evaluation, (4) Committee Governance & Voting, (5) Award & Controlled Supplier Reveal, and (6) Purchase Order, Fulfillment & Direct Settlement. If an order exceeds 24 hours without action, automated Stalled SLA diagnostics help you unblock it with one click.',
+      'No. You agree terms with the supplier and pay them directly. The platform records the purchase order, '
+      + 'the work, sign-offs, invoices and approvals so you have a full record — but no payment passes through '
+      + 'us, and we do not guarantee one.',
   },
 ];
 
 export const SUPPLIER_FAQS: FaqEntry[] = [
   {
-    question: 'How do suppliers participate across the 6 procurement lifecycle stages?',
-    answer:
-      'Suppliers receive enquiry invitations via portal or WhatsApp in Stage 2 (Supplier Discovery & Quoting), submit competitive sealed prices without revealing company identities during Stage 3 (Proposal Comparison & Evaluation), and upon award in Stage 5 (Award & Controlled Supplier Reveal), receive unmasked buyer details to generate official Purchase Orders, track execution, submit verified GST invoices, and receive direct settlement (Stage 6).',
-  },
-  {
     question: 'Will the buyer know it is us when they compare quotes?',
     answer:
-      'No. You appear as an alias for that enquiry only. Your company name, contact person, phone number, email, logo, tax ID and address are not present in the data the buyer’s comparison screen reads.',
+      'No. You appear under a label for that request only. Your company name, contact person, phone number, '
+      + 'email, logo, tax number and address are not shown to the buyer unless they award the work to you.',
   },
   {
     question: 'Do we know who the buyer is?',
     answer:
-      'Not by default. You see the specification, the delivery city, the criteria and the weights — enough to price the work and the travel — and the buying organisation stays masked unless they choose to run the enquiry openly.',
+      'Not by default. You see what is needed, the delivery city and how quotes will be scored — enough to '
+      + 'price the work and the travel — and the buyer’s name stays hidden unless they choose to run the request openly.',
   },
   {
     question: 'What stops a buyer from just picking their existing supplier?',
     answer:
-      'They cannot see which quote is their existing supplier. Quotes are ranked by the formula published before quoting opened, votes carry a recorded reason, and the whole sequence is in an append-only trail. Favouring a name becomes something you would have to do in writing.',
+      'They cannot tell which quote is from their existing supplier. Quotes are scored the same way, on weights '
+      + 'set before quoting opened, every vote carries a written reason, and each step is kept on record. '
+      + 'Favouring a name would have to be done openly and in writing.',
   },
   {
-    question: 'Can we quote from WhatsApp?',
+    question: 'Can we quote from WhatsApp without registering first?',
     answer:
-      'Yes. Through the WhatsApp and SMS channel, you can receive the enquiry reference on WhatsApp, reply directly with your price and timeline, and our automated parser records it as an identity-protected quote. You also receive a secure single-use link to submit itemised specifications and documentation without creating a complex account upfront.',
+      'Yes. Through the WhatsApp and SMS channel you receive the request on your phone, reply with your price '
+      + 'and delivery time, and it is recorded as your quote. You also get a secure one-time link to add item '
+      + 'details and documents without creating an account first. The buyer never sees your contact details, and '
+      + 'you never see theirs, until the work is awarded.',
   },
   {
     question: 'Can we revise our price?',
     answer:
-      'Until the revision deadline for that enquiry. Every revision is a new version with the old one kept, so a buyer can see that you improved your offer and cannot pretend they never saw the first one.',
+      'Until the revision deadline for that request. Every revision is saved as a new version with the old one '
+      + 'kept, so a buyer can see that you improved your offer and cannot pretend they never saw the first one.',
   },
   {
     question: 'What do we get if we win, and if we lose?',
     answer:
-      "If you win, the buyer's verified contact details and company credentials are released to you when the award is locked, and the order, work and invoices run through the platform. If you lose, you are told the enquiry closed, and your identity stays masked permanently — losing a quote does not put you on anybody's list.",
+      "If you win, the buyer's contact and company details are shared with you when the award is confirmed, and "
+      + 'the order, work and invoice are then handled through OTP. If you lose, you are told the request has '
+      + "closed, and your identity stays masked permanently — losing a quote does not put you on anybody's list.",
   },
   {
     question: 'Are there lead fees?',
     answer:
-      'No. Enquiries reach you because you declared the capability and the coverage, not because you paid for placement, and your details are not resold.',
+      'No. Requests reach you because you declared what you do and where you work, not because you paid for '
+      + 'placement, and your details are not resold. After the pilot, a small fee applies only to orders you win; '
+      + 'during the pilot it is waived.',
+  },
+  {
+    question: 'Can suppliers from ONDC or BNI take part?',
+    answer:
+      'Not yet. Connections to ONDC, BNI and local business associations are planned but not live, so no '
+      + 'supplier can be reached through them today. Right now suppliers take part through the OTP supplier '
+      + 'registry, direct invitations from buyers, and the WhatsApp and SMS channel.',
   },
 ];

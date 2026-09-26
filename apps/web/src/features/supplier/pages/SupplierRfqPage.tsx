@@ -14,7 +14,9 @@ import { RfqPhasePanel } from '@/features/phase';
 import { formatDeadlineCountdown } from '@/lib/date-utils';
 import { fetchSupplierRfq, markInvitationViewed } from '../api/fetch-invitations';
 import { fetchSupplierQuoteForRfq } from '../api/fetch-quote';
+import { IdentityProtectedShield } from '../components/IdentityProtectedShield';
 import { SupplierQuotePanel } from '../components/SupplierQuotePanel';
+import { IDENTITY_SHIELD_LABEL } from '../lib/identity-shield';
 import {
   SupplierRequirementPanel,
   type SupplierPrimaryAction,
@@ -297,7 +299,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
                   ✓ Quote Submitted (v{quote.currentVersion})
                 </span>
                 <span className="text-[10px] text-muted-foreground block">
-                  Anonymous Sealed Evaluation Active
+                  {IDENTITY_SHIELD_LABEL} active
                 </span>
               </div>
             ) : rfqOpen ? (
@@ -306,7 +308,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
                   ⚡ Quoting Active
                 </span>
                 <span className="text-[10px] text-muted-foreground block leading-relaxed">
-                  Open for supplier response. Identity and terms protected under sealed evaluation.
+                  Open for supplier response under {IDENTITY_SHIELD_LABEL}.
                 </span>
               </div>
             ) : (
@@ -359,10 +361,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
               </p>
             </div>
 
-            {/* Shield Notice */}
-            <div className="text-[11px] text-muted-foreground leading-relaxed pt-2 border-t border-border/60">
-              🔒 <strong className="text-foreground">Identity-Protected Evaluation:</strong> Pricing and technical details are protected from competing suppliers.
-            </div>
+            <IdentityProtectedShield variant="note" className="pt-2 border-t border-border/60" />
           </div>
         </aside>
       </div>

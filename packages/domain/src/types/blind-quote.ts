@@ -97,3 +97,132 @@ export function assertIdentityProtectedPayloadSafe(
 
 // Legacy function alias
 export const assertBlindPayloadSafe = assertIdentityProtectedPayloadSafe;
+
+/**
+ * The mirror image: fields that name the buyer, forbidden on anything a
+ * supplier receives before award.
+ *
+ * A supplier needs the job (what, how much, which city, by when) to price it.
+ * Who is asking — organization, person, contact, street address, GSTIN, or the
+ * ids that resolve to them — is released only through rfq_buyer_revealed once
+ * the award is revealed. Checked at every depth, because a spec or commercial
+ * block is free-form JSON and a buyer's phone number nests as easily as it sits
+ * at the top.
+ */
+export const SUPPLIER_FACING_FORBIDDEN_BUYER_FIELDS = [
+  'buyer_display_name',
+  'buyerOrganization',
+  'buyer_organization',
+  'buyerOrganizationId',
+  'buyer_organization_id',
+  'buyerOrganizationName',
+  'buyer_organization_name',
+  'buyerName',
+  'buyer_name',
+  'organizationId',
+  'organization_id',
+  'organizationName',
+  'organization_name',
+  'orgName',
+  'org_name',
+  'createdBy',
+  'created_by',
+  'contactPerson',
+  'contact_person',
+  'contactPhone',
+  'contact_phone',
+  'contactEmail',
+  'contact_email',
+  'buyerContactPerson',
+  'buyer_contact_person',
+  'buyerContactPhone',
+  'buyer_contact_phone',
+  'buyerContactEmail',
+  'buyer_contact_email',
+  'phone',
+  'mobile',
+  'email',
+  'fullName',
+  'full_name',
+  'address',
+  'street',
+  'line1',
+  'line2',
+  'buyerAddress',
+  'buyer_address',
+  'deliveryAddress',
+  'delivery_address',
+  'deliveryAddressSnapshot',
+  'delivery_address_snapshot',
+  'billingAddressSnapshot',
+  'billing_address_snapshot',
+  'gstin',
+  'buyerGstin',
+  'buyer_gstin',
+  'taxRegistration',
+  'tax_registration',
+  'awardedByName',
+  'awarded_by_name',
+  'awardedByEmail',
+  'awarded_by_email',
+] as const;
+
+export type SupplierFacingForbiddenBuyerField =
+  (typeof SUPPLIER_FACING_FORBIDDEN_BUYER_FIELDS)[number];
+
+const SUPPLIER_FACING_FORBIDDEN_SET: ReadonlySet<string> = new Set(
+  SUPPLIER_FACING_FORBIDDEN_BUYER_FIELDS,
+);
+
+function isPlainContainer(value: unknown): value is Record<string, unknown> | unknown[] {
+  return typeof value === 'object' && value !== null;
+}
+
+/** Dotted paths of every buyer-identity key present (non-null) at any depth. */
+export function findSupplierFacingBuyerIdentityLeaks(payload: unknown): string[] {
+  const leaks: string[] = [];
+  const seen = new WeakSet<object>();
+
+  const walk = (value: unknown, path: string) => {
+    if (!isPlainContainer(value) || seen.has(value)) return;
+    seen.add(value);
+
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => walk(item, `${path}[${index}]`));
+      return;
+    }
+
+    for (const [key, child] of Object.entries(value)) {
+      const childPath = path ? `${path}.${key}` : key;
+      if (SUPPLIER_FACING_FORBIDDEN_SET.has(key) && child !== undefined && child !== null) {
+        leaks.push(childPath);
+      }
+      walk(child, childPath);
+    }
+  };
+
+  walk(payload, '');
+  return leaks;
+}
+
+export function assertSupplierFacingPayloadSafe(payload: Record<string, unknown>): void {
+  const leaks = findSupplierFacingBuyerIdentityLeaks(payload);
+  if (leaks.length > 0) {
+    throw new IdentityProtectedViolationError(leaks[0]!);
+  }
+}
+
+/** A copy with every buyer-identity key removed at any depth. Input is not mutated. */
+export function stripSupplierFacingBuyerIdentity<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripSupplierFacingBuyerIdentity(item)) as unknown as T;
+  }
+  if (!isPlainContainer(value)) return value;
+
+  const out: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (SUPPLIER_FACING_FORBIDDEN_SET.has(key)) continue;
+    out[key] = stripSupplierFacingBuyerIdentity(child);
+  }
+  return out as T;
+}

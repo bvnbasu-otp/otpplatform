@@ -73,7 +73,7 @@ const TRIVIA = [
       'Bribing the office cat',
     ],
     correct: 0,
-    commentary: 'Verified delivery proof = instant escrow milestone payout!',
+    commentary: 'Verified delivery proof = faster milestone sign-off!',
   },
 ];
 

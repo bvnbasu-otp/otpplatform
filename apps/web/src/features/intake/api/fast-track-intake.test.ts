@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { ParsedRequirement, TaxonomySnapshot } from '@otp/domain';
 import {
@@ -44,8 +46,9 @@ describe('resolveDeliveryCity', () => {
     expect(resolveDeliveryCity(null, 'Warehouse in Erode')).toBe('Erode');
   });
 
-  it('falls back to Tiruppur when no city is identifiable', () => {
-    expect(resolveDeliveryCity(null, 'Need 50 chairs')).toBe('Tiruppur');
+  it('returns null (no silent fake city) when no city is identifiable', () => {
+    expect(resolveDeliveryCity(null, 'Need 50 chairs')).toBeNull();
+    expect(resolveDeliveryCity('   ', 'Need 50 chairs')).toBeNull();
   });
 });
 
@@ -132,10 +135,10 @@ describe('fastTrackExpressIntake validation', () => {
     expect(res2.ok).toBe(false);
   });
 
-  it('preserves production truth by defaulting autoQuoteSimulation to undefined', async () => {
-    // Calling with empty text fails early before any DB mutations or simulation RPCs
-    const res = await fastTrackExpressIntake('', { autoQuoteSimulation: false });
-    expect(res.ok).toBe(false);
-    expect(res.error).toBe('Please enter a requirement description.');
+  it('has no code path to any synthetic quote RPC (REAL PILOT RFQ = ZERO SYNTHETIC QUOTES)', () => {
+    const src = readFileSync(resolve(__dirname, 'fast-track-intake.ts'), 'utf8');
+    expect(src).not.toMatch(/auto_submit_pilot_quotes|seed_simulated_quotes_for_rfq|demo_simulate_quotes|demo_generate_quotes/);
+    expect(src).not.toMatch(/autoQuoteSimulation/);
+    expect(fastTrackExpressIntake.length).toBe(1);
   });
 });

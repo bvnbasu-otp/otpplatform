@@ -8,6 +8,12 @@ export { SupplierRequirementPanel } from './components/SupplierRequirementPanel'
 export { QuoteForm } from './components/QuoteForm';
 export { SupplierQuotePanel } from './components/SupplierQuotePanel';
 export { SupplierCapabilityModal } from './components/SupplierCapabilityModal';
+export { IdentityProtectedShield } from './components/IdentityProtectedShield';
+export {
+  IDENTITY_SHIELD_EXPLANATION,
+  IDENTITY_SHIELD_LABEL,
+  PROTECTED_BUYER_LABEL,
+} from './lib/identity-shield';
 export { useSupplierInvitations } from './hooks/use-supplier-invitations';
 export { useSupplierRadarCapabilities } from './hooks/use-supplier-radar';
 export {

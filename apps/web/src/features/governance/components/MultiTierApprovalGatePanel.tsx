@@ -5,6 +5,7 @@ import type {
   ApprovalTierLevel,
   OrganizationDelegation,
 } from '@otp/domain';
+import { formatDateIST } from '@/lib/date-utils';
 
 export interface MultiTierApprovalGatePanelProps {
   stages: RfqApprovalStage[];
@@ -240,7 +241,7 @@ export function MultiTierApprovalGatePanel({
                       <span>• Signed by <strong>{stage.approverRole}</strong></span>
                     )}
                     {stage.approvedAt && (
-                      <span>• {new Date(stage.approvedAt).toLocaleDateString()}</span>
+                      <span>• {formatDateIST(stage.approvedAt)}</span>
                     )}
                   </div>
                 </div>

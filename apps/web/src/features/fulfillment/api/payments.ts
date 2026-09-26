@@ -1477,7 +1477,7 @@ export async function applyTdsWithholdingRpc(params: {
   panStatus?: string;
   isLowerDeduction?: boolean;
   lowerDeductionCert?: string | null;
-}): Promise<{ ok: true; deductionId: string } | { ok: false; error: string }> {
+}): Promise<{ ok: true; deductionId: string; tdsAmount?: number } | { ok: false; error: string }> {
   try {
     const { data, error } = await supabase.rpc('apply_tds_withholding_atomic', {
       p_organization_id: params.organizationId,
@@ -1492,7 +1492,12 @@ export async function applyTdsWithholdingRpc(params: {
     });
 
     if (error) return { ok: false, error: error.message };
-    return { ok: true, deductionId: data?.tds_deduction_id || data?.id };
+    const recorded = Number(data?.tds_deduction?.tds_amount);
+    return {
+      ok: true,
+      deductionId: data?.tds_deduction_id || data?.id,
+      tdsAmount: Number.isFinite(recorded) ? recorded : undefined,
+    };
   } catch (err: any) {
     return { ok: false, error: err?.message || 'Failed to apply TDS withholding' };
   }

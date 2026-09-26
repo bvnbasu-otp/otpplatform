@@ -11,6 +11,8 @@
  * - Provider isolation: Google quota exhaustion does not throttle local GIS, Haversine, PIN, City, or Mapbox.
  */
 
+import { getUtcDayKey, getUtcMonthKey } from '@otp/domain';
+
 export interface GoogleGisQuotaLimits {
   readonly maxDaily: number;
   readonly maxMonthly: number;
@@ -76,18 +78,7 @@ export interface GoogleGisQuotaStore {
   reset(): Promise<void>;
 }
 
-export function getUtcDayKey(date: Date): string {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(date.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-export function getUtcMonthKey(date: Date): string {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-  return `${y}-${m}`;
-}
+export { getUtcDayKey, getUtcMonthKey };
 
 /**
  * In-memory thread-safe / atomic Quota Store implementation.

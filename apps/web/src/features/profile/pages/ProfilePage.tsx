@@ -23,6 +23,7 @@ import {
 } from '@/features/subscription';
 import { ReferAndEarnCard } from '@/features/referral';
 import { AddressBookManager } from '../components/AddressBookManager';
+import { OrganizationCharterPanel } from '@/features/governance/components/OrganizationCharterPanel';
 import { CommitteeTeamBuilder } from '@/features/org/components/CommitteeTeamBuilder';
 import { tryResolveBuyerPersona } from '@otp/domain';
 
@@ -301,11 +302,7 @@ export function ProfilePage() {
     try {
       sessionStorage.setItem('otp_phone_resend_timer', String(Date.now() + 60000));
     } catch {}
-    setPhoneOtpSuccess(
-      res.otpCode
-        ? `Verification code sent via WhatsApp! (Code: ${res.otpCode})`
-        : 'Verification code sent to your phone number via WhatsApp.'
-    );
+    setPhoneOtpSuccess(res.otpCode ? `${res.message} (Demo code: ${res.otpCode})` : res.message);
   }
 
   async function handleVerifyPhoneOtp() {
@@ -355,11 +352,7 @@ export function ProfilePage() {
     try {
       sessionStorage.setItem('otp_email_resend_timer', String(Date.now() + 60000));
     } catch {}
-    setEmailOtpSuccess(
-      res.otpCode
-        ? `Verification code sent to ${clean}! (Code: ${res.otpCode})`
-        : `Verification code sent to ${clean}.`
-    );
+    setEmailOtpSuccess(res.otpCode ? `${res.message} (Demo code: ${res.otpCode})` : res.message);
   }
 
   async function handleVerifyEmailOtp() {
@@ -991,31 +984,11 @@ export function ProfilePage() {
       {/* 3. TAB: ORGANIZATION, GOVERNANCE & AGREEMENTS */}
       {activeTab === 'team' && (
         <div className="space-y-3">
-          {/* Organization Registration Agreement & Governance Charter */}
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">📜</span>
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">Organization Registration Agreement</h3>
-                  <p className="text-[11px] text-muted-foreground">
-                    Governance terms &amp; institutional charter under which this workspace operates
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="p-4 rounded-xl bg-muted/20 border text-xs space-y-2">
-              <p className="font-semibold text-foreground">
-                {tryResolveBuyerPersona(currentOrgType) === 'RWA'
-                  ? '🏛️ RWA Institutional Organization Agreement'
-                  : '🏢 MSME Institutional Procurement Agreement'}
-              </p>
-              <p className="text-muted-foreground leading-relaxed">
-                This organization is registered under OTP's direct settlement framework with zero markup,
-                identity-protected competitive quoting, and immutable audit logs.
-              </p>
-            </div>
-          </section>
+          <OrganizationCharterPanel
+            orgType={currentOrgType}
+            organizationName={context.organizationName || orgName || null}
+            isSupplier={context.side === 'SUPPLIER'}
+          />
           {/* Quick link to Dedicated Governance & Delegation Workbench */}
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3.5 flex flex-wrap items-center justify-between gap-2 shadow-xs">
             <div className="min-w-0">

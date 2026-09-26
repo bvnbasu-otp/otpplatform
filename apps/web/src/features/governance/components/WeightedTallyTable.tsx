@@ -3,6 +3,7 @@ import {
   type VoteTallyEntry,
   type VotingSummary,
 } from '../types/governance';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 export interface WeightedTallyTableProps {
   tally: VoteTallyEntry[];
@@ -108,7 +109,7 @@ export function WeightedTallyTable({
         <p className="mt-3 text-xs text-muted-foreground">
           Voting closed when the award was locked
           {summary.votesLockedAt &&
-            ` on ${new Date(summary.votesLockedAt).toLocaleString()}`}
+            ` on ${formatDateTimeIST(summary.votesLockedAt)}`}
           .
         </p>
       )}

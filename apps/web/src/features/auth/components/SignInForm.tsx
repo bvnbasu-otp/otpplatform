@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, Field, controlClasses } from '@/components/ui';
+import { describeNotificationStatus, type NotificationStatusResolution } from '@otp/domain';
+import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
 import { useAuth } from '../AuthProvider';
 import { isSuperAdminEmail } from '../user-role';
 import { fetchDemoStatus } from '../../demo/api/demo';
@@ -171,6 +173,7 @@ export function SignInForm({
     return '';
   });
   const [resetSent, setResetSent] = useState(false);
+  const [resetDelivery, setResetDelivery] = useState<NotificationStatusResolution | null>(null);
 
   useEffect(() => {
     async function checkDemo() {
@@ -219,6 +222,7 @@ export function SignInForm({
         setError(res.error || 'Failed to send WhatsApp verification code.');
         return;
       }
+      setResetDelivery(res.delivery ?? null);
       setResetSent(true);
       setTimeout(() => {
         navigate(`/reset-password?identifier=${encodeURIComponent(cleanPhone)}`);
@@ -236,6 +240,7 @@ export function SignInForm({
         setError(res.error);
         return;
       }
+      setResetDelivery(res.delivery ?? resolveSupabaseEmailDispatch(null));
       setResetSent(true);
     }
   }
@@ -302,7 +307,9 @@ export function SignInForm({
       return;
     }
     setCodeSent(true);
-    setNotice(`We sent an eight-digit code to ${normalizedEmail}. It expires in a few minutes.`);
+    setNotice(
+      `${describeNotificationStatus(resolveSupabaseEmailDispatch(null), 'VERIFICATION_CODE').message} The eight-digit code was requested for ${normalizedEmail} and expires in a few minutes.`,
+    );
   }
 
   async function submit() {
@@ -477,13 +484,19 @@ export function SignInForm({
           {resetSent ? (
             <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-900 space-y-2">
               <p className="font-bold flex items-center gap-1.5">
-                <span>✓</span> {resetChannel === 'WHATSAPP' ? 'Verification Code Sent to WhatsApp!' : 'Password Reset Email Sent!'}
+                <span>✓</span> {resetChannel === 'WHATSAPP' ? 'Reset code requested for WhatsApp' : 'Password reset email requested'}
               </p>
-              <p className="text-emerald-800">
+              <p className="text-emerald-800" data-testid="reset-delivery-copy">
+                {
+                  describeNotificationStatus(
+                    resetDelivery ?? { status: 'SUBMITTED', channel: resetChannel === 'WHATSAPP' ? 'WHATSAPP' : 'EMAIL' },
+                    'PASSWORD_RESET',
+                  ).message
+                }{' '}
                 {resetChannel === 'WHATSAPP' ? (
-                  <>We sent an 8-digit verification code to WhatsApp on <strong>{resetPhone}</strong>. Redirecting to set new password...</>
+                  <>Requested for <strong>{resetPhone}</strong>. Redirecting to set new password...</>
                 ) : (
-                  <>Check your inbox at <strong>{email}</strong>. Click the link in the email or enter the 8-digit code on the reset page.</>
+                  <>Requested for <strong>{email}</strong>. If it arrives, use the link or enter the 8-digit code on the reset page.</>
                 )}
               </p>
               <div className="flex items-center gap-3 pt-1">

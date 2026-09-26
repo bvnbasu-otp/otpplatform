@@ -51,44 +51,55 @@ const SUGGESTION_CHIPS = [
   {
     icon: '⚡',
     label: 'Borewell',
-    text: 'Require 10 HP submersible borewell motor rewinding in Bengaluru 560001, needed within 5 days with 6 months warranty.',
+    text: 'Require 10 HP submersible borewell motor rewinding, needed within 5 days with 6 months warranty.',
   },
   {
     icon: '💡',
     label: 'Electrical',
-    text: 'Industrial electrical panel wiring, busbar installation and LT breaker maintenance in Chennai 600001 within 7 days.',
+    text: 'Industrial electrical panel wiring, busbar installation and LT breaker maintenance within 7 days.',
   },
   {
     icon: '🔧',
     label: 'Plumbing',
-    text: 'Commercial building booster pump overhaul, valve fitting and pipe replacement in Hyderabad 500001 within 5 days.',
+    text: 'Commercial building booster pump overhaul, valve fitting and pipe replacement within 5 days.',
   },
   {
     icon: '🛡️',
     label: 'Security',
-    text: '8-Channel HD CCTV camera installation with 2TB NVR recording and smartphone remote monitoring in Pune 411001.',
+    text: '8-Channel HD CCTV camera installation with 2TB NVR recording and smartphone remote monitoring.',
   },
   {
     icon: '🧹',
     label: 'Cleaning',
-    text: 'Deep cleaning and sanitization for 10,000 sq ft commercial facility in Mumbai 400001 within 3 days.',
+    text: 'Deep cleaning and sanitization for 10,000 sq ft commercial facility within 3 days.',
   },
   {
     icon: '🏗️',
     label: 'Civil work',
-    text: 'Commercial terrace waterproofing 5000 sq ft with elastomeric membrane coating in Mumbai 400001 within 15 days.',
+    text: 'Commercial terrace waterproofing 5000 sq ft with elastomeric membrane coating within 15 days.',
   },
   {
     icon: '⚙️',
     label: 'Maintenance',
-    text: 'Annual diesel generator DG set servicing, oil filter replacement and preventative maintenance in Coimbatore 641001.',
+    text: 'Annual diesel generator DG set servicing, oil filter replacement and preventative maintenance.',
   },
   {
     icon: '📦',
     label: 'Packaging',
-    text: 'Custom printed 5-ply corrugated shipping boxes 1000 units in Delhi NCR within 10 days.',
+    text: 'Custom printed 5-ply corrugated shipping boxes 1000 units within 10 days.',
   },
 ];
+
+/** Moves focus to the typed-requirement box, e.g. when mic permission is denied. */
+export function focusRequirementDescriptionInput(root: Pick<Document, 'querySelector'>): boolean {
+  const input = root.querySelector<HTMLTextAreaElement>('[data-requirement-description-input]');
+  if (!input) return false;
+  input.focus();
+  return true;
+}
+
+export const GPS_CITY_UNRESOLVED_NOTICE =
+  'Location detected, but we could not work out your city. Please type your city and PIN code.';
 
 const POPULAR_CITIES = [
   'Bengaluru',
@@ -207,6 +218,7 @@ export function Tier1TellOtpCard({
   const [showVoiceDictation, setShowVoiceDictation] = useState(false);
   const [isCustomTerms, setIsCustomTerms] = useState(false);
   const { isLocating, locationError, requestCurrentLocation } = useDeviceCapabilities();
+  const [gpsNotice, setGpsNotice] = useState<string | null>(null);
 
   const subcategories = useMemo(
     () => taxonomy.subcategories.filter((s) => s.categoryId === categoryId),
@@ -233,11 +245,18 @@ export function Tier1TellOtpCard({
   const confidence = parsed?.confidence ?? null;
 
   async function handleAutoDetectLocation() {
+    setGpsNotice(null);
     const loc = await requestCurrentLocation();
-    if (loc && !loc.error) {
-      if (!city) onCityChange('Bengaluru');
-      if (!pincode) onPincodeChange('560001');
+    if (!loc || loc.error) return;
+    if (loc.city && !city) {
+      onCityChange(loc.city);
+    } else if (!loc.city) {
+      setGpsNotice(GPS_CITY_UNRESOLVED_NOTICE);
     }
+  }
+
+  function focusDescriptionInput() {
+    focusRequirementDescriptionInput(document);
   }
 
   function handleCategorySelect(newCatId: string) {
@@ -387,6 +406,7 @@ export function Tier1TellOtpCard({
                     void onParse(dictatedText.trim());
                   }
                 }}
+                onPermissionError={focusDescriptionInput}
               />
             </div>
           )}
@@ -395,6 +415,7 @@ export function Tier1TellOtpCard({
             {({ id, describedBy, invalid }) => (
               <Textarea
                 id={id}
+                data-requirement-description-input=""
                 aria-describedby={describedBy}
                 invalid={invalid}
                 rows={3}
@@ -583,12 +604,10 @@ export function Tier1TellOtpCard({
                           key={c}
                           type="button"
                           onClick={() => {
-                            onCityChange(c === 'Bangalore' ? 'Bengaluru' : c);
-                            if (c === 'Bengaluru') onPincodeChange('560001');
-                            else if (c === 'Chennai') onPincodeChange('600001');
-                            else if (c === 'Coimbatore') onPincodeChange('641001');
-                            else if (c === 'Hyderabad') onPincodeChange('500001');
-                            else if (c === 'Mumbai') onPincodeChange('400001');
+                            const nextCity = c === 'Bangalore' ? 'Bengaluru' : c;
+                            // A city is not an address: the buyer's own PIN is required.
+                            if (nextCity.toLowerCase() !== city.trim().toLowerCase()) onPincodeChange('');
+                            onCityChange(nextCity);
                           }}
                           className={`rounded-full border px-3 py-1.5 text-xs font-bold transition active:scale-95 min-h-[38px] shrink-0 mobile-touch-target shadow-2xs whitespace-nowrap ${
                             isSelected
@@ -613,9 +632,9 @@ export function Tier1TellOtpCard({
                   </button>
                 </div>
 
-                {locationError && (
+                {(locationError || gpsNotice) && (
                   <p className="text-xs text-amber-600 dark:text-amber-400">
-                    ℹ️ {locationError}
+                    ℹ️ {locationError || gpsNotice}
                   </p>
                 )}
 
@@ -664,7 +683,7 @@ export function Tier1TellOtpCard({
                 maxLength={6}
                 aria-describedby={describedBy}
                 invalid={invalid}
-                placeholder="e.g. 560001"
+                placeholder="6-digit PIN code"
                 value={pincode}
                 onChange={(e) => onPincodeChange(e.target.value.replace(/\D/g, ''))}
               />

@@ -10,8 +10,10 @@ import {
   LIFECYCLE_GROUPS,
   PHASES,
   PILLARS,
+  PUBLIC_JOURNEY,
   ROLE_SUMMARY,
   SUPPLIER_CHANNELS,
+  TRUST_PRINCIPLES,
   type FaqEntry,
   SUPPLIER_FAQS,
 } from './site-content';
@@ -88,12 +90,23 @@ describe('what the home page says the product is', () => {
     expect(HERO.tagline.toLowerCase()).toMatch(/identity[- ]protected/);
     expect(HERO.tagline.toLowerCase()).toMatch(/competitive|sourcing/);
     expect(HERO.tagline).toBe('Identity-Protected Competitive Sourcing');
-    expect(HERO.title.toLowerCase()).toMatch(/procure smarter/i);
+    expect(HERO.title).toBe('OTP — Identity-Protected Competitive Sourcing');
+    expect(HERO.body).toBe('Compare competing supplier quotes and make better procurement decisions.');
   });
 
-  it('verifies distinct primary tagline and supporting journey statement', () => {
+  it('verifies distinct primary tagline and the single five-step public journey statement', () => {
     expect(PRODUCT_TAGLINE).toBe('Identity-Protected Competitive Sourcing');
-    expect(PRODUCT_JOURNEY_STATEMENT).toBe('Request. Compare. Decide.');
+    expect(PRODUCT_JOURNEY_STATEMENT).toBe('Request. Compare. Decide. Purchase. Track.');
+    expect(PUBLIC_JOURNEY.map((s) => s.title)).toEqual(['Request', 'Compare', 'Decide', 'Purchase', 'Track']);
+  });
+
+  it('keeps trust principles separate from the journey steps', () => {
+    const stepTitles = new Set(PUBLIC_JOURNEY.map((s) => s.title.toLowerCase()));
+    expect(TRUST_PRINCIPLES.length).toBeGreaterThanOrEqual(3);
+    for (const principle of TRUST_PRINCIPLES) {
+      expect(stepTitles.has(principle.title.toLowerCase()), principle.title).toBe(false);
+    }
+    expect(TRUST_PRINCIPLES.map((p) => p.body).join(' ')).not.toMatch(/escrow|guarantee|certified/i);
   });
 
   it('opens with one question rather than a procurement vocabulary lesson', () => {
@@ -207,17 +220,21 @@ describe('a home page that stays a home page', () => {
     }
   });
 
-  it('leaves the mechanism to the FAQ', () => {
-    // Salts, views and append-only trails are what makes the claims true, and a
-    // reader who wants them can have them — one click away. On the home page
-    // they reassure nobody and cost the reader their attention.
-    const home = HOME_PROSE.join('\n');
-
-    expect(home).not.toMatch(/salt|hash|append-only|tax ID|per-enquiry alias/i);
-    // And the FAQ must still carry them, or the detail is simply gone.
-    const faqs = ALL_FAQS.map((f) => f.answer).join('\n');
-    expect(faqs).toMatch(/salt/i);
-    expect(faqs).toMatch(/append-only/i);
+  it('keeps implementation jargon off every public surface, the FAQ included', () => {
+    // Public copy says what happens to the customer, never how the system is
+    // built. The FAQ used to be the exception; it no longer is.
+    const jargon =
+      /\bRLS\b|row[- ]level|database|cryptograph|\bSHA\b|hash|\bsalt|architecture|WAHA|append-only|postgres|supabase|edge function|per-enquiry alias/i;
+    const publicCopy = [
+      ...HOME_PROSE,
+      ...ALL_FAQS.flatMap((f) => [f.question, f.answer]),
+      ...SUPPLIER_CHANNELS.map((c) => c.description ?? ''),
+      ...PUBLIC_JOURNEY.map((s) => s.body),
+      ...TRUST_PRINCIPLES.flatMap((p) => [p.title, p.body]),
+    ];
+    for (const text of publicCopy) {
+      expect(text, text.slice(0, 60)).not.toMatch(jargon);
+    }
   });
 
   it('does not say the same thing in two sections', () => {
@@ -351,7 +368,7 @@ describe('supplier channels, which are the easiest thing to overclaim', () => {
     }
   });
 
-  it('calls messaging available now with live WAHA WhatsApp gateway delivery', () => {
+  it('calls WhatsApp and SMS messaging available now', () => {
     const messaging = SUPPLIER_CHANNELS.find((c) => /whatsapp|sms/i.test(c.name));
 
     expect(messaging, 'no channel covers WhatsApp or SMS').toBeDefined();

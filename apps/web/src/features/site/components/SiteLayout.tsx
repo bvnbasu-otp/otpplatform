@@ -1,35 +1,29 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { SiteHeader } from './SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileSimulatorFrame } from '@/components/layout/MobileSimulatorFrame';
-
-function useArrivalScroll() {
-  const { pathname, hash } = useLocation();
-
-  useEffect(() => {
-    if (!hash) {
-      window.scrollTo(0, 0);
-      return;
-    }
-
-    const frame = requestAnimationFrame(() => {
-      document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth' });
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [pathname, hash]);
-}
+import {
+  SHELL_ROOT_CLASS,
+  scrollContainerProps,
+  shellScrollerClass,
+  useScrollContainerReset,
+} from '@/components/layout/scroll-model';
+import { shouldShowGlobalBottomNav } from '@/features/navigation/navigation-config';
 
 export function SiteLayout({ children }: { children: ReactNode }) {
-  useArrivalScroll();
+  const { pathname } = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+  useScrollContainerReset(mainRef);
+
+  const showBottomNav = shouldShowGlobalBottomNav(pathname);
 
   return (
     <MobileSimulatorFrame>
-      <div className="h-full w-full flex flex-col bg-background overflow-hidden relative">
+      <div className={SHELL_ROOT_CLASS}>
         <SiteHeader />
-        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
+        <main ref={mainRef} className={shellScrollerClass(showBottomNav)} {...scrollContainerProps('site')}>
           <div className="flex-1">
             {children}
           </div>
@@ -37,8 +31,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
           <SiteFooter />
         </main>
 
-        {/* Mobile Fixed Bottom Navigation Bar */}
-        <MobileBottomNav />
+        {showBottomNav && <MobileBottomNav />}
       </div>
     </MobileSimulatorFrame>
   );

@@ -4,8 +4,22 @@ export const PRODUCT_NAME = 'OTP';
 export const PRODUCT_FULL_NAME = 'Open Trade & Procurement';
 
 export const PRODUCT_TAGLINE = 'Identity-Protected Competitive Sourcing';
-export const PRODUCT_PLATFORM_SUBTITLE = 'Neutral Sourcing & Governance Platform';
-export const PRODUCT_JOURNEY_STATEMENT = 'Request. Compare. Decide.';
+export const PRODUCT_PLATFORM_SUBTITLE =
+  'Compare competing supplier quotes and make better procurement decisions.';
+
+/** Browser title, share cards and the public hero all use this one string. */
+export const PRODUCT_TITLE = `${PRODUCT_NAME} — ${PRODUCT_TAGLINE}`;
+
+/** The one customer journey shown publicly. Internal workflow states stay inside the app. */
+export const PUBLIC_JOURNEY_STEPS = ['Request', 'Compare', 'Decide', 'Purchase', 'Track'] as const;
+export const PRODUCT_JOURNEY_STATEMENT = `${PUBLIC_JOURNEY_STEPS.join('. ')}.`;
+
+/**
+ * The date the public copy was last reviewed. Bump it here when the copy is
+ * reviewed again; pages that show a "last updated" line read it from here
+ * rather than each carrying their own literal that goes stale separately.
+ */
+export const PUBLIC_CONTENT_LAST_REVIEWED = '26 September 2026';
 
 export const PRODUCT_CONCEPT =
   'A local procurement network and procurement operating system — one engine, any buyer, any locality, any supplier network.';

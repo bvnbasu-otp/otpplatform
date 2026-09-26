@@ -283,6 +283,41 @@ export async function publishDraft(draft: IntakeDraft): Promise<PublishResult> {
   };
 }
 
+export function mergeDraftPatch(draft: IntakeDraft, patch: DraftPatch): IntakeDraft {
+  return {
+    ...draft,
+    ...patch,
+    attributes: patch.attributes ?? draft.attributes,
+    quality: patch.quality ? { ...draft.quality, ...patch.quality } : draft.quality,
+    commercial: patch.commercial ? { ...draft.commercial, ...patch.commercial } : draft.commercial,
+    sourcing: patch.sourcing ? { ...draft.sourcing, ...patch.sourcing } : draft.sourcing,
+  };
+}
+
+/**
+ * Saves the buyer's latest edits and then publishes.
+ *
+ * publish_requirement reads the requirement row, not the client draft, so the
+ * edits must be on the server first. If that save fails we stop: publishing
+ * the stale row would silently drop manual category / scope / location edits.
+ */
+export async function persistAndPublishDraft(
+  draft: IntakeDraft,
+  patch: DraftPatch,
+): Promise<PublishResult> {
+  let current = mergeDraftPatch(draft, patch);
+
+  if (!draft.requirementId.startsWith('local-')) {
+    const saved = await updateDraft(draft, patch);
+    if (!saved.ok) {
+      return { ok: false, error: `Could not save your latest edits before publishing: ${saved.error}` };
+    }
+    current = saved.draft;
+  }
+
+  return publishDraft(current);
+}
+
 /** The most recent unfinished draft, so "continue where you left off" works. */
 export async function fetchLatestDraft(): Promise<
   { ok: true; draft: IntakeDraft | null } | { ok: false; error: string }

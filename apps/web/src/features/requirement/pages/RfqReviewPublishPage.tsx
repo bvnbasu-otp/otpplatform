@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
+import { useRoleContext } from '@/features/roles';
+import { usePilotAllowance } from '@/features/intake/hooks/use-pilot-allowance';
 import {
   fetchRfqReviewData,
   publishRfq,
@@ -16,6 +18,7 @@ import { RfqSupplierInstructionsCard } from '../components/RfqSupplierInstructio
 import { RfqGovernanceCard } from '../components/RfqGovernanceCard';
 import { RfqValidationBanner } from '../components/RfqValidationBanner';
 import { RfqPublishConfirmationModal } from '../components/RfqPublishConfirmationModal';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 interface RfqReviewPublishPageProps {
   requirementId?: string;
@@ -27,6 +30,8 @@ export function RfqReviewPublishPage({
   rfqId: propRfqId,
 }: RfqReviewPublishPageProps) {
   const navigate = useNavigate();
+  const { context } = useRoleContext();
+  const pilotAllowance = usePilotAllowance(context.organizationId);
   const [data, setData] = useState<RfqReviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +109,7 @@ export function RfqReviewPublishPage({
 
       const count = res.invitedCount || data.selectedSuppliers.length;
       setSuccess(
-        `🎉 RFQ successfully published! Broadcast dispatched to ${count} verified supplier(s). Quoting is now live with responses expected within 30 minutes.`
+        `RFQ published. ${count} supplier(s) invited to quote. You'll see quotes here as suppliers respond.`
       );
 
       // Update local RFQ status to OPEN and Requirement to QUOTING
@@ -172,14 +177,7 @@ export function RfqReviewPublishPage({
   const supplierCount = selectedSuppliers.length;
   const isQuorumMet = supplierCount >= governance.minQuotesRequired;
 
-  const deadlineDisplay = new Date(currentDeadline || rfq.quoteDeadline).toLocaleString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  const deadlineDisplay = formatDateTimeIST(currentDeadline || rfq.quoteDeadline);
 
   return (
     <div
@@ -289,6 +287,7 @@ export function RfqReviewPublishPage({
 
       {/* Broadcast Confirmation Modal */}
       <RfqPublishConfirmationModal
+        pilotAllowance={pilotAllowance}
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}
         onConfirm={handleConfirmPublish}

@@ -3,6 +3,8 @@ import { formatDateIST, formatDeadlineCountdown } from '@/lib/date-utils';
 import type { SupplierInvitation } from '../types/supplier-quote';
 import { formatMoney, type PurchaseOrderSummary } from '@/features/fulfillment/types/fulfillment';
 import { useSupplierRadarCapabilities } from '../hooks/use-supplier-radar';
+import { PROTECTED_BUYER_LABEL } from '../lib/identity-shield';
+import { IdentityProtectedShield } from './IdentityProtectedShield';
 
 export function SupplierInvitationList({
   invitations,
@@ -129,7 +131,9 @@ export function SupplierInvitationList({
                   {inv.rfqTitle}
                 </h3>
                 <p className="mt-1 text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <span className="font-medium text-foreground/80">Buyer: {inv.buyerDisplayName}</span>
+                  <span className="font-medium text-foreground/80 inline-flex items-center gap-1">
+                    Buyer: {PROTECTED_BUYER_LABEL} <IdentityProtectedShield variant="badge" />
+                  </span>
                   <span>•</span>
                   <span>Invited: {formatDateIST(inv.invitedAt)}</span>
                 </p>

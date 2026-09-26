@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  generatePersistentReferralCode,
+  buildReferralShareMessage,
   generateReferralUrl,
   generateWhatsAppShareUrl,
+  getReferralCreditDisplay,
   getReferralWebShareData,
-} from '@/features/subscription';
+} from '@otp/domain';
+import { resolveReferralCode } from '../lib/referral-code-storage';
 
 export interface ReferAndEarnCardProps {
   identifier?: string | null;
@@ -25,7 +27,8 @@ export function ReferAndEarnCard({
   const [shareError, setShareError] = useState<string | null>(null);
 
   const safeIdentifier = identifier || 'OTP-COMMUNITY';
-  const referralCode = generatePersistentReferralCode(safeIdentifier, 'OTP');
+  const referralCode = useMemo(() => resolveReferralCode(safeIdentifier), [safeIdentifier]);
+  const creditDisplay = getReferralCreditDisplay();
   
   const origin = typeof window !== 'undefined' && window.location.origin
     ? window.location.origin
@@ -37,14 +40,15 @@ export function ReferAndEarnCard({
     referralCode,
     source: 'web_dashboard',
   });
+  const shareMessage = buildReferralShareMessage(referralCode, referralUrl);
 
   const handleCopy = async () => {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(referralUrl);
+        await navigator.clipboard.writeText(shareMessage);
       } else {
         const input = document.createElement('input');
-        input.value = referralUrl;
+        input.value = shareMessage;
         document.body.appendChild(input);
         input.select();
         document.execCommand('copy');
@@ -83,7 +87,7 @@ export function ReferAndEarnCard({
           <div className="flex items-center gap-2">
             <span className="text-xl">🤝</span>
             <div>
-              <h4 className="text-xs font-bold text-foreground">Refer &amp; Earn 10% Reward</h4>
+              <h4 className="text-xs font-bold text-foreground">Refer a peer · pilot credit {creditDisplay.formattedMonetaryCredit}</h4>
               <p className="text-[11px] text-muted-foreground font-mono">{referralCode}</p>
             </div>
           </div>
@@ -120,13 +124,13 @@ export function ReferAndEarnCard({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-extrabold text-foreground text-base">Refer &amp; Earn 10% Reward</h3>
+              <h3 className="font-extrabold text-foreground text-base">Refer a peer to OTP</h3>
               <span className="rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 border border-emerald-500/30">
-                Non-Cash Platform Credits
+                Pilot credit: {creditDisplay.formattedMonetaryCredit}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Invite peer buyers or verified suppliers. Receive 10% in OTP Wallet Credits on their first subscription payment.
+              Invite peer buyers or verified suppliers. {creditDisplay.notice}
             </p>
           </div>
         </div>
@@ -155,7 +159,7 @@ export function ReferAndEarnCard({
             onClick={handleCopy}
             className="rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-bold px-3 py-1.5 border border-border transition cursor-pointer"
           >
-            {copied ? '✓ Copied Link' : '📋 Copy Link'}
+            {copied ? '✓ Copied message' : '📋 Copy message'}
           </button>
         </div>
 
@@ -208,7 +212,7 @@ export function ReferAndEarnCard({
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-          <span><strong>Wallet Only:</strong> Platform credit for renewals &amp; top-ups.</span>
+          <span><strong>Pilot:</strong> {creditDisplay.formattedMonetaryCredit} monetary or wallet credit.</span>
         </div>
       </div>
     </div>

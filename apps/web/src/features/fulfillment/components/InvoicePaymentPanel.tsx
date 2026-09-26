@@ -27,8 +27,16 @@ import {
 } from '../api/payments';
 import { fetchWorkOrderMilestones } from '../api/work-orders';
 import { TdsWithholdingPanel } from './TdsWithholdingPanel';
+import { InvoiceBalancesReview } from './InvoiceBalancesReview';
+import {
+  RECORD_OFF_PLATFORM_PAYMENT_LABEL,
+  buildInvoiceBalanceRows,
+  pickActionableInvoice,
+  sumLiveTdsByInvoice,
+} from '../lib/settlement-state';
 import {
   calculateRemainingInvoiceableAmount,
+  deriveInvoiceTdsBase,
   validateInvoiceAmountAgainstPo,
   type CreditDebitNote,
 } from '@otp/domain';
@@ -41,6 +49,10 @@ export interface InvoicePaymentPanelProps {
   poAmount?: number;
   deliveryAccepted?: boolean;
   onUpdated?: () => void;
+  /** Counterparty legal/business name for statutory documents (Form 16A, TDS). */
+  supplierName?: string;
+  /** INVOICE: GST invoices & TDS. SETTLEMENT: balances & off-platform payment recording. */
+  view?: 'ALL' | 'INVOICE' | 'SETTLEMENT';
 }
 
 export interface MilestoneOption {
@@ -57,11 +69,15 @@ export interface MilestoneOption {
 export function InvoicePaymentPanel({
   workOrderId,
   supplierId,
+  supplierName,
   role,
   poAmount = 0,
   deliveryAccepted = true,
   onUpdated,
+  view = 'ALL',
 }: InvoicePaymentPanelProps) {
+  const showInvoicing = view !== 'SETTLEMENT';
+  const showSettlement = view !== 'INVOICE';
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [activeInvoice, setActiveInvoice] = useState<InvoiceSummary | null>(null);
   const [payment, setPayment] = useState<PaymentSummary | null>(null);
@@ -80,11 +96,11 @@ export function InvoicePaymentPanel({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [showQrModal, setShowQrModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [allocations, setAllocations] = useState<PaymentAllocationRecord[]>([]);
   const [invoiceNotes, setInvoiceNotes] = useState<CreditDebitNote[]>([]);
   const [tdsDeductions, setTdsDeductions] = useState<TdsDeductionRecord[]>([]);
+  const [tdsByInvoice, setTdsByInvoice] = useState<Record<string, number>>({});
   const [showReversalModal, setShowReversalModal] = useState(false);
   const [reversalTargetAlloc, setReversalTargetAlloc] = useState<PaymentAllocationRecord | null>(null);
   const [reversalReason, setReversalReason] = useState('');
@@ -102,8 +118,11 @@ export function InvoicePaymentPanel({
 
     if (invsRes.ok) {
       setInvoices(invsRes.invoices);
-      const latest = invsRes.invoices[invsRes.invoices.length - 1] || null;
+      const latest = pickActionableInvoice(invsRes.invoices);
       setActiveInvoice(latest);
+      void Promise.all(invsRes.invoices.map((inv) => fetchTdsDeductionsByInvoice(inv.id))).then((results) => {
+        setTdsByInvoice(sumLiveTdsByInvoice(results.flatMap((r) => (r.ok ? r.deductions : []))));
+      });
       if (latest) {
         const bal = latest.balanceDue ?? (latest.status === 'PAID' ? 0 : latest.amount);
         const [payRes, allocRes, noteRes, tdsRes] = await Promise.all([
@@ -532,7 +551,6 @@ export function InvoicePaymentPanel({
   const effectiveAmount = activeInvoice ? activeInvoice.amount : Number(amount) || poAmount;
   const activeBalDue = activeInvoice?.balanceDue ?? (activeInvoice?.status === 'PAID' ? 0 : activeInvoice?.amount ?? 0);
   const activePaidAmt = activeInvoice?.paidAmount ?? (activeInvoice?.status === 'PAID' ? activeInvoice.amount : 0);
-  const payableAmount = activeBalDue > 0 ? activeBalDue : effectiveAmount;
   const totalTdsDeducted = tdsDeductions.reduce((sum, d) => sum + (d.tdsAmount || 0), 0);
   const netSettlementPayable = Math.max(0, activeBalDue - totalTdsDeducted);
 
@@ -543,8 +561,11 @@ export function InvoicePaymentPanel({
   const igstAmount = activeInvoice?.igstTotal ?? 0;
   const totalGst = cgstAmount + sgstAmount + utgstAmount + igstAmount || (effectiveAmount - baseAmount);
 
-  // Sanitized dynamic virtual settlement handle
-  const virtualAccountCode = `OTP-SETTLE-${workOrderId.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+  const balances = buildInvoiceBalanceRows(
+    invoices,
+    tdsByInvoice,
+    poPayments.reduce((s, p) => s + (p.unallocatedAmount > 0 ? p.unallocatedAmount : 0), 0),
+  );
 
   function getStatusBadge(status: string) {
     if (status === 'PAID') {
@@ -584,6 +605,7 @@ export function InvoicePaymentPanel({
 
   return (
     <div className="space-y-4" data-testid="invoice-payment-panel">
+      {showInvoicing && (<>
       {/* =========================================================================
           PROGRESSIVE INVOICING & REMAINING INVOICEABLE AMOUNT BAR (PHASE 5A/5C)
           ========================================================================= */}
@@ -612,7 +634,7 @@ export function InvoicePaymentPanel({
               {invoicingCalc.isFullyInvoiced ? '✓ Fully Invoiced (100%)' : `Remaining: ${formatMoney(invoicingCalc.remainingInvoiceableAmount, 'INR')}`}
             </span>
 
-            {role === 'supplier' && !invoicingCalc.isFullyInvoiced && (
+            {role === 'supplier' && invoices.length > 0 && !invoicingCalc.isFullyInvoiced && (
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(true)}
@@ -659,7 +681,6 @@ export function InvoicePaymentPanel({
                     <th className="px-3 py-2 text-right">Paid (₹)</th>
                     <th className="px-3 py-2 text-right">Balance (₹)</th>
                     <th className="px-3 py-2 text-center">Status</th>
-                    <th className="px-3 py-2 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -690,34 +711,6 @@ export function InvoicePaymentPanel({
                         </td>
                         <td className="px-3 py-2 text-center">
                           {getStatusBadge(inv.status)}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {role === 'buyer' && inv.status === 'SUBMITTED' && (
-                            <div className="inline-flex gap-1">
-                              <button
-                                type="button"
-                                disabled={busy}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleApprove(inv.id);
-                                }}
-                                className="px-2 py-1 rounded-md bg-emerald-600 text-white text-[10px] font-bold hover:bg-emerald-700"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                type="button"
-                                disabled={busy}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleReject(inv.id);
-                                }}
-                                className="px-2 py-1 rounded-md bg-red-100 text-red-800 text-[10px] font-bold hover:bg-red-200"
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          )}
                         </td>
                       </tr>
                     );
@@ -975,7 +968,8 @@ export function InvoicePaymentPanel({
                   invoiceId={activeInvoice.id}
                   invoiceNumber={activeInvoice.invoiceNumber}
                   invoiceAmount={activeInvoice.amount}
-                  supplierName="Assigned Supplier"
+                  gstAmount={deriveInvoiceTdsBase(activeInvoice).gstAmount}
+                  supplierName={supplierName?.trim() || 'Supplier name not on record'}
                   existingDeductions={tdsDeductions}
                   isBuyerUser={role === 'buyer'}
                   onDeductionApplied={() => void load()}
@@ -986,6 +980,23 @@ export function InvoicePaymentPanel({
         )}
       </section>
 
+      </>)}
+
+      {showSettlement && (<>
+      {!showInvoicing && error && (
+        <div className="rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-bold text-red-700 dark:text-red-300">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {!showInvoicing && success && (
+        <div className="rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+          {success}
+        </div>
+      )}
+
+      <InvoiceBalancesReview rows={balances.rows} totals={balances.totals} poAmount={poAmount} role={role} />
+
       {/* =========================================================================
           PAYMENT EXECUTION & SETTLEMENT SECTION
           ========================================================================= */}
@@ -995,11 +1006,11 @@ export function InvoicePaymentPanel({
             <div className="flex items-center gap-2">
               <span className="text-sm">💳</span>
               <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
-                Payment Execution &amp; Settlement
+                Off-Platform Payment Record
               </h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Direct Bank Transfer (NEFT/RTGS), Instant UPI QR, and Partial/Milestone Remittance.
+              Record payments made directly to the supplier outside OTP (NEFT/RTGS, UPI or cheque).
             </p>
           </div>
           {payment && (
@@ -1015,43 +1026,8 @@ export function InvoicePaymentPanel({
           )}
         </div>
 
-        {/* Clean Neutral Settlement Card */}
-        <div className="rounded-xl border bg-muted/15 p-3.5 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-              Authorized Settlement Destination
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowQrModal(true)}
-              className="min-h-[36px] text-[11px] font-bold text-primary flex items-center gap-1 hover:underline"
-            >
-              <span>📱</span>
-              <span>View UPI QR</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-            <div className="p-2.5 rounded-lg border bg-card space-y-1">
-              <span className="text-[9px] uppercase font-bold text-muted-foreground block">
-                Beneficiary Virtual Settlement Account
-              </span>
-              <p className="font-mono font-bold text-foreground">{virtualAccountCode}</p>
-              <p className="text-[10px] text-muted-foreground">
-                IFSC: <span className="font-mono text-foreground">HDFC0000001</span> (HDFC Settlement Node)
-              </p>
-            </div>
-
-            <div className="p-2.5 rounded-lg border bg-card space-y-1">
-              <span className="text-[9px] uppercase font-bold text-muted-foreground block">
-                Instant UPI Settlement Handle
-              </span>
-              <p className="font-mono font-bold text-foreground">otp.settle@hdfcbank</p>
-              <p className="text-[10px] text-muted-foreground">
-                Merchant: <span className="font-semibold text-foreground">Open Trade Platform Node</span>
-              </p>
-            </div>
-          </div>
+        <div className="rounded-xl border bg-muted/15 p-3 text-[11px] text-muted-foreground" data-testid="off-platform-settlement-notice">
+          <strong className="text-foreground">Direct settlement, off platform.</strong> The buyer pays the supplier directly to the supplier's own bank account or UPI ID, then records the UTR here for the audit trail. OTP does not collect, hold or settle funds, and no payment is processed by OTP during the pilot.
         </div>
 
         {/* State: Buyer payment entry form (when invoice approved or partially paid with balance due) */}
@@ -1223,7 +1199,7 @@ export function InvoicePaymentPanel({
                   <span>
                     {busy
                       ? 'Recording Settlement…'
-                      : `Record Direct Payment (${formatMoney(Number(payAmountInput) || (netSettlementPayable > 0 ? netSettlementPayable : activeBalDue), activeInvoice.currency)}) →`}
+                      : `${RECORD_OFF_PLATFORM_PAYMENT_LABEL} (${formatMoney(Number(payAmountInput) || (netSettlementPayable > 0 ? netSettlementPayable : activeBalDue), activeInvoice.currency)})`}
                   </span>
                 </button>
               </form>
@@ -1357,6 +1333,8 @@ export function InvoicePaymentPanel({
           </div>
         )}
       </section>
+
+      </>)}
 
       {/* =========================================================================
           PROGRESSIVE INVOICE SUBMISSION MODAL
@@ -1505,33 +1483,6 @@ export function InvoicePaymentPanel({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Dynamic Neutral UPI QR Modal */}
-      {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-2xl bg-card border border-border p-5 shadow-2xl text-center space-y-4">
-            <h3 className="text-sm font-black text-foreground">Scan UPI QR to Remit</h3>
-            <div className="bg-white p-4 rounded-xl border inline-block">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                  `upi://pay?pa=otp.settle@hdfcbank&pn=OTP+Settlement&am=${payableAmount}&cu=INR`,
-                )}`}
-                alt="UPI QR Code"
-                className="w-44 h-44 mx-auto"
-              />
-            </div>
-            <p className="font-mono text-xs font-bold text-foreground">otp.settle@hdfcbank</p>
-            <p className="font-mono text-sm font-black text-primary">{formatMoney(payableAmount, 'INR')}</p>
-            <button
-              type="button"
-              onClick={() => setShowQrModal(false)}
-              className="w-full min-h-[44px] rounded-xl bg-primary text-primary-foreground text-xs font-bold"
-            >
-              Close
-            </button>
           </div>
         </div>
       )}

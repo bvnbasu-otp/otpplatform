@@ -216,6 +216,7 @@ export type AccountBlockReason =
   | 'Unresponsive / Failed Fulfillment'
   | 'Non-Compliant KYC / Invalid GSTIN'
   | 'Payment Dispute / Fraud Risk'
+  | 'Legacy / Demo Data Retirement'
   | 'Other';
 
 export interface AdminUserItem {

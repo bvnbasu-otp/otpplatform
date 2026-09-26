@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useRoleContext } from '@/features/roles';
 import { useMaintenance } from '@/features/maintenance';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileSimulatorFrame } from '@/components/layout/MobileSimulatorFrame';
+import {
+  SHELL_ROOT_CLASS,
+  scrollContainerProps,
+  shellScrollerClass,
+  useScrollContainerReset,
+} from '@/components/layout/scroll-model';
 import { SupplierCapabilityModal } from '@/features/supplier';
-import { WorkspaceHeader, isTransactionalWorkflowRoute } from '@/features/navigation';
+import { WorkspaceHeader, shouldShowGlobalBottomNav } from '@/features/navigation';
 import { PRODUCT_NAME } from '@/lib/brand';
 
 export function AppLayout() {
@@ -14,6 +20,8 @@ export function AppLayout() {
   const { pathname, search } = useLocation();
   const { isMaintenanceMode } = useMaintenance();
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
+  const scrollContainerRef = useRef<HTMLElement>(null);
+  useScrollContainerReset(scrollContainerRef);
 
   // If maintenance is active and user is not a platform admin, redirect to maintenance screen
   if (isMaintenanceMode && !context.isPlatformAdmin) {
@@ -24,19 +32,18 @@ export function AppLayout() {
     return <Navigate to={dest} replace />;
   }
 
-  const isWorkflowRoute = isTransactionalWorkflowRoute(pathname);
+  const showBottomNav = shouldShowGlobalBottomNav(pathname);
 
   return (
     <MobileSimulatorFrame>
-      <div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden relative sm:transform-gpu sm:[transform:translate3d(0,0,0)] [contain:paint]">
+      <div className={SHELL_ROOT_CLASS}>
         {/* Canonical Authenticated Header: OTP Logo | ROLE | Help & Support | Notifications | Menu */}
         <WorkspaceHeader onOpenSupplierCapabilities={() => setIsCapabilityModalOpen(true)} />
 
-        {/* Main Content Viewport with Safe Bottom Padding */}
         <main
-          className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col relative ${
-            isWorkflowRoute ? 'pb-0' : 'pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]'
-          }`}
+          ref={scrollContainerRef}
+          {...scrollContainerProps('app')}
+          className={shellScrollerClass(showBottomNav)}
         >
           <ErrorBoundary>
             <Outlet />
@@ -44,7 +51,7 @@ export function AppLayout() {
         </main>
 
         {/* Canonical Authenticated Bottom Navigation: Home | Orders | + | Audit | Profile */}
-        {!isWorkflowRoute && <MobileBottomNav />}
+        {showBottomNav && <MobileBottomNav />}
 
         {/* Quick Capability Editor Modal for Suppliers */}
         <SupplierCapabilityModal

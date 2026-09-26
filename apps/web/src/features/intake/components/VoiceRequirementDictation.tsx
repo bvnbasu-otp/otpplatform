@@ -43,6 +43,45 @@ const LANGUAGES: LanguageOption[] = [
   },
 ];
 
+export const MIC_PERMISSION_DENIED_MESSAGE =
+  'Click the microphone icon in your browser address bar to enable, or simply type your requirement below.';
+
+export const VOICE_UNSUPPORTED_MESSAGE =
+  'Voice input is not available in this browser. Please type your requirement below.';
+
+const PERMISSION_DENIED_CODES = new Set([
+  'not-allowed',
+  'service-not-allowed',
+  'NotAllowedError',
+  'PermissionDeniedError',
+  'SecurityError',
+]);
+
+export function isMicPermissionDenied(code: unknown): boolean {
+  return typeof code === 'string' && PERMISSION_DENIED_CODES.has(code);
+}
+
+/**
+ * Maps a recognition error to what the buyer sees. On a permission denial the
+ * callback runs synchronously so the caller can move focus to the text input
+ * in the same tick.
+ */
+export function reportVoiceError(
+  code: unknown,
+  handlers: { setError: (msg: string) => void; onPermissionError?: (msg: string) => void },
+): void {
+  if (isMicPermissionDenied(code)) {
+    handlers.setError(MIC_PERMISSION_DENIED_MESSAGE);
+    handlers.onPermissionError?.(MIC_PERMISSION_DENIED_MESSAGE);
+    return;
+  }
+  if (code === 'no-speech') {
+    handlers.setError('No voice detected. Please speak into the mic.');
+    return;
+  }
+  handlers.setError(`Voice input error: ${String(code)}`);
+}
+
 // Browser speech recognition interface declaration
 interface IWindow extends Window {
   SpeechRecognition?: any;
@@ -64,6 +103,8 @@ export function VoiceRequirementDictation({
 
   const recognitionRef = useRef<any>(null);
   const processingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onPermissionErrorRef = useRef(onPermissionError);
+  onPermissionErrorRef.current = onPermissionError;
 
   // Clear pending timers on unmount
   useEffect(() => {
@@ -142,18 +183,10 @@ export function VoiceRequirementDictation({
 
       recognition.onerror = (event: any) => {
         setRecordingState('IDLE');
-        let msg = '';
-        if (event.error === 'not-allowed') {
-          msg = 'Microphone access denied. Please enable mic permissions in your browser.';
-          setError(msg);
-          onPermissionError?.(msg);
-        } else if (event.error === 'no-speech') {
-          msg = 'No voice detected. Please speak into the mic.';
-          setError(msg);
-        } else {
-          msg = `Voice input error: ${event.error}`;
-          setError(msg);
-        }
+        reportVoiceError(event.error, {
+          setError,
+          onPermissionError: onPermissionErrorRef.current,
+        });
       };
 
       recognition.onend = () => {
@@ -179,11 +212,8 @@ export function VoiceRequirementDictation({
   const toggleListening = () => {
     setError(null);
     if (!recognitionRef.current) {
-      // Fallback: If Web Speech API not present in current environment, simulate sample regional dictation
-      const lang = LANGUAGES.find((l) => l.code === selectedLanguage);
-      if (lang) {
-        handleFinalResult(lang.samplePhrase);
-      }
+      setError(VOICE_UNSUPPORTED_MESSAGE);
+      onPermissionErrorRef.current?.(VOICE_UNSUPPORTED_MESSAGE);
       return;
     }
 
@@ -205,8 +235,12 @@ export function VoiceRequirementDictation({
           recognitionRef.current.lang = selectedLanguage;
           recognitionRef.current.start();
         } catch (e: any) {
-          setError(e?.message || 'Could not start microphone');
           setRecordingState('IDLE');
+          if (isMicPermissionDenied(e?.name)) {
+            reportVoiceError(e.name, { setError, onPermissionError: onPermissionErrorRef.current });
+          } else {
+            setError(e?.message || 'Could not start microphone');
+          }
         }
       }
     }

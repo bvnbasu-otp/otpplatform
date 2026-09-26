@@ -658,7 +658,7 @@ export function EvaluationDecisionCockpit({
               rfqTitle={effectiveTitle}
               selectedQuoteId={selectedQuote?.quoteId ?? null}
               onSelectForAward={(q) => setSelectedQuoteId(q.quoteId)}
-              onSimulateQuotes={() => void handleSimulateQuotes()}
+              onSimulateQuotes={isDemoMode ? () => void handleSimulateQuotes() : undefined}
               isSimulating={isSimulatingQuotes}
             />
 

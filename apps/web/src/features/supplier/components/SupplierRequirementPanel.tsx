@@ -7,7 +7,9 @@ import {
   type RequiredByMode,
 } from '@otp/domain';
 import { AttachmentList, type Attachment } from '@/features/attachments';
+import { PROTECTED_BUYER_LABEL } from '../lib/identity-shield';
 import type { SupplierRfqDetail } from '../types/supplier-quote';
+import { IdentityProtectedShield } from './IdentityProtectedShield';
 
 const FULFILMENT_LABELS: Record<FulfilmentMode, string> = {
   SUPPLIER_DELIVERY: 'Supplier delivers to site',
@@ -139,27 +141,20 @@ export function SupplierRequirementPanel({
           </h1>
         </div>
 
-        {/* Buyer Identity Protection Guarantee Banner (Truthful Data Only) */}
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
-              <span>🔒</span>
-              <span>Buyer Identity Protected</span>
-            </div>
-            {rfq.buyerReliabilityScore != null && Number.isFinite(rfq.buyerReliabilityScore) ? (
+        <IdentityProtectedShield
+          variant="banner"
+          aside={
+            rfq.buyerReliabilityScore != null && Number.isFinite(rfq.buyerReliabilityScore) ? (
               <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-extrabold border border-emerald-300 dark:border-emerald-800">
                 ⭐ {rfq.buyerReliabilityScore}% Verified Score
               </span>
             ) : (
               <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-bold border border-border/60">
-                🛡️ Sealed Sourcing
+                Buyer: {PROTECTED_BUYER_LABEL}
               </span>
-            )}
-          </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Buyer identity is sealed during quoting for neutral, unbiased evaluation. Your pricing and commercial terms remain protected from competing suppliers.
-          </p>
-        </div>
+            )
+          }
+        />
 
         {/* Key Parameters 3-Column Summary */}
         <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-xl bg-muted/30 border border-border/60 text-center text-xs">
@@ -457,9 +452,9 @@ export function SupplierRequirementPanel({
       {/* 8. SUPPLIER VERIFICATION & PROTECTED EVALUATION */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 rounded-xl bg-muted/20 border border-border/60 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5 font-medium text-foreground">
-          <span>🛡️</span> Standard category authorization &amp; identity-protected evaluation apply
+          Standard category authorization applies
         </span>
-        <span className="text-[11px] font-semibold text-primary shrink-0">Verified Commercial Scope</span>
+        <IdentityProtectedShield variant="badge" className="shrink-0" />
       </div>
     </div>
   );

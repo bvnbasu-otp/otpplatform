@@ -10,6 +10,7 @@ import {
   type DisputeStatus,
 } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 export interface DisputeResolutionDrawerProps {
   isOpen: boolean;
@@ -107,7 +108,7 @@ export const DisputeResolutionDrawer: React.FC<DisputeResolutionDrawerProps> = (
 
       setStatusMessage({
         type: 'success',
-        text: `Dispute opened successfully (${data.dispute_number}). SLA deadline: ${new Date(data.sla_deadline).toLocaleString()}.`,
+        text: `Dispute opened successfully (${data.dispute_number}). SLA deadline: ${formatDateTimeIST(data.sla_deadline)}.`,
       });
 
       if (onDisputeUpdated) onDisputeUpdated();

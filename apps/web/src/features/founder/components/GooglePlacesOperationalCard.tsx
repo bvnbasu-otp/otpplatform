@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { GOOGLE_PLACES_QUOTA_RESET_LABEL } from '@otp/domain';
 import { Card, Badge } from '@/components/ui';
 
 export type GooglePlacesProviderStatus =
@@ -312,7 +313,7 @@ export function GooglePlacesOperationalCard({
               />
             </div>
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>0 (Resets daily at 05:30 IST / 00:00 UTC)</span>
+              <span data-testid="quota-reset-label">0 ({GOOGLE_PLACES_QUOTA_RESET_LABEL})</span>
               <span data-testid="quota-max-limit">Limit: {quota.limit.toLocaleString('en-IN')} reqs/day</span>
             </div>
           </div>

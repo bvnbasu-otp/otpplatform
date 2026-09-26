@@ -1,16 +1,10 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
 import { AboutPage } from './pages/AboutPage';
 
-vi.mock('react-router-dom', () => ({
-  useLocation: () => ({ pathname: '/about-us', hash: '', search: '' }),
-  useNavigate: () => vi.fn(),
-  Link: ({ children, to, ...props }: any) =>
-    React.createElement('a', { href: to, ...props }, children),
-  NavLink: ({ children, to, ...props }: any) =>
-    React.createElement('a', { href: to, ...props }, children),
-}));
+const roleState = vi.hoisted(() => ({ isFounder: false, isPlatformAdmin: false }));
 
 vi.mock('@/features/auth', () => ({
   useAuth: () => ({ user: null, isAuthenticated: false }),
@@ -19,11 +13,11 @@ vi.mock('@/features/auth', () => ({
 vi.mock('@/features/roles', () => ({
   useRoleContext: () => ({
     context: {
-      signedIn: false,
+      signedIn: roleState.isFounder || roleState.isPlatformAdmin,
       profileId: null,
       side: 'BUYER',
-      isFounder: false,
-      isPlatformAdmin: false,
+      isFounder: roleState.isFounder,
+      isPlatformAdmin: roleState.isPlatformAdmin,
       needsOnboarding: false,
       activeRole: null,
       roles: [],
@@ -44,22 +38,41 @@ vi.mock('@/features/roles', () => ({
   }),
 }));
 
-describe('AboutPage Product Leadership & Provenance Suite', () => {
-  it('renders Product Creator & Author attribution cleanly', () => {
-    const html = renderToStaticMarkup(<AboutPage />);
+function renderAbout(): string {
+  return renderToStaticMarkup(
+    <MemoryRouter initialEntries={['/about-us']}>
+      <AboutPage />
+    </MemoryRouter>,
+  );
+}
+
+describe('AboutPage Product Leadership & Provenance — hidden from the public', () => {
+  beforeEach(() => {
+    roleState.isFounder = false;
+    roleState.isPlatformAdmin = false;
+  });
+
+  it('does not render Product Leadership or Provenance for an anonymous visitor', () => {
+    const html = renderAbout();
+    expect(html).not.toContain('data-testid="product-leadership-provenance"');
+    expect(html).not.toMatch(/Provenance/i);
+    expect(html).not.toMatch(/Product Leadership/i);
+    expect(html).not.toContain('Product Creator &amp; Author');
+  });
+
+  it('renders Product Creator, Product Manager and CEO / Founder attribution for the founder', () => {
+    roleState.isFounder = true;
+    const html = renderAbout();
+    expect(html).toContain('data-testid="product-leadership-provenance"');
     expect(html).toContain('Product Creator &amp; Author');
-    expect(html).toContain('Baskar Loganathan');
-  });
-
-  it('renders Product Manager attribution cleanly', () => {
-    const html = renderToStaticMarkup(<AboutPage />);
     expect(html).toContain('Product Manager');
-    expect(html).toContain('Baskar Loganathan');
-  });
-
-  it('renders CEO / Founder attribution cleanly', () => {
-    const html = renderToStaticMarkup(<AboutPage />);
     expect(html).toContain('CEO / Founder');
     expect(html).toContain('Baskar Loganathan');
+  });
+
+  it('renders the provenance block for a platform admin', () => {
+    roleState.isPlatformAdmin = true;
+    const html = renderAbout();
+    expect(html).toContain('data-testid="product-leadership-provenance"');
   });
 });

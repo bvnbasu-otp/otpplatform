@@ -61,18 +61,6 @@ describe('User Profile Management & Customization Suite', () => {
     const invalidEmailReq = await requestProfileCredentialOtp('EMAIL', '');
     expect(invalidEmailReq.ok).toBe(false);
 
-    // Valid phone OTP request generates OTP code
-    const validPhoneReq = await requestProfileCredentialOtp('PHONE', '9840012345');
-    expect(validPhoneReq.ok).toBe(true);
-    if (validPhoneReq.ok) {
-      expect(validPhoneReq.otpCode).toBeDefined();
-      expect(validPhoneReq.formattedValue).toBeDefined();
-    }
-
-    // OTP verification with mock fallback code
-    const verifyPhoneRes = await verifyAndUpdateProfileCredential('PHONE', '9840012345', '123456');
-    expect(verifyPhoneRes.ok).toBe(true);
-
     const verifyShortOtp = await verifyAndUpdateProfileCredential('PHONE', '9840012345', '12');
     expect(verifyShortOtp.ok).toBe(false);
 

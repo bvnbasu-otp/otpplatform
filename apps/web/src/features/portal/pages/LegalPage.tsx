@@ -63,9 +63,8 @@ export function LegalPage() {
               <p className="mt-2">
                 During the identity-protected evaluation phase, supplier identities are
                 hidden from the buying committee. Each supplier appears under an
-                anonymous, request-specific alias generated from a cryptographic salt
-                unique to that RFQ. This prevents tracking the same supplier across
-                different requests.
+                anonymous alias that is different for every request, so the same
+                supplier cannot be tracked across different requests.
               </p>
               <p className="mt-2">
                 The buyer's identity may also be hidden from suppliers until award,
@@ -73,8 +72,8 @@ export function LegalPage() {
               </p>
               <p className="mt-2">
                 Identity disclosure occurs only after award is locked through a separate,
-                deliberate action. All revelations are recorded in an immutable audit trail
-                with timestamps and actor identification.
+                deliberate action. Every reveal is kept on record with the time and the
+                person who made it.
               </p>
             </div>
 

@@ -54,7 +54,7 @@ export function AdminQuickActionsSheet({ isOpen, onClose }: AdminQuickActionsShe
             <span className="text-lg">📋</span>
             <div>
               <p className="font-bold text-foreground">Transaction Orders &amp; Settlements</p>
-              <p className="text-[11px] text-muted-foreground">Platform PO lifecycle and direct escrow settlement logs</p>
+              <p className="text-[11px] text-muted-foreground">Platform PO lifecycle and direct settlement logs</p>
             </div>
           </div>
           <span className="text-muted-foreground">➔</span>

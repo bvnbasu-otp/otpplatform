@@ -72,7 +72,7 @@ export const BUYER_PO_ACTIONS: Partial<
   PENDING_APPROVAL: [{ label: 'Approve', next: 'APPROVED' }],
   APPROVED: [{ label: 'Issue to supplier', next: 'ISSUED' }],
   ACCEPTED: [{ label: 'Mark in progress', next: 'IN_PROGRESS' }],
-  IN_PROGRESS: [{ label: 'Mark completed', next: 'COMPLETED' }],
+  // COMPLETED is reached only through the settlement CTA (see lib/settlement-state).
 };
 
 export const SUPPLIER_PO_ACTIONS: Partial<

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { PurchaseOrderStatus } from '@otp/domain';
+import { PILOT_COMMERCIAL_MODE_POLICY, type PurchaseOrderStatus } from '@otp/domain';
 
 const STATUS_STYLES: Record<string, string> = {
   DRAFT: 'bg-muted text-muted-foreground border border-border',
@@ -47,10 +47,6 @@ export function PoActionButtons({
   const [acknowledgedFee, setAcknowledgedFee] = useState(false);
 
   if (role === 'supplier' && status === 'ISSUED') {
-    const feeRate = 0.5;
-    const estFee = Math.round((poTotalAmount * feeRate) / 100);
-    const estNet = Math.max(0, poTotalAmount - estFee);
-
     return (
       <div className="rounded-xl border-2 border-primary/50 bg-primary/5 p-4 shadow-sm space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -59,39 +55,29 @@ export function PoActionButtons({
               <span>⚡</span> Commercial Purchase Order Issued by Buyer
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Please review platform fee terms and accept this purchase order to begin milestone delivery tracking.
+              Review the purchase order and accept it to begin milestone delivery tracking.
             </p>
           </div>
         </div>
 
-        {/* Commercial Fee Disclosure */}
-        <div className="rounded-lg border bg-card p-3 space-y-2 text-xs">
+        <div className="rounded-lg border bg-card p-3 space-y-2 text-xs" data-testid="supplier-fee-disclosure">
           <div className="flex items-center justify-between border-b pb-1.5">
-            <span className="font-bold text-foreground flex items-center gap-1">
-              <span>🛡️</span>
-              <span>OTP Platform Fee at Settlement Disclosure</span>
-            </span>
-            <span className="font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-              {feeRate.toFixed(2)}% Rate
+            <span className="font-bold text-foreground">Supplier platform fee</span>
+            <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
+              {PILOT_COMMERCIAL_MODE_POLICY.supplierPlatformFeeCharged ? 'Charged' : '₹0 · Waived'}
             </span>
           </div>
-
           <p className="text-[11px] text-muted-foreground">
-            Suppliers pay <strong>₹0 upfront</strong>. Platform fee is deducted only upon settlement payout:
+            {PILOT_COMMERCIAL_MODE_POLICY.supplierFeeNotice} The buyer pays you directly for the full invoice amount (less any statutory TDS the buyer withholds); OTP does not collect, hold or deduct anything from that payment.
           </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
             <div className="bg-muted/40 p-2 rounded border">
-              <span className="text-[10px] text-muted-foreground block font-sans">Gross Settlement</span>
+              <span className="text-[10px] text-muted-foreground block font-sans">PO value</span>
               <span className="font-bold text-foreground">₹{poTotalAmount.toLocaleString('en-IN')}</span>
             </div>
-            <div className="bg-amber-50 dark:bg-amber-950/40 p-2 rounded border border-amber-200 text-amber-800 dark:text-amber-300">
-              <span className="text-[10px] block font-sans">Est. Platform Fee (0.5%)</span>
-              <span className="font-bold">-₹{estFee.toLocaleString('en-IN')}</span>
-            </div>
             <div className="bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded border border-emerald-200 text-emerald-800 dark:text-emerald-300">
-              <span className="text-[10px] block font-sans">Est. Net Payout</span>
-              <span className="font-bold">₹{estNet.toLocaleString('en-IN')}</span>
+              <span className="text-[10px] block font-sans">OTP fee on this PO</span>
+              <span className="font-bold">₹0</span>
             </div>
           </div>
 
@@ -103,7 +89,7 @@ export function PoActionButtons({
               className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
             />
             <span className="text-[11px] text-foreground leading-tight">
-              I acknowledge the OTP commercial fee policy ({feeRate}% deduction at settlement). I agree to receive net settlement upon milestone delivery verification.
+              I have reviewed this purchase order and commit to delivering it as specified. Payment is settled directly between the buyer and my business.
             </span>
           </label>
         </div>
@@ -128,7 +114,6 @@ export function PoActionButtons({
       PENDING_APPROVAL: [{ label: 'Approve', next: 'APPROVED' }],
       APPROVED: [{ label: 'Issue to supplier', next: 'ISSUED' }],
       ACCEPTED: [{ label: 'Mark in progress', next: 'IN_PROGRESS' }],
-      IN_PROGRESS: [{ label: 'Mark completed', next: 'COMPLETED' }],
     },
     supplier: {
       ISSUED: [{ label: 'Accept Purchase Order', next: 'ACCEPTED' }],

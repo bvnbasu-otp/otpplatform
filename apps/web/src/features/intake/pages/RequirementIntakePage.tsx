@@ -4,8 +4,10 @@ import { REQUIREMENT_PROMPT_KEY } from '@/features/site/components/RequirementPr
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import { fetchSuggestedWeights } from '../api/taxonomy';
-import { publishDraft } from '../api/draft';
+import { mergeDraftPatch, persistAndPublishDraft } from '../api/draft';
 import type { DraftPatch } from '../api/draft';
+import { checkPilotAllowanceBeforePublish } from '../api/pilot-allowance';
+import type { IntakeDraft } from '../types/intake-draft';
 import { useIntakeDraft } from '../hooks/use-intake-draft';
 import { useTaxonomy } from '../hooks/use-taxonomy';
 import {
@@ -110,19 +112,14 @@ export function RequirementIntakePage() {
     };
   }, [subcategory]);
 
-  async function handlePublishWithSourcing(sourcingPatch: DraftPatch) {
-    if (!draft) return;
+  async function handlePublishWithSourcing(sourcingPatch: DraftPatch, createdDraft?: IntakeDraft) {
+    // A draft created in the same click is not in this render's state yet.
+    const baseDraft = createdDraft ?? draft;
+    if (!baseDraft) return;
 
     // Check if user is unauthenticated
     if (!user || !context.profileId) {
-      const latestDraft = {
-        ...draft,
-        ...sourcingPatch,
-        sourcing: {
-          ...draft.sourcing,
-          ...sourcingPatch.sourcing,
-        },
-      };
+      const latestDraft = mergeDraftPatch(baseDraft, sourcingPatch);
       saveLocalIntakeDraft(
         {
           stepIndex: 0,
@@ -145,23 +142,15 @@ export function RequirementIntakePage() {
     setIsPublishing(true);
     setPublishError(null);
 
-    const saved = await save(sourcingPatch);
-    if (!saved) {
+    const allowanceCheck = await checkPilotAllowanceBeforePublish(context.organizationId);
+    if (!allowanceCheck.ok) {
       setIsPublishing(false);
-      setPublishError('Could not save sourcing parameters.');
+      setPublishError(allowanceCheck.error);
       return;
     }
 
-    const latestDraft = {
-      ...draft,
-      ...sourcingPatch,
-      sourcing: {
-        ...draft.sourcing,
-        ...sourcingPatch.sourcing,
-      },
-    };
-
-    const result = await publishDraft(latestDraft);
+    setDraft(mergeDraftPatch(baseDraft, sourcingPatch));
+    const result = await persistAndPublishDraft(baseDraft, sourcingPatch);
     setIsPublishing(false);
 
     if (!result.ok) {

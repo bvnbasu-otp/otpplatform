@@ -103,7 +103,7 @@ export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
             <span className="font-mono text-[11px] font-bold text-slate-200">
-              Procurement Cockpit
+              Pilot Mode
             </span>
           </div>
         </div>
@@ -182,7 +182,7 @@ export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
       {/* ------------------------------------------------------------------ */}
       <footer className="hidden sm:flex shrink-0 z-30 w-full max-w-6xl items-center justify-between px-6 py-1.5 text-[11px] text-slate-500">
         <div>
-          © {new Date().getFullYear()} {PRODUCT_NAME} Platform · Built 100% Mobile-First for India B2B Procurement
+          © {new Date().getFullYear()} {PRODUCT_NAME} · Identity-Protected Competitive Sourcing
         </div>
         <div className="flex items-center gap-3">
           <Link to="/faqs" className="hover:text-slate-300 transition">FAQs</Link>

@@ -1,53 +1,78 @@
 /**
  * Date and time formatting utilities in Indian Standard Time (IST - Asia/Kolkata).
+ *
+ * Canonical customer-visible formats:
+ *   date      → "DD MMM YYYY"            e.g. "05 Sep 2026"
+ *   date-time → "DD MMM YYYY, HH:mm IST" e.g. "05 Sep 2026, 14:30 IST"
+ *
+ * Month names come from a fixed table rather than the runtime locale: ICU builds
+ * disagree on "Sep" vs "Sept" for en-IN, and receipts must read identically on
+ * every device.
  */
 
+const IST_TIME_ZONE = 'Asia/Kolkata';
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+const istPartsFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: IST_TIME_ZONE,
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  hourCycle: 'h23',
+});
+
+interface IstParts {
+  day: string;
+  month: string;
+  year: string;
+  hour: string;
+  minute: string;
+}
+
+function toDate(value: string | Date | null | undefined): Date | null {
+  if (!value) return null;
+  const d = typeof value === 'string' ? new Date(value) : value;
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function istParts(d: Date): IstParts {
+  const parts: Record<string, string> = {};
+  for (const p of istPartsFormatter.formatToParts(d)) parts[p.type] = p.value;
+  const monthIdx = Number(parts.month) - 1;
+  const hour = Number(parts.hour) % 24;
+  return {
+    day: String(Number(parts.day)).padStart(2, '0'),
+    month: MONTHS[monthIdx] ?? '',
+    year: parts.year ?? '',
+    hour: String(hour).padStart(2, '0'),
+    minute: String(Number(parts.minute)).padStart(2, '0'),
+  };
+}
+
+/** "DD MMM YYYY" in IST, or '' for empty/invalid input. */
 export function formatDateIST(dateStr: string | Date | null | undefined): string {
-  if (!dateStr) return '';
-  const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  const d = toDate(dateStr);
+  if (!d) return '';
+  const p = istParts(d);
+  return `${p.day} ${p.month} ${p.year}`;
 }
 
+/** "DD MMM YYYY, HH:mm IST", or '' for empty/invalid input. */
 export function formatDateTimeIST(dateStr: string | Date | null | undefined): string {
-  if (!dateStr) return '';
-  const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-  if (isNaN(d.getTime())) return '';
-
-  const datePart = d.toLocaleDateString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-
-  const timePart = d.toLocaleTimeString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-
-  return `${datePart}, ${timePart} IST`;
+  const d = toDate(dateStr);
+  if (!d) return '';
+  const p = istParts(d);
+  return `${p.day} ${p.month} ${p.year}, ${p.hour}:${p.minute} IST`;
 }
 
+/** "HH:mm IST", or '' for empty/invalid input. */
 export function formatTimeIST(dateStr: string | Date | null | undefined): string {
-  if (!dateStr) return '';
-  const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-  if (isNaN(d.getTime())) return '';
-  return (
-    d.toLocaleTimeString('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    }) + ' IST'
-  );
+  const d = toDate(dateStr);
+  if (!d) return '';
+  const p = istParts(d);
+  return `${p.hour}:${p.minute} IST`;
 }
 
 export function formatDate(dateStr: string | Date | null | undefined): string {

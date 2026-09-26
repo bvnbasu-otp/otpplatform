@@ -198,7 +198,7 @@ export function DecisionReceiptCard({
               <div className="text-xs space-y-1">
                 <p className="text-foreground font-semibold">Individual Personal Procurement</p>
                 <p className="text-muted-foreground">
-                  Direct 1-click confirmation executed by buyer {authorityAttribution.awardedByName} at {new Date(timestamps.awardedAt).toLocaleTimeString('en-IN')}.
+                  Direct 1-click confirmation executed by buyer {authorityAttribution.awardedByName} at {formatDateTimeIST(timestamps.awardedAt)}.
                 </p>
               </div>
             )}

@@ -1,7 +1,10 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { VoiceRequirementDictation } from './VoiceRequirementDictation';
+import {
+  MIC_PERMISSION_DENIED_MESSAGE,
+  VoiceRequirementDictation,
+} from './VoiceRequirementDictation';
 import { REQUIREMENT_PROMPT_KEY } from '@/features/site/components/RequirementPrompt';
 
 export interface VoiceTextRequirementIntakeModalProps {
@@ -32,10 +35,7 @@ export function VoiceTextRequirementIntakeModal({
 
   const handlePermissionError = (errorMsg: string) => {
     setPermissionError(errorMsg);
-    // Instant auto-focus on the text input area
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 50);
+    textareaRef.current?.focus();
   };
 
   const handleLaunchIntake = (customText?: string) => {
@@ -75,9 +75,13 @@ export function VoiceTextRequirementIntakeModal({
           >
             <span className="text-base shrink-0 mt-0.5">🔒</span>
             <div className="space-y-1 min-w-0">
-              <p className="font-bold text-[11px]">Microphone Permission Required</p>
+              <p className="font-bold text-[11px]">
+                {permissionError === MIC_PERMISSION_DENIED_MESSAGE
+                  ? 'Microphone Permission Required'
+                  : 'Voice Input Unavailable'}
+              </p>
               <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-                Click the microphone icon in your browser address bar to enable, or simply type your requirement below.
+                {permissionError}
               </p>
             </div>
           </div>

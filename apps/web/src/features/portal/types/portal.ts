@@ -48,7 +48,7 @@ export const BUYER_COPY: PortalCopy = {
     },
     {
       title: 'Execution tracking',
-      body: 'Work orders, sign-offs and an append-only audit trail from purchase order through to payment approval.',
+      body: 'Work orders, sign-offs and a clear record of every step, from purchase order through to payment approval.',
     },
   ],
   signInTitle: 'Sign in to your organisation',

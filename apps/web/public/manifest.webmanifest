@@ -1,7 +1,7 @@
 {
-  "name": "OTP Platform — Open Trade & Procurement",
-  "short_name": "OTP Platform",
-  "description": "OTP Platform — Open Trade & Procurement. Identity-Protected Competitive Sourcing.",
+  "name": "OTP — Identity-Protected Competitive Sourcing",
+  "short_name": "OTP",
+  "description": "Compare competing supplier quotes and make better procurement decisions.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

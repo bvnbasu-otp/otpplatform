@@ -371,10 +371,12 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
     it('opens RFQ and transitions requirement to QUOTING when quorum of invitations is present', async () => {
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'rfqs') {
-          return createSupabaseQueryMock({
+          const chain = createSupabaseQueryMock({
             data: { id: 'rfq-202', status: 'DRAFT', requirement_id: 'req-101' },
             error: null,
           });
+          chain.update = vi.fn(() => createSupabaseQueryMock({ data: [{ id: 'rfq-202' }], error: null }));
+          return chain;
         }
         if (table === 'rfq_supplier_networks') {
           return createSupabaseQueryMock({

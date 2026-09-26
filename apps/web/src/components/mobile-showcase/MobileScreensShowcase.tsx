@@ -96,7 +96,7 @@ export function MobileScreensShowcase() {
       tagline: 'WhatsApp & mobile-optimized 3-field numeric quote sheet with instant GST.',
       badge: 'Quoting Engine',
       badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
-      description: 'Suppliers quote within 30 minutes from their phones. All quotes remain cryptographically sealed.',
+      description: 'Suppliers quote from their phones. All quotes stay sealed until the buyer decides.',
       component: <ScreenBuyerQuoting onNext={() => setActiveScreenIndex(4)} />,
     },
     {
@@ -246,10 +246,10 @@ export function MobileScreensShowcase() {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-3">
-            <span>Procurement Cockpit</span>
+            <span>OTP on Mobile</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground tracking-tight">
-            Procurement Cockpit
+            Request, compare and decide from your phone
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
             Experience how Indian building committees, MSMEs, and verified suppliers execute sourcing—via voice, WhatsApp, and 1-tap thumb interactions.
@@ -458,7 +458,7 @@ export function MobileScreensShowcase() {
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
-                          <span><strong>Immutable Vote Record:</strong> Cryptographic audit trail for society compliance.</span>
+                          <span><strong>Recorded Votes:</strong> Every committee vote is kept on record for the society.</span>
                         </li>
                       </>
                     )}
@@ -509,7 +509,7 @@ export function MobileScreensShowcase() {
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
-                          <span><strong>Zero App Install Friction:</strong> Quote directly in responsive mobile browser with cryptographic security.</span>
+                          <span><strong>Zero App Install Friction:</strong> Quote directly in the mobile browser, no app needed.</span>
                         </li>
                       </>
                     )}
@@ -557,7 +557,7 @@ export function MobileScreensShowcase() {
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
-                          <span><strong>Direct Settlement Release:</strong> Buyer signs off delivery for immediate direct escrow/bank transfer.</span>
+                          <span><strong>Direct Settlement Release:</strong> Buyer signs off delivery, then pays the supplier directly.</span>
                         </li>
                       </>
                     )}

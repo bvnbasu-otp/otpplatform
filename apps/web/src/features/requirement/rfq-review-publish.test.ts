@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   fetchRfqReviewData,
@@ -450,10 +452,12 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
           return createSupabaseQueryMock({ data: [{ invited_count: 4 }], error: null });
         }
         if (table === 'rfqs') {
-          return createSupabaseQueryMock({
+          const chain = createSupabaseQueryMock({
             data: { id: 'rfq-301', status: 'DRAFT', requirement_id: 'req-201' },
             error: null,
           });
+          chain.update = vi.fn(() => createSupabaseQueryMock({ data: [{ id: 'rfq-301' }], error: null }));
+          return chain;
         }
         if (table === 'requirements') {
           return createSupabaseQueryMock({ data: { id: 'req-201' }, error: null });
@@ -475,28 +479,134 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
       }
     });
 
-    it('prevents publishing an RFQ that is already OPEN (duplicate publish protection)', async () => {
+    it('re-opening an RFQ that is already OPEN is an idempotent success with no second write', async () => {
+      const updates: unknown[] = [];
       vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === 'rfqs') {
-          return createSupabaseQueryMock({
-            data: { id: 'rfq-301', status: 'OPEN', requirement_id: 'req-201' },
-            error: null,
-          });
-        }
-        return createSupabaseQueryMock({ data: null, error: null });
+        const chain = createSupabaseQueryMock({
+          data: table === 'rfqs' ? { id: 'rfq-301', status: 'OPEN', requirement_id: 'req-201' } : null,
+          error: null,
+        });
+        chain.update = vi.fn((patch: unknown) => {
+          updates.push(patch);
+          return createSupabaseQueryMock({ data: [], error: null });
+        });
+        return chain;
       });
 
       const res = await openRfq('rfq-301');
-      expect(res.ok).toBe(false);
-      if (!res.ok) {
-        expect(res.error).toMatch(/Cannot open RFQ from status OPEN/i);
-      }
+      expect(res).toEqual({ ok: true });
+      expect(updates).toEqual([]);
     });
 
-    it('guarantees clean production publishing without synthetic quote injection', async () => {
-      // In production, publish does not trigger automatic quote simulation
-      const autoQuotesInjectedOnPublish = false;
-      expect(autoQuotesInjectedOnPublish).toBe(false);
+    it('rejects opening from a non-DRAFT, non-OPEN status', async () => {
+      vi.mocked(supabase.from).mockImplementation(() =>
+        createSupabaseQueryMock({ data: { id: 'rfq-301', status: 'AWARDED', requirement_id: 'req-201' }, error: null }),
+      );
+      const res = await openRfq('rfq-301');
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.error).toMatch(/Cannot open RFQ from status AWARDED/);
+    });
+
+    it('only transitions rows still in DRAFT (guarded update)', async () => {
+      let updateChain: any;
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [{ invited_count: 2 }], error: null });
+        const chain = createSupabaseQueryMock({ data: { id: 'rfq-9', status: 'DRAFT', requirement_id: 'req-9' }, error: null });
+        if (table === 'rfqs') {
+          chain.update = vi.fn(() => {
+            updateChain = createSupabaseQueryMock({ data: [{ id: 'rfq-9' }], error: null });
+            return updateChain;
+          });
+        }
+        return chain;
+      });
+      const res = await openRfq('rfq-9');
+      expect(res).toEqual({ ok: true });
+      expect(updateChain.eq).toHaveBeenCalledWith('status', 'DRAFT');
+    });
+
+    it('publish succeeds when discovery already opened the RFQ server-side (no false error)', async () => {
+      let rfqReads = 0;
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: { success: true, invited: 3, total: 3 }, error: null } as any);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'rfqs') {
+          rfqReads++;
+          return createSupabaseQueryMock({ data: { id: 'rfq-5', status: 'OPEN', requirement_id: 'req-5' }, error: null });
+        }
+        return createSupabaseQueryMock({ data: { commercial: {} }, error: null });
+      });
+      const res = await publishRfq({ rfqId: 'rfq-5', requirementId: 'req-5' });
+      expect(res).toEqual({ ok: true, rfqId: 'rfq-5', invitedCount: 3 });
+      expect(rfqReads).toBeGreaterThan(0);
+    });
+
+    it('double-click: concurrent publishes of the same RFQ share one execution', async () => {
+      let discoverCalls = 0;
+      vi.mocked(supabase.rpc).mockImplementation((() => {
+        discoverCalls++;
+        return Promise.resolve({ data: { success: true, invited: 2, total: 2 }, error: null });
+      }) as any);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'rfqs') return createSupabaseQueryMock({ data: { id: 'rfq-7', status: 'OPEN', requirement_id: 'req-7' }, error: null });
+        return createSupabaseQueryMock({ data: { commercial: {} }, error: null });
+      });
+      const [a, b] = await Promise.all([
+        publishRfq({ rfqId: 'rfq-7', requirementId: 'req-7' }),
+        publishRfq({ rfqId: 'rfq-7', requirementId: 'req-7' }),
+      ]);
+      expect(a).toEqual(b);
+      expect(discoverCalls).toBe(1);
+    });
+
+    it('a failed instruction save blocks publishing and a retry can then succeed', async () => {
+      let failSave = true;
+      const rpcCalls: string[] = [];
+      vi.mocked(supabase.rpc).mockImplementation(((fn: string) => {
+        rpcCalls.push(fn);
+        return Promise.resolve({ data: { success: true, invited: 1, total: 1 }, error: null });
+      }) as any);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'requirements') {
+          const chain = createSupabaseQueryMock({ data: { commercial: {} }, error: null });
+          chain.update = vi.fn(() =>
+            createSupabaseQueryMock({ data: null, error: failSave ? { message: 'network down' } : null }),
+          );
+          return chain;
+        }
+        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        return createSupabaseQueryMock({ data: { id: 'rfq-8', status: 'OPEN', requirement_id: 'req-8' }, error: null });
+      });
+
+      const first = await publishRfq({ rfqId: 'rfq-8', requirementId: 'req-8', instructions: 'x' });
+      expect(first).toEqual({ ok: false, error: 'network down' });
+      expect(rpcCalls).toEqual([]);
+
+      failSave = false;
+      const retry = await publishRfq({ rfqId: 'rfq-8', requirementId: 'req-8', instructions: 'x' });
+      expect(retry.ok).toBe(true);
+    });
+
+    it('publish path makes no synthetic quote RPC calls', async () => {
+      const rpcCalls: string[] = [];
+      vi.mocked(supabase.rpc).mockImplementation(((fn: string) => {
+        rpcCalls.push(fn);
+        return Promise.resolve({ data: { success: true, invited: 2, total: 2 }, error: null });
+      }) as any);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        return createSupabaseQueryMock({ data: { id: 'rfq-6', status: 'OPEN', requirement_id: 'req-6' }, error: null });
+      });
+      await publishRfq({ rfqId: 'rfq-6', requirementId: 'req-6' });
+      expect(rpcCalls).toEqual(['discover_and_invite_for_rfq']);
+    });
+
+    it('success copy states only what happened (no delivery or response-time promise)', () => {
+      const src = readFileSync(resolve(__dirname, 'pages/RfqReviewPublishPage.tsx'), 'utf8');
+      expect(src).not.toMatch(/Broadcast dispatched/);
+      expect(src).not.toMatch(/responses expected within 30 minutes/);
+      expect(src).toMatch(/supplier\(s\) invited to quote/);
     });
   });
 

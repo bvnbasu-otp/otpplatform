@@ -1933,13 +1933,18 @@ export async function fetchUsersAndOrganizations(): Promise<AdminUsersAndOrgsRes
       };
     });
 
-    const users: AdminUserItem[] = stitchedProfiles.map(normalizeAdminUserItem);
-    const buyerOrgs: AdminOrganizationItem[] = rawOrgs.map((o) =>
-      normalizeAdminOrgItem({ ...o, entity_type: 'BUYER_ORG' })
-    );
-    const supplierOrgs: AdminOrganizationItem[] = rawSupps.map((s) =>
-      normalizeAdminOrgItem({ ...s, entity_type: 'SUPPLIER' })
-    );
+    // Same exclusion as the RPC: soft-deleted rows never reappear in the roster.
+    const users: AdminUserItem[] = stitchedProfiles
+      .filter((p) => !p.deleted_at)
+      .map(normalizeAdminUserItem)
+      .filter((u) => u.status !== 'DELETED');
+    const buyerOrgs: AdminOrganizationItem[] = rawOrgs
+      .filter((o) => !o.deleted_at)
+      .map((o) => normalizeAdminOrgItem({ ...o, entity_type: 'BUYER_ORG' }))
+      .filter((o) => o.status !== 'DELETED');
+    const supplierOrgs: AdminOrganizationItem[] = rawSupps
+      .filter((s) => !s.deleted_at)
+      .map((s) => normalizeAdminOrgItem({ ...s, entity_type: 'SUPPLIER' }));
     const allOrgs = [...buyerOrgs, ...supplierOrgs];
 
     return {
@@ -1961,211 +1966,56 @@ export async function fetchUsersAndOrganizations(): Promise<AdminUsersAndOrgsRes
   }
 }
 
+/**
+ * Bulk lifecycle actions go through the SECURITY DEFINER RPCs only
+ * (admin_bulk_block_* / admin_bulk_unblock_*): they check platform-admin,
+ * protect super-admin accounts and write the audit event. There is no
+ * direct-table fallback (it would skip authorization and audit) and no
+ * delete: legacy records are deactivated with a reason, never removed.
+ */
+
+function rpcBulkResult(data: unknown, error: { message?: string } | null, fallbackError: string): AdminBulkActionResult {
+  if (error) return { ok: false, error: error.message || fallbackError };
+  const payload = (data ?? {}) as { ok?: boolean; count?: number; message?: string; error?: string };
+  if (!payload.ok) return { ok: false, error: payload.error || fallbackError };
+  const count = typeof payload.count === 'number' ? payload.count : 0;
+  return { ok: true, count, message: payload.message };
+}
+
+function requireReason(reason: string): string | null {
+  const trimmed = (reason ?? '').trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export async function bulkBlockUsers(
   userIds: string[],
   reason: string
 ): Promise<AdminBulkActionResult> {
+  const trimmedReason = requireReason(reason);
+  if (!trimmedReason) return { ok: false, error: 'A reason is required to deactivate accounts.' };
+  if (userIds.length === 0) return { ok: false, error: 'No accounts selected.' };
   try {
-    const trimmedReason = reason?.trim() || 'Administrative block / policy enforcement';
-    let rpcSucceeded = false;
-    let rpcCount = 0;
-
-    try {
-      const { data, error } = await supabase.rpc('admin_bulk_block_users', {
-        p_user_ids: userIds,
-        p_reason: trimmedReason,
-      });
-      if (!error && data && (data as any).ok) {
-        rpcSucceeded = true;
-        rpcCount = (data as any).count ?? userIds.length;
-      }
-    } catch (rpcErr) {
-      console.warn('admin_bulk_block_users RPC fallback:', rpcErr);
-    }
-
-    if (!rpcSucceeded) {
-      // 1. Direct update on profiles
-      const { error: updErr } = await supabase
-        .from('profiles')
-        .update({
-          status: 'BLOCKED',
-          blocked_at: new Date().toISOString(),
-          blocked_reason: trimmedReason,
-        })
-        .in('id', userIds);
-
-      if (updErr) {
-        console.warn('Profiles update with status column failed, falling back:', updErr);
-        await supabase
-          .from('profiles')
-          .update({
-            blocked_at: new Date().toISOString(),
-            blocked_reason: trimmedReason,
-          })
-          .in('id', userIds);
-      }
-
-      // 2. Also suspend linked suppliers
-      try {
-        const { data: suppUsers } = await supabase
-          .from('supplier_users')
-          .select('supplier_id')
-          .in('profile_id', userIds);
-
-        if (suppUsers && suppUsers.length > 0) {
-          const suppIds = Array.from(new Set(suppUsers.map((su) => su.supplier_id).filter(Boolean)));
-          if (suppIds.length > 0) {
-            await supabase
-              .from('suppliers')
-              .update({
-                status: 'SUSPENDED',
-                blocked_at: new Date().toISOString(),
-                blocked_reason: trimmedReason,
-              })
-              .in('id', suppIds);
-          }
-        }
-      } catch (suppCascadeErr) {
-        console.warn('Supplier cascade suspension fallback error:', suppCascadeErr);
-      }
-    }
-
-    return {
-      ok: true,
-      count: rpcCount || userIds.length,
-      message: `Successfully blocked ${userIds.length} user account(s).`,
-    };
+    const { data, error } = await supabase.rpc('admin_bulk_block_users', {
+      p_user_ids: userIds,
+      p_reason: trimmedReason,
+    });
+    return rpcBulkResult(data, error, 'Failed to deactivate accounts');
   } catch (err: any) {
-    return {
-      ok: false,
-      error: err?.message || 'Failed to block users',
-    };
+    return { ok: false, error: err?.message || 'Failed to deactivate accounts' };
   }
 }
 
 export async function bulkUnblockUsers(
   userIds: string[]
 ): Promise<AdminBulkActionResult> {
+  if (userIds.length === 0) return { ok: false, error: 'No accounts selected.' };
   try {
-    let rpcSucceeded = false;
-    let rpcCount = 0;
-
-    try {
-      const { data, error } = await supabase.rpc('admin_bulk_unblock_users', {
-        p_user_ids: userIds,
-      });
-      if (!error && data && (data as any).ok) {
-        rpcSucceeded = true;
-        rpcCount = (data as any).count ?? userIds.length;
-      }
-    } catch (rpcErr) {
-      console.warn('admin_bulk_unblock_users RPC fallback:', rpcErr);
-    }
-
-    if (!rpcSucceeded) {
-      // 1. Direct update profiles
-      await supabase
-        .from('profiles')
-        .update({
-          status: 'ACTIVE',
-          blocked_at: null,
-          blocked_reason: null,
-        })
-        .in('id', userIds);
-
-      // 2. Unblock linked suppliers
-      try {
-        const { data: suppUsers } = await supabase
-          .from('supplier_users')
-          .select('supplier_id')
-          .in('profile_id', userIds);
-
-        if (suppUsers && suppUsers.length > 0) {
-          const suppIds = Array.from(new Set(suppUsers.map((su) => su.supplier_id).filter(Boolean)));
-          if (suppIds.length > 0) {
-            await supabase
-              .from('suppliers')
-              .update({
-                status: 'ACTIVE',
-                blocked_at: null,
-                blocked_reason: null,
-              })
-              .in('id', suppIds);
-          }
-        }
-      } catch (suppCascadeErr) {
-        console.warn('Supplier cascade reactivate fallback error:', suppCascadeErr);
-      }
-    }
-
-    return {
-      ok: true,
-      count: rpcCount || userIds.length,
-      message: `Successfully unblocked and reactivated ${userIds.length} user account(s).`,
-    };
+    const { data, error } = await supabase.rpc('admin_bulk_unblock_users', {
+      p_user_ids: userIds,
+    });
+    return rpcBulkResult(data, error, 'Failed to reactivate accounts');
   } catch (err: any) {
-    return {
-      ok: false,
-      error: err?.message || 'Failed to unblock users',
-    };
-  }
-}
-
-export async function bulkDeleteUsers(
-  userIds: string[],
-  softDelete: boolean = true
-): Promise<AdminBulkActionResult> {
-  try {
-    try {
-      const { data, error } = await supabase.rpc('admin_bulk_delete_users', {
-        p_user_ids: userIds,
-        p_soft_delete: softDelete,
-      });
-      if (!error && data) {
-        return data as AdminBulkActionResult;
-      }
-    } catch (rpcErr) {
-      console.warn('admin_bulk_delete_users RPC fallback:', rpcErr);
-    }
-
-    if (softDelete) {
-      const { error: delErr } = await supabase
-        .from('profiles')
-        .update({
-          status: 'DELETED',
-          deleted_at: new Date().toISOString(),
-        })
-        .in('id', userIds);
-
-      if (delErr) throw delErr;
-    } else {
-      // Direct client fallback cascade for hard delete:
-      // Clean child records first to satisfy FK constraints
-      await Promise.allSettled([
-        supabase.from('profile_roles').delete().in('profile_id', userIds),
-        supabase.from('organization_members').delete().in('profile_id', userIds),
-        supabase.from('supplier_users').delete().in('profile_id', userIds),
-        supabase.from('notification_preferences').delete().in('user_id', userIds),
-      ]);
-
-      const { error: delErr } = await supabase
-        .from('profiles')
-        .delete()
-        .in('id', userIds);
-
-      if (delErr) throw delErr;
-    }
-
-    return {
-      ok: true,
-      count: userIds.length,
-      message: `Successfully deleted ${userIds.length} user account(s).`,
-    };
-  } catch (err: any) {
-    return {
-      ok: false,
-      error: err?.message || 'Failed to delete users',
-    };
+    return { ok: false, error: err?.message || 'Failed to reactivate accounts' };
   }
 }
 
@@ -2174,105 +2024,18 @@ export async function bulkBlockOrganizations(
   isSupplier: boolean,
   reason: string
 ): Promise<AdminBulkActionResult> {
+  const trimmedReason = requireReason(reason);
+  if (!trimmedReason) return { ok: false, error: 'A reason is required to deactivate organizations.' };
+  if (orgIds.length === 0) return { ok: false, error: 'No organizations selected.' };
   try {
-    const trimmedReason = reason?.trim() || 'Administrative block / policy enforcement';
-    let rpcSucceeded = false;
-    let rpcCount = 0;
-
-    try {
-      const { data, error } = await supabase.rpc('admin_bulk_block_organizations', {
-        p_org_ids: orgIds,
-        p_is_supplier: isSupplier,
-        p_reason: trimmedReason,
-      });
-      if (!error && data && (data as any).ok) {
-        rpcSucceeded = true;
-        rpcCount = (data as any).count ?? orgIds.length;
-      }
-    } catch (rpcErr) {
-      console.warn('admin_bulk_block_organizations RPC fallback:', rpcErr);
-    }
-
-    if (!rpcSucceeded) {
-      if (isSupplier) {
-        await supabase
-          .from('suppliers')
-          .update({
-            status: 'SUSPENDED',
-            blocked_at: new Date().toISOString(),
-            blocked_reason: trimmedReason,
-          })
-          .in('id', orgIds);
-
-        // Also cascade block to all user profiles belonging to this supplier
-        try {
-          const { data: suppUsers } = await supabase
-            .from('supplier_users')
-            .select('profile_id')
-            .in('supplier_id', orgIds);
-
-          if (suppUsers && suppUsers.length > 0) {
-            const profIds = suppUsers.map((su) => su.profile_id).filter(Boolean);
-            if (profIds.length > 0) {
-              await supabase
-                .from('profiles')
-                .update({
-                  status: 'BLOCKED',
-                  blocked_at: new Date().toISOString(),
-                  blocked_reason: trimmedReason,
-                })
-                .in('id', profIds);
-            }
-          }
-        } catch (cascadeProfErr) {
-          console.warn('Supplier user cascade block error:', cascadeProfErr);
-        }
-      } else {
-        await supabase
-          .from('organizations')
-          .update({
-            status: 'BLOCKED',
-            blocked_at: new Date().toISOString(),
-            blocked_reason: trimmedReason,
-          })
-          .in('id', orgIds);
-
-        // Also cascade block to all members belonging to this organization
-        try {
-          const { data: orgMembers } = await supabase
-            .from('organization_members')
-            .select('profile_id')
-            .in('organization_id', orgIds);
-
-          if (orgMembers && orgMembers.length > 0) {
-            const profIds = orgMembers.map((om) => om.profile_id).filter(Boolean);
-            if (profIds.length > 0) {
-              await supabase
-                .from('profiles')
-                .update({
-                  status: 'BLOCKED',
-                  blocked_at: new Date().toISOString(),
-                  blocked_reason: trimmedReason,
-                })
-                .in('id', profIds);
-            }
-          }
-        } catch (cascadeMemberErr) {
-          console.warn('Org members cascade block error:', cascadeMemberErr);
-        }
-      }
-    }
-
-    return {
-      ok: true,
-      count: rpcCount || orgIds.length,
-      message: `Successfully blocked ${orgIds.length} organization(s).`,
-    };
+    const { data, error } = await supabase.rpc('admin_bulk_block_organizations', {
+      p_org_ids: orgIds,
+      p_is_supplier: isSupplier,
+      p_reason: trimmedReason,
+    });
+    return rpcBulkResult(data, error, 'Failed to deactivate organizations');
   } catch (err: any) {
-    return {
-      ok: false,
-      error: err?.message || 'Failed to block organizations',
-    };
+    return { ok: false, error: err?.message || 'Failed to deactivate organizations' };
   }
 }
 
@@ -2280,166 +2043,14 @@ export async function bulkUnblockOrganizations(
   orgIds: string[],
   isSupplier: boolean
 ): Promise<AdminBulkActionResult> {
+  if (orgIds.length === 0) return { ok: false, error: 'No organizations selected.' };
   try {
-    let rpcSucceeded = false;
-    let rpcCount = 0;
-
-    try {
-      const { data, error } = await supabase.rpc('admin_bulk_unblock_organizations', {
-        p_org_ids: orgIds,
-        p_is_supplier: isSupplier,
-      });
-      if (!error && data && (data as any).ok) {
-        rpcSucceeded = true;
-        rpcCount = (data as any).count ?? orgIds.length;
-      }
-    } catch (rpcErr) {
-      console.warn('admin_bulk_unblock_organizations RPC fallback:', rpcErr);
-    }
-
-    if (!rpcSucceeded) {
-      if (isSupplier) {
-        await supabase
-          .from('suppliers')
-          .update({
-            status: 'ACTIVE',
-            blocked_at: null,
-            blocked_reason: null,
-          })
-          .in('id', orgIds);
-
-        // Unblock supplier users
-        try {
-          const { data: suppUsers } = await supabase
-            .from('supplier_users')
-            .select('profile_id')
-            .in('supplier_id', orgIds);
-
-          if (suppUsers && suppUsers.length > 0) {
-            const profIds = suppUsers.map((su) => su.profile_id).filter(Boolean);
-            if (profIds.length > 0) {
-              await supabase
-                .from('profiles')
-                .update({
-                  status: 'ACTIVE',
-                  blocked_at: null,
-                  blocked_reason: null,
-                })
-                .in('id', profIds);
-            }
-          }
-        } catch (cascadeProfErr) {
-          console.warn('Supplier user cascade unblock error:', cascadeProfErr);
-        }
-      } else {
-        await supabase
-          .from('organizations')
-          .update({
-            status: 'ACTIVE',
-            blocked_at: null,
-            blocked_reason: null,
-          })
-          .in('id', orgIds);
-
-        // Unblock org members
-        try {
-          const { data: orgMembers } = await supabase
-            .from('organization_members')
-            .select('profile_id')
-            .in('organization_id', orgIds);
-
-          if (orgMembers && orgMembers.length > 0) {
-            const profIds = orgMembers.map((om) => om.profile_id).filter(Boolean);
-            if (profIds.length > 0) {
-              await supabase
-                .from('profiles')
-                .update({
-                  status: 'ACTIVE',
-                  blocked_at: null,
-                  blocked_reason: null,
-                })
-                .in('id', profIds);
-            }
-          }
-        } catch (cascadeMemberErr) {
-          console.warn('Org members cascade unblock error:', cascadeMemberErr);
-        }
-      }
-    }
-
-    return {
-      ok: true,
-      count: rpcCount || orgIds.length,
-      message: `Successfully unblocked ${orgIds.length} organization(s).`,
-    };
+    const { data, error } = await supabase.rpc('admin_bulk_unblock_organizations', {
+      p_org_ids: orgIds,
+      p_is_supplier: isSupplier,
+    });
+    return rpcBulkResult(data, error, 'Failed to reactivate organizations');
   } catch (err: any) {
-    return {
-      ok: false,
-      error: err?.message || 'Failed to unblock organizations',
-    };
-  }
-}
-
-export async function bulkDeleteOrganizations(
-  orgIds: string[],
-  isSupplier: boolean,
-  softDelete: boolean = true
-): Promise<AdminBulkActionResult> {
-  try {
-    try {
-      const { data, error } = await supabase.rpc('admin_bulk_delete_organizations', {
-        p_org_ids: orgIds,
-        p_is_supplier: isSupplier,
-        p_soft_delete: softDelete,
-      });
-      if (!error && data) {
-        return data as AdminBulkActionResult;
-      }
-    } catch (rpcErr) {
-      console.warn('admin_bulk_delete_organizations RPC fallback:', rpcErr);
-    }
-
-    if (isSupplier) {
-      if (softDelete) {
-        await supabase
-          .from('suppliers')
-          .update({
-            status: 'SUSPENDED',
-            deleted_at: new Date().toISOString(),
-          })
-          .in('id', orgIds);
-      } else {
-        await supabase
-          .from('suppliers')
-          .delete()
-          .in('id', orgIds);
-      }
-    } else {
-      if (softDelete) {
-        await supabase
-          .from('organizations')
-          .update({
-            status: 'DELETED',
-            deleted_at: new Date().toISOString(),
-          })
-          .in('id', orgIds);
-      } else {
-        await supabase
-          .from('organizations')
-          .delete()
-          .in('id', orgIds);
-      }
-    }
-
-    return {
-      ok: true,
-      count: orgIds.length,
-      message: `Successfully deleted ${orgIds.length} organization(s).`,
-    };
-  } catch (err: any) {
-    return {
-      ok: false,
-      error: err?.message || 'Failed to delete organizations',
-    };
+    return { ok: false, error: err?.message || 'Failed to reactivate organizations' };
   }
 }

@@ -1,17 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { NOTIFICATION_STATUS_LABEL } from '@otp/domain';
 import { sendWhatsAppNotification } from '@/features/portal/api/signup';
+import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
 import {
   fetchUsersAndOrganizations,
   fetchSignupRequests,
   reviewSignupRequest,
-  bulkBlockUsers,
-  bulkUnblockUsers,
-  bulkDeleteUsers,
-  bulkBlockOrganizations,
-  bulkUnblockOrganizations,
-  bulkDeleteOrganizations,
 } from '../api/admin-ops';
+import {
+  computeUndoTargets,
+  effectiveSelection,
+  isProtectedAdminUser,
+  isRowBlocked,
+  pruneSelectionToFiltered,
+  selectAllFiltered,
+  validateLifecycleReason,
+} from '../lib/account-lifecycle';
+import {
+  executeBulkDeactivation,
+  executeBulkReactivation,
+  type LifecycleEntityType,
+} from '../lib/bulk-lifecycle-actions';
 import {
   getUserOnlineStatus,
   getPresenceBadgeConfig,
@@ -34,6 +44,7 @@ const BLOCK_REASONS: AccountBlockReason[] = [
   'Unresponsive / Failed Fulfillment',
   'Non-Compliant KYC / Invalid GSTIN',
   'Payment Dispute / Fraud Risk',
+  'Legacy / Demo Data Retirement',
   'Other',
 ];
 
@@ -93,18 +104,9 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     ids: string[];
     labels: string[];
   } | null>(null);
-  const [selectedBlockReason, setSelectedBlockReason] = useState<AccountBlockReason>('Suspicious Activity');
+  const [selectedBlockReason, setSelectedBlockReason] = useState<AccountBlockReason | ''>('');
   const [customBlockReason, setCustomBlockReason] = useState('');
-
-  // Delete Modal State (Two-step confirmation)
-  const [deleteModalTarget, setDeleteModalTarget] = useState<{
-    type: 'USERS' | 'ORGANIZATIONS';
-    ids: string[];
-    labels: string[];
-  } | null>(null);
-  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
-  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
-  const [isSoftDelete, setIsSoftDelete] = useState(true);
+  const [undoTarget, setUndoTarget] = useState<{ type: LifecycleEntityType; ids: string[] } | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -264,22 +266,44 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     });
   }, [requests, statusFilter, sideFilter, search]);
 
-  // Selection Toggles
-  const isAllUsersSelected =
-    filteredUsers.length > 0 && filteredUsers.every((u) => selectedUserIds.has(u.id));
-  const isSomeUsersSelected =
-    filteredUsers.some((u) => selectedUserIds.has(u.id)) && !isAllUsersSelected;
+  // Selection is always bounded to the rows visible under the current filters.
+  const selectableUserRows = useMemo(
+    () => filteredUsers.map((u) => ({ id: u.id, isProtected: isProtectedAdminUser(u) })),
+    [filteredUsers],
+  );
+  const selectableOrgRows = useMemo(
+    () => filteredOrganizations.map((o) => ({ id: o.id })),
+    [filteredOrganizations],
+  );
+  const effectiveUserIds = useMemo(
+    () => effectiveSelection(selectableUserRows, selectedUserIds),
+    [selectableUserRows, selectedUserIds],
+  );
+  const effectiveOrgIds = useMemo(
+    () => effectiveSelection(selectableOrgRows, selectedOrgIds),
+    [selectableOrgRows, selectedOrgIds],
+  );
+
+  useEffect(() => {
+    setSelectedUserIds((prev) => {
+      const next = pruneSelectionToFiltered(selectableUserRows, prev);
+      return next.size === prev.size ? prev : next;
+    });
+  }, [selectableUserRows]);
+
+  useEffect(() => {
+    setSelectedOrgIds((prev) => {
+      const next = pruneSelectionToFiltered(selectableOrgRows, prev);
+      return next.size === prev.size ? prev : next;
+    });
+  }, [selectableOrgRows]);
+
+  const selectableUserCount = selectableUserRows.filter((r) => !r.isProtected).length;
+  const isAllUsersSelected = selectableUserCount > 0 && effectiveUserIds.length === selectableUserCount;
+  const isSomeUsersSelected = effectiveUserIds.length > 0 && !isAllUsersSelected;
 
   const toggleSelectAllUsers = () => {
-    if (isAllUsersSelected) {
-      setSelectedUserIds(new Set());
-    } else {
-      const next = new Set<string>();
-      filteredUsers.forEach((u) => {
-        if (!u.isPlatformAdmin) next.add(u.id);
-      });
-      setSelectedUserIds(next);
-    }
+    setSelectedUserIds(isAllUsersSelected ? new Set() : selectAllFiltered(selectableUserRows));
   };
 
   const toggleSelectUser = (id: string, isSuperAdmin?: boolean) => {
@@ -293,18 +317,11 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
   };
 
   const isAllOrgsSelected =
-    filteredOrganizations.length > 0 &&
-    filteredOrganizations.every((o) => selectedOrgIds.has(o.id));
-  const isSomeOrgsSelected =
-    filteredOrganizations.some((o) => selectedOrgIds.has(o.id)) && !isAllOrgsSelected;
+    selectableOrgRows.length > 0 && effectiveOrgIds.length === selectableOrgRows.length;
+  const isSomeOrgsSelected = effectiveOrgIds.length > 0 && !isAllOrgsSelected;
 
   const toggleSelectAllOrgs = () => {
-    if (isAllOrgsSelected) {
-      setSelectedOrgIds(new Set());
-    } else {
-      const next = new Set<string>(filteredOrganizations.map((o) => o.id));
-      setSelectedOrgIds(next);
-    }
+    setSelectedOrgIds(isAllOrgsSelected ? new Set() : selectAllFiltered(selectableOrgRows));
   };
 
   const toggleSelectOrg = (id: string) => {
@@ -322,226 +339,94 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     ids: string[],
     labels: string[]
   ) => {
+    if (ids.length === 0) return;
     setBlockModalTarget({ type, ids, labels });
-    setSelectedBlockReason('Suspicious Activity');
+    setSelectedBlockReason('');
     setCustomBlockReason('');
   };
 
-  const openDeleteModal = (
-    type: 'USERS' | 'ORGANIZATIONS',
-    ids: string[],
-    labels: string[]
-  ) => {
-    setDeleteModalTarget({ type, ids, labels });
-    setDeleteStep(1);
-    setDeleteConfirmationText('');
-    setIsSoftDelete(true);
-  };
+  const blockReasonValidation = validateLifecycleReason(selectedBlockReason, customBlockReason);
 
   // Execution Handlers
   const handleConfirmBlock = async () => {
-    if (!blockModalTarget) return;
-    const finalReason =
-      selectedBlockReason === 'Other' && customBlockReason.trim()
-        ? customBlockReason.trim()
-        : selectedBlockReason;
+    if (!blockModalTarget || !blockReasonValidation.ok) return;
+    const target = blockModalTarget;
 
     setIsBulkExecuting(true);
-    const previousUsers = [...users];
-    const previousOrgs = [...organizations];
-    const nowIso = new Date().toISOString();
-
-    if (blockModalTarget.type === 'USERS') {
-      const blockedIdSet = new Set(blockModalTarget.ids);
-      setUsers((prev) =>
-        prev.map((u) =>
-          blockedIdSet.has(u.id)
-            ? { ...u, status: 'BLOCKED', blockedAt: nowIso, blockedReason: finalReason }
-            : u
-        )
-      );
-    } else {
-      const blockedIdSet = new Set(blockModalTarget.ids);
-      setOrganizations((prev) =>
-        prev.map((o) =>
-          blockedIdSet.has(o.id)
-            ? { ...o, status: 'BLOCKED', blocked_at: nowIso, blocked_reason: finalReason }
-            : o
-        )
-      );
-    }
+    const undoIds =
+      target.type === 'USERS'
+        ? computeUndoTargets(users, target.ids, (u) => isRowBlocked(u))
+        : computeUndoTargets(organizations, target.ids, (o) => isRowBlocked(o));
 
     try {
-      if (blockModalTarget.type === 'USERS') {
-        const res = await bulkBlockUsers(blockModalTarget.ids, finalReason);
-        if (res.ok) {
-          setBannerMessage({
-            type: 'success',
-            text: `✓ ${res.message || `Blocked ${blockModalTarget.ids.length} user account(s).`}`,
-          });
-          setSelectedUserIds(new Set());
-          await loadData();
-        } else {
-          setUsers(previousUsers);
-          setBannerMessage({ type: 'error', text: `✕ ${res.error || 'Failed to block users.'}` });
-        }
+      const res = await executeBulkDeactivation({
+        type: target.type,
+        ids: target.ids,
+        organizations,
+        reasonCategory: selectedBlockReason,
+        reasonDetails: customBlockReason,
+      });
+      const noun = target.type === 'USERS' ? 'account(s)' : 'organization(s)';
+      if (res.ok) {
+        setBannerMessage({
+          type: 'success',
+          text: `Deactivated ${res.count} of ${res.requested} selected ${noun}. Reason recorded in the audit trail.`,
+        });
+        setUndoTarget(undoIds.length > 0 ? { type: target.type, ids: undoIds } : null);
+        if (target.type === 'USERS') setSelectedUserIds(new Set());
+        else setSelectedOrgIds(new Set());
       } else {
-        const isSupplier = organizations.some(
-          (o) => blockModalTarget.ids.includes(o.id) && o.entity_type === 'SUPPLIER'
-        );
-        const res = await bulkBlockOrganizations(blockModalTarget.ids, isSupplier, finalReason);
-        if (res.ok) {
-          setBannerMessage({
-            type: 'success',
-            text: `✓ ${res.message || `Blocked ${blockModalTarget.ids.length} organization(s).`}`,
-          });
-          setSelectedOrgIds(new Set());
-          await loadData();
-        } else {
-          setOrganizations(previousOrgs);
-          setBannerMessage({
-            type: 'error',
-            text: `✕ ${res.error || 'Failed to block organizations.'}`,
-          });
-        }
+        setUndoTarget(null);
+        setBannerMessage({
+          type: 'error',
+          text: `✕ ${res.error || `Failed to deactivate ${noun}.`}${res.count > 0 ? ` (${res.count} were deactivated before the failure.)` : ''}`,
+        });
       }
+      await loadData();
     } catch (err: any) {
-      setUsers(previousUsers);
-      setOrganizations(previousOrgs);
-      setBannerMessage({ type: 'error', text: `✕ Operation error: ${err.message}` });
+      setBannerMessage({ type: 'error', text: `✕ Operation error: ${err?.message || String(err)}` });
     } finally {
       setIsBulkExecuting(false);
       setBlockModalTarget(null);
     }
   };
 
-  const handleConfirmUnblock = async (type: 'USERS' | 'ORGANIZATIONS', ids: string[]) => {
-    setIsBulkExecuting(true);
-    const previousUsers = [...users];
-    const previousOrgs = [...organizations];
-    const unblockedIdSet = new Set(ids);
-
-    if (type === 'USERS') {
-      setUsers((prev) =>
-        prev.map((u) =>
-          unblockedIdSet.has(u.id)
-            ? { ...u, status: 'ACTIVE', blockedAt: undefined, blockedReason: undefined }
-            : u
-        )
-      );
-    } else {
-      setOrganizations((prev) =>
-        prev.map((o) =>
-          unblockedIdSet.has(o.id)
-            ? { ...o, status: 'ACTIVE', blocked_at: null, blocked_reason: null }
-            : o
-        )
-      );
+  const handleConfirmUnblock = async (
+    type: 'USERS' | 'ORGANIZATIONS',
+    ids: string[],
+    options: { skipConfirm?: boolean } = {},
+  ) => {
+    if (ids.length === 0) return;
+    const noun = type === 'USERS' ? 'account(s)' : 'organization(s)';
+    if (
+      !options.skipConfirm &&
+      typeof window !== 'undefined' &&
+      !window.confirm(`Reactivate ${ids.length} ${noun}? This clears their recorded block reason.`)
+    ) {
+      return;
     }
-
+    setIsBulkExecuting(true);
     try {
-      if (type === 'USERS') {
-        const res = await bulkUnblockUsers(ids);
-        if (res.ok) {
-          setBannerMessage({
-            type: 'success',
-            text: `✓ ${res.message || `Unblocked and reactivated ${ids.length} user account(s).`}`,
-          });
-          setSelectedUserIds(new Set());
-          await loadData();
-        } else {
-          setUsers(previousUsers);
-          setBannerMessage({ type: 'error', text: `✕ ${res.error || 'Failed to unblock users.'}` });
-        }
+      const res = await executeBulkReactivation({ type, ids, organizations });
+      if (res.ok) {
+        setBannerMessage({ type: 'success', text: `Reactivated ${res.count} of ${res.requested} ${noun}.` });
+        if (type === 'USERS') setSelectedUserIds(new Set());
+        else setSelectedOrgIds(new Set());
       } else {
-        const isSupplier = organizations.some(
-          (o) => ids.includes(o.id) && o.entity_type === 'SUPPLIER'
-        );
-        const res = await bulkUnblockOrganizations(ids, isSupplier);
-        if (res.ok) {
-          setBannerMessage({
-            type: 'success',
-            text: `✓ ${res.message || `Unblocked and reactivated ${ids.length} organization(s).`}`,
-          });
-          setSelectedOrgIds(new Set());
-          await loadData();
-        } else {
-          setOrganizations(previousOrgs);
-          setBannerMessage({
-            type: 'error',
-            text: `✕ ${res.error || 'Failed to unblock organizations.'}`,
-          });
-        }
+        setBannerMessage({ type: 'error', text: `✕ ${res.error || `Failed to reactivate ${noun}.`}` });
       }
+      setUndoTarget(null);
+      await loadData();
     } catch (err: any) {
-      setUsers(previousUsers);
-      setOrganizations(previousOrgs);
-      setBannerMessage({ type: 'error', text: `✕ Operation error: ${err.message}` });
+      setBannerMessage({ type: 'error', text: `✕ Operation error: ${err?.message || String(err)}` });
     } finally {
       setIsBulkExecuting(false);
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!deleteModalTarget) return;
-
-    setIsBulkExecuting(true);
-    const previousUsers = [...users];
-    const previousOrgs = [...organizations];
-    const deletedIdSet = new Set(deleteModalTarget.ids);
-
-    if (deleteModalTarget.type === 'USERS') {
-      setUsers((prev) => prev.filter((u) => !deletedIdSet.has(u.id)));
-    } else {
-      setOrganizations((prev) => prev.filter((o) => !deletedIdSet.has(o.id)));
-    }
-
-    try {
-      if (deleteModalTarget.type === 'USERS') {
-        const res = await bulkDeleteUsers(deleteModalTarget.ids, isSoftDelete);
-        if (res.ok) {
-          setBannerMessage({
-            type: 'success',
-            text: `✓ ${res.message || `Deleted ${deleteModalTarget.ids.length} user account(s).`}`,
-          });
-          setSelectedUserIds(new Set());
-          await loadData();
-        } else {
-          setUsers(previousUsers);
-          setBannerMessage({ type: 'error', text: `✕ ${res.error || 'Failed to delete users.'}` });
-        }
-      } else {
-        const isSupplier = organizations.some(
-          (o) => deleteModalTarget.ids.includes(o.id) && o.entity_type === 'SUPPLIER'
-        );
-        const res = await bulkDeleteOrganizations(
-          deleteModalTarget.ids,
-          isSupplier,
-          isSoftDelete
-        );
-        if (res.ok) {
-          setBannerMessage({
-            type: 'success',
-            text: `✓ ${res.message || `Deleted ${deleteModalTarget.ids.length} organization(s).`}`,
-          });
-          setSelectedOrgIds(new Set());
-          await loadData();
-        } else {
-          setOrganizations(previousOrgs);
-          setBannerMessage({
-            type: 'error',
-            text: `✕ ${res.error || 'Failed to delete organizations.'}`,
-          });
-        }
-      }
-    } catch (err: any) {
-      setUsers(previousUsers);
-      setOrganizations(previousOrgs);
-      setBannerMessage({ type: 'error', text: `✕ Operation error: ${err.message}` });
-    } finally {
-      setIsBulkExecuting(false);
-      setDeleteModalTarget(null);
-    }
+  const handleUndoLastDeactivation = async () => {
+    if (!undoTarget) return;
+    await handleConfirmUnblock(undoTarget.type, undoTarget.ids, { skipConfirm: true });
   };
 
   // Registration Review Handler
@@ -557,34 +442,33 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
             const { error: emailErr } = await supabase.auth.resetPasswordForEmail(request.email, {
               redirectTo: `${window.location.origin}/reset-password`,
             });
-            if (!emailErr) notifDetails.push('Activation email dispatched');
+            notifDetails.push(
+              `Activation email: ${NOTIFICATION_STATUS_LABEL[resolveSupabaseEmailDispatch(emailErr).status]}`,
+            );
           } catch (e) {
-            console.warn('Approval email dispatch note:', e);
+            notifDetails.push(`Activation email: ${NOTIFICATION_STATUS_LABEL.FAILED}`);
           }
 
           if (request.phone) {
-            try {
-              const portalUrl = window.location.origin;
-              const tempPass = res.temporary_password || 'Welcome@OTP2026!';
-              const waSuccess = await sendWhatsAppNotification(
-                request.phone,
-                `[OTP Platform] Account Approved & Activated\n\n` +
-                  `Hello ${request.contact_full_name},\n` +
-                  `Your registration for *${request.business_name}* (Ref: ${request.reference}) has been approved by the platform administrator.\n\n` +
-                  `*Your Login Credentials:*\n` +
-                  `- Email: ${request.email}\n` +
-                  `- Temporary Password: ${tempPass}\n` +
-                  `- Login URL: ${portalUrl}/login\n\n` +
-                  `An activation email has also been sent to *${request.email}*. Please log in and update your password under Account Settings.`
-              );
-              if (waSuccess) notifDetails.push('WhatsApp dispatched');
-            } catch (e) {
-              console.warn('Failed to send WhatsApp activation message:', e);
-            }
+            const loginUrl = new URL('/login', window.location.origin).toString();
+            const credentialLine = res.temporary_password
+              ? `*Your Login Credentials:*\n- Email: ${request.email}\n- Temporary Password: ${res.temporary_password}\n`
+              : `*Sign-in email:* ${request.email}\nUse the password-reset link requested for this email to set your password.\n`;
+            const wa = await sendWhatsAppNotification(
+              request.phone,
+              `[OTP Platform] Account Approved & Activated\n\n` +
+                `Hello ${request.contact_full_name},\n` +
+                `Your registration for *${request.business_name}* (Ref: ${request.reference}) has been approved by the platform administrator.\n\n` +
+                credentialLine +
+                `- Login URL: ${loginUrl}\n\n` +
+                `Please log in and update your password under Account Settings.`,
+              { idempotencyKey: `welcome:${request.reference}` },
+            );
+            notifDetails.push(`Welcome WhatsApp: ${NOTIFICATION_STATUS_LABEL[wa.status]}`);
           }
         }
 
-        const notifSummary = notifDetails.length > 0 ? ` (${notifDetails.join(' & ')})` : '';
+        const notifSummary = notifDetails.length > 0 ? ` (${notifDetails.join(' · ')}; delivery not confirmed)` : '';
         setBannerMessage({
           type: 'success',
           text:
@@ -618,7 +502,7 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         Boolean(user.blockedAt) ||
         Boolean(user.blockedReason);
       if (isBlocked) {
-        await handleConfirmUnblock('USERS', [user.id]);
+        await handleConfirmUnblock('USERS', [user.id], { skipConfirm: true });
       }
       const { error: profErr } = await supabase
         .from('profiles')
@@ -720,9 +604,9 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
 
   const selectedCount =
     subTab === 'USERS'
-      ? selectedUserIds.size
+      ? effectiveUserIds.length
       : subTab === 'ORGANIZATIONS'
-      ? selectedOrgIds.size
+      ? effectiveOrgIds.length
       : 0;
 
   return (
@@ -741,10 +625,24 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
           <div className="flex items-center gap-2">
             <span>{bannerMessage.type === 'success' ? '✓' : '⚠️'}</span>
             <span>{bannerMessage.text}</span>
+            {bannerMessage.type === 'success' && undoTarget && (
+              <button
+                type="button"
+                data-testid="lifecycle-undo"
+                onClick={() => void handleUndoLastDeactivation()}
+                disabled={isBulkExecuting}
+                className="ml-2 underline font-bold hover:no-underline disabled:opacity-50"
+              >
+                Undo ({undoTarget.ids.length})
+              </button>
+            )}
           </div>
           <button
             type="button"
-            onClick={() => setBannerMessage(null)}
+            onClick={() => {
+              setBannerMessage(null);
+              setUndoTarget(null);
+            }}
             className="text-muted-foreground hover:text-foreground font-bold ml-3 px-1.5 py-0.5"
             title="Dismiss"
           >
@@ -985,14 +883,16 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
               type="button"
               onClick={() => {
                 if (subTab === 'USERS') {
-                  const targetUsers = users.filter((u) => selectedUserIds.has(u.id));
+                  const ids = new Set(effectiveUserIds);
+                  const targetUsers = filteredUsers.filter((u) => ids.has(u.id));
                   openBlockModal(
                     'USERS',
                     targetUsers.map((u) => u.id),
                     targetUsers.map((u) => `${u.fullName || u.email} (${u.email})`)
                   );
                 } else if (subTab === 'ORGANIZATIONS') {
-                  const targetOrgs = organizations.filter((o) => selectedOrgIds.has(o.id));
+                  const ids = new Set(effectiveOrgIds);
+                  const targetOrgs = filteredOrganizations.filter((o) => ids.has(o.id));
                   openBlockModal(
                     'ORGANIZATIONS',
                     targetOrgs.map((o) => o.id),
@@ -1003,7 +903,7 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
               disabled={isBulkExecuting}
               className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 mobile-touch-target"
             >
-              <span>🚫</span> Block Account{selectedCount > 1 ? 's' : ''}
+              <span>🚫</span> Deactivate {selectedCount} selected
             </button>
 
             {/* Unblock Action Button */}
@@ -1011,9 +911,9 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
               type="button"
               onClick={() => {
                 if (subTab === 'USERS') {
-                  void handleConfirmUnblock('USERS', Array.from(selectedUserIds));
+                  void handleConfirmUnblock('USERS', effectiveUserIds);
                 } else if (subTab === 'ORGANIZATIONS') {
-                  void handleConfirmUnblock('ORGANIZATIONS', Array.from(selectedOrgIds));
+                  void handleConfirmUnblock('ORGANIZATIONS', effectiveOrgIds);
                 }
               }}
               disabled={isBulkExecuting}
@@ -1022,31 +922,6 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
               <span>🔓</span> Unblock / Activate
             </button>
 
-            {/* Delete Action Button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (subTab === 'USERS') {
-                  const targetUsers = users.filter((u) => selectedUserIds.has(u.id));
-                  openDeleteModal(
-                    'USERS',
-                    targetUsers.map((u) => u.id),
-                    targetUsers.map((u) => `${u.fullName || u.email} (${u.email})`)
-                  );
-                } else if (subTab === 'ORGANIZATIONS') {
-                  const targetOrgs = organizations.filter((o) => selectedOrgIds.has(o.id));
-                  openDeleteModal(
-                    'ORGANIZATIONS',
-                    targetOrgs.map((o) => o.id),
-                    targetOrgs.map((o) => o.name)
-                  );
-                }
-              }}
-              disabled={isBulkExecuting}
-              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold px-3.5 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 mobile-touch-target"
-            >
-              <span>🗑️</span> Delete {subTab === 'USERS' ? 'User' : 'Org'}{selectedCount > 1 ? 's' : ''}
-            </button>
           </div>
         </div>
       )}
@@ -1325,16 +1200,6 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                                 </button>
                               )}
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openDeleteModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
-                                }
-                                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1.5 text-xs transition mobile-touch-target"
-                                title="Delete user account"
-                              >
-                                🗑️
-                              </button>
                             </>
                           ) : (
                             <span className="text-[10px] text-muted-foreground font-semibold px-2">Protected Admin</span>
@@ -1569,16 +1434,6 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                                   </button>
                                 )}
 
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openDeleteModal('USERS', [u.id], [`${u.fullName || u.email} (${u.email})`])
-                                  }
-                                  className="rounded-lg border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
-                                  title="Delete user account"
-                                >
-                                  Delete
-                                </button>
                               </div>
                             ) : (
                               <span className="text-[10px] text-muted-foreground font-semibold">Protected</span>
@@ -1771,14 +1626,6 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                             </button>
                           )}
 
-                          <button
-                            type="button"
-                            onClick={() => openDeleteModal('ORGANIZATIONS', [o.id], [o.name])}
-                            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1.5 text-xs transition mobile-touch-target"
-                            title="Delete organization"
-                          >
-                            🗑️
-                          </button>
                         </div>
                       </div>
                     </article>
@@ -1977,14 +1824,6 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                                 </button>
                               )}
 
-                              <button
-                                type="button"
-                                onClick={() => openDeleteModal('ORGANIZATIONS', [o.id], [o.name])}
-                                className="rounded-lg border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
-                                title="Delete organization"
-                              >
-                                Delete
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -2419,9 +2258,11 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                 </label>
                 <select
                   value={selectedBlockReason}
-                  onChange={(e) => setSelectedBlockReason(e.target.value as AccountBlockReason)}
+                  onChange={(e) => setSelectedBlockReason(e.target.value as AccountBlockReason | '')}
                   className="w-full rounded-md border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium min-h-[44px]"
+                  data-testid="lifecycle-reason-category"
                 >
+                  <option value="">Select a reason…</option>
                   {BLOCK_REASONS.map((r) => (
                     <option key={r} value={r}>
                       {r}
@@ -2431,20 +2272,22 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
               </div>
 
               {/* Custom reason text input */}
-              {selectedBlockReason === 'Other' && (
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-foreground">
-                    Specify Reason Details <span className="text-rose-500">*</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={customBlockReason}
-                    onChange={(e) => setCustomBlockReason(e.target.value)}
-                    placeholder="Provide detailed justification for administrative audit..."
-                    className="w-full rounded-md border bg-background p-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              )}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-foreground">
+                  Justification for the audit trail <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={customBlockReason}
+                  onChange={(e) => setCustomBlockReason(e.target.value)}
+                  placeholder="e.g. Legacy demo organisation from pre-pilot seeding; no live RFQs."
+                  data-testid="lifecycle-reason-details"
+                  className="w-full rounded-md border bg-background p-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                {!blockReasonValidation.ok && (
+                  <p className="text-[11px] text-muted-foreground">{blockReasonValidation.error}</p>
+                )}
+              </div>
 
               {/* Operational Impact Notice */}
               <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-[11px] text-amber-950 dark:text-amber-200">
@@ -2469,156 +2312,17 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
               <button
                 type="button"
                 onClick={() => void handleConfirmBlock()}
-                disabled={
-                  isBulkExecuting ||
-                  (selectedBlockReason === 'Other' && !customBlockReason.trim())
-                }
+                disabled={isBulkExecuting || !blockReasonValidation.ok}
+                data-testid="lifecycle-confirm-deactivate"
                 className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-1.5 text-xs transition shadow-2xs disabled:opacity-50 flex items-center gap-1.5 min-h-[44px]"
               >
-                {isBulkExecuting ? 'Executing Block…' : 'Confirm & Block Account'}
+                {isBulkExecuting ? 'Deactivating…' : 'Confirm deactivation'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL 2: TWO-STEP DESTRUCTIVE DELETE CONFIRMATION */}
-      {deleteModalTarget && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-        >
-          <div className="w-full max-w-lg rounded-2xl border border-rose-500/40 bg-card p-5 shadow-2xl animate-in zoom-in-95 duration-150 space-y-4">
-            <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
-              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
-                <span className="text-xl">⚠️</span>
-                <h3 id="delete-modal-title" className="text-base font-bold text-foreground">
-                  {deleteStep === 1 ? 'Step 1: Data Retention Warning' : 'Step 2: Final Confirmation'}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDeleteModalTarget(null)}
-                className="text-muted-foreground hover:text-foreground text-sm font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* STEP 1: Warning & Retention Explanation */}
-            {deleteStep === 1 && (
-              <div className="space-y-3 text-xs">
-                <p className="text-foreground font-semibold">
-                  You have requested deletion of{' '}
-                  <span className="text-rose-600 dark:text-rose-400 font-extrabold">
-                    {deleteModalTarget.ids.length}
-                  </span>{' '}
-                  {deleteModalTarget.type === 'USERS' ? 'user account(s)' : 'organization entity(ies)'}:
-                </p>
-
-                <div className="max-h-24 overflow-y-auto rounded-lg bg-muted/40 border p-2 space-y-1 font-mono text-[11px]">
-                  {deleteModalTarget.labels.map((lbl, idx) => (
-                    <div key={idx} className="truncate text-foreground">
-                      • {lbl}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Soft-delete vs Hard-delete options */}
-                <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      id="soft-delete-chk"
-                      checked={isSoftDelete}
-                      onChange={(e) => setIsSoftDelete(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
-                    />
-                    <label htmlFor="soft-delete-chk" className="cursor-pointer">
-                      <span className="font-bold text-foreground block">
-                        Soft-Delete &amp; Retain Regulatory Audit Records (Recommended)
-                      </span>
-                      <span className="text-[11px] text-muted-foreground block mt-0.5">
-                        Deactivates credentials immediately while preserving GST/tax audit logs, purchase order history, and statutory contract archives.
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="rounded-lg bg-rose-500/10 border border-rose-500/30 p-2.5 text-[11px] text-rose-950 dark:text-rose-200">
-                  <strong>Warning:</strong> Deletion will revoke all user access tokens and active workspaces.
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: Explicit Confirmation Input */}
-            {deleteStep === 2 && (
-              <div className="space-y-3 text-xs">
-                <div className="rounded-lg bg-rose-500/15 border border-rose-500/40 p-3 text-rose-950 dark:text-rose-200 space-y-1">
-                  <div className="font-bold text-sm">Final Confirmation Required</div>
-                  <p className="text-xs">
-                    To execute deletion of <strong>{deleteModalTarget.ids.length}</strong> {deleteModalTarget.type.toLowerCase()}, type{' '}
-                    <span className="font-mono font-extrabold text-rose-600 dark:text-rose-400">DELETE</span> in the box below.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <input
-                    type="text"
-                    value={deleteConfirmationText}
-                    onChange={(e) => setDeleteConfirmationText(e.target.value)}
-                    placeholder="Type DELETE to confirm"
-                    className="w-full rounded-md border border-rose-400 bg-background px-3 py-2 text-xs font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-rose-500 min-h-[44px]"
-                    autoFocus
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between border-t border-rose-500/20 pt-3">
-              {deleteStep === 2 ? (
-                <button
-                  type="button"
-                  onClick={() => setDeleteStep(1)}
-                  disabled={isBulkExecuting}
-                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px]"
-                >
-                  ← Back to Step 1
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setDeleteModalTarget(null)}
-                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px]"
-                >
-                  Cancel
-                </button>
-              )}
-
-              {deleteStep === 1 ? (
-                <button
-                  type="button"
-                  onClick={() => setDeleteStep(2)}
-                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-1.5 text-xs transition shadow-2xs flex items-center gap-1.5 min-h-[44px]"
-                >
-                  Proceed to Step 2 →
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => void handleConfirmDelete()}
-                  disabled={isBulkExecuting || deleteConfirmationText !== 'DELETE'}
-                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-extrabold px-4 py-1.5 text-xs transition shadow-2xs disabled:opacity-40 flex items-center gap-1.5 min-h-[44px]"
-                >
-                  {isBulkExecuting ? 'Deleting…' : 'Permanently Execute Deletion'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

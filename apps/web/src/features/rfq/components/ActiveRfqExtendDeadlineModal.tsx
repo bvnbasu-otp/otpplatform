@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { updateRfqDeadline } from '@/features/requirement/api/rfq-lifecycle';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 interface ActiveRfqExtendDeadlineModalProps {
   rfqId: string;
@@ -62,14 +63,7 @@ export function ActiveRfqExtendDeadlineModal({
     onClose();
   }
 
-  const deadlineDisplay = new Date(selectedDeadline).toLocaleString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  const deadlineDisplay = formatDateTimeIST(selectedDeadline);
 
   return (
     <div

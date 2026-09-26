@@ -391,7 +391,14 @@ export function lookupTdsRate(input: TdsRateLookupInput): TdsRateLookupResult {
 }
 
 export interface TdsCalculationInput {
-  invoiceAmount: number; // Gross or Taxable invoice amount
+  invoiceAmount: number; // Gross invoice amount (inclusive of any GST)
+  /**
+   * GST charged separately on the invoice. TDS is computed on
+   * `invoiceAmount - gstAmount` (CBDT Circular 23/2017: where GST is shown
+   * separately, TDS applies to the value excluding GST). Omit or pass 0 when
+   * the invoice does not state GST separately.
+   */
+  gstAmount?: number;
   section: TdsSection;
   deducteePan?: string | null;
   deducteeType?: DeducteeType;
@@ -406,6 +413,8 @@ export interface TdsCalculationInput {
 }
 
 export interface TdsCalculationResult {
+  grossAmount: number;
+  gstExcluded: number;
   taxableAmount: number;
   tdsRate: number;
   exactTdsAmount: number; // floating / 2 decimals
@@ -424,11 +433,64 @@ export interface TdsCalculationResult {
 }
 
 /**
- * Calculates exact Statutory TDS withholding, nearest rupee rounding (Sec 288B),
- * and net payable amount.
+ * Rounds a TDS amount to the nearest whole rupee (Sec 288B) exactly the way
+ * `apply_tds_withholding_atomic` does: a single ROUND of taxable × rate / 100,
+ * with a ₹1 floor whenever a positive rate applies to a positive base.
+ */
+export function roundStatutoryTds(taxableBase: number, ratePercent: number): number {
+  if (!(taxableBase > 0) || !(ratePercent > 0)) return 0;
+  const exact = Number(((taxableBase * ratePercent) / 100).toFixed(6));
+  const rounded = Math.round(exact);
+  return rounded <= 0 ? 1 : rounded;
+}
+
+export interface InvoiceTdsBaseInput {
+  amount: number;
+  taxableTotal?: number | null;
+  cgstTotal?: number | null;
+  sgstTotal?: number | null;
+  utgstTotal?: number | null;
+  igstTotal?: number | null;
+}
+
+export interface InvoiceTdsBase {
+  grossAmount: number;
+  gstAmount: number;
+  taxableAmount: number;
+  gstSeparatelyStated: boolean;
+}
+
+/**
+ * Derives the TDS base from a persisted invoice. Prefers the stored GST split;
+ * falls back to `taxable_total`; if neither is recorded the invoice is treated
+ * as not stating GST separately and the whole amount is the base.
+ */
+export function deriveInvoiceTdsBase(inv: InvoiceTdsBaseInput): InvoiceTdsBase {
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const gross = r2(Math.max(0, Number(inv.amount) || 0));
+  const gstFromSplit = r2(
+    [inv.cgstTotal, inv.sgstTotal, inv.utgstTotal, inv.igstTotal]
+      .map((v) => Math.max(0, Number(v) || 0))
+      .reduce((a, b) => a + b, 0),
+  );
+  if (gstFromSplit > 0 && gstFromSplit < gross) {
+    return { grossAmount: gross, gstAmount: gstFromSplit, taxableAmount: r2(gross - gstFromSplit), gstSeparatelyStated: true };
+  }
+  const taxableTotal = r2(Math.max(0, Number(inv.taxableTotal) || 0));
+  if (taxableTotal > 0 && taxableTotal < gross) {
+    return { grossAmount: gross, gstAmount: r2(gross - taxableTotal), taxableAmount: taxableTotal, gstSeparatelyStated: true };
+  }
+  return { grossAmount: gross, gstAmount: 0, taxableAmount: gross, gstSeparatelyStated: false };
+}
+
+/**
+ * Calculates statutory TDS on the value excluding separately stated GST,
+ * nearest-rupee rounding (Sec 288B), and net payable = gross − TDS.
  */
 export function calculateTds(input: TdsCalculationInput): TdsCalculationResult {
   const grossAmount = Math.max(0, Number(input.invoiceAmount || 0));
+  const gstExcluded = Math.min(grossAmount, Math.max(0, Number(input.gstAmount || 0)));
+  const valueExcludingGst = Math.round((grossAmount - gstExcluded) * 100) / 100;
   const date = input.date || new Date();
   const fyInfo = determineFinancialYear(date);
   const lawVersion = input.lawVersion || determineTaxLawVersion(date);
@@ -444,7 +506,7 @@ export function calculateTds(input: TdsCalculationInput): TdsCalculationResult {
     lawVersion,
     date,
     cumulativeFYAmount: input.cumulativeFYAmount,
-    currentInvoiceAmount: grossAmount,
+    currentInvoiceAmount: valueExcludingGst,
     customTdsRate: input.customTdsRate,
   });
 
@@ -457,15 +519,13 @@ export function calculateTds(input: TdsCalculationInput): TdsCalculationResult {
     rateResult.taxableBaseAmount > 0
       ? rateResult.taxableBaseAmount
       : rateResult.thresholdExceeded
-      ? grossAmount
+      ? valueExcludingGst
       : 0;
 
-  // Exact floating calculation
   const exactTdsAmount =
     Math.round(((taxableBase * effectiveRate) / 100) * 100) / 100;
 
-  // Statutory Rounding: Under Indian Tax Rules (Sec 288B), round to nearest whole rupee
-  const statutoryTdsAmount = Math.round(exactTdsAmount);
+  const statutoryTdsAmount = roundStatutoryTds(taxableBase, effectiveRate);
 
   // Invariant: Net Payable = max(0, Gross - TDS)
   const netPayableAfterTds =
@@ -483,6 +543,8 @@ export function calculateTds(input: TdsCalculationInput): TdsCalculationResult {
       : 'INVALID');
 
   return {
+    grossAmount,
+    gstExcluded,
     taxableAmount: taxableBase,
     tdsRate: effectiveRate,
     exactTdsAmount,

@@ -41,10 +41,11 @@ describe('supplier identity-protected RFQ mapping', () => {
     expect(invitation.buyerAnonymous).toBe(true);
   });
 
-  it('treats a named buyer as identified', () => {
+  it('never names the buyer pre-award, even when the view does (OPEN_RFQ)', () => {
     const invitation = toInvitation(row({ buyer_display_name: 'Greenview Apartments' }));
-    expect(invitation.buyerAnonymous).toBe(false);
-    expect(invitation.buyerDisplayName).toBe('Greenview Apartments');
+    expect(invitation.buyerAnonymous).toBe(true);
+    expect(invitation.buyerDisplayName).toBe('Identity protected');
+    expect(JSON.stringify(invitation)).not.toContain('Greenview');
   });
 
   it('carries the public reference a supplier can quote over the phone', () => {

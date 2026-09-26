@@ -12,6 +12,7 @@ import { DecisionReceipt } from '../components/DecisionReceipt';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
 import { CancelRfqModal } from '@/features/rfq/components';
 import { triggerPrintDialog } from '@/features/reporting/lib/pdf-generator';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
   const navigate = useNavigate();
@@ -255,7 +256,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                 INTENT-TO-AWARD GATE
               </span>
               <span className="text-[10px] text-muted-foreground">
-                Vote tally locked: {award.votesLockedAt ? new Date(award.votesLockedAt).toLocaleString() : 'Recorded'}
+                Vote tally locked: {award.votesLockedAt ? formatDateTimeIST(award.votesLockedAt) : 'Recorded'}
               </span>
             </div>
 

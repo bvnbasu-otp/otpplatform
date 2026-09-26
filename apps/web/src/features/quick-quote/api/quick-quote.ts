@@ -1,4 +1,6 @@
+import { assertSupplierFacingPayloadSafe } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
+import { PROTECTED_BUYER_LABEL, scrubBuyerFreeText } from '@/features/supplier/lib/identity-shield';
 
 /**
  * The quoting journey that starts in a text message.
@@ -8,8 +10,8 @@ import { supabase } from '@/lib/supabase';
  * token is the credential, and the database is what enforces what it can do:
  * one supplier, one enquiry, expiring in hours.
  *
- * So there is nothing to guard in this file. It cannot decide anything, and it
- * deliberately does not try to; every call re-checks state server-side.
+ * So nothing in this file authorizes anything; every call re-checks state
+ * server-side. The one thing it does do is keep the buyer off the page.
  */
 
 /** Fields a supplier may be shown about the enquiry. Mirrors the SQL allow-list. */
@@ -26,6 +28,7 @@ export interface QuickQuoteRfq {
   requiredByDate?: string;
   quoteDeadline?: string;
   minQuotes?: number;
+  /** Always the protected label; the server value is not passed through. */
   buyerDisplay?: string;
   isDemo?: boolean;
 }
@@ -104,6 +107,42 @@ export async function redeemQuickQuoteLink(
   return { ok: false, reason: asFailure(payload?.outcome) };
 }
 
+/**
+ * The enquiry as the quick-quote page may show it, rebuilt field by field.
+ *
+ * supplier_rfq_message_payload returns the buyer organization's real name as
+ * buyerDisplay on OPEN_RFQ enquiries. That value is dropped here and the buyer
+ * is always shown as protected before award. This keeps the page clean; the
+ * RPC is still what a determined caller sees, so it is not a security boundary.
+ */
+export function toSupplierFacingQuickQuoteRfq(raw: Record<string, unknown>): QuickQuoteRfq {
+  const str = (v: unknown) => (typeof v === 'string' && v !== '' ? v : undefined);
+  const num = (v: unknown) => (v === null || v === undefined || v === '' ? undefined : Number(v));
+
+  const rfq: QuickQuoteRfq = {
+    publicRef: String(raw.publicRef ?? ''),
+    alias: str(raw.alias),
+    title: raw.title == null ? undefined : scrubBuyerFreeText(String(raw.title)),
+    category: str(raw.category),
+    subcategory: str(raw.subcategory),
+    quantity: num(raw.quantity),
+    unit: str(raw.unit),
+    location: str(raw.location),
+    requiredByDays: num(raw.requiredByDays),
+    requiredByDate: str(raw.requiredByDate),
+    quoteDeadline: str(raw.quoteDeadline),
+    minQuotes: num(raw.minQuotes),
+    buyerDisplay: PROTECTED_BUYER_LABEL,
+    isDemo: raw.isDemo === undefined ? undefined : Boolean(raw.isDemo),
+  };
+
+  for (const key of Object.keys(rfq) as Array<keyof QuickQuoteRfq>) {
+    if (rfq[key] === undefined) delete rfq[key];
+  }
+  assertSupplierFacingPayloadSafe(rfq as unknown as Record<string, unknown>);
+  return rfq;
+}
+
 export async function fetchQuickQuoteContext(
   sessionToken: string,
 ): Promise<QuickQuoteResult<QuickQuoteContext>> {
@@ -116,10 +155,16 @@ export async function fetchQuickQuoteContext(
   const payload = data as Record<string, unknown> | null;
 
   if (payload?.outcome === 'OK') {
+    let rfq: QuickQuoteRfq;
+    try {
+      rfq = toSupplierFacingQuickQuoteRfq((payload.rfq ?? {}) as Record<string, unknown>);
+    } catch {
+      return { ok: false, reason: 'UNAVAILABLE' };
+    }
     return {
       ok: true,
       value: {
-        rfq: payload.rfq as QuickQuoteRfq,
+        rfq,
         expiresAt: String(payload.expiresAt),
         quote: (payload.quote as QuickQuoteContext['quote']) ?? null,
       },

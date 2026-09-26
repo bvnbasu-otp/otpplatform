@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth';
 import {
   type BuyerAddress,
@@ -8,9 +7,14 @@ import {
   type BuyerPersona,
   getAllowedLocationTypes,
   getDefaultLocationType,
-  isAddressValid,
-  isPincodeValid,
 } from '@otp/domain';
+import {
+  deactivateBuyerAddress,
+  fetchBuyerAddresses,
+  saveBuyerAddress,
+  setPrimaryBuyerAddress,
+} from '../api/buyer-addresses';
+import { BuyerAddressCard } from './BuyerAddressCard';
 
 interface AddressBookManagerProps {
   organizationId?: string | null;
@@ -32,6 +36,7 @@ export function AddressBookManager({
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingStateCode, setEditingStateCode] = useState<string | null>(null);
 
   // Form states
   const [label, setLabel] = useState('');
@@ -58,88 +63,13 @@ export function AddressBookManager({
     if (!user) return;
     setLoading(true);
     setError(null);
-    try {
-      const { data, error: rpcErr } = await supabase.rpc('get_buyer_addresses', {
-        p_org_id: organizationId || null,
-      });
-
-      if (rpcErr) {
-        // Fallback to table select if RPC error
-        const query = supabase
-          .from('buyer_addresses')
-          .select('*')
-          .eq('is_active', true)
-          .order('is_primary', { ascending: false });
-
-        if (organizationId) {
-          query.eq('organization_id', organizationId);
-        } else {
-          query.eq('profile_id', user.id).is('organization_id', null);
-        }
-
-        const { data: tableData, error: tableErr } = await query;
-        if (tableErr) throw tableErr;
-        setAddresses(
-          (tableData || []).map((row: any) => ({
-            id: row.id,
-            profileId: row.profile_id,
-            organizationId: row.organization_id,
-            label: row.label,
-            locationType: row.location_type || getDefaultLocationType(persona),
-            recipientName: row.recipient_name,
-            line1: row.address_line1,
-            line2: row.address_line2,
-            locality: row.locality,
-            landmark: row.landmark,
-            city: row.city,
-            district: row.district,
-            state: row.state,
-            stateCode: row.state_code,
-            pincode: row.pincode,
-            country: row.country || 'India',
-            contactPerson: row.contact_person,
-            contactPhone: row.contact_phone,
-            isPrimary: Boolean(row.is_primary),
-            addressType: row.address_type || 'DELIVERY',
-            isActive: row.is_active !== false,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-          }))
-        );
-      } else if (data && data.ok) {
-        setAddresses(
-          (data.addresses || []).map((row: any) => ({
-            id: row.id,
-            profileId: row.profile_id,
-            organizationId: row.organization_id,
-            label: row.label,
-            locationType: row.location_type || getDefaultLocationType(persona),
-            recipientName: row.recipient_name,
-            line1: row.address_line1,
-            line2: row.address_line2,
-            locality: row.locality,
-            landmark: row.landmark,
-            city: row.city,
-            district: row.district,
-            state: row.state,
-            stateCode: row.state_code,
-            pincode: row.pincode,
-            country: row.country || 'India',
-            contactPerson: row.contact_person,
-            contactPhone: row.contact_phone,
-            isPrimary: Boolean(row.is_primary),
-            addressType: row.address_type || 'DELIVERY',
-            isActive: row.is_active !== false,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-          }))
-        );
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load address book');
-    } finally {
-      setLoading(false);
+    const res = await fetchBuyerAddresses(organizationId, persona);
+    if (res.ok) {
+      setAddresses(res.addresses);
+    } else {
+      setError(res.error);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -148,154 +78,65 @@ export function AddressBookManager({
 
   const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const validation = isAddressValid({
-      line1,
-      city,
-      state,
-      pincode,
-    });
-
-    if (!validation.valid) {
-      setError(validation.errors.join(' '));
-      return;
-    }
-
     setSaving(true);
     setError(null);
 
-    try {
-      const { data, error: rpcErr } = await supabase.rpc('upsert_buyer_address_atomic', {
-        p_label:
-          label.trim() ||
-          (persona === 'RWA'
-            ? 'Society Premises'
-            : persona === 'MSME'
-            ? 'Operational Site'
-            : 'Home Delivery'),
-        p_line1: line1.trim(),
-        p_line2: line2.trim() || null,
-        p_landmark: landmark.trim() || null,
-        p_city: city.trim(),
-        p_state: state.trim(),
-        p_pincode: pincode.trim(),
-        p_country: 'India',
-        p_is_primary: isPrimary || addresses.length === 0,
-        p_address_type: addressType,
-        p_org_id: organizationId || null,
-        p_address_id: editingId || null,
-        p_contact_person: (contactPerson || recipientName).trim() || null,
-        p_contact_phone: contactPhone.trim() || null,
-      });
+    const res = await saveBuyerAddress({
+      addressId: editingId,
+      organizationId,
+      persona,
+      label,
+      line1,
+      line2,
+      landmark,
+      city,
+      state,
+      stateCode: editingStateCode,
+      pincode,
+      addressType,
+      recipientName,
+      contactPerson,
+      contactPhone,
+      isPrimary,
+      isFirstAddress: addresses.length === 0,
+    });
 
-      if (rpcErr) {
-        // Direct table fallback if RPC fails or unavailable in some client contexts
-        if (editingId) {
-          const { error: updErr } = await supabase
-            .from('buyer_addresses')
-            .update({
-              label: label.trim() || 'Primary Site',
-              address_line1: line1.trim(),
-              address_line2: line2.trim() || null,
-              landmark: landmark.trim() || null,
-              city: city.trim(),
-              state: state.trim(),
-              pincode: pincode.trim(),
-              recipient_name: recipientName.trim() || null,
-              contact_person: (contactPerson || recipientName).trim() || null,
-              contact_phone: contactPhone.trim() || null,
-              address_type: addressType,
-              is_primary: isPrimary || addresses.length === 0,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', editingId);
-          if (updErr) throw updErr;
-        } else {
-          const { error: insErr } = await supabase
-            .from('buyer_addresses')
-            .insert({
-              profile_id: user?.id,
-              organization_id: organizationId || null,
-              label: label.trim() || (persona === 'RWA' ? 'Society Premises' : persona === 'MSME' ? 'Operational Site' : 'Home Delivery'),
-              address_line1: line1.trim(),
-              address_line2: line2.trim() || null,
-              landmark: landmark.trim() || null,
-              city: city.trim(),
-              state: state.trim(),
-              pincode: pincode.trim(),
-              recipient_name: recipientName.trim() || null,
-              contact_person: (contactPerson || recipientName).trim() || null,
-              contact_phone: contactPhone.trim() || null,
-              address_type: addressType,
-              is_primary: isPrimary || addresses.length === 0,
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            });
-          if (insErr) throw insErr;
-        }
-      } else if (data && !data.ok) {
-        throw new Error(data.error || 'Failed to save address');
-      }
-
-      resetForm();
-      setShowAddModal(false);
-      await fetchAddresses();
-    } catch (err: any) {
-      setError(err.message || 'Error saving address');
-    } finally {
-      setSaving(false);
+    setSaving(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    resetForm();
+    setShowAddModal(false);
+    await fetchAddresses();
   };
 
   const handleSetPrimary = async (addressId: string) => {
-    try {
-      const target = addresses.find((a) => a.id === addressId);
-      if (!target) return;
-
-      const { data, error: rpcErr } = await supabase.rpc('upsert_buyer_address_atomic', {
-        p_label: target.label,
-        p_line1: target.line1,
-        p_line2: target.line2 || null,
-        p_landmark: target.landmark || null,
-        p_city: target.city,
-        p_state: target.state,
-        p_pincode: target.pincode,
-        p_country: target.country,
-        p_is_primary: true,
-        p_address_type: target.addressType,
-        p_org_id: organizationId || null,
-        p_address_id: addressId,
-        p_contact_person: target.contactPerson || null,
-        p_contact_phone: target.contactPhone || null,
-      });
-
-      if (rpcErr) throw rpcErr;
-      await fetchAddresses();
-    } catch (err: any) {
-      setError(err.message || 'Error updating primary address');
+    const target = addresses.find((a) => a.id === addressId);
+    if (!target) return;
+    const res = await setPrimaryBuyerAddress(target, organizationId, persona);
+    if (!res.ok) {
+      setError(res.error || 'Error updating primary address');
+      return;
     }
+    await fetchAddresses();
   };
 
   const handleDelete = async (addressId: string) => {
     if (!confirm('Are you sure you want to deactivate this address? (Historical procurement records will remain 100% intact.)')) {
       return;
     }
-    try {
-      const { error: delErr } = await supabase
-        .from('buyer_addresses')
-        .update({ is_active: false })
-        .eq('id', addressId);
-
-      if (delErr) throw delErr;
-      await fetchAddresses();
-    } catch (err: any) {
-      setError(err.message || 'Error deleting address');
+    const res = await deactivateBuyerAddress(addressId);
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    await fetchAddresses();
   };
 
   const startEdit = (addr: BuyerAddress) => {
     setEditingId(addr.id);
+    setEditingStateCode(addr.stateCode ?? null);
     setLabel(addr.label);
     setLocationType(addr.locationType || getDefaultLocationType(persona));
     setAddressType(addr.addressType || 'DELIVERY');
@@ -316,6 +157,7 @@ export function AddressBookManager({
 
   const resetForm = () => {
     setEditingId(null);
+    setEditingStateCode(null);
     setLabel('');
     setLocationType(getDefaultLocationType(persona));
     setAddressType('DELIVERY');
@@ -396,98 +238,17 @@ export function AddressBookManager({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {addresses.map((addr) => {
-            const isSelected = selectedAddressId === addr.id;
-            return (
-              <div
-                key={addr.id}
-                className={`relative p-4 rounded-xl border transition-all ${
-                  addr.isPrimary
-                    ? 'border-primary/50 bg-primary/5 dark:bg-primary/10 shadow-sm'
-                    : 'border-border bg-card hover:border-border/80'
-                } ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
-              >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-sm text-foreground">{addr.label}</span>
-                    {addr.isPrimary && (
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
-                        Primary Default
-                      </span>
-                    )}
-                    {addr.locationType && (
-                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border">
-                        {addr.locationType.replace(/_/g, ' ')}
-                      </span>
-                    )}
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-                      {addr.addressType}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-xs text-foreground/80 space-y-1 mb-3">
-                  {addr.recipientName && (
-                    <p className="font-semibold text-foreground">{addr.recipientName}</p>
-                  )}
-                  <p className="font-medium">{addr.line1}</p>
-                  {addr.line2 && <p>{addr.line2}</p>}
-                  {addr.locality && <p className="text-muted-foreground">Area: {addr.locality}</p>}
-                  {addr.landmark && <p className="text-muted-foreground">Landmark: {addr.landmark}</p>}
-                  <p className="text-muted-foreground">
-                    {addr.city}{addr.district ? `, ${addr.district}` : ''}, {addr.state} —{' '}
-                    <span className="font-mono font-medium text-foreground">{addr.pincode}</span>
-                  </p>
-                  {(addr.contactPerson || addr.contactPhone) && (
-                    <p className="text-[11px] text-muted-foreground pt-1 border-t border-border/40 mt-1">
-                      Contact: {addr.contactPerson || 'Site Incharge'} {addr.contactPhone ? `(${addr.contactPhone})` : ''}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-border/50 gap-2">
-                  <div className="flex items-center gap-2">
-                    {!addr.isPrimary && (
-                      <button
-                        type="button"
-                        onClick={() => handleSetPrimary(addr.id)}
-                        className="text-xs text-primary hover:underline min-h-[44px] py-1 px-2 touch-manipulation font-medium"
-                      >
-                        Set as Primary
-                      </button>
-                    )}
-                    {onAddressSelected && (
-                      <button
-                        type="button"
-                        onClick={() => onAddressSelected(addr)}
-                        className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-md min-h-[44px] touch-manipulation font-medium"
-                      >
-                        Select for RFQ
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(addr)}
-                      className="text-xs text-muted-foreground hover:text-foreground p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center touch-manipulation"
-                      title="Edit Location"
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(addr.id)}
-                      className="text-xs text-destructive hover:text-destructive/80 p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center touch-manipulation"
-                      title="Deactivate Location"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {addresses.map((addr) => (
+            <BuyerAddressCard
+              key={addr.id}
+              address={addr}
+              isSelected={selectedAddressId === addr.id}
+              onSetPrimary={handleSetPrimary}
+              onSelect={onAddressSelected}
+              onEdit={startEdit}
+              onDelete={handleDelete}
+            />
+          ))}
         </div>
       )}
 

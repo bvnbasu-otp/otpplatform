@@ -8,7 +8,12 @@ import {
   type GooglePlacesOperationalVisibilityData,
 } from '../components/GooglePlacesOperationalCard';
 import { supabase } from '@/lib/supabase';
-import { TruthfulProviderStatus, GisExecutionMode } from '@otp/domain';
+import {
+  TruthfulProviderStatus,
+  GisExecutionMode,
+  GOOGLE_PLACES_QUOTA_RESET_LABEL,
+  getUtcDayKey,
+} from '@otp/domain';
 
 // Mock Supabase RPC for FounderDashboardPage
 vi.mock('@/lib/supabase', () => ({
@@ -374,6 +379,19 @@ describe('OTP R2-C2: Founder / CEO Operational Visibility Suite (C2-01 to C2-12)
     expect(html).toContain('overflow-hidden');
     expect(html).toContain('grid grid-cols-1 sm:grid-cols-2');
     expect(html).toContain('Resets daily at 05:30 IST / 00:00 UTC');
+  });
+
+  it('C2-10b: quota reset label is the shared domain constant that matches the UTC day-window counter', () => {
+    expect(GOOGLE_PLACES_QUOTA_RESET_LABEL).toBe('Resets daily at 05:30 IST / 00:00 UTC');
+    const html = renderToStaticMarkup(<GooglePlacesOperationalCard />);
+    expect(html).toContain(
+      `<span data-testid="quota-reset-label">0 (${GOOGLE_PLACES_QUOTA_RESET_LABEL})</span>`,
+    );
+    // The counter's day key rolls at 00:00Z (05:30 IST), not at IST midnight (18:30Z).
+    expect(getUtcDayKey(new Date('2026-09-26T18:29:59Z'))).toBe('2026-09-26');
+    expect(getUtcDayKey(new Date('2026-09-26T18:30:00Z'))).toBe('2026-09-26');
+    expect(getUtcDayKey(new Date('2026-09-26T23:59:59Z'))).toBe('2026-09-26');
+    expect(getUtcDayKey(new Date('2026-09-27T00:00:00Z'))).toBe('2026-09-27');
   });
 
   /**

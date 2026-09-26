@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth';
 import { SignInForm } from '@/features/auth/components/SignInForm';
 import { SiteLayout } from '@/features/site/components/SiteLayout';
 import { useMaintenance } from '@/features/maintenance';
+import { PRODUCT_PLATFORM_SUBTITLE, PRODUCT_TITLE } from '@/lib/brand';
 
 /**
  * The canonical sign-in page.
@@ -101,13 +102,16 @@ export function LoginPage() {
         )}
 
         <div className="mb-3">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-action" data-testid="login-brand-title">
+            {PRODUCT_TITLE}
+          </p>
+          <h1 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             {isAdminEmergency && isMaintenanceMode ? 'Admin Sign In' : 'Sign In'}
           </h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {isAdminEmergency && isMaintenanceMode
               ? 'Enter Super Admin credentials to proceed to the management console.'
-              : 'Welcome back! Enter your details to access your workspace.'}
+              : `Welcome back. ${PRODUCT_PLATFORM_SUBTITLE}`}
           </p>
         </div>
 

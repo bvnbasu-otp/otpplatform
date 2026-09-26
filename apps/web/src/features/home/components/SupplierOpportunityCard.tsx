@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { IdentityProtectedShield } from '@/features/supplier/components/IdentityProtectedShield';
+import { PROTECTED_BUYER_LABEL } from '@/features/supplier/lib/identity-shield';
 import type { SupplierOpportunityItem } from '../types';
 
 interface SupplierOpportunityCardProps {
@@ -7,8 +9,6 @@ interface SupplierOpportunityCardProps {
 }
 
 export function SupplierOpportunityCard({ opportunity }: SupplierOpportunityCardProps) {
-  const buyerName = opportunity.buyerDisplayName || 'Palm Meadows RWA';
-
   return (
     <article
       className="rounded-2xl border border-primary/20 bg-card p-3.5 sm:p-4 space-y-2.5 shadow-xs transition hover:border-primary/40"
@@ -30,11 +30,11 @@ export function SupplierOpportunityCard({ opportunity }: SupplierOpportunityCard
           {opportunity.title}
         </h4>
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          {buyerName} · Requires 6-month warranty
+          Buyer: {PROTECTED_BUYER_LABEL} · Requires 6-month warranty
         </p>
       </div>
 
-      {/* Submission Window & Identity Sealed Grid */}
+      {/* Submission Window & Identity Protection Grid */}
       <div className="grid grid-cols-2 gap-2 text-xs py-1.5 px-2.5 rounded-xl bg-muted/25 border border-border/60">
         <div>
           <span className="text-[9px] uppercase font-bold text-muted-foreground block">Submission Window:</span>
@@ -45,10 +45,7 @@ export function SupplierOpportunityCard({ opportunity }: SupplierOpportunityCard
         </div>
         <div>
           <span className="text-[9px] uppercase font-bold text-muted-foreground block">Protection:</span>
-          <span className="text-xs font-bold text-primary flex items-center gap-1 mt-0.5">
-            <span>🔒</span>
-            <span>Identity Sealed</span>
-          </span>
+          <IdentityProtectedShield variant="badge" className="mt-0.5" />
         </div>
       </div>
 

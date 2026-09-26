@@ -1,6 +1,7 @@
 import type { WorkOrderStatus } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
 import type { WorkOrderSummary } from '../types/fulfillment';
+import { validateMilestoneTransition } from '../lib/milestone-progress';
 
 interface WoRow {
   id: string;
@@ -192,22 +193,46 @@ export async function createWorkOrder(
   return { ok: true, workOrderId: data.id };
 }
 
+/**
+ * Records the next 25% milestone. The current value is re-read from the database
+ * and the write is conditional on it, so a stale screen or a double tap cannot
+ * skip a milestone or advance twice.
+ */
 export async function updateWorkOrderProgress(
   woId: string,
   progressPercent: number,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const status: WorkOrderStatus =
-    progressPercent >= 100 ? 'COMPLETED' : progressPercent > 0 ? 'IN_PROGRESS' : 'NOT_STARTED';
+  const { data: current, error: readError } = await supabase
+    .from('work_orders')
+    .select('id, progress_percent, status')
+    .eq('id', woId)
+    .maybeSingle();
+  if (readError) return { ok: false, error: readError.message };
+  if (!current) return { ok: false, error: 'Work order not found.' };
 
+  const fromPercent = Number((current as { progress_percent?: number }).progress_percent ?? 0);
+  const check = validateMilestoneTransition(fromPercent, progressPercent);
+  if (!check.ok) return check;
+
+  const status: WorkOrderStatus = progressPercent >= 100 ? 'COMPLETED' : 'IN_PROGRESS';
+  const now = new Date().toISOString();
   const patch: Record<string, unknown> = {
     progress_percent: progressPercent,
     status,
-    updated_at: new Date().toISOString(),
+    updated_at: now,
   };
-  if (status === 'COMPLETED') patch.completed_at = new Date().toISOString();
+  if (status === 'COMPLETED') patch.completed_at = now;
 
-  const { error } = await supabase.from('work_orders').update(patch).eq('id', woId);
+  const { data: updated, error } = await supabase
+    .from('work_orders')
+    .update(patch)
+    .eq('id', woId)
+    .eq('progress_percent', fromPercent)
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!Array.isArray(updated) || updated.length === 0) {
+    return { ok: false, error: 'Progress was already updated. Refresh to see the latest milestone.' };
+  }
   return { ok: true };
 }
 

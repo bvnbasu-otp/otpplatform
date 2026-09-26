@@ -5,6 +5,7 @@ import type {
   MsmeSpendDecisionEvaluation,
 } from '@otp/domain';
 import { evaluateMsmeSpendDecisionState } from '@otp/domain';
+import { formatDateIST } from '@/lib/date-utils';
 
 export interface SpendApprovalModalProps {
   isOpen: boolean;
@@ -165,7 +166,7 @@ export function SpendApprovalModal({
               >
                 {activeDelegations.map((d) => (
                   <option key={d.id} value={d.id}>
-                    Delegated Cap: {d.spendCapAmount ? `₹${d.spendCapAmount.toLocaleString('en-IN')}` : 'Unlimited'} (Expires: {new Date(d.expiresAt).toLocaleDateString('en-IN')})
+                    Delegated Cap: {d.spendCapAmount ? `₹${d.spendCapAmount.toLocaleString('en-IN')}` : 'Unlimited'} (Expires: {formatDateIST(d.expiresAt)})
                   </option>
                 ))}
               </select>

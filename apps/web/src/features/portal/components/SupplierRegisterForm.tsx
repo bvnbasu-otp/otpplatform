@@ -13,6 +13,7 @@ import {
   type SignupResult,
   type VerificationChannel,
 } from '../api/signup';
+import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { RoleChoiceField } from './RoleChoiceField';
 import { SUPPLIER_COPY } from '../types/portal';
 import { VerificationChoice } from './VerificationChoice';
@@ -105,20 +106,23 @@ export function SupplierRegisterForm({
       coveragePincode: pincode.trim() || undefined,
     });
 
-    setBusy(false);
     if (!result.ok) {
+      setBusy(false);
       setError(result.error);
       return;
     }
 
-    if (channel === 'WHATSAPP' && phone.trim()) {
-      void sendWhatsAppNotification(
-        phone,
-        `[OTP Platform] Registration Received\n\nHello ${firstName.trim()},\nYour supplier registration for *${business.trim()}* has been received.\n\n*Reference:* ${result.result.reference}\n*Status:* ${result.result.status}\n\nOur operations team will verify your business and activate your account. You will receive notifications here on WhatsApp for new RFQs in your category.`,
-      );
-    }
+    const notification =
+      channel === 'WHATSAPP' && phone.trim() && !result.result.alreadySubmitted
+        ? await sendWhatsAppNotification(
+            phone,
+            `[OTP Platform] Registration Received\n\nHello ${firstName.trim()},\nYour supplier registration for *${business.trim()}* has been received.\n\n*Reference:* ${result.result.reference}\n*Status:* ${result.result.status}\n\nOur operations team will verify your business before your account is activated.`,
+            { idempotencyKey: `registration:${result.result.reference}` },
+          )
+        : undefined;
 
-    onSuccess(result.result);
+    setBusy(false);
+    onSuccess({ ...result.result, notification });
   }
 
   return (
@@ -400,7 +404,7 @@ export function SupplierRegisterForm({
               {referral && (
                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                   <span>✓</span>
-                  <span>Referral applied: 10% platform credit program linked.</span>
+                  <span>{REFERRAL_ATTRIBUTION_NOTE}</span>
                 </p>
               )}
             </div>

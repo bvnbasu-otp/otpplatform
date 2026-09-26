@@ -3,10 +3,10 @@ import {
   type ParsedRequirement,
   type TaxonomySnapshot,
 } from '@otp/domain';
-import { supabase } from '@/lib/supabase';
 import { discoverAndInvite } from '@/features/requirement/api/rfq-lifecycle';
 import { createDraft, publishDraft, type DraftPatch } from './draft';
 import { fetchTaxonomy } from './taxonomy';
+import { fetchPrimaryDeliveryLocation, resolveLocationPrefill } from './primary-address';
 
 const parser = new RuleBasedRequirementParser();
 
@@ -43,7 +43,8 @@ export function resolveWordQuantity(text: string): number | null {
   return null;
 }
 
-export function resolveDeliveryCity(parsedCity: string | null, originalText: string): string {
+/** Returns null when the text names no known city; callers must ask the buyer. */
+export function resolveDeliveryCity(parsedCity: string | null, originalText: string): string | null {
   if (parsedCity && parsedCity.trim()) {
     return parsedCity.trim();
   }
@@ -75,7 +76,7 @@ export function resolveDeliveryCity(parsedCity: string | null, originalText: str
   if (textLower.includes('hyderabad')) {
     return 'Hyderabad';
   }
-  return 'Tiruppur';
+  return null;
 }
 
 export function parsedToPatch(
@@ -119,6 +120,7 @@ export function parsedToPatch(
   patch.quantity = explicitQty ?? wordQty ?? 1;
   patch.unit = parsed.unit || 'units';
   patch.deliveryCity = resolveDeliveryCity(parsed.deliveryCity, originalText);
+  patch.deliveryPincode = parsed.deliveryPincode?.trim() || null;
   patch.requiredByMode = 'WITHIN_DAYS';
   patch.requiredByDays = parsed.timing?.requiredByDays ?? 3;
 
@@ -149,18 +151,16 @@ export interface FastTrackIntakeResult {
  * creates the requirement, immediately publishes the RFQ, and triggers
  * the 4 verified supplier quotes in a single automated step.
  */
-export interface FastTrackIntakeOptions {
-  autoQuoteSimulation?: boolean;
-}
-
 /**
- * Executes the fast-track intake flow.
- * In production mode, publishes draft, runs discovery, and invites real suppliers.
- * Synthetic quote generation is strictly firewalled behind explicit demo/pilot test flags.
+ * Executes the fast-track intake flow: publishes the draft, runs discovery and
+ * invites real suppliers. It never generates synthetic quotes.
  */
+export const FAST_TRACK_LOCATION_REQUIRED_ERROR =
+  'Please include the delivery city and 6-digit PIN code, or set a primary address in your Address Book.';
+
 export async function fastTrackExpressIntake(
   queryText: string,
-  options?: FastTrackIntakeOptions,
+  options: { organizationId?: string | null } = {},
 ): Promise<FastTrackIntakeResult> {
   const trimmed = queryText.trim();
   if (!trimmed) {
@@ -181,6 +181,20 @@ export async function fastTrackExpressIntake(
 
   const parsedPatch = parsedToPatch(parsed, taxonomy, trimmed);
 
+  if (!parsedPatch.deliveryCity || !parsedPatch.deliveryPincode) {
+    const primary = await fetchPrimaryDeliveryLocation(options.organizationId);
+    const prefill = resolveLocationPrefill(
+      { city: parsedPatch.deliveryCity ?? '', pincode: parsedPatch.deliveryPincode ?? '' },
+      primary,
+    );
+    if (prefill.city) parsedPatch.deliveryCity = prefill.city;
+    if (prefill.pincode) parsedPatch.deliveryPincode = prefill.pincode;
+  }
+
+  if (!parsedPatch.deliveryCity || !parsedPatch.deliveryPincode) {
+    return { ok: false, error: FAST_TRACK_LOCATION_REQUIRED_ERROR };
+  }
+
   const draftRes = await createDraft({
     title,
     originalText: trimmed,
@@ -200,13 +214,6 @@ export async function fastTrackExpressIntake(
   const discoverRes = await discoverAndInvite(publishRes.rfqId);
   if (!discoverRes.ok) {
     return { ok: false, error: discoverRes.error };
-  }
-
-  // 2. Deterministic quote guarantee: ONLY when explicitly requested in demo / pilot walkthroughs
-  if (options?.autoQuoteSimulation) {
-    await supabase.rpc('auto_submit_pilot_quotes', {
-      p_rfq_id: publishRes.rfqId,
-    });
   }
 
   return {

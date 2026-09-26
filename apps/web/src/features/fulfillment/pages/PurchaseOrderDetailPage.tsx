@@ -24,6 +24,17 @@ import {
 import { createWorkOrder, fetchWorkOrderByPo, updateWorkOrderProgress } from '../api/work-orders';
 import { DeliveryInspectionPanel } from '../components/DeliveryInspectionPanel';
 import { InvoicePaymentPanel } from '../components/InvoicePaymentPanel';
+import { CompletionBlockersNotice, SettlementCta } from '../components/SettlementCta';
+import {
+  computeCompletionBlockers,
+  resolveSettlementAction,
+  resolveSettlementCtaPlacement,
+  type SettlementAction,
+} from '../lib/settlement-state';
+import { buildPurchaseOrderDocumentInput } from '../lib/po-document';
+import { fetchInvoicesByWorkOrder, type InvoiceSummary } from '../api/invoices';
+import { PrintableProcurementDocument } from '@/features/reporting/components/PrintableProcurementDocument';
+import { buildProcurementDocumentModel } from '@/features/reporting/lib/procurement-document';
 import { SupplierMilestoneStepper } from '../components/SupplierMilestoneStepper';
 import { FivePointMilestoneStepper } from '../components/FivePointMilestoneStepper';
 import { PoActionButtons, StatusBadge } from '../components/FulfillmentStatus';
@@ -351,6 +362,7 @@ export function PurchaseOrderDetailPage({
   } | null>(null);
   const [settlementSummary, setSettlementSummary] = useState<PoSettlementSummary | null>(null);
   const [poPayments, setPoPayments] = useState<PaymentSummary[]>([]);
+  const [poInvoices, setPoInvoices] = useState<InvoiceSummary[]>([]);
   const [creditDebitNotes, setCreditDebitNotes] = useState<CreditDebitNote[]>([]);
   const [changeOrders, setChangeOrders] = useState<PoChangeOrder[]>([]);
   const [showChangeOrderModal, setShowChangeOrderModal] = useState(false);
@@ -397,6 +409,10 @@ export function PurchaseOrderDetailPage({
 
         if (woResult.ok) {
           setWorkOrder(woResult.workOrder);
+          if (woResult.workOrder?.id) {
+            const invRes = await fetchInvoicesByWorkOrder(woResult.workOrder.id);
+            setPoInvoices(invRes.ok ? invRes.invoices : []);
+          }
         }
 
         if (payResult.ok) {
@@ -503,21 +519,28 @@ export function PurchaseOrderDetailPage({
     }
   }
 
+  function currentCompletionBlockers() {
+    return computeCompletionBlockers({
+      hasWorkOrder: Boolean(workOrder),
+      workOrderStatus: workOrder?.status ?? null,
+      progressPercent: workOrder?.progressPercent ?? 0,
+      inspectionAccepted: Boolean(workOrder?.buyerAcceptedAt),
+      invoices: poInvoices,
+      hasPaymentAwaitingVerification: poPayments.some((p) => p.status === 'RECORDED'),
+      poTotal: order?.totalAmount ?? 0,
+      allocatedTotal: settlementSummary?.cumulativeAllocatedAmount ?? null,
+      currencyFormatter: (n) => formatMoney(n, order?.currency),
+    });
+  }
+
   async function handleConfirmCompletion() {
     const cleanId = (poId || '').trim();
     if (!cleanId) return;
-    if (!settlementSummary || !settlementSummary.isFullySettled) {
-      const outstanding = settlementSummary?.invoicedOutstandingAmount ?? settlementSummary?.remainingSettlementAmount ?? 0;
-      const outstandingMsg = outstanding > 0 ? ` Outstanding balance remaining: ₹${outstanding.toLocaleString('en-IN')}.` : '';
-      setError(`PO cannot be marked completed: Pending invoices and settlements must be 100% verified.${outstandingMsg}`);
+    const blockers = currentCompletionBlockers();
+    if (blockers.length > 0) {
+      setError(`PO cannot be marked completed: ${blockers.map((b) => b.message).join(' ')}`);
       setShowCompletionModal(false);
-      setActiveTab('PAYMENT');
-      return;
-    }
-    if (workOrder && !workOrder.buyerAcceptedAt && workOrder.progressPercent < 100) {
-      setError('PO cannot be marked completed: Milestone inspection sign-off is incomplete.');
-      setShowCompletionModal(false);
-      setActiveTab('MILESTONES');
+      setActiveTab(blockers[0]!.tab);
       return;
     }
     setBusy(true);
@@ -882,6 +905,47 @@ export function PurchaseOrderDetailPage({
     return { label: '⚪ Order Issued', class: 'bg-muted text-muted-foreground border-border' };
   })();
 
+  const settlementAction = resolveSettlementAction({
+    role,
+    poStatus: order.status,
+    hasWorkOrder: Boolean(workOrder),
+    workOrderStatus: workOrder?.status ?? null,
+    progressPercent: workOrder?.progressPercent ?? 0,
+    inspectionAccepted: Boolean(workOrder?.buyerAcceptedAt),
+    invoices: poInvoices,
+    hasPaymentAwaitingVerification: poPayments.some((p) => p.status === 'RECORDED'),
+    isFullySettled: Boolean(settlementSummary?.isFullySettled),
+  });
+  const completionBlockers = currentCompletionBlockers();
+
+  function handleSettlementAction(action: SettlementAction) {
+    if (action.kind === 'START_TRACKING') {
+      void handleCreateWorkOrder();
+    } else if (action.kind === 'COMPLETE_PO') {
+      setShowCompletionModal(true);
+    } else if (action.targetTab) {
+      setActiveTab(action.targetTab);
+    }
+  }
+
+  const printModel = buildProcurementDocumentModel(
+    buildPurchaseOrderDocumentInput(
+      order,
+      dbLineItems.map((li) => ({
+        description: li.name,
+        hsnCode: li.hsnCode,
+        quantity: li.quantity,
+        unit: li.unit,
+        rate: li.rate,
+        amount: li.amount,
+        gstRate: li.gstRate,
+        gstAmount: li.gstAmount,
+        total: li.total,
+      })),
+      { viewerRole: role, generatedAt: new Date(), buyerAddress: formatAddress(order.buyerAddress, order.buyerCity) || null },
+    ),
+  );
+
   return (
     <div className="zero-scroll-container p-2.5 sm:p-4 max-w-2xl mx-auto w-full overflow-x-hidden min-h-screen pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] flex flex-col justify-between" data-testid="purchase-order-detail">
       {/* 15-Step Linear Procurement Navigator */}
@@ -916,7 +980,7 @@ export function PurchaseOrderDetailPage({
       </div>
 
       {/* Hero Card: Winning Supplier Unmasked Banner */}
-      <div className="mt-2 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-4 space-y-2 shadow-md">
+      <div className="print:hidden mt-2 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-4 space-y-2 shadow-md">
         <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full inline-block">
           🎉 Winning Supplier Unmasked
         </span>
@@ -924,14 +988,14 @@ export function PurchaseOrderDetailPage({
           {order.supplierName || 'Awarded Vendor'}
         </h2>
         <div className="flex flex-wrap items-center gap-3 text-xs text-white/90 pt-0.5">
-          <span>✓ GST: {order.supplierGstin || 'Verified'}</span>
+          <span>GSTIN: {order.supplierGstin || 'Not on record'}</span>
           <span>·</span>
-          <span>📞 {order.supplierPhone || '+91 98450 12345'}</span>
+          <span>📞 {order.supplierPhone || order.supplierEmail || 'Contact not on record'}</span>
         </div>
       </div>
 
       {/* Hero Card: High-Impact Digital Purchase Order Details */}
-      <div className="mt-3 rounded-2xl border bg-card p-3.5 sm:p-5 shadow-sm space-y-3.5">
+      <div className="print:hidden mt-3 rounded-2xl border bg-card p-3.5 sm:p-5 shadow-sm space-y-3.5">
         <div className="flex flex-wrap items-start justify-between gap-2 border-b pb-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -1209,7 +1273,7 @@ export function PurchaseOrderDetailPage({
       </div>
 
       {/* Main Content Area */}
-      <div className="mt-3 space-y-4 pb-32 sm:pb-28 pb-[calc(8rem+env(safe-area-inset-bottom,0px))]">
+      <div className="print:hidden mt-3 space-y-4 pb-32 sm:pb-28 pb-[calc(8rem+env(safe-area-inset-bottom,0px))]">
         {/* TAB 1: OVERVIEW & LEDGER */}
         {activeTab === 'OVERVIEW' && (
           <div className="space-y-4">
@@ -1592,41 +1656,6 @@ export function PurchaseOrderDetailPage({
               </div>
             )}
 
-            {/* Auto Create Work Order if missing */}
-            {!workOrder ? (
-              <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2 no-print">
-                <p className="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">Work Execution &amp; Progress</p>
-                <p className="text-xs text-muted-foreground">
-                  Initialize milestone progress tracking (0% → 100%) and mutual inspection acknowledgment.
-                </p>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void handleCreateWorkOrder()}
-                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground shadow-2xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
-                >
-                  {busy ? 'Initializing…' : 'Initialize Work Order Progress →'}
-                </button>
-              </div>
-            ) : (
-              /* Step Progression CTA to Milestones */
-              <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
-                <div className="text-xs">
-                  <span className="font-extrabold text-foreground block">Next Fulfillment Step:</span>
-                  <span className="text-[11px] text-muted-foreground">
-                    Track deliverable execution progress (0% → 100%) and sign off on milestone inspections.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('MILESTONES')}
-                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
-                  data-testid="continue-to-milestones-btn"
-                >
-                  Continue to Milestones ({workOrder?.progressPercent || 0}%) →
-                </button>
-              </div>
-            )}
           </div>
         )}
 
@@ -1660,104 +1689,48 @@ export function PurchaseOrderDetailPage({
                   workOrder={workOrder}
                   role={role}
                   onAccepted={() => void load()}
-                  onGoToInvoices={() => setActiveTab('INVOICE')}
                 />
 
-                {/* Step Progression CTA to Invoicing */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
-                  <div className="text-xs">
-                    <span className="font-extrabold text-foreground block">Next Fulfillment Step:</span>
-                    <span className="text-[11px] text-muted-foreground">
-                      Review itemized GST tax invoices generated against completed delivery milestones.
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('INVOICE')}
-                    className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
-                    data-testid="continue-to-invoice-btn"
-                  >
-                    Continue to Invoices →
-                  </button>
-                </div>
               </>
             )}
           </div>
         )}
 
-        {/* TAB 3: INVOICE (SCREEN 12 FOCUS) */}
+        {/* TAB 3: INVOICE */}
         {activeTab === 'INVOICE' && (
           <div className="space-y-4">
             {!workOrder ? (
-              <div className="rounded-2xl border bg-card p-5 text-center space-y-3">
-                <span className="text-2xl block">🧾</span>
-                <p className="text-xs text-muted-foreground font-medium">
-                  Work Order execution not yet initialized. Initialize milestone progress tracking to enable statutory GST invoicing.
-                </p>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void handleCreateWorkOrder()}
-                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
-                >
-                  {busy ? 'Initializing…' : 'Initialize Milestones & Invoicing →'}
-                </button>
+              <div className="rounded-2xl border border-dashed bg-card p-5 text-center text-xs text-muted-foreground" data-testid="invoice-tab-empty">
+                Invoicing opens once milestone tracking is initialized for this purchase order.
               </div>
             ) : (
-              <>
-                <InvoicePaymentPanel
-                  workOrderId={workOrder.id}
-                  supplierId={order.supplierId}
-                  role={role}
-                  poAmount={order.totalAmount}
-                  deliveryAccepted={Boolean(workOrder.buyerAcceptedAt)}
-                  onUpdated={() => void load()}
-                />
-
-                {/* Step Progression CTA to Payment Settlement */}
-                <div className="hidden sm:flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
-                  <div className="text-xs">
-                    <span className="font-extrabold text-foreground block">Next Fulfillment Step:</span>
-                    <span className="text-[11px] text-muted-foreground">
-                      Manage disbursements, unallocated advance settlements, and ERP accounting exports.
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('PAYMENT')}
-                    className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 transition mobile-touch-target"
-                    data-testid="continue-to-payment-btn"
-                  >
-                    Continue to Settlement →
-                  </button>
-                </div>
-              </>
+              <InvoicePaymentPanel
+                view="INVOICE"
+                workOrderId={workOrder.id}
+                supplierId={order.supplierId}
+                supplierName={order.supplierLegalName || order.supplierName}
+                role={role}
+                poAmount={order.totalAmount}
+                deliveryAccepted={Boolean(workOrder.buyerAcceptedAt)}
+                onUpdated={() => void load()}
+              />
             )}
           </div>
         )}
 
-        {/* TAB 4: PAYMENT (SCREEN 13 FOCUS) */}
+        {/* TAB 4: SETTLEMENT */}
         {activeTab === 'PAYMENT' && (
-          <div>
+          <div className="space-y-4">
             {!workOrder ? (
-              <div className="rounded-2xl border bg-card p-5 text-center space-y-3">
-                <span className="text-2xl block">💳</span>
-                <p className="text-xs text-muted-foreground font-medium">
-                  Work Order execution not yet initialized. Initialize milestone progress tracking to access payment settlement.
-                </p>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void handleCreateWorkOrder()}
-                  className="min-h-[44px] rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
-                >
-                  {busy ? 'Initializing…' : 'Initialize Milestones & Payment Settlement →'}
-                </button>
+              <div className="rounded-2xl border border-dashed bg-card p-5 text-center text-xs text-muted-foreground" data-testid="settlement-tab-empty">
+                Settlement balances appear once milestone tracking is initialized and the supplier submits an invoice.
               </div>
             ) : (
               <InvoicePaymentPanel
+                view="SETTLEMENT"
                 workOrderId={workOrder.id}
                 supplierId={order.supplierId}
+                supplierName={order.supplierLegalName || order.supplierName}
                 role={role}
                 poAmount={order.totalAmount}
                 deliveryAccepted={Boolean(workOrder.buyerAcceptedAt)}
@@ -1781,76 +1754,14 @@ export function PurchaseOrderDetailPage({
             </span>
           </div>
 
-          {/* Single Contextual Primary Action: Min 48px touch target */}
+          {/* The one settlement action for the current state */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {activeTab === 'OVERVIEW' ? (
-              <button
-                type="button"
-                onClick={() => {
-                  if (!workOrder) {
-                    void handleCreateWorkOrder();
-                  } else {
-                    setActiveTab('MILESTONES');
-                  }
-                }}
-                className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
-              >
-                <span>⚡</span>
-                <span>{!workOrder ? 'Initialize Milestones →' : `Continue to Milestones (${workOrder?.progressPercent || 0}%) →`}</span>
-              </button>
-            ) : activeTab === 'MILESTONES' ? (
-              workOrder?.buyerAcceptedAt ? (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('INVOICE')}
-                  className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-md hover:bg-emerald-700 active:scale-98 transition mobile-touch-target"
-                >
-                  <span>🧾</span>
-                  <span>Review Invoices &amp; Settle →</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.querySelector('[data-testid="delivery-inspection-panel"]') || document.querySelector('[data-testid="supplier-milestone-stepper"]');
-                    el?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
-                >
-                  <span>{workOrder?.progressPercent === 100 ? '🔍' : '🛠️'}</span>
-                  <span>{workOrder?.progressPercent === 100 ? 'Sign Off Inspection (100%) →' : `Milestone Progress (${workOrder?.progressPercent || 0}%)`}</span>
-                </button>
-              )
-            ) : activeTab === 'INVOICE' ? (
-              <button
-                type="button"
-                onClick={() => setActiveTab('PAYMENT')}
-                className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-98 transition mobile-touch-target"
-              >
-                <span>💳</span>
-                <span>Continue to Settlement →</span>
-              </button>
-            ) : (
-              settlementSummary?.isFullySettled ? (
-                <button
-                  type="button"
-                  onClick={() => setShowCompletionModal(true)}
-                  className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-md hover:bg-emerald-700 active:scale-98 transition mobile-touch-target"
-                >
-                  <span>🏁</span>
-                  <span>Complete Purchase Order →</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('INVOICE')}
-                  className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-muted/60 text-foreground border border-border px-5 py-2.5 text-xs font-bold hover:bg-muted transition mobile-touch-target"
-                >
-                  <span>⚖️</span>
-                  <span>Review Invoices &amp; Balances</span>
-                </button>
-              )
-            )}
+            <SettlementCta
+              action={settlementAction}
+              placement={resolveSettlementCtaPlacement(settlementAction, activeTab)}
+              onActivate={handleSettlementAction}
+              busy={busy}
+            />
           </div>
         </div>
       </div>
@@ -1873,17 +1784,9 @@ export function PurchaseOrderDetailPage({
               </button>
             </div>
 
-            {!settlementSummary || !settlementSummary.isFullySettled ? (
+            {completionBlockers.length > 0 ? (
               <div className="space-y-3">
-                <div className="p-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 text-xs text-amber-800 dark:text-amber-200 space-y-1">
-                  <p className="font-bold flex items-center gap-1.5">
-                    <span>⚠️</span>
-                    <span>Cannot Complete Purchase Order (Settlement Incomplete)</span>
-                  </p>
-                  <p>
-                    All statutory progressive invoices must be submitted, approved, and 100% paid with zero outstanding balance before marking the contract COMPLETED.
-                  </p>
-                </div>
+                <CompletionBlockersNotice blockers={completionBlockers} />
 
                 {settlementSummary && (
                   <div className="rounded-xl border bg-muted/20 p-3 space-y-2 text-xs">
@@ -1919,11 +1822,11 @@ export function PurchaseOrderDetailPage({
                     type="button"
                     onClick={() => {
                       setShowCompletionModal(false);
-                      setActiveTab('PAYMENT');
+                      setActiveTab(completionBlockers[0]?.tab ?? 'PAYMENT');
                     }}
                     className="min-h-[44px] rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 mobile-touch-target"
                   >
-                    Go to Invoicing &amp; Settlement →
+                    Resolve first item →
                   </button>
                 </div>
               </div>
@@ -1935,7 +1838,7 @@ export function PurchaseOrderDetailPage({
                     <span>Reconciliation Verified (100% Settled)</span>
                   </p>
                   <p>
-                    All invoices have been paid in full, with zero outstanding balances. Transitioning to COMPLETED will permanently close execution and issue a cryptographically verifiable settlement certificate.
+                    All invoices have been paid in full, with zero outstanding balances. Transitioning to COMPLETED will close execution and make the settlement certificate available for download.
                   </p>
                 </div>
 
@@ -1984,6 +1887,8 @@ export function PurchaseOrderDetailPage({
           </div>
         </div>
       )}
+
+      <PrintableProcurementDocument model={printModel} />
 
       {/* PO Change Order Modal */}
       <ChangeOrderModal

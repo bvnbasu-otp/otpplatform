@@ -146,6 +146,14 @@ export function isTransactionalWorkflowRoute(pathname: string): boolean {
   if (cleanPath.startsWith('/supplier/work-orders/')) {
     return true;
   }
+  // Alias detail routes that render PurchaseOrderDetailPage / SupplierWorkOrderPage (App.tsx)
+  if (
+    cleanPath.startsWith('/orders/') ||
+    cleanPath.startsWith('/track/') ||
+    cleanPath.startsWith('/work-orders/')
+  ) {
+    return true;
+  }
 
   // Sourcing & RFQ workflow pages
   if (
@@ -163,6 +171,14 @@ export function isTransactionalWorkflowRoute(pathname: string): boolean {
   }
 
   return false;
+}
+
+/**
+ * Single visibility rule for the global MobileBottomNav: shown everywhere except
+ * routes whose page renders its own sticky primary action dock.
+ */
+export function shouldShowGlobalBottomNav(pathname: string): boolean {
+  return !isTransactionalWorkflowRoute(pathname);
 }
 
 /**

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatDeadlineCountdown, formatDate, formatDateTime, formatRelativeTime } from './date-utils';
+import {
+  formatDeadlineCountdown,
+  formatDate,
+  formatDateIST,
+  formatDateTime,
+  formatDateTimeIST,
+  formatRelativeTime,
+  formatTimeIST,
+} from './date-utils';
 
 describe('date-utils', () => {
   describe('formatDeadlineCountdown', () => {
@@ -49,7 +57,51 @@ describe('date-utils', () => {
       expect(formatted).toContain('IST');
     });
 
+    it('renders the canonical "DD MMM YYYY, HH:mm IST" format in Asia/Kolkata', () => {
+      // 10:00 UTC = 15:30 IST
+      expect(formatDateTimeIST('2026-09-13T10:00:00Z')).toBe('13 Sep 2026, 15:30 IST');
+      expect(formatDateTime('2026-09-13T10:00:00Z')).toBe('13 Sep 2026, 15:30 IST');
+      expect(formatDateIST('2026-09-05T10:00:00Z')).toBe('05 Sep 2026');
+      expect(formatTimeIST('2026-09-13T10:00:00Z')).toBe('15:30 IST');
+    });
+
+    it('rolls the calendar date over at IST midnight, not UTC midnight', () => {
+      // 18:45 UTC on 31 Dec = 00:15 IST on 1 Jan
+      expect(formatDateTimeIST('2026-12-31T18:45:00Z')).toBe('01 Jan 2027, 00:15 IST');
+      expect(formatDateIST('2026-12-31T18:45:00Z')).toBe('01 Jan 2027');
+    });
+
+    it('never emits locale-dependent month spellings such as "Sept"', () => {
+      for (let m = 0; m < 12; m++) {
+        const out = formatDateTimeIST(new Date(Date.UTC(2026, m, 15, 6, 0)));
+        expect(out).toMatch(/^\d{2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2} IST$/);
+      }
+    });
+
+    it('renders the canonical "DD MMM YYYY, HH:mm IST" format in Asia/Kolkata', () => {
+      // 10:00 UTC = 15:30 IST
+      expect(formatDateTimeIST('2026-09-13T10:00:00Z')).toBe('13 Sep 2026, 15:30 IST');
+      expect(formatDateTime('2026-09-13T10:00:00Z')).toBe('13 Sep 2026, 15:30 IST');
+      expect(formatDateIST('2026-09-05T10:00:00Z')).toBe('05 Sep 2026');
+      expect(formatTimeIST('2026-09-13T10:00:00Z')).toBe('15:30 IST');
+    });
+
+    it('rolls the calendar date over at IST midnight, not UTC midnight', () => {
+      // 18:45 UTC on 31 Dec = 00:15 IST on 1 Jan
+      expect(formatDateTimeIST('2026-12-31T18:45:00Z')).toBe('01 Jan 2027, 00:15 IST');
+      expect(formatDateIST('2026-12-31T18:45:00Z')).toBe('01 Jan 2027');
+    });
+
+    it('never emits locale-dependent month spellings such as "Sept"', () => {
+      for (let m = 0; m < 12; m++) {
+        const out = formatDateTimeIST(new Date(Date.UTC(2026, m, 15, 6, 0)));
+        expect(out).toMatch(/^\d{2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2} IST$/);
+      }
+    });
+
     it('handles empty or invalid inputs gracefully', () => {
+      expect(formatDateTimeIST('not-a-date')).toBe('');
+      expect(formatDateTimeIST('not-a-date')).toBe('');
       expect(formatDate(null)).toBe('—');
       expect(formatDateTime(undefined)).toBe('—');
       expect(formatRelativeTime('invalid')).toBe('—');

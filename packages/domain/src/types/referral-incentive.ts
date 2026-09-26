@@ -135,28 +135,32 @@ export function validateReferralCodeFormat(code: string): boolean {
 }
 
 /**
- * Generates cryptographically secure random bytes across Node.js, Web Browser, and test environments.
+ * Generates cryptographically secure random bytes (Web Crypto, available in browsers and Node 19+).
+ * There is deliberately no Math.random fallback: a guessable referral code is worse than none.
  */
 function getSecureRandomBytes(count: number): Uint8Array {
-  if (typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
-    const bytes = new Uint8Array(count);
-    globalThis.crypto.getRandomValues(bytes);
-    return bytes;
-  }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const nodeCrypto = require('crypto');
-    if (typeof nodeCrypto.randomBytes === 'function') {
-      return new Uint8Array(nodeCrypto.randomBytes(count));
-    }
-  } catch {
-    // constrained fallback
+  const webCrypto = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined;
+  if (!webCrypto || typeof webCrypto.getRandomValues !== 'function') {
+    throw new Error('Secure random source (crypto.getRandomValues) is unavailable; refusing to generate a referral code.');
   }
   const bytes = new Uint8Array(count);
-  for (let i = 0; i < count; i++) {
-    bytes[i] = Math.floor(Math.random() * 256);
-  }
+  webCrypto.getRandomValues(bytes);
   return bytes;
+}
+
+/** Draws `length` unbiased characters from `alphabet` using rejection sampling over CSPRNG bytes. */
+function drawSecureCodeBody(alphabet: string, length: number): string {
+  const alphabetLen = alphabet.length;
+  const limit = 256 - (256 % alphabetLen);
+  let body = '';
+  while (body.length < length) {
+    const bytes = getSecureRandomBytes(length - body.length);
+    for (let i = 0; i < bytes.length && body.length < length; i++) {
+      const byte = bytes[i]!;
+      if (byte < limit) body += alphabet[byte % alphabetLen];
+    }
+  }
+  return body;
 }
 
 /**
@@ -177,33 +181,22 @@ export function generateSecureRandomReferralCode(
       ? new Set(existingCodes)
       : null;
 
-  const alphabet = REFERRAL_CODE_ALPHABET;
-  const alphabetLen = alphabet.length;
+  const safeLength = Math.min(12, Math.max(4, Math.floor(length) || DEFAULT_REFERRAL_CODE_LENGTH));
   const maxAttempts = 25;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const randomBytes = getSecureRandomBytes(length);
-    let codeBody = '';
-    for (let i = 0; i < length; i++) {
-      const byte = randomBytes[i] ?? Math.floor(Math.random() * 256);
-      const idx = byte % alphabetLen;
-      codeBody += alphabet[idx];
-    }
-    const candidate = `${cleanPrefix}-${codeBody}`;
+    const candidate = `${cleanPrefix}-${drawSecureCodeBody(REFERRAL_CODE_ALPHABET, safeLength)}`;
     if (!existingSet || !existingSet.has(candidate)) {
       return candidate;
     }
   }
 
-  // Fallback with additional entropy
-  const extraBytes = getSecureRandomBytes(length);
-  let extraBody = '';
-  for (let i = 0; i < length; i++) {
-    const byte = extraBytes[i] ?? Math.floor(Math.random() * 256);
-    const idx = byte % alphabetLen;
-    extraBody += alphabet[idx];
+  // Collision space exhausted at this length: widen the body rather than return a known code.
+  let widened = `${cleanPrefix}-${drawSecureCodeBody(REFERRAL_CODE_ALPHABET, Math.min(12, safeLength + 2))}`;
+  while (existingSet && existingSet.has(widened)) {
+    widened = `${cleanPrefix}-${drawSecureCodeBody(REFERRAL_CODE_ALPHABET, 12)}`;
   }
-  return `${cleanPrefix}-${extraBody}`;
+  return widened;
 }
 
 /**
@@ -302,19 +295,83 @@ export function generatePersistentReferralCode(
 /**
  * Generates the authoritative public referral URL.
  */
+export const DEFAULT_REFERRAL_ORIGIN = 'https://otp.market';
+export const FALLBACK_REFERRAL_CODE = 'OTP-GROWTH';
+
+/**
+ * Reduces any caller-supplied code to the characters a referral code may contain,
+ * so it cannot smuggle template tokens, separators, markup or newlines into links/messages.
+ */
+export function sanitizeReferralCode(rawCode?: string | null): string {
+  const cleaned = normalizeReferralCode(String(rawCode ?? ''))
+    .replace(/[^A-Z0-9_-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 32);
+  return cleaned.length >= 4 ? cleaned : FALLBACK_REFERRAL_CODE;
+}
+
+/** Returns the scheme+host+port of an http(s) origin, or the default origin for anything else. */
+export function sanitizeReferralOrigin(origin?: string | null): string {
+  try {
+    const parsed = new URL(String(origin ?? '').trim() || DEFAULT_REFERRAL_ORIGIN);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return DEFAULT_REFERRAL_ORIGIN;
+    return parsed.origin;
+  } catch {
+    return DEFAULT_REFERRAL_ORIGIN;
+  }
+}
+
+/**
+ * Generates the authoritative public referral URL via the URL API (no string concatenation).
+ */
 export function generateReferralUrl(
   referralCode: string,
-  origin: string = 'https://otp.market',
+  origin: string = DEFAULT_REFERRAL_ORIGIN,
   side?: 'BUYER' | 'SUPPLIER' | 'buyer' | 'supplier' | 'all' | string,
 ): string {
-  const cleanOrigin = (origin || 'https://otp.market').replace(/\/+$/, '');
-  const cleanCode = normalizeReferralCode(referralCode) || 'OTP-GROWTH';
-  const queryParams = new URLSearchParams();
-  queryParams.set('ref', cleanCode);
-  if (side && side.toLowerCase() !== 'all') {
-    queryParams.set('side', side.toLowerCase());
+  const url = new URL('/signup', sanitizeReferralOrigin(origin));
+  url.searchParams.set('ref', sanitizeReferralCode(referralCode));
+  const cleanSide = (side || '').toLowerCase();
+  if (cleanSide === 'buyer' || cleanSide === 'supplier') {
+    url.searchParams.set('side', cleanSide);
   }
-  return `${cleanOrigin}/signup?${queryParams.toString()}`;
+  return url.toString();
+}
+
+/** Accepts a caller-built referral URL only if it is a well-formed http(s) URL. */
+function resolveShareUrl(params: {
+  referralUrl?: string;
+  referralCode: string;
+  origin?: string;
+  side?: string;
+}): string {
+  if (params.referralUrl) {
+    try {
+      const parsed = new URL(params.referralUrl);
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') return parsed.toString();
+    } catch {
+      // fall through to a freshly generated URL
+    }
+  }
+  return generateReferralUrl(params.referralCode, params.origin, params.side);
+}
+
+/**
+ * Builds the referral share message from a template in a single pass, so a value
+ * substituted for one token can never be re-expanded as another token.
+ */
+export function buildReferralShareMessage(
+  referralCode: string,
+  referralUrl: string,
+  template: string = DEFAULT_REFERRAL_SHARE_MESSAGE,
+): string {
+  const code = sanitizeReferralCode(referralCode);
+  const hasUrlToken = /\{(url|LINK)\}/.test(template);
+  const message = template.replace(/\{(code|CODE|url|LINK)\}/g, (_match, token: string) =>
+    token === 'code' || token === 'CODE' ? code : referralUrl,
+  );
+  return hasUrlToken ? message : `${message}\n\n${referralUrl}`;
 }
 
 export interface GenerateWhatsAppShareUrlParams {
@@ -332,31 +389,21 @@ export interface GenerateWhatsAppShareUrlParams {
  * Allows the user to share their referral link with zero automated phone scraping or WAHA dependency.
  */
 export function generateWhatsAppShareUrl(params: GenerateWhatsAppShareUrlParams): string {
-  const url = params.referralUrl || generateReferralUrl(params.referralCode, params.origin, params.side);
-  const template = params.customMessage || DEFAULT_REFERRAL_SHARE_MESSAGE;
-  let message = template;
-  if (message.includes('{code}')) {
-    message = message.replace(/{code}/g, params.referralCode);
-  }
-  if (message.includes('{CODE}')) {
-    message = message.replace(/{CODE}/g, params.referralCode);
-  }
-  if (message.includes('{url}')) {
-    message = message.replace(/{url}/g, url);
-  } else if (message.includes('{LINK}')) {
-    message = message.replace(/{LINK}/g, url);
-  } else {
-    message = `${message}\n\n${url}`;
-  }
+  const url = resolveShareUrl(params);
+  const message = buildReferralShareMessage(
+    params.referralCode,
+    url,
+    params.customMessage || DEFAULT_REFERRAL_SHARE_MESSAGE,
+  );
 
-  const searchParams = new URLSearchParams();
+  const shareUrl = new URL('https://api.whatsapp.com/send');
   if (params.targetPhone) {
     const cleanPhone = params.targetPhone.replace(/\D/g, '');
-    if (cleanPhone) searchParams.set('phone', cleanPhone);
+    if (cleanPhone) shareUrl.searchParams.set('phone', cleanPhone);
   }
-  searchParams.set('text', message);
+  shareUrl.searchParams.set('text', message);
 
-  return `https://api.whatsapp.com/send?${searchParams.toString()}`;
+  return shareUrl.toString();
 }
 
 /**
@@ -368,11 +415,39 @@ export function getReferralWebShareData(params: {
   side?: 'BUYER' | 'SUPPLIER' | 'buyer' | 'supplier' | 'all' | string;
   referralUrl?: string;
 }): { title: string; text: string; url: string } {
-  const url = params.referralUrl || generateReferralUrl(params.referralCode, params.origin, params.side);
+  const url = resolveShareUrl(params);
   return {
     title: 'OTP — Transparent Procurement Platform',
-    text: `Hi, I'm using OTP for competitive procurement. Use my referral code ${params.referralCode} or sign up here:`,
+    text: buildReferralShareMessage(params.referralCode, url),
     url,
+  };
+}
+
+/**
+ * Pilot referral credit boundary for display: attribution is recorded, monetary credit is ₹0.
+ */
+export const REFERRAL_PROGRAM_MODE: ReferralAttributionMode = 'PILOT_SANDBOX';
+
+export function getReferralCreditDisplay(mode: ReferralAttributionMode = REFERRAL_PROGRAM_MODE): {
+  mode: ReferralAttributionMode;
+  monetaryCreditAmount: number;
+  formattedMonetaryCredit: string;
+  notice: string;
+} {
+  if (mode === 'PILOT_SANDBOX') {
+    return {
+      mode,
+      monetaryCreditAmount: 0,
+      formattedMonetaryCredit: '₹0.00',
+      notice:
+        'Controlled pilot: referrals are recorded for attribution, but no monetary or wallet credit is issued during the pilot (₹0).',
+    };
+  }
+  return {
+    mode,
+    monetaryCreditAmount: 0,
+    formattedMonetaryCredit: '₹0.00',
+    notice: `Earn ${REFERRAL_REWARD_PERCENTAGE}% of a referred account's first successful subscription payment as non-cash OTP Wallet credit, within ${REFERRAL_QUALIFICATION_WINDOW_DAYS} days of attribution.`,
   };
 }
 
