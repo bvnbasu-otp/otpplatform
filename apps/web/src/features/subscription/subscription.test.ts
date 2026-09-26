@@ -35,7 +35,7 @@ describe('Subscription Pricing & Tier Rules', () => {
     expect(rwa.yearlyMonthlyRfqs).toBe(3);
     expect(rwa.quarterlyBonusRfqs).toBe(1);
     expect(rwa.yearlySavings).toBe(2989);
-    expect(rwa.additionalRfqPrice).toBe(149);
+    expect(rwa.additionalRfqPrice).toBe(999);
     expect(rwa.popular).toBe(true);
   });
 
@@ -49,7 +49,7 @@ describe('Subscription Pricing & Tier Rules', () => {
     expect(msme.yearlyMonthlyRfqs).toBe(3);
     expect(msme.quarterlyBonusRfqs).toBe(1);
     expect(msme.yearlySavings).toBe(3989);
-    expect(msme.additionalRfqPrice).toBe(149);
+    expect(msme.additionalRfqPrice).toBe(1499);
   });
 
   it('enforces exact Enterprise tier pricing (From ₹4,999/mo, From ₹49,999/yr)', () => {

@@ -3,8 +3,10 @@ import {
   calculateGst,
   calculateSupplierPlatformFeeWithGst,
   computeSubscriptionPricing,
+  computeExtraRfqPricing,
   evaluateRfqEntitlement,
   getCalendarMonthWindow,
+  getExtraRfqPriceForTier,
   resolveBillingMode,
   resolveTierForOrgType,
   SUBSCRIPTION_TIERS,
@@ -22,7 +24,7 @@ import {
 } from '../../packages/domain/src/types/buyer-reward';
 import { generateSubscriptionPaymentRef } from '../../apps/web/src/features/subscription/types';
 
-describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)', () => {
+describe('Pricing & Entitlement Red-Team Security Test Suite (25 Attack Vectors)', () => {
   // -------------------------------------------------------------------------
   // VECTOR 1: Negative Base Price Injection
   // -------------------------------------------------------------------------
@@ -496,5 +498,42 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
       refs.add(ref);
     }
     expect(refs.size).toBe(2000);
+  });
+
+  // -------------------------------------------------------------------------
+  // VECTOR 25: Persona-Specific Extra RFQ Price Tampering & Security Isolation
+  // -------------------------------------------------------------------------
+  it('Vector 25: Rejects client-side price tampering and isolates persona-specific Extra RFQ rates', () => {
+    // Canonical rates
+    expect(getExtraRfqPriceForTier('INDIVIDUAL')).toBe(149);
+    expect(getExtraRfqPriceForTier('RWA')).toBe(999);
+    expect(getExtraRfqPriceForTier('MSME')).toBe(1499);
+
+    // Attempted client price override should have no effect on server computation
+    const indPricing = computeExtraRfqPricing('INDIVIDUAL');
+    expect(indPricing.basePrice).toBe(149);
+    expect(indPricing.gstAmount).toBe(26.82);
+    expect(indPricing.totalAmount).toBe(175.82);
+
+    const rwaPricing = computeExtraRfqPricing('RWA');
+    expect(rwaPricing.basePrice).toBe(999);
+    expect(rwaPricing.gstAmount).toBe(179.82);
+    expect(rwaPricing.totalAmount).toBe(1178.82);
+
+    const msmePricing = computeExtraRfqPricing('MSME');
+    expect(msmePricing.basePrice).toBe(1499);
+    expect(msmePricing.gstAmount).toBe(269.82);
+    expect(msmePricing.totalAmount).toBe(1768.82);
+
+    // Context Isolation: An RWA user context cannot be assigned Individual extra RFQ price
+    const rwaOrgTier = resolveTierForOrgType('RWA');
+    expect(getExtraRfqPriceForTier(rwaOrgTier)).toBe(999);
+    expect(getExtraRfqPriceForTier(rwaOrgTier)).not.toBe(149);
+
+    // Context Isolation: An MSME user context cannot be assigned Individual or RWA extra RFQ price
+    const msmeOrgTier = resolveTierForOrgType('MSME');
+    expect(getExtraRfqPriceForTier(msmeOrgTier)).toBe(1499);
+    expect(getExtraRfqPriceForTier(msmeOrgTier)).not.toBe(149);
+    expect(getExtraRfqPriceForTier(msmeOrgTier)).not.toBe(999);
   });
 });

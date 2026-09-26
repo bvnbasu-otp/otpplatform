@@ -7,6 +7,7 @@ import {
   OTP_GST_RATE,
   DEFAULT_SUPPLIER_PLATFORM_FEE_RATE,
   PILOT_COHORT_COPY,
+  PERSONA_EXTRA_RFQ_PRICES,
   STANDARD_MONTHLY_RFQ_ALLOWANCE,
   SUBSCRIPTION_TIERS,
   SUPPLIER_FEE_POLICY,
@@ -14,15 +15,18 @@ import {
   calculateGst,
   calculateSupplierPlatformFeeWithGst,
   computeSubscriptionPricing,
+  computeExtraRfqPricing,
   evaluateRfqEntitlement,
   getCalendarMonthWindow,
+  getCalendarQuarterWindow,
+  getExtraRfqPriceForTier,
   resolveBillingMode,
   resolveTierForOrgType,
 } from './pricing-entitlement';
 
 describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
   describe('Subscription Tiers & Price Matrix', () => {
-    it('enforces canonical Individual tier pricing: ₹199/mo, ₹1,999/yr, 3 RFQs/mo (1 quarterly bonus on annual)', () => {
+    it('enforces canonical Individual tier pricing: ₹199/mo, ₹1,999/yr, 3 RFQs/mo (1 quarterly bonus on annual, Extra RFQ: ₹149)', () => {
       const tier = SUBSCRIPTION_TIERS.INDIVIDUAL;
       expect(tier.monthlyPrice).toBe(199);
       expect(tier.yearlyPrice).toBe(1999);
@@ -30,9 +34,10 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(tier.quarterlyBonusRfqs).toBe(1);
       expect(tier.yearlySavings).toBe(389);
       expect(tier.additionalRfqPrice).toBe(149);
+      expect(getExtraRfqPriceForTier('INDIVIDUAL')).toBe(149);
     });
 
-    it('enforces canonical RWA tier pricing: ₹1,499/mo, ₹14,999/yr, 3 RFQs/mo (1 quarterly bonus on annual)', () => {
+    it('enforces canonical RWA tier pricing: ₹1,499/mo, ₹14,999/yr, 3 RFQs/mo (1 quarterly bonus on annual, Extra RFQ: ₹999)', () => {
       const tier = SUBSCRIPTION_TIERS.RWA;
       expect(tier.monthlyPrice).toBe(1499);
       expect(tier.yearlyPrice).toBe(14999);
@@ -40,11 +45,12 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(tier.yearlyMonthlyRfqs).toBe(3);
       expect(tier.quarterlyBonusRfqs).toBe(1);
       expect(tier.yearlySavings).toBe(2989);
-      expect(tier.additionalRfqPrice).toBe(149);
+      expect(tier.additionalRfqPrice).toBe(999);
       expect(tier.popular).toBe(true);
+      expect(getExtraRfqPriceForTier('RWA')).toBe(999);
     });
 
-    it('enforces canonical MSME tier pricing: ₹1,999/mo, ₹19,999/yr, 3 RFQs/mo (1 quarterly bonus on annual)', () => {
+    it('enforces canonical MSME tier pricing: ₹1,999/mo, ₹19,999/yr, 3 RFQs/mo (1 quarterly bonus on annual, Extra RFQ: ₹1,499)', () => {
       const tier = SUBSCRIPTION_TIERS.MSME;
       expect(tier.monthlyPrice).toBe(1999);
       expect(tier.yearlyPrice).toBe(19999);
@@ -52,7 +58,8 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(tier.yearlyMonthlyRfqs).toBe(3);
       expect(tier.quarterlyBonusRfqs).toBe(1);
       expect(tier.yearlySavings).toBe(3989);
-      expect(tier.additionalRfqPrice).toBe(149);
+      expect(tier.additionalRfqPrice).toBe(1499);
+      expect(getExtraRfqPriceForTier('MSME')).toBe(1499);
     });
 
     it('enforces canonical Enterprise tier pricing: From ₹4,999/mo, From ₹49,999/yr', () => {
@@ -61,7 +68,7 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(tier.yearlyPrice).toBe(49999);
       expect(tier.monthlyRfqs).toBe(3);
       expect(tier.yearlySavings).toBe(9989);
-      expect(tier.additionalRfqPrice).toBe(149);
+      expect(tier.additionalRfqPrice).toBe(1499);
     });
 
     it('maps buyer organization types to the correct canonical tiers', () => {
@@ -88,11 +95,40 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(res.totalAmount).toBe(234.82);
     });
 
-    it('computes exact GST on Additional RFQ Top-up (₹149.00 -> GST ₹26.82, Total ₹175.82)', () => {
-      const res = calculateGst(ADDITIONAL_RFQ_TOPUP_BASE_PRICE);
+    it('computes exact GST on Individual Extra RFQ Top-up (₹149.00 -> GST ₹26.82, Total ₹175.82)', () => {
+      const res = calculateGst(149);
       expect(res.basePrice).toBe(149.0);
       expect(res.gstAmount).toBe(26.82);
       expect(res.totalAmount).toBe(175.82);
+
+      const computed = computeExtraRfqPricing('INDIVIDUAL');
+      expect(computed.basePrice).toBe(149.0);
+      expect(computed.gstAmount).toBe(26.82);
+      expect(computed.totalAmount).toBe(175.82);
+    });
+
+    it('computes exact GST on RWA Extra RFQ Top-up (₹999.00 -> GST ₹179.82, Total ₹1,178.82)', () => {
+      const res = calculateGst(999);
+      expect(res.basePrice).toBe(999.0);
+      expect(res.gstAmount).toBe(179.82);
+      expect(res.totalAmount).toBe(1178.82);
+
+      const computed = computeExtraRfqPricing('RWA');
+      expect(computed.basePrice).toBe(999.0);
+      expect(computed.gstAmount).toBe(179.82);
+      expect(computed.totalAmount).toBe(1178.82);
+    });
+
+    it('computes exact GST on MSME Extra RFQ Top-up (₹1,499.00 -> GST ₹269.82, Total ₹1,768.82)', () => {
+      const res = calculateGst(1499);
+      expect(res.basePrice).toBe(1499.0);
+      expect(res.gstAmount).toBe(269.82);
+      expect(res.totalAmount).toBe(1768.82);
+
+      const computed = computeExtraRfqPricing('MSME');
+      expect(computed.basePrice).toBe(1499.0);
+      expect(computed.gstAmount).toBe(269.82);
+      expect(computed.totalAmount).toBe(1768.82);
     });
 
     it('computes exact GST on RWA monthly plan (₹1,499.00 -> GST ₹269.82, Total ₹1,768.82)', () => {
@@ -259,7 +295,7 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(res.isBonusApplied).toBe(true);
     });
 
-    it('blocks RFQ creation when monthly quota is exhausted (3/3 used)', () => {
+    it('blocks RFQ creation when monthly quota is exhausted (3/3 used) with persona-specific extra RFQ top-up price in rejection reason', () => {
       const res = evaluateRfqEntitlement({
         tierId: 'RWA',
         plan: 'MONTHLY',
@@ -275,7 +311,31 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(res.totalAvailableRfqs).toBe(0);
       expect(res.canCreateRfq).toBe(false);
       expect(res.rejectionReason).toContain('Entitlement limit reached');
-      expect(res.rejectionReason).toContain('₹149 + GST');
+      expect(res.rejectionReason).toContain('₹999 + GST');
+
+      const indRes = evaluateRfqEntitlement({
+        tierId: 'INDIVIDUAL',
+        plan: 'MONTHLY',
+        subscriptionStatus: 'ACTIVE',
+        subscriptionExpiresAt: '2026-10-15T23:59:59Z',
+        rfqsUsedInCurrentMonth: 3,
+        additionalPurchasedCredits: 0,
+        billingMode: 'LIVE',
+        now: '2026-09-20T12:00:00Z',
+      });
+      expect(indRes.rejectionReason).toContain('₹149 + GST');
+
+      const msmeRes = evaluateRfqEntitlement({
+        tierId: 'MSME',
+        plan: 'MONTHLY',
+        subscriptionStatus: 'ACTIVE',
+        subscriptionExpiresAt: '2026-10-15T23:59:59Z',
+        rfqsUsedInCurrentMonth: 3,
+        additionalPurchasedCredits: 0,
+        billingMode: 'LIVE',
+        now: '2026-09-20T12:00:00Z',
+      });
+      expect(msmeRes.rejectionReason).toContain('₹1,499 + GST');
     });
 
     it('allows RFQ creation via additional top-up credits when monthly quota is exhausted', () => {
@@ -339,6 +399,45 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(res.isSubscriptionActive).toBe(false);
       expect(res.canCreateRfq).toBe(false);
       expect(res.rejectionReason).toContain('Prepaid subscription plan has expired');
+    });
+
+    it('enforces that quarterly bonuses on annual plans are consumed before paid extra RFQ top-up is needed', () => {
+      // Annual MSME subscriber with 3 monthly quota and 1 quarterly bonus
+      // Step 1: Use 3 monthly quota
+      const res3 = evaluateRfqEntitlement({
+        tierId: 'MSME',
+        plan: 'YEARLY',
+        subscriptionStatus: 'ACTIVE',
+        subscriptionExpiresAt: '2027-09-01T00:00:00Z',
+        rfqsUsedInCurrentMonth: 3,
+        quarterlyBonusUsedInCurrentQuarter: 0,
+        additionalPurchasedCredits: 0,
+        billingMode: 'LIVE',
+        now: '2026-09-15T12:00:00Z',
+      });
+      // Monthly remaining is 0, but quarterly bonus is 1 remaining, so total available is 1 and can create RFQ
+      expect(res3.monthlyRemaining).toBe(0);
+      expect(res3.quarterlyBonusRemaining).toBe(1);
+      expect(res3.totalAvailableRfqs).toBe(1);
+      expect(res3.canCreateRfq).toBe(true);
+
+      // Step 2: Use quarterly bonus (1/1 used)
+      const res4 = evaluateRfqEntitlement({
+        tierId: 'MSME',
+        plan: 'YEARLY',
+        subscriptionStatus: 'ACTIVE',
+        subscriptionExpiresAt: '2027-09-01T00:00:00Z',
+        rfqsUsedInCurrentMonth: 3,
+        quarterlyBonusUsedInCurrentQuarter: 1,
+        additionalPurchasedCredits: 0,
+        billingMode: 'LIVE',
+        now: '2026-09-15T12:00:00Z',
+      });
+      expect(res4.monthlyRemaining).toBe(0);
+      expect(res4.quarterlyBonusRemaining).toBe(0);
+      expect(res4.totalAvailableRfqs).toBe(0);
+      expect(res4.canCreateRfq).toBe(false);
+      expect(res4.rejectionReason).toContain('₹1,499 + GST');
     });
 
     it('allows RFQ creation using purchased top-up credits even if subscription has expired', () => {

@@ -42,7 +42,30 @@ export interface SubscriptionPlanDefinition {
   popular?: boolean;
 }
 
-export const ADDITIONAL_RFQ_TOPUP_BASE_PRICE = 149;
+export const ADDITIONAL_RFQ_TOPUP_BASE_PRICE = 149; // Default fallback for Individual tier
+
+/**
+ * Authoritative persona-specific Extra RFQ Top-Up Pricing Matrix (Base in INR, pre-GST)
+ * - INDIVIDUAL: ₹149 + GST
+ * - RWA: ₹999 + GST
+ * - MSME: ₹1,499 + GST
+ * - ENTERPRISE: ₹1,499 + GST (Legacy/fallback)
+ */
+export const PERSONA_EXTRA_RFQ_PRICES: Record<SubscriptionTierId, number> = {
+  INDIVIDUAL: 149,
+  RWA: 999,
+  MSME: 1499,
+  ENTERPRISE: 1499,
+  TIER_1_MSME: 149,
+  TIER_2_ENTERPRISE: 999,
+};
+
+/**
+ * Resolves persona-specific Extra RFQ Top-Up base price (pre-GST)
+ */
+export function getExtraRfqPriceForTier(tierId: SubscriptionTierId = 'INDIVIDUAL'): number {
+  return PERSONA_EXTRA_RFQ_PRICES[tierId] ?? ADDITIONAL_RFQ_TOPUP_BASE_PRICE;
+}
 export const DEFAULT_GST_RATE_PERCENT = 18.0;
 export const OTP_GST_RATE = DEFAULT_GST_RATE_PERCENT; // Authoritative OTP Platform Tax Configuration (18% GST)
 export const DEFAULT_SUPPLIER_PLATFORM_FEE_RATE = 0.5; // 0.50%
@@ -130,7 +153,7 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     yearlyMonthlyRfqs: INDIVIDUAL_MONTHLY_RFQ_ALLOWANCE, // 3 normal monthly RFQs
     quarterlyBonusRfqs: 1, // +1 additional RFQ per quarter (expires at quarter end, does not accumulate)
     yearlySavings: 389, // (199 * 12) - 1999 = 2388 - 1999 = 389
-    additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
+    additionalRfqPrice: PERSONA_EXTRA_RFQ_PRICES.INDIVIDUAL, // ₹149 + GST
     features: [
       '3 High-intent RFQs included per calendar month',
       '1 Bonus RFQ per quarter on annual plan (non-accumulating, quarterly expiry)',
@@ -156,7 +179,7 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
     quarterlyBonusRfqs: 1,
     yearlySavings: 2989, // (1499 * 12) - 14999 = 17988 - 14999 = 2989
-    additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
+    additionalRfqPrice: PERSONA_EXTRA_RFQ_PRICES.RWA, // ₹999 + GST
     popular: true,
     features: [
       '3 High-intent RFQs included per calendar month (+1 Quarterly Bonus on annual plan)',
@@ -181,7 +204,7 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
     quarterlyBonusRfqs: 1,
     yearlySavings: 3989, // (1999 * 12) - 19999 = 23988 - 19999 = 3989
-    additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
+    additionalRfqPrice: PERSONA_EXTRA_RFQ_PRICES.MSME, // ₹1,499 + GST
     features: [
       '3 High-intent RFQs included per calendar month (+1 Quarterly Bonus on annual plan)',
       'Multi-department procurement workflow & role-based approval controls',
@@ -205,7 +228,7 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
     quarterlyBonusRfqs: 1,
     yearlySavings: 9989, // (4999 * 12) - 49999 = 59988 - 49999 = 9989
-    additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
+    additionalRfqPrice: PERSONA_EXTRA_RFQ_PRICES.ENTERPRISE,
     features: [
       'Custom RFQ allowances tailored to multi-unit procurement volume',
       'Configurable multi-tier financial threshold approval matrices',
@@ -230,7 +253,7 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
     quarterlyBonusRfqs: 1,
     yearlySavings: 389,
-    additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
+    additionalRfqPrice: PERSONA_EXTRA_RFQ_PRICES.TIER_1_MSME,
     features: [
       '3 High-intent RFQs included per calendar month',
       'Protected supplier quoting & fair comparison matrix',
@@ -254,7 +277,7 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
     quarterlyBonusRfqs: 1,
     yearlySavings: 2989,
-    additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
+    additionalRfqPrice: PERSONA_EXTRA_RFQ_PRICES.TIER_2_ENTERPRISE,
     popular: true,
     features: [
       '3 High-intent RFQs included per calendar month',
@@ -338,8 +361,10 @@ export function computeSubscriptionPricing(
   const durationDays = isYearly ? tier.yearlyDurationDays : tier.monthlyDurationDays;
   const monthlyRfqQuota = isYearly ? tier.yearlyMonthlyRfqs : tier.monthlyRfqs;
   const savings = isYearly ? tier.yearlySavings : 0;
+  const additionalRfqPrice = tier.additionalRfqPrice;
 
   const gst = calculateGst(basePrice, gstRatePercent);
+  const additionalRfqGst = calculateGst(additionalRfqPrice, gstRatePercent);
 
   return {
     tierId: tier.tierId,
@@ -352,10 +377,48 @@ export function computeSubscriptionPricing(
     durationDays,
     monthlyRfqQuota,
     savings,
+    additionalRfqPrice,
+    additionalRfqGstAmount: additionalRfqGst.gstAmount,
+    additionalRfqTotalAmount: additionalRfqGst.totalAmount,
     formattedBase: gst.formattedBase,
     formattedGst: gst.formattedGst,
     formattedTotal: gst.formattedTotal,
+    formattedAdditionalRfqTotal: additionalRfqGst.formattedTotal,
     label: `${gst.formattedTotal} / ${isYearly ? 'year' : 'month'} (incl. ${gst.gstRatePercent}% GST)`,
+  };
+}
+
+/**
+ * Computes exact persona-specific Extra RFQ Top-Up pricing with 18% GST breakdown.
+ * Server-authoritative: Client-supplied prices or tampering are strictly ignored.
+ */
+export interface ExtraRfqPricingResult {
+  tierId: SubscriptionTierId;
+  basePrice: number;
+  gstRatePercent: number;
+  gstAmount: number;
+  totalAmount: number;
+  formattedBase: string;
+  formattedGst: string;
+  formattedTotal: string;
+}
+
+export function computeExtraRfqPricing(
+  tierId: SubscriptionTierId = 'INDIVIDUAL',
+  gstRatePercent: number = DEFAULT_GST_RATE_PERCENT,
+): ExtraRfqPricingResult {
+  const basePrice = getExtraRfqPriceForTier(tierId);
+  const gst = calculateGst(basePrice, gstRatePercent);
+
+  return {
+    tierId,
+    basePrice: gst.basePrice,
+    gstRatePercent: gst.gstRatePercent,
+    gstAmount: gst.gstAmount,
+    totalAmount: gst.totalAmount,
+    formattedBase: gst.formattedBase,
+    formattedGst: gst.formattedGst,
+    formattedTotal: gst.formattedTotal,
   };
 }
 
@@ -537,11 +600,12 @@ export function evaluateRfqEntitlement(
     totalAvailableRfqs = monthlyRemaining + quarterlyBonusRemaining + additionalCredits;
     canCreateRfq = totalAvailableRfqs > 0;
     if (!canCreateRfq) {
+      const topUpPrice = tier.additionalRfqPrice;
       rejectionReason = `Entitlement limit reached (${usedThisMonth}/${monthlyAllowance} monthly RFQs used in ${calendarMonth.label}${
         quarterlyBonusAllowance > 0
           ? `, quarterly bonus ${quarterlyUsed}/${quarterlyBonusAllowance} used in ${calendarQuarter.label}`
           : ''
-      }). Recharge an additional RFQ top-up (₹149 + GST) or wait for reset.`;
+      }). Recharge an additional RFQ top-up (₹${topUpPrice.toLocaleString('en-IN')} + GST) or wait for reset.`;
     }
   } else {
     // If subscription is expired, can only use purchased additional credits
@@ -615,8 +679,8 @@ export const WHY_5_RFQS_EXPLANATION = {
       description: 'Eliminates noisy broadcast spam, ensuring regional suppliers submit sharp, competitive bids within 30 minutes.',
     },
     {
-      title: 'Instant Additional Top-Ups (₹149 + GST)',
-      description: 'Need more? Uncapped ₹149 (+ GST) top-up credits are available anytime for surge or emergency procurement.',
+      title: 'Instant Additional Top-Ups (From ₹149 + GST)',
+      description: 'Need more? Persona-tailored top-up credits (Individual ₹149, RWA ₹999, MSME ₹1,499 + GST) are available anytime for surge or emergency procurement.',
     },
   ],
 };

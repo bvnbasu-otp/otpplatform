@@ -119,7 +119,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Top-Ups:</strong> ₹{indTier.additionalRfqPrice} per additional RFQ</span>
+                  <span><strong>Top-Ups:</strong> ₹{indTier.additionalRfqPrice} per additional RFQ (+ GST)</span>
                 </li>
               </ul>
             </div>
@@ -194,6 +194,10 @@ export function PricingPage() {
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                   <span><strong>Compliance:</strong> Immutable AGM audit logs &amp; legal society records</span>
                 </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span><strong>Top-Ups:</strong> ₹{rwaTier.additionalRfqPrice.toLocaleString('en-IN')} per additional RFQ (+ GST)</span>
+                </li>
               </ul>
             </div>
 
@@ -263,6 +267,10 @@ export function PricingPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                   <span><strong>Integration:</strong> GST split, Tally / Zoho ERP export &amp; double-entry ledger</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                  <span><strong>Top-Ups:</strong> ₹{msmeTier.additionalRfqPrice.toLocaleString('en-IN')} per additional RFQ (+ GST)</span>
                 </li>
               </ul>
             </div>

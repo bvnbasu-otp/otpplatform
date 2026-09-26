@@ -31,10 +31,9 @@ Supporting Customer Message      : "Compare competing supplier quotes and make b
 Protected Assets PA-01 to PA-10  : 100% INTACT AND CRYPTOGRAPHICALLY ENFORCED
 Canonical Buyer Personas         : INDIVIDUAL, RWA, MSME (Enterprise strictly retired, fails closed)
 Authoritative Frozen Pricing     : 100% ENFORCED across domain, services, UI components & tests
-  • Individual Buyer             : ₹199/month + GST (₹234.82) | ₹1,999/year + GST (₹2,358.82)
-  • RWA / Housing Society        : ₹1,499/month + GST (₹1,768.82) | ₹14,999/year + GST (₹17,698.82)
-  • MSME / Growing Business      : ₹1,999/month + GST (₹2,358.82) | ₹19,999/year + GST (₹23,598.82)
-  • Additional RFQ Top-Up        : ₹149 + GST (₹175.82)
+  • Individual Buyer             : ₹199/month + GST (₹234.82) | ₹1,999/year + GST (₹2,358.82) | Extra RFQ: ₹149 + GST (₹175.82)
+  • RWA / Housing Society        : ₹1,499/month + GST (₹1,768.82) | ₹14,999/year + GST (₹17,698.82) | Extra RFQ: ₹999 + GST (₹1,178.82)
+  • MSME / Growing Business      : ₹1,999/month + GST (₹2,358.82) | ₹19,999/year + GST (₹23,598.82) | Extra RFQ: ₹1,499 + GST (₹1,768.82)
   • Monthly RFQ Entitlement      : 3 RFQs/month (Annual: 3 RFQs/month + 1 quarterly bonus RFQ)
   • Referral Incentive Law       : 10% on actual first subscription payment (e.g. ₹19.90 / ₹199.90)
   • Non-Cash Wallet Invariant    : Subscription purchase & renewal only (0 cash withdrawal, 0 GMV mix)
@@ -80,20 +79,19 @@ No public marketing text contains raw database or infrastructure implementation 
 
 All subscription tiers, allowances, and billing formulas are frozen and locked across `@otp/domain`, `@otp/services`, and `apps/web`.
 
-| Buyer Persona | Billing Cycle | Base Price (INR) | GST (18.00%) | Total Payable | Monthly RFQ Allowance | Bonus Entitlement | Savings vs Monthly | 10% Referral Reward |
-|:---|:---|:---|:---|:---|:---|:---|:---|:---|
-| **INDIVIDUAL** | Monthly | ₹199.00 | ₹35.82 | **₹234.82** | 3 RFQs / month | None | Baseline | ₹19.90 |
-| **INDIVIDUAL** | Yearly | ₹1,999.00 | ₹359.82 | **₹2,358.82** | 3 RFQs / month | +1 RFQ / quarter (expires Q-end) | ₹389.00 (16.3%) | ₹199.90 |
-| **RWA / SOCIETY** | Monthly | ₹1,499.00 | ₹269.82 | **₹1,768.82** | 3 RFQs / month | None | Baseline | ₹149.90 |
-| **RWA / SOCIETY** | Yearly | ₹14,999.00 | ₹2,699.82 | **₹17,698.82** | 3 RFQs / month | +1 RFQ / quarter (expires Q-end) | ₹2,989.00 (16.6%) | ₹1,499.90 |
-| **MSME / BUSINESS** | Monthly | ₹1,999.00 | ₹359.82 | **₹2,358.82** | 3 RFQs / month | None | Baseline | ₹199.90 |
-| **MSME / BUSINESS** | Yearly | ₹19,999.00 | ₹3,599.82 | **₹23,598.82** | 3 RFQs / month | +1 RFQ / quarter (expires Q-end) | ₹3,989.00 (16.6%) | ₹1,999.90 |
-| **RFQ TOP-UP** | Per Credit | ₹149.00 | ₹26.82 | **₹175.82** | +1 RFQ (Instant) | Active Subscription Required | N/A | N/A |
+| Buyer Persona | Billing Cycle | Base Price (INR) | GST (18.00%) | Total Payable | Monthly RFQ Allowance | Bonus Entitlement | Extra RFQ Price (+GST) | Savings vs Monthly | 10% Referral Reward |
+|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
+| **INDIVIDUAL** | Monthly | ₹199.00 | ₹35.82 | **₹234.82** | 3 RFQs / month | None | ₹149.00 (₹175.82) | Baseline | ₹19.90 |
+| **INDIVIDUAL** | Yearly | ₹1,999.00 | ₹359.82 | **₹2,358.82** | 3 RFQs / month | +1 RFQ / quarter (expires Q-end) | ₹149.00 (₹175.82) | ₹389.00 (16.3%) | ₹199.90 |
+| **RWA / SOCIETY** | Monthly | ₹1,499.00 | ₹269.82 | **₹1,768.82** | 3 RFQs / month | None | ₹999.00 (₹1,178.82) | Baseline | ₹149.90 |
+| **RWA / SOCIETY** | Yearly | ₹14,999.00 | ₹2,699.82 | **₹17,698.82** | 3 RFQs / month | +1 RFQ / quarter (expires Q-end) | ₹999.00 (₹1,178.82) | ₹2,989.00 (16.6%) | ₹1,499.90 |
+| **MSME / BUSINESS** | Monthly | ₹1,999.00 | ₹359.82 | **₹2,358.82** | 3 RFQs / month | None | ₹1,499.00 (₹1,768.82) | Baseline | ₹199.90 |
+| **MSME / BUSINESS** | Yearly | ₹19,999.00 | ₹3,599.82 | **₹23,598.82** | 3 RFQs / month | +1 RFQ / quarter (expires Q-end) | ₹1,499.00 (₹1,768.82) | ₹3,989.00 (16.6%) | ₹1,999.90 |
 
 ### 3.1. Entitlement Rules
 1. **Calendar-Month Quotas:** Standard monthly allowances (3 RFQs) activate on the 1st day of the calendar month (00:00:00 UTC) and expire at month end (23:59:59 UTC). Unused monthly subscription quotas do not roll over.
 2. **Annual Quarterly Bonus RFQs:** Annual subscribers receive 1 bonus RFQ per calendar quarter (Q1: Jan-Mar, Q2: Apr-Jun, Q3: Jul-Sep, Q4: Oct-Dec). Bonus credits expire at the end of the respective quarter without accumulation.
-3. **Purchased Top-Up RFQs:** RFQs purchased individually at ₹149 + GST remain valid as long as the organization maintains an active subscription status (`ACTIVE`, `GRACE`, or `TRIAL`).
+3. **Purchased Top-Up RFQs (Persona-Specific):** Extra RFQs are strictly priced according to buyer persona (Individual: ₹149 + GST, RWA: ₹999 + GST, MSME: ₹1,499 + GST) and become available once active monthly and quarterly bonus entitlements are exhausted. Top-up credits remain valid as long as the organization maintains an active subscription status (`ACTIVE`, `GRACE`, or `TRIAL`).
 4. **Referral Reward Law:** Referral rewards are strictly computed at 10% of the *actual first successful payment* made by the referee. Self-referral is cryptographically prohibited.
 5. **Non-Cash Wallet Restriction:** All earned referral rewards and non-cash credits are strictly limited to subscription purchase, subscription renewal, and RFQ top-up credits. Cash withdrawals are physically blocked at the database constraint level.
 
