@@ -83,7 +83,7 @@ export async function fetchSystemHealth(options?: {
     // 4. If RPC failed, get live real counts directly from database tables (NO mock/fake numbers) with strict mode filtering
     if (error || !data) {
       let reqQ = supabase.from('requirements').select('*', { count: 'exact', head: true });
-      let rfqQ = supabase.from('rfqs').select('*', { count: 'exact', head: true });
+      let rfqQ = supabase.from('rfqs').select('id', { count: 'exact', head: true });
       let quoteQ = supabase.from('quotes').select('*', { count: 'exact', head: true });
       let poQ = supabase.from('purchase_orders').select('*', { count: 'exact', head: true });
       let woQ = supabase.from('work_orders').select('*', { count: 'exact', head: true });

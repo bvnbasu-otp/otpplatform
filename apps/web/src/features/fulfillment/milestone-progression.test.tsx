@@ -134,12 +134,21 @@ describe('Milestone progression 0 → 25 → 50 → 75 → 100 (deliberate only)
       if (!res.ok) expect(res.error).toMatch(/already updated/i);
     });
 
-    it('marks COMPLETED only on the deliberate 75 → 100 step', async () => {
+    it('records 100% on the deliberate 75 → 100 step but leaves completion to buyer inspection', async () => {
       mockDb(75);
       const res = await updateWorkOrderProgress('wo-1', 100);
       expect(res).toEqual({ ok: true });
-      expect(updatePatches[0]).toMatchObject({ progress_percent: 100, status: 'COMPLETED' });
-      expect(typeof updatePatches[0].completed_at).toBe('string');
+      expect(updatePatches[0]).toMatchObject({ progress_percent: 100, status: 'IN_PROGRESS' });
+      expect(updatePatches[0].status).not.toBe('COMPLETED');
+      expect(updatePatches[0].completed_at).toBeUndefined();
+      expect(updateChain.eq).toHaveBeenCalledWith('progress_percent', 75);
+    });
+
+    it('the supplier progress API never writes COMPLETED or completed_at', () => {
+      const src = readFileSync(resolve(__dirname, 'api/work-orders.ts'), 'utf8');
+      const fn = src.slice(src.indexOf('export async function updateWorkOrderProgress'), src.indexOf('export async function acceptDeliveryInspection'));
+      expect(fn).not.toMatch(/'COMPLETED'/);
+      expect(fn).not.toMatch(/completed_at/);
     });
 
     it('fails when the work order cannot be read', async () => {

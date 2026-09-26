@@ -1477,8 +1477,12 @@ export async function applyTdsWithholdingRpc(params: {
   panStatus?: string;
   isLowerDeduction?: boolean;
   lowerDeductionCert?: string | null;
-}): Promise<{ ok: true; deductionId: string; tdsAmount?: number } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; deductionId: string; tdsAmount?: number; taxableAmount?: number; idempotentReplay: boolean }
+  | { ok: false; error: string }
+> {
   try {
+    // The server derives the taxable base from the stored invoice; taxableAmount is informational.
     const { data, error } = await supabase.rpc('apply_tds_withholding_atomic', {
       p_organization_id: params.organizationId,
       p_invoice_id: params.invoiceId,
@@ -1493,10 +1497,13 @@ export async function applyTdsWithholdingRpc(params: {
 
     if (error) return { ok: false, error: error.message };
     const recorded = Number(data?.tds_deduction?.tds_amount);
+    const base = Number(data?.taxable_amount ?? data?.tds_deduction?.taxable_amount);
     return {
       ok: true,
       deductionId: data?.tds_deduction_id || data?.id,
       tdsAmount: Number.isFinite(recorded) ? recorded : undefined,
+      taxableAmount: Number.isFinite(base) ? base : undefined,
+      idempotentReplay: data?.idempotent_replay === true,
     };
   } catch (err: any) {
     return { ok: false, error: err?.message || 'Failed to apply TDS withholding' };

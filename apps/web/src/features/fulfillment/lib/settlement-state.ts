@@ -287,7 +287,7 @@ export interface InvoiceBalanceRow {
   gstStated: boolean;
   tds: number;
   paid: number;
-  /** Balance due on the invoice as stored by the ledger (gross − allocations). */
+  /** Gross less allocated payments, before TDS (gross − allocations). */
   outstanding: number;
   /** What the buyer still remits directly: outstanding − live TDS withheld. */
   netPayable: number;
@@ -312,8 +312,11 @@ export function buildInvoiceBalanceRows(
 ): { rows: InvoiceBalanceRow[]; totals: InvoiceBalanceTotals } {
   const rows = invoices.filter(isLiveInvoice).map((inv) => {
     const base = deriveInvoiceTdsBase(inv);
-    const outstanding = balanceOf(inv);
-    const paid = inv.paidAmount != null ? Number(inv.paidAmount) || 0 : Math.max(0, base.grossAmount - outstanding);
+    // The stored balance_due already nets live TDS, so the pre-TDS figure comes
+    // from gross − paid whenever the ledger reports paid_amount.
+    const hasPaid = inv.paidAmount != null;
+    const paid = hasPaid ? Number(inv.paidAmount) || 0 : Math.max(0, base.grossAmount - balanceOf(inv));
+    const outstanding = hasPaid ? Math.max(0, base.grossAmount - paid) : balanceOf(inv);
     const tds = r2(Math.max(0, tdsByInvoice[inv.id] ?? 0));
     return {
       id: inv.id,

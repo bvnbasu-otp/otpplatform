@@ -28,10 +28,10 @@ function stripComments(s: string): string {
 }
 
 describe('Migration 00198 — synthetic quote & simulator isolation (static SQL contract)', () => {
-  it('is the highest migration and the chain is contiguous 00001..00198', () => {
+  it('sits at position 198 of the contiguous chain 00001..00199', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
-    expect(files.length).toBe(198);
-    expect(files[files.length - 1]).toBe(FILE);
+    expect(files.length).toBe(199);
+    expect(files[197]).toBe(FILE);
     files.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));
   });
 

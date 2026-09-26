@@ -81,8 +81,31 @@ describe('TDS withholding panel (GST-exclusive base, single deduction)', () => {
     const res = await applyTdsWithholdingRpc({
       organizationId: 'org-1', invoiceId: 'inv-1', section: '194C', taxableAmount: 100000, tdsRate: 2,
     });
-    expect(res).toEqual({ ok: true, deductionId: 'd9', tdsAmount: 2000 });
+    expect(res).toEqual({ ok: true, deductionId: 'd9', tdsAmount: 2000, idempotentReplay: false });
     expect(vi.mocked(supabase.rpc).mock.calls.at(-1)?.[1]).toMatchObject({ p_taxable_amount: 100000, p_tds_rate: 2 });
+  });
+
+  it('applyTdsWithholdingRpc reports the server-derived base and an idempotent replay', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: {
+        ok: true,
+        idempotent_replay: true,
+        tds_deduction_id: 'd1',
+        taxable_amount: 100000,
+        tds_deduction: { tds_amount: 2000, taxable_amount: 100000 },
+      },
+      error: null,
+    } as any);
+    const res = await applyTdsWithholdingRpc({
+      organizationId: 'org-1', invoiceId: 'inv-1', section: '194C', taxableAmount: 118000, tdsRate: 2,
+    });
+    expect(res).toEqual({ ok: true, deductionId: 'd1', tdsAmount: 2000, taxableAmount: 100000, idempotentReplay: true });
+  });
+
+  it('the panel tells the buyer when TDS was already recorded instead of claiming a new deduction', () => {
+    const src = readFileSync(resolve(__dirname, 'components/TdsWithholdingPanel.tsx'), 'utf8');
+    expect(src).toMatch(/res\.idempotentReplay/);
+    expect(src).toMatch(/already recorded/);
   });
 
   it('InvoicePaymentPanel passes the stored GST split to the TDS panel', () => {

@@ -9,7 +9,7 @@
   - Verifies current git HEAD (optionally matches expected -CertifiedSha)
   - Verifies current branch is 'main'
   - Verifies clean working tree (no uncommitted or untracked changes)
-  - Verifies database migration ceiling (strictly locks ceiling <= 197)
+  - Verifies database migration ceiling (strictly locks ceiling <= 199)
   - Fetches origin/main without mutating local state
   - Shows side-by-side local and remote SHA, commit message, and commit count
   - Requires explicit interactive 'PROMOTE' confirmation before push
@@ -36,7 +36,7 @@ param(
   [string]$CertifiedSha = "",
 
   [Parameter(Mandatory = $false, HelpMessage = "Maximum allowed migration number. Strictly enforced against supabase/migrations/.")]
-  [int]$MigrationCeiling = 197,
+  [int]$MigrationCeiling = 199,
 
   [Parameter(Mandatory = $false, HelpMessage = "Git remote name. Defaults to 'origin'.")]
   [string]$Remote = "origin",

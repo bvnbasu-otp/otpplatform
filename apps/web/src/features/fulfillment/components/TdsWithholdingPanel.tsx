@@ -80,6 +80,11 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
       setErrorMsg(res.error);
     } else {
       const recorded = res.tdsAmount ?? preview.statutoryTdsAmount;
+      if (res.idempotentReplay) {
+        setSuccessMsg(`TDS of ₹${recorded.toLocaleString('en-IN')} was already recorded for this invoice.`);
+        if (onDeductionApplied) onDeductionApplied();
+        return;
+      }
       setSuccessMsg(`TDS of ₹${recorded.toLocaleString('en-IN')} (${preview.tdsRate}%) recorded.`);
       if (onDeductionApplied) onDeductionApplied();
     }

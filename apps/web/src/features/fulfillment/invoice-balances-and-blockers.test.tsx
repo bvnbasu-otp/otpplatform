@@ -34,6 +34,19 @@ describe('buildInvoiceBalanceRows (invoice → GST → TDS → paid → outstand
     expect(totals).toEqual({ gross: 177000, gst: 27000, tds: 2000, paid: 50000, outstanding: 127000, netPayable: 125000, unallocatedAdvances: 10000 });
   });
 
+  it('does not subtract TDS twice when the server balance already nets it', () => {
+    const netted = { ...inv1, balanceDue: 66000 };
+    const { rows } = buildInvoiceBalanceRows([netted], tds, 0);
+    expect(rows[0]).toMatchObject({ paid: 50000, tds: 2000, outstanding: 68000, netPayable: 66000 });
+    expect(rows[0]?.netPayable).toBe(netted.balanceDue);
+  });
+
+  it('an invoice settled by payment plus TDS shows nothing left to pay', () => {
+    const settled = { ...inv1, status: 'PAID', paidAmount: 116000, balanceDue: 0 };
+    const { rows } = buildInvoiceBalanceRows([settled], tds, 0);
+    expect(rows[0]).toMatchObject({ paid: 116000, tds: 2000, outstanding: 2000, netPayable: 0 });
+  });
+
   it('opens the panel on the invoice the buyer must act on, not merely the latest', () => {
     const paidLatest = { id: 'i9', invoiceNumber: 'INV-009', status: 'PAID', amount: 10, balanceDue: 0 };
     expect(pickActionableInvoice([inv2, inv1, paidLatest])?.id).toBe('i1');

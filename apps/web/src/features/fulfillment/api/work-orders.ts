@@ -214,14 +214,14 @@ export async function updateWorkOrderProgress(
   const check = validateMilestoneTransition(fromPercent, progressPercent);
   if (!check.ok) return check;
 
-  const status: WorkOrderStatus = progressPercent >= 100 ? 'COMPLETED' : 'IN_PROGRESS';
-  const now = new Date().toISOString();
+  // COMPLETED is set only by the buyer's accept_delivery_inspection sign-off;
+  // the server rejects any other path.
+  const status: WorkOrderStatus = 'IN_PROGRESS';
   const patch: Record<string, unknown> = {
     progress_percent: progressPercent,
     status,
-    updated_at: now,
+    updated_at: new Date().toISOString(),
   };
-  if (status === 'COMPLETED') patch.completed_at = now;
 
   const { data: updated, error } = await supabase
     .from('work_orders')
