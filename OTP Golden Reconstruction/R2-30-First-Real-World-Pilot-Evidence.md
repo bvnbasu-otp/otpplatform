@@ -2,7 +2,7 @@
 
 **Product:** OTP — Open Trade & Procurement  
 **Stage:** R2-30 — Real-World Pilot Evidence Reconciliation & Surgical Closure  
-**Baseline Git Commit:** `51f93e0` (`51f93e05f910e8380c4087b4a09989186472b518`)  
+**Baseline Git Commit:** `a06551a` (`a06551afefbe83b4fcacb23edd45605245df7c5e`)  
 **Execution Date:** Saturday, September 26, 2026  
 **Auditor Mode:** Master Lead Auditor & Golden Reconstruction Architect  
 **Operating Mode:** 3-Month Production-Like Controlled Pilot Sandbox  
@@ -27,7 +27,7 @@ $$\mathbf{\color{goldenrod}\text{🟡 PILOT LIVE — INTEGRATION PARTIALLY ACTIV
 ====================================================================================================
   🛡️  OTP PLATFORM — STAGE R2-30 RECONCILED EVIDENCE & TRUTHFULNESS VERDICT
 ====================================================================================================
-Baseline Commit                  : 51f93e0 (Reconciliation starting commit)
+Baseline Commit                  : a06551a (Reconciliation starting commit)
 Audit Execution Date             : 26-09-2026
 Database Migration Ceiling       : Strictly Locked at 00197 (197 migrations intact, 0 unapplied)
 Protected Assets PA-01 to PA-10  : 100% INTACT AND ENFORCED
@@ -62,7 +62,7 @@ RECONCILED STAGE R2-30 VERDICT   : 🟡 PILOT LIVE — INTEGRATION PARTIALLY ACT
 ## 2. PRE-FLIGHT BASELINE & INTEGRITY AUDIT
 
 ### 2.1. Git Working Tree Baseline
-- **Verified Commit:** `51f93e05f910e8380c4087b4a09989186472b518` (matches `51f93e0`)
+- **Verified Commit:** `a06551afefbe83b4fcacb23edd45605245df7c5e` (matches `a06551a`)
 - **Branch:** `main`
 - **Working Tree State:** Clean (`nothing to commit, working tree clean`)
 - **Isolation Invariant:** Local execution only. Zero git push to remote origin, zero Vercel production deployment, zero production DB mutations.
