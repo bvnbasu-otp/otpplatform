@@ -67,3 +67,16 @@ export {
   SupabaseBuyerAddressRepository,
   SupabaseOrgRoleLifecycleRepository,
 } from './repositories/index';
+
+export {
+  CANONICAL_DATABASE_TABLE_INVENTORY,
+  PRODUCTION_RESET_CONFIRMATION_TOKEN,
+  buildFreshStartResetPlan,
+  validatePostResetIntegrity,
+} from './reset/clean-start-reset';
+export type {
+  DatabaseTableInventory,
+  ResetExecutionPlan,
+  PostResetIntegrityCheckResult,
+} from './reset/clean-start-reset';
+

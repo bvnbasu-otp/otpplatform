@@ -86,5 +86,7 @@ export * from './types/track-milestone';
 export * from './types/financial-settlement-controls';
 export * from './types/operational-oversight';
 export * from './standards/indian-procurement-standards';
+export * from './types/referral-incentive';
+export * from './types/funnel-analytics';
 
 
