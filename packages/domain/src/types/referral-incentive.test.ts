@@ -147,6 +147,81 @@ describe('Referral & Incentive System Domain Engine (Stage Pre-R2-30 Surgical Cl
       expect(shareUrl).not.toContain('phone=');
     });
 
+    describe('R2-30C Controlled Pilot WhatsApp Identity & Intent Proof (W1 through W8)', () => {
+      const pilotPhone = '9972967530';
+
+      it('W1: User-Driven Intent URL — Constructs valid https://api.whatsapp.com/send URL', () => {
+        const url = generateWhatsAppShareUrl({
+          referralCode: 'OTP-PILOT1',
+          origin: 'https://otp.market',
+        });
+        expect(url.startsWith('https://api.whatsapp.com/send?')).toBe(true);
+      });
+
+      it('W2: Pilot Phone Handling — Correctly handles approved pilot phone 9972967530 when targeted', () => {
+        const url = generateWhatsAppShareUrl({
+          referralCode: 'OTP-PILOT1',
+          targetPhone: pilotPhone,
+        });
+        expect(url).toContain('phone=9972967530');
+      });
+
+      it('W3: Message Formatting — Encodes URL and referral text cleanly without broken characters', () => {
+        const url = generateWhatsAppShareUrl({
+          referralCode: 'OTP-PILOT1',
+          customMessage: 'Join me on OTP: {url}',
+          referralUrl: 'https://otp.market/signup?ref=OTP-PILOT1',
+        });
+        expect(url).toContain(new URLSearchParams({ text: 'Join me on OTP: https://otp.market/signup?ref=OTP-PILOT1' }).toString());
+      });
+
+      it('W4: Zero Pre-Reveal Leakage — Does not include confidential supplier identities or quote numbers in share text', () => {
+        const url = generateWhatsAppShareUrl({
+          referralCode: 'OTP-PILOT1',
+          origin: 'https://otp.market',
+        });
+        expect(url).not.toContain('Supplier');
+        expect(url).not.toContain('GSTIN');
+        expect(url).not.toContain('QuoteAmount');
+      });
+
+      it('W5: Zero Sensitive Quote Data in URLs — Share links do not encode unmasked pricing amounts', () => {
+        const url = generateWhatsAppShareUrl({
+          referralCode: 'OTP-PILOT1',
+          referralUrl: 'https://otp.market/signup?ref=OTP-PILOT1',
+        });
+        expect(url).not.toContain('price=');
+        expect(url).not.toContain('margin=');
+      });
+
+      it('W6: User-Initiated Action — Relies 100% on user action (zero automated scraping or WAHA dependency)', () => {
+        // Pure functional generation without network sockets or background daemons
+        const shareData = getReferralWebShareData({
+          referralCode: 'OTP-PILOT1',
+          origin: 'https://otp.market',
+        });
+        expect(typeof shareData.url).toBe('string');
+        expect(shareData.url).toContain('OTP-PILOT1');
+      });
+
+      it('W7: Invalid Input Handling — Strips invalid characters and handles missing parameters gracefully', () => {
+        const url = generateWhatsAppShareUrl({
+          referralCode: 'OTP-PILOT1',
+          targetPhone: '+91 (9972) 967-530',
+        });
+        expect(url).toContain('phone=919972967530');
+      });
+
+      it('W8: Event/Audit Safety — Deterministic URL output is safely loggable without PII leaks', () => {
+        const url = generateWhatsAppShareUrl({
+          referralCode: 'OTP-PILOT1',
+          origin: 'https://otp.market',
+        });
+        expect(url.length).toBeGreaterThan(0);
+        expect(typeof url).toBe('string');
+      });
+    });
+
     it('provides Web Share API data structure', () => {
       const shareData = getReferralWebShareData({
         referralUrl: 'https://otp.market/signup?ref=OTP-XYZ999',

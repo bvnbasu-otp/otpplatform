@@ -71,6 +71,38 @@ describe('GIS Provider Adapters & Spatial Resilience', () => {
       const adapter = new GoogleMapsLocationAdapter({ apiKey: 'gmaps-test-key-1234' });
       expect(adapter.executionMode).toBe(GisExecutionMode.EXTERNAL_PROVIDER_READY);
     });
+
+    it('proves controlled Bangalore PIN 560048 Electrical / Automation lookup falls back safely', async () => {
+      delete process.env.GOOGLE_MAPS_API_KEY;
+      delete process.env.GOOGLE_PLACES_API_KEY;
+      const adapter = new GoogleMapsLocationAdapter();
+      
+      expect(adapter.executionMode).toBe(GisExecutionMode.OFFLINE_PROVIDER_NEUTRAL);
+
+      // Controlled location for Bangalore PIN 560048 (Mahadevapura / Hoodi)
+      const deliveryLocation = {
+        city: 'Bengaluru',
+        pinCode: '560048',
+        coordinates: { lat: 12.9863, lng: 77.7081 },
+      };
+
+      const supplierLocation = {
+        city: 'Bengaluru',
+        pinCode: '560066', // Whitefield (nearby)
+        coordinates: { lat: 12.9698, lng: 77.7500 },
+      };
+
+      const distanceRes = await adapter.calculateDistance(deliveryLocation, supplierLocation);
+      expect(distanceRes.distanceKm).toBeGreaterThan(0);
+      expect(distanceRes.distanceKm).toBeLessThan(15);
+      expect(distanceRes.isLocal).toBe(true);
+
+      const coverageRes = await adapter.validateCoverage(
+        { city: 'Bengaluru', pinCode: '560048', radiusKm: 25 },
+        deliveryLocation,
+      );
+      expect(coverageRes.isCovered).toBe(true);
+    });
   });
 
   describe('MapboxLocationAdapter', () => {
