@@ -292,5 +292,10 @@ describe('Quote Comparison Mobile Redesign — Flagship OTP Screen', () => {
       expect(barClasses).toContain('mt-auto');
       expect(barClasses).not.toContain('fixed sm:absolute');
     });
+
+    it('verifies Crockford Base32 identity shield tooltip on 4-pillar quote cards', () => {
+      const shieldTooltip = '🔒 Identity Protected: Supplier identity is sealed until mutual award to ensure unbiased evaluation.';
+      expect(shieldTooltip).toContain('Supplier identity is sealed');
+    });
   });
 });

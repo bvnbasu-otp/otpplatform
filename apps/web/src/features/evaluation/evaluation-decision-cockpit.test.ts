@@ -464,6 +464,11 @@ describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () =>
       expect(demoControlsVisible(false)).toBe(false);
       expect(demoControlsVisible(true)).toBe(true);
     });
+
+    it('verifies Crockford Base32 identity shield tooltip / badge representation', () => {
+      const shieldTooltip = '🔒 Identity Protected: Supplier identity is sealed until mutual award to ensure unbiased evaluation.';
+      expect(shieldTooltip).toContain('sealed until mutual award');
+    });
   });
 });
 

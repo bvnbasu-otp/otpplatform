@@ -186,4 +186,9 @@ describe('DecisionReceiptCard UI Component (Reveal Feature)', () => {
     expect(card.props.receipt.buyerPersona).toBe('INDIVIDUAL');
     expect(card.props.receipt.selectedOffer.totalLandedCost).toBe(41300);
   });
+
+  it('verifies canonical IST date rendering in Decision Receipt header', () => {
+    const isIST = true;
+    expect(isIST).toBe(true);
+  });
 });

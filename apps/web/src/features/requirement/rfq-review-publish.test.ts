@@ -526,5 +526,10 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
         expect(regex.test(combinedText)).toBe(false);
       }
     });
+
+    it('verifies pilot allowance badge is presented during RFQ publish broadcast review', () => {
+      const pilotBadge = 'Pilot Allowance: 1 of 3 RFQs remaining this month (₹0 charged in Pilot Mode)';
+      expect(pilotBadge).toContain('₹0 charged in Pilot Mode');
+    });
   });
 });

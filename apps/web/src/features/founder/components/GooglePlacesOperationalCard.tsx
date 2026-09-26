@@ -312,7 +312,7 @@ export function GooglePlacesOperationalCard({
               />
             </div>
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>0 (Reset 00:00 UTC)</span>
+              <span>0 (Resets daily at 05:30 IST / 00:00 UTC)</span>
               <span data-testid="quota-max-limit">Limit: {quota.limit.toLocaleString('en-IN')} reqs/day</span>
             </div>
           </div>

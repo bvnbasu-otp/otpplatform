@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { CanonicalDecisionReceipt } from '@otp/domain';
 import { verifyDecisionReceiptIntegrity } from '@otp/domain';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 export interface DecisionReceiptCardProps {
   receipt: CanonicalDecisionReceipt;
@@ -88,7 +89,7 @@ export function DecisionReceiptCard({
           {receipt.rfqTitle}
         </h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Reference: <span className="font-mono">{receipt.rfqRefNumber}</span> · Generated: {new Date(timestamps.receiptGeneratedAt).toLocaleString('en-IN')}
+          Reference: <span className="font-mono">{receipt.rfqRefNumber}</span> · Generated: {formatDateTimeIST(timestamps.receiptGeneratedAt)}
         </p>
       </div>
 

@@ -41,10 +41,12 @@ describe('date-utils', () => {
   });
 
   describe('formatDate & formatDateTime', () => {
-    it('formats valid date strings in en-IN format', () => {
+    it('formats valid date strings in en-IN format and canonical IST', () => {
       const date = new Date('2026-09-13T10:00:00Z');
       expect(formatDate(date)).toBeTruthy();
-      expect(formatDateTime(date)).toBeTruthy();
+      const formatted = formatDateTime(date);
+      expect(formatted).toBeTruthy();
+      expect(formatted).toContain('IST');
     });
 
     it('handles empty or invalid inputs gracefully', () => {

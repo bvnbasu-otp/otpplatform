@@ -547,14 +547,15 @@ export function AddressBookManager({
                 />
               </div>
 
+              {/* Secondary Address & Landmark Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-foreground mb-1">
-                    Address Line 2 (Area / Locality)
+                    Sub-locality / Area (Line 2)
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Perundurai Road"
+                    placeholder="e.g. Perundurai Road / Sector 4"
                     value={line2}
                     onChange={(e) => setLine2(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground min-h-[44px]"
@@ -562,11 +563,11 @@ export function AddressBookManager({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-foreground mb-1">
-                    Landmark
+                    Landmark / Delivery Instructions
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Near Toll Gate"
+                    placeholder="e.g. Near Toll Gate / Security Gate 2"
                     value={landmark}
                     onChange={(e) => setLandmark(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground min-h-[44px]"

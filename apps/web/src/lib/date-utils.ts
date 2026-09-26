@@ -18,22 +18,22 @@ export function formatDateTimeIST(dateStr: string | Date | null | undefined): st
   if (!dateStr) return '';
   const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
   if (isNaN(d.getTime())) return '';
-  return (
-    d.toLocaleDateString('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }) +
-    ', ' +
-    d.toLocaleTimeString('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    }) +
-    ' IST'
-  );
+
+  const datePart = d.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const timePart = d.toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  return `${datePart}, ${timePart} IST`;
 }
 
 export function formatTimeIST(dateStr: string | Date | null | undefined): string {

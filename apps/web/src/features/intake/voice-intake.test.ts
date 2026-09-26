@@ -38,7 +38,7 @@ describe('Voice Requirement Dictation Module', () => {
     expect(customEl.props.className).toBe('test-custom-class');
   });
 
-  it('exports and renders VoiceTextRequirementIntakeModal targeting canonical /intake', () => {
+  it('exports and renders VoiceTextRequirementIntakeModal targeting canonical /intake with permission fallback', () => {
     expect(VoiceTextRequirementIntakeModal).toBeDefined();
     expect(typeof VoiceTextRequirementIntakeModal).toBe('function');
 

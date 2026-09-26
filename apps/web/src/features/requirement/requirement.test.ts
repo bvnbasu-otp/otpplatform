@@ -291,5 +291,10 @@ describe('Requirement Feature Module Tests', () => {
         expect(res.requirements).toEqual([]);
       }
     });
+
+    it('verifies RequirementDetailPage exports correctly', async () => {
+      const { RequirementDetailPage } = await import('./pages/RequirementDetailPage');
+      expect(RequirementDetailPage).toBeDefined();
+    });
   });
 });

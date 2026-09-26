@@ -107,6 +107,13 @@ export function QuoteCard4Pillar({
               <span className="font-mono font-black text-sm text-foreground truncate">
                 {quote.anonymousLabel}
               </span>
+              <span
+                title="🔒 Identity Protected: Supplier identity is sealed until mutual award to ensure unbiased evaluation."
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[9px] font-bold shrink-0 cursor-help"
+              >
+                <span>🔒</span>
+                <span>Shielded</span>
+              </span>
               {quote.isGstVerified && (
                 <span
                   title="GST Registered & Verified"

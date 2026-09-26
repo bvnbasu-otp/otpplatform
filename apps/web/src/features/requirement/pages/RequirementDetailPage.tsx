@@ -98,6 +98,19 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
         </div>
       </div>
 
+      {/* Pilot Sourcing Allowance & Countdown Clarity Banner */}
+      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-950 dark:text-emerald-200 shrink-0 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <span>🎁</span>
+          <span>
+            <strong>Pilot Allowance:</strong> 1 of 3 RFQs remaining this month (₹0 charged in Pilot Mode)
+          </span>
+        </div>
+        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
+          Pilot Active
+        </span>
+      </div>
+
       {pilot && (
         <div className="text-[11px] text-muted-foreground bg-muted/40 rounded-md px-3 py-1 border shrink-0">
           🏢 <strong>{pilot.orgName}</strong> · {pilot.label} · {pilot.location}

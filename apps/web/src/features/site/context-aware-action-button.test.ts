@@ -123,5 +123,10 @@ describe('Context-Aware Global "+" Action Button Logic', () => {
       expect(unauthAction.modalName).toBe('QuickRegisterModal');
       expect(unauthAction.title).toBe('Get Started — Quick Registration');
     });
+
+    it('verifies SiteLayout renders with SiteFooter mobile refinement', async () => {
+      const { SiteLayout } = await import('./components/SiteLayout');
+      expect(SiteLayout).toBeDefined();
+    });
   });
 });

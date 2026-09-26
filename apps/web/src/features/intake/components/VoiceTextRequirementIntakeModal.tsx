@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { VoiceRequirementDictation } from './VoiceRequirementDictation';
@@ -22,9 +22,20 @@ export function VoiceTextRequirementIntakeModal({
 }: VoiceTextRequirementIntakeModalProps) {
   const navigate = useNavigate();
   const [promptText, setPromptText] = useState('');
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleVoiceTranscript = (dictated: string) => {
     setPromptText(dictated);
+    setPermissionError(null);
+  };
+
+  const handlePermissionError = (errorMsg: string) => {
+    setPermissionError(errorMsg);
+    // Instant auto-focus on the text input area
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 50);
   };
 
   const handleLaunchIntake = (customText?: string) => {
@@ -56,6 +67,22 @@ export function VoiceTextRequirementIntakeModal({
       className="sm:max-w-lg"
     >
       <div className="space-y-4 text-xs" data-testid="voice-text-intake-modal">
+        {/* Permission Guidance Banner when mic permission denied or unsupported */}
+        {permissionError && (
+          <div
+            data-testid="voice-permission-guidance"
+            className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2 animate-in fade-in-50"
+          >
+            <span className="text-base shrink-0 mt-0.5">🔒</span>
+            <div className="space-y-1 min-w-0">
+              <p className="font-bold text-[11px]">Microphone Permission Required</p>
+              <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                Click the microphone icon in your browser address bar to enable, or simply type your requirement below.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Voice & Plain-Text Input Area */}
         <div className="rounded-2xl border-2 border-primary/40 bg-card p-3.5 space-y-2.5 shadow-xs">
           <div className="flex items-center justify-between">
@@ -72,15 +99,20 @@ export function VoiceTextRequirementIntakeModal({
               <VoiceRequirementDictation
                 compact
                 onTranscript={handleVoiceTranscript}
+                onPermissionError={handlePermissionError}
               />
             </div>
           </div>
 
           <textarea
             id="modal-intake-input"
+            ref={textareaRef}
             rows={3}
             value={promptText}
-            onChange={(e) => setPromptText(e.target.value)}
+            onChange={(e) => {
+              setPromptText(e.target.value);
+              if (permissionError) setPermissionError(null);
+            }}
             placeholder="e.g. 10 HP submersible motor rewinding in Coimbatore within 3 days with 6-month warranty..."
             className="w-full rounded-xl border border-border bg-background p-2.5 text-xs font-medium text-foreground resize-none leading-relaxed focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
           />

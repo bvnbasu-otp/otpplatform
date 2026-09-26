@@ -78,6 +78,16 @@ export function RfqPublishConfirmationModal({
           </div>
 
           <div className="space-y-1.5 pt-1 text-[11px]">
+            {/* Pilot Allowance & Countdown Badge */}
+            <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2 flex items-center justify-between text-emerald-900 dark:text-emerald-200">
+              <span className="font-extrabold flex items-center gap-1">
+                <span>🎁</span> Pilot Allowance:
+              </span>
+              <span className="font-bold">
+                1 of 3 RFQs remaining this month (₹0 charged in Pilot Mode)
+              </span>
+            </div>
+
             <div className="flex items-center justify-between py-1 border-b">
               <span className="text-muted-foreground">Selected Suppliers:</span>
               <span className="font-bold text-foreground">

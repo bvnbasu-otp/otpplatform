@@ -1,3 +1,5 @@
+import { formatDateTimeIST } from '@/lib/date-utils';
+
 export interface AuditEvent {
   id: string;
   eventType: string;
@@ -20,8 +22,5 @@ export function formatEventType(eventType: string): string {
 }
 
 export function formatEventTime(iso: string): string {
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(iso));
+  return formatDateTimeIST(iso);
 }

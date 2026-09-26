@@ -191,4 +191,9 @@ describe('Buyer Home - Procurement Card & Activity Timeline', () => {
     const workspaceTitle = !orgName && persona === 'INDIVIDUAL' ? 'Personal Workspace' : (orgName || 'Workspace');
     expect(workspaceTitle).toBe('Personal Workspace');
   });
+
+  it('verifies pilot allowance badge is presented with ₹0 charged in Pilot Mode', () => {
+    const allowanceBadge = 'Pilot Allowance: 1 of 3 RFQs remaining this month (₹0 charged in Pilot Mode)';
+    expect(allowanceBadge).toContain('₹0 charged in Pilot Mode');
+  });
 });

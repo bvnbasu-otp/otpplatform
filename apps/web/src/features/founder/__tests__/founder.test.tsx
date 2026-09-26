@@ -368,11 +368,12 @@ describe('OTP R2-C2: Founder / CEO Operational Visibility Suite (C2-01 to C2-12)
   /**
    * C2-10: Mobile layout renders within shell boundaries without horizontal overflow.
    */
-  it('C2-10: Mobile layout uses responsive containment without overflow', () => {
+  it('C2-10: Mobile layout uses responsive containment without overflow and shows IST reset schedule', () => {
     const html = renderToStaticMarkup(<GooglePlacesOperationalCard />);
     expect(html).toContain('data-testid="google-places-operational-card"');
     expect(html).toContain('overflow-hidden');
     expect(html).toContain('grid grid-cols-1 sm:grid-cols-2');
+    expect(html).toContain('Resets daily at 05:30 IST / 00:00 UTC');
   });
 
   /**

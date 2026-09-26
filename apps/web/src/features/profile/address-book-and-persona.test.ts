@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { AddressBookManager } from './components/AddressBookManager';
 import {
   resolveBuyerPersona,
   tryResolveBuyerPersona,
@@ -136,11 +137,12 @@ describe('Address Book & Buyer Persona UX Module Tests', () => {
     expect(opLoc.pincode).toBe('635126');
   });
 
-  it('validates AddressBookManager persona badge and location help text mappings', () => {
+  it('validates AddressBookManager persona badge and location help text mappings and explicit form fields', () => {
     const msmeLocs = getAllowedLocationTypes('MSME');
     expect(msmeLocs).toContain('REGISTERED_OFFICE');
     expect(msmeLocs).toContain('FACTORY');
     expect(msmeLocs).toContain('WAREHOUSE');
+    expect(AddressBookManager).toBeDefined();
   });
 
   it('verifies referral code generation availability for profile contexts', () => {

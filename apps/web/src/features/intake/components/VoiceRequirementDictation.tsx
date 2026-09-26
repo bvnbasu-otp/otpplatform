@@ -4,6 +4,7 @@ export interface VoiceRequirementDictationProps {
   onTranscript: (text: string) => void;
   className?: string;
   compact?: boolean;
+  onPermissionError?: (errorMsg: string) => void;
 }
 
 export type SupportedSpeechLanguage = 'ta-IN' | 'hi-IN' | 'en-IN';
@@ -52,6 +53,7 @@ export function VoiceRequirementDictation({
   onTranscript,
   className = '',
   compact = false,
+  onPermissionError,
 }: VoiceRequirementDictationProps) {
   const [recordingState, setRecordingState] = useState<RecordingState>('IDLE');
   const [selectedLanguage, setSelectedLanguage] = useState<SupportedSpeechLanguage>('en-IN');
@@ -140,12 +142,17 @@ export function VoiceRequirementDictation({
 
       recognition.onerror = (event: any) => {
         setRecordingState('IDLE');
+        let msg = '';
         if (event.error === 'not-allowed') {
-          setError('Microphone access denied. Please enable mic permissions in your browser.');
+          msg = 'Microphone access denied. Please enable mic permissions in your browser.';
+          setError(msg);
+          onPermissionError?.(msg);
         } else if (event.error === 'no-speech') {
-          setError('No voice detected. Please speak into the mic.');
+          msg = 'No voice detected. Please speak into the mic.';
+          setError(msg);
         } else {
-          setError(`Voice input error: ${event.error}`);
+          msg = `Voice input error: ${event.error}`;
+          setError(msg);
         }
       };
 

@@ -31,6 +31,7 @@ import { ChangeOrderModal } from '../components/ChangeOrderModal';
 import { ProcurementStageNavigator, type CoreProcurementState } from '@/features/lifecycle';
 import { translateError } from '@/lib/error-translator';
 import { formatMoney, type PurchaseOrderSummary, type WorkOrderSummary } from '../types/fulfillment';
+import { formatDateTimeIST } from '@/lib/date-utils';
 
 function formatAddress(addr: unknown, city?: string | null): string {
   if (!addr && !city) return '';
@@ -938,7 +939,7 @@ export function PurchaseOrderDetailPage({
               {order.rfqTitle || 'Commercial Purchase Order'}
             </h1>
             <p className="text-[11px] text-muted-foreground">
-              Issued {order.issuedAt ? new Date(order.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : new Date(order.createdAt).toLocaleDateString('en-IN')} · Direct Bilateral B2B Contract
+              Issued {formatDateTimeIST(order.issuedAt || order.createdAt)} · Direct Bilateral B2B Contract
             </p>
           </div>
 

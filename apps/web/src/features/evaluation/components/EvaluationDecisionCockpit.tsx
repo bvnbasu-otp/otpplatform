@@ -951,9 +951,18 @@ export function EvaluationDecisionCockpit({
                         <span className="text-[10px] uppercase font-extrabold tracking-wider text-muted-foreground">
                           Target Candidate for Award:
                         </span>
-                        <h4 className="font-mono font-black text-base text-foreground">
-                          🔒 {selectedQuote.anonymousLabel}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-mono font-black text-base text-foreground">
+                            🔒 {selectedQuote.anonymousLabel}
+                          </h4>
+                          <span
+                            title="🔒 Identity Protected: Supplier identity is sealed until mutual award to ensure unbiased evaluation."
+                            className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold cursor-help"
+                          >
+                            <span>🔒</span>
+                            <span>Identity Shielded</span>
+                          </span>
+                        </div>
                       </div>
 
                       <div className="text-right">
@@ -1051,6 +1060,13 @@ export function EvaluationDecisionCockpit({
                     </span>
                     <span className="font-mono font-bold text-xs text-foreground truncate">
                       {selectedQuote.anonymousLabel}
+                    </span>
+                    <span
+                      title="🔒 Identity Protected: Supplier identity is sealed until mutual award to ensure unbiased evaluation."
+                      className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.2 text-[9px] font-bold shrink-0 cursor-help"
+                    >
+                      <span>🔒</span>
+                      <span>Shielded</span>
                     </span>
                     <span className="font-mono font-black text-xs text-primary tabular-nums">
                       {formatInr(selectedQuote.totalCost)}
