@@ -79,7 +79,7 @@ export class GoogleMapsLocationAdapter implements LocationIntelligencePort {
   constructor(options: GoogleMapsLocationAdapterOptions = {}) {
     this.config = {
       providerName: 'google',
-      apiKey: options.apiKey ?? process.env.GOOGLE_MAPS_API_KEY,
+      apiKey: options.apiKey ?? process.env.GOOGLE_MAPS_API_KEY ?? process.env.GOOGLE_PLACES_API_KEY,
       endpointUrl: options.endpointUrl ?? 'https://maps.googleapis.com/maps/api',
       timeoutMs: options.timeoutMs ?? 3000,
       enableFallbackToOffline: options.enableFallbackToOffline ?? true,

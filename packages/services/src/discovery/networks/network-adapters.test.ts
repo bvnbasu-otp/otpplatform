@@ -6,6 +6,7 @@ import {
   BniNetworkAdapter,
   DirectNetworkAdapter,
   LocalRegistryNetworkAdapter,
+  GooglePlacesNetworkAdapter,
 } from './supplier-network-adapters';
 import { OndcNetworkAdapter } from './ondc-network-adapter';
 
@@ -24,6 +25,7 @@ const ADAPTERS: SupplierNetworkPort[] = [
   AssociationNetworkAdapter,
   DirectNetworkAdapter,
   LocalRegistryNetworkAdapter,
+  GooglePlacesNetworkAdapter,
   // Explicitly enabled for the guard suite — production wiring reads the
   // feature flag; the guard only cares about shape.
   new OndcNetworkAdapter({ enabled: true }),

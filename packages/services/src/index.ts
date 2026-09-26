@@ -23,6 +23,7 @@ export * from './discovery/async-callback-ingestion-service';
 export * from './gis/provider-neutral-location-intelligence';
 export * from './gis/google-gis-safety-quota';
 export * from './gis/google-maps-location-adapter';
+export * from './gis/google-places-discovery-adapter';
 export * from './discovery/networks/ondc-network-adapter';
 export * from './discovery/networks/supplier-network-adapters';
 export * from './evaluation/quote-evaluation-service-impl';

@@ -1,5 +1,6 @@
 import type { SupplierNetworkPort } from '../../interfaces/supplier-network-port';
 import { SupplierNetwork } from '@otp/domain';
+import { GooglePlacesDiscoveryAdapter } from '../../gis/google-places-discovery-adapter';
 
 function stubAdapter(network: SupplierNetwork, label: string): SupplierNetworkPort {
   return {
@@ -29,3 +30,5 @@ export const LocalRegistryNetworkAdapter = stubAdapter(
   SupplierNetwork.LOCAL_REGISTRY,
   'OTP Local',
 );
+export const GooglePlacesNetworkAdapter: SupplierNetworkPort = new GooglePlacesDiscoveryAdapter();
+

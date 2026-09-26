@@ -227,9 +227,18 @@ export class GoogleGisSafetyQuotaGuard {
     limits?: Partial<GoogleGisQuotaLimits>;
   } = {}) {
     this.store = options.store ?? GoogleGisSafetyQuotaGuard.defaultStore;
+    const envDaily = process.env.GOOGLE_PLACES_DAILY_LIMIT
+      ? parseInt(process.env.GOOGLE_PLACES_DAILY_LIMIT, 10)
+      : undefined;
+    const defaultDaily = Number.isFinite(envDaily) && (envDaily as number) > 0
+      ? (envDaily as number)
+      : DEFAULT_GOOGLE_GIS_LIMITS.maxDaily;
+
     this.limits = {
-      maxDaily: options.limits?.maxDaily ?? DEFAULT_GOOGLE_GIS_LIMITS.maxDaily,
+      maxDaily: options.limits?.maxDaily ?? defaultDaily,
       maxMonthly: options.limits?.maxMonthly ?? DEFAULT_GOOGLE_GIS_LIMITS.maxMonthly,
+      emergencyReserve: options.limits?.emergencyReserve,
+      buyerDemandReserve: options.limits?.buyerDemandReserve,
     };
   }
 

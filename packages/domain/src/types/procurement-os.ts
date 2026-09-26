@@ -11,6 +11,9 @@ export function supplierSourceToNetwork(source: string): SupplierNetwork {
       return 'ASSOCIATION';
     case 'LOCAL_REGISTRY':
       return 'LOCAL_REGISTRY';
+    case 'GOOGLE_PLACES':
+    case 'PLACES':
+      return 'GOOGLE_PLACES';
     case 'DIRECT':
     case 'REFERRAL':
     default:

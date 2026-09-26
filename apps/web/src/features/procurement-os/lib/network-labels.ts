@@ -6,6 +6,7 @@ const NETWORK_LABELS: Record<SupplierNetwork, string> = {
   ASSOCIATION: 'Trade associations',
   DIRECT: 'Direct suppliers',
   LOCAL_REGISTRY: 'OTP Local registry',
+  GOOGLE_PLACES: 'Google Places',
 };
 
 export function networkLabel(network: SupplierNetwork): string {

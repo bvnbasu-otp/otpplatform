@@ -526,9 +526,15 @@ describe('Supplier Network Engine Domain Contracts & SN.3 Intelligence Models', 
 
     it('defines truthful provider statuses for accurate labeling', () => {
       expect(TruthfulProviderStatus.LIVE_ACTIVE).toBe('LIVE_ACTIVE');
+      expect(TruthfulProviderStatus.LIVE_API).toBe('LIVE_API');
+      expect(TruthfulProviderStatus.CREDENTIAL_GATED).toBe('CREDENTIAL_GATED');
       expect(TruthfulProviderStatus.STUBBED_SIMULATION).toBe('STUBBED_SIMULATION');
       expect(TruthfulProviderStatus.DISABLED_GATE).toBe('DISABLED_GATE');
       expect(TruthfulProviderStatus.DEGRADED).toBe('DEGRADED');
+    });
+
+    it('supports GOOGLE_PLACES supplier network and location execution modes', () => {
+      expect(SupplierNetwork.GOOGLE_PLACES).toBe('GOOGLE_PLACES');
     });
   });
 });

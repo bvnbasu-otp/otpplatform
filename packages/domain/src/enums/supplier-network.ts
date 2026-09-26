@@ -8,6 +8,7 @@ export const SupplierNetwork = {
   ASSOCIATION: 'ASSOCIATION',
   DIRECT: 'DIRECT',
   LOCAL_REGISTRY: 'LOCAL_REGISTRY',
+  GOOGLE_PLACES: 'GOOGLE_PLACES',
 } as const;
 
 export type SupplierNetwork =
