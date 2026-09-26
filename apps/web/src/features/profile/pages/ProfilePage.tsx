@@ -21,6 +21,7 @@ import {
   fetchOrganizationSubscription,
   type OrganizationSubscription,
 } from '@/features/subscription';
+import { ReferAndEarnCard } from '@/features/referral';
 import { AddressBookManager } from '../components/AddressBookManager';
 import { CommitteeTeamBuilder } from '@/features/org/components/CommitteeTeamBuilder';
 import { tryResolveBuyerPersona } from '@otp/domain';
@@ -653,6 +654,13 @@ export function ProfilePage() {
           <OtpWalletCreditsWidget
             organizationId={orgId || undefined}
             onApplyRenewal={() => setIsPaymentModalOpen(true)}
+          />
+
+          {/* Refer & Earn 10% Reward Card */}
+          <ReferAndEarnCard
+            identifier={orgId || user?.id || user?.email}
+            orgName={orgName}
+            side="buyer"
           />
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">

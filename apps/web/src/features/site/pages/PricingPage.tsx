@@ -23,6 +23,9 @@ export function PricingPage() {
             <span className="rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 px-3 py-1 text-xs font-bold border border-emerald-500/30">
               ⚡ Predictable Prepaid Access
             </span>
+            <span className="rounded-full bg-blue-500/10 text-blue-800 dark:text-blue-300 px-2.5 py-1 text-[10px] font-bold border border-blue-500/30">
+              🛡️ Controlled Pilot Sandbox
+            </span>
             <span className="text-[10px] text-muted-foreground font-medium">Institutional Procurement OS</span>
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
@@ -31,6 +34,17 @@ export function PricingPage() {
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             30-day or 365-day prepaid access for buyers. Suppliers quote <strong>100% free forever</strong> with zero listing fees.
           </p>
+
+          {/* Controlled Pilot Commercial Mode Disclosure */}
+          <div className="mt-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-3.5 text-xs text-blue-900 dark:text-blue-200 text-left shadow-2xs space-y-1">
+            <div className="flex items-center gap-2 font-bold">
+              <span>🛡️</span>
+              <span>Pilot Mode — No real payment will be charged during this pilot.</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Real commercial pricing is published for full transparency. During our 3-month controlled pilot, subscription activation grants genuine monthly sourcing allowances (3 RFQs/mo + 1 quarterly bonus on annual plans) with ₹0 charged and zero supplier platform fee deduction.
+            </p>
+          </div>
 
           {/* Billing Cycle Switcher */}
           <div className="pt-3 inline-flex items-center rounded-xl border bg-muted/40 p-1 text-xs">
@@ -286,30 +300,57 @@ export function PricingPage() {
           </section>
         </div>
 
-        {/* Product-Led Buyer Rewards Banner */}
-        <div className="mt-8 rounded-2xl border border-border bg-gradient-to-r from-amber-500/10 via-primary/10 to-amber-500/10 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xl font-bold">
-              🎁
-            </span>
-            <div>
-              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                <span>Product-Led Buyer Rewards</span>
-                <span className="rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-extrabold px-2 py-0.5">
-                  OTP Wallet Credits
-                </span>
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Complete transactions on OTP to earn OTP Wallet Credits toward subscription renewals and RFQ top-ups.
-              </p>
+        {/* Product-Led Buyer Rewards & Refer-and-Earn Banner */}
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-gradient-to-r from-amber-500/10 via-primary/10 to-amber-500/10 p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xl font-bold">
+                🎁
+              </span>
+              <div>
+                <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                  <span>Product-Led Buyer Rewards</span>
+                  <span className="rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-extrabold px-2 py-0.5">
+                    OTP Wallet Credits
+                  </span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Complete transactions on OTP to earn OTP Wallet Credits toward subscription renewals and RFQ top-ups.
+                </p>
+              </div>
             </div>
+            <Link
+              to="/dashboard"
+              className="shrink-0 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs min-h-[44px] flex items-center justify-center"
+            >
+              View Wallet Balance →
+            </Link>
           </div>
-          <Link
-            to="/dashboard"
-            className="shrink-0 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs min-h-[44px] flex items-center justify-center"
-          >
-            View Wallet Balance →
-          </Link>
+
+          <div className="rounded-2xl border border-border bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xl font-bold">
+                🤝
+              </span>
+              <div>
+                <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                  <span>Refer &amp; Earn 10% Reward</span>
+                  <span className="rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold px-2 py-0.5">
+                    WhatsApp Direct Share
+                  </span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Invite buyers or suppliers with your persistent referral link. Earn a 10% wallet credit reward on their first subscription payment.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/profile"
+              className="shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs min-h-[44px] flex items-center justify-center"
+            >
+              Get Your Referral Code →
+            </Link>
+          </div>
         </div>
 
         {/* Verified Supplier Free Quote Callout Banner */}

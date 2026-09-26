@@ -5,11 +5,15 @@ import {
   normalizeReferralCode,
   validateReferralCodeFormat,
   generatePersistentReferralCode,
+  generateReferralUrl,
+  generateWhatsAppShareUrl,
+  getReferralWebShareData,
+  isWithinQualificationWindow,
   calculateReferralReward,
   assertReferralWalletUsagePolicy,
 } from './referral-incentive';
 
-describe('Referral & Incentive System Domain Engine (Stage R2-27)', () => {
+describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', () => {
   describe('Constants & Code Generation', () => {
     it('enforces 10% referral reward percentage and 30-day qualification window', () => {
       expect(REFERRAL_REWARD_PERCENTAGE).toBe(10.0);
@@ -36,6 +40,61 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27)', () => {
       expect(code1).toBe(code2);
       expect(code1.startsWith('OTP-')).toBe(true);
       expect(validateReferralCodeFormat(code1)).toBe(true);
+    });
+
+    it('generates custom prefix referral codes deterministically', () => {
+      const bniCode = generatePersistentReferralCode('org_blr_bni_01', 'BNI');
+      expect(bniCode.startsWith('BNI-')).toBe(true);
+      expect(validateReferralCodeFormat(bniCode)).toBe(true);
+    });
+  });
+
+  describe('Referral Sharing & WhatsApp Intent Links', () => {
+    it('generates referral URLs with correct query parameters', () => {
+      const urlBuyer = generateReferralUrl('OTP-ABC123', 'https://otp.market', 'buyer');
+      expect(urlBuyer).toBe('https://otp.market/signup?ref=OTP-ABC123&side=buyer');
+
+      const urlSupplier = generateReferralUrl('OTP-ABC123', 'https://otp.market', 'supplier');
+      expect(urlSupplier).toBe('https://otp.market/signup?ref=OTP-ABC123&side=supplier');
+
+      const urlAll = generateReferralUrl('OTP-ABC123', 'https://otp.market', 'all');
+      expect(urlAll).toBe('https://otp.market/signup?ref=OTP-ABC123');
+    });
+
+    it('generates WhatsApp share URL with prefilled text and no recipient phone collection', () => {
+      const shareUrl = generateWhatsAppShareUrl({
+        referralUrl: 'https://otp.market/signup?ref=OTP-XYZ999&side=buyer',
+        referralCode: 'OTP-XYZ999',
+        source: 'buyer_cockpit',
+      });
+
+      expect(shareUrl.startsWith('https://api.whatsapp.com/send?text=')).toBe(true);
+      expect(shareUrl).toContain(encodeURIComponent('OTP-XYZ999'));
+      expect(shareUrl).toContain(encodeURIComponent('https://otp.market/signup?ref=OTP-XYZ999&side=buyer'));
+      // Verifies intent-based model without requiring WAHA or scraping recipient phone numbers
+      expect(shareUrl).not.toContain('phone=');
+    });
+
+    it('provides Web Share API data structure', () => {
+      const shareData = getReferralWebShareData({
+        referralUrl: 'https://otp.market/signup?ref=OTP-XYZ999',
+        referralCode: 'OTP-XYZ999',
+      });
+
+      expect(shareData.title).toBe('OTP — Transparent Procurement Platform');
+      expect(shareData.url).toBe('https://otp.market/signup?ref=OTP-XYZ999');
+      expect(shareData.text).toContain('OTP-XYZ999');
+    });
+
+    it('accurately evaluates 30-day qualification window', () => {
+      const attribution = new Date('2026-09-01T10:00:00Z');
+      const day15 = new Date('2026-09-16T10:00:00Z');
+      const day30 = new Date('2026-10-01T10:00:00Z');
+      const day31 = new Date('2026-10-02T10:00:00Z');
+
+      expect(isWithinQualificationWindow(attribution, day15)).toBe(true);
+      expect(isWithinQualificationWindow(attribution, day30)).toBe(true);
+      expect(isWithinQualificationWindow(attribution, day31)).toBe(false);
     });
   });
 
@@ -189,6 +248,24 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27)', () => {
 
       expect(result.isEligible).toBe(false);
       expect(result.disqualificationReason).toBe('INVALID_SUBSCRIPTION_AMOUNT');
+    });
+
+    it('correctly tags reward simulation during controlled pilot mode', () => {
+      const paymentDate = '2026-09-10T10:00:00Z';
+      const result = calculateReferralReward({
+        referrerId,
+        referredId,
+        attributionDate,
+        paymentDate,
+        subscriptionPaidAmount: 14999.0, // RWA Annual Plan ₹14,999
+        isFirstSuccessfulPayment: true,
+        isPilotMode: true,
+      });
+
+      expect(result.isEligible).toBe(true);
+      expect(result.rewardAmount).toBe(1499.9);
+      expect(result.isPilotSimulated).toBe(true);
+      expect(result.pilotModeNotice).toContain('Pilot Mode');
     });
   });
 

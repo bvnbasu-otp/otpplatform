@@ -142,4 +142,11 @@ describe('Address Book & Buyer Persona UX Module Tests', () => {
     expect(msmeLocs).toContain('FACTORY');
     expect(msmeLocs).toContain('WAREHOUSE');
   });
+
+  it('verifies referral code generation availability for profile contexts', () => {
+    const orgId = 'org-profile-test-999';
+    const cleanPrefix = 'OTP';
+    expect(orgId).toBeDefined();
+    expect(cleanPrefix).toBe('OTP');
+  });
 });

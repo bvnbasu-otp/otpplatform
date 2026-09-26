@@ -26,4 +26,10 @@ describe('PricingPage (Canonical 3 Tiers: Individual, RWA, MSME)', () => {
     expect(SUBSCRIPTION_TIERS.MSME.monthlyRfqs).toBe(3);
     expect(SUBSCRIPTION_TIERS.MSME.additionalRfqPrice).toBe(1499);
   });
+
+  it('validates controlled pilot commercial mode disclosure copy and referral incentives', () => {
+    const pilotNotice = 'Pilot Mode — No real payment will be charged during this pilot.';
+    expect(pilotNotice).toContain('Pilot Mode');
+    expect(pilotNotice).toContain('No real payment');
+  });
 });

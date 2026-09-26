@@ -5,6 +5,9 @@ import {
   type SubscriptionStatus,
   type SubscriptionPlanDefinition,
   type ExtraRfqPricingResult,
+  type FinancialReportingClassification,
+  type SupplierPlatformFeePilotAwareParams,
+  type SupplierPlatformFeePilotAwareResult,
   SUBSCRIPTION_TIERS,
   resolveTierForOrgType,
   calculateGst,
@@ -17,6 +20,9 @@ import {
   SUPPLIER_FEE_POLICY,
   BUYER_REWARD_POLICY,
   PILOT_COHORT_COPY,
+  PILOT_COMMERCIAL_MODE_POLICY,
+  resolveFinancialReportingClassification,
+  calculateSupplierPlatformFeeWithPilotMode,
   ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
   PERSONA_EXTRA_RFQ_PRICES,
   getExtraRfqPriceForTier,
@@ -25,6 +31,16 @@ import {
   DEFAULT_SUPPLIER_PLATFORM_FEE_RATE,
   STANDARD_MONTHLY_RFQ_ALLOWANCE,
   ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
+  generatePersistentReferralCode,
+  generateReferralUrl,
+  generateWhatsAppShareUrl,
+  getReferralWebShareData,
+  DEFAULT_REFERRAL_SHARE_MESSAGE,
+  calculateReferralReward,
+  assertReferralWalletUsagePolicy,
+  normalizeReferralCode,
+  validateReferralCodeFormat,
+  isWithinQualificationWindow,
 } from '@otp/domain';
 
 export type {
@@ -34,6 +50,9 @@ export type {
   SubscriptionStatus,
   SubscriptionPlanDefinition,
   ExtraRfqPricingResult,
+  FinancialReportingClassification,
+  SupplierPlatformFeePilotAwareParams,
+  SupplierPlatformFeePilotAwareResult,
 };
 
 export {
@@ -49,6 +68,9 @@ export {
   SUPPLIER_FEE_POLICY,
   BUYER_REWARD_POLICY,
   PILOT_COHORT_COPY,
+  PILOT_COMMERCIAL_MODE_POLICY,
+  resolveFinancialReportingClassification,
+  calculateSupplierPlatformFeeWithPilotMode,
   ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
   PERSONA_EXTRA_RFQ_PRICES,
   getExtraRfqPriceForTier,
@@ -57,6 +79,16 @@ export {
   DEFAULT_SUPPLIER_PLATFORM_FEE_RATE,
   STANDARD_MONTHLY_RFQ_ALLOWANCE,
   ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
+  generatePersistentReferralCode,
+  generateReferralUrl,
+  generateWhatsAppShareUrl,
+  getReferralWebShareData,
+  DEFAULT_REFERRAL_SHARE_MESSAGE,
+  calculateReferralReward,
+  assertReferralWalletUsagePolicy,
+  normalizeReferralCode,
+  validateReferralCodeFormat,
+  isWithinQualificationWindow,
 };
 
 export interface OrganizationSubscription {

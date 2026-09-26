@@ -242,4 +242,24 @@ describe('Cryptographically Secure Payment Reference Generation (FIX-01)', () =>
     expect(canonicalTiers).toEqual(['INDIVIDUAL', 'RWA', 'MSME']);
     expect(canonicalTiers).not.toContain('ENTERPRISE');
   });
+
+  it('re-exports controlled pilot commercial mode policies and referral utilities', async () => {
+    const {
+      PILOT_COMMERCIAL_MODE_POLICY,
+      calculateSupplierPlatformFeeWithPilotMode,
+      resolveFinancialReportingClassification,
+      generatePersistentReferralCode,
+      generateReferralUrl,
+      generateWhatsAppShareUrl,
+      calculateReferralReward,
+    } = await import('./types');
+
+    expect(PILOT_COMMERCIAL_MODE_POLICY.isControlledPilot).toBe(true);
+    expect(typeof calculateSupplierPlatformFeeWithPilotMode).toBe('function');
+    expect(typeof resolveFinancialReportingClassification).toBe('function');
+    expect(typeof generatePersistentReferralCode).toBe('function');
+    expect(typeof generateReferralUrl).toBe('function');
+    expect(typeof generateWhatsAppShareUrl).toBe('function');
+    expect(typeof calculateReferralReward).toBe('function');
+  });
 });

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { validateGstin, type GstTaxpayerInfo } from '@otp/domain';
 import { Button } from '@/components/ui';
 import { PortalField, useFormText, usePortalControl } from './FormDensity';
@@ -30,6 +31,9 @@ export function SupplierRegisterForm({
   onSignIn: () => void;
   showHeading?: boolean;
 }) {
+  const [searchParams] = useSearchParams();
+  const urlReferral = searchParams.get('ref') || searchParams.get('referral') || '';
+
   const control = usePortalControl();
   const text = useFormText();
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
@@ -45,6 +49,7 @@ export function SupplierRegisterForm({
   const [roleCode, setRoleCode] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [referral, setReferral] = useState(urlReferral);
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
   const [channel, setChannel] = useState<VerificationChannel>('WHATSAPP');
@@ -94,6 +99,7 @@ export function SupplierRegisterForm({
       verificationChannel: channel,
       roleCode: roleCode || undefined,
       categoryCodes: chosen,
+      referralCode: referral.trim() || undefined,
       taxRegistrationId: finalTaxId || undefined,
       coverageCity: city.trim() || undefined,
       coveragePincode: pincode.trim() || undefined,
@@ -380,6 +386,26 @@ export function SupplierRegisterForm({
             <option key={name} value={name} />
           ))}
         </datalist>
+
+        <PortalField label="Referral code" hint={referral ? 'applied' : 'optional'}>
+          {({ id, invalid }) => (
+            <div className="space-y-1">
+              <input
+                id={id}
+                value={referral}
+                onChange={(e) => setReferral(e.target.value.toUpperCase())}
+                placeholder="e.g. OTP-XXXXXX or BNI-BLR-014"
+                className={control(invalid)}
+              />
+              {referral && (
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                  <span>✓</span>
+                  <span>Referral applied: 10% platform credit program linked.</span>
+                </p>
+              )}
+            </div>
+          )}
+        </PortalField>
 
         {error && (
           <p className={`text-red-600 ${text.body}`} role="alert" data-testid="register-error">

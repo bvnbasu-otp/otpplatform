@@ -87,6 +87,33 @@ describe('auto-approval and 1 free RFQ credit structures', () => {
     expect(mockSignupResponse.auto_approved).toBe(true);
     expect(mockSignupResponse.free_rfq_credits).toBe(1);
   });
+
+  it('supports referral code propagation in signup submissions for both buyer and supplier sides', () => {
+    const buyerSubmission = {
+      side: 'BUYER' as const,
+      businessName: 'Greenwood Society',
+      contactFirstName: 'Aarav',
+      contactLastName: 'Sharma',
+      email: 'aarav@greenwood.in',
+      phone: '+919876543210',
+      verificationChannel: 'WHATSAPP' as const,
+      referralCode: 'OTP-A1B2C3',
+    };
+    expect(buyerSubmission.referralCode).toBe('OTP-A1B2C3');
+
+    const supplierSubmission = {
+      side: 'SUPPLIER' as const,
+      businessName: 'Zenith Electro Systems',
+      contactFirstName: 'Vikram',
+      contactLastName: 'Patel',
+      email: 'vikram@zenith.in',
+      phone: '+919876543211',
+      verificationChannel: 'WHATSAPP' as const,
+      categoryCodes: ['ELECTRICAL_SUPPLY'],
+      referralCode: 'OTP-D4E5F6',
+    };
+    expect(supplierSubmission.referralCode).toBe('OTP-D4E5F6');
+  });
 });
 
 

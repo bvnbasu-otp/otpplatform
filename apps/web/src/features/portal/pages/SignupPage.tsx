@@ -77,6 +77,18 @@ export function SignupPage() {
                 />
               ) : (
                 <>
+                  {params.get('ref') && (
+                    <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+                      <span className="text-base">🎁</span>
+                      <div>
+                        <span className="font-bold">Referred by {params.get('ref')}</span>
+                        <p className="text-[11px] text-muted-foreground">
+                          Welcome! You're signing up with a verified peer invitation.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/*
                     The same segmented switch the sign-in form uses to choose a
                     code or a password. Signing up and signing in are one errand

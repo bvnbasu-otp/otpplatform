@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { validateGstin, type GstTaxpayerInfo, type MsmeBusinessType, MSME_BUSINESS_TYPES } from '@otp/domain';
 import { Button } from '@/components/ui';
 import { PortalField, useFormText, usePortalControl } from './FormDensity';
@@ -43,6 +44,9 @@ export function BuyerRegisterForm({
   onSignIn: () => void;
   showHeading?: boolean;
 }) {
+  const [searchParams] = useSearchParams();
+  const urlReferral = searchParams.get('ref') || searchParams.get('referral') || '';
+
   const control = usePortalControl();
   const text = useFormText();
   const [organisation, setOrganisation] = useState('');
@@ -54,7 +58,7 @@ export function BuyerRegisterForm({
   const [taxId, setTaxId] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [referral, setReferral] = useState('');
+  const [referral, setReferral] = useState(urlReferral);
   const [channel, setChannel] = useState<VerificationChannel>('WHATSAPP');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -481,15 +485,23 @@ export function BuyerRegisterForm({
 
         <VerificationChoice value={channel} onChange={setChannel} />
 
-        <PortalField label="Referral code" hint="optional">
+        <PortalField label="Referral code" hint={referral ? 'applied' : 'optional'}>
           {({ id, invalid }) => (
-            <input
-              id={id}
-              value={referral}
-              onChange={(e) => setReferral(e.target.value.toUpperCase())}
-              placeholder="e.g. BNI-BLR-014"
-              className={control(invalid)}
-            />
+            <div className="space-y-1">
+              <input
+                id={id}
+                value={referral}
+                onChange={(e) => setReferral(e.target.value.toUpperCase())}
+                placeholder="e.g. OTP-XXXXXX or BNI-BLR-014"
+                className={control(invalid)}
+              />
+              {referral && (
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                  <span>✓</span>
+                  <span>Referral applied: 10% platform credit program linked.</span>
+                </p>
+              )}
+            </div>
           )}
         </PortalField>
 

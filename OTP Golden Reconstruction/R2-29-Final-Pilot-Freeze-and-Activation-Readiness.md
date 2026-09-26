@@ -218,8 +218,17 @@ All ten Protected Assets remain 100% intact and cryptographically enforced:
 
 ---
 
-## 11. FINAL CONCLUSION & PILOT ACTIVATION VERDICT
+## 11. PRE-R2-30 PILOT COMMERCIAL MODE & REFERRAL CLARIFICATIONS
 
-The OTP platform has achieved complete architectural, operational, legal, and documentation baseline freeze for Stage R2-29. Controlled real-world pilot activation is fully approved upon external credential provisioning.
+The Pre-R2-30 clarifications have been fully integrated:
+1. **Controlled Pilot Commercial Mode**: Displaying authentic commercial pricing with explicit pilot disclosures ("Pilot Mode — No real payment will be charged during this pilot."), genuine monthly sourcing allowances active at ₹0 charged, 0.50% supplier platform fee waived (100% net disbursement), and strict ledger classification isolation (`PILOT_SANDBOX` vs `COMMERCIAL_PRODUCTION`).
+2. **Persistent Deterministic Referral & WhatsApp Sharing**: Stable `OTP-XXXXXX` referral codes via FNV-1a hashing, 30-day qualification window, exact 10% first subscription reward, non-cash platform credit wallet policy, user-driven intent WhatsApp sharing (`https://api.whatsapp.com/send?text=...`) without recipient phone harvesting or WAHA dependency, and public signup pre-filling.
+3. **Reference Documentation**: Full specifications documented in `OTP Golden Reconstruction/R2-29-Controlled-Pilot-Mode-and-Referral-Clarification.md`.
 
-**Final Verdict:** `🟡 PILOT ACTIVATION READY — EXTERNAL CREDENTIALS REQUIRED`
+---
+
+## 12. FINAL CONCLUSION & PILOT ACTIVATION VERDICT
+
+The OTP platform has achieved complete architectural, operational, legal, and documentation baseline freeze for Stage R2-29 and Pre-R2-30 clarifications. Controlled real-world pilot activation is fully approved upon external credential provisioning.
+
+**Final Verdict:** `🟢 PRE-R2-30 PILOT + REFERRAL CLARIFICATION CERTIFIED`

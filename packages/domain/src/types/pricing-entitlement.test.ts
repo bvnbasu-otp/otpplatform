@@ -14,6 +14,7 @@ import {
   WHY_5_RFQS_EXPLANATION,
   calculateGst,
   calculateSupplierPlatformFeeWithGst,
+  calculateSupplierPlatformFeeWithPilotMode,
   computeSubscriptionPricing,
   computeExtraRfqPricing,
   evaluateRfqEntitlement,
@@ -21,7 +22,9 @@ import {
   getCalendarQuarterWindow,
   getExtraRfqPriceForTier,
   resolveBillingMode,
+  resolveFinancialReportingClassification,
   resolveTierForOrgType,
+  PILOT_COMMERCIAL_MODE_POLICY,
 } from './pricing-entitlement';
 
 describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
@@ -549,6 +552,49 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
     it('provides friendly pilot cohort copy without exposing internal config variables', () => {
       expect(PILOT_COHORT_COPY.badge).toBe('Platform Pilot Active');
       expect(PILOT_COHORT_COPY.body).not.toMatch(/VITE_|PROCESS\.ENV|SUPABASE|RPC/i);
+    });
+  });
+
+  describe('Controlled Pilot Commercial Mode (Pre-R2-30 Clarification)', () => {
+    it('verifies pilot commercial mode policy configuration', () => {
+      expect(PILOT_COMMERCIAL_MODE_POLICY.isControlledPilot).toBe(true);
+      expect(PILOT_COMMERCIAL_MODE_POLICY.pilotDurationMonths).toBe(3);
+      expect(PILOT_COMMERCIAL_MODE_POLICY.displayCommercialPricing).toBe(true);
+      expect(PILOT_COMMERCIAL_MODE_POLICY.realPaymentCharged).toBe(false);
+      expect(PILOT_COMMERCIAL_MODE_POLICY.supplierPlatformFeeCharged).toBe(false);
+      expect(PILOT_COMMERCIAL_MODE_POLICY.userNotice).toContain('No real payment will be charged');
+    });
+
+    it('isolates pilot reporting classification from commercial production', () => {
+      expect(resolveFinancialReportingClassification('PILOT_FREE')).toBe('PILOT_SANDBOX');
+      expect(resolveFinancialReportingClassification('PREPAID_STRICT')).toBe('COMMERCIAL_PRODUCTION');
+    });
+
+    it('waives supplier platform fee during pilot mode with 100% net disbursement to supplier', () => {
+      const result = calculateSupplierPlatformFeeWithPilotMode({
+        poGrossAmount: 250000,
+        isPilotMode: true,
+      });
+
+      expect(result.feeAmount).toBe(0);
+      expect(result.gstOnFeeAmount).toBe(0);
+      expect(result.totalFeeWithGst).toBe(0);
+      expect(result.netSupplierDisbursement).toBe(250000);
+      expect(result.isPilotWaived).toBe(true);
+      expect(result.pilotNotice).toContain('No commercial OTP Platform Fee will be charged');
+    });
+
+    it('charges standard 0.50% supplier platform fee when pilot mode is inactive', () => {
+      const result = calculateSupplierPlatformFeeWithPilotMode({
+        poGrossAmount: 250000,
+        isPilotMode: false,
+      });
+
+      expect(result.feeAmount).toBe(1250);
+      expect(result.gstOnFeeAmount).toBe(225);
+      expect(result.totalFeeWithGst).toBe(1475);
+      expect(result.netSupplierDisbursement).toBe(248525);
+      expect(result.isPilotWaived).toBe(false);
     });
   });
 });

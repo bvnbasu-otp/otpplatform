@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import { SupplierCapabilityModal } from '@/features/supplier';
+import { ReferAndEarnCard } from '@/features/referral';
 import {
   useSupplierHomeData,
   HomeContextBar,
@@ -141,6 +142,13 @@ export function SupplierDashboardPage() {
           )}
         </div>
       )}
+
+      {/* Refer & Earn 10% Reward for Suppliers */}
+      <ReferAndEarnCard
+        identifier={context.organizationId || user?.id || user?.email}
+        orgName={businessName}
+        side="supplier"
+      />
 
       {/* Quick Capability Editor Modal for Suppliers */}
       <SupplierCapabilityModal

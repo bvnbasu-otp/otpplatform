@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateGst,
   calculateSupplierPlatformFeeWithGst,
+  calculateSupplierPlatformFeeWithPilotMode,
   computeSubscriptionPricing,
   computeExtraRfqPricing,
   evaluateRfqEntitlement,
   getCalendarMonthWindow,
   getExtraRfqPriceForTier,
   resolveBillingMode,
+  resolveFinancialReportingClassification,
   resolveTierForOrgType,
   SUBSCRIPTION_TIERS,
   SUPPLIER_FEE_POLICY,
@@ -22,9 +24,14 @@ import {
   consumeWalletCreditsFefo,
   type WalletCreditLot,
 } from '../../packages/domain/src/types/buyer-reward';
+import {
+  generatePersistentReferralCode,
+  calculateReferralReward,
+  assertReferralWalletUsagePolicy,
+} from '../../packages/domain/src/types/referral-incentive';
 import { generateSubscriptionPaymentRef } from '../../apps/web/src/features/subscription/types';
 
-describe('Pricing & Entitlement Red-Team Security Test Suite (25 Attack Vectors)', () => {
+describe('Pricing & Entitlement Red-Team Security Test Suite (30 Attack Vectors)', () => {
   // -------------------------------------------------------------------------
   // VECTOR 1: Negative Base Price Injection
   // -------------------------------------------------------------------------
@@ -535,5 +542,125 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (25 Attack Vectors)
     expect(getExtraRfqPriceForTier(msmeOrgTier)).toBe(1499);
     expect(getExtraRfqPriceForTier(msmeOrgTier)).not.toBe(149);
     expect(getExtraRfqPriceForTier(msmeOrgTier)).not.toBe(999);
+  });
+
+  // -------------------------------------------------------------------------
+  // VECTOR 26: Referral Code Determinism & Tampering Resistance
+  // -------------------------------------------------------------------------
+  it('Vector 26: Ensures persistent referral codes are deterministic, non-forgeable, and invariant', () => {
+    const orgId = 'org-tenant-uuid-12345';
+    const codeA = generatePersistentReferralCode(orgId, 'OTP');
+    const codeB = generatePersistentReferralCode(orgId, 'OTP');
+    expect(codeA).toBe(codeB);
+    expect(codeA).toMatch(/^OTP-[0-9A-F]{6}$/);
+
+    // Two different org IDs produce distinct non-colliding codes
+    const codeOther = generatePersistentReferralCode('org-tenant-uuid-99999', 'OTP');
+    expect(codeA).not.toBe(codeOther);
+  });
+
+  // -------------------------------------------------------------------------
+  // VECTOR 27: Anti-Self-Referral & Sybil Identity Attack Defense
+  // -------------------------------------------------------------------------
+  it('Vector 27: Strictly blocks self-referral attacks and shared identity schemes', () => {
+    const selfReferral = calculateReferralReward({
+      referrerId: 'attacker-uuid-888',
+      referredId: 'attacker-uuid-888',
+      attributionDate: '2026-09-01T10:00:00Z',
+      paymentDate: '2026-09-05T10:00:00Z',
+      subscriptionPaidAmount: 1999,
+      isFirstSuccessfulPayment: true,
+    });
+    expect(selfReferral.isEligible).toBe(false);
+    expect(selfReferral.rewardAmount).toBe(0);
+    expect(selfReferral.disqualificationReason).toBe('SELF_REFERRAL');
+
+    // Also blocks if identity match flag is asserted
+    const proxyReferral = calculateReferralReward({
+      referrerId: 'attacker-uuid-888',
+      referredId: 'attacker-sub-account',
+      attributionDate: '2026-09-01T10:00:00Z',
+      paymentDate: '2026-09-05T10:00:00Z',
+      subscriptionPaidAmount: 1999,
+      isFirstSuccessfulPayment: true,
+      isSameAccountOrIdentity: true,
+    });
+    expect(proxyReferral.isEligible).toBe(false);
+    expect(proxyReferral.disqualificationReason).toBe('SELF_REFERRAL');
+  });
+
+  // -------------------------------------------------------------------------
+  // VECTOR 28: Referral Reward Replay & Idempotency Boundary Attack
+  // -------------------------------------------------------------------------
+  it('Vector 28: Defends against reward replay, renewal reward harvesting, and expired windows', () => {
+    // 1. Replay attack on already rewarded attribution
+    const replayAttack = calculateReferralReward({
+      referrerId: 'referrer-1',
+      referredId: 'referee-1',
+      attributionDate: '2026-09-01T10:00:00Z',
+      paymentDate: '2026-09-05T10:00:00Z',
+      subscriptionPaidAmount: 1999,
+      isFirstSuccessfulPayment: true,
+      existingRewardProcessed: true,
+    });
+    expect(replayAttack.isEligible).toBe(false);
+    expect(replayAttack.disqualificationReason).toBe('ALREADY_REWARDED');
+
+    // 2. Renewal attack (reward harvesting on 2nd payment)
+    const renewalAttack = calculateReferralReward({
+      referrerId: 'referrer-1',
+      referredId: 'referee-1',
+      attributionDate: '2026-09-01T10:00:00Z',
+      paymentDate: '2026-09-20T10:00:00Z',
+      subscriptionPaidAmount: 1999,
+      isFirstSuccessfulPayment: false,
+    });
+    expect(renewalAttack.isEligible).toBe(false);
+    expect(renewalAttack.disqualificationReason).toBe('NOT_FIRST_PAYMENT');
+
+    // 3. Expired qualification window attack (31+ days)
+    const expiredAttack = calculateReferralReward({
+      referrerId: 'referrer-1',
+      referredId: 'referee-1',
+      attributionDate: '2026-09-01T10:00:00Z',
+      paymentDate: '2026-10-05T10:00:00Z', // 34 days later
+      subscriptionPaidAmount: 1999,
+      isFirstSuccessfulPayment: true,
+    });
+    expect(expiredAttack.isEligible).toBe(false);
+    expect(expiredAttack.disqualificationReason).toBe('QUALIFICATION_WINDOW_EXPIRED');
+  });
+
+  // -------------------------------------------------------------------------
+  // VECTOR 29: Controlled Pilot Commercial Isolation & Zero-Fee Shield
+  // -------------------------------------------------------------------------
+  it('Vector 29: Verifies zero financial mutation and supplier fee waiver during Controlled Pilot Mode', () => {
+    // Pilot mode financial isolation
+    expect(resolveFinancialReportingClassification('PILOT_FREE')).toBe('PILOT_SANDBOX');
+    expect(resolveFinancialReportingClassification('PREPAID_STRICT')).toBe('COMMERCIAL_PRODUCTION');
+
+    // Pilot mode fee waiver protects supplier disbursements
+    const pilotDisbursement = calculateSupplierPlatformFeeWithPilotMode({
+      poGrossAmount: 500000,
+      isPilotMode: true,
+    });
+    expect(pilotDisbursement.feeAmount).toBe(0);
+    expect(pilotDisbursement.totalFeeWithGst).toBe(0);
+    expect(pilotDisbursement.netSupplierDisbursement).toBe(500000);
+    expect(pilotDisbursement.isPilotWaived).toBe(true);
+  });
+
+  // -------------------------------------------------------------------------
+  // VECTOR 30: Referral Reward Wallet Non-Cash Settlement Boundary Defense
+  // -------------------------------------------------------------------------
+  it('Vector 30: Strictly prevents referral wallet credits from cash withdrawals or GMV settlement mixing', () => {
+    expect(assertReferralWalletUsagePolicy('CASH_WITHDRAWAL').isAllowed).toBe(false);
+    expect(assertReferralWalletUsagePolicy('GMV_PAYMENT').isAllowed).toBe(false);
+    expect(assertReferralWalletUsagePolicy('SUPPLIER_DISBURSEMENT').isAllowed).toBe(false);
+
+    // Legitimate non-cash platform utility usage is permitted
+    expect(assertReferralWalletUsagePolicy('SUBSCRIPTION_PURCHASE').isAllowed).toBe(true);
+    expect(assertReferralWalletUsagePolicy('SUBSCRIPTION_RENEWAL').isAllowed).toBe(true);
+    expect(assertReferralWalletUsagePolicy('RFQ_TOPUP').isAllowed).toBe(true);
   });
 });

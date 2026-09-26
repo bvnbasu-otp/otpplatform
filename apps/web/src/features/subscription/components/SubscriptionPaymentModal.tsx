@@ -162,17 +162,17 @@ export function SubscriptionPaymentModal({
         {/* Header */}
         <div className="flex items-start justify-between border-b pb-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2.5 py-0.5 text-xs font-bold border border-emerald-300 dark:border-emerald-700">
-                ⚡ Prepaid Subscription
+                ⚡ Controlled Pilot Mode
               </span>
-              <span className="text-xs text-muted-foreground font-mono">Calendar Month Entitlement</span>
+              <span className="text-xs text-muted-foreground font-mono">Real Entitlement (3 RFQs/mo)</span>
             </div>
             <h2 className="text-xl font-bold mt-1 text-foreground">
-              {isSuccess ? 'Payment Verified & Plan Activated!' : 'Recharge / Renew Platform Plan'}
+              {isSuccess ? 'Controlled Pilot Plan Activated!' : 'Activate / Renew Sourcing Plan'}
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Buyer Org: <strong className="text-foreground">{organizationName}</strong> · Standard UPI &amp; Wallet Redemption
+              Buyer Org: <strong className="text-foreground">{organizationName}</strong> · Production-Like Pilot Sandbox
             </p>
           </div>
           <button
@@ -185,6 +185,17 @@ export function SubscriptionPaymentModal({
           </button>
         </div>
 
+        {/* Controlled Pilot Commercial Mode Notice */}
+        <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2 shadow-2xs">
+          <span className="text-base shrink-0">🛡️</span>
+          <div>
+            <span className="font-bold block">Pilot Mode — No real payment will be charged during this pilot.</span>
+            <span className="text-[11px] text-muted-foreground">
+              Commercial pricing is displayed for complete budget transparency. Activating a plan grants genuine calendar-month sourcing allowances (3 RFQs/mo + 1 quarterly bonus on annual plans) with ₹0 charged.
+            </span>
+          </div>
+        </div>
+
         {isSuccess ? (
           /* Success Screen */
           <div className="text-center py-6 space-y-4 animate-in zoom-in-95 duration-200">
@@ -192,9 +203,13 @@ export function SubscriptionPaymentModal({
               ✓
             </div>
             <div>
-              <h3 className="text-lg font-bold text-foreground">Prepaid Plan Successfully Active!</h3>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 text-[10px] font-bold px-2.5 py-0.5 border border-blue-300 mb-2">
+                <span>🛡️</span>
+                <span>Controlled Pilot Mode Active</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground">Sourcing Entitlement Successfully Activated!</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                Your organization now has active calendar-month sourcing access with {fee.monthlyRfqQuota} RFQs per month.
+                Your organization now has active calendar-month sourcing access with {fee.monthlyRfqQuota} RFQs per month in controlled pilot mode (zero real payment charged).
               </p>
             </div>
 
@@ -445,7 +460,7 @@ export function SubscriptionPaymentModal({
             {/* Step 3: Simulation & Action Trigger */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
               <div className="text-xs text-muted-foreground text-center sm:text-left">
-                {isFullyCoveredByWallet ? 'Wallet Direct Activation' : 'Test Simulation Mode · Instant Activation'}
+                {isFullyCoveredByWallet ? 'Wallet Direct Activation' : 'Controlled Pilot Mode · ₹0 Payment Charged'}
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -477,7 +492,7 @@ export function SubscriptionPaymentModal({
                   ) : (
                     <>
                       <span>⚡</span>
-                      <span>Simulate &amp; Verify Payment (₹{cashPayable})</span>
+                      <span>Activate Plan in Pilot Mode (₹0 Charged)</span>
                     </>
                   )}
                 </button>

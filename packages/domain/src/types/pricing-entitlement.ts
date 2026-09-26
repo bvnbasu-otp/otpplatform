@@ -729,3 +729,93 @@ export const PILOT_COHORT_COPY = {
   body:
     'During our platform pilot, subscription fees are waived for onboarded buyers. Enjoy full access to competitive sourcing, identity-protected comparisons, and committee voting with standard monthly RFQ allowances.',
 };
+
+/**
+ * Controlled 3-Month Production-Like Controlled Pilot Commercial Mode Policy (Stage Pre-R2-30)
+ */
+export const PILOT_COMMERCIAL_MODE_POLICY = {
+  isControlledPilot: true,
+  pilotDurationMonths: 3,
+  realPaymentCharged: false,
+  supplierPlatformFeeCharged: false,
+  buyerPlatformFeeRewardRecognized: false,
+  commercialRevenueRecognized: false,
+  displayCommercialPricing: true,
+  userNotice: 'Pilot Mode — No real payment will be charged during this pilot.',
+  supplierFeeNotice: 'Pilot Mode — No commercial OTP Platform Fee will be charged during this pilot.',
+  buyerRewardNotice: 'Pilot Mode — Sourcing rewards are simulated and non-commercial during this pilot.',
+  reportingClassification: 'PILOT_SANDBOX' as const,
+};
+
+export type FinancialReportingClassification = 'PILOT_SANDBOX' | 'COMMERCIAL_PRODUCTION';
+
+/**
+ * Resolves financial ledger reporting scope to strictly segregate PILOT sandbox
+ * simulation from LIVE commercial production revenue and disbursements.
+ */
+export function resolveFinancialReportingClassification(
+  billingMode?: BillingMode | string | null,
+): FinancialReportingClassification {
+  if (!billingMode) return 'PILOT_SANDBOX';
+  const clean = String(billingMode).trim().toUpperCase();
+  if (clean === 'LIVE' || clean === 'PREPAID_STRICT' || clean === 'COMMERCIAL_PRODUCTION' || clean === 'COMMERCIAL') {
+    return 'COMMERCIAL_PRODUCTION';
+  }
+  return 'PILOT_SANDBOX';
+}
+
+export interface SupplierPlatformFeePilotAwareParams extends SupplierPlatformFeeCalculationParams {
+  billingMode?: BillingMode | string;
+  isPilotMode?: boolean;
+}
+
+export interface SupplierPlatformFeePilotAwareResult extends SupplierPlatformFeeCalculationResult {
+  isPilotWaived: boolean;
+  isPilotMode: boolean;
+  pilotNotice?: string;
+  financialReportingScope: FinancialReportingClassification;
+}
+
+/**
+ * Calculates supplier platform fee with controlled pilot mode deactivation support.
+ * During pilot: Fee is 0.00%, PO gross is 100% disbursed to supplier, and commercial fee recognition is OFF.
+ */
+export function calculateSupplierPlatformFeeWithPilotMode(
+  params: SupplierPlatformFeePilotAwareParams,
+): SupplierPlatformFeePilotAwareResult {
+  const mode = resolveBillingMode(params.billingMode);
+  const isPilot = params.isPilotMode ?? (mode === 'PILOT_FREE');
+  const scope = resolveFinancialReportingClassification(mode);
+
+  if (isPilot) {
+    const gross = Math.max(0, Math.round(Number(params.poGrossAmount || 0) * 100) / 100);
+    return {
+      poGrossAmount: gross,
+      feeRatePercent: 0,
+      feeAmount: 0,
+      gstRatePercent: 0,
+      gstOnFeeAmount: 0,
+      totalFeeWithGst: 0,
+      netSupplierDisbursement: gross,
+      poGrossUntouched: true,
+      formattedPoGross: `₹${gross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      formattedFee: '₹0.00',
+      formattedGstOnFee: '₹0.00',
+      formattedTotalFeeWithGst: '₹0.00',
+      formattedNetDisbursement: `₹${gross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      isPilotWaived: true,
+      isPilotMode: true,
+      pilotNotice: PILOT_COMMERCIAL_MODE_POLICY.supplierFeeNotice,
+      financialReportingScope: scope,
+    };
+  }
+
+  const standardCalc = calculateSupplierPlatformFeeWithGst(params);
+  return {
+    ...standardCalc,
+    isPilotWaived: false,
+    isPilotMode: false,
+    financialReportingScope: scope,
+  };
+}
+

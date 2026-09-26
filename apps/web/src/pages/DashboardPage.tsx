@@ -7,6 +7,7 @@ import {
   SubscriptionExpiryBanner,
   validateOrganizationSourcingAccess,
 } from '@/features/subscription';
+import { ReferAndEarnCard } from '@/features/referral';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { formatDateIST } from '@/lib/date-utils';
 import type { OrganizationRequirementSummary } from '@/features/requirement/api/requirements';
@@ -209,6 +210,13 @@ export function DashboardPage() {
           )}
         </div>
       )}
+
+      {/* Refer & Earn 10% Reward Widget */}
+      <ReferAndEarnCard
+        identifier={org?.organizationId || context.organizationId || user?.id || user?.email}
+        orgName={org?.organizationName || context.organizationName}
+        side="buyer"
+      />
 
       {/* Subscription Payment & Renewal Modal */}
       {subscription && (
