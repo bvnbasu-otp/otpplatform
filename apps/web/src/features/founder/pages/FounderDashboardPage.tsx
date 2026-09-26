@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Badge, Button, Card } from '@/components/ui';
+import {
+  GooglePlacesOperationalCard,
+  type GooglePlacesOperationalVisibilityData,
+} from '../components/GooglePlacesOperationalCard';
 
 interface Milestone {
   id: string;
@@ -41,9 +45,17 @@ interface FounderMetrics {
   milestones: Milestone[];
 }
 
-export function FounderDashboardPage() {
-  const [metrics, setMetrics] = useState<FounderMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
+export interface FounderDashboardPageProps {
+  initialMetrics?: FounderMetrics | null;
+  placesData?: GooglePlacesOperationalVisibilityData;
+}
+
+export function FounderDashboardPage({
+  initialMetrics = null,
+  placesData,
+}: FounderDashboardPageProps = {}) {
+  const [metrics, setMetrics] = useState<FounderMetrics | null>(initialMetrics);
+  const [loading, setLoading] = useState(!initialMetrics);
   const [error, setError] = useState<string | null>(null);
 
   async function loadMetrics() {
@@ -62,8 +74,10 @@ export function FounderDashboardPage() {
   }
 
   useEffect(() => {
-    void loadMetrics();
-  }, []);
+    if (!initialMetrics) {
+      void loadMetrics();
+    }
+  }, [initialMetrics]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
@@ -240,6 +254,11 @@ export function FounderDashboardPage() {
                 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">90.1% remaining</span>
               </Card>
             </div>
+          </div>
+
+          {/* Google Places Supplier Discovery Operational Visibility Card */}
+          <div className="space-y-3 pt-2">
+            <GooglePlacesOperationalCard data={placesData} />
           </div>
         </>
       )}
