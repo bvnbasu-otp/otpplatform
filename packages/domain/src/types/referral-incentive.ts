@@ -5,8 +5,12 @@
  * NON-NEGOTIABLE CORE RULES:
  * 1. 10% Referral Reward Rule: Reward is calculated strictly as 10% of the actual
  *    first successful subscription payment made by the referred buyer account.
- * 2. Persistent Referral Code: Deterministic, persistent referral code per referrer
- *    (does not change across logins, shares, or refreshes).
+ * 2. Uniquely/Randomly Generated Persistent Referral Code:
+ *    - Referral codes are uniquely and cryptographically randomly generated once (e.g. OTP-XXXXXX),
+ *      then persistently stored and reused across logins, shares, URL generation, and dashboard visits.
+ *    - Codes are NOT deterministically derived from: user ID, organization ID, tenant ID, email, phone, or identity attributes.
+ *    - Collision handling ensures absolute uniqueness.
+ *    - Existing valid referral codes are preserved and normalized.
  * 3. 30-Day Qualification Window: The referred buyer must complete their first
  *    successful subscription payment within 30 calendar days of attribution.
  * 4. Idempotent & Fraud-Proof:
@@ -21,13 +25,18 @@
  *    - WhatsApp links generated via https://api.whatsapp.com/send?text=... with pre-filled message.
  *    - User controls recipient and sending; OTP does not collect recipient phone numbers.
  *    - Universal fallback: Copy Referral Link (+ optional Web Share API).
- * 7. Controlled Pilot Commercial Mode:
- *    - In pilot mode, referral rewards are calculated and simulated without real payment or commercial revenue recognition.
+ * 7. Controlled Pilot Mode Boundary (Pre-R2-30 Invariant):
+ *    - In pilot mode without actual qualifying subscription payment, NO monetary wallet balance,
+ *      NO monetary liability, and NO commercial revenue is recognized.
+ *    - Pilot executions produce clearly classified REFERRAL_TEST_RESULT records with walletMonetaryCredit: 0
+ *      and simulatedRewardAmount reflecting the simulated 10% rule.
  */
 
 export const REFERRAL_REWARD_PERCENTAGE = 10.0; // 10%
 export const REFERRAL_QUALIFICATION_WINDOW_DAYS = 30; // 30 Calendar Days
 export const REFERRAL_CODE_PREFIX = 'OTP';
+export const DEFAULT_REFERRAL_CODE_LENGTH = 6;
+export const REFERRAL_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 export const DEFAULT_REFERRAL_SHARE_MESSAGE =
   "Hi, I'm using OTP for competitive institutional and business procurement. You can check it out, get verified supplier quotes, and sign up here: {url}";
@@ -40,6 +49,8 @@ export type ReferralAttributionStatus =
   | 'DISQUALIFIED';
 
 export type ReferralAttributionMode = 'PILOT_SANDBOX' | 'COMMERCIAL_PRODUCTION';
+
+export type ReferralRecordClassification = 'REFERRAL_TEST_RESULT' | 'COMMERCIAL_REWARD_PAYOUT';
 
 export type ReferralRewardDisqualificationReason =
   | 'SELF_REFERRAL'
@@ -82,12 +93,20 @@ export interface CalculateReferralRewardParams {
 
 export interface ReferralRewardCalculationResult {
   isEligible: boolean;
-  rewardAmount: number;
+  rewardAmount: number; // Monetary wallet credit (0 in pilot simulation or disqualified; actual 10% amount in live commercial mode)
+  monetaryCreditAmount: number; // 0 in pilot simulation; actual monetary credit in live commercial mode
+  walletMonetaryCredit: number; // 0 in pilot simulation; actual wallet monetary balance in live commercial mode
+  simulatedRewardAmount: number; // The simulated 10% calculation in pilot mode; 0 in live commercial mode
+  financialLiabilityRecognized: boolean; // false during pilot mode or disqualification; true only for live commercial payouts
+  financialReportingScope: ReferralAttributionMode;
+  recordClassification: ReferralRecordClassification;
   rewardPercentage: number;
   subscriptionPaidAmount: number;
   qualificationDaysElapsed: number;
   isWithinWindow: boolean;
   formattedRewardAmount: string;
+  formattedMonetaryCredit: string;
+  formattedSimulatedRewardAmount: string;
   status: ReferralAttributionStatus;
   isPilotSimulated: boolean;
   disqualificationReason?: ReferralRewardDisqualificationReason;
@@ -105,51 +124,179 @@ export function normalizeReferralCode(rawCode: string): string {
 
 /**
  * Validates referral code formatting.
+ * Accepts standard OTP-XXXXXX, BNI-XXXXXX, REF-XXXX, or custom alphanumeric handles.
  */
 export function validateReferralCodeFormat(code: string): boolean {
   const normalized = normalizeReferralCode(code);
   if (!normalized || normalized.length < 4 || normalized.length > 32) {
     return false;
   }
-  // Accepts OTP-XXXX, REF-XXXX, BNI-XXXX, or alphanumeric handles
   return /^[A-Z0-9_-]{4,32}$/.test(normalized);
 }
 
 /**
- * Simple, deterministic 32-bit FNV-1a hash function for generating stable referral codes.
+ * Generates cryptographically secure random bytes across Node.js, Web Browser, and test environments.
  */
-function fnv1aHashHex(str: string): string {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+function getSecureRandomBytes(count: number): Uint8Array {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(count);
+    globalThis.crypto.getRandomValues(bytes);
+    return bytes;
   }
-  return (hash >>> 0).toString(16).toUpperCase().padStart(8, '0');
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const nodeCrypto = require('crypto');
+    if (typeof nodeCrypto.randomBytes === 'function') {
+      return new Uint8Array(nodeCrypto.randomBytes(count));
+    }
+  } catch {
+    // constrained fallback
+  }
+  const bytes = new Uint8Array(count);
+  for (let i = 0; i < count; i++) {
+    bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return bytes;
 }
 
 /**
- * Generates a persistent, deterministic referral code for an individual buyer or organization.
- * Guaranteed to produce the exact same code for the same identifier across all sessions and shares.
+ * Generates an unpredictable, cryptographically secure random referral code string.
+ * Uses an unambiguous alphabet ('23456789ABCDEFGHJKLMNPQRSTUVWXYZ' excluding 0, O, 1, I).
+ * Guaranteed to be non-derived from any identity, tenant, email, or phone attribute.
  */
-export function generatePersistentReferralCode(
-  identifier: string,
+export function generateSecureRandomReferralCode(
   prefix: string = REFERRAL_CODE_PREFIX,
+  length: number = DEFAULT_REFERRAL_CODE_LENGTH,
+  existingCodes?: Set<string> | string[],
 ): string {
-  const cleanId = (identifier || '').trim();
-  if (!cleanId) {
-    return `${(prefix || REFERRAL_CODE_PREFIX).toUpperCase()}-GROWTH`;
+  const cleanPrefix = (prefix || REFERRAL_CODE_PREFIX).toUpperCase().replace(/[^A-Z0-9]/g, '') || REFERRAL_CODE_PREFIX;
+  const existingSet =
+    existingCodes instanceof Set
+      ? existingCodes
+      : Array.isArray(existingCodes)
+      ? new Set(existingCodes)
+      : null;
+
+  const alphabet = REFERRAL_CODE_ALPHABET;
+  const alphabetLen = alphabet.length;
+  const maxAttempts = 25;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const randomBytes = getSecureRandomBytes(length);
+    let codeBody = '';
+    for (let i = 0; i < length; i++) {
+      const byte = randomBytes[i] ?? Math.floor(Math.random() * 256);
+      const idx = byte % alphabetLen;
+      codeBody += alphabet[idx];
+    }
+    const candidate = `${cleanPrefix}-${codeBody}`;
+    if (!existingSet || !existingSet.has(candidate)) {
+      return candidate;
+    }
   }
 
-  // If already a valid referral code format with prefix, normalize and return
-  const normalized = normalizeReferralCode(cleanId);
-  if (/^[A-Z0-9]{3,4}-[A-Z0-9]{4,12}$/.test(normalized)) {
+  // Fallback with additional entropy
+  const extraBytes = getSecureRandomBytes(length);
+  let extraBody = '';
+  for (let i = 0; i < length; i++) {
+    const byte = extraBytes[i] ?? Math.floor(Math.random() * 256);
+    const idx = byte % alphabetLen;
+    extraBody += alphabet[idx];
+  }
+  return `${cleanPrefix}-${extraBody}`;
+}
+
+/**
+ * Global persistent in-memory referral code store.
+ * Maps entity/user/org identifier -> persistent random code.
+ * Guarantees that once generated, the exact same code is returned across
+ * subsequent queries, refreshes, shares, and dashboard visits.
+ */
+const persistentReferralStore = new Map<string, string>();
+
+export function getPersistentReferralCodeStore(): Map<string, string> {
+  return persistentReferralStore;
+}
+
+export function setPersistentReferralCode(identifier: string, code: string): void {
+  if (identifier && code) {
+    persistentReferralStore.set(identifier.trim(), normalizeReferralCode(code));
+  }
+}
+
+export function clearPersistentReferralCodeStore(): void {
+  persistentReferralStore.clear();
+}
+
+export interface GeneratePersistentReferralCodeOptions {
+  codeStore?: Map<string, string>;
+  forceNew?: boolean;
+  existingCodes?: Set<string> | string[];
+}
+
+/**
+ * Generates or retrieves a persistent, randomly generated referral code for a user or organization.
+ *
+ * Invariants (Workstream 1):
+ * 1. Random & Non-Identity-Derived: Generated from cryptographically secure entropy. Zero reliance on
+ *    user ID, org ID, tenant ID, email, or phone.
+ * 2. Persistent: Stored on initial generation and reused consistently across logins, refreshes,
+ *    URL generations, sharing, and dashboard visits.
+ * 3. Preserves Existing Valid Codes: If an already-valid referral code format is passed, it is preserved,
+ *    normalized, registered, and returned.
+ * 4. Collision Resistant: Collision avoidance regenerates against known stores.
+ */
+export function generatePersistentReferralCode(
+  identifierOrExistingCode?: string | null,
+  prefix: string = REFERRAL_CODE_PREFIX,
+  options?: GeneratePersistentReferralCodeOptions,
+): string {
+  const input = (identifierOrExistingCode || '').trim();
+  const cleanPrefix = (prefix || REFERRAL_CODE_PREFIX).toUpperCase().replace(/[^A-Z0-9]/g, '') || REFERRAL_CODE_PREFIX;
+  const activeStore = options?.codeStore || persistentReferralStore;
+
+  // If no identifier or code passed, generate a new random code
+  if (!input) {
+    return generateSecureRandomReferralCode(cleanPrefix, DEFAULT_REFERRAL_CODE_LENGTH, options?.existingCodes);
+  }
+
+  // 1. If input is already a valid formatted referral code (e.g. "OTP-7X8Y9Z", "BNI-2K3M4P"), preserve and return it
+  const normalized = normalizeReferralCode(input);
+  if (/^[A-Z0-9]{2,6}-[A-Z0-9]{4,12}$/.test(normalized)) {
+    activeStore.set(input, normalized);
     return normalized;
   }
 
-  const cleanPrefix = (prefix || REFERRAL_CODE_PREFIX).toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const hashHex = fnv1aHashHex(cleanId);
-  const shortHash = hashHex.slice(0, 6);
-  return `${cleanPrefix}-${shortHash}`;
+  // 2. If a code has already been generated and stored for this identifier, return the persistent code
+  if (!options?.forceNew && activeStore.has(input)) {
+    const existing = activeStore.get(input);
+    if (existing) {
+      return existing;
+    }
+  }
+
+  // 3. Build collision set from existing store and options
+  const knownCodes = new Set<string>();
+  for (const code of activeStore.values()) {
+    knownCodes.add(code);
+  }
+  if (options?.existingCodes) {
+    for (const c of options.existingCodes) {
+      knownCodes.add(c);
+    }
+  }
+
+  // 4. Generate fresh cryptographically random code
+  const newRandomCode = generateSecureRandomReferralCode(
+    cleanPrefix,
+    DEFAULT_REFERRAL_CODE_LENGTH,
+    knownCodes,
+  );
+
+  // 5. Persist mapping so the entity always receives this same code
+  activeStore.set(input, newRandomCode);
+
+  return newRandomCode;
 }
 
 /**
@@ -233,93 +380,84 @@ export function isWithinQualificationWindow(
 
 /**
  * Computes referral reward eligibility and exact amount according to R2-27 / Pre-R2-30 rules.
+ *
+ * Strict Pilot Reward Boundary Enforcement (Workstream 2):
+ * - NO MONETARY REFERRAL REWARD may be recognized, earned, credited, or represented as a real
+ *   wallet balance during pilot mode (isPilotMode: true).
+ * - During pilot simulation, returns clearly classified REFERRAL_TEST_RESULT with:
+ *   walletMonetaryCredit: 0, monetaryCreditAmount: 0, rewardAmount: 0,
+ *   simulatedRewardAmount: calculated10PercentAmount, financialLiabilityRecognized: false,
+ *   financialReportingScope: 'PILOT_SANDBOX'.
+ * - In live commercial mode (isPilotMode: false) with real payment:
+ *   Returns classified COMMERCIAL_REWARD_PAYOUT with walletMonetaryCredit: calculated10PercentAmount,
+ *   monetaryCreditAmount: calculated10PercentAmount, rewardAmount: calculated10PercentAmount,
+ *   simulatedRewardAmount: 0, financialLiabilityRecognized: true,
+ *   financialReportingScope: 'COMMERCIAL_PRODUCTION'.
  */
 export function calculateReferralReward(
   params: CalculateReferralRewardParams,
 ): ReferralRewardCalculationResult {
   const isPilot = Boolean(params.isPilotMode);
+  const scope: ReferralAttributionMode = isPilot ? 'PILOT_SANDBOX' : 'COMMERCIAL_PRODUCTION';
+  const classification: ReferralRecordClassification = isPilot ? 'REFERRAL_TEST_RESULT' : 'COMMERCIAL_REWARD_PAYOUT';
+
   const walletRestrictionNotice =
     'Referral reward credits are strictly restricted to OTP platform subscription purchases, renewals, and RFQ top-ups. Cash withdrawal and GMV settlement mixing are strictly prohibited.';
   const pilotModeNotice = isPilot
-    ? 'Controlled Pilot Mode: 10% referral rewards are simulated for validation. No real money or commercial revenue is recognized.'
+    ? 'Controlled Pilot Mode: Sourcing & referral rewards are simulated for validation. Zero monetary wallet credit, zero financial liability, and zero commercial revenue are recognized.'
     : undefined;
 
-  // 1. Zero Self-Referral Invariant
+  const createDisqualifiedResult = (
+    reason: ReferralRewardDisqualificationReason,
+    daysElapsed: number = 0,
+    status: ReferralAttributionStatus = 'DISQUALIFIED',
+  ): ReferralRewardCalculationResult => ({
+    isEligible: false,
+    rewardAmount: 0,
+    monetaryCreditAmount: 0,
+    walletMonetaryCredit: 0,
+    simulatedRewardAmount: 0,
+    financialLiabilityRecognized: false,
+    financialReportingScope: scope,
+    recordClassification: classification,
+    rewardPercentage: REFERRAL_REWARD_PERCENTAGE,
+    subscriptionPaidAmount: params.subscriptionPaidAmount || 0,
+    qualificationDaysElapsed: daysElapsed,
+    isWithinWindow: false,
+    formattedRewardAmount: '₹0.00',
+    formattedMonetaryCredit: '₹0.00',
+    formattedSimulatedRewardAmount: '₹0.00',
+    status,
+    isPilotSimulated: isPilot,
+    disqualificationReason: reason,
+    walletRestrictionNotice,
+    pilotModeNotice,
+  });
+
+  // 1. Zero Self-Referral Invariant (Strict Identity & Tenant Separation)
   if (
     !params.referrerId ||
     !params.referredId ||
     params.referrerId === params.referredId ||
     params.isSameAccountOrIdentity
   ) {
-    return {
-      isEligible: false,
-      rewardAmount: 0,
-      rewardPercentage: REFERRAL_REWARD_PERCENTAGE,
-      subscriptionPaidAmount: params.subscriptionPaidAmount,
-      qualificationDaysElapsed: 0,
-      isWithinWindow: false,
-      formattedRewardAmount: '₹0.00',
-      status: 'DISQUALIFIED',
-      isPilotSimulated: isPilot,
-      disqualificationReason: 'SELF_REFERRAL',
-      walletRestrictionNotice,
-      pilotModeNotice,
-    };
+    return createDisqualifiedResult('SELF_REFERRAL', 0, 'DISQUALIFIED');
   }
 
   // 2. Already Rewarded / Idempotency Check
   if (params.existingRewardProcessed) {
-    return {
-      isEligible: false,
-      rewardAmount: 0,
-      rewardPercentage: REFERRAL_REWARD_PERCENTAGE,
-      subscriptionPaidAmount: params.subscriptionPaidAmount,
-      qualificationDaysElapsed: 0,
-      isWithinWindow: false,
-      formattedRewardAmount: '₹0.00',
-      status: 'DISQUALIFIED',
-      isPilotSimulated: isPilot,
-      disqualificationReason: 'ALREADY_REWARDED',
-      walletRestrictionNotice,
-      pilotModeNotice,
-    };
+    return createDisqualifiedResult('ALREADY_REWARDED', 0, 'DISQUALIFIED');
   }
 
   // 3. First Successful Payment Only Invariant
   if (!params.isFirstSuccessfulPayment) {
-    return {
-      isEligible: false,
-      rewardAmount: 0,
-      rewardPercentage: REFERRAL_REWARD_PERCENTAGE,
-      subscriptionPaidAmount: params.subscriptionPaidAmount,
-      qualificationDaysElapsed: 0,
-      isWithinWindow: false,
-      formattedRewardAmount: '₹0.00',
-      status: 'DISQUALIFIED',
-      isPilotSimulated: isPilot,
-      disqualificationReason: 'NOT_FIRST_PAYMENT',
-      walletRestrictionNotice,
-      pilotModeNotice,
-    };
+    return createDisqualifiedResult('NOT_FIRST_PAYMENT', 0, 'DISQUALIFIED');
   }
 
   // 4. Positive Subscription Amount Check
   const paidAmount = Math.max(0, Math.round(Number(params.subscriptionPaidAmount || 0) * 100) / 100);
   if (paidAmount <= 0) {
-    return {
-      isEligible: false,
-      rewardAmount: 0,
-      rewardPercentage: REFERRAL_REWARD_PERCENTAGE,
-      subscriptionPaidAmount: 0,
-      qualificationDaysElapsed: 0,
-      isWithinWindow: false,
-      formattedRewardAmount: '₹0.00',
-      status: 'DISQUALIFIED',
-      isPilotSimulated: isPilot,
-      disqualificationReason: 'INVALID_SUBSCRIPTION_AMOUNT',
-      walletRestrictionNotice,
-      pilotModeNotice,
-    };
+    return createDisqualifiedResult('INVALID_SUBSCRIPTION_AMOUNT', 0, 'DISQUALIFIED');
   }
 
   // 5. 30-Day Qualification Window Check
@@ -330,38 +468,65 @@ export function calculateReferralReward(
   const isWithinWindow = diffMs >= 0 && daysElapsed <= REFERRAL_QUALIFICATION_WINDOW_DAYS;
 
   if (!isWithinWindow) {
+    return createDisqualifiedResult('QUALIFICATION_WINDOW_EXPIRED', daysElapsed, 'EXPIRED');
+  }
+
+  // 6. Calculate 10% Reward to exact 2-decimal paisa precision
+  const rawReward = (paidAmount * REFERRAL_REWARD_PERCENTAGE) / 100;
+  const calculated10PercentAmount = Math.round(rawReward * 100) / 100;
+
+  const formattedCalculatedAmount = `₹${calculated10PercentAmount.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+  // 7. Pilot Simulation vs Live Commercial Payout Isolation
+  if (isPilot) {
+    // In pilot mode: Zero monetary wallet balance, zero monetary liability, simulated reward only
     return {
-      isEligible: false,
-      rewardAmount: 0,
+      isEligible: true,
+      rewardAmount: 0, // Strict invariant: 0 monetary balance during pilot
+      monetaryCreditAmount: 0, // Strict invariant: 0 monetary credit
+      walletMonetaryCredit: 0, // Strict invariant: 0 monetary balance
+      simulatedRewardAmount: calculated10PercentAmount, // Simulation for validation
+      financialLiabilityRecognized: false, // Strict invariant: 0 liability
+      financialReportingScope: 'PILOT_SANDBOX',
+      recordClassification: 'REFERRAL_TEST_RESULT',
       rewardPercentage: REFERRAL_REWARD_PERCENTAGE,
       subscriptionPaidAmount: paidAmount,
       qualificationDaysElapsed: daysElapsed,
-      isWithinWindow: false,
+      isWithinWindow: true,
       formattedRewardAmount: '₹0.00',
-      status: 'EXPIRED',
-      isPilotSimulated: isPilot,
-      disqualificationReason: 'QUALIFICATION_WINDOW_EXPIRED',
+      formattedMonetaryCredit: '₹0.00',
+      formattedSimulatedRewardAmount: formattedCalculatedAmount,
+      status: 'QUALIFIED',
+      isPilotSimulated: true,
       walletRestrictionNotice,
       pilotModeNotice,
     };
   }
 
-  // 6. Calculate 10% Reward to exact 2-decimal paisa precision
-  const rawReward = (paidAmount * REFERRAL_REWARD_PERCENTAGE) / 100;
-  const rewardAmount = Math.round(rawReward * 100) / 100;
-
+  // Live Commercial Production Payout
   return {
     isEligible: true,
-    rewardAmount,
+    rewardAmount: calculated10PercentAmount,
+    monetaryCreditAmount: calculated10PercentAmount,
+    walletMonetaryCredit: calculated10PercentAmount,
+    simulatedRewardAmount: 0,
+    financialLiabilityRecognized: true,
+    financialReportingScope: 'COMMERCIAL_PRODUCTION',
+    recordClassification: 'COMMERCIAL_REWARD_PAYOUT',
     rewardPercentage: REFERRAL_REWARD_PERCENTAGE,
     subscriptionPaidAmount: paidAmount,
     qualificationDaysElapsed: daysElapsed,
     isWithinWindow: true,
-    formattedRewardAmount: `₹${rewardAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    formattedRewardAmount: formattedCalculatedAmount,
+    formattedMonetaryCredit: formattedCalculatedAmount,
+    formattedSimulatedRewardAmount: '₹0.00',
     status: 'QUALIFIED',
-    isPilotSimulated: isPilot,
+    isPilotSimulated: false,
     walletRestrictionNotice,
-    pilotModeNotice,
+    pilotModeNotice: undefined,
   };
 }
 

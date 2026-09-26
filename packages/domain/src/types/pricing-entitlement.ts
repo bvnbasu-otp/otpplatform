@@ -739,11 +739,13 @@ export const PILOT_COMMERCIAL_MODE_POLICY = {
   realPaymentCharged: false,
   supplierPlatformFeeCharged: false,
   buyerPlatformFeeRewardRecognized: false,
+  referralMonetaryRewardRecognized: false,
   commercialRevenueRecognized: false,
   displayCommercialPricing: true,
   userNotice: 'Pilot Mode — No real payment will be charged during this pilot.',
   supplierFeeNotice: 'Pilot Mode — No commercial OTP Platform Fee will be charged during this pilot.',
   buyerRewardNotice: 'Pilot Mode — Sourcing rewards are simulated and non-commercial during this pilot.',
+  referralRewardNotice: 'Pilot Mode — Referral rewards are simulated test results (₹0 monetary credit) during this pilot.',
   reportingClassification: 'PILOT_SANDBOX' as const,
 };
 

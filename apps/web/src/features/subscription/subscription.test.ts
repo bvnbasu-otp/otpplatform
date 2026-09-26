@@ -249,6 +249,12 @@ describe('Cryptographically Secure Payment Reference Generation (FIX-01)', () =>
       calculateSupplierPlatformFeeWithPilotMode,
       resolveFinancialReportingClassification,
       generatePersistentReferralCode,
+      generateSecureRandomReferralCode,
+      getPersistentReferralCodeStore,
+      setPersistentReferralCode,
+      clearPersistentReferralCodeStore,
+      REFERRAL_CODE_ALPHABET,
+      DEFAULT_REFERRAL_CODE_LENGTH,
       generateReferralUrl,
       generateWhatsAppShareUrl,
       calculateReferralReward,
@@ -258,6 +264,12 @@ describe('Cryptographically Secure Payment Reference Generation (FIX-01)', () =>
     expect(typeof calculateSupplierPlatformFeeWithPilotMode).toBe('function');
     expect(typeof resolveFinancialReportingClassification).toBe('function');
     expect(typeof generatePersistentReferralCode).toBe('function');
+    expect(typeof generateSecureRandomReferralCode).toBe('function');
+    expect(typeof getPersistentReferralCodeStore).toBe('function');
+    expect(typeof setPersistentReferralCode).toBe('function');
+    expect(typeof clearPersistentReferralCodeStore).toBe('function');
+    expect(typeof REFERRAL_CODE_ALPHABET).toBe('string');
+    expect(typeof DEFAULT_REFERRAL_CODE_LENGTH).toBe('number');
     expect(typeof generateReferralUrl).toBe('function');
     expect(typeof generateWhatsAppShareUrl).toBe('function');
     expect(typeof calculateReferralReward).toBe('function');

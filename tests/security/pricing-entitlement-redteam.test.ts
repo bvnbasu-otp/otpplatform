@@ -545,18 +545,23 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (30 Attack Vectors)
   });
 
   // -------------------------------------------------------------------------
-  // VECTOR 26: Referral Code Determinism & Tampering Resistance
+  // VECTOR 26: Referral Code Randomness, Non-Derivation & Persistence Invariant
   // -------------------------------------------------------------------------
-  it('Vector 26: Ensures persistent referral codes are deterministic, non-forgeable, and invariant', () => {
+  it('Vector 26: Ensures referral codes are randomly generated, persistent, non-identity-derived, and non-forgeable', () => {
     const orgId = 'org-tenant-uuid-12345';
     const codeA = generatePersistentReferralCode(orgId, 'OTP');
     const codeB = generatePersistentReferralCode(orgId, 'OTP');
     expect(codeA).toBe(codeB);
-    expect(codeA).toMatch(/^OTP-[0-9A-F]{6}$/);
+    expect(codeA).toMatch(/^OTP-[A-Z0-9]{6}$/);
 
-    // Two different org IDs produce distinct non-colliding codes
+    // Two different org IDs produce distinct non-colliding random codes
     const codeOther = generatePersistentReferralCode('org-tenant-uuid-99999', 'OTP');
     expect(codeA).not.toBe(codeOther);
+
+    // Identity non-derivation: changing 1 char produces distinct independent random codes
+    const codeVariant = generatePersistentReferralCode('org-tenant-uuid-12346', 'OTP');
+    expect(codeVariant).not.toBe(codeA);
+    expect(codeVariant).not.toBe(codeOther);
   });
 
   // -------------------------------------------------------------------------
@@ -632,14 +637,14 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (30 Attack Vectors)
   });
 
   // -------------------------------------------------------------------------
-  // VECTOR 29: Controlled Pilot Commercial Isolation & Zero-Fee Shield
+  // VECTOR 29: Controlled Pilot Commercial Isolation, Zero-Fee Shield & Zero Pilot Referral Liability
   // -------------------------------------------------------------------------
-  it('Vector 29: Verifies zero financial mutation and supplier fee waiver during Controlled Pilot Mode', () => {
-    // Pilot mode financial isolation
+  it('Vector 29: Verifies zero financial mutation, supplier fee waiver, and zero monetary referral credit during Pilot Mode', () => {
+    // 1. Pilot mode financial ledger isolation
     expect(resolveFinancialReportingClassification('PILOT_FREE')).toBe('PILOT_SANDBOX');
     expect(resolveFinancialReportingClassification('PREPAID_STRICT')).toBe('COMMERCIAL_PRODUCTION');
 
-    // Pilot mode fee waiver protects supplier disbursements
+    // 2. Pilot mode fee waiver protects supplier disbursements (100% net disbursement)
     const pilotDisbursement = calculateSupplierPlatformFeeWithPilotMode({
       poGrossAmount: 500000,
       isPilotMode: true,
@@ -648,6 +653,44 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (30 Attack Vectors)
     expect(pilotDisbursement.totalFeeWithGst).toBe(0);
     expect(pilotDisbursement.netSupplierDisbursement).toBe(500000);
     expect(pilotDisbursement.isPilotWaived).toBe(true);
+    expect(pilotDisbursement.financialReportingScope).toBe('PILOT_SANDBOX');
+
+    // 3. Pilot referral reward boundary: Zero monetary wallet balance or liability during pilot
+    const pilotReferral = calculateReferralReward({
+      referrerId: 'referrer-pilot-1',
+      referredId: 'referee-pilot-1',
+      attributionDate: '2026-09-01T10:00:00Z',
+      paymentDate: '2026-09-10T10:00:00Z',
+      subscriptionPaidAmount: 1999,
+      isFirstSuccessfulPayment: true,
+      isPilotMode: true,
+    });
+    expect(pilotReferral.isEligible).toBe(true);
+    expect(pilotReferral.rewardAmount).toBe(0);
+    expect(pilotReferral.walletMonetaryCredit).toBe(0);
+    expect(pilotReferral.monetaryCreditAmount).toBe(0);
+    expect(pilotReferral.financialLiabilityRecognized).toBe(false);
+    expect(pilotReferral.financialReportingScope).toBe('PILOT_SANDBOX');
+    expect(pilotReferral.recordClassification).toBe('REFERRAL_TEST_RESULT');
+    expect(pilotReferral.simulatedRewardAmount).toBe(199.9);
+
+    // 4. Commercial mode with real payment: 10% monetary reward recognized
+    const commercialReferral = calculateReferralReward({
+      referrerId: 'referrer-live-1',
+      referredId: 'referee-live-1',
+      attributionDate: '2026-09-01T10:00:00Z',
+      paymentDate: '2026-09-10T10:00:00Z',
+      subscriptionPaidAmount: 1999,
+      isFirstSuccessfulPayment: true,
+      isPilotMode: false,
+    });
+    expect(commercialReferral.isEligible).toBe(true);
+    expect(commercialReferral.rewardAmount).toBe(199.9);
+    expect(commercialReferral.walletMonetaryCredit).toBe(199.9);
+    expect(commercialReferral.monetaryCreditAmount).toBe(199.9);
+    expect(commercialReferral.financialLiabilityRecognized).toBe(true);
+    expect(commercialReferral.financialReportingScope).toBe('COMMERCIAL_PRODUCTION');
+    expect(commercialReferral.recordClassification).toBe('COMMERCIAL_REWARD_PAYOUT');
   });
 
   // -------------------------------------------------------------------------

@@ -1,10 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   REFERRAL_REWARD_PERCENTAGE,
   REFERRAL_QUALIFICATION_WINDOW_DAYS,
   normalizeReferralCode,
   validateReferralCodeFormat,
+  generateSecureRandomReferralCode,
   generatePersistentReferralCode,
+  getPersistentReferralCodeStore,
+  setPersistentReferralCode,
+  clearPersistentReferralCodeStore,
   generateReferralUrl,
   generateWhatsAppShareUrl,
   getReferralWebShareData,
@@ -13,39 +17,108 @@ import {
   assertReferralWalletUsagePolicy,
 } from './referral-incentive';
 
-describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', () => {
-  describe('Constants & Code Generation', () => {
-    it('enforces 10% referral reward percentage and 30-day qualification window', () => {
+describe('Referral & Incentive System Domain Engine (Stage Pre-R2-30 Surgical Closure)', () => {
+  beforeEach(() => {
+    clearPersistentReferralCodeStore();
+  });
+
+  describe('Workstream 1: Random, Unpredictable & Persistent Referral Code Generation', () => {
+    it('enforces 10% referral reward percentage and 30-day qualification window constants', () => {
       expect(REFERRAL_REWARD_PERCENTAGE).toBe(10.0);
       expect(REFERRAL_QUALIFICATION_WINDOW_DAYS).toBe(30);
     });
 
-    it('normalizes referral codes cleanly', () => {
+    it('normalizes referral codes cleanly and strips unwanted characters', () => {
       expect(normalizeReferralCode('  ref-blr-014  ')).toBe('REF-BLR-014');
       expect(normalizeReferralCode('otp 999 123')).toBe('OTP-999-123');
       expect(normalizeReferralCode('')).toBe('');
     });
 
-    it('validates referral code formatting', () => {
+    it('validates referral code formatting accurately', () => {
       expect(validateReferralCodeFormat('OTP-A1B2C3')).toBe(true);
+      expect(validateReferralCodeFormat('OTP-9K7X2M')).toBe(true);
       expect(validateReferralCodeFormat('REF-12345')).toBe(true);
       expect(validateReferralCodeFormat('BNI-BLR-014')).toBe(true);
       expect(validateReferralCodeFormat('AB')).toBe(false); // too short
       expect(validateReferralCodeFormat('INVALID CODE WITH @#$!*')).toBe(false);
     });
 
-    it('generates persistent deterministic referral code from identifier', () => {
-      const code1 = generatePersistentReferralCode('user_abc123456');
-      const code2 = generatePersistentReferralCode('user_abc123456');
-      expect(code1).toBe(code2);
+    it('generates cryptographically secure, unpredictable random referral codes', () => {
+      const code1 = generateSecureRandomReferralCode('OTP');
+      const code2 = generateSecureRandomReferralCode('OTP');
+      const code3 = generateSecureRandomReferralCode('OTP');
+
       expect(code1.startsWith('OTP-')).toBe(true);
+      expect(code2.startsWith('OTP-')).toBe(true);
+      expect(code3.startsWith('OTP-')).toBe(true);
       expect(validateReferralCodeFormat(code1)).toBe(true);
+      expect(validateReferralCodeFormat(code2)).toBe(true);
+      expect(validateReferralCodeFormat(code3)).toBe(true);
+
+      // Random generation guarantees codes are not identical
+      expect(code1).not.toBe(code2);
+      expect(code2).not.toBe(code3);
     });
 
-    it('generates custom prefix referral codes deterministically', () => {
-      const bniCode = generatePersistentReferralCode('org_blr_bni_01', 'BNI');
+    it('proves non-derivation from identity attributes (no hashing of user/org/email/phone)', () => {
+      const idA = 'user_abc123456';
+      const idB = 'user_abc123457'; // 1 character difference
+      const codeA = generatePersistentReferralCode(idA, 'OTP');
+      const codeB = generatePersistentReferralCode(idB, 'OTP');
+
+      expect(codeA).not.toBe(codeB);
+      expect(codeA.startsWith('OTP-')).toBe(true);
+      expect(codeB.startsWith('OTP-')).toBe(true);
+
+      // Verify that code does NOT contain substrings of the input ID
+      expect(codeA.includes('abc')).toBe(false);
+      expect(codeB.includes('abc')).toBe(false);
+    });
+
+    it('guarantees persistent storage and reuse for the same entity across sessions/calls', () => {
+      const entityId = 'org-tenant-uuid-12345';
+      const initialCode = generatePersistentReferralCode(entityId, 'OTP');
+      
+      // Subsequent calls for the same entity return the exact same stored random code
+      const secondCall = generatePersistentReferralCode(entityId, 'OTP');
+      const thirdCall = generatePersistentReferralCode(entityId, 'OTP');
+
+      expect(initialCode).toBe(secondCall);
+      expect(secondCall).toBe(thirdCall);
+      expect(validateReferralCodeFormat(initialCode)).toBe(true);
+    });
+
+    it('preserves and normalizes already-valid referral code formats without overwriting', () => {
+      const existingCode = 'OTP-K8M4N2';
+      const resolved = generatePersistentReferralCode(existingCode, 'OTP');
+      expect(resolved).toBe('OTP-K8M4N2');
+
+      const customPrefixCode = 'BNI-7X9P3Q';
+      const resolvedCustom = generatePersistentReferralCode(customPrefixCode, 'BNI');
+      expect(resolvedCustom).toBe('BNI-7X9P3Q');
+    });
+
+    it('supports custom prefix referral code generation (e.g. BNI, REF)', () => {
+      const bniCode = generateSecureRandomReferralCode('BNI');
       expect(bniCode.startsWith('BNI-')).toBe(true);
       expect(validateReferralCodeFormat(bniCode)).toBe(true);
+    });
+
+    it('provides store inspection and manual registration capabilities', () => {
+      const store = getPersistentReferralCodeStore();
+      expect(store.size).toBe(0);
+
+      setPersistentReferralCode('user-manual-01', 'OTP-MANUAL99');
+      expect(getPersistentReferralCodeStore().get('user-manual-01')).toBe('OTP-MANUAL99');
+
+      const retrieved = generatePersistentReferralCode('user-manual-01', 'OTP');
+      expect(retrieved).toBe('OTP-MANUAL99');
+    });
+
+    it('handles collision avoidance when existing codes set is provided', () => {
+      const existingSet = new Set(['OTP-AAAAAA', 'OTP-BBBBBB']);
+      const newCode = generateSecureRandomReferralCode('OTP', 6, existingSet);
+      expect(existingSet.has(newCode)).toBe(false);
     });
   });
 
@@ -71,7 +144,6 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
       expect(shareUrl.startsWith('https://api.whatsapp.com/send?text=')).toBe(true);
       expect(shareUrl).toContain(encodeURIComponent('OTP-XYZ999'));
       expect(shareUrl).toContain(encodeURIComponent('https://otp.market/signup?ref=OTP-XYZ999&side=buyer'));
-      // Verifies intent-based model without requiring WAHA or scraping recipient phone numbers
       expect(shareUrl).not.toContain('phone=');
     });
 
@@ -98,12 +170,12 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
     });
   });
 
-  describe('10% Referral Reward Calculation & Qualification Engine', () => {
+  describe('Workstream 2: 10% Referral Reward & Controlled Pilot Boundary Enforcement', () => {
     const referrerId = 'referrer-user-111';
     const referredId = 'referred-user-222';
     const attributionDate = '2026-09-01T10:00:00Z';
 
-    it('calculates exact 10% reward for first successful subscription payment within 30 days', () => {
+    it('calculates exact 10% commercial reward for live first payment within 30 days', () => {
       const paymentDate = '2026-09-15T12:00:00Z'; // 14 days later (within 30 days)
       const result = calculateReferralReward({
         referrerId,
@@ -112,17 +184,54 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
         paymentDate,
         subscriptionPaidAmount: 1999.0, // ₹1,999 Annual Individual Plan
         isFirstSuccessfulPayment: true,
+        isPilotMode: false,
       });
 
       expect(result.isEligible).toBe(true);
       expect(result.rewardAmount).toBe(199.9);
+      expect(result.monetaryCreditAmount).toBe(199.9);
+      expect(result.walletMonetaryCredit).toBe(199.9);
+      expect(result.simulatedRewardAmount).toBe(0);
+      expect(result.financialLiabilityRecognized).toBe(true);
+      expect(result.financialReportingScope).toBe('COMMERCIAL_PRODUCTION');
+      expect(result.recordClassification).toBe('COMMERCIAL_REWARD_PAYOUT');
       expect(result.formattedRewardAmount).toBe('₹199.90');
       expect(result.status).toBe('QUALIFIED');
       expect(result.isWithinWindow).toBe(true);
       expect(result.qualificationDaysElapsed).toBe(14);
     });
 
-    it('calculates exact 10% reward for monthly ₹199 plan', () => {
+    it('strictly enforces Zero Monetary Balance during Pilot Mode simulation', () => {
+      const paymentDate = '2026-09-10T10:00:00Z';
+      const result = calculateReferralReward({
+        referrerId,
+        referredId,
+        attributionDate,
+        paymentDate,
+        subscriptionPaidAmount: 14999.0, // RWA Annual Plan ₹14,999
+        isFirstSuccessfulPayment: true,
+        isPilotMode: true,
+      });
+
+      expect(result.isEligible).toBe(true);
+      // STRICT INVARIANTS: Zero monetary wallet balance or liability during pilot
+      expect(result.rewardAmount).toBe(0);
+      expect(result.monetaryCreditAmount).toBe(0);
+      expect(result.walletMonetaryCredit).toBe(0);
+      expect(result.financialLiabilityRecognized).toBe(false);
+      expect(result.financialReportingScope).toBe('PILOT_SANDBOX');
+      expect(result.recordClassification).toBe('REFERRAL_TEST_RESULT');
+
+      // Simulation amount is tracked for validation
+      expect(result.simulatedRewardAmount).toBe(1499.9);
+      expect(result.formattedSimulatedRewardAmount).toBe('₹1,499.90');
+      expect(result.formattedRewardAmount).toBe('₹0.00');
+      expect(result.formattedMonetaryCredit).toBe('₹0.00');
+      expect(result.isPilotSimulated).toBe(true);
+      expect(result.pilotModeNotice).toContain('Pilot Mode');
+    });
+
+    it('calculates exact 10% reward for monthly ₹199 plan in commercial mode', () => {
       const paymentDate = '2026-09-02T10:00:00Z'; // 1 day later
       const result = calculateReferralReward({
         referrerId,
@@ -131,14 +240,17 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
         paymentDate,
         subscriptionPaidAmount: 199.0,
         isFirstSuccessfulPayment: true,
+        isPilotMode: false,
       });
 
       expect(result.isEligible).toBe(true);
       expect(result.rewardAmount).toBe(19.9);
+      expect(result.walletMonetaryCredit).toBe(19.9);
       expect(result.formattedRewardAmount).toBe('₹19.90');
+      expect(result.financialLiabilityRecognized).toBe(true);
     });
 
-    it('calculates exact 10% reward for MSME ₹19,999 annual plan', () => {
+    it('calculates exact 10% reward for MSME ₹19,999 annual plan in commercial mode', () => {
       const paymentDate = '2026-09-20T10:00:00Z';
       const result = calculateReferralReward({
         referrerId,
@@ -147,10 +259,12 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
         paymentDate,
         subscriptionPaidAmount: 19999.0,
         isFirstSuccessfulPayment: true,
+        isPilotMode: false,
       });
 
       expect(result.isEligible).toBe(true);
       expect(result.rewardAmount).toBe(1999.9);
+      expect(result.walletMonetaryCredit).toBe(1999.9);
       expect(result.formattedRewardAmount).toBe('₹1,999.90');
     });
 
@@ -166,6 +280,9 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
 
       expect(result.isEligible).toBe(false);
       expect(result.rewardAmount).toBe(0);
+      expect(result.walletMonetaryCredit).toBe(0);
+      expect(result.simulatedRewardAmount).toBe(0);
+      expect(result.financialLiabilityRecognized).toBe(false);
       expect(result.disqualificationReason).toBe('SELF_REFERRAL');
       expect(result.status).toBe('DISQUALIFIED');
     });
@@ -182,6 +299,9 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
       });
 
       expect(result.isEligible).toBe(false);
+      expect(result.rewardAmount).toBe(0);
+      expect(result.walletMonetaryCredit).toBe(0);
+      expect(result.financialLiabilityRecognized).toBe(false);
       expect(result.disqualificationReason).toBe('SELF_REFERRAL');
     });
 
@@ -197,6 +317,8 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
 
       expect(result.isEligible).toBe(false);
       expect(result.rewardAmount).toBe(0);
+      expect(result.walletMonetaryCredit).toBe(0);
+      expect(result.financialLiabilityRecognized).toBe(false);
       expect(result.disqualificationReason).toBe('NOT_FIRST_PAYMENT');
       expect(result.status).toBe('DISQUALIFIED');
     });
@@ -214,6 +336,8 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
 
       expect(result.isEligible).toBe(false);
       expect(result.rewardAmount).toBe(0);
+      expect(result.walletMonetaryCredit).toBe(0);
+      expect(result.financialLiabilityRecognized).toBe(false);
       expect(result.isWithinWindow).toBe(false);
       expect(result.qualificationDaysElapsed).toBe(35);
       expect(result.disqualificationReason).toBe('QUALIFICATION_WINDOW_EXPIRED');
@@ -233,6 +357,8 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
 
       expect(result.isEligible).toBe(false);
       expect(result.rewardAmount).toBe(0);
+      expect(result.walletMonetaryCredit).toBe(0);
+      expect(result.financialLiabilityRecognized).toBe(false);
       expect(result.disqualificationReason).toBe('ALREADY_REWARDED');
     });
 
@@ -247,25 +373,10 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27 / Pre-R2-30)', 
       });
 
       expect(result.isEligible).toBe(false);
+      expect(result.rewardAmount).toBe(0);
+      expect(result.walletMonetaryCredit).toBe(0);
+      expect(result.financialLiabilityRecognized).toBe(false);
       expect(result.disqualificationReason).toBe('INVALID_SUBSCRIPTION_AMOUNT');
-    });
-
-    it('correctly tags reward simulation during controlled pilot mode', () => {
-      const paymentDate = '2026-09-10T10:00:00Z';
-      const result = calculateReferralReward({
-        referrerId,
-        referredId,
-        attributionDate,
-        paymentDate,
-        subscriptionPaidAmount: 14999.0, // RWA Annual Plan ₹14,999
-        isFirstSuccessfulPayment: true,
-        isPilotMode: true,
-      });
-
-      expect(result.isEligible).toBe(true);
-      expect(result.rewardAmount).toBe(1499.9);
-      expect(result.isPilotSimulated).toBe(true);
-      expect(result.pilotModeNotice).toContain('Pilot Mode');
     });
   });
 
