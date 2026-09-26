@@ -80,6 +80,8 @@ describe('OTP R2-C2: Founder / CEO Operational Visibility Suite (C2-01 to C2-12)
     expect(html).toContain('OTP Executive &amp; Founder Cockpit');
     expect(html).toContain('Executive Isolation');
     expect(html).toContain('Google Places Supplier Discovery');
+    expect(html).toContain('Baskar Loganathan');
+    expect(html).toContain('Founder &amp; CEO');
   });
 
   /**

@@ -93,6 +93,11 @@ export function FounderDashboardPage({
           <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
             Authoritative, real-time platform metrics and milestone achievement tracking derived directly from production ledgers.
           </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground font-medium">
+            <span>Founder &amp; CEO: <strong className="text-foreground">Baskar Loganathan</strong></span>
+            <span>·</span>
+            <span>Product Manager &amp; Author: <strong className="text-foreground">Baskar Loganathan</strong></span>
+          </div>
         </div>
         <Button
           variant="secondary"

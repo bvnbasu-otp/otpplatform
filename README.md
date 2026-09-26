@@ -203,6 +203,14 @@ The dev server runs on **port 3000** (`strictPort`), matching the Supabase auth 
 
 ---
 
+## Product Leadership & Ownership
+
+- **Author & Creator:** Baskar Loganathan (`bvnbasu@gmail.com`)
+- **Product Manager & Lead Architect:** Baskar Loganathan
+- **CEO & Founder:** Baskar Loganathan
+
+---
+
 ## License
 
 Proprietary — OTP Platform

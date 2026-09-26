@@ -119,6 +119,39 @@ export function AboutPage() {
           </div>
         </div>
 
+        {/* Product Leadership & Ownership */}
+        <div className="mt-8 rounded-2xl border bg-card p-5 sm:p-6 space-y-4 shadow-xs">
+          <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary text-sm">
+              👤
+            </span>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-action">Product Leadership &amp; Provenance</p>
+              <h2 className="text-base font-bold text-foreground">Executive Architecture &amp; Ownership</h2>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3 text-xs">
+            <div className="rounded-xl border bg-muted/20 p-3 space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Product Creator &amp; Author</span>
+              <p className="font-extrabold text-foreground text-sm">Baskar Loganathan</p>
+              <p className="text-[11px] text-muted-foreground">Original concept, domain architecture, and cryptographic protocol design.</p>
+            </div>
+
+            <div className="rounded-xl border bg-muted/20 p-3 space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Product Manager</span>
+              <p className="font-extrabold text-foreground text-sm">Baskar Loganathan</p>
+              <p className="text-[11px] text-muted-foreground">Product roadmap, feature specifications, and canonical procurement governance.</p>
+            </div>
+
+            <div className="rounded-xl border bg-muted/20 p-3 space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">CEO / Founder</span>
+              <p className="font-extrabold text-foreground text-sm">Baskar Loganathan</p>
+              <p className="text-[11px] text-muted-foreground">Executive direction, commercial pilot execution, and platform leadership.</p>
+            </div>
+          </div>
+        </div>
+
         {/* CTA Actions */}
         <div className="mt-8 flex flex-wrap items-center gap-3 pt-2">
           <Link

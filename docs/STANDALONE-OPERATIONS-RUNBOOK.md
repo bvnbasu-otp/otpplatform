@@ -1,6 +1,6 @@
 # OTP Platform — Master Operations Runbook & Automation Guide
 
-This document is the **sole authoritative operational runbook** for maintaining, testing, deploying, backing up, and troubleshooting the OTP Platform **standalone without requiring AI assistants (Antigravity, Claude, or Cursor)**.
+This document is the **sole authoritative operational runbook** for maintaining, testing, deploying, backing up, and troubleshooting the OTP Platform standalone.
 
 ---
 

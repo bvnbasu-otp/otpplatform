@@ -2,6 +2,7 @@
   "name": "@otp/config",
   "version": "0.1.0",
   "private": true,
+  "author": "Baskar Loganathan <bvnbasu@gmail.com>",
   "exports": {
     "./typescript/base.json": "./typescript/base.json",
     "./typescript/react.json": "./typescript/react.json"

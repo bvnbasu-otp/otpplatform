@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "OTP — Open Trade & Procurement",
+  "author": "Baskar Loganathan <bvnbasu@gmail.com>",
   "scripts": {
     "build": "vite build apps/web",
     "dev": "vite apps/web",

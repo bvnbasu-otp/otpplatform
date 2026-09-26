@@ -8,7 +8,7 @@ import { getRetainedSession, type RetainedSessionData } from '@/features/mainten
 // ----------------------------------------------------
 const COMIC_QUOTES = [
   'Our digital hard hats are on! Tightening the cryptographic bolts and vacuuming the database indexes.',
-  'Teaching our AI model how to politely say "Your quote is rejected" without hurting anyone\'s feelings.',
+  'Calibrating our automated quote parser to maintain strict identity protection.',
   'Refilling the virtual chai dispenser. Procurement leads require high octane tea to operate.',
   'Untangling the ONDC network cables. Someone plugged the identity-protected comparison server into the toaster.',
   'Recalibrating the committee quorum scale. Finding 2 partners who agree on anything takes time.',
