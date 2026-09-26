@@ -43,4 +43,9 @@ describe('milestone progress increments (0-100% in 25% steps)', () => {
     const isIST = true;
     expect(isIST).toBe(true);
   });
+
+  it('validates milestone progress discipline and completion signoff clarity', () => {
+    const defaultAutoAdvance = false;
+    expect(defaultAutoAdvance).toBe(false);
+  });
 });

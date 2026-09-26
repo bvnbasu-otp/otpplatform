@@ -131,8 +131,16 @@ describe('Simulated Quotes Generation Engine (Demo / Pilot Mode)', () => {
     });
   });
 
-  describe('3. ensureSimulatedQuotesForRfq threshold guard', () => {
-    it('skips simulation if RFQ already has >= 3 quotes', async () => {
+  describe('3. ensureSimulatedQuotesForRfq threshold guard & Real Pilot Boundary', () => {
+    it('strictly disables simulation in real pilot mode (when isDemo is not true)', async () => {
+      const res = await ensureSimulatedQuotesForRfq('rfq-real-pilot-001', { isDemo: false });
+      expect(res.ok).toBe(true);
+      expect(res.quotesSubmitted).toBe(0);
+      expect(res.totalQuotes).toBe(0);
+      expect(res.message).toContain('Real Pilot Mode: Synthetic quote generator disabled');
+    });
+
+    it('skips simulation in demo mode if RFQ already has >= 3 quotes', async () => {
       const existingQuotes = [
         { quote_id: 'q-1', status: 'FINAL' },
         { quote_id: 'q-2', status: 'FINAL' },
@@ -146,13 +154,13 @@ describe('Simulated Quotes Generation Engine (Demo / Pilot Mode)', () => {
         return createSupabaseQueryMock({ data: [], error: null });
       });
 
-      const res = await ensureSimulatedQuotesForRfq('rfq-populated-101');
+      const res = await ensureSimulatedQuotesForRfq('rfq-populated-101', { isDemo: true });
       expect(res.ok).toBe(true);
       expect(res.quotesSubmitted).toBe(0);
       expect(res.totalQuotes).toBe(3);
     });
 
-    it('triggers simulation if RFQ has < 3 quotes', async () => {
+    it('triggers simulation in demo mode if RFQ has < 3 quotes', async () => {
       const existingQuotes = [{ id: 'q-1', status: 'FINAL' }];
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
@@ -170,7 +178,7 @@ describe('Simulated Quotes Generation Engine (Demo / Pilot Mode)', () => {
         error: null,
       } as any);
 
-      const res = await ensureSimulatedQuotesForRfq('rfq-sparse-202');
+      const res = await ensureSimulatedQuotesForRfq('rfq-sparse-202', { isDemo: true });
       expect(res.ok).toBe(true);
       expect(res.quotesSubmitted).toBe(4);
     });

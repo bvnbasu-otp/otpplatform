@@ -507,9 +507,17 @@ export function PurchaseOrderDetailPage({
     const cleanId = (poId || '').trim();
     if (!cleanId) return;
     if (!settlementSummary || !settlementSummary.isFullySettled) {
-      setError('Cannot complete Purchase Order: all issued invoices must be 100% settled first.');
+      const outstanding = settlementSummary?.invoicedOutstandingAmount ?? settlementSummary?.remainingSettlementAmount ?? 0;
+      const outstandingMsg = outstanding > 0 ? ` Outstanding balance remaining: ₹${outstanding.toLocaleString('en-IN')}.` : '';
+      setError(`PO cannot be marked completed: Pending invoices and settlements must be 100% verified.${outstandingMsg}`);
       setShowCompletionModal(false);
       setActiveTab('PAYMENT');
+      return;
+    }
+    if (workOrder && !workOrder.buyerAcceptedAt && workOrder.progressPercent < 100) {
+      setError('PO cannot be marked completed: Milestone inspection sign-off is incomplete.');
+      setShowCompletionModal(false);
+      setActiveTab('MILESTONES');
       return;
     }
     setBusy(true);
@@ -1707,7 +1715,7 @@ export function PurchaseOrderDetailPage({
                 />
 
                 {/* Step Progression CTA to Payment Settlement */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
+                <div className="hidden sm:flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl border border-border bg-muted/20">
                   <div className="text-xs">
                     <span className="font-extrabold text-foreground block">Next Fulfillment Step:</span>
                     <span className="text-[11px] text-muted-foreground">

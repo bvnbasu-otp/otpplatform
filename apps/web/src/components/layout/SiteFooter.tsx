@@ -38,7 +38,7 @@ export function SiteFooter() {
               <span>© {new Date().getFullYear()} All rights reserved.</span>
             </div>
             <span className="hidden sm:inline">·</span>
-            <span className="text-[11px] text-muted-foreground/80">Last updated: 21 September 2026</span>
+            <span className="text-[11px] text-muted-foreground/80">Last updated: 26 September 2026</span>
           </div>
 
           {/* Strict 5-Item Navigation Footer Links */}

@@ -988,9 +988,34 @@ export function ProfilePage() {
         </section>
       )}
 
-      {/* 3. TAB 2: WORKSPACE & TEAM MEMBERS */}
+      {/* 3. TAB: ORGANIZATION, GOVERNANCE & AGREEMENTS */}
       {activeTab === 'team' && (
         <div className="space-y-3">
+          {/* Organization Registration Agreement & Governance Charter */}
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📜</span>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Organization Registration Agreement</h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Governance terms &amp; institutional charter under which this workspace operates
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-muted/20 border text-xs space-y-2">
+              <p className="font-semibold text-foreground">
+                {tryResolveBuyerPersona(currentOrgType) === 'RWA'
+                  ? '🏛️ RWA Institutional Organization Agreement'
+                  : '🏢 MSME Institutional Procurement Agreement'}
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                This organization is registered under OTP's direct settlement framework with zero markup,
+                identity-protected competitive quoting, and immutable audit logs.
+              </p>
+            </div>
+          </section>
           {/* Quick link to Dedicated Governance & Delegation Workbench */}
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3.5 flex flex-wrap items-center justify-between gap-2 shadow-xs">
             <div className="min-w-0">

@@ -318,9 +318,9 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
               type="button"
               onClick={handleApplyTds}
               disabled={loading || preview.statutoryTdsAmount <= 0}
-              className="px-4 py-2 bg-primary text-primary-foreground font-semibold text-xs rounded-lg hover:bg-primary/90 transition disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-primary-foreground font-semibold text-xs rounded-lg hover:bg-primary/90 transition disabled:opacity-50 min-h-[44px] cursor-pointer"
             >
-              {loading ? 'Recording Statutory TDS...' : 'Apply & Deduct TDS'}
+              {loading ? 'Recording Statutory TDS...' : 'Apply & Detect TDS'}
             </button>
           </div>
         </div>

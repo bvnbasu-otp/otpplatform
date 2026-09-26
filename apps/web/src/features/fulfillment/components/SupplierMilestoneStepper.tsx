@@ -34,7 +34,7 @@ export function SupplierMilestoneStepper({
   const [attachmentNote, setAttachmentNote] = useState<string>('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; size: string; time: string }>>([]);
   const [showAttachModal, setShowAttachModal] = useState(false);
-  const [markCompleteOnSave, setMarkCompleteOnSave] = useState(true);
+  const [markCompleteOnSave, setMarkCompleteOnSave] = useState(false);
 
   const currentPercent = workOrder.progressPercent || 0;
 

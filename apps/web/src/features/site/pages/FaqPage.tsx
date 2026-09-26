@@ -70,7 +70,7 @@ export function FaqPage() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
               <span>🛡️</span> Complete Architecture &amp; FAQs
             </span>
-            <span className="text-[10px] text-muted-foreground font-medium">Last updated: 21 September 2026</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Last updated: 26 September 2026</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
             How OTP Works &amp; FAQ

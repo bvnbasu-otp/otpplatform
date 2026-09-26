@@ -188,8 +188,55 @@ export function AddressBookManager({
         p_contact_phone: contactPhone.trim() || null,
       });
 
-      if (rpcErr) throw rpcErr;
-      if (data && !data.ok) throw new Error(data.error || 'Failed to save address');
+      if (rpcErr) {
+        // Direct table fallback if RPC fails or unavailable in some client contexts
+        if (editingId) {
+          const { error: updErr } = await supabase
+            .from('buyer_addresses')
+            .update({
+              label: label.trim() || 'Primary Site',
+              address_line1: line1.trim(),
+              address_line2: line2.trim() || null,
+              landmark: landmark.trim() || null,
+              city: city.trim(),
+              state: state.trim(),
+              pincode: pincode.trim(),
+              recipient_name: recipientName.trim() || null,
+              contact_person: (contactPerson || recipientName).trim() || null,
+              contact_phone: contactPhone.trim() || null,
+              address_type: addressType,
+              is_primary: isPrimary || addresses.length === 0,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', editingId);
+          if (updErr) throw updErr;
+        } else {
+          const { error: insErr } = await supabase
+            .from('buyer_addresses')
+            .insert({
+              profile_id: user?.id,
+              organization_id: organizationId || null,
+              label: label.trim() || (persona === 'RWA' ? 'Society Premises' : persona === 'MSME' ? 'Operational Site' : 'Home Delivery'),
+              address_line1: line1.trim(),
+              address_line2: line2.trim() || null,
+              landmark: landmark.trim() || null,
+              city: city.trim(),
+              state: state.trim(),
+              pincode: pincode.trim(),
+              recipient_name: recipientName.trim() || null,
+              contact_person: (contactPerson || recipientName).trim() || null,
+              contact_phone: contactPhone.trim() || null,
+              address_type: addressType,
+              is_primary: isPrimary || addresses.length === 0,
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          if (insErr) throw insErr;
+        }
+      } else if (data && !data.ok) {
+        throw new Error(data.error || 'Failed to save address');
+      }
 
       resetForm();
       setShowAddModal(false);

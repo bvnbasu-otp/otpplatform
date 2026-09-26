@@ -321,9 +321,16 @@ export async function simulateQuotesForRfq(
  * Checks if the RFQ currently has 0 quotes and seeds simulated quotes if so.
  */
 export async function ensureSimulatedQuotesForRfq(
-  rfqId: string
+  rfqId: string,
+  options?: { isDemo?: boolean }
 ): Promise<SimulateQuotesResult> {
   if (!rfqId) return { ok: false, error: 'Missing RFQ ID' };
+
+  // STRICT REAL PILOT BOUNDARY:
+  // In real pilot / production mode, never auto-generate synthetic quotes. Genuine responses only via /q/:token
+  if (!options?.isDemo) {
+    return { ok: true, rfqId, totalQuotes: 0, quotesSubmitted: 0, message: 'Real Pilot Mode: Synthetic quote generator disabled' };
+  }
 
   try {
     const { data: viewData, error: viewErr } = await supabase

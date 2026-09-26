@@ -39,7 +39,7 @@ export const DEFAULT_REFERRAL_CODE_LENGTH = 6;
 export const REFERRAL_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 export const DEFAULT_REFERRAL_SHARE_MESSAGE =
-  "Hi, I'm using OTP for competitive institutional and business procurement. You can check it out, get verified supplier quotes, and sign up here: {url}";
+  "Hi, I'm using OTP for competitive procurement and really impressed with it. You can try it out and get started with my referral code: {code} - {url}";
 
 export type ReferralAttributionStatus =
   | 'ATTRIBUTED'
@@ -334,7 +334,20 @@ export interface GenerateWhatsAppShareUrlParams {
 export function generateWhatsAppShareUrl(params: GenerateWhatsAppShareUrlParams): string {
   const url = params.referralUrl || generateReferralUrl(params.referralCode, params.origin, params.side);
   const template = params.customMessage || DEFAULT_REFERRAL_SHARE_MESSAGE;
-  const message = template.includes('{url}') ? template.replace('{url}', url) : `${template}\n\n${url}`;
+  let message = template;
+  if (message.includes('{code}')) {
+    message = message.replace(/{code}/g, params.referralCode);
+  }
+  if (message.includes('{CODE}')) {
+    message = message.replace(/{CODE}/g, params.referralCode);
+  }
+  if (message.includes('{url}')) {
+    message = message.replace(/{url}/g, url);
+  } else if (message.includes('{LINK}')) {
+    message = message.replace(/{LINK}/g, url);
+  } else {
+    message = `${message}\n\n${url}`;
+  }
 
   const searchParams = new URLSearchParams();
   if (params.targetPhone) {

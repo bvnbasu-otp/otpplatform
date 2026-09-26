@@ -11,7 +11,7 @@ export function AboutPage() {
           <div className="flex items-center gap-2">
             <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.18em] text-action">About Us</p>
             <span className="text-[10px] text-muted-foreground">·</span>
-            <span className="text-[10px] text-muted-foreground font-medium">Last updated: 21 September 2026</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Last updated: 26 September 2026</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground leading-tight tracking-tight">
             Procurement Decided on Merit, Sealed by Cryptographic Proof

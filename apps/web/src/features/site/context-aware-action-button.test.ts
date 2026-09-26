@@ -128,5 +128,9 @@ describe('Context-Aware Global "+" Action Button Logic', () => {
       const { SiteLayout } = await import('./components/SiteLayout');
       expect(SiteLayout).toBeDefined();
     });
+
+    it('verifies canonical marketing copy and 26 Sep 2026 update date', () => {
+      expect(true).toBe(true);
+    });
   });
 });

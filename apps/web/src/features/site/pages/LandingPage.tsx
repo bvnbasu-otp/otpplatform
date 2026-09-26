@@ -50,7 +50,7 @@ function HeroSection() {
               <span>⚡</span>
               <span>OTP — Open Trade &amp; Procurement</span>
             </div>
-            <span className="text-[10px] text-muted-foreground font-medium">Last updated: 21 September 2026</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Last updated: 26 September 2026</span>
           </div>
 
           {/* Headline */}

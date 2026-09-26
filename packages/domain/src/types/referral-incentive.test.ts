@@ -477,5 +477,16 @@ describe('Referral & Incentive System Domain Engine (Stage Pre-R2-30 Surgical Cl
       expect(r2.isAllowed).toBe(false);
       expect(r2.error).toContain('cannot be used for procurement GMV settlement');
     });
+
+    it('formats friendly human referral WhatsApp share message properly', () => {
+      const shareUrl = generateWhatsAppShareUrl({
+        referralCode: 'OTP-FRIENDLY1',
+        origin: 'https://otp.market',
+        side: 'buyer',
+      });
+      expect(shareUrl.startsWith('https://api.whatsapp.com/send?text=')).toBe(true);
+      expect(shareUrl).toContain(encodeURIComponent('OTP-FRIENDLY1'));
+      expect(decodeURIComponent(shareUrl.replace(/\+/g, ' '))).toContain("Hi, I'm using OTP for competitive procurement and really impressed with it.");
+    });
   });
 });
