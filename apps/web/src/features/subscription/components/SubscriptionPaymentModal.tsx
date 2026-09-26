@@ -26,9 +26,9 @@ interface SubscriptionPaymentModalProps {
 }
 
 const AVAILABLE_TIERS: { id: SubscriptionTierId; label: string; priceMonthly: number }[] = [
-  { id: 'INDIVIDUAL', label: 'Individual (₹99)', priceMonthly: 99 },
-  { id: 'RWA', label: 'RWA / Society (₹499)', priceMonthly: 499 },
-  { id: 'MSME', label: 'MSME (₹999)', priceMonthly: 999 },
+  { id: 'INDIVIDUAL', label: 'Individual (₹199)', priceMonthly: 199 },
+  { id: 'RWA', label: 'RWA / Society (₹1,499)', priceMonthly: 1499 },
+  { id: 'MSME', label: 'MSME (₹1,999)', priceMonthly: 1999 },
 ];
 
 export function SubscriptionPaymentModal({
@@ -283,7 +283,7 @@ export function SubscriptionPaymentModal({
                   }`}
                 >
                   <div className="font-bold text-sm text-foreground">Monthly Plan</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">5 RFQs / Calendar Month</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">3 RFQs / Calendar Month</div>
                   <div className="text-base font-black text-foreground mt-2">
                     ₹{SUBSCRIPTION_TIERS[selectedTier]?.monthlyPrice.toLocaleString('en-IN')}
                     <span className="text-[11px] font-normal text-muted-foreground"> + 18% GST</span>
@@ -300,7 +300,7 @@ export function SubscriptionPaymentModal({
                   }`}
                 >
                   <span className="absolute top-2 right-2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.2 border border-emerald-300 dark:border-emerald-700">
-                    6 RFQs/mo (Annual Bonus)
+                    +1 Quarterly Bonus
                   </span>
                   <div className="font-bold text-sm text-foreground">Yearly Plan</div>
                   <div className="text-xs text-muted-foreground mt-0.5">Save ₹{SUBSCRIPTION_TIERS[selectedTier]?.yearlySavings.toLocaleString('en-IN')}</div>
@@ -315,7 +315,7 @@ export function SubscriptionPaymentModal({
               <div className="rounded-lg border bg-muted/20 p-2.5 text-xs flex items-center justify-between">
                 <span className="text-muted-foreground">Monthly Entitlement:</span>
                 <span className="font-bold text-foreground">
-                  {fee.monthlyRfqQuota} RFQs / month {selectedCycle === 'YEARLY' ? '(Includes 1 Bonus RFQ/mo)' : ''}
+                  {fee.monthlyRfqQuota} RFQs / month {selectedCycle === 'YEARLY' ? '(+1 Quarterly Bonus RFQ)' : ''}
                 </span>
               </div>
             </div>

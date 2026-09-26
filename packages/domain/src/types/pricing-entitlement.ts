@@ -47,8 +47,8 @@ export const DEFAULT_GST_RATE_PERCENT = 18.0;
 export const OTP_GST_RATE = DEFAULT_GST_RATE_PERCENT; // Authoritative OTP Platform Tax Configuration (18% GST)
 export const DEFAULT_SUPPLIER_PLATFORM_FEE_RATE = 0.5; // 0.50%
 export const INDIVIDUAL_MONTHLY_RFQ_ALLOWANCE = 3; // 3 RFQs per month for Individual Buyers
-export const STANDARD_MONTHLY_RFQ_ALLOWANCE = 5;
-export const ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE = 6; // 5 + 1 bonus
+export const STANDARD_MONTHLY_RFQ_ALLOWANCE = 3; // 3 RFQs per month for standard buyer tiers
+export const ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE = 3; // 3 RFQs per month + 1 quarterly bonus on annual plans
 
 export interface SupplierPlatformFeeCalculationParams {
   poGrossAmount: number;
@@ -122,14 +122,14 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     tagline: 'For independent property owners, solo buyers & personal procurement',
     targetOrgTypes: ['INDIVIDUAL'],
     targetAudience: 'Independent buyers, property owners & personal purchasers',
-    monthlyPrice: 99,
+    monthlyPrice: 199,
     monthlyDurationDays: 30,
     monthlyRfqs: INDIVIDUAL_MONTHLY_RFQ_ALLOWANCE, // 3 RFQs/month
-    yearlyPrice: 999,
+    yearlyPrice: 1999,
     yearlyDurationDays: 365,
     yearlyMonthlyRfqs: INDIVIDUAL_MONTHLY_RFQ_ALLOWANCE, // 3 normal monthly RFQs
     quarterlyBonusRfqs: 1, // +1 additional RFQ per quarter (expires at quarter end, does not accumulate)
-    yearlySavings: 189, // (99 * 12) - 999 = 1188 - 999 = 189
+    yearlySavings: 389, // (199 * 12) - 1999 = 2388 - 1999 = 389
     additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
     features: [
       '3 High-intent RFQs included per calendar month',
@@ -148,17 +148,18 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     tagline: 'For housing societies, apartment committees & residential welfare',
     targetOrgTypes: ['COMMUNITY', 'RWA', 'SOCIETY'],
     targetAudience: 'RWAs, Apartment Societies, Resident Welfare Associations',
-    monthlyPrice: 499,
+    monthlyPrice: 1499,
     monthlyDurationDays: 30,
     monthlyRfqs: STANDARD_MONTHLY_RFQ_ALLOWANCE,
-    yearlyPrice: 4999,
+    yearlyPrice: 14999,
     yearlyDurationDays: 365,
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
-    yearlySavings: 989, // (499 * 12) - 4999 = 5988 - 4999 = 989
+    quarterlyBonusRfqs: 1,
+    yearlySavings: 2989, // (1499 * 12) - 14999 = 17988 - 14999 = 2989
     additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
     popular: true,
     features: [
-      '5 High-intent RFQs included per calendar month (6 RFQs/mo on annual plan)',
+      '3 High-intent RFQs included per calendar month (+1 Quarterly Bonus on annual plan)',
       'Multi-member Committee Voting Room with quorum tracking',
       'Conflict-of-interest declarations & recorded voter justifications',
       'Weighted scoring rubrics (Price, Delivery TAT, Warranty, Quality)',
@@ -172,16 +173,17 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     tagline: 'For small & medium enterprises, workshops, plants & commercial teams',
     targetOrgTypes: ['MSME'],
     targetAudience: 'MSMEs, Manufacturing Units, Commercial Contractors & Service Firms',
-    monthlyPrice: 999,
+    monthlyPrice: 1999,
     monthlyDurationDays: 30,
     monthlyRfqs: STANDARD_MONTHLY_RFQ_ALLOWANCE,
-    yearlyPrice: 9999,
+    yearlyPrice: 19999,
     yearlyDurationDays: 365,
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
-    yearlySavings: 1989, // (999 * 12) - 9999 = 11988 - 9999 = 1989
+    quarterlyBonusRfqs: 1,
+    yearlySavings: 3989, // (1999 * 12) - 19999 = 23988 - 19999 = 3989
     additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
     features: [
-      '5 High-intent RFQs included per calendar month (6 RFQs/mo on annual plan)',
+      '3 High-intent RFQs included per calendar month (+1 Quarterly Bonus on annual plan)',
       'Multi-department procurement workflow & role-based approval controls',
       'Vendor discovery across regional supplier networks with verified GSTINs',
       'Technical specification comparison & anonymous clarification Q&A',
@@ -201,6 +203,7 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     yearlyPrice: 49999,
     yearlyDurationDays: 365,
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
+    quarterlyBonusRfqs: 1,
     yearlySavings: 9989, // (4999 * 12) - 49999 = 59988 - 49999 = 9989
     additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
     features: [
@@ -219,16 +222,17 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     tagline: 'For Property Owners, MSMEs & Small Business Buyers',
     targetOrgTypes: ['INDIVIDUAL', 'MSME'],
     targetAudience: 'Individuals, Proprietary Firms & MSMEs',
-    monthlyPrice: 99,
+    monthlyPrice: 199,
     monthlyDurationDays: 30,
     monthlyRfqs: STANDARD_MONTHLY_RFQ_ALLOWANCE,
-    yearlyPrice: 999,
+    yearlyPrice: 1999,
     yearlyDurationDays: 365,
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
-    yearlySavings: 189,
+    quarterlyBonusRfqs: 1,
+    yearlySavings: 389,
     additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
     features: [
-      '5 High-intent RFQs included per calendar month',
+      '3 High-intent RFQs included per calendar month',
       'Protected supplier quoting & fair comparison matrix',
       'Automated GST tax invoice & PO generation upon award',
       'Direct supplier interaction & bilateral settlement',
@@ -242,17 +246,18 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTierId, SubscriptionPlanDefi
     tagline: 'For Housing Societies, Enterprises & Institutional Committees',
     targetOrgTypes: ['COMMUNITY', 'ENTERPRISE', 'INSTITUTION'],
     targetAudience: 'RWAs, Apartment Societies, Colleges, Trusts & Enterprises',
-    monthlyPrice: 499,
+    monthlyPrice: 1499,
     monthlyDurationDays: 30,
     monthlyRfqs: STANDARD_MONTHLY_RFQ_ALLOWANCE,
-    yearlyPrice: 4999,
+    yearlyPrice: 14999,
     yearlyDurationDays: 365,
     yearlyMonthlyRfqs: ANNUAL_BONUS_MONTHLY_RFQ_ALLOWANCE,
-    yearlySavings: 989,
+    quarterlyBonusRfqs: 1,
+    yearlySavings: 2989,
     additionalRfqPrice: ADDITIONAL_RFQ_TOPUP_BASE_PRICE,
     popular: true,
     features: [
-      '5 High-intent RFQs included per calendar month',
+      '3 High-intent RFQs included per calendar month',
       'Multi-member Committee Voting Room with quorum tracking',
       'Weighted scoring rubrics & decision justifications',
       'Formal Purchase Order (PO) generation & multi-stage sign-offs',

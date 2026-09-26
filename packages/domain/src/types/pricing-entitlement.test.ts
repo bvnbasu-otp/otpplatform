@@ -22,34 +22,36 @@ import {
 
 describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
   describe('Subscription Tiers & Price Matrix', () => {
-    it('enforces canonical Individual tier pricing: ₹99/mo, ₹999/yr, 3 RFQs/mo (1 quarterly bonus on annual)', () => {
+    it('enforces canonical Individual tier pricing: ₹199/mo, ₹1,999/yr, 3 RFQs/mo (1 quarterly bonus on annual)', () => {
       const tier = SUBSCRIPTION_TIERS.INDIVIDUAL;
-      expect(tier.monthlyPrice).toBe(99);
-      expect(tier.yearlyPrice).toBe(999);
+      expect(tier.monthlyPrice).toBe(199);
+      expect(tier.yearlyPrice).toBe(1999);
       expect(tier.monthlyRfqs).toBe(3);
       expect(tier.quarterlyBonusRfqs).toBe(1);
-      expect(tier.yearlySavings).toBe(189);
+      expect(tier.yearlySavings).toBe(389);
       expect(tier.additionalRfqPrice).toBe(149);
     });
 
-    it('enforces canonical RWA tier pricing: ₹499/mo, ₹4,999/yr, 5 RFQs/mo (6 on annual)', () => {
+    it('enforces canonical RWA tier pricing: ₹1,499/mo, ₹14,999/yr, 3 RFQs/mo (1 quarterly bonus on annual)', () => {
       const tier = SUBSCRIPTION_TIERS.RWA;
-      expect(tier.monthlyPrice).toBe(499);
-      expect(tier.yearlyPrice).toBe(4999);
-      expect(tier.monthlyRfqs).toBe(5);
-      expect(tier.yearlyMonthlyRfqs).toBe(6);
-      expect(tier.yearlySavings).toBe(989);
+      expect(tier.monthlyPrice).toBe(1499);
+      expect(tier.yearlyPrice).toBe(14999);
+      expect(tier.monthlyRfqs).toBe(3);
+      expect(tier.yearlyMonthlyRfqs).toBe(3);
+      expect(tier.quarterlyBonusRfqs).toBe(1);
+      expect(tier.yearlySavings).toBe(2989);
       expect(tier.additionalRfqPrice).toBe(149);
       expect(tier.popular).toBe(true);
     });
 
-    it('enforces canonical MSME tier pricing: ₹999/mo, ₹9,999/yr, 5 RFQs/mo (6 on annual)', () => {
+    it('enforces canonical MSME tier pricing: ₹1,999/mo, ₹19,999/yr, 3 RFQs/mo (1 quarterly bonus on annual)', () => {
       const tier = SUBSCRIPTION_TIERS.MSME;
-      expect(tier.monthlyPrice).toBe(999);
-      expect(tier.yearlyPrice).toBe(9999);
-      expect(tier.monthlyRfqs).toBe(5);
-      expect(tier.yearlyMonthlyRfqs).toBe(6);
-      expect(tier.yearlySavings).toBe(1989);
+      expect(tier.monthlyPrice).toBe(1999);
+      expect(tier.yearlyPrice).toBe(19999);
+      expect(tier.monthlyRfqs).toBe(3);
+      expect(tier.yearlyMonthlyRfqs).toBe(3);
+      expect(tier.quarterlyBonusRfqs).toBe(1);
+      expect(tier.yearlySavings).toBe(3989);
       expect(tier.additionalRfqPrice).toBe(149);
     });
 
@@ -57,8 +59,7 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       const tier = SUBSCRIPTION_TIERS.ENTERPRISE;
       expect(tier.monthlyPrice).toBe(4999);
       expect(tier.yearlyPrice).toBe(49999);
-      expect(tier.monthlyRfqs).toBe(5);
-      expect(tier.yearlyMonthlyRfqs).toBe(6);
+      expect(tier.monthlyRfqs).toBe(3);
       expect(tier.yearlySavings).toBe(9989);
       expect(tier.additionalRfqPrice).toBe(149);
     });
@@ -79,12 +80,12 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
   });
 
   describe('GST Decimal-Safe Precision Arithmetic', () => {
-    it('computes exact GST on Individual monthly plan (₹99.00 -> GST ₹17.82, Total ₹116.82)', () => {
-      const res = calculateGst(99);
-      expect(res.basePrice).toBe(99.0);
+    it('computes exact GST on Individual monthly plan (₹199.00 -> GST ₹35.82, Total ₹234.82)', () => {
+      const res = calculateGst(199);
+      expect(res.basePrice).toBe(199.0);
       expect(res.gstRatePercent).toBe(18.0);
-      expect(res.gstAmount).toBe(17.82);
-      expect(res.totalAmount).toBe(116.82);
+      expect(res.gstAmount).toBe(35.82);
+      expect(res.totalAmount).toBe(234.82);
     });
 
     it('computes exact GST on Additional RFQ Top-up (₹149.00 -> GST ₹26.82, Total ₹175.82)', () => {
@@ -94,32 +95,32 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(res.totalAmount).toBe(175.82);
     });
 
-    it('computes exact GST on RWA monthly plan (₹499.00 -> GST ₹89.82, Total ₹588.82)', () => {
-      const res = calculateGst(499);
-      expect(res.basePrice).toBe(499.0);
-      expect(res.gstAmount).toBe(89.82);
-      expect(res.totalAmount).toBe(588.82);
+    it('computes exact GST on RWA monthly plan (₹1,499.00 -> GST ₹269.82, Total ₹1,768.82)', () => {
+      const res = calculateGst(1499);
+      expect(res.basePrice).toBe(1499.0);
+      expect(res.gstAmount).toBe(269.82);
+      expect(res.totalAmount).toBe(1768.82);
     });
 
-    it('computes exact GST on MSME monthly / Individual yearly plan (₹999.00 -> GST ₹179.82, Total ₹1,178.82)', () => {
-      const res = calculateGst(999);
-      expect(res.basePrice).toBe(999.0);
-      expect(res.gstAmount).toBe(179.82);
-      expect(res.totalAmount).toBe(1178.82);
+    it('computes exact GST on MSME monthly / Individual yearly plan (₹1,999.00 -> GST ₹359.82, Total ₹2,358.82)', () => {
+      const res = calculateGst(1999);
+      expect(res.basePrice).toBe(1999.0);
+      expect(res.gstAmount).toBe(359.82);
+      expect(res.totalAmount).toBe(2358.82);
     });
 
-    it('computes exact GST on RWA yearly plan (₹4,999.00 -> GST ₹899.82, Total ₹5,898.82)', () => {
-      const res = calculateGst(4999);
-      expect(res.basePrice).toBe(4999.0);
-      expect(res.gstAmount).toBe(899.82);
-      expect(res.totalAmount).toBe(5898.82);
+    it('computes exact GST on RWA yearly plan (₹14,999.00 -> GST ₹2,699.82, Total ₹17,698.82)', () => {
+      const res = calculateGst(14999);
+      expect(res.basePrice).toBe(14999.0);
+      expect(res.gstAmount).toBe(2699.82);
+      expect(res.totalAmount).toBe(17698.82);
     });
 
-    it('computes exact GST on MSME yearly plan (₹9,999.00 -> GST ₹1,799.82, Total ₹11,798.82)', () => {
-      const res = calculateGst(9999);
-      expect(res.basePrice).toBe(9999.0);
-      expect(res.gstAmount).toBe(1799.82);
-      expect(res.totalAmount).toBe(11798.82);
+    it('computes exact GST on MSME yearly plan (₹19,999.00 -> GST ₹3,599.82, Total ₹23,598.82)', () => {
+      const res = calculateGst(19999);
+      expect(res.basePrice).toBe(19999.0);
+      expect(res.gstAmount).toBe(3599.82);
+      expect(res.totalAmount).toBe(23598.82);
     });
 
     it('computes exact GST on Enterprise yearly plan (₹49,999.00 -> GST ₹8,999.82, Total ₹58,998.82)', () => {
@@ -146,25 +147,25 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
     });
 
     it('verifies dynamic GST tax rate change from 18% to 12% and back without code redesign', () => {
-      const basePrice = 999;
+      const basePrice = 1999;
       // Default configured rate (18%)
       const res18 = calculateGst(basePrice, OTP_GST_RATE);
       expect(res18.gstRatePercent).toBe(18.0);
-      expect(res18.gstAmount).toBe(179.82);
-      expect(res18.totalAmount).toBe(1178.82);
+      expect(res18.gstAmount).toBe(359.82);
+      expect(res18.totalAmount).toBe(2358.82);
 
       // Dynamically simulated statutory rate change to 12%
       const statutoryRateUpdate = 12.0;
       const resUpdated = calculateGst(basePrice, statutoryRateUpdate);
       expect(resUpdated.gstRatePercent).toBe(12.0);
-      expect(resUpdated.gstAmount).toBe(119.88);
-      expect(resUpdated.totalAmount).toBe(1118.88);
+      expect(resUpdated.gstAmount).toBe(239.88);
+      expect(resUpdated.totalAmount).toBe(2238.88);
 
       // Restores to standard 18%
       const resRestored = calculateGst(basePrice, OTP_GST_RATE);
       expect(resRestored.gstRatePercent).toBe(18.0);
-      expect(resRestored.gstAmount).toBe(179.82);
-      expect(resRestored.totalAmount).toBe(1178.82);
+      expect(resRestored.gstAmount).toBe(359.82);
+      expect(resRestored.totalAmount).toBe(2358.82);
     });
 
     it('handles zero and negative amounts safely', () => {
@@ -183,19 +184,19 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
   describe('computeSubscriptionPricing', () => {
     it('computes full pricing breakdown for RWA monthly and yearly cycles', () => {
       const monthly = computeSubscriptionPricing('RWA', 'MONTHLY');
-      expect(monthly.basePrice).toBe(499);
-      expect(monthly.gstAmount).toBe(89.82);
-      expect(monthly.totalAmount).toBe(588.82);
-      expect(monthly.monthlyRfqQuota).toBe(5);
+      expect(monthly.basePrice).toBe(1499);
+      expect(monthly.gstAmount).toBe(269.82);
+      expect(monthly.totalAmount).toBe(1768.82);
+      expect(monthly.monthlyRfqQuota).toBe(3);
       expect(monthly.durationDays).toBe(30);
 
       const yearly = computeSubscriptionPricing('RWA', 'YEARLY');
-      expect(yearly.basePrice).toBe(4999);
-      expect(yearly.gstAmount).toBe(899.82);
-      expect(yearly.totalAmount).toBe(5898.82);
-      expect(yearly.monthlyRfqQuota).toBe(6); // 5 + 1 bonus
+      expect(yearly.basePrice).toBe(14999);
+      expect(yearly.gstAmount).toBe(2699.82);
+      expect(yearly.totalAmount).toBe(17698.82);
+      expect(yearly.monthlyRfqQuota).toBe(3);
       expect(yearly.durationDays).toBe(365);
-      expect(yearly.savings).toBe(989);
+      expect(yearly.savings).toBe(2989);
     });
   });
 
@@ -217,50 +218,54 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(sep2026.endIso).toBe('2026-09-30T23:59:59.999Z');
     });
 
-    it('grants 5 RFQs per calendar month on active monthly subscription', () => {
+    it('grants 3 RFQs per calendar month on active monthly subscription', () => {
       const res = evaluateRfqEntitlement({
         tierId: 'MSME',
         plan: 'MONTHLY',
         subscriptionStatus: 'ACTIVE',
         subscriptionExpiresAt: '2026-10-31T23:59:59Z',
-        rfqsUsedInCurrentMonth: 2,
+        rfqsUsedInCurrentMonth: 1,
         billingMode: 'LIVE',
         now: '2026-09-15T12:00:00Z',
       });
 
-      expect(res.monthlyAllowance).toBe(5);
-      expect(res.rfqsUsedInCurrentMonth).toBe(2);
-      expect(res.monthlyRemaining).toBe(3);
-      expect(res.totalAvailableRfqs).toBe(3);
+      expect(res.monthlyAllowance).toBe(3);
+      expect(res.rfqsUsedInCurrentMonth).toBe(1);
+      expect(res.monthlyRemaining).toBe(2);
+      expect(res.totalAvailableRfqs).toBe(2);
       expect(res.canCreateRfq).toBe(true);
       expect(res.isBonusApplied).toBe(false);
     });
 
-    it('grants 6 RFQs per calendar month (5 standard + 1 bonus) on annual RWA subscription', () => {
+    it('grants 3 RFQs per calendar month + 1 quarterly bonus on annual RWA subscription', () => {
       const res = evaluateRfqEntitlement({
         tierId: 'RWA',
         plan: 'YEARLY',
         subscriptionStatus: 'ACTIVE',
         subscriptionExpiresAt: '2027-08-31T23:59:59Z',
-        rfqsUsedInCurrentMonth: 4,
+        rfqsUsedInCurrentMonth: 2,
+        quarterlyBonusUsedInCurrentQuarter: 0,
         billingMode: 'LIVE',
         now: '2026-09-15T12:00:00Z',
       });
 
-      expect(res.monthlyAllowance).toBe(6);
-      expect(res.rfqsUsedInCurrentMonth).toBe(4);
-      expect(res.monthlyRemaining).toBe(2);
+      expect(res.monthlyAllowance).toBe(3);
+      expect(res.rfqsUsedInCurrentMonth).toBe(2);
+      expect(res.monthlyRemaining).toBe(1);
+      expect(res.quarterlyBonusAllowance).toBe(1);
+      expect(res.quarterlyBonusRemaining).toBe(1);
+      expect(res.totalAvailableRfqs).toBe(2);
       expect(res.canCreateRfq).toBe(true);
       expect(res.isBonusApplied).toBe(true);
     });
 
-    it('blocks RFQ creation when monthly quota is exhausted (5/5 used)', () => {
+    it('blocks RFQ creation when monthly quota is exhausted (3/3 used)', () => {
       const res = evaluateRfqEntitlement({
         tierId: 'RWA',
         plan: 'MONTHLY',
         subscriptionStatus: 'ACTIVE',
         subscriptionExpiresAt: '2026-10-15T23:59:59Z',
-        rfqsUsedInCurrentMonth: 5,
+        rfqsUsedInCurrentMonth: 3,
         additionalPurchasedCredits: 0,
         billingMode: 'LIVE',
         now: '2026-09-20T12:00:00Z',
@@ -279,7 +284,7 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
         plan: 'MONTHLY',
         subscriptionStatus: 'ACTIVE',
         subscriptionExpiresAt: '2026-10-15T23:59:59Z',
-        rfqsUsedInCurrentMonth: 5,
+        rfqsUsedInCurrentMonth: 3,
         additionalPurchasedCredits: 2, // 2 top-ups purchased
         billingMode: 'LIVE',
         now: '2026-09-20T12:00:00Z',
@@ -292,7 +297,7 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
     });
 
     it('enforces calendar-month reset with zero rollover of unused quota', () => {
-      // In September: 1 RFQ used out of 5 (4 unused)
+      // In September: 1 RFQ used out of 3 (2 unused)
       const sepRes = evaluateRfqEntitlement({
         tierId: 'MSME',
         plan: 'MONTHLY',
@@ -302,9 +307,9 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
         billingMode: 'LIVE',
         now: '2026-09-30T23:00:00Z',
       });
-      expect(sepRes.monthlyRemaining).toBe(4);
+      expect(sepRes.monthlyRemaining).toBe(2);
 
-      // In October: Month resets, rfqsUsed is 0, allowance is strictly 5 (not 5 + 4)
+      // In October: Month resets, rfqsUsed is 0, allowance is strictly 3 (not 3 + 2)
       const octRes = evaluateRfqEntitlement({
         tierId: 'MSME',
         plan: 'MONTHLY',
@@ -314,9 +319,9 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
         billingMode: 'LIVE',
         now: '2026-10-01T00:01:00Z',
       });
-      expect(octRes.monthlyAllowance).toBe(5);
-      expect(octRes.monthlyRemaining).toBe(5);
-      expect(octRes.totalAvailableRfqs).toBe(5);
+      expect(octRes.monthlyAllowance).toBe(3);
+      expect(octRes.monthlyRemaining).toBe(3);
+      expect(octRes.totalAvailableRfqs).toBe(3);
     });
 
     it('blocks RFQ creation when subscription is expired and zero top-up credits exist', () => {
@@ -379,7 +384,7 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
 
       expect(res.billingMode).toBe('PILOT_FREE');
       expect(res.isSubscriptionActive).toBe(true); // Active due to pilot mode
-      expect(res.monthlyRemaining).toBe(4);
+      expect(res.monthlyRemaining).toBe(2);
       expect(res.canCreateRfq).toBe(true);
     });
   });

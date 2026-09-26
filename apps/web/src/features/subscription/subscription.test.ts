@@ -13,40 +13,42 @@ import {
 } from './types';
 
 describe('Subscription Pricing & Tier Rules', () => {
-  it('enforces exact Individual tier pricing (₹99/mo, ₹999/yr, 3 RFQs/mo [1 bonus per quarter on annual])', () => {
+  it('enforces exact Individual tier pricing (₹199/mo, ₹1,999/yr, 3 RFQs/mo [1 bonus per quarter on annual])', () => {
     const individual = SUBSCRIPTION_TIERS.INDIVIDUAL;
-    expect(individual.monthlyPrice).toBe(99);
+    expect(individual.monthlyPrice).toBe(199);
     expect(individual.monthlyDurationDays).toBe(30);
     expect(individual.monthlyRfqs).toBe(3);
-    expect(individual.yearlyPrice).toBe(999);
+    expect(individual.yearlyPrice).toBe(1999);
     expect(individual.yearlyDurationDays).toBe(365);
     expect(individual.quarterlyBonusRfqs).toBe(1);
-    expect(individual.yearlySavings).toBe(189);
+    expect(individual.yearlySavings).toBe(389);
     expect(individual.additionalRfqPrice).toBe(149);
   });
 
-  it('enforces exact RWA tier pricing (₹499/mo, ₹4,999/yr, 5 RFQs/mo [6 on annual])', () => {
+  it('enforces exact RWA tier pricing (₹1,499/mo, ₹14,999/yr, 3 RFQs/mo [1 bonus per quarter on annual])', () => {
     const rwa = SUBSCRIPTION_TIERS.RWA;
-    expect(rwa.monthlyPrice).toBe(499);
+    expect(rwa.monthlyPrice).toBe(1499);
     expect(rwa.monthlyDurationDays).toBe(30);
-    expect(rwa.monthlyRfqs).toBe(5);
-    expect(rwa.yearlyPrice).toBe(4999);
+    expect(rwa.monthlyRfqs).toBe(3);
+    expect(rwa.yearlyPrice).toBe(14999);
     expect(rwa.yearlyDurationDays).toBe(365);
-    expect(rwa.yearlyMonthlyRfqs).toBe(6);
-    expect(rwa.yearlySavings).toBe(989);
+    expect(rwa.yearlyMonthlyRfqs).toBe(3);
+    expect(rwa.quarterlyBonusRfqs).toBe(1);
+    expect(rwa.yearlySavings).toBe(2989);
     expect(rwa.additionalRfqPrice).toBe(149);
     expect(rwa.popular).toBe(true);
   });
 
-  it('enforces exact MSME tier pricing (₹999/mo, ₹9,999/yr, 5 RFQs/mo [6 on annual])', () => {
+  it('enforces exact MSME tier pricing (₹1,999/mo, ₹19,999/yr, 3 RFQs/mo [1 bonus per quarter on annual])', () => {
     const msme = SUBSCRIPTION_TIERS.MSME;
-    expect(msme.monthlyPrice).toBe(999);
+    expect(msme.monthlyPrice).toBe(1999);
     expect(msme.monthlyDurationDays).toBe(30);
-    expect(msme.monthlyRfqs).toBe(5);
-    expect(msme.yearlyPrice).toBe(9999);
+    expect(msme.monthlyRfqs).toBe(3);
+    expect(msme.yearlyPrice).toBe(19999);
     expect(msme.yearlyDurationDays).toBe(365);
-    expect(msme.yearlyMonthlyRfqs).toBe(6);
-    expect(msme.yearlySavings).toBe(1989);
+    expect(msme.yearlyMonthlyRfqs).toBe(3);
+    expect(msme.quarterlyBonusRfqs).toBe(1);
+    expect(msme.yearlySavings).toBe(3989);
     expect(msme.additionalRfqPrice).toBe(149);
   });
 
@@ -74,40 +76,40 @@ describe('Subscription Pricing & Tier Rules', () => {
 
   it('computes subscription fees and duration correctly for monthly and yearly cycles', () => {
     const indMonthly = computeSubscriptionFee('INDIVIDUAL', 'MONTHLY');
-    expect(indMonthly.amount).toBe(99);
+    expect(indMonthly.amount).toBe(199);
     expect(indMonthly.durationDays).toBe(30);
     expect(indMonthly.monthlyRfqQuota).toBe(3);
 
     const indYearly = computeSubscriptionFee('INDIVIDUAL', 'YEARLY');
-    expect(indYearly.amount).toBe(999);
+    expect(indYearly.amount).toBe(1999);
     expect(indYearly.durationDays).toBe(365);
     expect(indYearly.monthlyRfqQuota).toBe(3);
-    expect(indYearly.savings).toBe(189);
+    expect(indYearly.savings).toBe(389);
 
     const rwaMonthly = computeSubscriptionFee('RWA', 'MONTHLY');
-    expect(rwaMonthly.amount).toBe(499);
+    expect(rwaMonthly.amount).toBe(1499);
     expect(rwaMonthly.durationDays).toBe(30);
-    expect(rwaMonthly.monthlyRfqQuota).toBe(5);
+    expect(rwaMonthly.monthlyRfqQuota).toBe(3);
 
     const rwaYearly = computeSubscriptionFee('RWA', 'YEARLY');
-    expect(rwaYearly.amount).toBe(4999);
+    expect(rwaYearly.amount).toBe(14999);
     expect(rwaYearly.durationDays).toBe(365);
-    expect(rwaYearly.monthlyRfqQuota).toBe(6);
-    expect(rwaYearly.savings).toBe(989);
+    expect(rwaYearly.monthlyRfqQuota).toBe(3);
+    expect(rwaYearly.savings).toBe(2989);
   });
 
   it('computes exact GST breakdown on subscription amounts', () => {
-    const gst99 = calculateGst(99);
-    expect(gst99.gstAmount).toBe(17.82);
-    expect(gst99.totalAmount).toBe(116.82);
+    const gst199 = calculateGst(199);
+    expect(gst199.gstAmount).toBe(35.82);
+    expect(gst199.totalAmount).toBe(234.82);
 
-    const gst499 = calculateGst(499);
-    expect(gst499.gstAmount).toBe(89.82);
-    expect(gst499.totalAmount).toBe(588.82);
+    const gst1499 = calculateGst(1499);
+    expect(gst1499.gstAmount).toBe(269.82);
+    expect(gst1499.totalAmount).toBe(1768.82);
 
-    const gst999 = calculateGst(999);
-    expect(gst999.gstAmount).toBe(179.82);
-    expect(gst999.totalAmount).toBe(1178.82);
+    const gst1999 = calculateGst(1999);
+    expect(gst1999.gstAmount).toBe(359.82);
+    expect(gst1999.totalAmount).toBe(2358.82);
 
     const gst149 = calculateGst(149);
     expect(gst149.gstAmount).toBe(26.82);
@@ -149,11 +151,11 @@ describe('Calendar Month RFQ Entitlement Engine', () => {
       plan: 'MONTHLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: '2026-10-31T23:59:59Z',
-      rfqsUsedInCurrentMonth: 3,
+      rfqsUsedInCurrentMonth: 1,
       billingMode: 'LIVE',
       now: '2026-09-22T08:00:00Z',
     });
-    expect(activeMonthly.monthlyAllowance).toBe(5);
+    expect(activeMonthly.monthlyAllowance).toBe(3);
     expect(activeMonthly.monthlyRemaining).toBe(2);
     expect(activeMonthly.canCreateRfq).toBe(true);
 
@@ -162,12 +164,12 @@ describe('Calendar Month RFQ Entitlement Engine', () => {
       plan: 'YEARLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: '2027-08-31T23:59:59Z',
-      rfqsUsedInCurrentMonth: 3,
+      rfqsUsedInCurrentMonth: 1,
       billingMode: 'LIVE',
       now: '2026-09-22T08:00:00Z',
     });
-    expect(activeYearly.monthlyAllowance).toBe(6);
-    expect(activeYearly.monthlyRemaining).toBe(3);
+    expect(activeYearly.monthlyAllowance).toBe(3);
+    expect(activeYearly.monthlyRemaining).toBe(2);
     expect(activeYearly.isBonusApplied).toBe(true);
   });
 });

@@ -18,8 +18,8 @@ describe('Stage R2-04: Individual Buyer Experience Domain Engine', () => {
       const tier = SUBSCRIPTION_TIERS.INDIVIDUAL;
       expect(tier.monthlyRfqs).toBe(3);
       expect(tier.quarterlyBonusRfqs).toBe(1);
-      expect(tier.monthlyPrice).toBe(99);
-      expect(tier.yearlyPrice).toBe(999);
+      expect(tier.monthlyPrice).toBe(199);
+      expect(tier.yearlyPrice).toBe(1999);
     });
 
     it('resolves tier correctly for null / individual org type', () => {

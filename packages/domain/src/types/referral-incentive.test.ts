@@ -51,48 +51,48 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27)', () => {
         referredId,
         attributionDate,
         paymentDate,
-        subscriptionPaidAmount: 999.0, // ₹999 Annual Individual Plan
+        subscriptionPaidAmount: 1999.0, // ₹1,999 Annual Individual Plan
         isFirstSuccessfulPayment: true,
       });
 
       expect(result.isEligible).toBe(true);
-      expect(result.rewardAmount).toBe(99.9);
-      expect(result.formattedRewardAmount).toBe('₹99.90');
+      expect(result.rewardAmount).toBe(199.9);
+      expect(result.formattedRewardAmount).toBe('₹199.90');
       expect(result.status).toBe('QUALIFIED');
       expect(result.isWithinWindow).toBe(true);
       expect(result.qualificationDaysElapsed).toBe(14);
     });
 
-    it('calculates exact 10% reward for monthly ₹99 plan', () => {
+    it('calculates exact 10% reward for monthly ₹199 plan', () => {
       const paymentDate = '2026-09-02T10:00:00Z'; // 1 day later
       const result = calculateReferralReward({
         referrerId,
         referredId,
         attributionDate,
         paymentDate,
-        subscriptionPaidAmount: 99.0,
+        subscriptionPaidAmount: 199.0,
         isFirstSuccessfulPayment: true,
       });
 
       expect(result.isEligible).toBe(true);
-      expect(result.rewardAmount).toBe(9.9);
-      expect(result.formattedRewardAmount).toBe('₹9.90');
+      expect(result.rewardAmount).toBe(19.9);
+      expect(result.formattedRewardAmount).toBe('₹19.90');
     });
 
-    it('calculates exact 10% reward for MSME ₹9,999 annual plan', () => {
+    it('calculates exact 10% reward for MSME ₹19,999 annual plan', () => {
       const paymentDate = '2026-09-20T10:00:00Z';
       const result = calculateReferralReward({
         referrerId,
         referredId,
         attributionDate,
         paymentDate,
-        subscriptionPaidAmount: 9999.0,
+        subscriptionPaidAmount: 19999.0,
         isFirstSuccessfulPayment: true,
       });
 
       expect(result.isEligible).toBe(true);
-      expect(result.rewardAmount).toBe(999.9);
-      expect(result.formattedRewardAmount).toBe('₹999.90');
+      expect(result.rewardAmount).toBe(1999.9);
+      expect(result.formattedRewardAmount).toBe('₹1,999.90');
     });
 
     it('strictly rejects self-referral (referrerId === referredId)', () => {
@@ -101,7 +101,7 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27)', () => {
         referredId: 'user-same-123',
         attributionDate,
         paymentDate: '2026-09-05T10:00:00Z',
-        subscriptionPaidAmount: 999.0,
+        subscriptionPaidAmount: 1999.0,
         isFirstSuccessfulPayment: true,
       });
 
@@ -117,7 +117,7 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27)', () => {
         referredId,
         attributionDate,
         paymentDate: '2026-09-05T10:00:00Z',
-        subscriptionPaidAmount: 999.0,
+        subscriptionPaidAmount: 1999.0,
         isFirstSuccessfulPayment: true,
         isSameAccountOrIdentity: true,
       });
@@ -132,7 +132,7 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27)', () => {
         referredId,
         attributionDate,
         paymentDate: '2026-09-10T10:00:00Z',
-        subscriptionPaidAmount: 999.0,
+        subscriptionPaidAmount: 1999.0,
         isFirstSuccessfulPayment: false, // Second payment / Renewal
       });
 
@@ -149,7 +149,7 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27)', () => {
         referredId,
         attributionDate,
         paymentDate,
-        subscriptionPaidAmount: 999.0,
+        subscriptionPaidAmount: 1999.0,
         isFirstSuccessfulPayment: true,
       });
 
@@ -167,7 +167,7 @@ describe('Referral & Incentive System Domain Engine (Stage R2-27)', () => {
         referredId,
         attributionDate,
         paymentDate: '2026-09-10T10:00:00Z',
-        subscriptionPaidAmount: 999.0,
+        subscriptionPaidAmount: 1999.0,
         isFirstSuccessfulPayment: true,
         existingRewardProcessed: true,
       });

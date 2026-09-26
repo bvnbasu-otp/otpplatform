@@ -174,8 +174,14 @@ export function PricingPage() {
               <ul className="mt-4 space-y-2.5 text-xs text-foreground/90">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Allowance:</strong> {cycle === 'YEARLY' ? '6 RFQs/month (Annual Bonus)' : '5 RFQs/month'} included</span>
+                  <span><strong>Allowance:</strong> 3 High-intent RFQs/month included</span>
                 </li>
+                {cycle === 'YEARLY' && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                    <span><strong>Bonus:</strong> +1 Bonus RFQ per calendar quarter</span>
+                  </li>
+                )}
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                   <span><strong>Roles:</strong> President, Secretary, Treasurer, Estate Manager, Committee</span>
@@ -238,8 +244,14 @@ export function PricingPage() {
               <ul className="mt-4 space-y-2.5 text-xs text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Allowance:</strong> {cycle === 'YEARLY' ? '6 RFQs/month (Annual Bonus)' : '5 RFQs/month'} included</span>
+                  <span><strong>Allowance:</strong> 3 High-intent RFQs/month included</span>
                 </li>
+                {cycle === 'YEARLY' && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                    <span><strong>Bonus:</strong> +1 Bonus RFQ per calendar quarter</span>
+                  </li>
+                )}
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                   <span><strong>Governance:</strong> Primary Owner, Manager &amp; Delegated spend proxies</span>

@@ -581,10 +581,10 @@ function PricingSection() {
               </span>
               <div className="mt-3">
                 <div className="text-2xl sm:text-3xl font-extrabold text-foreground">
-                  ₹99 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
+                  ₹199 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  ₹999 / year · Unlimited personal RFQs
+                  ₹1,999 / year · 3 RFQs/mo + 1 quarterly bonus
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
@@ -592,7 +592,7 @@ function PricingSection() {
               </p>
 
               <ul className="mt-4 space-y-2 text-xs text-foreground/80">
-                <li className="flex items-center gap-2">✓ Unlimited Sourcing Inquiries</li>
+                <li className="flex items-center gap-2">✓ 3 High-Intent RFQs / Month</li>
                 <li className="flex items-center gap-2">✓ Identity-Protected Quoting</li>
                 <li className="flex items-center gap-2">✓ Direct Supplier Settle on Award</li>
                 <li className="flex items-center gap-2">✓ Fast-Track 2-Step Intake</li>
@@ -621,10 +621,10 @@ function PricingSection() {
               </span>
               <div className="mt-3">
                 <div className="text-2xl sm:text-3xl font-extrabold text-foreground">
-                  ₹499 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
+                  ₹1,499 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  ₹4,999 / year · Democratic Governance
+                  ₹14,999 / year · Democratic Governance
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
@@ -658,10 +658,10 @@ function PricingSection() {
               </span>
               <div className="mt-3">
                 <div className="text-2xl sm:text-3xl font-extrabold text-foreground">
-                  ₹999 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
+                  ₹1,999 <span className="text-xs font-normal text-muted-foreground">/ mo</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  ₹9,999 / year · Commercial Procurement
+                  ₹19,999 / year · Commercial Procurement
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">

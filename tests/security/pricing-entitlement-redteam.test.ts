@@ -64,7 +64,7 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
   // VECTOR 4: Floating-Point Precision Exploitation (Paise Drift Attack)
   // -------------------------------------------------------------------------
   it('Vector 4: Defends against floating-point precision drift across all price points', () => {
-    const testPrices = [99, 149, 499, 999, 4999, 9999, 49999];
+    const testPrices = [149, 199, 1499, 1999, 4999, 14999, 19999, 49999];
     for (const p of testPrices) {
       const calc = calculateGst(p, OTP_GST_RATE);
       const expectedGst = Math.round(p * 0.18 * 100) / 100;
@@ -83,12 +83,13 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
   it('Vector 4B: Proves dynamic GST tax rate change safely recomputes across all subscription tiers and restores 18%', () => {
     // 1. Subscription GST baseline calculations at 18%
     const expected18 = [
-      { price: 99, gst: 17.82, total: 116.82 },
       { price: 149, gst: 26.82, total: 175.82 },
-      { price: 499, gst: 89.82, total: 588.82 },
-      { price: 999, gst: 179.82, total: 1178.82 },
+      { price: 199, gst: 35.82, total: 234.82 },
+      { price: 1499, gst: 269.82, total: 1768.82 },
+      { price: 1999, gst: 359.82, total: 2358.82 },
       { price: 4999, gst: 899.82, total: 5898.82 },
-      { price: 9999, gst: 1799.82, total: 11798.82 },
+      { price: 14999, gst: 2699.82, total: 17698.82 },
+      { price: 19999, gst: 3599.82, total: 23598.82 },
       { price: 49999, gst: 8999.82, total: 58998.82 },
     ];
 
@@ -212,39 +213,43 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
   });
 
   // -------------------------------------------------------------------------
-  // VECTOR 10: Annual Plan 6th Bonus RFQ Single-Month Cap
+  // VECTOR 10: Annual Plan Quarterly Bonus RFQ Cap
   // -------------------------------------------------------------------------
-  it('Vector 10: Annual plan 6th bonus RFQ caps strictly at 6 per month without extra bonus accumulation', () => {
+  it('Vector 10: Annual plan quarterly bonus RFQ caps strictly at 1 bonus per quarter without extra accumulation', () => {
     const evalResult = evaluateRfqEntitlement({
       tierId: 'MSME',
       plan: 'YEARLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: new Date(Date.now() + 86400000 * 200).toISOString(),
-      rfqsUsedInCurrentMonth: 6,
+      rfqsUsedInCurrentMonth: 3,
+      quarterlyBonusUsedInCurrentQuarter: 1,
       additionalPurchasedCredits: 0,
       billingMode: 'LIVE',
     });
-    expect(evalResult.monthlyAllowance).toBe(6);
+    expect(evalResult.monthlyAllowance).toBe(3);
     expect(evalResult.monthlyRemaining).toBe(0);
+    expect(evalResult.quarterlyBonusRemaining).toBe(0);
     expect(evalResult.canCreateRfq).toBe(false);
-    expect(evalResult.rejectionReason).toContain('Entitlement limit reached (6/6 monthly RFQs used');
+    expect(evalResult.rejectionReason).toContain('Entitlement limit reached');
   });
 
   // -------------------------------------------------------------------------
   // VECTOR 11: Annual Plan Bonus Rollover Denial
   // -------------------------------------------------------------------------
-  it('Vector 11: 6th bonus RFQ resets per calendar month and does not accumulate over 12 months (e.g. 12 x 1 = 12 bonus burst is prevented)', () => {
+  it('Vector 11: Quarterly bonus RFQ resets per calendar quarter and does not accumulate over 4 quarters', () => {
     const evalResult = evaluateRfqEntitlement({
       tierId: 'MSME',
       plan: 'YEARLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: new Date(Date.now() + 86400000 * 300).toISOString(),
-      rfqsUsedInCurrentMonth: 7, // Attempting to use 7th RFQ claiming unused bonus from past months
+      rfqsUsedInCurrentMonth: 3,
+      quarterlyBonusUsedInCurrentQuarter: 2, // Attempting to use multiple bonus RFQs claiming past quarters
       additionalPurchasedCredits: 0,
       billingMode: 'LIVE',
     });
-    expect(evalResult.monthlyAllowance).toBe(6);
+    expect(evalResult.monthlyAllowance).toBe(3);
     expect(evalResult.monthlyRemaining).toBe(0);
+    expect(evalResult.quarterlyBonusRemaining).toBe(0);
     expect(evalResult.canCreateRfq).toBe(false);
   });
 
@@ -257,7 +262,7 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
       plan: 'MONTHLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: new Date(Date.now() + 86400000 * 20).toISOString(),
-      rfqsUsedInCurrentMonth: 5, // Monthly quota exhausted
+      rfqsUsedInCurrentMonth: 3, // Monthly quota exhausted (3/3)
       additionalPurchasedCredits: 2, // 2 Top-ups available
       billingMode: 'LIVE',
     });
@@ -270,7 +275,7 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
       plan: 'MONTHLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: new Date(Date.now() + 86400000 * 20).toISOString(),
-      rfqsUsedInCurrentMonth: 5,
+      rfqsUsedInCurrentMonth: 3,
       additionalPurchasedCredits: 0,
       billingMode: 'LIVE',
     });
@@ -287,7 +292,7 @@ describe('Pricing & Entitlement Red-Team Security Test Suite (24 Attack Vectors)
       plan: 'MONTHLY',
       subscriptionStatus: 'ACTIVE',
       subscriptionExpiresAt: new Date(Date.now() + 86400000 * 20).toISOString(),
-      rfqsUsedInCurrentMonth: 5,
+      rfqsUsedInCurrentMonth: 3,
       additionalPurchasedCredits: -10,
       billingMode: 'LIVE',
     });
