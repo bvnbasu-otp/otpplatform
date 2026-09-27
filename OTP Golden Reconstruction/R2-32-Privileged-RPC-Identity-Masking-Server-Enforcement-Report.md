@@ -196,3 +196,66 @@ The web workspace was first run from inside `apps/web`. There, `components/ui/ot
 ## H. Git
 
 Single local commit on top of `5325988`, with no push. The SHA is reported in the hand-off message, because a commit cannot contain its own hash. Live-DB execution: **none**.
+
+---
+
+## I. Follow-up: migration 00200 (R1 and the TDS-void gap)
+
+Product Owner decision, 27 Sep 2026. Built on top of `769813a706bba8c8d48fd2815b911387a093f9cd`. 00199 was not edited: it is committed and referenced, so the fixes are in a new migration, `00200_scope_procurement_readers_and_recompute_invoice_on_tds_void.sql` (249 lines, single `BEGIN … COMMIT`).
+
+**Migration 00200 has never been executed.** There is still no local database. Its claims are proven only by static tests: **T200** = `tests/security/procurement-readers-and-tds-void-00200-redteam.test.ts` (16 tests), plus one app-level test.
+
+**Baseline:** HEAD `769813a`, clean tree, 199 migrations. **After:** 200 migrations, contiguous 00001–00200.
+
+Ceiling references moved to 200:
+- `clean-start-reset.ts` and its test;
+- `scripts/otp-promote-certified.ps1`;
+- the 00198 test, which now expects 200 files with 00198 at position 198;
+- the 00199 test, which now expects 00199 at position 199 of 200.
+
+### I.1 Per-item matrix
+
+| Item | Root cause (file:line) | Fix in 00200 | Tests | Status |
+|---|---|---|---|---|
+| R1 `get_current_procurement_step(uuid)` | 00148:43-82 has no caller check; the anon grant at 00148:84 was revoked by 00199, but any signed-in user could still read any requirement's stage, RFQ id and PO id. | :28-81. The 00148 body plus a guard evaluated before the stage events are read: the requirement's organization is resolved, and only service_role, a platform admin or a member of that organization gets through (COALESCE, so it fails closed). Anyone else gets `{ok:false, error:'Access denied'}`, the pattern 00199 uses for `get_organization_subscription`. Revoked from PUBLIC and anon. | T200: guard ordering; line diff vs 00148 (0 removed; only the org lookup and guard added); no supplier path; grants. | FIXED (static) |
+| R1 `check_supplier_award_eligibility_atomic(uuid)` | 00196:371-430 has no caller check; the anon grant at 00196:430 was revoked by 00199. Any signed-in user could read any awarded supplier's lifecycle and verification state. | :83-154. The 00196 body plus the same guard, keyed to the organization of the award's RFQ and placed after "Award not found" and before quote and supplier data are read. Revoked from PUBLIC and anon. | T200: ordering; line diff vs 00196 (0 removed); no supplier path; no buyer fields in the output; grants. | FIXED (static) |
+| R1 supplier access decision | Neither function has a caller in `apps/web/src`, `packages` or `supabase/functions`, and no SQL function calls them (T200 scans all three trees). | Suppliers get no access. The functions return no buyer identity or other suppliers' data in any case. | T200 "neither reader has a client caller". | Decided: no supplier path |
+| R2 TDS void | 00199:1272 `private.enforce_invoice_tds_balance` returned early when live TDS was 0. Voiding the only deduction therefore left `balance_due` netted by the voided amount, and a PAID invoice stayed PAID. The AFTER trigger (00199:1310) also missed inserts and `invoice_id` changes, and no void was audited. There is no void RPC; voiding is an admin-only direct update (00199 `tds_deductions_mutate`). | :162-248.<br>• The balance trigger now recomputes every invoice that has ever had a TDS row, live or voided. Invoices that never had one are untouched, so the 00178 / 00172 / 00175 writers behave as before for them.<br>• `balance_due = amount − paid − live TDS`.<br>• APPROVED / PARTIALLY_PAID → PAID when paid + TDS ≥ amount, as before.<br>• New: PAID → PARTIALLY_PAID (paid > 0) or APPROVED (paid = 0) when paid + TDS < amount, the same rule as `sync_invoice_payment_state` (00178:429-438). Enum values are cast explicitly.<br>• The AFTER trigger now fires on INSERT or UPDATE OF status / tds_amount / invoice_id, and touches both the old and new invoice.<br>• A non-VOIDED → VOIDED transition writes one `tds.voided` audit event with the invoice's status and balance after recompute. Re-voiding is a no-op and writes no audit, and the recompute is deterministic.<br>Client: no change needed. `sumLiveTdsByInvoice` already ignores VOIDED and `buildInvoiceBalanceRows` computes outstanding as gross − paid, so the UI matches the reopened server balance. | T200: recompute condition, PAID revert with casts, a JS mirror of the apply → void → void-again → re-apply cycle, trigger events, audit ordering and single-fire condition, grants. `invoice-balances-and-blockers.test.tsx`: "after the TDS is voided the reopened server balance is what the buyer owes", which covers both the `paidAmount` and the balance-only fallback paths. | FIXED (static) |
+
+### I.2 Section F re-review
+
+| ID | Disposition |
+|---|---|
+| R1 | Fixed (I.1). |
+| R2 | Fixed (I.1). |
+| R3 Admin bypass of the milestone and allowance rules | By design; left open. |
+| R4 Transaction-local sign-off flag | Not in these functions; left open. |
+| R5 `is_platform_admin` email whitelist | Different function (00179), not trivial; left open. |
+| R6 Unique TDS index skipped if duplicates exist | Depends on live data; left open. |
+| R7 Nothing executed against Postgres | Still true for 00199 and 00200. |
+| R8 (new) | `procurement_stage_events` read policy 00148:27-32 is `USING (true)`: any signed-in user can read stage rows directly, which weakens the R1 guard on `get_current_procurement_step`. It is a table policy, not one of these functions, and changing it needs a client read-path check, so it is left open. |
+| Future `rfqs` columns need an explicit column grant (from §D) | Left open. |
+
+### I.3 Security implications and rollback
+
+**What changes:**
+- Signed-in users outside the buying organization now get "Access denied" from both readers. No client path calls them, so no UI should change.
+- Invoices whose TDS is voided now show the reopened balance and move out of PAID. A buyer who had treated such an invoice as settled will see it outstanding again. That is the correct ledger state, and the void is audited.
+
+**Rollback:** re-run the 00148 / 00196 / 00199 definitions of the four functions and the 00199 trigger definition. 00200 drops or deletes nothing, apart from `DROP TRIGGER IF EXISTS` immediately followed by recreating the same trigger (asserted by T200). Do not re-grant anon.
+
+### I.4 Gate results (run from the repo root after all edits)
+
+| Gate | Result |
+|---|---|
+| Typecheck | domain, database, services and web PASSED |
+| Vocabulary | PASSED: 455 files, 0 violations |
+| Coverage policy `--strict` | PASSED: UNIT 81, MODULE 196, FUNCTIONAL 47, REGRESSION 4; 328 test files |
+| Vitest root | 318 files passed (318); 3527 passed, 371 skipped (3898) |
+| Vitest domain (`--config packages/domain/vitest.config.ts`) | 61 files; 773 passed |
+| Vitest services | 40 files; 559 passed |
+| Vitest database | 2 files; 5 passed |
+| Vitest web (`--config apps/web/vitest.config.ts`) | 163 files; 1635 passed |
+| Build `vite build apps/web` | built in 1m 2s, exit 0 |
+
+Single local commit on top of `769813a`, with no push and no deploy. Live-DB execution: **none**.

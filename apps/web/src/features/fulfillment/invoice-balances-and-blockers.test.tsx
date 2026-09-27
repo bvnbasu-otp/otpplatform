@@ -47,6 +47,19 @@ describe('buildInvoiceBalanceRows (invoice → GST → TDS → paid → outstand
     expect(rows[0]).toMatchObject({ paid: 116000, tds: 2000, outstanding: 2000, netPayable: 0 });
   });
 
+  it('after the TDS is voided the reopened server balance is what the buyer owes', () => {
+    const voidedTds = sumLiveTdsByInvoice([{ invoiceId: 'i1', tdsAmount: 2000, status: 'VOIDED' }]);
+    const reopened = { ...inv1, status: 'PARTIALLY_PAID', paidAmount: 116000, balanceDue: 2000 };
+    const { rows } = buildInvoiceBalanceRows([reopened], voidedTds, 0);
+    expect(rows[0]).toMatchObject({ paid: 116000, tds: 0, outstanding: 2000, netPayable: 2000 });
+    expect(rows[0]?.netPayable).toBe(reopened.balanceDue);
+
+    const { paidAmount: _omitted, ...inv1WithoutPaid } = inv1;
+    const withoutPaidAmount = { ...inv1WithoutPaid, status: 'PARTIALLY_PAID', balanceDue: 2000 };
+    const fallback = buildInvoiceBalanceRows([withoutPaidAmount], voidedTds, 0).rows[0];
+    expect(fallback).toMatchObject({ paid: 116000, tds: 0, outstanding: 2000, netPayable: 2000 });
+  });
+
   it('opens the panel on the invoice the buyer must act on, not merely the latest', () => {
     const paidLatest = { id: 'i9', invoiceNumber: 'INV-009', status: 'PAID', amount: 10, balanceDue: 0 };
     expect(pickActionableInvoice([inv2, inv1, paidLatest])?.id).toBe('i1');

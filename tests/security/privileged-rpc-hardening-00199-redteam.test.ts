@@ -140,9 +140,9 @@ function lineDiff(before: string, after: string): { added: string[]; removed: st
 }
 
 describe('00199 migration file', () => {
-  it('is the highest migration and the chain is contiguous 00001..00199', () => {
-    expect(MIGRATION_FILES.length).toBe(199);
-    expect(MIGRATION_FILES[MIGRATION_FILES.length - 1]).toBe(FILE);
+  it('sits at position 199 of the contiguous chain 00001..00200', () => {
+    expect(MIGRATION_FILES.length).toBe(200);
+    expect(MIGRATION_FILES[198]).toBe(FILE);
     MIGRATION_FILES.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));
   });
 
