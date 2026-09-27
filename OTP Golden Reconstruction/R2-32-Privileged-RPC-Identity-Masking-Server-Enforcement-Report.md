@@ -259,3 +259,96 @@ Ceiling references moved to 200:
 | Build `vite build apps/web` | built in 1m 2s, exit 0 |
 
 Single local commit on top of `769813a`, with no push and no deploy. Live-DB execution: **none**.
+
+---
+
+## J. Follow-up: migration 00201 (R8, plus the same always-true pattern on audit_events delete and support_tickets)
+
+Product Owner decision, 27 Sep 2026. Built on top of `4db44c4eb2127d077955c9882453980c6ad83e55`. New migration: `00201_scope_procurement_stage_events_audit_delete_and_support_tickets.sql` (173 lines, single `BEGIN … COMMIT`).
+
+**Migration 00201 has never been executed.** There is still no local database. Its claims are proven only by **T201** = `tests/security/stage-events-audit-delete-support-tickets-00201-redteam.test.ts` (18 tests). T201 re-derives the effective RLS policy set by applying every CREATE / DROP POLICY in 00001–00201 in order.
+
+**Baseline:** HEAD `4db44c4`, clean tree, 200 migrations. **After:** 201 migrations, contiguous 00001–00201.
+
+Ceiling references moved to 201:
+- `clean-start-reset.ts` and its test;
+- `scripts/otp-promote-certified.ps1`;
+- the 00198, 00199 and 00200 tests, each now checking its own position in a 201-file chain.
+
+There are no client changes.
+
+### J.1 Every reader and writer of `procurement_stage_events`
+
+| Reader / writer | Kind | Finding |
+|---|---|---|
+| `get_current_procurement_step` (00148, re-created in 00200:28-81) | SQL, SECURITY DEFINER | Reads the table; org-guarded since 00200 |
+| `advance_procurement_step` (00148:88-155) | SQL, SECURITY DEFINER, the only writer | No caller check, anon grant. Re-created in 00201 with a guard |
+| Views | — | None in 00001–00201 (asserted by T201) |
+| `apps/web/src`, `packages`, `supabase/functions` | Client / edge | No reads or writes. `packages/database/src/reset/clean-start-reset.ts:123` only lists the table name in the reset inventory. No caller of `advance_procurement_step` or `get_current_procurement_step` exists (asserted by T201). |
+
+Because no client or edge code reads the table, **no supplier path was added**.
+
+### J.2 Per-item matrix
+
+| Item | Root cause (file:line) | Fix in 00201 | Tests | Status |
+|---|---|---|---|---|
+| R8 `procurement_stage_events` read | 00148:27-32: SELECT policy `TO authenticated USING (true)` | :29-41. SELECT allowed to platform admins or members of the requirement's buying organization (`requirements.organization_id` is NOT NULL, and the RFQ org is the same org). service_role bypasses RLS. | T201: root cause in the pre-00201 policy set; the new scope; no supplier clause | FIXED (static) |
+| Same table: insert | 00148:35-40: INSERT `WITH CHECK (true)`, so any signed-in user could append forged stage rows (PA-10 integrity) | :43-55. Same scope as reads. The DEFINER writer is unaffected, because tables are NO FORCE RLS (00178:490) and the owner bypasses RLS. | T201 | FIXED (static) |
+| Same table: append-only (PA-10) | Append-only by policy absence only | No UPDATE, DELETE or ALL policy is added. Table-level UPDATE / DELETE / TRUNCATE revoked from PUBLIC, anon and authenticated; all privileges revoked from anon (:57-58). | T201: the effective policies on the table are exactly {INSERT, SELECT}; the revokes | FIXED (static) |
+| `advance_procurement_step` | 00148:88-155: no caller check; anon grant at 00148:155 | :60-139. The 00148 body plus the same guard as 00200 (service_role, platform admin, or member of the requirement org, via COALESCE), evaluated before the insert. Returns `{ok:false, error:'Access denied'}` otherwise. Revoked from PUBLIC and anon. | T201: count-based line diff vs 00148 (0 removed; only the guard added); guard before insert; revoke | FIXED (static) |
+| `audit_events_delete` | 00134:242-244: `FOR DELETE TO anon, authenticated, service_role USING (true)`, so anyone, anon included, could delete audit rows through PostgREST (PA-10) | :145-148. `TO authenticated USING (private.is_platform_admin())`. The only client deletes, the admin reset fallbacks at `admin-ops.ts:618` and `:1428`, run as a platform admin. The DEFINER clear-audit RPCs bypass RLS. | T201: root cause, new policy, the only client deleter is the admin ops module | FIXED (static) |
+| `support_tickets` read / update | 00076:31-38: SELECT and UPDATE `USING (true)` with no `TO`, so PUBLIC including anon could read every ticket's email, role, description and page URL, and rewrite tickets | :154-171. SELECT: platform admin, or `lower(user_email) = lower(auth.jwt()->>'email')`. UPDATE: platform admin only. No client code reads or updates the table directly: admin reads use the DEFINER `admin_get_support_tickets`, and creation uses `create_support_ticket`. | T201: root cause, new policies, no client select / update | FIXED (static) |
+
+### J.3 Other always-true policies (effective state after 00201, from T201)
+
+**SELECT / ALL `USING (true)` reaching API roles.** All are kept, because none holds tenant, identity or financial data. T201 pins exactly these nine tables.
+
+| Table | Origin | Content | Disposition |
+|---|---|---|---|
+| `buyer_type_config` | 00021 | Org-type labels, voting power | Keep: reference |
+| `demo_settings` | 00021 | Demo flag, seed, run id | Keep: read by `notificationService.ts` and `admin-ops.ts` |
+| `demo_price_anchors` | 00025 | Synthetic price anchors | Keep: reference |
+| `market_intelligence_baselines` | 00008 | Aggregated price and delivery ranges per category and city | Keep: read by `fetch-market-intelligence.ts:226`; no supplier identity |
+| `subcategory_capabilities`, `subcategory_evaluation_suggestions` | 00013 | Taxonomy | Keep: read by `intake/api/taxonomy.ts:263` |
+| `platform_fee_policies` | 00174 | Published fee policy (0.5%, waived in pilot) | Keep: public pricing |
+| `platform_environment_settings`, `otp_schema_migrations` | 00125 | Environment name and flags, applied migration versions | Keep. They are anon-readable ops metadata with no tenant data, a minor information disclosure (listed as R9). |
+
+**Other always-true patterns, listed and not fixed:**
+
+| Policy | Pattern | Why not fixed |
+|---|---|---|
+| `invoices.invoices_update` (00004:467-479), `work_orders.work_orders_update` (00004:436-448) | USING is scoped (supplier / buyer roles) but `WITH CHECK (true)`. An authorized updater could re-point a row's supplier or PO. | Financial update paths; tightening needs per-flow verification. Listed as R10. |
+| `audit_events.audit_events_insert` (00134:238-240, anon included) | `WITH CHECK (true)`: forged audit rows possible | The client writes audit rows directly (`notificationService.ts:372`, `admin-telemetry.ts:36`, `admin-ops.ts`). Needs an RPC migration. Listed as R11. |
+| `notifications_insert`, `supplier_notifications_insert` (00134) | `WITH CHECK (true)` for authenticated: spoofed notifications possible | Client notification writers would need moving to an RPC. Listed as R11. |
+| `organizations.organizations_insert` | `WITH CHECK (true)` for authenticated | Signup creates organizations; by design |
+| `support_tickets` "Anyone can create support tickets" | `WITH CHECK (true)` for PUBLIC | Public support form; by design. The table has no DELETE policy, so the client fallback `admin-ops.ts:617` deletes nothing (pre-existing, harmless). |
+
+T201 pins that no UPDATE or DELETE policy reaching API roles is `USING (true)` after 00201. It also pins the two `WITH CHECK (true)` UPDATE policies and the five always-true INSERT policies above, so any new one fails the test.
+
+### J.4 Security implications and rollback
+
+**What changes:**
+- Signed-in users outside a requirement's buying organization can no longer read or append its stage events.
+- Anon can no longer touch the table, call `advance_procurement_step`, delete audit rows, or read or update support tickets.
+- Non-admin signed-in users can no longer delete audit rows or update tickets.
+- No client path relies on any of the removed access (asserted by T201). PA-10 is strengthened: stage events are append-only by policy and by table privileges, and audit rows can no longer be deleted by non-admins.
+
+**Rollback:** re-create the 00148 policies and function, the 00134 `audit_events_delete` policy and the 00076 ticket policies, and re-grant table privileges. That would re-open anon access, so it is not recommended. 00201 drops or deletes nothing except `DROP POLICY IF EXISTS` immediately followed by recreating the same policy (asserted by T201).
+
+### J.5 Gate results (run from the repo root after all edits)
+
+| Gate | Result |
+|---|---|
+| Typecheck | domain, database, services and web PASSED |
+| Vocabulary | PASSED: 455 files, 0 violations |
+| Coverage policy `--strict` | PASSED: UNIT 81, MODULE 196, FUNCTIONAL 48, REGRESSION 4; 329 test files |
+| Vitest root | 319 files passed (319); 3545 passed, 371 skipped (3916) |
+| Vitest domain | 61 files; 773 passed |
+| Vitest services | 40 files; 559 passed |
+| Vitest database | 2 files; 5 passed |
+| Vitest web (`--config apps/web/vitest.config.ts`) | 163 files; 1635 passed |
+| Build | built in 36.05s, exit 0 |
+
+**Open after 00201:** R3–R7 as in I.2 (R7: nothing has been executed against Postgres, for 00199, 00200 or 00201), the future `rfqs` column grants, and new residuals R9–R11 above.
+
+Single local commit on top of `4db44c4`, with no push and no deploy. Live-DB execution: **none**.

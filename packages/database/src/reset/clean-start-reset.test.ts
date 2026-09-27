@@ -37,10 +37,10 @@ describe('Clean-Start Database Reset Engine (Stage R2-27)', () => {
     expect(plan.tablesToTruncate.length).toBe(CANONICAL_DATABASE_TABLE_INVENTORY.transactionalAndReset.length);
   });
 
-  it('passes post-reset integrity check when data is pure and 200 migrations are intact', () => {
+  it('passes post-reset integrity check when data is pure and 201 migrations are intact', () => {
     const result = validatePostResetIntegrity({
       transactionalRecordCount: 0,
-      preservedMigrationsCount: 200,
+      preservedMigrationsCount: 201,
       preservedTaxonomyCount: 14,
       preservedLedgerAccountsCount: 20,
       nonZeroWalletBalancesCount: 0,
@@ -49,7 +49,7 @@ describe('Clean-Start Database Reset Engine (Stage R2-27)', () => {
     expect(result.isClean).toBe(true);
     expect(result.activeTransactionsCount).toBe(0);
     expect(result.migrationCeilingPreserved).toBe(true);
-    expect(result.expectedMigrations).toBe(200);
+    expect(result.expectedMigrations).toBe(201);
     expect(result.errors).toHaveLength(0);
   });
 

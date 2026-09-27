@@ -140,8 +140,8 @@ function lineDiff(before: string, after: string): { added: string[]; removed: st
 }
 
 describe('00199 migration file', () => {
-  it('sits at position 199 of the contiguous chain 00001..00200', () => {
-    expect(MIGRATION_FILES.length).toBe(200);
+  it('sits at position 199 of the contiguous chain 00001..00201', () => {
+    expect(MIGRATION_FILES.length).toBe(201);
     expect(MIGRATION_FILES[198]).toBe(FILE);
     MIGRATION_FILES.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));
   });

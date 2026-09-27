@@ -75,9 +75,9 @@ const ORG_GUARD = [
 ];
 
 describe('00200 migration file', () => {
-  it('is the highest migration and the chain is contiguous 00001..00200', () => {
-    expect(MIGRATION_FILES.length).toBe(200);
-    expect(MIGRATION_FILES[MIGRATION_FILES.length - 1]).toBe(FILE);
+  it('sits at position 200 of the contiguous chain 00001..00201', () => {
+    expect(MIGRATION_FILES.length).toBe(201);
+    expect(MIGRATION_FILES[199]).toBe(FILE);
     MIGRATION_FILES.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));
   });
 
