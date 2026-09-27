@@ -64,8 +64,8 @@ function sourceFiles(root: string): string[] {
 }
 
 describe('00201 migration file', () => {
-  it('sits at position 201 of the contiguous chain 00001..00202', () => {
-    expect(MIGRATION_FILES.length).toBe(202);
+  it('sits at position 201 of the contiguous chain 00001..00203', () => {
+    expect(MIGRATION_FILES.length).toBe(203);
     expect(MIGRATION_FILES[200]).toBe(FILE);
     MIGRATION_FILES.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));
   });
@@ -248,8 +248,8 @@ describe('support_tickets', () => {
   });
 });
 
-describe('remaining always-true policies after 00202', () => {
-  it('SELECT/ALL USING (true) policies reaching API roles are only reference, config and ops-metadata tables', () => {
+describe('remaining always-true policies after 00203', () => {
+  it('SELECT/ALL USING (true) policies reaching API roles are only reference and config tables (ops metadata closed by 00203)', () => {
     const open = [...AFTER.values()]
       .filter((p) => ['SELECT', 'ALL'].includes(p.cmd) && reachesApiRoles(p) && /\bUSING\s*\(\s*\(?\s*true\s*\)?\s*\)/i.test(p.body))
       .map((p) => p.table)
@@ -259,8 +259,6 @@ describe('remaining always-true policies after 00202', () => {
       'demo_price_anchors',
       'demo_settings',
       'market_intelligence_baselines',
-      'otp_schema_migrations',
-      'platform_environment_settings',
       'platform_fee_policies',
       'subcategory_capabilities',
       'subcategory_evaluation_suggestions',

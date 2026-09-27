@@ -157,8 +157,7 @@ export async function ensureTrackingTables(client: any): Promise<void> {
 
     ALTER TABLE public.otp_schema_migrations ENABLE ROW LEVEL SECURITY;
     DROP POLICY IF EXISTS "otp_schema_migrations_read" ON public.otp_schema_migrations;
-    CREATE POLICY "otp_schema_migrations_read" ON public.otp_schema_migrations
-      FOR SELECT TO authenticated, anon, service_role USING (true);
+    REVOKE ALL ON public.otp_schema_migrations FROM PUBLIC, anon;
   `;
   await client.query(sql);
 }

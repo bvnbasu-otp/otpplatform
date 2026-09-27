@@ -31,19 +31,22 @@ async function runKeepAlive() {
 
   // 1. PostgREST REST Heartbeat Ping
   try {
-    const restUrl = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/platform_environment_settings?select=environment,is_production&limit=1`;
+    const restUrl = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/rpc/platform_heartbeat`;
     const res = await fetch(restUrl, {
+      method: 'POST',
       headers: {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
       },
+      body: '{}',
     });
 
     const elapsed = Date.now() - startTime;
     if (res.ok) {
       const data = await res.json();
       console.log(`[PASS] PostgREST Database Heartbeat (${elapsed}ms) -> HTTP ${res.status}`);
-      console.log(`       Environment Data: ${JSON.stringify(data)}`);
+      console.log(`       Heartbeat: ${JSON.stringify(data)}`);
       successCount++;
     } else {
       console.warn(`[WARN] PostgREST returned HTTP ${res.status}: ${await res.text()}`);

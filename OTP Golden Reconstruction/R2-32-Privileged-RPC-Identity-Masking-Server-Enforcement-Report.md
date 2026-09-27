@@ -450,3 +450,92 @@ The T201 always-true pin now expects no `WITH CHECK (true)` UPDATE policy, and o
 - `organizations_insert` and the public support-ticket insert, by design.
 
 Single local commit on top of `c23d6fc`, with no push and no deploy. Live-DB execution: **none**.
+
+## L. Follow-up: migration 00203 (R9, R3–R6 and the `rfqs` column-grant guard)
+
+Product Owner decision, 27 Sep 2026. Built on top of `d3e98a9108403d3861e532e71f858aecb9c3ca6f`. New migration: `00203_restrict_ops_metadata_guard_profile_privileges_and_one_live_tds.sql` (255 lines, single `BEGIN … COMMIT`).
+
+**Migration 00203 has never been executed.** There is still no local database. Its claims are proven only by **T203** = `tests/security/ops-metadata-profile-privileges-tds-rfqs-guards-00203-redteam.test.ts` (27 tests). T203 re-derives the effective policy set, scans the latest definition of every SQL function (all schemas), and scans client, package, edge and script source.
+
+**Baseline:** HEAD `d3e98a9`, clean tree, 202 migrations. **After:** 203 migrations, contiguous 00001–00203.
+
+Ceiling references moved to 203:
+- `clean-start-reset.ts` and its test;
+- `scripts/otp-promote-certified.ps1`;
+- the 00198–00202 tests, each checking its own position in a 203-file chain.
+
+The T201 open-SELECT pin drops `platform_environment_settings` and `otp_schema_migrations`, leaving seven reference and config tables.
+
+No web-app client code changed. Two ops scripts changed (listed in L.1).
+
+### L.1 R9: every reader found
+
+| Reader | Kind | Finding / new path |
+|---|---|---|
+| `scripts/ping-supabase-keep-alive.ts:34` | Script, anon REST | Read `environment, is_production`, but only needs a database round trip. It now POSTs `/rest/v1/rpc/platform_heartbeat`, which returns `{"ok": true}` and reads no table. |
+| `scripts/deploy-migrations.ts` `ensureTrackingTables` | Script, postgres connection | **Re-created `otp_schema_migrations_read` `TO authenticated, anon, service_role USING (true)` on every deploy**, which would have silently re-opened R9. It now drops that policy and revokes anon. |
+| `deploy-prod.ps1`, `update-live.ps1`, `start-platform.ps1`, `otp.ps1`, `deploy-migrations.ts` (psql / pg as postgres) | Scripts, owner | Unaffected: the owner bypasses RLS |
+| `private.is_production_environment`, `public.assert_production_data_integrity` | SQL | Both SECURITY DEFINER, so unaffected. This matters because the production lock fails open if the row is invisible. |
+| `assert_production_data_integrity()` grant | SQL | Was executable by anon (00125:561) and returns the environment and table counts. Now service_role only; its callers are ops scripts running as postgres. |
+| `apps/web/src`, `packages`, `supabase/functions` | Client / edge | No readers. `clean-start-reset.ts` only lists the names. There is no public page, pilot flag or demo-mode detection reading them. |
+
+**Fix (:41-82):**
+- Both SELECT policies are now `TO authenticated USING (private.is_platform_admin())`. The migrations one is renamed `otp_schema_migrations_admin_read`, so an old deploy script's DROP cannot remove it.
+- All table privileges are revoked from PUBLIC and anon.
+- `platform_heartbeat()` is SECURITY INVOKER and granted to anon; it is the only anon grant in 00203.
+
+### L.2 Per-item status
+
+| Item | Status | Detail |
+|---|---|---|
+| **R9** | FIXED (static) | See L.1 |
+| **R3** Admin bypass of the milestone and allowance rules | **Left open, by design** | The admin repair tools (`admin_force_transition_order_state`, `admin_retry_invoice_payment_webhook`, `admin_fix_buyer_issue`) exist to move stuck orders. Removing the bypass changes operator recovery behaviour, which is a product decision rather than a contained fix. |
+| **R4** Transaction-local sign-off GUC | **Guarded (test), design unchanged** | The flag cannot be removed without redesigning the inspection sign-off. Revoking `set_config` from API roles would break PostgREST, which uses it for JWT claims. T203 now fails if any migration calls `set_config` with anything but a literal `otp.*` name and constant value (13 calls today); if anything other than `accept_delivery_inspection` sets `otp.wo_inspection_signoff`; if its readers change; or if any client calls `rpc('set_config')`. |
+| **R5** `is_platform_admin` email whitelist | **Partially fixed** | **New finding:** `profiles_update` / `profiles_insert` (00004) check only row ownership, and no trigger guarded `is_platform_admin`. `is_platform_admin()` trusts `profiles.is_platform_admin` and `profiles.email`, so any signed-in user could make themselves a platform admin. 00203 :84-144 adds `trg_aa_guard_profile_privileges`, which blocks this for non-admin, non-service callers (details below). The JWT / `auth.users` email whitelist itself **stays**: removing it needs a live-data check that every whitelisted account carries the profile flag. GoTrue auto-confirm also means requiring confirmed email would not help. Neither can be verified statically. |
+| **R6** TDS unique index skipped if duplicates exist | **Fixed (static), no financial row touched** | :146-253. `trg_enforce_one_live_tds_per_invoice` rejects any new live duplicate, whatever the caller (details below). The unique index is retried; if duplicates exist, a WARNING gives the count and points to `admin_list_duplicate_live_tds()`, a read-only function for admin and service_role that lists duplicate groups and whether the index exists. Existing duplicates are not voided automatically, because voiding re-opens invoice balances through the 00200 triggers. They must be voided through an audited correction. |
+| **Future `rfqs` column grants** | **Guarded (test)** | T203 `rfqsGrantViolations` checks every migration after 00199 (details below). No DB change. |
+
+**R5 guard.** For callers that are not platform admins, service_role or JWT-less sessions, it rejects:
+- setting or changing `is_platform_admin`;
+- inserting or changing to one of the seven whitelisted admin emails (T203 checks this list equals the `is_platform_admin` whitelist);
+- changing `status`, `deleted_at` or `blocked_*`, which stops self-unblocking.
+
+Every SQL writer of those columns is an `admin_*` function. The only non-admin email writer is `verify_and_update_profile_credential`, which verifies the email first. The client writes only `last_seen_at` (the presence heartbeat) outside the admin feature. All of this is asserted by T203.
+
+**R6 trigger.** It rejects any insert, un-void or re-point that would create a second live TDS row for an invoice, for every caller including admins and service_role. It locks the invoice row. The only writer, `apply_tds_withholding_atomic`, already returns the existing live row, and clients only read the table.
+
+**`rfqs` guard.** For every migration after 00199, it requires each added `rfqs` column (except the two address snapshots) to be matched by `GRANT SELECT (col) ON public.rfqs TO authenticated` or by the 00199 dynamic re-grant. It forbids table-wide `GRANT SELECT|ALL ON rfqs` and `GRANT … ON ALL TABLES IN SCHEMA public` to API roles. Synthetic cases prove it fails on each violation and accepts valid grants.
+
+### L.3 Security implications and rollback
+
+**What changes:**
+- Anon can no longer read the environment flags or migration ledger, or run the integrity report.
+- Signed-in users can no longer grant themselves platform admin, claim an admin email, or unblock themselves.
+- A second live TDS deduction per invoice is impossible from 00203 on.
+
+**Rollback:** re-create the 00125 policies, re-grant, restore the old deploy and keep-alive scripts, and drop the two new triggers. That would re-open R9 and the admin self-escalation, so it is not recommended.
+
+### L.4 Gate results (run from the repo root after all edits)
+
+| Gate | Result |
+|---|---|
+| Typecheck | domain, database, services and web PASSED |
+| Vocabulary | PASSED: 456 files, 0 violations |
+| Coverage policy `--strict` | PASSED: UNIT 81, MODULE 199, FUNCTIONAL 50, REGRESSION 4; 334 test files |
+| Vitest root | 324 files passed (324); 3601 passed, 371 skipped (3972) |
+| Vitest domain | 61 files; 773 passed |
+| Vitest services | 40 files; 559 passed |
+| Vitest database | 2 files; 5 passed |
+| Vitest web (`--config apps/web/vitest.config.ts`) | 166 files; 1644 passed |
+| Build | built in 30.80s, exit 0 |
+
+**Open after 00203:**
+- R3 (by design).
+- R4 (design unchanged, guarded).
+- The R5 whitelist (live-data check needed).
+- Existing TDS duplicates, if any (listed by `admin_list_duplicate_live_tds()`).
+- R7: nothing has been executed against Postgres, for 00199–00203.
+- `organizations_insert` and the public support-ticket insert, by design.
+- `profiles_insert` still lets a user self-insert a profile with a non-default `status` (for example to skip a pending state). Only the admin flag and admin emails are blocked on insert.
+
+Single local commit on top of `d3e98a9`, with no push and no deploy. Live-DB execution: **none**.
