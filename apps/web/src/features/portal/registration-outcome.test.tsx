@@ -8,6 +8,7 @@ vi.mock('@/lib/supabase', () => {
     from: vi.fn(),
     rpc: vi.fn(),
     auth: { getUser: vi.fn() },
+    functions: { invoke: vi.fn() },
   };
   (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
   return { supabase: globalMock };
@@ -114,9 +115,10 @@ describe('SignupSuccess copy', () => {
 describe('signup API truthfulness', () => {
   beforeEach(() => {
     mockSupabase.rpc = vi.fn();
+    mockSupabase.functions = { invoke: vi.fn() };
   });
 
-  it('submitSignupRequest does not invent a temporary password or credits', async () => {
+  it('submitSignupRequest does not invent free credits, and does not notify without a requestId', async () => {
     mockSupabase.rpc.mockResolvedValue({ data: { reference: 'REG-1', status: 'PENDING' }, error: null });
     const res = await submitSignupRequest({
       side: 'SUPPLIER',
@@ -130,15 +132,42 @@ describe('signup API truthfulness', () => {
     });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.result.temporaryPassword).toBeUndefined();
       expect(res.result.freeRfqCredits).toBeUndefined();
       expect(res.result.status).toBe('PENDING');
+      // No requestId in the RPC response → no guaranteed notice was requested.
+      expect(res.result.notification).toBeUndefined();
     }
     expect(mockSupabase.rpc.mock.calls[0][1].p_request.referral_code).toBe('OTP-D4E5F6');
+    expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
+  });
+
+  it('submitSignupRequest asks onboarding-notify for a guaranteed notice once a requestId comes back', async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: { reference: 'REG-1', requestId: 'req-1', status: 'PENDING', already_submitted: false },
+      error: null,
+    });
+    mockSupabase.functions.invoke.mockResolvedValue({ data: { ok: true, status: 'SUBMITTED' }, error: null });
+    const res = await submitSignupRequest({
+      side: 'SUPPLIER',
+      businessName: 'Zenith',
+      contactFirstName: 'V',
+      contactLastName: 'P',
+      email: 'v@z.in',
+      phone: '+919876543211',
+      verificationChannel: 'EMAIL',
+    });
+    expect(res.ok).toBe(true);
+    expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+      'onboarding-notify',
+      expect.objectContaining({ body: { requestId: 'req-1', kind: 'SUBMITTED' } }),
+    );
+    if (res.ok) {
+      expect(res.result.notification?.status).toBe('SUBMITTED');
+    }
   });
 
   it('sendVerificationCode fails closed when the server cannot issue a code (no fallback code)', async () => {
-    mockSupabase.rpc.mockResolvedValue({ data: null, error: { message: 'function does not exist' } });
+    mockSupabase.functions.invoke.mockResolvedValue({ data: { ok: false, error: 'function does not exist' }, error: null });
     const res = await sendVerificationCode('WHATSAPP', { email: 'v@z.in', phone: '9876543211' });
     expect(res.ok).toBe(false);
     expect(JSON.stringify(res)).not.toContain('123456');

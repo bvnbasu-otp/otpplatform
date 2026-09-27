@@ -356,6 +356,101 @@ export function renderOptInConfirmation(): RenderedMessage {
   };
 }
 
+/**
+ * Onboarding notices (D-21/A-30/B-01/A-29's joint server-side redesign).
+ *
+ * Unlike the RFQ templates above, these never carry a buyer's identity —
+ * there is no allow-list to enforce — but they follow the same rule that
+ * mattered for the OTP-secrecy fix: the caller passes the raw code, this
+ * function only ever formats it into text that is about to go straight to
+ * a provider send. Nothing here stores or returns the code a second time.
+ */
+export interface OtpMessageInput {
+  code: string;
+  minutesValid: number;
+}
+
+/** Registration-time phone verification (currently unwired to any UI gate). */
+export function renderSignupVerificationOtp(input: OtpMessageInput): RenderedMessage {
+  return {
+    templateId: 'signup_verification_otp',
+    body:
+      `[OTP Platform] Verification Code\n\n` +
+      `Your verification code is: ${input.code}\n\n` +
+      `Valid for ${input.minutesValid} minutes. Enter this code on the registration page to proceed.`,
+  };
+}
+
+export interface PasswordResetOtpInput extends OtpMessageInput {
+  fullName: string;
+}
+
+export function renderPasswordResetOtp(input: PasswordResetOtpInput): RenderedMessage {
+  return {
+    templateId: 'password_reset_otp',
+    body:
+      `[OTP Platform] Password Reset Verification\n\n` +
+      `Hello ${input.fullName},\n` +
+      `Your password reset verification code is: ${input.code}\n\n` +
+      `Valid for ${input.minutesValid} minutes. Enter this code on the password reset screen to set your new password.\n\n` +
+      `If you did not request this, you can safely ignore this message.`,
+  };
+}
+
+export function renderProfileCredentialOtp(input: PasswordResetOtpInput): RenderedMessage {
+  return {
+    templateId: 'profile_credential_otp',
+    body:
+      `OTP Platform profile verification\n\n` +
+      `Hello ${input.fullName},\n` +
+      `Your code to link this phone number to your profile is: ${input.code}\n\n` +
+      `Valid for ${input.minutesValid} minutes. Enter it in your Profile settings.`,
+  };
+}
+
+export interface RegistrationReceivedInput {
+  fullName: string;
+  businessName: string;
+  reference: string;
+}
+
+/** B-01, submission leg: sent regardless of the applicant's stated channel
+ * preference, because both registration forms require a phone number. */
+export function renderRegistrationReceivedNotice(input: RegistrationReceivedInput): RenderedMessage {
+  return {
+    templateId: 'registration_received',
+    body:
+      `[OTP Platform] Registration Received\n\n` +
+      `Hello ${input.fullName},\n` +
+      `Your registration for "${input.businessName}" has been received.\n\n` +
+      `Reference: ${input.reference}\n` +
+      `Status: PENDING\n\n` +
+      `Our operations team will verify your details before your account is activated.`,
+  };
+}
+
+export interface ApprovalActivationInput {
+  fullName: string;
+  businessName: string;
+  code: string;
+  minutesValid: number;
+}
+
+/** B-01/A-29, approval leg: the applicant's first credential is this code,
+ * redeemed on the same "reset password" screen an existing user would use —
+ * never a shared literal password, never a Supabase-native recovery link. */
+export function renderApprovalActivationNotice(input: ApprovalActivationInput): RenderedMessage {
+  return {
+    templateId: 'approval_activation_otp',
+    body:
+      `[OTP Platform] Account Approved — Set Your Password\n\n` +
+      `Hello ${input.fullName},\n` +
+      `Your registration for "${input.businessName}" has been approved.\n\n` +
+      `Your one-time activation code is: ${input.code}\n\n` +
+      `Valid for ${input.minutesValid} minutes. Go to the "Forgot password?" screen, enter this code, and choose your own password to sign in for the first time.`,
+  };
+}
+
 export function renderDeclineAcknowledgement(
   reference: string | null,
 ): RenderedMessage {

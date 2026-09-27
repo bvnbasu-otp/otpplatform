@@ -8,7 +8,6 @@ import {
   fetchServedCities,
   fetchServiceCategories,
   submitSignupRequest,
-  sendWhatsAppNotification,
   type ServiceCategory,
   type SignupResult,
   type VerificationChannel,
@@ -56,6 +55,9 @@ export function SupplierRegisterForm({
   const [channel, setChannel] = useState<VerificationChannel>('WHATSAPP');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // F-RUN2-VAL-01: field-level messages shown next to the field that needs
+  // attention, populated on a submit attempt — see validateSupplierForm below.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     void (async () => {
@@ -68,14 +70,21 @@ export function SupplierRegisterForm({
     })();
   }, []);
 
-  const complete =
-    business.trim() &&
-    chosen.length > 0 &&
-    firstName.trim() &&
-    lastName.trim() &&
-    email.trim() &&
-    phone.trim() &&
-    (city.trim() || pincode.trim());
+  /**
+   * F-RUN2-VAL-01: what used to silently disable the submit button, now
+   * surfaced as a message next to the field it is about.
+   */
+  function validateSupplierForm(): Record<string, string> {
+    const errors: Record<string, string> = {};
+    if (!business.trim()) errors.business = 'Business or contractor name is required.';
+    if (chosen.length === 0) errors.categories = 'Pick at least one category you work in.';
+    if (!firstName.trim()) errors.firstName = 'Contact first name is required.';
+    if (!lastName.trim()) errors.lastName = 'Contact last name is required.';
+    if (!email.trim()) errors.email = 'Work email is required.';
+    if (!phone.trim()) errors.phone = 'Phone number is required.';
+    if (!city.trim() && !pincode.trim()) errors.city = 'Tell us the city or pin code you work in.';
+    return errors;
+  }
 
   function toggleCategory(code: string) {
     setChosen((current) =>
@@ -85,8 +94,15 @@ export function SupplierRegisterForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setError(null);
+
+    const validationErrors = validateSupplierForm();
+    setFieldErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    setBusy(true);
 
     const finalTaxId = businessType === 'GST_REGISTERED' ? taxId.trim() : panNumber.trim();
 
@@ -112,17 +128,11 @@ export function SupplierRegisterForm({
       return;
     }
 
-    const notification =
-      channel === 'WHATSAPP' && phone.trim() && !result.result.alreadySubmitted
-        ? await sendWhatsAppNotification(
-            phone,
-            `[OTP Platform] Registration Received\n\nHello ${firstName.trim()},\nYour supplier registration for *${business.trim()}* has been received.\n\n*Reference:* ${result.result.reference}\n*Status:* ${result.result.status}\n\nOur operations team will verify your business before your account is activated.`,
-            { idempotencyKey: `registration:${result.result.reference}` },
-          )
-        : undefined;
-
+    // B-01: the acknowledgement notice is now a guaranteed server-side send
+    // (submitSignupRequest already asked onboarding-notify to send it and
+    // put the truthful outcome on result.result.notification).
     setBusy(false);
-    onSuccess({ ...result.result, notification });
+    onSuccess(result.result);
   }
 
   return (
@@ -140,6 +150,7 @@ export function SupplierRegisterForm({
 
       <form
         onSubmit={(e) => void handleSubmit(e)}
+        noValidate
         className={`${showHeading ? 'mt-4' : ''} ${text.stack}`}
       >
         {/* Business Entity Type Selector (GST Enterprise vs. Micro-Contractor) */}
@@ -186,7 +197,7 @@ export function SupplierRegisterForm({
           </div>
         </div>
 
-        <PortalField label="Business / Contractor Name" required>
+        <PortalField label="Business / Contractor Name" error={fieldErrors.business} required>
           {({ id, invalid }) => (
             <input
               id={id}
@@ -203,6 +214,7 @@ export function SupplierRegisterForm({
         <PortalField
           label="What work do you take on?"
           help="Pick every category you genuinely cover. Requests reach you by these."
+          error={fieldErrors.categories}
           required
         >
           {({ describedBy }) => (
@@ -239,7 +251,7 @@ export function SupplierRegisterForm({
         </PortalField>
 
         <div className={`grid sm:grid-cols-2 ${text.grid}`}>
-          <PortalField label="Contact first name" required>
+          <PortalField label="Contact first name" error={fieldErrors.firstName} required>
             {({ id, invalid }) => (
               <input
                 id={id}
@@ -251,7 +263,7 @@ export function SupplierRegisterForm({
               />
             )}
           </PortalField>
-          <PortalField label="Contact last name" required>
+          <PortalField label="Contact last name" error={fieldErrors.lastName} required>
             {({ id, invalid }) => (
               <input
                 id={id}
@@ -267,7 +279,7 @@ export function SupplierRegisterForm({
 
         <RoleChoiceField side="SUPPLIER" value={roleCode} onChange={setRoleCode} />
 
-        <PortalField label="Work email" required>
+        <PortalField label="Work email" error={fieldErrors.email} required>
           {({ id, invalid }) => (
             <input
               id={id}
@@ -281,7 +293,12 @@ export function SupplierRegisterForm({
           )}
         </PortalField>
 
-        <PortalField label="Phone number" help="Used for verification and WhatsApp RFQ alerts." required>
+        <PortalField
+          label="Phone number"
+          help="Used for verification and WhatsApp RFQ alerts."
+          error={fieldErrors.phone}
+          required
+        >
           {({ id, describedBy, invalid }) => (
             <input
               id={id}
@@ -358,7 +375,7 @@ export function SupplierRegisterForm({
         )}
 
         <div className={`grid sm:grid-cols-[1fr_8rem] ${text.grid}`}>
-          <PortalField label="City you work in" required>
+          <PortalField label="City you work in" error={fieldErrors.city} required>
             {({ id, invalid }) => (
               <input
                 id={id}
@@ -421,7 +438,6 @@ export function SupplierRegisterForm({
           type="submit"
           variant="action"
           className="w-full"
-          disabled={!complete}
           busy={busy}
           busyLabel="Submitting…"
         >

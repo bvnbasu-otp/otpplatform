@@ -10,7 +10,6 @@ import { RwaRegistrationAgreementModal } from './RwaRegistrationAgreementModal';
 import { MsmeRegistrationAgreementModal } from './MsmeRegistrationAgreementModal';
 import {
   submitSignupRequest,
-  sendWhatsAppNotification,
   resolveBuyerOrganisation,
   resolveBuyerRoleCode,
   type SignupResult,
@@ -63,6 +62,9 @@ export function BuyerRegisterForm({
   const [channel, setChannel] = useState<VerificationChannel>('WHATSAPP');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // F-RUN2-VAL-01: field-level messages shown next to the field that needs
+  // attention, populated on a submit attempt — see validateBuyerForm below.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [pan, setPan] = useState('');
   const [agreementAccepted, setAgreementAccepted] = useState(false);
@@ -109,23 +111,40 @@ export function BuyerRegisterForm({
     }
   }
 
-  const complete =
-    (isIndividual ? Boolean(organisation.trim() || true) : Boolean(organisation.trim())) &&
-    Boolean(firstName.trim()) &&
-    Boolean(lastName.trim()) &&
-    Boolean(buyerType) &&
-    Boolean(email.trim()) &&
-    Boolean(phone.trim()) &&
-    (!isRwa || agreementAccepted) &&
-    (!isMsme || agreementAccepted);
-  // Role is deliberately absent from the completeness check: the dropdown hides
-  // itself if the catalogue cannot be read, and a hidden required field is a
-  // form that cannot be submitted for reasons nobody can see.
+  /**
+   * F-RUN2-VAL-01: what used to silently disable the submit button, now
+   * surfaced as a message next to the field it is about. Role is
+   * deliberately absent: the dropdown hides itself if the catalogue cannot
+   * be read, and a hidden required field is a form that cannot be
+   * submitted for reasons nobody can see.
+   */
+  function validateBuyerForm(): Record<string, string> {
+    const errors: Record<string, string> = {};
+    if (!buyerType) errors.buyerType = 'Choose who you are buying for.';
+    if (!isIndividual && !organisation.trim()) errors.organisation = 'Organisation name is required.';
+    if (!firstName.trim()) errors.firstName = 'First name is required.';
+    if (!lastName.trim()) errors.lastName = 'Last name is required.';
+    if (!city.trim()) errors.city = 'Operational city is required.';
+    if (pincode.trim().length !== 6) errors.pincode = 'Pincode must be 6 digits.';
+    if (!email.trim()) errors.email = 'Work email is required.';
+    if (!phone.trim()) errors.phone = 'Phone number is required.';
+    if ((isRwa || isMsme) && !agreementAccepted) {
+      errors.agreement = 'Review and accept the agreement above to continue.';
+    }
+    return errors;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setError(null);
+
+    const validationErrors = validateBuyerForm();
+    setFieldErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    setBusy(true);
 
     const resolvedOrg = resolveBuyerOrganisation(buyerType, organisation);
     const resolvedRole = resolveBuyerRoleCode(buyerType, roleCode);
@@ -151,17 +170,14 @@ export function BuyerRegisterForm({
       return;
     }
 
-    const notification =
-      channel === 'WHATSAPP' && phone.trim() && !result.result.alreadySubmitted
-        ? await sendWhatsAppNotification(
-            phone,
-            `[OTP Platform] Registration Received\n\nHello ${firstName.trim()},\nYour buyer registration for *${resolvedOrg}* has been received.\n\n*Reference:* ${result.result.reference}\n*Status:* ${result.result.status}\n\nOur operations team will verify your organisation before your account is activated.`,
-            { idempotencyKey: `registration:${result.result.reference}` },
-          )
-        : undefined;
-
+    // B-01: the acknowledgement notice is now a guaranteed server-side send
+    // (submitSignupRequest already asked onboarding-notify to send it and
+    // put the truthful outcome on result.result.notification) — there is no
+    // client-side WhatsApp call left to make here, and no gate on `channel`,
+    // since both registration forms require a phone number regardless of
+    // the applicant's stated acknowledgement-channel preference.
     setBusy(false);
-    onSuccess({ ...result.result, notification });
+    onSuccess(result.result);
   }
 
   return (
@@ -179,11 +195,13 @@ export function BuyerRegisterForm({
 
       <form
         onSubmit={(e) => void handleSubmit(e)}
+        noValidate
         className={`${showHeading ? 'mt-4' : ''} ${text.stack}`}
       >
         <PortalField
           label="Who are you buying for?"
           help="This sets how approvals work for your account, and what a committee vote is worth."
+          error={fieldErrors.buyerType}
           required
         >
           {({ id, describedBy, invalid }) => (
@@ -224,6 +242,7 @@ export function BuyerRegisterForm({
               ? 'Residential Welfare Association or Society. Committee votes require democratic quorum.'
               : 'This sets your buyer organization context for sourcing and procurement.'
           }
+          error={fieldErrors.organisation}
           required
         >
           {({ id, describedBy, invalid }) => (
@@ -248,7 +267,7 @@ export function BuyerRegisterForm({
         </PortalField>
 
         <div className={`grid sm:grid-cols-2 ${text.grid}`}>
-          <PortalField label="First name" required>
+          <PortalField label="First name" error={fieldErrors.firstName} required>
             {({ id, invalid }) => (
               <input
                 id={id}
@@ -260,7 +279,7 @@ export function BuyerRegisterForm({
               />
             )}
           </PortalField>
-          <PortalField label="Last name" required>
+          <PortalField label="Last name" error={fieldErrors.lastName} required>
             {({ id, invalid }) => (
               <input
                 id={id}
@@ -275,7 +294,7 @@ export function BuyerRegisterForm({
         </div>
 
         <div className={`grid sm:grid-cols-2 ${text.grid}`}>
-          <PortalField label="Operational City" required>
+          <PortalField label="Operational City" error={fieldErrors.city} required>
             {({ id, invalid }) => (
               <input
                 id={id}
@@ -287,7 +306,12 @@ export function BuyerRegisterForm({
               />
             )}
           </PortalField>
-          <PortalField label="Pincode (6 digits)" help="Helps check immediate regional supplier coverage." required>
+          <PortalField
+            label="Pincode (6 digits)"
+            help="Helps check immediate regional supplier coverage."
+            error={fieldErrors.pincode}
+            required
+          >
             {({ id, invalid }) => (
               <input
                 id={id}
@@ -423,6 +447,11 @@ export function BuyerRegisterForm({
             >
               {agreementAccepted ? 'View / Download Accepted Agreement' : 'Review & Accept RWA Agreement →'}
             </Button>
+            {fieldErrors.agreement && (
+              <p className="text-red-600 text-[11px] font-semibold" role="alert">
+                {fieldErrors.agreement}
+              </p>
+            )}
           </div>
         )}
 
@@ -453,10 +482,15 @@ export function BuyerRegisterForm({
             >
               {agreementAccepted ? 'View / Download Accepted Agreement' : 'Review & Accept MSME Agreement →'}
             </Button>
+            {fieldErrors.agreement && (
+              <p className="text-red-600 text-[11px] font-semibold" role="alert">
+                {fieldErrors.agreement}
+              </p>
+            )}
           </div>
         )}
 
-        <PortalField label="Work email" required>
+        <PortalField label="Work email" error={fieldErrors.email} required>
           {({ id, invalid }) => (
             <input
               id={id}
@@ -470,7 +504,12 @@ export function BuyerRegisterForm({
           )}
         </PortalField>
 
-        <PortalField label="Phone number" help="Used for verification and nothing else." required>
+        <PortalField
+          label="Phone number"
+          help="Used for verification and nothing else."
+          error={fieldErrors.phone}
+          required
+        >
           {({ id, describedBy, invalid }) => (
             <input
               id={id}
@@ -519,7 +558,6 @@ export function BuyerRegisterForm({
           type="submit"
           variant="action"
           className="w-full"
-          disabled={!complete}
           busy={busy}
           busyLabel="Submitting…"
         >

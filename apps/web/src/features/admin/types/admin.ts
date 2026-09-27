@@ -459,7 +459,17 @@ export interface AdminReviewSignupResponse {
   full_name?: string;
   organization_id?: string;
   supplier_id?: string;
+  /**
+   * A-29: there is no shared literal password any more, so this RPC never
+   * returns one — the field stays only so old callers checking it fail
+   * closed to the "send an activation code" path below rather than to a
+   * throw. New callers should key off `activation_required` instead.
+   */
   temporary_password?: string;
+  /** True when this approval created a brand-new account that still needs
+   * its bespoke single-use activation code (see onboarding-notify, kind:
+   * 'APPROVED') before it can sign in. */
+  activation_required?: boolean;
   message?: string;
   error?: string;
 }

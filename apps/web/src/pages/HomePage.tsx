@@ -14,7 +14,7 @@ export function HomePage() {
   const isSupplier = role === 'supplier' || context.side === 'SUPPLIER';
   const isAdmin = role === 'admin' || context.isPlatformAdmin;
 
-  if (portalLoading && contextLoading) {
+  if (portalLoading || contextLoading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
         Loading portal…

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { NOTIFICATION_STATUS_LABEL } from '@otp/domain';
-import { sendWhatsAppNotification } from '@/features/portal/api/signup';
-import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
+import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
 import {
   fetchUsersAndOrganizations,
   fetchSignupRequests,
@@ -429,51 +427,40 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     await handleConfirmUnblock(undoTarget.type, undoTarget.ids, { skipConfirm: true });
   };
 
-  // Registration Review Handler
+  /**
+   * B-01 + A-29: approval used to fire two independent, best-effort browser
+   * calls — `resetPasswordForEmail` (a GoTrue link that cannot reach a
+   * WhatsApp-only applicant) and a WhatsApp message containing the shared
+   * literal password whenever `admin_review_signup_request` handed one
+   * back. Neither was guaranteed, and the RPC no longer returns a password
+   * at all. There is now exactly one guaranteed notice for an approval:
+   * `onboarding-notify` (kind: 'APPROVED'), called synchronously right
+   * here, after the RPC has committed. It issues a fresh single-use
+   * activation code and sends it — fail-closed, so a delivery failure is
+   * reported to the admin rather than silently swallowed.
+   */
   const handleReview = async (request: AdminSignupRequest, action: 'APPROVE' | 'REJECT') => {
     setProcessingId(request.id);
     try {
       const res = await reviewSignupRequest(request.id, action);
       if (res.ok) {
-        const notifDetails: string[] = [];
+        let notifSummary = '';
 
         if (action === 'APPROVE') {
-          try {
-            const { error: emailErr } = await supabase.auth.resetPasswordForEmail(request.email, {
-              redirectTo: `${window.location.origin}/reset-password`,
-            });
-            notifDetails.push(
-              `Activation email: ${NOTIFICATION_STATUS_LABEL[resolveSupabaseEmailDispatch(emailErr).status]}`,
-            );
-          } catch (e) {
-            notifDetails.push(`Activation email: ${NOTIFICATION_STATUS_LABEL.FAILED}`);
-          }
-
-          if (request.phone) {
-            const loginUrl = new URL('/login', window.location.origin).toString();
-            const credentialLine = res.temporary_password
-              ? `*Your Login Credentials:*\n- Email: ${request.email}\n- Temporary Password: ${res.temporary_password}\n`
-              : `*Sign-in email:* ${request.email}\nUse the password-reset link requested for this email to set your password.\n`;
-            const wa = await sendWhatsAppNotification(
-              request.phone,
-              `[OTP Platform] Account Approved & Activated\n\n` +
-                `Hello ${request.contact_full_name},\n` +
-                `Your registration for *${request.business_name}* (Ref: ${request.reference}) has been approved by the platform administrator.\n\n` +
-                credentialLine +
-                `- Login URL: ${loginUrl}\n\n` +
-                `Please log in and update your password under Account Settings.`,
-              { idempotencyKey: `welcome:${request.reference}` },
-            );
-            notifDetails.push(`Welcome WhatsApp: ${NOTIFICATION_STATUS_LABEL[wa.status]}`);
-          }
+          const { result: notifyRes } = await invokeEdgeFunction('onboarding-notify', {
+            requestId: request.id,
+            kind: 'APPROVED',
+          });
+          notifSummary = notifyRes.ok
+            ? ' (Activation notice: submitted; delivery not confirmed)'
+            : ` (Activation notice FAILED to send: ${notifyRes.error || 'unknown error'} — the applicant cannot sign in until this is retried)`;
         }
 
-        const notifSummary = notifDetails.length > 0 ? ` (${notifDetails.join(' · ')}; delivery not confirmed)` : '';
         setBannerMessage({
-          type: 'success',
+          type: notifSummary.includes('FAILED') ? 'error' : 'success',
           text:
             action === 'APPROVE'
-              ? `✓ Successfully approved and onboarded "${request.business_name}" (${request.reference}). Workspace provisioned for ${request.email}.${notifSummary}`
+              ? `${notifSummary.includes('FAILED') ? '⚠' : '✓'} Approved and onboarded "${request.business_name}" (${request.reference}). Workspace provisioned for ${request.email}.${notifSummary}`
               : `✕ Registration request "${request.business_name}" (${request.reference}) marked as rejected.`,
         });
         await loadData();
@@ -581,23 +568,49 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     }
   };
 
+  /**
+   * B-01, product decision 6: bulk approval must send the *same* guaranteed
+   * notice as a single approval, synchronously per item — each item's send
+   * must complete (or be reported as a failure) before the loop moves to
+   * the next one. Before this fix, this loop only ever called the review
+   * RPC; it never sent any notice at all, so a bulk-approved applicant had
+   * no way to learn they had been approved, let alone how to sign in.
+   */
   const handleApproveAllPending = async () => {
     const pendingReqs = requests.filter((r) => r.status === 'PENDING');
     if (pendingReqs.length === 0) return;
     setIsBulkExecuting(true);
     let successCount = 0;
+    let notifyFailureCount = 0;
     for (const req of pendingReqs) {
       try {
         const res = await reviewSignupRequest(req.id, 'APPROVE');
-        if (res.ok) successCount++;
+        if (!res.ok) continue;
+        successCount++;
+
+        // Synchronous, awaited per item — deliberately not fired-and-forgotten
+        // and not batched — so a failure here is attributed to this item
+        // before the loop reports on the next one.
+        const { result: notifyRes } = await invokeEdgeFunction('onboarding-notify', {
+          requestId: req.id,
+          kind: 'APPROVED',
+        });
+        if (!notifyRes.ok) {
+          notifyFailureCount++;
+          console.warn('Bulk approve: activation notice failed to send for', req.id, notifyRes.error);
+        }
       } catch (e) {
         console.warn('Bulk approve item failed:', req.id, e);
       }
     }
     setIsBulkExecuting(false);
+    const notifySummary =
+      notifyFailureCount > 0
+        ? ` ⚠ ${notifyFailureCount} activation notice(s) FAILED to send — those applicants cannot sign in until retried.`
+        : ' Activation notices submitted for all approved (delivery not confirmed).';
     setBannerMessage({
-      type: 'success',
-      text: `✓ Approved & activated ${successCount} of ${pendingReqs.length} pending registration(s).`,
+      type: notifyFailureCount > 0 ? 'error' : 'success',
+      text: `${notifyFailureCount > 0 ? '⚠' : '✓'} Approved & activated ${successCount} of ${pendingReqs.length} pending registration(s).${notifySummary}`,
     });
     await loadData();
   };

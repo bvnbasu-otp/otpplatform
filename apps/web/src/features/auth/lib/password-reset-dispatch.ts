@@ -1,67 +1,43 @@
 import { describeNotificationStatus, type NotificationStatusResolution } from '@otp/domain';
-import { supabase } from '@/lib/supabase';
-import { dispatchWhatsAppText } from '@/features/notifications/lib/outbound-dispatch';
+import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
 
 export interface WhatsAppPasswordResetResult {
   ok: boolean;
-  phone?: string;
-  email?: string;
   error?: string;
   delivery?: NotificationStatusResolution;
 }
 
 /**
- * Asks the server for a reset code and hands it to the WhatsApp gateway.
- * `ok: true` means the gateway took the message (SUBMITTED/ACCEPTED); it is not a delivery receipt.
+ * Asks the server to generate and send a password-reset code over WhatsApp.
+ *
+ * D-21/A-30: this used to call `request_whatsapp_password_reset` directly
+ * from the browser, receive the plaintext code back in the RPC response,
+ * and build + send the WhatsApp message itself via a `/waha` gateway that
+ * only ever existed in dev/preview. The RPC is now service_role-only (it
+ * would simply be refused if called from here), and the code never reaches
+ * the browser: `otp-dispatch` generates it, sends it, and reports back only
+ * success or failure — the same generic outcome regardless of whether the
+ * identifier was unknown, had no phone on file, or the provider rejected
+ * the send, so no destination detail is ever exposed.
  */
-export async function requestWhatsAppPasswordReset(
-  identifier: string,
-  options: { origin?: string; fetchImpl?: typeof fetch; timeoutMs?: number } = {},
-): Promise<WhatsAppPasswordResetResult> {
-  try {
-    const { data, error } = await supabase.rpc('request_whatsapp_password_reset', {
-      p_identifier: identifier.trim(),
-    });
-    if (error) return { ok: false, error: error.message };
-    const res = (data ?? {}) as {
-      ok?: boolean;
-      error?: string;
-      phone?: string;
-      email?: string;
-      full_name?: string;
-      otp_code?: string;
-    };
-    if (!res.ok) {
-      return { ok: false, error: res.error || 'User not found' };
-    }
-
-    if (!res.phone || !res.otp_code) {
-      return { ok: false, error: 'No WhatsApp number is registered for this account. Use email instead.' };
-    }
-
-    const origin = options.origin ?? (typeof window !== 'undefined' ? window.location.origin : 'https://otp.market');
-    const resetLink = new URL('/reset-password', origin);
-    resetLink.searchParams.set('identifier', res.phone);
-
-    const delivery = await dispatchWhatsAppText({
-      phone: res.phone,
-      text:
-        `[OTP Platform] Password Reset Verification\n\n` +
-        `Hello ${res.full_name || 'User'},\n` +
-        `Your password reset verification code is:\n\n` +
-        `*${res.otp_code}*\n\n` +
-        `Valid for 15 minutes. Enter this code on the password reset screen to set your new password:\n` +
-        `${resetLink.toString()}\n\n` +
-        `If you did not request this, you can safely ignore this message.`,
-      fetchImpl: options.fetchImpl,
-      timeoutMs: options.timeoutMs,
-    });
-
-    if (delivery.status === 'FAILED' || delivery.status === 'NOT_ATTEMPTED') {
-      return { ok: false, delivery, error: describeNotificationStatus(delivery, 'PASSWORD_RESET').message };
-    }
-    return { ok: true, phone: res.phone, email: res.email, delivery };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+export async function requestWhatsAppPasswordReset(identifier: string): Promise<WhatsAppPasswordResetResult> {
+  const trimmed = identifier.trim();
+  if (!trimmed) {
+    return { ok: false, error: 'Enter your email or phone number.' };
   }
+
+  const { result, delivery } = await invokeEdgeFunction('otp-dispatch', {
+    purpose: 'PASSWORD_RESET',
+    identifier: trimmed,
+  });
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      delivery,
+      error: result.error || describeNotificationStatus(delivery, 'PASSWORD_RESET').message,
+    };
+  }
+
+  return { ok: true, delivery };
 }

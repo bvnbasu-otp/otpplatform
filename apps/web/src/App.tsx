@@ -189,6 +189,34 @@ function SupplierPoDetailRoute() {
   );
 }
 
+/**
+ * Resolves which side of the platform a signed-in account should see for the
+ * dual-role Purchase Orders views, given the role context's resolved `side`.
+ * Mirrors the established pattern already used in BuyerPoDetailRoute /
+ * SupplierPoDetailRoute above: suppliers get the supplier view; everyone else
+ * (buyers, admins, and accounts whose side hasn't resolved yet) gets the
+ * buyer view.
+ */
+function resolvePurchaseOrdersRole(side: string | null | undefined): 'buyer' | 'supplier' {
+  return side === 'SUPPLIER' ? 'supplier' : 'buyer';
+}
+
+function PurchaseOrdersRoute() {
+  const { context } = useRoleContext();
+  return <PurchaseOrdersPage role={resolvePurchaseOrdersRole(context.side)} />;
+}
+
+function OrdersRoute() {
+  const { context } = useRoleContext();
+  const effectiveRole = resolvePurchaseOrdersRole(context.side);
+  return (
+    <Navigate
+      to={effectiveRole === 'supplier' ? '/supplier/purchase-orders' : '/purchase-orders'}
+      replace
+    />
+  );
+}
+
 function SupplierWoRoute() {
   const { woId } = useParams<{ woId: string }>();
   const sanitized = sanitizeRouteParam(woId);
@@ -426,7 +454,7 @@ export function App() {
               path="/purchase-orders"
               element={
                 <ProtectedRoute allowedRoles={['BUYER', 'SUPPLIER', 'ADMIN']}>
-                  <PurchaseOrdersPage role="buyer" />
+                  <PurchaseOrdersRoute />
                 </ProtectedRoute>
               }
             />
@@ -464,7 +492,7 @@ export function App() {
             />
             {/* Orders & Reports, Purchase Orders, Work Orders Aliases & Deep Links */}
             <Route path="/orders-reports" element={<Navigate to="/purchase-orders" replace />} />
-            <Route path="/orders" element={<Navigate to="/purchase-orders" replace />} />
+            <Route path="/orders" element={<OrdersRoute />} />
             <Route path="/orders/:poId" element={<BuyerPoDetailRoute />} />
             <Route path="/track/:poId" element={<BuyerPoDetailRoute />} />
             <Route path="/reports" element={<Navigate to="/purchase-orders?view=reports" replace />} />

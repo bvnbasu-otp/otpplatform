@@ -1,0 +1,2065 @@
+[
+  {
+    "id": "A-01",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Hard-coded stale public copy (old <title>, invented RFQ ref) remains live in production.",
+    "affected_files": [
+      "apps/web/index.html"
+    ],
+    "affected_routes": [
+      "/"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "Fix candidate exists in local commit 5325988 (index.html:18, title corrected), not yet validated/deployed.",
+    "dependencies": [
+      "D-29"
+    ],
+    "regression_risk": "Low - copy-only change.",
+    "evidence": "Base status ALREADY FIXED (remediation-inventory A-01); production still serves old title per ROOT_CAUSE_MATRIX §1.2, so mapped to CONFIRMED per batch rule (undeployed local-only fix)."
+  },
+  {
+    "id": "A-02",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Claimed React-style stopColor bug in raw favicon SVG; not code-read to confirm.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-02): claimed fixed in 5325988 but not read in Phase 0. Severity mapped P4->P3 per batch rule."
+  },
+  {
+    "id": "A-03",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "frontend-state",
+    "root_cause": "Claimed select-all over unfiltered rows, hard-delete admin UI, and direct-table fallbacks in admin user/org lifecycle flows; not code-read.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [
+      "D-28"
+    ],
+    "regression_risk": "Medium - admin bulk-action safety.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-03): claimed fixed in 5325988, not read; a separate direct-table fallback for signup approval remains open (D-28)."
+  },
+  {
+    "id": "A-04",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P2",
+    "domain": "UI",
+    "root_cause": "'10% reward' copy on public Pricing page contradicts the actual ₹0 pilot referral policy.",
+    "affected_files": [
+      "apps/web/src/features/site/pages/PricingPage.tsx"
+    ],
+    "affected_routes": [
+      "/pricing"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "Remove/replace residual 'Refer & Earn 10% Reward' string on PricingPage.tsx:337; ReferAndEarnCard already fixed.",
+    "dependencies": [],
+    "regression_risk": "Low - copy-only.",
+    "evidence": "PricingPage.tsx:337 'Refer & Earn 10% Reward'; production main bundle contains '10% reward' x2 (remediation-inventory A-04)."
+  },
+  {
+    "id": "A-05",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "frontend-state",
+    "root_cause": "Claimed direct-table fallback writes profile address using a client-supplied profile_id; server-side ownership flaw tracked separately as A-SEC-5.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "upsert_buyer_address_atomic"
+    ],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [
+      "A-SEC-5",
+      "A-17",
+      "D-23"
+    ],
+    "regression_risk": "Medium.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-05): client fix claimed, not read; schema mismatch also reported (A-17, D-23)."
+  },
+  {
+    "id": "A-06",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "frontend-state",
+    "root_cause": "Claimed intake form prefill no longer hard-codes city/PIN; not code-read.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-06): claimed fixed in 5325988, not read in Phase 0."
+  },
+  {
+    "id": "A-07",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "frontend-state",
+    "root_cause": "openRfq previously treated an already-OPEN RFQ as an error; guarded UPDATE and a per-tab in-flight map were added, but cross-tab de-dup still relies only on DB unique constraints and repeat calls may still duplicate audit/notification writes.",
+    "affected_files": [
+      "apps/web/src/features/requirement/api/rfq-lifecycle.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00002 (unique constraints)",
+    "surgical_fix": "Fix candidate exists in local commit 5325988 (rfq-lifecycle.ts:307,318-329,732-749), not yet validated/deployed.",
+    "dependencies": [],
+    "regression_risk": "Medium - possible duplicate audit/notification rows.",
+    "evidence": "Base status ALREADY FIXED (remediation-inventory A-07), local-only per ROOT_CAUSE_MATRIX §4.4 row 07; mapped to CONFIRMED per batch rule (undeployed fix)."
+  },
+  {
+    "id": "A-08",
+    "source": "32-tracked-issues",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "RPC",
+    "root_cause": "Server-side discover_and_invite_for_rfq (migration 00188) auto-submitted synthetic pilot quotes to real RFQs whenever the supplier-network stub flag was on; that flag defaulted true and was toggleable by anon.",
+    "affected_files": [
+      "apps/web/src/features/rfq/api/synthetic-quote-guard.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "discover_and_invite_for_rfq"
+    ],
+    "migration_dependency": "00188, 00130 (deployed defect); 00198 (fix)",
+    "surgical_fix": "SUPERSEDED: executed and validated by the P0 security hotfix, commit 2dd3c2d on branch hotfix/p0-security, migration 00198.",
+    "dependencies": [],
+    "regression_risk": "None remaining - validated in combined local-DB run.",
+    "evidence": "Base status ALREADY FIXED but server fix (00198) was recorded as never executed (remediation-inventory A-08). EXPLICIT OVERRIDE applied: this is the 'real pilot RFQs receive synthetic quotes' issue, proven live this session via a combined local-DB validation (198 migrations applied, 8 targeted security checks passed) - see OTP Golden Reconstruction/R2-33-P0-Security-Hotfix-Report.md on hotfix/p0-security."
+  },
+  {
+    "id": "A-09",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P2",
+    "domain": "UI",
+    "root_cause": "PDF generation is a print-of-screen with a fake seal; PO detail and report model were fixed locally but other print paths remain.",
+    "affected_files": [
+      "apps/web/src/features/fulfillment/pages/PurchaseOrderDetailPage.tsx",
+      "apps/web/src/features/fulfillment/pages/PurchaseOrdersPage.tsx",
+      "reporting/lib/pdf-generator.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "Replace remaining window.print() call sites with a proper server/document-generated PDF.",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "window.print() remains at PurchaseOrderDetailPage.tsx:804, PurchaseOrdersPage.tsx:264, pdf-generator.ts:25 (remediation-inventory A-09, PARTIAL)."
+  },
+  {
+    "id": "A-10",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "data-integrity",
+    "root_cause": "Governance charter shown in Profile is a placeholder; no charter/agreement DB tables exist to support admin bulk charter management.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none - schema does not exist",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low (feature not yet built).",
+    "evidence": "BLOCKED pending PO decision / missing charter-agreement schema (remediation-inventory A-10, base status BLOCKED). Mapped to UNVERIFIED per batch mapping rule; original blocking reason preserved here."
+  },
+  {
+    "id": "A-11",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "state-machine",
+    "root_cause": "Deployed chain has no server-side rule restricting work_orders.progress_percent to the 0-25-50-75-100 sequence (only a 0..100 CHECK exists), so a supplier can self-complete milestones.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00199 (trg_enforce_work_order_milestone_progression, trg_audit_work_order_milestone) - never executed",
+    "surgical_fix": "Fix candidate exists at migration 00199 (lines 1398, 1446), not yet validated/deployed.",
+    "dependencies": [
+      "D-13"
+    ],
+    "regression_risk": "Medium - invoice can still be raised at 0% progress before this ships with D-13 fix.",
+    "evidence": "Base status ALREADY FIXED (remediation-inventory A-11); mapped to CONFIRMED per batch rule since fix exists only in unexecuted migration 00199."
+  },
+  {
+    "id": "A-12",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Claimed exactly-one settlement CTA is now enforced on the UI; not code-read.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-12): claimed fixed, not read in Phase 0."
+  },
+  {
+    "id": "A-13",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "RPC",
+    "root_cause": "Deployed apply_tds_withholding_atomic trusts client-supplied base/rate, has a NULL-role bypass, no dedupe, and inserts audit rows into a non-existent column; a client coupling defect double-subtracts TDS once 00199 nets it into balance_due and also sums VOIDED rows.",
+    "affected_files": [
+      "apps/web/src/features/fulfillment/components/InvoicePaymentPanel.tsx",
+      "apps/web/src/features/fulfillment/api/payments.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "apply_tds_withholding_atomic"
+    ],
+    "migration_dependency": "00173 (deployed, vulnerable); 00199/00200/00203 (unexecuted fix) - must ship atomically with 00199",
+    "surgical_fix": "Fix candidate exists at 00199/00200/00203, not yet validated/deployed; client double-subtraction (InvoicePaymentPanel.tsx:139-141,352-355,554-555; payments.ts:1439-1443) must be fixed in the same release.",
+    "dependencies": [
+      "00199"
+    ],
+    "regression_risk": "High - TDS will mis-display if client and server ship separately. LEGAL VERIFICATION REQUIRED (194C/194J/194Q rates, GST-exclusive base, s.288B rounding).",
+    "evidence": "00173:358,384-393 (server trust); InvoicePaymentPanel/payments.ts double-subtraction (subagent) (remediation-inventory A-13, base status CONFIRMED)."
+  },
+  {
+    "id": "A-14",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "UI",
+    "root_cause": "Claimed Invoice & Balances tabs now show real data instead of placeholders; not code-read.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-14): claimed fixed, not read in Phase 0."
+  },
+  {
+    "id": "A-15",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Claimed sign-off blocker message is now derived from real workflow state; not code-read.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-15): claimed fixed, not read in Phase 0."
+  },
+  {
+    "id": "A-16",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Claimed footer layout fixed at 320-375px viewport widths; verification is static class tests only, not device-rendered.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-16): static class tests only, not device-rendered."
+  },
+  {
+    "id": "A-17",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "data-integrity",
+    "root_cause": "No delivery_instructions or sub-locality columns exist in buyer_addresses; client works around this by mapping sub-locality->address_line2 and delivery instructions->landmark.",
+    "affected_files": [
+      "apps/web/src/features/profile/api/buyer-addresses.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00196 (buyer_addresses columns, lines 20-42) - schema change needed",
+    "surgical_fix": "Add proper delivery_instructions/sub-locality columns via new migration; update buyer-addresses.ts mapping (currently :20-21,103-104).",
+    "dependencies": [
+      "A-05",
+      "D-23"
+    ],
+    "regression_risk": "Low - additive schema change.",
+    "evidence": "00196:20-42 buyer_addresses columns; buyer-addresses.ts:20-21,103-104 workaround mapping (subagent) (remediation-inventory A-17, base status CONFIRMED)."
+  },
+  {
+    "id": "A-18",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Claimed voice-input-denied message and autofocus behavior fixed; not code-read.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-18): claimed fixed, not read. Severity mapped P4->P3 per batch rule."
+  },
+  {
+    "id": "A-19",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Ad-hoc toLocale* date-formatting calls remain in remaining admin/financial dashboards instead of a single IST formatter utility.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "Replace remaining ad-hoc toLocale* calls with the shared IST formatter across admin/financial dashboards.",
+    "dependencies": [],
+    "regression_risk": "Low - display-only.",
+    "evidence": "Deferred admin/financial remnants per prior report (remediation-inventory A-19, base status CONFIRMED, PARTIAL fix)."
+  },
+  {
+    "id": "A-20",
+    "source": "32-tracked-issues",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "RLS",
+    "root_cause": "Deployed rfqs_supplier_masked view exposed the buyer org's real name whenever buyer_anonymous_to_suppliers=false, and migration 00180 sets that flag false for OPEN_RFQ status, leaking buyer identity to suppliers pre-award.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "rfqs_supplier_masked"
+    ],
+    "migration_dependency": "00117 (deployed leak, lines 126-129), 00180 (sets flag false for OPEN_RFQ), 00199 (unexecuted reveal-scoped fix)",
+    "surgical_fix": "SUPERSEDED: executed and validated by the P0 security hotfix, commit 2dd3c2d on branch hotfix/p0-security, migration 00198.",
+    "dependencies": [
+      "A-SEC-6",
+      "A-SEC-7"
+    ],
+    "regression_risk": "None remaining - validated in combined local-DB run.",
+    "evidence": "Base status ALREADY FIXED but server fix (00199) was recorded as never executed (remediation-inventory A-20). EXPLICIT OVERRIDE applied: this is the 'buyer identity leaked to suppliers pre-award' issue, proven live this session - see OTP Golden Reconstruction/R2-33-P0-Security-Hotfix-Report.md on hotfix/p0-security."
+  },
+  {
+    "id": "A-21",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Claimed Google Places API quota label fixed on founder ops page; not code-read.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-21): claimed fixed, not read. Severity mapped P4->P3 per batch rule."
+  },
+  {
+    "id": "A-22",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P2",
+    "domain": "RPC",
+    "root_cause": "publish_requirement had no server-side pilot allowance check; enforcement was UI-only and could be bypassed by calling the RPC directly.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "publish_requirement"
+    ],
+    "migration_dependency": "00199 (trg_enforce_pilot_rfq_allowance, HINT PILOT_ALLOWANCE_EXHAUSTED, lines 1598/1608) - never executed",
+    "surgical_fix": "Fix candidate exists at migration 00199 (lines 1598, 1608), not yet validated/deployed.",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status ALREADY FIXED (remediation-inventory A-22); mapped to CONFIRMED per batch rule since fix exists only in unexecuted migration 00199."
+  },
+  {
+    "id": "A-23",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Legacy brand strings ('Neutral Sourcing', 'Procurement Cockpit') removed from local source, but the still-deployed pre-fix production bundle continues to serve them.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "Fix candidate exists in local commits (5325988 chain), not yet validated/deployed; blocked on D-29 (production deployment gap).",
+    "dependencies": [
+      "D-29"
+    ],
+    "regression_risk": "Low - copy-only.",
+    "evidence": "'Neutral Sourcing' has 0 hits in local non-test source; production main bundle still contains it (remediation-inventory A-23, base status ALREADY FIXED, undeployed)."
+  },
+  {
+    "id": "A-24",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Residual public copy on the /showcase route still describes a competing '6-Stage Commercial Procurement Lifecycle' narrative.",
+    "affected_files": [
+      "apps/web/src/pages/MobileShowcasePage.tsx"
+    ],
+    "affected_routes": [
+      "/showcase",
+      "/mobile",
+      "/mobile-showcase"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "Remove or rewrite the '6-stage procurement lifecycle' copy at MobileShowcasePage.tsx:23.",
+    "dependencies": [],
+    "regression_risk": "Low - copy-only.",
+    "evidence": "MobileShowcasePage.tsx:23 '6-stage procurement lifecycle'; production bundle still contains 'The 6-Stage Commercial Procurement Lifecycle' (remediation-inventory A-24, base status CONFIRMED, PARTIAL)."
+  },
+  {
+    "id": "A-25",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Claimed homepage CTA duplication fixed locally; not deployed, and local source not re-read in Phase 0.",
+    "affected_files": [],
+    "affected_routes": [
+      "/"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [
+      "D-29"
+    ],
+    "regression_risk": "Low.",
+    "evidence": "Production main bundle 'Get Started' x11 (pre-fix build); local fix claimed but not read (remediation-inventory A-25, base status UNVERIFIED)."
+  },
+  {
+    "id": "A-26",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "AboutPage founder/leadership provenance section is gated to founder/admin locally, but the still-deployed pre-fix production bundle chunk continues to expose 'Product Leadership' content publicly.",
+    "affected_files": [
+      "apps/web/src/features/site/pages/AboutPage.tsx"
+    ],
+    "affected_routes": [
+      "/about"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "Fix candidate exists locally (AboutPage.tsx:14,111 gated to founder/admin), not yet validated/deployed; blocked on D-29.",
+    "dependencies": [
+      "D-29"
+    ],
+    "regression_risk": "Low - visibility gate only.",
+    "evidence": "Production chunk assets/index-7r0FDnAX.js still contains 'Product Leadership' (remediation-inventory A-26, base status ALREADY FIXED, undeployed)."
+  },
+  {
+    "id": "A-27",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Claimed technical/cryptographic implementation language removed from public pages locally; production still shows 'cryptographic salts' and a full local public-copy scan was not performed.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Production main bundle: 'cryptographic salts'; local non-test hits only in admin AdminTestSuiteRunner.tsx:115, but full scan not done (remediation-inventory A-27, base status UNVERIFIED)."
+  },
+  {
+    "id": "A-28",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "UI",
+    "root_cause": "Claimed supplier RFQ view now shows minimal fields only (UI-side); server-side enforcement is tracked separately as A-SEC-6/A-SEC-7.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [
+      "A-SEC-6",
+      "A-SEC-7"
+    ],
+    "regression_risk": "Medium - depends on server-side masking fix.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-28): UI claimed fixed, not read; server-side counterpart is A-SEC-6/SEC-7."
+  },
+  {
+    "id": "A-29",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "authorization",
+    "root_cause": "Approval still provisions accounts with a shared default password ('Welcome@OTP2026!') and applicant notifications are best-effort, browser-side calls rather than a guaranteed server-side notice.",
+    "affected_files": [
+      "apps/web/src/features/admin/api/admin-ops.ts",
+      "apps/web/src/features/admin/components/AdminUsersActivityPanel.tsx"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "admin_review_signup_request"
+    ],
+    "migration_dependency": "00161 (lines 27,149,451)",
+    "surgical_fix": "Replace shared default password with an invite/magic-link/set-password flow; move notification to guaranteed server-side dispatch.",
+    "dependencies": [
+      "B-01",
+      "D-01",
+      "D-21"
+    ],
+    "regression_risk": "Medium - touches auth provisioning flow.",
+    "evidence": "admin-ops.ts:1121 initialPassword='Welcome@OTP2026!'; 00161:27,149,451; AdminUsersActivityPanel.tsx:440-468 (remediation-inventory A-29, base status CONFIRMED, PARTIAL)."
+  },
+  {
+    "id": "A-30",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "RPC",
+    "root_cause": "request_profile_verification_otp generates the OTP server-side but returns otp_code to the browser, which then relays it via WhatsApp itself, so possession of the code proves nothing about genuine server-side delivery.",
+    "affected_files": [
+      "apps/web/src/features/portal/api/signup.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "request_profile_verification_otp"
+    ],
+    "migration_dependency": "none identified",
+    "surgical_fix": "Move OTP delivery entirely server-side; never return otp_code to the client.",
+    "dependencies": [],
+    "regression_risk": "Medium - changes signup verification flow; server-side WhatsApp/email dispatch architecture needed (see D-21).",
+    "evidence": "signup.ts:178-199; base fix_status noted 'OPEN (R2-31 marked server design BLOCKED)' but classification itself is CONFIRMED (remediation-inventory A-30) - no change made."
+  },
+  {
+    "id": "A-31",
+    "source": "32-tracked-issues",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Claimed footer/scroll architecture fixed; verification is static tests only, not device-rendered.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "Base status UNVERIFIED (remediation-inventory A-31): claimed fixed, static-only verification."
+  },
+  {
+    "id": "A-32",
+    "source": "32-tracked-issues",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Fixed-position navigator bar and monitoring dock still collide with page content/CTAs in remaining locations, deferred per prior report.",
+    "affected_files": [
+      "ProcurementStageNavigator.tsx",
+      "ActiveRfqMonitoringPage.tsx"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "none",
+    "surgical_fix": "Adjust fixed-position bar (ProcurementStageNavigator.tsx:285) and dock (ActiveRfqMonitoringPage.tsx:190) layout to avoid collisions.",
+    "dependencies": [],
+    "regression_risk": "Low - layout only.",
+    "evidence": "ProcurementStageNavigator.tsx:285 fixed bar; ActiveRfqMonitoringPage.tsx:190 dock (remediation-inventory A-32, base status CONFIRMED, PARTIAL)."
+  },
+  {
+    "id": "A-SEC-1",
+    "source": "security-remediation-series",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "RPC / Award authorization",
+    "root_cause": "Migration 00156 dropped the manager check added in 00151; lock_and_reveal_award_atomic (00196:527-746) has no caller check and can be invoked by anon.",
+    "affected_files": [
+      "supabase/migrations/00196_buyer_identity_address_rwa_msme_and_supplier_award_onboarding.sql",
+      "supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "lock_and_reveal_award_atomic"
+    ],
+    "migration_dependency": "Base fix candidate 00199:345-352 (AWARD-UNAUTHORIZED guard) was never executed; superseded by the separately-numbered hotfix migration 00198 on hotfix/p0-security.",
+    "surgical_fix": "No further fix needed; hotfix 00198 (commit 2dd3c2d) already adds the caller guard and was validated live this session. Needs push/deploy to production.",
+    "dependencies": [
+      "Push/deploy hotfix/p0-security to production"
+    ],
+    "regression_risk": "Low post-hotfix per this session's zero-error validation; still undeployed to prod.",
+    "evidence": "Base file cited 00199:345-352 as an unexecuted fix (classification ALREADY FIXED). Reclassified to SUPERSEDED per explicit batch override: validated live by P0 hotfix 2dd3c2d/migration 00198 on hotfix/p0-security, per OTP Golden Reconstruction/R2-33-P0-Security-Hotfix-Report.md."
+  },
+  {
+    "id": "A-SEC-2",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P0",
+    "domain": "RPC / Admin authorization",
+    "root_cause": "admin_bulk_delete_users has an always-true authorization guard, letting any caller including anon hard-delete users.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "admin_bulk_delete_users"
+    ],
+    "migration_dependency": "Claimed fix at 00199:201-298 but never read or verified by the consolidator.",
+    "surgical_fix": "Apply the same always-true-guard sweep pattern used for A-SEC-3/A-SEC-4/A-SWEEP; confirm with a live DB test.",
+    "dependencies": [
+      "A-SWEEP guard-sweep pattern"
+    ],
+    "regression_risk": "Unknown — fix claim is unverified.",
+    "evidence": "fix_status: 'Claimed 00199:201-298 (not read)'. Unlike A-SEC-3/A-SEC-4, base status here is UNVERIFIED (not ALREADY FIXED), so per the mechanical mapping rule it is NOT covered by this batch's SUPERSEDED override and stays UNVERIFIED."
+  },
+  {
+    "id": "A-SEC-3",
+    "source": "security-remediation-series",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "RPC / Admin authorization",
+    "root_cause": "admin_execute_service_action has an always-true guard: IF NOT (is_platform_admin() OR auth.role()='authenticated' OR auth.role()='anon').",
+    "affected_files": [
+      "supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "admin_execute_service_action"
+    ],
+    "migration_dependency": "Base candidate sweep 00199:46-135 never executed; superseded by hotfix migration 00198 on hotfix/p0-security, validated live this session.",
+    "surgical_fix": "Covered by hotfix 00198's guard sweep; needs push/deploy to production.",
+    "dependencies": [
+      "Push/deploy hotfix/p0-security to production"
+    ],
+    "regression_risk": "Low post-hotfix per this session's validation; still undeployed.",
+    "evidence": "Base evidence: 00199:46-135 sweep (strips always-true OR clauses, revokes anon). Reclassified SUPERSEDED per explicit override for 'always-true admin guards across ~42 functions', validated by P0 hotfix 2dd3c2d/00198."
+  },
+  {
+    "id": "A-SEC-4",
+    "source": "security-remediation-series",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "RPC / Admin authorization",
+    "root_cause": "admin_get_users_and_organizations has an always-true guard, same pattern as A-SEC-3.",
+    "affected_files": [
+      "supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "admin_get_users_and_organizations"
+    ],
+    "migration_dependency": "Base candidate sweep 00199:46-135 never executed; superseded by hotfix migration 00198 on hotfix/p0-security, validated live this session.",
+    "surgical_fix": "Covered by hotfix 00198's guard sweep; needs push/deploy to production.",
+    "dependencies": [
+      "Push/deploy hotfix/p0-security to production"
+    ],
+    "regression_risk": "Low post-hotfix per this session's validation; still undeployed.",
+    "evidence": "Base evidence: 00199:46-135 sweep. Reclassified SUPERSEDED per explicit override for 'always-true admin guards across ~42 functions', validated by P0 hotfix 2dd3c2d/00198."
+  },
+  {
+    "id": "A-SEC-5",
+    "source": "security-remediation-series",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "RPC / Address ownership",
+    "root_cause": "upsert_buyer_address_atomic (00196:245-269) lacks an ownership check, letting any signed-in or anon caller overwrite any org's address.",
+    "affected_files": [
+      "supabase/migrations/00196_buyer_identity_address_rwa_msme_and_supplier_award_onboarding.sql",
+      "supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "upsert_buyer_address_atomic"
+    ],
+    "migration_dependency": "Fix candidate 00199:594-615 adds an ownership check but was never executed against any database.",
+    "surgical_fix": "Execute/validate the 00199 ownership-check patch; residual gap noted in base file: any org member of any role can still edit org addresses (00199:605) and should be role-restricted.",
+    "dependencies": [],
+    "regression_risk": "Medium — residual over-broad org-member write access persists even after the fix candidate applies.",
+    "evidence": "Base classification ALREADY FIXED but not on this batch's explicit SUPERSEDED override list. Per default mapping rule mapped to CONFIRMED — a fix candidate exists (00199:594-615) but is unvalidated/undeployed."
+  },
+  {
+    "id": "A-SEC-6",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P1",
+    "domain": "RLS / Identity protection",
+    "root_cause": "Suppliers can read buyer address snapshot columns on rfqs.",
+    "affected_files": [
+      "supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Candidate column re-grant fix at 00199:857-883 was not read in full.",
+    "surgical_fix": "Read/verify the 00199:857-883 grant change; current real-world risk is low since snapshot columns are never written today (per D-23).",
+    "dependencies": [
+      "D-23 (snapshot column write behavior)"
+    ],
+    "regression_risk": "Low currently — exposure is nil while snapshot columns remain unwritten.",
+    "evidence": "Base note: 'Snapshot columns are never written today (D-23), so current exposure is nil.' No override applies; stays UNVERIFIED."
+  },
+  {
+    "id": "A-SEC-7",
+    "source": "security-remediation-series",
+    "status": "SUPERSEDED",
+    "severity": "P1",
+    "domain": "RLS / Identity protection",
+    "root_cause": "Buyer name leaks pre-award via the rfqs_supplier_masked view / message payload (00117:126-129); duplicate of item A-20.",
+    "affected_files": [
+      "supabase/migrations/00117_canonical_identity_protected_views_and_enums.sql",
+      "supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Base candidate 00199:889-940 never executed; superseded by hotfix migration 00198 on hotfix/p0-security, validated live this session.",
+    "surgical_fix": "Covered by hotfix; needs push/deploy to production.",
+    "dependencies": [
+      "Push/deploy hotfix/p0-security to production",
+      "A-20 (duplicate item, see Part A)"
+    ],
+    "regression_risk": "Low post-hotfix; still undeployed.",
+    "evidence": "duplicate_of_part: A-20. Reclassified SUPERSEDED per explicit override ('buyer-name exposure pre-award duplicate-of-A-20'), validated by P0 hotfix 2dd3c2d/00198."
+  },
+  {
+    "id": "A-SWEEP",
+    "source": "security-remediation-series",
+    "status": "CONFIRMED",
+    "severity": "P0",
+    "domain": "RPC / Admin authorization sweep",
+    "root_cause": "Same always-true-guard pattern (IF NOT (is_platform_admin() OR auth.role()='authenticated' OR auth.role()='anon')) plus anon grants, deployed across multiple admin functions including admin_force_transition_order_state, admin_bypass_approval_gate, and admin_review_signup_request.",
+    "affected_files": [
+      "supabase/migrations/00139_admin_operations_and_troubleshooting_suite.sql",
+      "supabase/migrations/00161_fix_admin_review_signup_request_robustness.sql",
+      "supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "admin_force_transition_order_state",
+      "admin_bypass_approval_gate",
+      "admin_review_signup_request"
+    ],
+    "migration_dependency": "Vulnerable pattern deployed at 00139:47,181,197,239 and 00161:63-66; fix candidate sweep at 00199:46-135 never executed.",
+    "surgical_fix": "Same guard-sweep fix as A-SEC-3/A-SEC-4, but deliberately kept out of this batch's SUPERSEDED override; needs its own live validation before reclassifying further.",
+    "dependencies": [
+      "A-SEC-3",
+      "A-SEC-4"
+    ],
+    "regression_risk": "Same class of risk as A-SEC-3/A-SEC-4's guard pattern, but not confirmed validated for this item's specific functions — treat independently.",
+    "evidence": "Deliberately excluded from the SUPERSEDED override per this batch's explicit instruction (a conservative decision preserved from a prior stalled attempt, not second-guessed here). Mapped ALREADY FIXED -> CONFIRMED per the default rule: a fix candidate (00199:46-135) exists but is unvalidated/undeployed for this item specifically."
+  },
+  {
+    "id": "A-R1",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "RPC",
+    "root_cause": "get_current_procurement_step / check_supplier_award_eligibility_atomic are readable by any signed-in user.",
+    "affected_files": [
+      "supabase/migrations/00200_scope_procurement_readers_and_recompute_invoice_on_tds_void.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "get_current_procurement_step",
+      "check_supplier_award_eligibility_atomic"
+    ],
+    "migration_dependency": "Claimed fix at 00200:28-154, not read/verified.",
+    "surgical_fix": "Read/verify 00200:28-154 correctly scopes access; validate live.",
+    "dependencies": [],
+    "regression_risk": "Unknown — fix claim unverified.",
+    "evidence": "fix_status: 'Claimed 00200:28-154 (not read)'."
+  },
+  {
+    "id": "A-R2",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "DB constraint",
+    "root_cause": "TDS void does not reopen a PAID invoice.",
+    "affected_files": [
+      "supabase/migrations/00200_scope_procurement_readers_and_recompute_invoice_on_tds_void.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Claimed fix at 00200:162-248, not read by the consolidator (subagent-summarised only).",
+    "surgical_fix": "Read/verify 00200:162-248 actually recomputes/reopens invoice state on TDS void; validate live.",
+    "dependencies": [],
+    "regression_risk": "Unknown — fix claim unverified.",
+    "evidence": "fix_status: 'Claimed 00200:162-248 (not read by consolidator; subagent summarised)'."
+  },
+  {
+    "id": "A-R3",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "Authorization",
+    "root_cause": "Platform admins can bypass milestone and allowance rules by design.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "No fix pending — requires a product-owner decision on whether the admin bypass is intended behavior before any change is scoped.",
+    "dependencies": [
+      "PO decision"
+    ],
+    "regression_risk": "N/A until a decision is made.",
+    "evidence": "BLOCKED pending PO decision on whether admin bypass of milestone/allowance rules is intended; base classification BLOCKED mapped to UNVERIFIED per this batch's mapping rule."
+  },
+  {
+    "id": "A-R4",
+    "source": "security-remediation-series",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "RPC",
+    "root_cause": "Transaction-local sign-off GUC otp.wo_inspection_signoff would be forgeable by any future code path that exposes set_config to callers.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Currently only guarded by a static test; add a runtime/DB-level guard so exposure of set_config cannot forge sign-off.",
+    "dependencies": [],
+    "regression_risk": "Low today (no current exposure), but risk is latent and would activate if set_config is ever exposed.",
+    "evidence": "fix_status: 'Guarded by static test only'."
+  },
+  {
+    "id": "A-R5a",
+    "source": "security-remediation-series",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "RLS / Identity self-escalation",
+    "root_cause": "profiles_update (00004:75-78) checks row ownership only, and is_platform_admin() trusts profiles.is_platform_admin — letting any signed-in user self-promote to platform admin or unblock themselves.",
+    "affected_files": [
+      "supabase/migrations/00004_rls_policies.sql",
+      "supabase/migrations/00203_restrict_ops_metadata_guard_profile_privileges_and_one_live_tds.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Base candidate 00203:87-143 (trg_aa_guard_profile_privileges) never executed; superseded by hotfix migration 00198 on hotfix/p0-security, validated live this session.",
+    "surgical_fix": "Covered by hotfix; needs push/deploy to production. Base file flags a residual risk: the guard exempts only admin/service/JWT-less callers, so any other non-admin SECURITY DEFINER path writing profiles.status would now fail and needs a live test.",
+    "dependencies": [
+      "Push/deploy hotfix/p0-security to production"
+    ],
+    "regression_risk": "Medium — the specific residual risk noted in the base file (non-admin DEFINER paths writing profiles.status may now fail) still needs a live test even post-hotfix.",
+    "evidence": "Reclassified SUPERSEDED per explicit override ('self-grant/self-promotion to platform admin'), validated by P0 hotfix 2dd3c2d/00198; base file's DEFINER-path breakage risk note preserved verbatim above."
+  },
+  {
+    "id": "A-R5b",
+    "source": "security-remediation-series",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "Authorization",
+    "root_cause": "is_platform_admin() honours a hard-coded email whitelist (00179:532, 00161:57-58) instead of relying purely on role-based checks — an open-signup security gap.",
+    "affected_files": [
+      "supabase/migrations/00179_phase6_group3_cross_cutting_remediation.sql",
+      "supabase/migrations/00161_fix_admin_review_signup_request_robustness.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "is_platform_admin"
+    ],
+    "migration_dependency": "OPEN — needs a live-data check; no fix implemented anywhere yet.",
+    "surgical_fix": "Remove the hard-coded email whitelist and rely solely on profiles.is_platform_admin / role-based checks.",
+    "dependencies": [],
+    "regression_risk": "High if left open — any account matching the whitelisted domain pattern could gain admin.",
+    "evidence": "elevated from base severity, high-priority open signup-security gap, no fix implemented anywhere yet."
+  },
+  {
+    "id": "A-R6",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "DB constraint",
+    "root_cause": "No constraint currently enforces exactly one live TDS record per invoice.",
+    "affected_files": [
+      "supabase/migrations/00203_restrict_ops_metadata_guard_profile_privileges_and_one_live_tds.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Claimed fix at 00203:146-253, not read.",
+    "surgical_fix": "Read/verify 00203:146-253 adds the one-live-TDS-per-invoice constraint; validate live.",
+    "dependencies": [],
+    "regression_risk": "Unknown — fix claim unverified.",
+    "evidence": "fix_status: 'Claimed 00203:146-253 (not read)'."
+  },
+  {
+    "id": "A-R7",
+    "source": "security-remediation-series",
+    "status": "CONFIRMED",
+    "severity": "P0",
+    "domain": "Migration/deployment",
+    "root_cause": "No local DB tooling (Docker/Supabase CLI) previously existed, so local main's own migrations 00198-00203 were never executed against Postgres; all prior 'FIXED' claims in the base inventory were static-text tests only.",
+    "affected_files": [
+      "supabase/migrations/00198*",
+      "supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql",
+      "supabase/migrations/00200_scope_procurement_readers_and_recompute_invoice_on_tds_void.sql",
+      "supabase/migrations/00201_scope_procurement_stage_events_audit_delete_and_support_tickets.sql",
+      "supabase/migrations/00202_scope_invoice_work_order_updates_and_close_client_audit_notification_inserts.sql",
+      "supabase/migrations/00203_restrict_ops_metadata_guard_profile_privileges_and_one_live_tds.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Local main's own 00198->00203 set (distinct content from the hotfix branch's separately-numbered 00198).",
+    "surgical_fix": "Execute local main's own 00198-00203 against a live DB and validate, the same way the hotfix branch's migration set was validated this session.",
+    "dependencies": [],
+    "regression_risk": "Unknown until executed against a live DB; this remains the top-priority migration gate.",
+    "evidence": "STILL TRUE for local main's OWN migration set (00198-00203), even though this session validated the P0 hotfix's separately-numbered, different-content 00198 on hotfix/p0-security. These are two different migrations sharing a number, not conflated. Classification remains CONFIRMED per the explicit instruction for this item."
+  },
+  {
+    "id": "A-R8",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "RLS",
+    "root_cause": "procurement_stage_events is readable/insertable by any signed-in user.",
+    "affected_files": [
+      "supabase/migrations/00201_scope_procurement_stage_events_audit_delete_and_support_tickets.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Claimed fix at 00201:29-139, not read.",
+    "surgical_fix": "Read/verify 00201:29-139 correctly scopes procurement_stage_events access; validate live.",
+    "dependencies": [],
+    "regression_risk": "Unknown — fix claim unverified.",
+    "evidence": "fix_status: 'Claimed 00201:29-139 (not read)'."
+  },
+  {
+    "id": "A-R8-AUDITDEL",
+    "source": "security-remediation-series",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "RLS / Audit integrity",
+    "root_cause": "audit_events table policy allows FOR DELETE TO anon, authenticated USING (true) (00134:242-244), letting anyone erase the audit trail.",
+    "affected_files": [
+      "supabase/migrations/00134_fix_audit_trail_and_notifications_mode_logging.sql",
+      "supabase/migrations/00201_scope_procurement_stage_events_audit_delete_and_support_tickets.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Base candidate 00201:145-148 never executed; superseded by hotfix migration 00198 on hotfix/p0-security, validated live this session.",
+    "surgical_fix": "Covered by hotfix; needs push/deploy to production.",
+    "dependencies": [
+      "Push/deploy hotfix/p0-security to production"
+    ],
+    "regression_risk": "Low post-hotfix; still undeployed.",
+    "evidence": "Base file classification was UNVERIFIED (fix claimed at 00201:145-148 but not read), not ALREADY FIXED. Explicitly named in this batch's SUPERSEDED override ('anon-deletable audit events'), validated live by P0 hotfix 2dd3c2d/00198 per R2-33-P0-Security-Hotfix-Report.md — reclassified from UNVERIFIED directly to SUPERSEDED per that explicit override, which takes precedence over the general ALREADY-FIXED-only mapping rule for this named item."
+  },
+  {
+    "id": "A-R8-SUPPORT",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P1",
+    "domain": "RLS",
+    "root_cause": "support_tickets has a USING (true) RLS policy (00076:31-38), making it readable/updatable by PUBLIC.",
+    "affected_files": [
+      "supabase/migrations/00076_support_tickets_and_ops_routing.sql",
+      "supabase/migrations/00201_scope_procurement_stage_events_audit_delete_and_support_tickets.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Claimed fix at 00201:154-171, not read/verified.",
+    "surgical_fix": "Read/verify 00201:154-171 restricts support_tickets access appropriately; validate against a live database.",
+    "dependencies": [],
+    "regression_risk": "Unknown — fix claim unverified against a live database.",
+    "evidence": "fix_status: 'Claimed 00201:154-171 (not read)'. A candidate fix exists on local main's migration 00201 but has never been validated against a live database."
+  },
+  {
+    "id": "A-R9",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "RLS",
+    "root_cause": "Ops metadata tables (platform_environment_settings, otp_schema_migrations) are anon-readable, which would also reveal the production migration ceiling.",
+    "affected_files": [
+      "supabase/migrations/00203_restrict_ops_metadata_guard_profile_privileges_and_one_live_tds.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Claimed fix at 00203:41-82, not read.",
+    "surgical_fix": "Read/verify 00203:41-82 restricts ops metadata table access; validate live.",
+    "dependencies": [],
+    "regression_risk": "Unknown — fix claim unverified.",
+    "evidence": "fix_status: 'Claimed 00203:41-82 (not read)'; base note: Phase 0 deliberately did not query this data to avoid revealing the production migration ceiling."
+  },
+  {
+    "id": "A-R10",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P1",
+    "domain": "RLS",
+    "root_cause": "invoices/work_orders UPDATE policy has WITH CHECK (true) (00004:467-479), allowing re-pointing of linkage to arbitrary rows.",
+    "affected_files": [
+      "supabase/migrations/00004_rls_policies.sql",
+      "supabase/migrations/00202_scope_invoice_work_order_updates_and_close_client_audit_notification_inserts.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Claimed fix at 00202 — only the header was read; the status column is NOT restricted (see D-13).",
+    "surgical_fix": "Read/verify full body of 00202 and additionally restrict the status column per D-13; validate live.",
+    "dependencies": [
+      "D-13"
+    ],
+    "regression_risk": "Unknown — fix claim only partially verified (header only), and a known residual gap (status column) is already flagged.",
+    "evidence": "fix_status: 'Claimed 00202 (header read only); status column NOT restricted - see D-13'."
+  },
+  {
+    "id": "A-R11",
+    "source": "security-remediation-series",
+    "status": "UNVERIFIED",
+    "severity": "P1",
+    "domain": "RLS",
+    "root_cause": "Forged audit_events / notifications inserts are possible.",
+    "affected_files": [
+      "supabase/migrations/00202_scope_invoice_work_order_updates_and_close_client_audit_notification_inserts.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "Claimed fix at 00202 — header read only.",
+    "surgical_fix": "Read/verify full body of 00202 closes forged-insert paths for audit_events/notifications; validate live.",
+    "dependencies": [],
+    "regression_risk": "Unknown — fix claim only partially verified (header only).",
+    "evidence": "fix_status: 'Claimed 00202 (header read only)'."
+  },
+  {
+    "id": "A-OPEN-PROFILE-INSERT",
+    "source": "security-remediation-series",
+    "status": "CONFIRMED",
+    "severity": "P2",
+    "domain": "RLS",
+    "root_cause": "profiles_insert policy (00004:71-73) lets a user self-insert a profile row with a non-default status value.",
+    "affected_files": [
+      "supabase/migrations/00004_rls_policies.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "OPEN — no fix candidate exists even after 00203, per R2-32 section L ('Open after 00203').",
+    "surgical_fix": "Restrict the profiles_insert policy/trigger to force default status regardless of caller-supplied value.",
+    "dependencies": [],
+    "regression_risk": "Low-medium — enables status self-manipulation at signup time.",
+    "evidence": "fix_status: 'OPEN'; evidence cites 00004:71-73 and R2-32 section L noting the gap remains open even after migration 00203."
+  },
+  {
+    "id": "B-01",
+    "source": "run1-run2-reconstructed",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "onboarding / authorization / external-provider",
+    "root_cause": "Registration only writes a PENDING signup_requests row (no auth account/profile); acknowledgement is WhatsApp-only from the browser, so EMAIL-channel applicants get nothing. On approval the server provisions auth.users with a shared default password ('Welcome@OTP2026!') and only an in-app notification the applicant cannot see; the real external notice depends on the approving admin's own browser calling resetPasswordForEmail/WAHA WhatsApp, which is unreachable on Vercel (D-21). Bulk 'approve all' sends nothing, and production still shows pre-fix success copy.",
+    "affected_files": [
+      "portal/api/signup.ts",
+      "portal/components/BuyerRegisterForm.tsx",
+      "portal/components/SupplierRegisterForm.tsx",
+      "portal/lib/registration-outcome.ts",
+      "auth/components/SignInForm.tsx",
+      "admin/components/AdminUsersActivityPanel.tsx",
+      "admin/api/admin-ops.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "submit_signup_request",
+      "admin_review_signup_request",
+      "create_system_notification"
+    ],
+    "migration_dependency": "00035, 00161, 00180",
+    "surgical_fix": "None shipped (5325988 changed copy only). Needs server-side separation of OTP delivery / auth-account creation / profile creation / approval state / approval notice, plus removal of the shared default password and a real server-side email/WhatsApp transport.",
+    "dependencies": [
+      "D-01",
+      "D-21"
+    ],
+    "regression_risk": "Moderate — touches the core onboarding/auth provisioning flow; existing registration-outcome tests would need updating.",
+    "evidence": "00180:17-118 (PENDING row only); BuyerRegisterForm.tsx:154-161 (WhatsApp only); SignInForm.tsx:788-790; 00161:27,136-150,416-423 (shared password + in-app-only notice); AdminUsersActivityPanel.tsx:440-468,583-603 (bulk approve sends nothing); production bundle still shows pre-fix success copy."
+  },
+  {
+    "id": "B-02",
+    "source": "run1-run2-reconstructed",
+    "status": "DUPLICATE",
+    "severity": "P2",
+    "domain": "data",
+    "root_cause": "'Blind evaluation'/'Blind RFQ' vocabulary is not present in any of the 62 scanned production JS chunks; the only live-served source is the DB announcement row seeded by migration 00179 (the same row underlying C-02).",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "get_active_announcements"
+    ],
+    "migration_dependency": "00179",
+    "surgical_fix": "No separate fix — resolved by fixing the canonical finding's announcement row.",
+    "dependencies": [
+      "F-RUN2-API-01"
+    ],
+    "regression_risk": "None — reclassification only, no code change tied to this ID.",
+    "evidence": "Base file already marks B-02 as duplicate_of C-02. Per Run-2 canonicalization override, C-02 is itself now DUPLICATE of F-RUN2-API-01, so B-02's canonical reference is re-pointed directly to F-RUN2-API-01 (chain: B-02 -> was dup of C-02, which is now itself dup of F-RUN2-API-01). Status remains DUPLICATE."
+  },
+  {
+    "id": "B-03",
+    "source": "run1-run2-reconstructed",
+    "status": "DUPLICATE",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Technical architecture language ('cryptographic salts') on public pages; local source is clean but the deployed production bundle still contains it.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "No separate fix — covered by A-27's local fix plus D-29 (deployment gap).",
+    "dependencies": [
+      "A-27",
+      "D-29"
+    ],
+    "regression_risk": "None — reclassification only.",
+    "evidence": "Production main bundle contains 'cryptographic salts'; carried forward unchanged from base file (duplicate_of A-27 + D-29)."
+  },
+  {
+    "id": "B-04",
+    "source": "run1-run2-reconstructed",
+    "status": "DUPLICATE",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Duplicate call-to-action elements on public pages, same underlying issue as A-25/A-32.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "No separate fix — covered by A-25/A-32.",
+    "dependencies": [
+      "A-25",
+      "A-32"
+    ],
+    "regression_risk": "None — reclassification only.",
+    "evidence": "Carried forward unchanged from base file (duplicate_of A-25 / A-32); no additional evidence recorded in Phase 0."
+  },
+  {
+    "id": "B-05",
+    "source": "run1-run2-reconstructed",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Many legacy route aliases remain (App.tsx:276-305,339-340,393-396), including a 'blind-comparison' path assembled via ['bl','ind-comparison'].join('') specifically to evade the vocabulary scanner.",
+    "affected_files": [
+      "App.tsx"
+    ],
+    "affected_routes": [
+      "blind-comparison (obfuscated alias)"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Not determined — no original Run-1 evidence exists to confirm which specific route was originally reported.",
+    "dependencies": [],
+    "regression_risk": "Unknown — pending scope confirmation.",
+    "evidence": "App.tsx:276-305,339-340,393-396; base file notes no original Run-1 evidence to confirm which route was reported, hence UNVERIFIED carried forward unchanged."
+  },
+  {
+    "id": "B-06",
+    "source": "run1-run2-reconstructed",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Unknown paths return HTTP 200 with the SPA shell (vercel.json rewrite), and the client catch-all silently redirects to '/' — there is no real not-found page.",
+    "affected_files": [
+      "App.tsx"
+    ],
+    "affected_routes": [
+      "* (catch-all / unknown paths)"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Add a real 404 page/state instead of the silent redirect-to-home catch-all.",
+    "dependencies": [],
+    "regression_risk": "Low — additive UI-only change.",
+    "evidence": "App.tsx:569 (catch-all redirect); GET /this-route-does-not-exist-xyz -> HTTP 200 index shell (vercel.json rewrite)."
+  },
+  {
+    "id": "B-07",
+    "source": "run1-run2-reconstructed",
+    "status": "DUPLICATE",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Provenance/leadership content leaked on public pages, same underlying issue as A-26.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "No separate fix — covered by A-26.",
+    "dependencies": [
+      "A-26"
+    ],
+    "regression_risk": "None — reclassification only.",
+    "evidence": "Carried forward unchanged from base file (duplicate_of A-26)."
+  },
+  {
+    "id": "B-08",
+    "source": "run1-run2-reconstructed",
+    "status": "UNVERIFIED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Navigation hierarchy concern with no original evidence recorded to substantiate or scope it.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Not determined — no original evidence available.",
+    "dependencies": [],
+    "regression_risk": "Unknown — pending scope confirmation.",
+    "evidence": "Base file records no original evidence for this item; carried forward unchanged as UNVERIFIED."
+  },
+  {
+    "id": "C-01",
+    "source": "run1-run2-reconstructed",
+    "status": "DUPLICATE",
+    "severity": "P2",
+    "domain": "authorization / UI",
+    "root_cause": "App.tsx:415-422 explicitly allows BUYER on the /supplier/quotes route, and ProtectedRoute.tsx:123 (evaluateRouteAccess) ALLOWs any route that lists both BUYER and SUPPLIER, so every dual-role route is open to both sides; other /supplier/* routes have no guard at all (App.tsx:408-413).",
+    "affected_files": [
+      "App.tsx",
+      "features/auth/ProtectedRoute.tsx",
+      "features/supplier/pages/SupplierQuotesPage.tsx",
+      "features/supplier/api/fetch-invitations.ts"
+    ],
+    "affected_routes": [
+      "/supplier/quotes",
+      "/supplier/* (other unguarded routes)"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "00117",
+    "surgical_fix": "No separate fix under this ID — superseded by the canonical ProtectedRoute fix at F-RUN2-T4-02; SupplierQuotesPage's mock-data fallback still needs its own removal.",
+    "dependencies": [
+      "F-RUN2-T4-02"
+    ],
+    "regression_risk": "Low for the route-guard fix itself; removing the mock-data fallback is UI-only and low risk.",
+    "evidence": "Reclassified DUPLICATE per Run-2 canonicalization override; canonical reference is F-RUN2-T4-02, a new finding from a different batch this session covering the same ProtectedRoute root cause (App.tsx:415-422, ProtectedRoute.tsx:117-125). Secondary data-integrity note not covered by F-RUN2-T4-02: because rfqs_supplier_masked is scoped by private.is_supplier_user_for (00117:140; 00199:940), a buyer session gets 0 real rows, but SupplierQuotesPage.tsx:19,58-118 then renders hard-coded/fabricated mock quotes (e.g. 'RFQ #0842', 'Merit Score' ~9.4) with count activeQuotes.length || 2 — confirmed still present in the codebase."
+  },
+  {
+    "id": "C-02",
+    "source": "run1-run2-reconstructed",
+    "status": "DUPLICATE",
+    "severity": "P2",
+    "domain": "data / migration / test",
+    "root_cause": "Migration 00179 seeded a PUBLISHED, audience-ALL, no-expiry announcement row (id e2000001-0000-4000-8000-000000000001) whose message reintroduces removed vocabulary ('identity-protected blind evaluations', 'double-entry ledger settlement'). get_active_announcements() (anon-executable) returns it, AnnouncementBanner shows it, no later migration (00180-00203) touches announcements, and the vocabulary scanner only scans apps/web/src so it never catches DB-seeded copy.",
+    "affected_files": [
+      "features/announcements/hooks/useAnnouncements.ts",
+      "features/announcements/components/AnnouncementBanner.tsx",
+      "packages/database/src/reset/clean-start-reset.ts",
+      "scripts/scan-canonical-vocabulary.cjs"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "get_active_announcements",
+      "admin_manage_announcement"
+    ],
+    "migration_dependency": "00179",
+    "surgical_fix": "No separate fix under this ID — superseded by canonical finding F-RUN2-API-01, which covers the same get_active_announcements() root cause.",
+    "dependencies": [
+      "F-RUN2-API-01"
+    ],
+    "regression_risk": "Low — the underlying fix is a forward migration archiving/expiring the seeded row by id (no delete), plus scanner coverage for DB-seeded copy.",
+    "evidence": "Reclassified DUPLICATE per Run-2 canonicalization override; canonical reference F-RUN2-API-01. 00179:632-644 (seed), 00179:159-218 (selection), 00179:125-144 (anon RLS); clean-start-reset.ts:42-49,170-172 preserves the table across resets."
+  },
+  {
+    "id": "C-03",
+    "source": "run1-run2-reconstructed",
+    "status": "DUPLICATE",
+    "severity": "P3",
+    "domain": "UI / API",
+    "root_cause": "The Register submit button is simply disabled until fields are filled, with no explanation and no field-level errors ever passed to PortalField; server-side submit_signup_request only enforces NOT NULL / shape CHECKs (email, phone, pincode, category), so empty names/business pass, and an empty 'side' raises a raw, un-humanised enum error.",
+    "affected_files": [
+      "BuyerRegisterForm.tsx",
+      "SupplierRegisterForm.tsx",
+      "portal/api/signup.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "submit_signup_request"
+    ],
+    "migration_dependency": "00035, 00180",
+    "surgical_fix": "No separate fix under this ID — superseded by canonical finding F-RUN2-VAL-01, which covers the same registration-validation root cause.",
+    "dependencies": [
+      "F-RUN2-VAL-01"
+    ],
+    "regression_risk": "Low — the underlying fix is client-side field-level validation plus humanised server error messages.",
+    "evidence": "Reclassified DUPLICATE per Run-2 canonicalization override; canonical reference F-RUN2-VAL-01. BuyerRegisterForm.tsx:112-120,518-526; SupplierRegisterForm.tsx:424; 00035:35-38,68-88; 00180:34,86-90; signup.ts:138-158."
+  },
+  {
+    "id": "RUN-2B",
+    "source": "run2b-blocked-followup",
+    "status": "PARTIALLY CONFIRMED",
+    "severity": "N/A",
+    "domain": "trust-boundary / identity-protection",
+    "root_cause": "Black-box run to validate the buyer<->supplier trust boundary; base status was BLOCKED because a genuine supplier persona prerequisite was unavailable during the audit. Code-level evidence alone (A-20, A-SEC-6/7, C-01) was explicitly deemed not a substitute for a live black-box run.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Not applicable — this is a verification run, not a code fix. Remaining sub-checks (quote immutability, cross-supplier isolation, award-reveal-to-winner-only) still need a genuine supplier persona run.",
+    "dependencies": [
+      "A-20",
+      "A-SEC-6",
+      "A-SEC-7",
+      "C-01"
+    ],
+    "regression_risk": "N/A — verification item.",
+    "evidence": "Explicit Run-2 override (not the generic BLOCKED->UNVERIFIED mapping): this session's Run-2d visual/network validation, using buyer persona 'Manimekalai' and supplier persona 'Dhiya', confirmed the supplier cockpit exposed no buyer name/email/phone and network inspection was clean, satisfying RUN-2B's buyer-identity-masking sub-check that was previously blocked on lacking a genuine supplier persona. However, three OTHER sub-checks RUN-2B originally required — quote immutability, cross-supplier isolation, and award-reveal-to-winner-only — were NOT covered by this new evidence and remain unverified. Partially unblocked only; do NOT treat this as evidence the full buyer<->supplier trust boundary is clean."
+  },
+  {
+    "id": "D-01",
+    "source": "d-series-defect-register",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "authorization",
+    "root_cause": "admin_review_signup_request set v_caller_is_admin := true for any authenticated/anon caller (anon EXECUTE granted). It provisioned auth.users with the shared default password 'Welcome@OTP2026!' and returned it, letting anyone approve any pending registration and log in as that person.",
+    "affected_files": [
+      "apps/web/src/features/admin/api/admin-ops.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "admin_review_signup_request"
+    ],
+    "migration_dependency": "00161 (guard); unexecuted local 00199 sweep never ran",
+    "surgical_fix": "Superseded by the P0 hotfix's admin-only guard rewrite and anon EXECUTE revoke on this RPC (SEC/sweep item 37).",
+    "dependencies": [],
+    "regression_risk": "None remaining once hotfix is deployed; residual risk is only that it is not yet merged/deployed.",
+    "evidence": "Base: 00161:53-70,27,136-150,451,460; admin-ops.ts:1121. Override: validated by OTP Golden Reconstruction/R2-33-P0-Security-Hotfix-Report.md on branch hotfix/p0-security (198 migrations applied, zero errors, all targeted security checks passed, this session)."
+  },
+  {
+    "id": "D-02",
+    "source": "d-series-defect-register",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "RPC",
+    "root_cause": "credit_buyer_settlement_reward_atomic had no auth check in its body; caller supplied org/base/rates; granted to authenticated and to anon via the 00194 blanket routine grant, so wallet credit could be minted for any org by anyone.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "credit_buyer_settlement_reward_atomic"
+    ],
+    "migration_dependency": "00181 (function body); 00194 (blanket anon grant)",
+    "surgical_fix": "Superseded by the P0 hotfix's anon EXECUTE revoke sweep, which blocks anon callers at the permission layer before the body runs.",
+    "dependencies": [],
+    "regression_risk": "None remaining once hotfix is deployed.",
+    "evidence": "Base: 00181:175-402 (no auth check), 00181:404, 00194:37-39. Override: R2-33-P0-Security-Hotfix-Report.md, hotfix/p0-security, validated live this session (198 migrations, zero errors, all security checks passed)."
+  },
+  {
+    "id": "D-03",
+    "source": "d-series-defect-register",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "RPC",
+    "root_cause": "private.get_org_role returns NULL for non-members, so checks like 'v_role NOT IN (OWNER,MANAGER)' evaluate NULL and skip the RAISE, letting non-members bypass role gates across roughly 24 functions (e.g. post_journal_entry_atomic).",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "post_journal_entry_atomic",
+      "and ~23 others in 00174-00176 per subagent list"
+    ],
+    "migration_dependency": "00163 (get_org_role); 00174-00176 (affected RPCs); only apply_tds_withholding_atomic fixed in unexecuted local 00199",
+    "surgical_fix": "Superseded by the P0 hotfix's guard hardening / anon EXECUTE revoke sweep validated this session.",
+    "dependencies": [],
+    "regression_risk": "None remaining once hotfix is deployed.",
+    "evidence": "Base: 00163:41-53; 00176:594-598; 00174:602,811; 00175:228/1092/1173/1256/1374; 00176:510/829. Override: R2-33-P0-Security-Hotfix-Report.md, hotfix/p0-security, validated live this session (198 migrations, zero errors, all security checks passed)."
+  },
+  {
+    "id": "D-04",
+    "source": "d-series-defect-register",
+    "status": "PARTIALLY CONFIRMED",
+    "severity": "P1",
+    "domain": "RPC",
+    "root_cause": "create_purchase_order_from_award only ran its membership check when auth.uid() IS NOT NULL, so anon callers skipped it entirely; the function also carried an explicit anon EXECUTE grant.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "create_purchase_order_from_award"
+    ],
+    "migration_dependency": "00196 (body, anon grant); local main's 00199 only references this function and does not redefine it",
+    "surgical_fix": "The P0 hotfix's blanket anon-EXECUTE revoke stops anon callers with 'permission denied' before the function body runs, substantially mitigating this. However, the internal dead-code-path logic gap for a null-auth.uid() caller inside the body was NOT rewritten and remains latent; it should still be removed.",
+    "dependencies": [],
+    "regression_risk": "Low: the permission-layer fix is safe; the unrewritten internal branch poses no active risk under the revoke but is technical debt.",
+    "evidence": "Base: 00196:784-788, 00196:880. Override: hotfix's anon-EXECUTE revoke mitigates at the permission layer (validated live this session, hotfix/p0-security, 198 migrations/zero errors/all security checks passed); the internal null-caller logic branch is unrewritten; local main's 00199 only references, does not redefine, this function."
+  },
+  {
+    "id": "D-05",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "DB constraint",
+    "root_cause": "audit_events has an event_type column and no action column; record_invoice_payment_atomic and other financial RPCs insert (action, ...), causing a runtime error and transaction rollback, so payment recording cannot succeed.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "record_invoice_payment_atomic"
+    ],
+    "migration_dependency": "00002 (audit_events schema, no action column added anywhere); 00175 (payment RPC body); unexecuted local 00199 fixes only the TDS RPC",
+    "surgical_fix": "Add the missing column or rewrite affected RPCs to use event_type consistently; extend beyond the TDS RPC to all affected financial RPCs.",
+    "dependencies": [],
+    "regression_risk": "Live schema may differ from migration text; live verification required before further fix work.",
+    "evidence": "00002:350-360 (no action column); 00175:788-808 (insert uses action); static analysis, LIVE VERIFICATION REQUIRED."
+  },
+  {
+    "id": "D-06",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "DB constraint",
+    "root_cause": "invoices.balance_due defaults to 0.00 (one-off backfill only at 00169:273-277); client insert never sets it, and record_invoice_payment_atomic rejects any amount greater than the (zero) balance, blocking payment on new invoices.",
+    "affected_files": [
+      "apps/web/src/features/fulfillment/api/invoices.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "record_invoice_payment_atomic"
+    ],
+    "migration_dependency": "00169",
+    "surgical_fix": "Set balance_due correctly at invoice creation (e.g. to invoice amount) instead of relying on a one-time backfill default.",
+    "dependencies": [],
+    "regression_risk": "Static finding; live verification required.",
+    "evidence": "00169:52,273-277; invoices.ts:346-367 (subagent); 00175:676-680 (subagent)."
+  },
+  {
+    "id": "D-07",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "state machine",
+    "root_cause": "No migration or client code ever inserts into rfq_approval_stages, so the PO gate checking 'pending stages > 0' never fires; a FOR ALL policy also lets any org member write stage rows directly, making the multi-tier spend approval gate vacuous.",
+    "affected_files": [
+      "apps/web/src/features/award/api/approval.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00196 (PO gate); 00183 (permissive FOR ALL policy)",
+    "surgical_fix": "Implement the missing INSERT path for rfq_approval_stages tied to a real approval workflow, and tighten the permissive policy.",
+    "dependencies": [
+      "D-08 (reject branch is moot while this holds)"
+    ],
+    "regression_risk": "Not assessed; needs a product decision on where stages originate.",
+    "evidence": "grep: no INSERT INTO rfq_approval_stages in supabase/migrations; approval.ts:54-61 (read only); 00196:790-797; 00183:280-291."
+  },
+  {
+    "id": "D-08",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P2",
+    "domain": "RPC",
+    "root_cause": "submit_rfq_tier_approval_atomic(stage_order) reject branch has no authorization check; currently moot because no approval stages exist (D-07).",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "submit_rfq_tier_approval_atomic"
+    ],
+    "migration_dependency": "00192",
+    "surgical_fix": "Add an authorization check to the reject branch; effective fix is gated on resolving D-07 first.",
+    "dependencies": [
+      "D-07"
+    ],
+    "regression_risk": "Low while moot; becomes live risk once D-07 is fixed.",
+    "evidence": "00192:307-357."
+  },
+  {
+    "id": "D-09",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P2",
+    "domain": "RPC",
+    "root_cause": "The anti-self-approval check compares rfqs.created_by (a profiles.id) directly to auth.uid(), which is only correct where profile id equals the auth user id, and fails silently where they diverge.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "submit_rfq_tier_approval_atomic"
+    ],
+    "migration_dependency": "00192",
+    "surgical_fix": "Compare against the caller's resolved profile id consistently instead of auth.uid() directly.",
+    "dependencies": [],
+    "regression_risk": "Not assessed; needs live data check on profile-id/auth-uid parity.",
+    "evidence": "00192:79,105; 00002:155 created_by REFERENCES profiles(id); 00161:198-204 matches, 00187:116 does not (subagent)."
+  },
+  {
+    "id": "D-10",
+    "source": "d-series-defect-register",
+    "status": "UNVERIFIED",
+    "severity": "P1",
+    "domain": "state machine",
+    "root_cause": "Quorum, conflict-of-interest, and committee membership rules are not enforced in SQL.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00049",
+    "surgical_fix": "Needs live verification; if confirmed, add server-side quorum/COI enforcement.",
+    "dependencies": [],
+    "regression_risk": "Unknown, not re-verified this session.",
+    "evidence": "00049:1-17 (subagent); not re-read this session."
+  },
+  {
+    "id": "D-11",
+    "source": "d-series-defect-register",
+    "status": "UNVERIFIED",
+    "severity": "P1",
+    "domain": "state machine",
+    "root_cause": "Bundle of award-path gaps: awarding while the RFQ is still OPEN, a repeat award re-marking a different winner, direct inserts into awards/purchase_orders bypassing the RPC, and confirm_intent_to_award_and_unmask skipping its gate.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "confirm_intent_to_award_and_unmask"
+    ],
+    "migration_dependency": "",
+    "surgical_fix": "Needs live verification; likely requires a state-machine guard on award transitions plus a caller/gate check in confirm_intent_to_award_and_unmask.",
+    "dependencies": [],
+    "regression_risk": "Unknown; not re-read this session, so not matched to the P0 hotfix's award/reveal fixes with confidence.",
+    "evidence": "Subagent report; not re-read this session."
+  },
+  {
+    "id": "D-12",
+    "source": "d-series-defect-register",
+    "status": "UNVERIFIED",
+    "severity": "P1",
+    "domain": "RLS",
+    "root_cause": "Supplier can edit quote status, version pointer, or score after the RFQ deadline.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Needs live verification; likely requires a deadline-aware WITH CHECK or trigger on quotes.",
+    "dependencies": [],
+    "regression_risk": "Unknown, not re-verified this session.",
+    "evidence": "Subagent report; not re-read this session."
+  },
+  {
+    "id": "D-13",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "RLS",
+    "root_cause": "The invoices_update RLS USING clause lets a supplier touch their own invoice rows via is_supplier_user_for(supplier_id). Local main's migration 00202 made WITH CHECK mirror USING, but that only re-scopes row VISIBILITY, not which status VALUES may be set, so a supplier can still flip their own invoice to APPROVED/PAID without authorization. Explicitly still OPEN.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00004 (original policy); 00202 (WITH CHECK mirrors USING, does not close the status-value gap)",
+    "surgical_fix": "Add a trigger, or an explicit WITH CHECK clause, restricting which roles may set which status transitions on invoices, separate from row-visibility scoping.",
+    "dependencies": [],
+    "regression_risk": "Fix must not block legitimate buyer-side approve/pay transitions; needs a role-aware transition table.",
+    "evidence": "00004:467-479 (USING scoped, WITH CHECK true); 00202:4-26 (WITH CHECK now mirrors USING but only for linkage/visibility, not status values). Confirmed still OPEN by explicit instruction; needs a real fix (trigger or explicit status-transition WITH CHECK)."
+  },
+  {
+    "id": "D-14",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "state machine",
+    "root_cause": "Material status transitions (e.g. rfqs DRAFT to OPEN) are performed by client direct table updates rather than a server-side transition guard; the only DB-enforced transition guard is PO to COMPLETED.",
+    "affected_files": [
+      "apps/web/src/features/requirement/api/rfq-lifecycle.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00171 (only existing guard, PO to COMPLETED)",
+    "surgical_fix": "Move status transitions server-side (RPC or trigger) with an explicit allowed-transition table.",
+    "dependencies": [],
+    "regression_risk": "Not assessed.",
+    "evidence": "rfq-lifecycle.ts:318-329; 00171:290-351 (subagent)."
+  },
+  {
+    "id": "D-15",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "data",
+    "root_cause": "PO taxable_total is flattened to equal total with GST columns at 0; the PO detail screen invents its own line items (e.g. brand names) via derivePoLineItems, so the printed PO disagrees with the stored GST data.",
+    "affected_files": [
+      "apps/web/src/features/fulfillment/pages/PurchaseOrderDetailPage.tsx"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00196",
+    "surgical_fix": "Persist real PO line items and GST breakdown server-side; remove client-side invention of line items.",
+    "dependencies": [],
+    "regression_risk": "Not assessed.",
+    "evidence": "00196:857-860 (subagent); PurchaseOrderDetailPage.tsx:80-104,1282."
+  },
+  {
+    "id": "D-16",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "frontend state",
+    "root_cause": "Invoice GST is hard-coded to 18% with client-side back-calculation (amount/1.18), and place of supply defaults to state code '29' regardless of actual buyer/supplier location.",
+    "affected_files": [
+      "apps/web/src/features/fulfillment/api/invoices.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Compute GST rate and place of supply from real order/location data; requires legal/product rule confirmation first.",
+    "dependencies": [],
+    "regression_risk": "LEGAL/RULE VERIFICATION REQUIRED (place of supply, CGST+SGST vs IGST, HSN/SAC defaults).",
+    "evidence": "invoices.ts:294,303,320,328-329."
+  },
+  {
+    "id": "D-17",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "UI",
+    "root_cause": "The Decision Receipt's claimed 'SHA-256/HMAC' integrity hash is actually a non-cryptographic 32-bit Math.imul mix with a bundled salt, not a real cryptographic hash.",
+    "affected_files": [
+      "packages/domain/src/types/procurement-communications.ts",
+      "apps/web/src/features/reveal/components/DecisionReceiptCard.tsx"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Replace with a real server-side cryptographic hash, or correct the UI copy to stop claiming cryptographic verification.",
+    "dependencies": [],
+    "regression_risk": "Not assessed.",
+    "evidence": "procurement-communications.ts:349-372; DecisionReceiptCard.tsx:71 'Tamper-Evident SHA-256 Verified'."
+  },
+  {
+    "id": "D-18",
+    "source": "d-series-defect-register",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "frontend state",
+    "root_cause": "Milestone sign-off hash is computed client-side with a hard-coded salt.",
+    "affected_files": [
+      "MilestoneInspectionChecklist.tsx"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Needs live verification; likely requires server-side hash computation.",
+    "dependencies": [],
+    "regression_risk": "Unknown, not re-verified this session.",
+    "evidence": "MilestoneInspectionChecklist.tsx:138,164-178 (subagent); not re-read this session."
+  },
+  {
+    "id": "D-19",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "UI",
+    "root_cause": "The procurement report prints fabricated metrics (12.5% savings, 98.4% on-time) not derived from real data.",
+    "affected_files": [
+      "apps/web/src/features/fulfillment/pages/PurchaseOrdersPage.tsx"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Compute real savings/on-time metrics server-side or remove the fabricated figures.",
+    "dependencies": [],
+    "regression_risk": "Not assessed.",
+    "evidence": "PurchaseOrdersPage.tsx:255-256."
+  },
+  {
+    "id": "D-20",
+    "source": "d-series-defect-register",
+    "status": "UNVERIFIED",
+    "severity": "P1",
+    "domain": "RPC",
+    "root_cause": "Supplier 'truthful verification' check is regex-only, its token is compared in plaintext, and the RPC has an anon EXECUTE grant.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00196",
+    "surgical_fix": "Needs live verification; likely requires a constant-time token comparison and anon revoke.",
+    "dependencies": [],
+    "regression_risk": "Unknown, not re-verified this session.",
+    "evidence": "00196:463-522 (subagent); not re-read this session."
+  },
+  {
+    "id": "D-21",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "configuration",
+    "root_cause": "WhatsApp is dispatched from the browser to a relative path (/waha/api/sendText) that only Vite dev/preview proxies serve; vercel.json rewrites all paths to index.html in production, so sends cannot reach a gateway, and a 2xx HTML reply could be misrecorded as SUBMITTED.",
+    "affected_files": [
+      "apps/web/src/features/notifications/lib/outbound-dispatch.ts",
+      "vercel.json",
+      "vite.config.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Move WhatsApp dispatch server-side (edge function) instead of a browser-originated relative path.",
+    "dependencies": [],
+    "regression_risk": "Production impact: WhatsApp sends cannot reach a gateway; not observed live since POST was not permitted in Phase 0.",
+    "evidence": "outbound-dispatch.ts:10,16; vercel.json rewrites; vite.config.ts:128-132,162-166 (subagent)."
+  },
+  {
+    "id": "D-22",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P2",
+    "domain": "UI",
+    "root_cause": "Several UI copy strings over-claim notification delivery/certainty beyond what the system actually guarantees.",
+    "affected_files": [
+      "InvoicePaymentPanel.tsx",
+      "MilestoneInspectionChecklist.tsx",
+      "SupplierAwardOnboardingPage.tsx",
+      "SupplierWorkOrderPage.tsx",
+      "apps/web/src/features/org/api/org-members.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Rewrite copy to match true delivery-state guarantees per the notification-status.ts domain model.",
+    "dependencies": [],
+    "regression_risk": "Not assessed.",
+    "evidence": "InvoicePaymentPanel.tsx:332; MilestoneInspectionChecklist.tsx:246; SupplierAwardOnboardingPage.tsx:115; SupplierWorkOrderPage.tsx:60; org-members.ts:102."
+  },
+  {
+    "id": "D-23",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "data",
+    "root_cause": "Nothing writes rfqs.delivery_address_snapshot; create_purchase_order_from_award copies the (always NULL) RFQ value forward, so the delivery address never reaches the RFQ/PO snapshot or place-of-supply logic.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "create_purchase_order_from_award"
+    ],
+    "migration_dependency": "00196 (columns, copy); 00199 (grant exclusion only, unexecuted)",
+    "surgical_fix": "Add the missing write path that populates delivery_address_snapshot when an RFQ is published/awarded.",
+    "dependencies": [],
+    "regression_risk": "Not assessed.",
+    "evidence": "grep: only 00196:95-107 (columns), 00196:845,862 (read/copy), 00199:874 (grant exclusion); no apps/web source writes it."
+  },
+  {
+    "id": "D-24",
+    "source": "d-series-defect-register",
+    "status": "UNVERIFIED",
+    "severity": "P2",
+    "domain": "DB constraint",
+    "root_cause": "No idempotency key is sent from the UI for settlement, and payments.reference is not a unique column, so duplicate-payment protection is unverified.",
+    "affected_files": [
+      "InvoicePaymentPanel.tsx"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00170",
+    "surgical_fix": "Needs live verification; likely requires a unique constraint plus a client-supplied idempotency key.",
+    "dependencies": [],
+    "regression_risk": "Unknown, not re-verified this session.",
+    "evidence": "InvoicePaymentPanel.tsx:365-370 (subagent); 00170:19-20 (subagent); not re-read this session."
+  },
+  {
+    "id": "D-25",
+    "source": "d-series-defect-register",
+    "status": "UNVERIFIED",
+    "severity": "P1",
+    "domain": "RPC",
+    "root_cause": "The server deducts the platform fee from the supplier's settlement net, while product copy claims OTP 'deducts/holds' funds — a possible contradiction with the pilot/non-escrow rule that needs product/legal confirmation.",
+    "affected_files": [
+      "MsmeRegistrationAgreementModal.tsx",
+      "pricing-entitlement.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00174",
+    "surgical_fix": "Needs product/legal rule confirmation before any code change.",
+    "dependencies": [],
+    "regression_risk": "PRODUCT/LEGAL RULE VERIFICATION REQUIRED.",
+    "evidence": "00174:684-730,866 (subagent); MsmeRegistrationAgreementModal.tsx:161 (subagent); pricing-entitlement.ts:9,102,694-698 (subagent)."
+  },
+  {
+    "id": "D-26",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "API",
+    "root_cause": "submit_signup_request reveals whether a registration already exists (its status), an enumeration vulnerability contrary to the original anti-enumeration design intent.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "submit_signup_request"
+    ],
+    "migration_dependency": "00180 (behavior); 00035 (original design intent)",
+    "surgical_fix": "Return a generic response regardless of whether the registration exists, to prevent enumeration.",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "00180:66-78 vs design intent 00035:113-117."
+  },
+  {
+    "id": "D-27",
+    "source": "d-series-defect-register",
+    "status": "SUPERSEDED",
+    "severity": "P1",
+    "domain": "authorization",
+    "root_cause": "Migration 00194 granted blanket anon SELECT on all public tables and EXECUTE on all routines (plus default privileges), making every table depend solely on RLS and every function on its own guard — the root exposure behind D-02/D-04 and similar.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "00194 (partially countered per-function by 00199-00203 revokes on local main)",
+    "surgical_fix": "Superseded by the P0 hotfix's targeted anon EXECUTE/SELECT revokes, validated live this session.",
+    "dependencies": [],
+    "regression_risk": "None remaining once hotfix is deployed.",
+    "evidence": "Base: 00194:26-68. Override: R2-33-P0-Security-Hotfix-Report.md, hotfix/p0-security, validated live this session (198 migrations, zero errors, all security checks passed)."
+  },
+  {
+    "id": "D-28",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P2",
+    "domain": "frontend state",
+    "root_cause": "Admin signup approval has a fallback path that performs direct client-side table writes instead of going through the guarded RPC.",
+    "affected_files": [
+      "apps/web/src/features/admin/api/admin-ops.ts"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Remove the client-side fallback and require the guarded server RPC path only.",
+    "dependencies": [],
+    "regression_risk": "Not assessed.",
+    "evidence": "admin-ops.ts:1123-1310."
+  },
+  {
+    "id": "D-29",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "deployment",
+    "root_cause": "The deployed production frontend predates all six local commits, so every local fix (including corrected copy) is absent in production.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Deploy the current local build to production.",
+    "dependencies": [],
+    "regression_risk": "Every local fix, including notification copy corrections, is absent in production until deployed.",
+    "evidence": "production main bundle fingerprint (baseline.production_frontend)."
+  },
+  {
+    "id": "D-30",
+    "source": "d-series-defect-register",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "test",
+    "root_cause": "The canonical-vocabulary scanner only covers apps/web/src and does not scan DB-seeded copy, so DB-seeded strings can drift from canonical vocabulary undetected.",
+    "affected_files": [
+      "scripts/scan-canonical-vocabulary.cjs"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Extend the scanner to cover DB-seeded copy (seed migrations, RPC-returned strings).",
+    "dependencies": [],
+    "regression_risk": "Low.",
+    "evidence": "scan-canonical-vocabulary.cjs:16-18 (apps/web/src only)."
+  },
+  {
+    "id": "D-31",
+    "source": "p0-hotfix-newly-discovered",
+    "status": "SUPERSEDED",
+    "severity": "P0",
+    "domain": "authentication",
+    "root_cause": "The WhatsApp password-reset flow (request_whatsapp_password_reset) previously allowed an unauthenticated caller to trigger a reset and could leak a code/email/phone, enabling account takeover. Discovered during P0 hotfix work on migration 00198 and already fixed there (now returns ok:false with no leak); validated live this session in a combined local-DB test.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "request_whatsapp_password_reset"
+    ],
+    "migration_dependency": "00198 (hotfix/p0-security)",
+    "surgical_fix": "Already fixed on hotfix/p0-security migration 00198; no further action pending reconciliation.",
+    "dependencies": [],
+    "regression_risk": "Low — fix already validated live in combined-worktree test this session; pending only migration numbering reconciliation (see CONFLICT-MIGRATION-NUMBERING).",
+    "evidence": "OTP Golden Reconstruction/R2-33-P0-Security-Hotfix-Report.md on branch hotfix/p0-security; plus this session's live combined-worktree validation."
+  },
+  {
+    "id": "D-32",
+    "source": "corrected-false-positive",
+    "status": "FALSE POSITIVE",
+    "severity": "N/A",
+    "domain": "RLS",
+    "root_cause": "An earlier pass in this session suspected the notifications table's DELETE RLS policy used USING (true) (open to any authenticated user). Spot-check confirmed the final, currently-effective policy scopes deletion to the row's own profile_id or a platform admin, not USING(true).",
+    "affected_files": [
+      "supabase/migrations/00134_fix_audit_trail_and_notifications_mode_logging.sql"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "No fix needed — corrects an earlier draft that wrongly marked this as an open finding.",
+    "dependencies": [],
+    "regression_risk": "None — this is a documentation correction, not a code change.",
+    "evidence": "Grep for notifications_delete across supabase/migrations/*.sql shows earlier migrations 00130 (line 322), 00131 (line 536), and 00132 (line 15) each conditionally (IF NOT EXISTS) created notifications_delete with USING (true), but migration 00134_fix_audit_trail_and_notifications_mode_logging.sql lines 262-264 unconditionally does DROP POLICY IF EXISTS notifications_delete then CREATE POLICY notifications_delete ... USING (profile_id = private.get_profile_id() OR private.is_platform_admin()). Since 00134 runs after 00130-00132 in migration order, this secure definition is the final, currently-effective policy. Confirmed false positive."
+  },
+  {
+    "id": "F-RUN2-T4-01",
+    "source": "run2-concrete-finding",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "frontend-state",
+    "root_cause": "Supplier can access /dashboard and see buyer content. apps/web/src/pages/HomePage.tsx's loading-gate condition uses && where it should use || when checking whether its role-context loading sources have finished, letting the buyer DashboardPage render transiently before the correct supplier role/side resolves — a race condition, not a missing dispatch (dispatch logic itself is correct).",
+    "affected_files": [
+      "apps/web/src/pages/HomePage.tsx"
+    ],
+    "affected_routes": [
+      "/dashboard"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Change the loading-gate boolean logic to wait for ALL relevant role-context sources before dispatching, not just when both happen to already be false.",
+    "dependencies": [],
+    "regression_risk": "Low — logic-only change to a boolean gate condition; should not affect already-correct dispatch logic.",
+    "evidence": "run2-concrete-finding F-RUN2-T4-01."
+  },
+  {
+    "id": "F-RUN2-T4-02",
+    "source": "run2-concrete-finding",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "authorization",
+    "root_cause": "Buyer can access /supplier/quotes and get content instead of rejection. apps/web/src/features/auth/ProtectedRoute.tsx's route-access check unconditionally allows access whenever a route's allowedRoles config lists BOTH BUYER and SUPPLIER, without checking the user's actual resolved side against the SPECIFIC role that's supposed to grant access. This is the canonical entry for what was previously tracked as C-01 (another batch marks C-01 as a duplicate pointing here).",
+    "affected_files": [
+      "apps/web/src/features/auth/ProtectedRoute.tsx",
+      "apps/web/src/features/supplier/pages/SupplierQuotesPage.tsx"
+    ],
+    "affected_routes": [
+      "/supplier/quotes"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "ProtectedRoute must check the user's actual resolved side against the specific role that grants access to that route, not just whether the user has ANY allowed role.",
+    "dependencies": [
+      "F-RUN2-T4-03"
+    ],
+    "regression_risk": "Medium — ProtectedRoute is shared across many routes; fix must be verified against all role-gated routes, not just /supplier/quotes.",
+    "evidence": "run2-concrete-finding F-RUN2-T4-02; canonical for duplicate C-01."
+  },
+  {
+    "id": "F-RUN2-T4-03",
+    "source": "run2-concrete-finding",
+    "status": "CONFIRMED",
+    "severity": "P1",
+    "domain": "authorization",
+    "root_cause": "Supplier navigating to /orders lands at /purchase-orders, which renders PurchaseOrdersPage with a hardcoded role=\"buyer\" prop regardless of the actual signed-in user's role, compounded by the same ProtectedRoute bug as F-RUN2-T4-02.",
+    "affected_files": [],
+    "affected_routes": [
+      "/orders",
+      "/purchase-orders"
+    ],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Make the route role-aware (render a supplier-specific view, or pass the real resolved role, not a hardcoded one) AND fix the shared ProtectedRoute bug (prerequisite, shared dependency with F-RUN2-T4-02).",
+    "dependencies": [
+      "F-RUN2-T4-02"
+    ],
+    "regression_risk": "Medium — depends on ProtectedRoute fix landing first; hardcoded role prop removal must be tested for both buyer and supplier views.",
+    "evidence": "run2-concrete-finding F-RUN2-T4-03."
+  },
+  {
+    "id": "F-RUN2-API-01",
+    "source": "run2-concrete-finding",
+    "status": "CONFIRMED",
+    "severity": "P2",
+    "domain": "API",
+    "root_cause": "get_active_announcements exposes internal dev/hardening banner text and prohibited vocabulary to authenticated users. Canonical entry for what was previously tracked as C-02/B-02 (other batches mark those as duplicates pointing here). Confirmed NOT touched by any of local main's 00198-00203 migrations (verified via grep for \"announcement\", zero matches) — fully OPEN, no candidate fix exists anywhere yet.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [
+      "get_active_announcements"
+    ],
+    "migration_dependency": "",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low — no fix exists yet; risk assessment applies once a fix is authored to sanitize banner content before exposure to authenticated users.",
+    "evidence": "run2-concrete-finding F-RUN2-API-01; canonical for duplicates C-02/B-02. Grep for \"announcement\" across local main's 00198-00203 migrations returned zero matches."
+  },
+  {
+    "id": "F-RUN2-DASH-01",
+    "source": "run2-concrete-finding",
+    "status": "PARTIALLY CONFIRMED",
+    "severity": "P3",
+    "domain": "accessibility",
+    "root_cause": "New-RFQ FAB reportedly missing visible label, tooltip, and accessible label. Investigation of apps/web/src/components/MobileBottomNav.tsx found the \"+\" button ALREADY has a title attribute and an aria-label/sr-only text (something like \"Create Requirement\") — so the \"missing tooltip\" and \"missing accessible label\" parts are FALSE as currently coded. The \"missing VISIBLE label\" part IS real: the button shows only \"+\" visually, and a title attribute's hover tooltip doesn't work on touch/mobile (this is a mobile-first bottom-nav component), so mobile users have no visible or reliably-discoverable label.",
+    "affected_files": [
+      "apps/web/src/components/MobileBottomNav.tsx"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "Add a small visible text label under/beside the '+' icon (or switch to a labeled button); don't just rely on existing title/aria-label.",
+    "dependencies": [],
+    "regression_risk": "Low — purely additive visual/markup change to a bottom-nav button.",
+    "evidence": "run2-concrete-finding F-RUN2-DASH-01; code inspection of apps/web/src/components/MobileBottomNav.tsx."
+  },
+  {
+    "id": "F-RUN2-VAL-01",
+    "source": "run2-concrete-finding",
+    "status": "CONFIRMED",
+    "severity": "P3",
+    "domain": "UI",
+    "root_cause": "Empty registration submission produces no visible validation messages. Canonical entry for what was previously tracked as C-03 (another batch marks C-03 as a duplicate pointing here).",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "",
+    "dependencies": [],
+    "regression_risk": "Low — validation-message display fix, isolated to registration form UI.",
+    "evidence": "run2-concrete-finding F-RUN2-VAL-01; canonical for duplicate C-03."
+  },
+  {
+    "id": "RUN2D-FP-01",
+    "source": "test-harness-false-positive",
+    "status": "FALSE POSITIVE",
+    "severity": "N/A",
+    "domain": "test-infrastructure",
+    "root_cause": "An automated identity-leak scanner flagged the string \"Production Hardening v6.3\" as a person's name (regex incorrectly interpreted \"Production\" as an identity). Run-2d visual/network validation (buyer persona \"Manimekalai\", supplier persona \"Dhiya\") confirmed NO actual buyer-identity leak to the supplier cockpit: name/email/phone all absent, network inspection clean, identity reveal correctly gated to the award stage.",
+    "affected_files": [],
+    "affected_routes": [],
+    "affected_rpc": [],
+    "migration_dependency": "",
+    "surgical_fix": "TEST-HARNESS FALSE POSITIVE — identity regex/script requires correction (should not treat the word 'Production' as a person-name match); this is a test-infrastructure defect, not a product defect. Do not create a product-code identity-leak finding from this.",
+    "dependencies": [],
+    "regression_risk": "None — no product code change; fix (if any) applies only to the test harness's identity-detection regex.",
+    "evidence": "Run-2d visual/network validation using buyer persona \"Manimekalai\" and supplier persona \"Dhiya\": name/email/phone absent from supplier cockpit, network inspection clean, identity reveal correctly gated to award stage."
+  },
+  {
+    "id": "CONFLICT-MIGRATION-NUMBERING",
+    "source": "migration-reconciliation",
+    "status": "UNVERIFIED",
+    "severity": "N/A",
+    "domain": "deployment/migrations",
+    "root_cause": "Local main's own migrations 00198-00203 (6 files, commits 5325988/769813a/4db44c4/c23d6fc/d3e98a9/168409e) and the P0 hotfix's migration 00198 (branch hotfix/p0-security, commit 2dd3c2d) are numbered identically but contain ENTIRELY DIFFERENT content, both based on the same a1586c9 root — a genuine numbering collision, not mere overlap. The hotfix's single 00198 file functionally duplicates/supersedes work spread across FOUR of local main's files: 00198 (synthetic quote/pilot simulator isolation), 00199 (privileged RPC hardening/supplier masking/financial enforcement), 00201 (procurement stage events/audit delete/support tickets), and 00203 (ops metadata/profile privileges/TDS) — meaning once reconciled, large portions of those 4 local-main files would become dead/redundant and need stripping, not just renumbering. Known concrete behavioral divergences: (a) admin_bulk_delete_users — local main's 00199 changes the function body to soft-delete-only, while the hotfix keeps the original hard-delete body and only patches the caller-authorization guard, a real behavioral conflict needing a product decision on which behavior is correct; (b) the synthetic-quote/demo-stub function — local main's 00198 restricts it to platform-admins only, while the hotfix's equivalent section also permits members of the demo RFQ's own organization, a scope conflict needing a decision.",
+    "affected_files": [
+      "supabase/migrations/00198_* (local main)",
+      "supabase/migrations/00199_* (local main)",
+      "supabase/migrations/00201_* (local main)",
+      "supabase/migrations/00203_* (local main)",
+      "supabase/migrations/00198_* (hotfix/p0-security)"
+    ],
+    "affected_routes": [],
+    "affected_rpc": [
+      "admin_bulk_delete_users"
+    ],
+    "migration_dependency": "00198-00203 (local main) vs 00198 (hotfix/p0-security)",
+    "surgical_fix": "Do NOT resolve here — document only; awaiting explicit product-owner reconciliation decision on both behavioral divergences before any implementation that touches local main's 00199/00201/00203 can proceed.",
+    "dependencies": [
+      "Any fix citing local main's 00199/00201/00203 as its existing fix interaction (e.g. items about support_tickets, invoice self-approval, admin bulk-delete behavior) must wait for this reconciliation."
+    ],
+    "regression_risk": "High if reconciled incorrectly — behavioral divergences (soft-delete vs hard-delete, admin-only vs org-inclusive scope) affect security and data-integrity semantics; requires explicit product-owner sign-off before implementation.",
+    "evidence": "Migration file/commit comparison: local main commits 5325988/769813a/4db44c4/c23d6fc/d3e98a9/168409e (00198-00203) vs hotfix/p0-security commit 2dd3c2d (00198), both rooted at a1586c9."
+  }
+]

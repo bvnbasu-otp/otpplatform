@@ -190,6 +190,113 @@ describe('Security & Route Guard Audit — ProtectedRoute & RBAC Enforcement', (
     expect(verdict.action).toBe('ONBOARDING');
   });
 
+  it('allows authenticated supplier to access supplier-only /supplier/quotes within a dual-role config', () => {
+    const input: RouteAccessEvaluationInput = {
+      session: { user: { id: 'usr-supp-2', email: 'quotes@precisionparts.test' } },
+      user: { id: 'usr-supp-2', email: 'quotes@precisionparts.test' },
+      context: {
+        ...SIGNED_OUT_CONTEXT,
+        signedIn: true,
+        side: 'SUPPLIER',
+        isPlatformAdmin: false,
+      },
+      pathname: '/supplier/quotes',
+      allowedRoles: ['BUYER', 'SUPPLIER', 'ADMIN'],
+    };
+
+    const verdict = evaluateRouteAccess(input);
+    expect(verdict.action).toBe('ALLOW');
+  });
+
+  it('denies an authenticated buyer trying to access supplier-only /supplier/quotes within a dual-role config (F-RUN2-T4-02)', () => {
+    const input: RouteAccessEvaluationInput = {
+      session: { user: { id: 'usr-buyer-2', email: 'procurement2@apex.test' } },
+      user: { id: 'usr-buyer-2', email: 'procurement2@apex.test' },
+      context: {
+        ...SIGNED_OUT_CONTEXT,
+        signedIn: true,
+        side: 'BUYER',
+        isPlatformAdmin: false,
+      },
+      pathname: '/supplier/quotes',
+      allowedRoles: ['BUYER', 'SUPPLIER', 'ADMIN'],
+    };
+
+    const verdict = evaluateRouteAccess(input);
+    expect(verdict.action).toBe('REDIRECT');
+    if (verdict.action === 'REDIRECT') {
+      expect(verdict.target).toBe('/dashboard');
+      expect(verdict.clearState).toBe(true);
+    }
+  });
+
+  it('denies an authenticated supplier trying to access buyer-only /purchase-orders within a dual-role config', () => {
+    const input: RouteAccessEvaluationInput = {
+      session: { user: { id: 'usr-supp-3', email: 'orders3@precisionparts.test' } },
+      user: { id: 'usr-supp-3', email: 'orders3@precisionparts.test' },
+      context: {
+        ...SIGNED_OUT_CONTEXT,
+        signedIn: true,
+        side: 'SUPPLIER',
+        isPlatformAdmin: false,
+      },
+      pathname: '/purchase-orders',
+      allowedRoles: ['BUYER', 'SUPPLIER', 'ADMIN'],
+    };
+
+    const verdict = evaluateRouteAccess(input);
+    expect(verdict.action).toBe('REDIRECT');
+    if (verdict.action === 'REDIRECT') {
+      expect(verdict.target).toBe('/supplier/purchase-orders');
+      expect(verdict.clearState).toBe(true);
+    }
+  });
+
+  it('denies an authenticated buyer trying to access supplier-only /supplier/purchase-orders within a dual-role config', () => {
+    const input: RouteAccessEvaluationInput = {
+      session: { user: { id: 'usr-buyer-3', email: 'procurement3@apex.test' } },
+      user: { id: 'usr-buyer-3', email: 'procurement3@apex.test' },
+      context: {
+        ...SIGNED_OUT_CONTEXT,
+        signedIn: true,
+        side: 'BUYER',
+        isPlatformAdmin: false,
+      },
+      pathname: '/supplier/purchase-orders',
+      allowedRoles: ['BUYER', 'SUPPLIER', 'ADMIN'],
+    };
+
+    const verdict = evaluateRouteAccess(input);
+    expect(verdict.action).toBe('REDIRECT');
+    if (verdict.action === 'REDIRECT') {
+      expect(verdict.target).toBe('/dashboard');
+      expect(verdict.clearState).toBe(true);
+    }
+  });
+
+  it('allows a platform admin to access either side of a dual-role route regardless of resolved side', () => {
+    const buyerRouteInput: RouteAccessEvaluationInput = {
+      session: { user: { id: 'usr-admin-2', email: 'admin@otp.test' } },
+      user: { id: 'usr-admin-2', email: 'admin@otp.test' },
+      context: {
+        ...SIGNED_OUT_CONTEXT,
+        signedIn: true,
+        isPlatformAdmin: true,
+      },
+      pathname: '/supplier/quotes',
+      allowedRoles: ['BUYER', 'SUPPLIER', 'ADMIN'],
+    };
+
+    expect(evaluateRouteAccess(buyerRouteInput).action).toBe('ALLOW');
+
+    const supplierRouteInput: RouteAccessEvaluationInput = {
+      ...buyerRouteInput,
+      pathname: '/purchase-orders',
+    };
+
+    expect(evaluateRouteAccess(supplierRouteInput).action).toBe('ALLOW');
+  });
+
   it('allows authenticated user with unassigned/null side into multi-role routes like /purchase-orders', () => {
     const input: RouteAccessEvaluationInput = {
       session: { user: { id: 'usr-pending-1', email: 'pending@corp.test' } },

@@ -1120,7 +1120,10 @@ export async function reviewSignupRequest(
   notes?: string,
   initialPassword = 'Welcome@OTP2026!'
 ): Promise<import('../types/admin').AdminReviewSignupResponse> {
-  // 1. Try Primary RPC: admin_review_signup_request
+  // D-28: the only path is the guarded server RPC. It performs the
+  // authorization check, the actual provisioning and the audit write inside
+  // one transaction; a client-side direct-table fallback would skip all
+  // three, so none exists here.
   try {
     const { data, error } = await supabase.rpc('admin_review_signup_request', {
       p_request_id: requestId,
@@ -1131,187 +1134,16 @@ export async function reviewSignupRequest(
     if (!error && (data as any)?.ok) {
       return data as import('../types/admin').AdminReviewSignupResponse;
     }
-  } catch (rpcErr) {
-    console.warn('admin_review_signup_request RPC error, attempting alias fallback:', rpcErr);
-  }
-
-  // 2. Try Alias RPC: review_signup_request
-  try {
-    const { data: aliasData, error: aliasError } = await supabase.rpc('review_signup_request', {
-      p_request_id: requestId,
-      p_action: action,
-      p_notes: notes ?? null,
-      p_initial_password: initialPassword,
-    });
-    if (!aliasError && (aliasData as any)?.ok) {
-      return aliasData as import('../types/admin').AdminReviewSignupResponse;
-    }
-  } catch (aliasErr) {
-    console.warn('review_signup_request alias error, attempting direct table fallback:', aliasErr);
-  }
-
-  // 3. Direct DB fallback: Update signup_requests and provision entities directly
-  try {
-    if (action === 'REJECT') {
-      const { error: updErr } = await supabase
-        .from('signup_requests')
-        .update({
-          status: 'REJECTED',
-          reviewed_at: new Date().toISOString(),
-          review_notes: notes || 'Application rejected by platform administrator',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', requestId);
-      if (updErr) throw updErr;
-      return {
-        ok: true,
-        status: 'REJECTED',
-        message: 'Registration request rejected successfully',
-      };
-    }
-
-    // APPROVE Action: Fetch request details
-    const { data: reqRow, error: fetchErr } = await supabase
-      .from('signup_requests')
-      .select('*')
-      .eq('id', requestId)
-      .single();
-    if (fetchErr || !reqRow) throw fetchErr || new Error('Signup request not found');
-
-    const fullName = `${reqRow.contact_first_name || ''} ${reqRow.contact_last_name || ''}`.trim() || 'User';
-    const email = reqRow.email.toLowerCase();
-
-    // Link or provision public.profiles
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle();
-
-    let profileId = existingProfile?.id;
-    if (!profileId) {
-      const { data: newProfile, error: profErr } = await supabase
-        .from('profiles')
-        .insert({
-          email,
-          full_name: fullName,
-          phone: reqRow.phone,
-          is_platform_admin: false,
-          is_demo: false,
-        })
-        .select('id')
-        .single();
-      if (!profErr && newProfile) {
-        profileId = newProfile.id;
-      }
-    }
-
-    let orgId = reqRow.organization_id;
-    let supplierId = reqRow.supplier_id;
-
-    if (reqRow.side === 'BUYER') {
-      if (!orgId) {
-        const orgName = reqRow.business_name || fullName || 'Buyer Organization';
-        const hasGst = Boolean(reqRow.tax_registration_id && reqRow.tax_registration_id.length >= 15);
-        const { data: newOrg, error: orgErr } = await supabase
-          .from('organizations')
-          .insert({
-            name: orgName,
-            org_type: reqRow.buyer_type || 'INDIVIDUAL',
-            contact_person: fullName,
-            contact_email: email,
-            contact_phone: reqRow.phone,
-            tax_registration: reqRow.tax_registration_id,
-            gst_verified: hasGst,
-            subscription_tier: 'TIER_1_MSME',
-            subscription_status: 'ACTIVE',
-            subscription_plan: 'MONTHLY',
-            subscription_started_at: new Date().toISOString(),
-            subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            payment_reference: 'REG-ONBOARD-M1',
-          })
-          .select('id')
-          .single();
-        if (!orgErr && newOrg) {
-          orgId = newOrg.id;
-          if (profileId) {
-            await supabase.from('organization_members').upsert({
-              organization_id: orgId,
-              profile_id: profileId,
-              role: 'OWNER',
-            });
-            await supabase.from('profiles').update({ active_organization_id: orgId }).eq('id', profileId);
-          }
-        }
-      }
-    } else {
-      // SUPPLIER
-      if (!supplierId) {
-        const suppName = reqRow.business_name || fullName || 'Supplier Business';
-        const hasGst = Boolean(reqRow.tax_registration_id && reqRow.tax_registration_id.length >= 15);
-        const { data: newSupp, error: suppErr } = await supabase
-          .from('suppliers')
-          .insert({
-            business_name: suppName,
-            legal_name: suppName,
-            trade_name: suppName,
-            gstin: reqRow.tax_registration_id,
-            contact_phone: reqRow.phone,
-            contact_email: email,
-            city: reqRow.coverage_city,
-            pincode: reqRow.coverage_pincode,
-            categories: reqRow.category_codes || [],
-            verification_status: 'PLATFORM_VERIFIED',
-            status: 'ACTIVE',
-            gst_verified: hasGst,
-            gst_status: hasGst ? 'Active' : 'UNVERIFIED',
-            gst_verified_at: hasGst ? new Date().toISOString() : null,
-          })
-          .select('id')
-          .single();
-        if (!suppErr && newSupp) {
-          supplierId = newSupp.id;
-          if (profileId) {
-            await supabase.from('supplier_users').upsert({
-              supplier_id: supplierId,
-              profile_id: profileId,
-              role: 'OWNER',
-            });
-          }
-        }
-      }
-    }
-
-    // Mark registration as ONBOARDED
-    const { error: finalUpdErr } = await supabase
-      .from('signup_requests')
-      .update({
-        status: 'ONBOARDED',
-        organization_id: orgId || null,
-        supplier_id: supplierId || null,
-        reviewed_at: new Date().toISOString(),
-        review_notes: notes || 'Approved and onboarded by platform administrator',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', requestId);
-    if (finalUpdErr) throw finalUpdErr;
-
-    return {
-      ok: true,
-      status: 'ONBOARDED',
-      side: reqRow.side,
-      email: reqRow.email,
-      full_name: fullName,
-      organization_id: orgId,
-      supplier_id: supplierId,
-      temporary_password: initialPassword,
-      message: 'Registration approved and onboarded successfully',
-    };
-  } catch (directErr: any) {
     return {
       ok: false,
       status: 'FAILED',
-      error: directErr?.message || (typeof directErr === 'string' ? directErr : 'Failed to review signup request'),
+      error: error?.message || (data as any)?.error || 'Failed to review signup request',
+    };
+  } catch (rpcErr: any) {
+    return {
+      ok: false,
+      status: 'FAILED',
+      error: rpcErr?.message || (typeof rpcErr === 'string' ? rpcErr : 'Failed to review signup request'),
     };
   }
 }

@@ -1,6 +1,5 @@
-﻿import { describeNotificationStatus } from '@otp/domain';
-import { supabase } from '@/lib/supabase';
-import { dispatchWhatsAppText } from '@/features/notifications/lib/outbound-dispatch';
+﻿import { supabase } from '@/lib/supabase';
+import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
 
 export interface UserProfileDetails {
   id: string;
@@ -132,6 +131,18 @@ export async function updateOrganizationName(
   return { ok: true, name: trimmed };
 }
 
+/**
+ * D-21 + A-30 + demo-visibility fix (product decision 3): this used to call
+ * `request_profile_credential_otp` directly, get the plaintext code back in
+ * the RPC response, and dispatch WhatsApp itself via the browser-side
+ * gateway — with a *client build flag* (`VITE_DEMO_MODE`) deciding whether
+ * to show that code on screen. All of that is gone: the RPC is now
+ * service_role-only, `otp-dispatch` (this function's only caller) is the
+ * only place the code exists, and any on-screen echo is controlled purely
+ * by a server-side env var (`OTP_DEBUG_REVEAL_CODE`) that decides whether
+ * the response includes `debugCode` at all — no client code can turn that
+ * on.
+ */
 export async function requestProfileCredentialOtp(
   credentialType: 'PHONE' | 'EMAIL',
   credentialValue: string
@@ -141,74 +152,28 @@ export async function requestProfileCredentialOtp(
     return { ok: false, error: `Please enter a valid ${credentialType === 'PHONE' ? 'phone number' : 'email address'}.` };
   }
 
-  try {
-    const { data, error } = await supabase.rpc('request_profile_credential_otp', {
-      p_credential_type: credentialType,
-      p_credential_value: cleanVal,
-    });
+  const formattedValue = credentialType === 'EMAIL' ? cleanVal.toLowerCase() : cleanVal;
 
-    if (error) {
-      return { ok: false, error: error.message || 'Could not create a verification code. Please try again.' };
-    }
+  const { result } = await invokeEdgeFunction('otp-dispatch', {
+    purpose: 'PROFILE_CREDENTIAL',
+    identifier: cleanVal,
+    credentialType,
+  });
 
-    const res = data as {
-      ok: boolean;
-      error?: string;
-      otp_code?: string;
-      credential_value?: string;
-      full_name?: string;
-      message?: string;
-    };
-
-    if (!res?.ok) {
-      return { ok: false, error: res?.error || 'Could not create a verification code. Please sign in again and retry.' };
-    }
-
-    const formattedValue = res.credential_value || cleanVal;
-    // The code proves ownership of the phone/email, so it is only ever shown on screen in demo builds.
-    const demoCode = isDemoBuild() ? res.otp_code : undefined;
-
-    if (credentialType === 'EMAIL') {
-      if (demoCode) {
-        return { ok: true, otpCode: demoCode, formattedValue, message: 'Demo build: the verification code is shown below.' };
-      }
-      return {
-        ok: false,
-        error: 'Email verification codes cannot be sent yet in this pilot, so no code was sent. Please verify a phone number instead.',
-      };
-    }
-
-    if (!res.otp_code) {
-      return { ok: false, error: 'Could not create a verification code. Please try again.' };
-    }
-
-    const delivery = await dispatchWhatsAppText({
-      phone: formattedValue,
-      idempotencyKey: `profile-credential-otp:${formattedValue}:${res.otp_code}`,
-      text:
-        `OTP profile verification\n\n` +
-        `Hello ${res.full_name || 'there'},\n` +
-        `Your code to link this phone number to your profile is:\n\n` +
-        `*${res.otp_code}*\n\n` +
-        `Valid for 15 minutes. Enter it in your Profile settings.`,
-    });
-    const copy = describeNotificationStatus(delivery, 'VERIFICATION_CODE');
-
-    if (delivery.status === 'FAILED' || delivery.status === 'NOT_ATTEMPTED') {
-      if (demoCode) {
-        return { ok: true, otpCode: demoCode, formattedValue, message: `${copy.message} Demo build: the code is shown below.` };
-      }
-      return { ok: false, error: copy.message };
-    }
-
-    return { ok: true, otpCode: demoCode, formattedValue, message: copy.message };
-  } catch {
-    return { ok: false, error: 'Could not create a verification code. Please check your connection and try again.' };
+  if (!result.ok) {
+    return { ok: false, error: result.error || 'Could not send a verification code. Please try again.' };
   }
-}
 
-function isDemoBuild(): boolean {
-  return import.meta.env.VITE_DEMO_MODE === 'true';
+  if (result.debugCode) {
+    return {
+      ok: true,
+      otpCode: result.debugCode,
+      formattedValue,
+      message: 'Debug build: the verification code is shown below.',
+    };
+  }
+
+  return { ok: true, formattedValue, message: 'A verification code has been sent. Delivery is not confirmed yet.' };
 }
 
 export async function verifyAndUpdateProfileCredential(

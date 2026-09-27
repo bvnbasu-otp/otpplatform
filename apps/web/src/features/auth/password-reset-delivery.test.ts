@@ -7,6 +7,7 @@ vi.mock('@/lib/supabase', () => {
     from: vi.fn(),
     rpc: vi.fn(),
     auth: { getUser: vi.fn() },
+    functions: { invoke: vi.fn() },
   };
   (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
   return { supabase: globalMock, setRememberDevice: vi.fn() };
@@ -15,66 +16,65 @@ vi.mock('@/lib/supabase', () => {
 import { supabase } from '@/lib/supabase';
 import { describeNotificationStatus } from '@otp/domain';
 import { requestWhatsAppPasswordReset } from './lib/password-reset-dispatch';
-import { clearDispatchIdempotencyCache, resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
+import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
 
 const mockSupabase = supabase as any;
 
-function jsonResponse(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
-}
-
+/**
+ * D-21 + A-30: `requestWhatsAppPasswordReset` no longer calls
+ * `request_whatsapp_password_reset` directly (service_role-only as of
+ * migration 00208) and no longer dispatches WhatsApp itself via a `/waha`
+ * gateway fetch. It calls the `otp-dispatch` edge function once and is told
+ * success/failure only — no phone, no email, no code ever comes back to
+ * this module, per the "no destination detail" response-shape decision.
+ */
 describe('requestWhatsAppPasswordReset', () => {
   beforeEach(() => {
-    clearDispatchIdempotencyCache();
-    mockSupabase.rpc = vi.fn().mockResolvedValue({
-      data: { ok: true, phone: '+919876543210', email: 'a@b.in', full_name: 'Asha', otp_code: '482913' },
-      error: null,
+    mockSupabase.functions = { invoke: vi.fn() };
+  });
+
+  it('server dispatch succeeds → ok with SUBMITTED delivery (not delivered)', async () => {
+    mockSupabase.functions.invoke.mockResolvedValue({ data: { ok: true, status: 'SUBMITTED' }, error: null });
+    const res = await requestWhatsAppPasswordReset('a@b.in');
+    expect(res.ok).toBe(true);
+    expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('otp-dispatch', {
+      body: { purpose: 'PASSWORD_RESET', identifier: 'a@b.in' },
     });
   });
 
-  it('gateway accepted → ok with ACCEPTED delivery (not delivered)', async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(201, { id: 'wamid-9' }));
-    const res = await requestWhatsAppPasswordReset('a@b.in', { origin: 'https://otp.market', fetchImpl });
-    expect(res.ok).toBe(true);
-    expect(res.delivery?.status).toBe('ACCEPTED');
-    expect(res.delivery?.deliveryConfirmed).toBe(false);
-    const body = JSON.parse((fetchImpl.mock.calls[0]![1] as RequestInit).body as string);
-    expect(body.text).toContain('https://otp.market/reset-password?identifier=%2B919876543210');
-  });
-
-  it('gateway rejects → ok:false with failure copy', async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(500, {}));
-    const res = await requestWhatsAppPasswordReset('a@b.in', { origin: 'https://otp.market', fetchImpl });
+  it('server dispatch fails → ok:false with failure copy, no destination detail', async () => {
+    mockSupabase.functions.invoke.mockResolvedValue({
+      data: { ok: false, error: 'We could not issue a verification code right now. Please try again shortly.' },
+      error: null,
+    });
+    const res = await requestWhatsAppPasswordReset('a@b.in');
     expect(res.ok).toBe(false);
-    expect(res.delivery?.status).toBe('FAILED');
     expect(res.error).toBeTruthy();
     expect(res.error!.toLowerCase()).not.toMatch(/sent successfully|delivered/);
+    expect(res.error).not.toMatch(/@|\+91|\d{6,}/); // no email/phone echoed back
   });
 
-  it('timeout → ok:false, outcome unknown', async () => {
-    const fetchImpl = vi.fn(
-      (_u: RequestInfo | URL, init?: RequestInit) =>
-        new Promise<Response>((_r, reject) =>
-          init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError'))),
-        ),
-    ) as unknown as typeof fetch;
-    const res = await requestWhatsAppPasswordReset('a@b.in', { origin: 'https://otp.market', fetchImpl, timeoutMs: 20 });
+  it('network-level failure reaching the edge function → ok:false, outcome unknown', async () => {
+    mockSupabase.functions.invoke.mockResolvedValue({ data: null, error: { message: 'network error' } });
+    const res = await requestWhatsAppPasswordReset('a@b.in');
     expect(res.ok).toBe(false);
     expect(res.delivery?.outcomeUnknown).toBe(true);
   });
 
-  it('no phone or code on the account → ok:false without calling the gateway', async () => {
-    mockSupabase.rpc = vi.fn().mockResolvedValue({ data: { ok: true, email: 'a@b.in' }, error: null });
-    const fetchImpl = vi.fn();
-    const res = await requestWhatsAppPasswordReset('a@b.in', { origin: 'https://otp.market', fetchImpl });
+  it('empty identifier → ok:false without calling the edge function', async () => {
+    const res = await requestWhatsAppPasswordReset('   ');
     expect(res.ok).toBe(false);
-    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
   });
 
-  it('RPC error → ok:false', async () => {
-    mockSupabase.rpc = vi.fn().mockResolvedValue({ data: null, error: { message: 'User not found' } });
-    const res = await requestWhatsAppPasswordReset('x', { fetchImpl: vi.fn() });
-    expect(res).toEqual({ ok: false, error: 'User not found' });
+  it('unknown account and "no phone on file" get the identical generic error (no enumeration)', async () => {
+    mockSupabase.functions.invoke.mockResolvedValue({
+      data: { ok: false, error: 'We could not issue a verification code right now. Please try again shortly.' },
+      error: null,
+    });
+    const unknownAccount = await requestWhatsAppPasswordReset('nobody@nowhere.in');
+    const noPhoneAccount = await requestWhatsAppPasswordReset('emailonly@company.in');
+    expect(unknownAccount.error).toBe(noPhoneAccount.error);
   });
 });
 
@@ -96,5 +96,11 @@ describe('password reset and sign-in code copy', () => {
       const source = readFileSync(file, 'utf8');
       expect(source, file).not.toMatch(/sent successfully|Message sent|Sent!|We sent|email sent to|delivered to/i);
     }
+  });
+
+  it('password-reset-dispatch.ts never contains a plaintext OTP code or destination detail', () => {
+    const source = readFileSync(resolve(__dirname, 'lib/password-reset-dispatch.ts'), 'utf8');
+    expect(source).not.toMatch(/otp_code/);
+    expect(source).not.toMatch(/res\.phone|res\.email/);
   });
 });

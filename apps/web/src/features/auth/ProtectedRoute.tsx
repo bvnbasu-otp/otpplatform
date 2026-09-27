@@ -114,13 +114,25 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
       return { action: 'ALLOW' };
     }
 
+    // Dual-role config (allowedRoles lists BOTH BUYER and SUPPLIER, e.g. the
+    // buyer/supplier PO & quote route pairs). "Any role in the list" is NOT
+    // sufficient here — the user's resolved side must match the SPECIFIC side
+    // this exact route path is for. This app's convention is: paths under
+    // "/supplier/" are the supplier-side route, everything else in a dual-role
+    // pair is the buyer-side route. Without this, a buyer could reach
+    // supplier-only content (e.g. /supplier/quotes) and vice versa.
+    const isDualSideRoute = allowsBuyer && allowsSupplier;
+    const requiredSideForDualRoute: 'BUYER' | 'SUPPLIER' | undefined = isDualSideRoute
+      ? (input.pathname.startsWith('/supplier/') ? 'SUPPLIER' : 'BUYER')
+      : undefined;
+
     const hasAllowedRole =
       (allowsFounder && isFounder) ||
       (allowsAdmin && isPlatformAdmin) ||
-      (allowsBuyer && (userSide === 'BUYER' || isPlatformAdmin)) ||
-      (allowsSupplier && (userSide === 'SUPPLIER' || isPlatformAdmin)) ||
-      // If route allows both buyers and suppliers (e.g. general PO, ledger, tracking routes)
-      (allowsBuyer && allowsSupplier) ||
+      (isDualSideRoute
+        ? userSide === requiredSideForDualRoute || isPlatformAdmin
+        : (allowsBuyer && (userSide === 'BUYER' || isPlatformAdmin)) ||
+          (allowsSupplier && (userSide === 'SUPPLIER' || isPlatformAdmin))) ||
       // If side is not explicitly set yet but user is authenticated and route is not admin-only
       (!userSide && (allowsBuyer || allowsSupplier));
 

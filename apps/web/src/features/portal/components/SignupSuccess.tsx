@@ -77,14 +77,16 @@ export function SignupSuccess({
           </dd>
         </div>
 
-        {outcome.canSignInNow && result.temporaryPassword && (
-          <div className="flex items-center justify-between border-t border-border/40 pt-2">
-            <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Initial Password</dt>
-            <dd className="font-mono text-xs font-bold text-foreground bg-muted px-2 py-0.5 rounded">
-              {result.temporaryPassword}
-            </dd>
-          </div>
-        )}
+        {/*
+          A-29: there is no literal password for the server to hand back any
+          more (submit_signup_request never returns one, and neither does
+          admin_review_signup_request) — an auto-approved buyer's account
+          activates the same way an approved applicant's does, via a
+          single-use activation code delivered to their phone, not a
+          password shown on this screen. See onboarding-notify (kind:
+          'APPROVED') and the reused verify_whatsapp_password_reset /
+          ResetPasswordPage flow.
+        */}
       </dl>
 
       <div className="space-y-1">

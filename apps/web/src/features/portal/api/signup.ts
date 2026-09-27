@@ -1,10 +1,10 @@
 import type { NotificationStatusResolution } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
 import {
-  dispatchWhatsAppText,
   resolveSupabaseEmailDispatch,
   sanitizeToAscii as sanitizeOutboundAscii,
 } from '@/features/notifications/lib/outbound-dispatch';
+import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
 import type { PortalSide } from '../types/portal';
 
 /**
@@ -51,14 +51,14 @@ export interface SignupSubmission {
 export interface SignupResult {
   /** What the applicant quotes when they follow up. */
   reference: string;
+  /** The row's own id — used only to ask onboarding-notify for a guaranteed
+   * server-side acknowledgement; never used to read the row back. */
+  requestId?: string;
   status: string;
   alreadySubmitted: boolean;
   autoApproved?: boolean;
   side?: 'BUYER' | 'SUPPLIER';
   email?: string;
-  /** Only ever what the server returned; never a client-side default. */
-  temporaryPassword?: string;
-  /** Only ever what the server returned; never a client-side default. */
   freeRfqCredits?: number;
   /** Outcome of the registration confirmation message, kept separate from the registration itself. */
   notification?: NotificationStatusResolution;
@@ -87,6 +87,18 @@ export async function fetchServedCities(): Promise<string[]> {
   return ((data ?? []) as { city: string }[]).map((row) => row.city).filter(Boolean);
 }
 
+/**
+ * Submits the registration, then asks the server for a guaranteed
+ * acknowledgement notice.
+ *
+ * B-01: this notice used to be a browser-side WhatsApp send the register
+ * form made itself, gated on the applicant having chosen the WHATSAPP
+ * acknowledgement channel — an EMAIL-channel applicant got nothing at all.
+ * Both registration forms require a phone number regardless of that
+ * preference, so the server now sends the same guaranteed notice over
+ * WhatsApp/SMS for every applicant; `verificationChannel` remains just a
+ * preference, not a gate on whether any notice is sent.
+ */
 export async function submitSignupRequest(
   input: SignupSubmission,
 ): Promise<{ ok: true; result: SignupResult } | { ok: false; error: string }> {
@@ -113,18 +125,30 @@ export async function submitSignupRequest(
   if (error) return { ok: false, error: humanizeSignupError(error.message) };
 
   const row = (data ?? {}) as Record<string, unknown>;
+  const requestId = typeof row.requestId === 'string' ? row.requestId : undefined;
+  const alreadySubmitted = Boolean(row.already_submitted);
+
+  let notification: NotificationStatusResolution | undefined;
+  if (requestId && !alreadySubmitted) {
+    const { delivery } = await invokeEdgeFunction('onboarding-notify', {
+      requestId,
+      kind: 'SUBMITTED',
+    });
+    notification = delivery;
+  }
+
   return {
     ok: true,
     result: {
       reference: (row.reference as string) ?? '',
+      requestId,
       status: (row.status as string) ?? 'PENDING',
-      alreadySubmitted: Boolean(row.already_submitted),
+      alreadySubmitted,
       autoApproved: Boolean(row.auto_approved || row.status === 'ONBOARDED'),
       side: (row.side as 'BUYER' | 'SUPPLIER') ?? input.side,
       email: (row.email as string) ?? input.email,
-      temporaryPassword:
-        typeof row.temporary_password === 'string' && row.temporary_password ? row.temporary_password : undefined,
       freeRfqCredits: typeof row.free_rfq_credits === 'number' ? row.free_rfq_credits : undefined,
+      notification,
     },
   };
 }
@@ -154,57 +178,50 @@ export function humanizeSignupError(message: string): string {
   if (/invalid input value for enum org_type/.test(message)) {
     return 'Choose the kind of organisation you are buying for.';
   }
+  // F-RUN2-VAL-01: submit_signup_request casts `side` to the signup_side
+  // enum before either registration form's own hardcoded 'BUYER'/'SUPPLIER'
+  // literal is normally what arrives here; a missing or malformed value
+  // (e.g. a direct RPC/API call that bypasses the UI) otherwise surfaces
+  // Postgres's raw "invalid input value for enum signup_side" message.
+  if (/invalid input value for enum signup_side/.test(message)) {
+    return 'Choose whether you are registering as a buyer or a supplier.';
+  }
   return message;
 }
 
 /**
  * Sends the one-time code using server-side OTP generation.
  *
- * Email works wherever the platform is deployed. WhatsApp is what this market
- * actually uses, and whether it is available depends on a messaging provider
- * being configured for the environment - so the caller is told plainly rather
- * than shown a code that will never arrive.
+ * D-21/A-30: neither the code nor the WhatsApp message it goes in is ever
+ * built here — otp-dispatch does both, and this function is told success or
+ * failure, never the code. Per product decision, this registration-time
+ * phone-verification pair stays unwired from the registration UI (no
+ * component calls this function), but the RPCs it depends on are fixed
+ * to the same standard as every other OTP family, since they are directly
+ * callable regardless of UI wiring.
  */
 export async function sendVerificationCode(
   channel: VerificationChannel,
   contact: { email: string; phone: string },
 ): Promise<
-  | { ok: true; sentTo: string; delivery: NotificationStatusResolution }
+  | { ok: true; delivery: NotificationStatusResolution }
   | { ok: false; error: string; delivery?: NotificationStatusResolution }
 > {
   if (channel === 'WHATSAPP') {
-    const cleanPhone = normalizePhone(contact.phone).replace(/\D/g, '');
-
-    const { data: rpcData, error: rpcError } = await supabase.rpc('request_profile_verification_otp', {
-      p_phone: cleanPhone,
+    const { result, delivery } = await invokeEdgeFunction('otp-dispatch', {
+      purpose: 'SIGNUP_VERIFY',
+      identifier: contact.phone,
     });
-    // No client-side or hard-coded fallback code: without a server-issued code there is nothing to verify.
-    if (rpcError || !rpcData?.ok || !rpcData?.otp_code) {
-      return {
-        ok: false,
-        error: 'We could not issue a verification code right now. Choose Email or try again shortly.',
-      };
-    }
 
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      sessionStorage.setItem(`otp_wa_resend_${cleanPhone}`, String(Date.now() + 60000));
-    }
-
-    const delivery = await dispatchWhatsAppText({
-      phone: cleanPhone,
-      text:
-        `[OTP Platform] Verification Code\n\n` +
-        `Your 6-digit verification code is: *${rpcData.otp_code}*\n\n` +
-        `Valid for 10 minutes. Enter this code on the registration page to proceed.`,
-    });
-    if (delivery.status === 'FAILED' || delivery.status === 'NOT_ATTEMPTED') {
+    if (!result.ok) {
       return {
         ok: false,
         delivery,
-        error: 'We could not send the code by WhatsApp. Choose Email and we will send your code there.',
+        error: result.error || 'We could not send the code by WhatsApp. Choose Email and we will send your code there.',
       };
     }
-    return { ok: true, sentTo: contact.phone, delivery };
+
+    return { ok: true, delivery };
   }
 
   const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
@@ -218,28 +235,11 @@ export async function sendVerificationCode(
 
   const delivery = resolveSupabaseEmailDispatch(error);
   if (error) return { ok: false, error: error.message, delivery };
-  return { ok: true, sentTo: contact.email, delivery };
+  return { ok: true, delivery };
 }
 
 /** Strictly sanitizes input string to 7-bit ASCII plain text. */
 export const sanitizeToAscii = sanitizeOutboundAscii;
-
-/**
- * Sends a WhatsApp notification via the WAHA gateway and reports the provider's
- * answer (ACCEPTED / SUBMITTED / FAILED...), never "delivered".
- */
-export async function sendWhatsAppNotification(
-  phone: string,
-  text: string,
-  options: { idempotencyKey?: string; timeoutMs?: number } = {},
-): Promise<NotificationStatusResolution> {
-  return dispatchWhatsAppText({
-    phone: normalizePhone(phone).replace(/\D/g, ''),
-    text,
-    idempotencyKey: options.idempotencyKey,
-    timeoutMs: options.timeoutMs,
-  });
-}
 
 /** E.164, assuming India when no country code was given. */
 export function normalizePhone(raw: string): string {
@@ -264,4 +264,3 @@ export function resolveBuyerRoleCode(buyerType: string, selectedRole?: string): 
   }
   return selectedRole || undefined;
 }
-
