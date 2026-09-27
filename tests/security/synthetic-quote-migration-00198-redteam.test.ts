@@ -28,9 +28,9 @@ function stripComments(s: string): string {
 }
 
 describe('Migration 00198 — synthetic quote & simulator isolation (static SQL contract)', () => {
-  it('sits at position 198 of the contiguous chain 00001..00201', () => {
+  it('sits at position 198 of the contiguous chain 00001..00202', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
-    expect(files.length).toBe(201);
+    expect(files.length).toBe(202);
     expect(files[197]).toBe(FILE);
     files.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));
   });

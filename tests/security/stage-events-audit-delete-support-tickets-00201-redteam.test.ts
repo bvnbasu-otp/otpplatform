@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 /**
  * Static contract tests for migration 00201. No database is available in this
  * environment, so the migration has never been executed; these tests pin the
- * SQL text and re-derive the effective RLS policy set from 00001..00201.
+ * SQL text and re-derive the effective RLS policy set from the whole chain.
  */
 
 const MIGRATIONS_DIR = resolve(__dirname, '../../supabase/migrations');
@@ -64,9 +64,9 @@ function sourceFiles(root: string): string[] {
 }
 
 describe('00201 migration file', () => {
-  it('is the highest migration and the chain is contiguous 00001..00201', () => {
-    expect(MIGRATION_FILES.length).toBe(201);
-    expect(MIGRATION_FILES[MIGRATION_FILES.length - 1]).toBe(FILE);
+  it('sits at position 201 of the contiguous chain 00001..00202', () => {
+    expect(MIGRATION_FILES.length).toBe(202);
+    expect(MIGRATION_FILES[200]).toBe(FILE);
     MIGRATION_FILES.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));
   });
 
@@ -248,7 +248,7 @@ describe('support_tickets', () => {
   });
 });
 
-describe('remaining always-true policies after 00201', () => {
+describe('remaining always-true policies after 00202', () => {
   it('SELECT/ALL USING (true) policies reaching API roles are only reference, config and ops-metadata tables', () => {
     const open = [...AFTER.values()]
       .filter((p) => ['SELECT', 'ALL'].includes(p.cmd) && reachesApiRoles(p) && /\bUSING\s*\(\s*\(?\s*true\s*\)?\s*\)/i.test(p.body))
@@ -274,21 +274,21 @@ describe('remaining always-true policies after 00201', () => {
     expect(open.map((p) => `${p.table}.${p.name}`)).toEqual([]);
   });
 
-  it('known residuals: scoped UPDATE policies with WITH CHECK (true), and always-true INSERT policies', () => {
+  it('no UPDATE policy reaching API roles has WITH CHECK (true) (invoices / work_orders closed by 00202)', () => {
     const withCheckTrue = [...AFTER.values()]
       .filter((p) => p.cmd === 'UPDATE' && reachesApiRoles(p) && /\bWITH\s+CHECK\s*\(\s*true\s*\)/i.test(p.body))
       .map((p) => `${p.table}.${p.name}`)
       .sort();
-    expect(withCheckTrue).toEqual(['invoices.invoices_update', 'work_orders.work_orders_update']);
+    expect(withCheckTrue).toEqual([]);
+  });
+
+  it('known residual always-true INSERT policies (audit_events / notifications / supplier_notifications closed by 00202)', () => {
     const insertTrue = [...AFTER.values()]
       .filter((p) => p.cmd === 'INSERT' && reachesApiRoles(p) && isAlwaysTrue(p))
       .map((p) => `${p.table}.${p.name} [${p.roles}]`)
       .sort();
     expect(insertTrue).toEqual([
-      'audit_events.audit_events_insert [anon, authenticated, service_role]',
-      'notifications.notifications_insert [authenticated, service_role]',
       'organizations.organizations_insert [authenticated]',
-      'supplier_notifications.supplier_notifications_insert [authenticated, service_role]',
       'support_tickets.Anyone can create support tickets [PUBLIC]',
     ]);
   });

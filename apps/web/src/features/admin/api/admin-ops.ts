@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { logClientAuditEvent } from '@/features/audit/api/log-client-audit-event';
 import type {
   AccountLifecycleStatus,
   AdminDataMode,
@@ -633,9 +634,10 @@ export async function purgeTransactionalData(confirmationToken: string = ''): Pr
 
     // Record structured audit event for this purge
     try {
-      await supabase.from('audit_events').insert({
-        event_type: 'admin.clean_production_reset',
-        entity_type: 'DATABASE_RESET',
+      await logClientAuditEvent({
+        eventType: 'admin.clean_production_reset',
+        entityType: 'DATABASE_RESET',
+        entityId: 'all_transactional_data',
         payload: {
           action: 'PURGE_ALL_TRANSACTIONAL_DATA',
           method: 'client_cascade_fallback',
@@ -1464,10 +1466,10 @@ export async function clearAuditLogsAndNotifications(
 
     // Log the purge event to audit_events
     try {
-      await supabase.from('audit_events').insert({
-        event_type: 'admin.audit_logs_purged',
-        entity_type: 'AUDIT_SYSTEM',
-        entity_id: `mode_${targetDemo ? 'demo' : 'prod'}`,
+      await logClientAuditEvent({
+        eventType: 'admin.audit_logs_purged',
+        entityType: 'AUDIT_SYSTEM',
+        entityId: `mode_${targetDemo ? 'demo' : 'prod'}`,
         payload: {
           action: 'CLEAR_AUDIT_LOGS_AND_NOTIFICATIONS',
           mode_cleared: mode === 'ALL' ? 'ALL' : targetDemo ? 'DEMO' : 'PROD',
@@ -1475,7 +1477,7 @@ export async function clearAuditLogsAndNotifications(
           method: 'client_fallback',
           timestamp: new Date().toISOString(),
         },
-        is_demo: targetDemo,
+        isDemo: targetDemo,
       });
     } catch {
       // ignore

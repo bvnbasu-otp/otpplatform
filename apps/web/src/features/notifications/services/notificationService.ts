@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { logClientAuditEvent } from '@/features/audit/api/log-client-audit-event';
 import type { AppNotification } from '../types';
 
 export const notificationService = {
@@ -369,10 +370,10 @@ export const notificationService = {
 
         // Write audit log entry
         try {
-          await supabase.from('audit_events').insert({
-            event_type: 'admin.notifications_purged',
-            entity_type: 'NOTIFICATION_SYSTEM',
-            entity_id: `mode_${targetDemo ? 'demo' : 'prod'}`,
+          await logClientAuditEvent({
+            eventType: 'admin.notifications_purged',
+            entityType: 'NOTIFICATION_SYSTEM',
+            entityId: `mode_${targetDemo ? 'demo' : 'prod'}`,
             payload: {
               action: 'CLEAR_NOTIFICATIONS',
               mode_cleared: mode === 'ALL' ? 'ALL' : targetDemo ? 'DEMO' : 'PROD',
@@ -380,7 +381,7 @@ export const notificationService = {
               method: 'client_fallback',
               timestamp: new Date().toISOString(),
             },
-            is_demo: targetDemo,
+            isDemo: targetDemo,
           });
         } catch {
           // ignore

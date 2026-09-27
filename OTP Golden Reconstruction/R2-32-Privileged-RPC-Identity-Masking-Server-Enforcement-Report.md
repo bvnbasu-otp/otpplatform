@@ -352,3 +352,101 @@ T201 pins that no UPDATE or DELETE policy reaching API roles is `USING (true)` a
 **Open after 00201:** R3–R7 as in I.2 (R7: nothing has been executed against Postgres, for 00199, 00200 or 00201), the future `rfqs` column grants, and new residuals R9–R11 above.
 
 Single local commit on top of `4db44c4`, with no push and no deploy. Live-DB execution: **none**.
+
+## K. Follow-up: migration 00202 (R10 and R11)
+
+Product Owner decision, 27 Sep 2026. Built on top of `c23d6fc41bec4ad8ae768e892174fde8a4ef4208`. New migration: `00202_scope_invoice_work_order_updates_and_close_client_audit_notification_inserts.sql` (266 lines, single `BEGIN … COMMIT`).
+
+**Migration 00202 has never been executed.** There is still no local database. Its claims are proven only by static tests:
+- **T202** = `tests/security/invoice-work-order-linkage-and-client-inserts-00202-redteam.test.ts` (19 tests). It re-derives the effective policy set from 00001–00202 and scans the latest definition of every SQL function, plus all client, package and edge source.
+- App-level tests for the changed client call sites: `features/audit/client-audit-rpc.test.ts` (3), `features/admin/client-audit-writers.test.ts` (4) and `features/notifications/notification-purge-audit.test.ts` (2).
+
+**Baseline:** HEAD `c23d6fc`, clean tree, 201 migrations. **After:** 202 migrations, contiguous 00001–00202.
+
+Ceiling references moved to 202:
+- `clean-start-reset.ts` and its test;
+- `scripts/otp-promote-certified.ps1`;
+- the 00198–00201 tests, each checking its own position in a 202-file chain.
+
+The T201 always-true pin now expects no `WITH CHECK (true)` UPDATE policy, and only `organizations_insert` and the public support-ticket insert among always-true INSERT policies.
+
+### K.1 R10: every update path of `invoices` / `work_orders`
+
+| Path | Columns written | Effect of 00202 |
+|---|---|---|
+| `invoices.ts:412` approve, `:427` reject | status, approved_at | Unchanged: the row stays within the same parties |
+| `payments.ts:393`, `:748` (test-fallback allocation sync) | paid_amount, balance_due, status, updated_at | Unchanged. The 00199/00200 `enforce_invoice_tds_balance` still recomputes. |
+| `payments.ts:522`, `purchase-orders.ts:514` (settlement sync) | status, balance_due, updated_at | Unchanged |
+| `payments.ts:530`, `:535` | work_orders.status, completed_at | Unchanged. The 00199 milestone trigger still decides whether COMPLETED is allowed. |
+| `work-orders.ts:228` milestone progress | progress_percent, status, updated_at | Unchanged |
+| SQL (all SECURITY DEFINER; latest definitions): `accept_delivery_inspection`, `admin_fix_buyer_issue`, `admin_force_transition_order_state`, `admin_retry_invoice_payment_webhook`, `admin_simulate_po_acceptance`, `apply_tds_withholding_atomic`, `record_verified_payment`, `reverse_payment_allocation_atomic`, `sync_invoice_payment_state`, `touch_invoice_after_tds_change`, `simulate_pilot_supplier_fulfillment` | status / financial / timestamp / rating fields only | Unchanged. T202 parses every `UPDATE invoices|work_orders … SET` and asserts that none sets a linkage column. |
+| `validate_invoice_allocation_integrity` (00171, BEFORE trigger) | Derives `NEW.purchase_order_id` from the work order when NULL | Allowed: the guard permits exactly NULL → the work order's own PO, and fires first (`trg_aa_…`) |
+| FK `invoices.milestone_id ON DELETE SET NULL` | milestone_id → NULL | Allowed: the cascade runs as a nested trigger (`pg_trigger_depth() > 1`) |
+| Edge functions | none update either table | — |
+
+**Fix:**
+- `work_orders_update` (:52-73) and `invoices_update` (:80-101) now have WITH CHECK identical to USING. T202 compares the parsed clauses and checks that USING is unchanged from 00004.
+- `private.guard_invoice_linkage` (:107-143) rejects changes to work_order_id, supplier_id, purchase_order_id (except the derivation above), milestone_id and is_demo. `private.guard_work_order_linkage` (:145-171) rejects changes to purchase_order_id, supplier_id and is_demo.
+- The guards let through only service_role, sessions with no JWT (migrations and direct DB) and nested triggers. **Platform-admin JWTs are not exempt**, per the "non-service_role callers" instruction; no admin UI changes these columns.
+- Both guards are SECURITY DEFINER, revoked from API roles, and named to fire before every other BEFORE UPDATE trigger on their table.
+- Neither table has `organization_id` or `rfq_id`: ownership derives through `purchase_orders`.
+
+### K.2 R11: every writer of `audit_events` / `notifications` / `supplier_notifications`
+
+| Writer | Kind | Old path | New path |
+|---|---|---|---|
+| `admin-telemetry.ts:36` `emitAdminTelemetryEvent` (e.g. `AdminBuyerTroubleshooter` tenant switch) | Client | Direct insert with a client-supplied `actor_id` (the auth user id, not the profile id) | `logClientAuditEvent` → `log_client_audit_event`; the server sets the actor |
+| `admin-ops.ts` `purgeTransactionalData` fallback | Client | Direct insert, omitting NOT NULL `entity_id`, so it always failed silently | RPC with `entity_id = 'all_transactional_data'` |
+| `admin-ops.ts` `clearAuditLogsAndNotifications` fallback | Client | Direct insert | RPC (mode carried in `p_is_demo`) |
+| `notificationService.ts` `clearAllNotifications` fleet fallback | Client | Direct insert | RPC |
+| notifications / supplier_notifications | Client | **No client inserts exist** | — |
+| `messaging-outbound` edge function | Edge | Reads `supplier_notifications` with a service_role client | Unaffected |
+| 93 SQL functions (for example `create_system_notification`, `notify_*` triggers, `admin_clear_*`, audit triggers) | SQL | All SECURITY DEFINER; they run as the owner and bypass RLS | Unaffected. T202 asserts that every writer's latest definition is DEFINER. |
+
+**Fix:**
+- The three INSERT policies are dropped with no replacement, and INSERT is revoked from PUBLIC, anon and authenticated (:174-190). service_role bypasses RLS.
+- `public.log_client_audit_event(p_event_type, p_entity_type, p_entity_id, p_payload, p_organization_id, p_is_demo)` (:196-264):
+  - requires a session and a platform admin;
+  - accepts only `admin.[a-z0-9_.]` event types;
+  - allow-lists 11 entity types;
+  - requires an entity id;
+  - requires the payload to be a JSON object under 16 KB;
+  - checks org membership when `organization_id` is given;
+  - sets `actor_id := private.get_profile_id()` (there is no actor parameter);
+  - stamps `payload.source = 'client_rpc'`;
+  - is granted to authenticated only.
+- audit_events stays append-only (PA-10): the effective policies are {SELECT, DELETE admin-only}, and the 00134 no-update / no-delete triggers are untouched.
+
+**Writers that could not be migrated:** none. The RPC accepts only platform-admin `admin.*` events because every current client writer is a platform-admin tool; a non-admin client audit need would require widening it deliberately.
+
+### K.3 Security implications and rollback
+
+**What changes:**
+- Anon and signed-in users can no longer insert audit rows, forge `actor_id`, or create notifications for anyone.
+- Invoice and work order updates can no longer move a row to another supplier, work order, PO or milestone, or flip its demo flag.
+- All legitimate paths listed above keep working (asserted statically, not executed).
+
+**Rollback:** re-create the 00004 update policies and the 00134 insert policies, re-grant INSERT, and drop the two `trg_aa_guard_*` triggers. That would re-open R10 and R11, so it is not recommended.
+
+### K.4 Gate results (run from the repo root after all edits)
+
+| Gate | Result |
+|---|---|
+| Typecheck | domain, database, services and web PASSED |
+| Vocabulary | PASSED: 456 files, 0 violations |
+| Coverage policy `--strict` | PASSED: UNIT 81, MODULE 199, FUNCTIONAL 49, REGRESSION 4; 333 test files |
+| Vitest root | 323 files passed (323); 3574 passed, 371 skipped (3945) |
+| Vitest domain | 61 files; 773 passed |
+| Vitest services | 40 files; 559 passed |
+| Vitest database | 2 files; 5 passed |
+| Vitest web (`--config apps/web/vitest.config.ts`) | 166 files; 1644 passed |
+| Build | built in 36.43s, exit 0 |
+
+**Open after 00202:**
+- R3–R6 as in I.2.
+- R7: nothing has been executed against Postgres, for 00199–00202.
+- The future `rfqs` column grants.
+- R9: anon-readable ops metadata.
+- `organizations_insert` and the public support-ticket insert, by design.
+
+Single local commit on top of `c23d6fc`, with no push and no deploy. Live-DB execution: **none**.

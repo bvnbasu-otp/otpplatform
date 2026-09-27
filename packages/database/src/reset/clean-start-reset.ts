@@ -5,7 +5,7 @@
  * Implements authoritative table classification and cascading transactional purge:
  * 1. STRUCTURE & PRESERVED TABLES: Master taxonomy, Chart of Accounts, system settings, migrations
  * 2. TRANSACTIONAL & RESET TABLES: RFQs, quotes, orders, invoices, payments, journal lines, disputes
- * 3. ZERO-DATA PURITY INVARIANT: Guarantees 0 active test transactions while leaving all 201 migrations,
+ * 3. ZERO-DATA PURITY INVARIANT: Guarantees 0 active test transactions while leaving all 202 migrations,
  *    RLS policies, DB functions, and canonical master data 100% intact.
  */
 
@@ -205,9 +205,9 @@ export function validatePostResetIntegrity(metrics: {
     );
   }
 
-  if (metrics.preservedMigrationsCount !== 201) {
+  if (metrics.preservedMigrationsCount !== 202) {
     errors.push(
-      `Migration Integrity Violation: Expected exactly 201 preserved schema migrations, found ${metrics.preservedMigrationsCount}.`,
+      `Migration Integrity Violation: Expected exactly 202 preserved schema migrations, found ${metrics.preservedMigrationsCount}.`,
     );
   }
 
@@ -232,8 +232,8 @@ export function validatePostResetIntegrity(metrics: {
       CANONICAL_DATABASE_TABLE_INVENTORY.configurationAndPolicies.length,
     resetTableCount: CANONICAL_DATABASE_TABLE_INVENTORY.transactionalAndReset.length,
     activeTransactionsCount: metrics.transactionalRecordCount,
-    migrationCeilingPreserved: metrics.preservedMigrationsCount === 201,
-    expectedMigrations: 201,
+    migrationCeilingPreserved: metrics.preservedMigrationsCount === 202,
+    expectedMigrations: 202,
     errors,
   };
 }

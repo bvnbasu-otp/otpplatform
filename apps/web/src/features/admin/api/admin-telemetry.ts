@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { logClientAuditEvent } from '@/features/audit/api/log-client-audit-event';
 
 export interface AdminTelemetryEventInput {
   eventType: string;
@@ -30,14 +31,10 @@ export async function emitAdminTelemetryEvent(input: AdminTelemetryEventInput): 
   error?: string;
 }> {
   try {
-    const { data: userResp } = await supabase.auth.getUser();
-    const actorId = userResp?.user?.id || null;
-
-    const { error } = await supabase.from('audit_events').insert({
-      event_type: input.eventType,
-      entity_type: input.entityType,
-      entity_id: input.entityId,
-      actor_id: actorId,
+    const result = await logClientAuditEvent({
+      eventType: input.eventType,
+      entityType: input.entityType,
+      entityId: input.entityId,
       payload: {
         action: input.action,
         from_state: input.fromState,
@@ -48,9 +45,9 @@ export async function emitAdminTelemetryEvent(input: AdminTelemetryEventInput): 
       },
     });
 
-    if (error) {
-      console.warn('Telemetry event failed to persist to audit_events:', error.message);
-      return { ok: false, error: error.message };
+    if (!result.ok) {
+      console.warn('Telemetry event failed to persist to audit_events:', result.error);
+      return { ok: false, error: result.error };
     }
 
     return { ok: true };
