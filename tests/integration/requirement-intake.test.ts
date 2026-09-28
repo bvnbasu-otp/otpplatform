@@ -9,7 +9,7 @@
  *
  * Requires a local Supabase seeded with `pnpm db:reset`. Skips otherwise.
  */
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   createAnonClient,
   createServiceClient,
@@ -17,12 +17,26 @@ import {
   signInAs,
 } from '../helpers/supabase-local';
 import { DEMO } from '../helpers/demo-fixtures';
+import { ISOLATED_ORGS, useIsolatedBuyerOrg } from '../helpers/isolated-buyer-org';
 
 let up = false;
 const created: string[] = [];
+const ORG = ISOLATED_ORGS.requirementIntake;
+let releaseOrg: (() => Promise<void>) | undefined;
 
 beforeAll(async () => {
   up = await isLocalSupabaseReachable();
+  if (!up) return;
+  ({ release: releaseOrg } = await useIsolatedBuyerOrg(
+    createServiceClient(),
+    ORG,
+    'Requirement intake test society',
+    DEMO.logins.sunriseManager,
+  ));
+});
+
+afterAll(async () => {
+  await releaseOrg?.();
 });
 
 beforeEach((ctx) => {
@@ -70,7 +84,7 @@ async function createDraft(
   const { data, error } = await client
     .from('requirements')
     .insert({
-      organization_id: DEMO.orgs.sunrise,
+      organization_id: ORG,
       created_by: await profileId(client),
       requirement_type: 'SERVICE',
       status: 'DRAFT',
@@ -278,6 +292,38 @@ describe('publishing a requirement', () => {
   });
 });
 
+describe('the pilot RFQ allowance', () => {
+  it('publishes three RFQs in a month and refuses the fourth, leaving it a draft', async () => {
+    const client = await buyerSession();
+
+    for (let i = 0; i < 3; i += 1) {
+      const draft = await createDraft(client);
+      const { error } = await client.rpc('publish_requirement', { p_requirement_id: draft.id });
+      expect(error).toBeNull();
+    }
+
+    const fourth = await createDraft(client);
+    const { error } = await client.rpc('publish_requirement', { p_requirement_id: fourth.id });
+
+    expect(error?.code).toBe('P0001');
+    expect(error?.hint).toBe('PILOT_ALLOWANCE_EXHAUSTED');
+
+    const service = createServiceClient();
+    const { data: requirement } = await service
+      .from('requirements')
+      .select('status, published_at')
+      .eq('id', fourth.id)
+      .single();
+    expect(requirement).toEqual({ status: 'DRAFT', published_at: null });
+
+    const { count } = await service
+      .from('rfqs')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', ORG);
+    expect(count).toBe(3);
+  });
+});
+
 describe('rfq visibility for the organization that owns it', () => {
   it('returns the inserted row to the buyer who created it', async () => {
     const client = await buyerSession();
@@ -290,7 +336,7 @@ describe('rfq visibility for the organization that owns it', () => {
       .from('rfqs')
       .insert({
         requirement_id: draft.id,
-        organization_id: DEMO.orgs.sunrise,
+        organization_id: ORG,
         status: 'DRAFT',
         reveal_status: 'BLIND',
         title: 'RFQ: returning check',

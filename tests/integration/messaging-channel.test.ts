@@ -419,12 +419,15 @@ describe('messages the gateway must refuse', () => {
   });
 
   it('refuses a bid after the deadline', async () => {
+    const { data: original } = await service
+      .from('rfqs').select('quote_deadline').eq('id', RFQ_ID).single();
+
     await setRfq({ quote_deadline: new Date(Date.now() - 60_000).toISOString() });
     try {
       const result = await inbound({ from: bidders[0]!, amount: 8000 });
       expect(result.outcome).toBe('DEADLINE_PASSED');
     } finally {
-      await setRfq({ quote_deadline: null });
+      await setRfq({ quote_deadline: original!.quote_deadline });
     }
   });
 });
@@ -645,6 +648,8 @@ describe('finishing the quote from the link', () => {
     // enquiry is still taking bids.
     const bidder = bidders[0]!;
     const session = await redeem(await issueLink(bidder.supplierId));
+    const { data: original } = await service
+      .from('rfqs').select('quote_deadline').eq('id', RFQ_ID).single();
 
     await setRfq({ quote_deadline: new Date(Date.now() - 60_000).toISOString() });
     try {
@@ -654,7 +659,7 @@ describe('finishing the quote from the link', () => {
       });
       expect(result.outcome).toBe('DEADLINE_PASSED');
     } finally {
-      await setRfq({ quote_deadline: null });
+      await setRfq({ quote_deadline: original!.quote_deadline });
     }
   });
 

@@ -16,7 +16,7 @@
  *
  * Requires a local Supabase seeded with `pnpm db:reset`. Skips otherwise.
  */
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   createAnonClient,
   createServiceClient,
@@ -24,12 +24,26 @@ import {
   signInAs,
 } from '../helpers/supabase-local';
 import { DEMO } from '../helpers/demo-fixtures';
+import { ISOLATED_ORGS, useIsolatedBuyerOrg } from '../helpers/isolated-buyer-org';
 
 let up = false;
 const created: string[] = [];
+const ORG = ISOLATED_ORGS.marketIntelligenceIntake;
+let releaseOrg: (() => Promise<void>) | undefined;
 
 beforeAll(async () => {
   up = await isLocalSupabaseReachable();
+  if (!up) return;
+  ({ release: releaseOrg } = await useIsolatedBuyerOrg(
+    createServiceClient(),
+    ORG,
+    'Market intelligence test society',
+    DEMO.logins.sunriseManager,
+  ));
+});
+
+afterAll(async () => {
+  await releaseOrg?.();
 });
 
 beforeEach((ctx) => {
@@ -79,7 +93,7 @@ async function createDraft(
   const { data, error } = await client
     .from('requirements')
     .insert({
-      organization_id: DEMO.orgs.sunrise,
+      organization_id: ORG,
       created_by: await profileId(client),
       requirement_type: 'SERVICE',
       status: 'DRAFT',
@@ -225,7 +239,7 @@ describe('publish_requirement snapshot', () => {
     const { data: draft, error: insErr } = await client
       .from('requirements')
       .insert({
-        organization_id: DEMO.orgs.sunrise,
+        organization_id: ORG,
         created_by: await profileId(client),
         requirement_type: 'SERVICE',
         status: 'DRAFT',

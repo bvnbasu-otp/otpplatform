@@ -17,6 +17,7 @@
  * reachable.
  */
 
+import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -40,7 +41,14 @@ async function callInvite(
   kind: 'PHONE' | 'EMAIL',
   value: string,
 ): Promise<{
-  data: { ok?: boolean; reused?: boolean; supplierId?: string; invitationId?: string } | null;
+  data: {
+    ok?: boolean;
+    reused?: boolean;
+    supplierId?: string;
+    invitationId?: string;
+    token?: string;
+    quickQuotePath?: string;
+  } | null;
   error: { message: string } | null;
 }> {
   const { data, error } = await client.rpc('invite_direct_supplier', {
@@ -289,6 +297,222 @@ describe('invite_direct_supplier', () => {
       expect(error.message).toMatch(/permission|policy|denied/i);
     } else {
       expect(data ?? []).toEqual([]);
+    }
+  });
+});
+
+/**
+ * 00213. The quick-quote link issued with every invitation records which
+ * messaging channel it belongs to. messaging_channel is the SMS/WhatsApp layer
+ * and has no email transport, so an EMAIL invitation must issue a link that is
+ * not bound to a messaging channel rather than fail on the enum cast.
+ */
+describe('invite_direct_supplier quick-quote link by contact kind', () => {
+  beforeEach((ctx) => {
+    if (!up) ctx.skip();
+  });
+
+  async function linksFor(supplierId: string) {
+    const { data } = await service
+      .from('supplier_magic_links')
+      .select('token_hash, channel, expires_at, created_at, used_at')
+      .eq('supplier_id', supplierId)
+      .eq('rfq_id', RFQ_ID)
+      .order('created_at');
+    return data ?? [];
+  }
+
+  async function auditFor(supplierId: string) {
+    const { data } = await service
+      .from('audit_events')
+      .select('payload')
+      .eq('event_type', 'rfq.direct_invitation_created')
+      .eq('entity_id', RFQ_ID)
+      .eq('payload->>supplier_id', supplierId);
+    return (data ?? []).map((e) => e.payload as Record<string, unknown>);
+  }
+
+  const sha256 = (token: string) => createHash('sha256').update(token).digest('hex');
+  const DAY_MS = 86_400_000;
+
+  it('invites by EMAIL and issues a 7-day single-use link bound to no messaging channel', async () => {
+    const buyer = createAnonClient();
+    await signInAs(buyer, DEMO.logins.sunriseManager);
+
+    const email = uniqueEmail();
+    const { data, error } = await callInvite(buyer, 'EMAIL', email);
+
+    expect(error).toBeNull();
+    expect(data?.ok).toBe(true);
+    expect(data?.reused).toBe(false);
+    if (data?.supplierId) createdInvites.push(data.supplierId);
+
+    const { data: supplier } = await service
+      .from('suppliers')
+      .select('source, status, contact_email, contact_phone')
+      .eq('id', data!.supplierId!)
+      .single();
+    expect(supplier).toEqual({
+      source: 'DIRECT',
+      status: 'PENDING',
+      contact_email: email,
+      contact_phone: null,
+    });
+
+    const { data: invitation } = await service
+      .from('rfq_invitations')
+      .select('match_reasons, status')
+      .eq('id', data!.invitationId!)
+      .single();
+    expect(invitation?.status).toBe('INVITED');
+    expect(invitation?.match_reasons).toContain('direct:email');
+
+    const links = await linksFor(data!.supplierId!);
+    expect(links).toHaveLength(1);
+    expect(links[0].channel).toBeNull();
+    expect(links[0].used_at).toBeNull();
+    // Only the hash is stored; the plaintext exists only in the response.
+    expect(links[0].token_hash).toBe(sha256(data!.token!));
+    expect(data?.quickQuotePath).toBe(`/q/${data!.token}`);
+    const lifetime = Date.parse(links[0].expires_at) - Date.parse(links[0].created_at);
+    expect(lifetime).toBeGreaterThan(7 * DAY_MS - 60_000);
+    expect(lifetime).toBeLessThanOrEqual(7 * DAY_MS);
+  });
+
+  it('still binds a PHONE invitation link to WhatsApp', async () => {
+    const buyer = createAnonClient();
+    await signInAs(buyer, DEMO.logins.sunriseManager);
+
+    const { data, error } = await callInvite(buyer, 'PHONE', uniquePhone());
+    expect(error).toBeNull();
+    expect(data?.reused).toBe(false);
+    if (data?.supplierId) createdInvites.push(data.supplierId);
+
+    const links = await linksFor(data!.supplierId!);
+    expect(links.map((l) => l.channel)).toEqual(['WHATSAPP']);
+    expect(links[0].token_hash).toBe(sha256(data!.token!));
+  });
+
+  it('does not treat a messaging channel name as a contact kind', async () => {
+    const buyer = createAnonClient();
+    await signInAs(buyer, DEMO.logins.sunriseManager);
+
+    for (const kind of ['SMS', 'WHATSAPP']) {
+      const { error } = await callInvite(buyer, kind as unknown as 'PHONE', uniquePhone());
+      expect(error?.message).toMatch(/PHONE or EMAIL/i);
+    }
+  });
+
+  it('keeps one invitation per email while each call reports reused', async () => {
+    const buyer = createAnonClient();
+    await signInAs(buyer, DEMO.logins.sunriseManager);
+
+    const email = uniqueEmail();
+    const first = await callInvite(buyer, 'EMAIL', email);
+    expect(first.error).toBeNull();
+    if (first.data?.supplierId) createdInvites.push(first.data.supplierId);
+    const second = await callInvite(buyer, 'EMAIL', email.toUpperCase());
+
+    expect(second.error).toBeNull();
+    expect(second.data?.reused).toBe(true);
+    expect(second.data?.invitationId).toBe(first.data?.invitationId);
+
+    const { count: invitations } = await service
+      .from('rfq_invitations')
+      .select('id', { count: 'exact', head: true })
+      .eq('rfq_id', RFQ_ID)
+      .eq('supplier_id', first.data!.supplierId!);
+    expect(invitations).toBe(1);
+
+    const { count: directRows } = await service
+      .from('direct_supplier_invites')
+      .select('id', { count: 'exact', head: true })
+      .eq('rfq_id', RFQ_ID)
+      .eq('contact_kind', 'EMAIL')
+      .eq('contact_value', email);
+    expect(directRows).toBe(1);
+
+    const links = await linksFor(first.data!.supplierId!);
+    expect(links.every((l) => l.channel === null)).toBe(true);
+  });
+
+  it('audits the email invitation with the contact masked', async () => {
+    const buyer = createAnonClient();
+    await signInAs(buyer, DEMO.logins.sunriseManager);
+
+    const email = uniqueEmail();
+    const { data } = await callInvite(buyer, 'EMAIL', email);
+    if (data?.supplierId) createdInvites.push(data.supplierId);
+
+    const events = await auditFor(data!.supplierId!);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      contact_kind: 'EMAIL',
+      invitation_id: data!.invitationId,
+      magic_link_issued: true,
+      contact_value_masked: `d***@invite.test`,
+    });
+    expect(JSON.stringify(events[0])).not.toContain(email);
+    expect(JSON.stringify(events[0])).not.toContain(data!.token!);
+  });
+
+  it('audits the phone invitation with all but the last four digits masked', async () => {
+    const buyer = createAnonClient();
+    await signInAs(buyer, DEMO.logins.sunriseManager);
+
+    const phone = uniquePhone();
+    const { data } = await callInvite(buyer, 'PHONE', phone);
+    if (data?.supplierId) createdInvites.push(data.supplierId);
+
+    const events = await auditFor(data!.supplierId!);
+    expect(events).toHaveLength(1);
+    expect(events[0].contact_value_masked).toBe(
+      '*'.repeat(phone.length - 4) + phone.slice(-4),
+    );
+  });
+
+  it('refuses an EMAIL invitation from another organization and from a committee member', async () => {
+    const outsider = createAnonClient();
+    await signInAs(outsider, DEMO.logins.bharathiOwner);
+    const denied = await callInvite(outsider, 'EMAIL', uniqueEmail());
+    expect(denied.error?.message).toMatch(/access denied/i);
+
+    const committee = createAnonClient();
+    await signInAs(committee, DEMO.logins.sunriseCommittee);
+    const underRole = await callInvite(committee, 'EMAIL', uniqueEmail());
+    expect(underRole.error?.message).toMatch(/insufficient role/i);
+
+    const anon = createAnonClient();
+    const noSession = await callInvite(anon, 'EMAIL', uniqueEmail());
+    expect(noSession.error).not.toBeNull();
+    expect(noSession.data).toBeNull();
+  });
+
+  it('refuses a malformed email without creating a supplier', async () => {
+    const buyer = createAnonClient();
+    await signInAs(buyer, DEMO.logins.sunriseManager);
+
+    const bad = `no-at-sign-${stamp()}.invite.test`;
+    const { error } = await callInvite(buyer, 'EMAIL', bad);
+    expect(error?.message).toMatch(/valid email/i);
+
+    const { count } = await service
+      .from('suppliers')
+      .select('id', { count: 'exact', head: true })
+      .eq('source_ref', `EMAIL:${bad}`);
+    expect(count).toBe(0);
+  });
+
+  it('refuses an EMAIL invitation once the RFQ leaves DRAFT or OPEN', async () => {
+    const buyer = createAnonClient();
+    await signInAs(buyer, DEMO.logins.sunriseManager);
+
+    await service.from('rfqs').update({ status: 'EVALUATING' }).eq('id', RFQ_ID);
+    try {
+      const { error } = await callInvite(buyer, 'EMAIL', uniqueEmail());
+      expect(error?.message).toMatch(/DRAFT or OPEN/i);
+    } finally {
+      await service.from('rfqs').update({ status: 'DRAFT' }).eq('id', RFQ_ID);
     }
   });
 });

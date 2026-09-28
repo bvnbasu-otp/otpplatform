@@ -381,18 +381,63 @@ describe('the role a person picked while registering', () => {
 
     expect(error).toBeNull();
     expect((data as any).reference).toMatch(/^REG-/);
+    // 00212: every buyer type is provisioned at once, but the login is only
+    // usable after the activation code sent to the phone is redeemed.
+    expect((data as any).activation_required).toBe(true);
 
     const { data: row } = await service
       .from('signup_requests')
-      .select('role_code, status')
+      .select('role_code, status, organization_id, reviewed_by')
       .eq('email', email)
       .single();
 
-    expect(row!.role_code).toBe('FINANCE_APPROVER');
-    // Still only a request. Nothing about choosing a role advances verification.
-    expect(row!.status).toBe('PENDING');
+    const { data: profile } = await service
+      .from('profiles')
+      .select('id, is_platform_admin')
+      .eq('email', email)
+      .single();
 
-    await service.from('signup_requests').delete().eq('email', email);
+    try {
+      expect(row!.role_code).toBe('FINANCE_APPROVER');
+      // Account provisioning is not verification: the account exists, nobody
+      // reviewed it, and nothing about choosing a role advances verification.
+      expect(row!.status).toBe('ONBOARDED');
+      expect(row!.reviewed_by).toBeNull();
+      expect(profile!.is_platform_admin).toBe(false);
+
+      const { data: memberships } = await service
+        .from('organization_members')
+        .select('organization_id, role')
+        .eq('profile_id', profile!.id);
+      // Only the organization created for this registration, never an existing one.
+      expect(memberships).toEqual([{ organization_id: row!.organization_id, role: 'OWNER' }]);
+
+      const { data: org } = await service
+        .from('organizations')
+        .select('gst_verified, is_demo')
+        .eq('id', row!.organization_id)
+        .single();
+      expect(org).toEqual({ gst_verified: false, is_demo: false });
+
+      const { data: roles } = await service
+        .from('profile_roles')
+        .select('role_code, assigned_by')
+        .eq('profile_id', profile!.id);
+      // The self-declared title and nothing wider; no admin assigned it.
+      expect(roles).toEqual([{ role_code: 'FINANCE_APPROVER', assigned_by: null }]);
+
+      const { count: supplierLinks } = await service
+        .from('supplier_users')
+        .select('profile_id', { count: 'exact', head: true })
+        .eq('profile_id', profile!.id);
+      expect(supplierLinks).toBe(0);
+    } finally {
+      // The unactivated login and its profile stay: a profile DELETE is
+      // swallowed by trg_enforce_superadmin_immutability, so removing the auth
+      // user would orphan the profile instead of removing it.
+      await service.from('signup_requests').delete().eq('email', email);
+      if (row?.organization_id) await service.from('organizations').delete().eq('id', row.organization_id);
+    }
   });
 
   it('drops a role belonging to the other side rather than losing the registration', async () => {

@@ -255,11 +255,14 @@ export function DirectInviteModal({
               <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-snug">
                 {createdInvite.reused
                   ? 'This vendor was previously invited to this RFQ under an identity-protected alias.'
-                  : 'Invitation registered in database. Direct single-use quotation link is generated below.'}
+                  : createdInvite.quickQuoteUrl
+                    ? 'Invitation registered in database. Direct single-use quotation link is generated below.'
+                    : 'Invitation registered in database.'}
               </p>
             </div>
 
             {/* Truthful gateway notice & Link sharing */}
+            {createdInvite.quickQuoteUrl ? (
             <div className="rounded-xl border bg-muted/20 p-3 space-y-2 text-xs">
               <div className="flex items-center justify-between text-[11px] text-muted-foreground font-semibold">
                 <span>Direct Quotation Link:</span>
@@ -299,6 +302,14 @@ export function DirectInviteModal({
                 </div>
               )}
             </div>
+            ) : (
+              <p
+                className="rounded-xl border bg-muted/20 p-3 text-[11px] text-muted-foreground leading-snug"
+                data-testid="direct-invite-no-share-link"
+              >
+                No share link is issued for this contact. OTP notifies the supplier through its own channels.
+              </p>
+            )}
 
             <div className="flex justify-end pt-1">
               <button

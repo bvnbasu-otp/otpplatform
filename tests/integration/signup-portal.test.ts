@@ -254,9 +254,13 @@ describe('the form is not a lead list', () => {
     const second = await anon.rpc('submit_signup_request', { p_request: BUYER(email) });
 
     // Same reference back, no error, nothing about what else is in the table.
+    // D-26 (00207, kept by 00209/00212): a repeat is indistinguishable from a
+    // first submission, so there is no flag, status or key that differs.
+    expect(first.error).toBeNull();
     expect(second.error).toBeNull();
     expect(second.data.reference).toBe(first.data.reference);
-    expect(second.data.already_submitted).toBe(true);
+    expect(second.data.already_submitted).toBe(false);
+    expect(second.data).toEqual(first.data);
 
     const { count } = await createServiceClient()
       .from('signup_requests')

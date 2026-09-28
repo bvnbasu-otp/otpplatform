@@ -8,7 +8,7 @@
  *
  * Requires a local Supabase seeded with `pnpm db:reset`. Skips otherwise.
  */
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   createAnonClient,
   createServiceClient,
@@ -16,15 +16,31 @@ import {
   signInAs,
 } from '../helpers/supabase-local';
 import { DEMO, findBlindLeaks } from '../helpers/demo-fixtures';
+import { ISOLATED_ORGS, useIsolatedBuyerOrg } from '../helpers/isolated-buyer-org';
 
 type Client = ReturnType<typeof createAnonClient>;
 
 let up = false;
 const createdRequirements: string[] = [];
 const createdAttachments: string[] = [];
+// Requirements this file publishes live here; the seeded motor RFQ, which
+// already has invited suppliers, stays in Sunrise for the visibility tests.
+const ORG = ISOLATED_ORGS.attachments;
+let releaseOrg: (() => Promise<void>) | undefined;
 
 beforeAll(async () => {
   up = await isLocalSupabaseReachable();
+  if (!up) return;
+  ({ release: releaseOrg } = await useIsolatedBuyerOrg(
+    createServiceClient(),
+    ORG,
+    'Attachments test society',
+    DEMO.logins.sunriseManager,
+  ));
+});
+
+afterAll(async () => {
+  await releaseOrg?.();
 });
 
 beforeEach((ctx) => {
@@ -100,7 +116,7 @@ async function publishedRequirement(client: Client) {
   const { data: draft, error } = await client
     .from('requirements')
     .insert({
-      organization_id: DEMO.orgs.sunrise,
+      organization_id: ORG,
       created_by: await profileId(client),
       requirement_type: 'SERVICE',
       status: 'DRAFT',

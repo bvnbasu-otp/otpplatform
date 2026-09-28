@@ -352,6 +352,30 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
       }
     });
 
+    it('returns no share link when the RPC withholds the token for an existing supplier', async () => {
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: {
+          ok: true,
+          reused: false,
+          invitationId: null,
+          supplierId: null,
+          token: null,
+          quickQuotePath: null,
+          shareLinkAvailable: false,
+        },
+        error: null,
+      } as any);
+
+      const res = await inviteDirectSupplier('rfq-202', 'EMAIL', 'contact01@otpdemo.test');
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.shareLinkAvailable).toBe(false);
+        expect(res.token).toBeUndefined();
+        expect(res.quickQuotePath).toBeUndefined();
+        expect(res.quickQuoteUrl).toBeUndefined();
+      }
+    });
+
     it('executes discover_and_invite_for_rfq RPC and returns candidate count', async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: { invited: 4, total: 4 },

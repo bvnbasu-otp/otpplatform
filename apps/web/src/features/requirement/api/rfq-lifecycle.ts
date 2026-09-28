@@ -254,7 +254,14 @@ export async function inviteDirectSupplier(
   kind: DirectInviteKind,
   value: string,
 ): Promise<
-  | { ok: true; reused: boolean; token?: string; quickQuotePath?: string; quickQuoteUrl?: string }
+  | {
+      ok: true;
+      reused: boolean;
+      shareLinkAvailable: boolean;
+      token?: string;
+      quickQuotePath?: string;
+      quickQuoteUrl?: string;
+    }
   | { ok: false; error: string }
 > {
   const trimmed = value.trim();
@@ -273,10 +280,11 @@ export async function inviteDirectSupplier(
   const result = (data ?? {}) as {
     ok?: boolean;
     reused?: boolean;
-    token?: string;
-    quickQuotePath?: string;
+    token?: string | null;
+    quickQuotePath?: string | null;
   };
-  const token = result.token;
+  // A contact that belongs to an existing supplier comes back with no share link.
+  const token = result.token || undefined;
   const quickQuotePath = result.quickQuotePath || (token ? `/q/${token}` : undefined);
   const origin =
     typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null'
@@ -287,6 +295,7 @@ export async function inviteDirectSupplier(
   return {
     ok: true,
     reused: Boolean(result.reused),
+    shareLinkAvailable: Boolean(quickQuoteUrl),
     token,
     quickQuotePath,
     quickQuoteUrl,

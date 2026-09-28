@@ -261,13 +261,32 @@ INSERT INTO demo_suppliers VALUES
   (44, '0d500000-0000-4000-8000-000000000044', 'SecureVision CCTV',               'LOCAL_REGISTRY', 'Bengaluru',  '560078', 12.8900, 77.5800, 30, 4.10,  81, 84.0, 2.8, 'DOCUMENT_VERIFIED'),
   (45, '0d500000-0000-4000-8000-000000000045', 'BuildRight Civil Contractors',     'REFERRAL',       'Bengaluru',  '560100', 12.8450, 77.6600, 40, 4.30, 113, 88.0, 2.0, 'DOCUMENT_VERIFIED');
 
+-- d.verification is the legacy grade; the column holds the 00212 vocabulary,
+-- mapped exactly as 00212 maps existing rows. Only a verified supplier is
+-- lifecycle VERIFIED, which the reveal and PO gates require together with
+-- verification_status = 'VERIFIED'.
 INSERT INTO suppliers (
-  id, business_name, source, status, verification_status, rating_avg,
+  id, business_name, source, status, verification_status, lifecycle_state,
+  legacy_verification_status, rating_avg,
   completed_jobs, on_time_percent, dispute_rate, city, pincode,
   contact_phone, contact_email, address, categories, capabilities, service_area, is_demo
 )
 SELECT
-  d.id, d.name, d.source, 'ACTIVE', d.verification, d.rating,
+  d.id, d.name, d.source, 'ACTIVE',
+  CASE d.verification::text
+    WHEN 'PLATFORM_VERIFIED' THEN 'VERIFIED'
+    WHEN 'DOCUMENT_VERIFIED' THEN 'VERIFIED'
+    WHEN 'SELF_DECLARED'     THEN 'PENDING'
+    ELSE 'NOT_PROVIDED'
+  END,
+  CASE d.verification::text
+    WHEN 'PLATFORM_VERIFIED' THEN 'VERIFIED'
+    WHEN 'DOCUMENT_VERIFIED' THEN 'VERIFIED'
+    WHEN 'SELF_DECLARED'     THEN 'VERIFICATION_PENDING'
+    ELSE 'QUOTE_PARTICIPANT'
+  END,
+  d.verification::text,
+  d.rating,
   d.jobs, d.on_time, d.dispute, d.city, d.pincode,
   '+9198' || lpad((45000000 + d.n)::text, 8, '0'),
   'contact' || lpad(d.n::text, 2, '0') || '@otpdemo.test',
@@ -287,6 +306,8 @@ SET business_name = EXCLUDED.business_name,
     source = EXCLUDED.source,
     status = EXCLUDED.status,
     verification_status = EXCLUDED.verification_status,
+    lifecycle_state = EXCLUDED.lifecycle_state,
+    legacy_verification_status = EXCLUDED.legacy_verification_status,
     rating_avg = EXCLUDED.rating_avg,
     completed_jobs = EXCLUDED.completed_jobs,
     on_time_percent = EXCLUDED.on_time_percent,
