@@ -529,15 +529,18 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     setProcessingId(org.id);
     try {
       if (org.entity_type === 'SUPPLIER') {
+        const verifiedAt = new Date().toISOString();
         const { error } = await supabase
           .from('suppliers')
           .update({
             status: 'ACTIVE',
-            verification_status: 'PLATFORM_VERIFIED',
+            verification_status: 'VERIFIED',
+            lifecycle_state: 'VERIFIED',
+            verified_at: verifiedAt,
             gst_verified: true,
             gst_status: 'Active',
-            gst_verified_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            gst_verified_at: verifiedAt,
+            updated_at: verifiedAt,
           })
           .eq('id', org.id);
         if (error) throw error;

@@ -70,9 +70,9 @@ interface Fn {
   definer: boolean;
 }
 
-const LATEST = (() => {
+const latestIn = (files: string[]) => {
   const out = new Map<string, Fn>();
-  for (const file of MIGRATION_FILES) {
+  for (const file of files) {
     const src = stripComments(read(file));
     const re = new RegExp(FN_RE.source, FN_RE.flags);
     let m: RegExpExecArray | null;
@@ -85,10 +85,13 @@ const LATEST = (() => {
     }
   }
   return out;
-})();
+};
+const LATEST = latestIn(MIGRATION_FILES);
+/** Definitions as 00203 left them; later migrations may redefine these. */
+const AS_OF_203 = latestIn(MIGRATION_FILES.slice(0, MIGRATION_FILES.indexOf(FILE) + 1));
 
 function fn203(key: string): string {
-  const hit = LATEST.get(key);
+  const hit = AS_OF_203.get(key);
   expect(hit?.file, `${key} defined in 00203`).toBe(FILE);
   return stripComments(hit?.body as string);
 }
@@ -101,8 +104,8 @@ function sourceFiles(root: string): string[] {
 const APP_ROOTS = ['apps/web/src', 'packages', 'supabase/functions'].map((p) => resolve(ROOT, p));
 
 describe('00203 migration file', () => {
-  it('is the highest migration and the chain is contiguous 00001..00203', () => {
-    expect(MIGRATION_FILES.length).toBe(203);
+  it('sits at position 203 of the contiguous chain', () => {
+    expect(MIGRATION_FILES.length).toBeGreaterThanOrEqual(203);
     expect(MIGRATION_FILES[202]).toBe(FILE);
     MIGRATION_FILES.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));
   });

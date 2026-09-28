@@ -84,7 +84,7 @@ describe('Profile credential verification never proves ownership on screen', () 
     (supabase as any).functions.invoke.mockResolvedValueOnce({ data: { ok: true, debugCode: '555000' }, error: null });
     const res = await requestProfileCredentialOtp('EMAIL', 'a@b.in');
     expect(res).toMatchObject({ ok: true, otpCode: '555000' });
-    expect(res.message).toMatch(/debug/i);
+    expect(res.ok && res.message).toMatch(/debug/i);
   });
 
   it('a server-rejected code is never turned into "verified" by entering 123456', async () => {

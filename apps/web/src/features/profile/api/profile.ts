@@ -135,7 +135,8 @@ export async function updateOrganizationName(
  * D-21 + A-30 + demo-visibility fix (product decision 3): this used to call
  * `request_profile_credential_otp` directly, get the plaintext code back in
  * the RPC response, and dispatch WhatsApp itself via the browser-side
- * gateway — with a *client build flag* (`VITE_DEMO_MODE`) deciding whether
+ * gateway — with a *client-visible build-time flag* (a Vite "demo mode"
+ * environment variable baked into the frontend bundle) deciding whether
  * to show that code on screen. All of that is gone: the RPC is now
  * service_role-only, `otp-dispatch` (this function's only caller) is the
  * only place the code exists, and any on-screen echo is controlled purely

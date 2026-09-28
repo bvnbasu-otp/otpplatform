@@ -112,60 +112,43 @@ END $$;
 -- ---------------------------------------------------------------------------
 -- 3. Schema Enhancements: Organizations (Persona, Statutory details)
 -- ---------------------------------------------------------------------------
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'organizations' AND column_name = 'persona'
-  ) THEN
-    ALTER TABLE public.organizations
-      ADD COLUMN persona text DEFAULT 'INDIVIDUAL' CHECK (persona IN ('INDIVIDUAL', 'RWA', 'MSME')),
-      ADD COLUMN legal_name text,
-      ADD COLUMN pan text,
-      ADD COLUMN state_code text;
-  END IF;
-END $$;
+-- Every column below is added individually with IF NOT EXISTS: several of
+-- them already exist on real databases (see sections 4 and 5), and a single
+-- multi-column ADD aborts the whole migration on the first collision.
+ALTER TABLE public.organizations
+  ADD COLUMN IF NOT EXISTS persona text DEFAULT 'INDIVIDUAL' CHECK (persona IN ('INDIVIDUAL', 'RWA', 'MSME')),
+  ADD COLUMN IF NOT EXISTS legal_name text,
+  ADD COLUMN IF NOT EXISTS pan text,
+  ADD COLUMN IF NOT EXISTS state_code text;
 
 -- ---------------------------------------------------------------------------
 -- 4. Schema Enhancements: Organization Invitations (Member Claims Lifecycle)
 -- ---------------------------------------------------------------------------
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'organization_invitations' AND column_name = 'claim_status'
-  ) THEN
-    ALTER TABLE public.organization_invitations
-      ADD COLUMN claim_status text NOT NULL DEFAULT 'INVITED' CHECK (claim_status IN ('INVITED', 'CLAIMED', 'PROFILE_COMPLETE', 'ACTIVE', 'INACTIVE')),
-      ADD COLUMN claimed_at timestamptz,
-      ADD COLUMN claimed_by_profile_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
-      ADD COLUMN role text,
-      ADD COLUMN voting_weight numeric DEFAULT 1.0,
-      ADD COLUMN spend_limit numeric DEFAULT NULL;
-  END IF;
-END $$;
+-- organization_invitations.role already exists (org_member_role enum) and is
+-- left as-is.
+ALTER TABLE public.organization_invitations
+  ADD COLUMN IF NOT EXISTS claim_status text NOT NULL DEFAULT 'INVITED' CHECK (claim_status IN ('INVITED', 'CLAIMED', 'PROFILE_COMPLETE', 'ACTIVE', 'INACTIVE')),
+  ADD COLUMN IF NOT EXISTS claimed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS claimed_by_profile_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS voting_weight numeric DEFAULT 1.0,
+  ADD COLUMN IF NOT EXISTS spend_limit numeric DEFAULT NULL;
 
 -- ---------------------------------------------------------------------------
 -- 5. Schema Enhancements: Suppliers (2-Stage Lifecycle & Truthful Verification)
 -- ---------------------------------------------------------------------------
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'suppliers' AND column_name = 'lifecycle_state'
-  ) THEN
-    ALTER TABLE public.suppliers
-      ADD COLUMN lifecycle_state text NOT NULL DEFAULT 'VERIFIED' CHECK (lifecycle_state IN ('QUOTE_PARTICIPANT', 'ONBOARDING_REQUIRED', 'ONBOARDING_IN_PROGRESS', 'VERIFICATION_PENDING', 'VERIFIED', 'VERIFICATION_FAILED', 'REQUIRES_REVERIFICATION', 'SUSPENDED')),
-      ADD COLUMN verification_status text NOT NULL DEFAULT 'NOT_PROVIDED' CHECK (verification_status IN ('NOT_PROVIDED', 'NOT_APPLICABLE', 'PENDING', 'VERIFIED', 'FAILED', 'REQUIRES_REVERIFICATION')),
-      ADD COLUMN pan text,
-      ADD COLUMN legal_business_name text,
-      ADD COLUMN trade_name text,
-      ADD COLUMN onboarding_claim_token_hash text,
-      ADD COLUMN registered_address jsonb,
-      ADD COLUMN verified_at timestamptz,
-      ADD COLUMN verification_notes text;
-  END IF;
-END $$;
+-- suppliers.pan and suppliers.trade_name already exist (00065).
+-- suppliers.verification_status already exists as the legacy
+-- supplier_verification_status enum (00015); it is converted to the
+-- lifecycle vocabulary, with a documented value mapping, by 00212.
+ALTER TABLE public.suppliers
+  ADD COLUMN IF NOT EXISTS lifecycle_state text NOT NULL DEFAULT 'VERIFIED' CHECK (lifecycle_state IN ('QUOTE_PARTICIPANT', 'ONBOARDING_REQUIRED', 'ONBOARDING_IN_PROGRESS', 'VERIFICATION_PENDING', 'VERIFIED', 'VERIFICATION_FAILED', 'REQUIRES_REVERIFICATION', 'SUSPENDED')),
+  ADD COLUMN IF NOT EXISTS pan text,
+  ADD COLUMN IF NOT EXISTS legal_business_name text,
+  ADD COLUMN IF NOT EXISTS trade_name text,
+  ADD COLUMN IF NOT EXISTS onboarding_claim_token_hash text,
+  ADD COLUMN IF NOT EXISTS registered_address jsonb,
+  ADD COLUMN IF NOT EXISTS verified_at timestamptz,
+  ADD COLUMN IF NOT EXISTS verification_notes text;
 
 CREATE INDEX IF NOT EXISTS idx_suppliers_lifecycle ON public.suppliers(lifecycle_state);
 CREATE INDEX IF NOT EXISTS idx_suppliers_verification ON public.suppliers(verification_status);

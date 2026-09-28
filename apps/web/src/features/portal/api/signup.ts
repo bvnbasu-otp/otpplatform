@@ -127,12 +127,15 @@ export async function submitSignupRequest(
   const row = (data ?? {}) as Record<string, unknown>;
   const requestId = typeof row.requestId === 'string' ? row.requestId : undefined;
   const alreadySubmitted = Boolean(row.already_submitted);
+  const autoApproved = Boolean(row.auto_approved || row.status === 'ONBOARDED');
 
   let notification: NotificationStatusResolution | undefined;
   if (requestId && !alreadySubmitted) {
+    // A self-provisioned account has an unusable password until the
+    // applicant redeems the single-use activation code sent to their phone.
     const { delivery } = await invokeEdgeFunction('onboarding-notify', {
       requestId,
-      kind: 'SUBMITTED',
+      kind: autoApproved ? 'APPROVED' : 'SUBMITTED',
     });
     notification = delivery;
   }
@@ -144,7 +147,7 @@ export async function submitSignupRequest(
       requestId,
       status: (row.status as string) ?? 'PENDING',
       alreadySubmitted,
-      autoApproved: Boolean(row.auto_approved || row.status === 'ONBOARDED'),
+      autoApproved,
       side: (row.side as 'BUYER' | 'SUPPLIER') ?? input.side,
       email: (row.email as string) ?? input.email,
       freeRfqCredits: typeof row.free_rfq_credits === 'number' ? row.free_rfq_credits : undefined,

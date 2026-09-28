@@ -107,7 +107,11 @@ describe('buyer registration', () => {
 
     expect(error).toBeNull();
     expect(data.reference).toMatch(/^REG-[0-9A-F]{8}$/);
-    expect(data.status).toBe('PENDING');
+    // 00212: a new email is provisioned immediately; the password stays
+    // unusable until the activation code sent to the phone is redeemed.
+    expect(data.status).toBe('ONBOARDED');
+    expect(data.auto_approved).toBe(true);
+    expect(data.activation_required).toBe(true);
     expect(data.already_submitted).toBe(false);
   });
 
@@ -127,7 +131,7 @@ describe('buyer registration', () => {
       buyer_type: 'COMMUNITY',
       verification_channel: 'WHATSAPP',
       referral_code: 'BNI-BLR-014',
-      status: 'PENDING',
+      status: 'ONBOARDED',
     });
   });
 

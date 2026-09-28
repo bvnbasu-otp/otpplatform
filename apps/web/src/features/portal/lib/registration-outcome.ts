@@ -67,7 +67,7 @@ export function deriveRegistrationOutcome(
     accountState === 'ALREADY_REGISTERED'
       ? 'This email already has a registration under the reference below. No new account was created.'
       : accountState === 'ACCOUNT_ACTIVE'
-        ? 'Your account is active. You can sign in now.'
+        ? 'Your account is ready. We sent a one-time activation code to your registered phone. On the sign-in screen, choose "Forgot password?" and enter that code to set your password.'
         : `Your registration was saved under the reference below. ${reviewSentence}`;
 
   return {

@@ -65,6 +65,10 @@ describe('deriveRegistrationOutcome', () => {
     expect(outcome.accountState).toBe('ACCOUNT_ACTIVE');
     expect(outcome.headline).toBe('Account created');
     expect(outcome.canSignInNow).toBe(true);
+    // The account's password is unusable until the activation code is redeemed.
+    expect(outcome.body).toMatch(/activation code/);
+    expect(outcome.body).toMatch(/Forgot password\?/);
+    expect(outcome.body).not.toMatch(/sign in now/i);
   });
 
   it('already submitted → no new account claimed', () => {
@@ -164,6 +168,60 @@ describe('signup API truthfulness', () => {
     if (res.ok) {
       expect(res.result.notification?.status).toBe('SUBMITTED');
     }
+  });
+
+  it('a self-provisioned registration asks onboarding-notify for the activation code, not the received notice', async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: {
+        reference: 'REG-2',
+        requestId: 'req-2',
+        status: 'ONBOARDED',
+        already_submitted: false,
+        auto_approved: true,
+        activation_required: true,
+      },
+      error: null,
+    });
+    mockSupabase.functions.invoke.mockResolvedValue({ data: { ok: true, status: 'SUBMITTED' }, error: null });
+    const res = await submitSignupRequest({
+      side: 'BUYER',
+      businessName: 'Self',
+      contactFirstName: 'I',
+      contactLastName: 'R',
+      email: 'i@r.in',
+      phone: '+919876543212',
+      verificationChannel: 'WHATSAPP',
+      buyerType: 'INDIVIDUAL',
+    });
+    expect(res.ok).toBe(true);
+    expect(mockSupabase.functions.invoke).toHaveBeenCalledTimes(1);
+    expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+      'onboarding-notify',
+      expect.objectContaining({ body: { requestId: 'req-2', kind: 'APPROVED' } }),
+    );
+    if (res.ok) {
+      expect(res.result.autoApproved).toBe(true);
+      expect(deriveRegistrationOutcome(res.result, 'BUYER').accountState).toBe('ACCOUNT_ACTIVE');
+    }
+  });
+
+  it('a registration routed to admin review never requests an activation code', async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: { reference: 'REG-3', requestId: 'req-3', status: 'PENDING', already_submitted: false, auto_approved: false },
+      error: null,
+    });
+    mockSupabase.functions.invoke.mockResolvedValue({ data: { ok: true, status: 'SUBMITTED' }, error: null });
+    await submitSignupRequest({
+      side: 'SUPPLIER',
+      businessName: 'Zenith',
+      contactFirstName: 'V',
+      contactLastName: 'P',
+      email: 'v2@z.in',
+      phone: '+919876543213',
+      verificationChannel: 'EMAIL',
+    });
+    const kinds = mockSupabase.functions.invoke.mock.calls.map((c: unknown[]) => (c[1] as { body: { kind: string } }).body.kind);
+    expect(kinds).toEqual(['SUBMITTED']);
   });
 
   it('sendVerificationCode fails closed when the server cannot issue a code (no fallback code)', async () => {
