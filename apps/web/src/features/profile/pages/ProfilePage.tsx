@@ -19,6 +19,7 @@ import {
   SubscriptionExpiryBanner,
   OtpWalletCreditsWidget,
   fetchOrganizationSubscription,
+  useWalletEntitlement,
   type OrganizationSubscription,
 } from '@/features/subscription';
 import { ReferAndEarnCard } from '@/features/referral';
@@ -194,6 +195,14 @@ export function ProfilePage() {
   const activeOrgSummary = context.organizations.find((o) => o.id === context.organizationId);
   const currentOrgType = activeOrgSummary?.orgType || null;
   const isIndividual = !context.organizationId || (tryResolveBuyerPersona(context.buyerType || currentOrgType) ?? 'INDIVIDUAL') === 'INDIVIDUAL';
+  const {
+    walletPersona,
+    isSupplierPersona,
+    entitledWalletOrgId,
+    referSide,
+    referIdentifier,
+    referOrgName: entitledReferOrgName,
+  } = useWalletEntitlement();
 
   useEffect(() => {
     if (isIndividual && activeTab === 'team') {
@@ -237,8 +246,10 @@ export function ProfilePage() {
 
     Promise.all([
       fetchMyProfile(),
-      fetchUserOrganization().catch(() => null),
-      context.organizationId ? fetchOrganizationSubscription(context.organizationId).catch(() => null) : Promise.resolve(null),
+      isSupplierPersona ? Promise.resolve(null) : fetchUserOrganization().catch(() => null),
+      !isSupplierPersona && context.organizationId
+        ? fetchOrganizationSubscription(context.organizationId).catch(() => null)
+        : Promise.resolve(null),
     ])
       .then(([res, orgRes, subRes]) => {
         if (res.ok) {
@@ -248,7 +259,7 @@ export function ProfilePage() {
           setEmail(res.profile.email || context.email || '');
           setPhone(res.profile.phone || context.phone || 'Not registered');
         }
-        if (orgRes && orgRes.ok) {
+        if (orgRes && orgRes.ok && !isSupplierPersona) {
           setOrgName(orgRes.org.organizationName);
           setOrgId(orgRes.org.organizationId);
         }
@@ -258,7 +269,7 @@ export function ProfilePage() {
       })
       .catch((err) => console.error('Error fetching profile:', err))
       .finally(() => setLoading(false));
-  }, [context]);
+  }, [context, isSupplierPersona]);
 
   // Load Org Members when on team tab
   useEffect(() => {
@@ -615,12 +626,12 @@ export function ProfilePage() {
       {activeTab === 'profile' && (
         <div className="space-y-3">
           {/* Subscription Expiry & Starter Credit Banner */}
-          {subscription ? (
+          {subscription && !isSupplierPersona ? (
             <SubscriptionExpiryBanner
               subscription={subscription}
               onRenewClick={() => setIsPaymentModalOpen(true)}
             />
-          ) : isIndividual ? (
+          ) : isIndividual && !isSupplierPersona ? (
             <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-2xs space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -645,15 +656,15 @@ export function ProfilePage() {
 
           {/* OTP Wallet Credits Widget */}
           <OtpWalletCreditsWidget
-            organizationId={orgId || undefined}
+            organizationId={entitledWalletOrgId || undefined}
+            persona={walletPersona}
             onApplyRenewal={() => setIsPaymentModalOpen(true)}
           />
 
-          {/* Refer & Earn 10% Reward Card */}
           <ReferAndEarnCard
-            identifier={orgId || user?.id || user?.email}
-            orgName={orgName}
-            side="buyer"
+            identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}
+            orgName={orgName || entitledReferOrgName}
+            side={referSide}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">

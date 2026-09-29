@@ -18,7 +18,8 @@ describe('resolveOrganizationCharter', () => {
         'audit-attribution',
         'direct-contracting',
         'financial-separation',
-        'pilot-referrals',
+        'wallet-referrals',
+        'buyer-success-cashback',
       ]),
     );
     expect(charter.clauses.find((c) => c.id === 'committee-quorum')!.body).toContain('minimum 2 votes');
@@ -38,10 +39,12 @@ describe('resolveOrganizationCharter', () => {
     expect(charter.clauses.map((c) => c.id)).toContain('direct-contracting');
   });
 
-  it('every charter states pilot referral credit is ₹0 and does not claim a signed acceptance', () => {
+  it('charters describe wallet referral rules and do not claim a signed acceptance', () => {
     for (const [orgType, supplier] of [['RWA', false], ['MSME', false], ['INDIVIDUAL', false], [null, true]] as const) {
       const charter = resolveOrganizationCharter(orgType, supplier);
-      expect(charter.clauses.find((c) => c.id === 'pilot-referrals')!.body).toContain('₹0');
+      const referralClause =
+        charter.clauses.find((c) => c.id === 'wallet-referrals' || c.id === 'supplier-wallet-rewards')!;
+      expect(referralClause.body).toMatch(/Wallet|wallet/);
       expect(charter.acceptanceNote).toBe(CHARTER_ACCEPTANCE_NOTE);
     }
   });

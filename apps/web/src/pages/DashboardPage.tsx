@@ -6,6 +6,7 @@ import {
   SubscriptionPaymentModal,
   SubscriptionExpiryBanner,
   validateOrganizationSourcingAccess,
+  useWalletEntitlement,
 } from '@/features/subscription';
 import { ReferAndEarnCard } from '@/features/referral';
 import { usePilotAllowance } from '@/features/intake/hooks/use-pilot-allowance';
@@ -40,6 +41,8 @@ export function DashboardPage() {
     organizationName: context.organizationName,
     orgRole: context.orgRole,
   });
+
+  const { entitledWalletOrgId, referSide, referIdentifier, referOrgName } = useWalletEntitlement();
 
   const pilotAllowance = usePilotAllowance(org?.organizationId || context.organizationId);
 
@@ -229,9 +232,9 @@ export function DashboardPage() {
 
       {/* Refer & Earn 10% Reward Widget */}
       <ReferAndEarnCard
-        identifier={org?.organizationId || context.organizationId || user?.id || user?.email}
-        orgName={org?.organizationName || context.organizationName}
-        side="buyer"
+        identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}
+        orgName={org?.organizationName || referOrgName || context.organizationName}
+        side={referSide}
       />
 
       {/* Subscription Payment & Renewal Modal */}

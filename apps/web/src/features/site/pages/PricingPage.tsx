@@ -300,7 +300,7 @@ export function PricingPage() {
           </section>
         </div>
 
-        {/* Product-Led Buyer Rewards & Refer-and-Earn Banner */}
+        {/* Buyer & supplier OTP Wallet (non-cash platform credits) */}
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-border bg-gradient-to-r from-amber-500/10 via-primary/10 to-amber-500/10 p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-2xs">
             <div className="flex items-start gap-3">
@@ -309,13 +309,13 @@ export function PricingPage() {
               </span>
               <div>
                 <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                  <span>Product-Led Buyer Rewards</span>
+                  <span>Buyer OTP Wallet</span>
                   <span className="rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-extrabold px-2 py-0.5">
-                    OTP Wallet Credits
+                    Non-cash credits
                   </span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Complete transactions on OTP to earn OTP Wallet Credits toward subscription renewals and RFQ top-ups.
+                  Buyers earn Success Cashback on qualifying transactions plus referral bonuses on one engine. Credits apply to OTP Subscription and Platform Fees only — not cash withdrawal, UPI, bank transfer, or supplier invoice settlement.
                 </p>
               </div>
             </div>
@@ -323,7 +323,7 @@ export function PricingPage() {
               to="/dashboard"
               className="shrink-0 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs min-h-[44px] flex items-center justify-center"
             >
-              View Wallet Balance →
+              Buyer workspace →
             </Link>
           </div>
 
@@ -334,13 +334,13 @@ export function PricingPage() {
               </span>
               <div>
                 <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                  <span>Refer &amp; Earn 10% Reward</span>
+                  <span>Refer someone to OTP</span>
                   <span className="rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold px-2 py-0.5">
-                    WhatsApp Direct Share
+                    Profile sets reward
                   </span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Invite buyers or suppliers with your persistent referral link. Earn a 10% wallet credit reward on their first subscription payment.
+                  Earn a non-cash wallet credit based on the profile they join as: Individual ₹10 · RWA ₹25 · MSME ₹50 · Supplier ₹100. OTP sets the amount from their profile — you cannot pick the reward. The referred person is not paid. Supplier referrers need a completed OTP transaction before referral credit; a separate one-time ₹100 success reward applies after a qualifying settled OTP transaction. Wallet credits are not cash.
                 </p>
               </div>
             </div>
@@ -348,7 +348,7 @@ export function PricingPage() {
               to="/profile"
               className="shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs transition shadow-2xs min-h-[44px] flex items-center justify-center"
             >
-              Get Your Referral Code →
+              Get your referral link →
             </Link>
           </div>
         </div>

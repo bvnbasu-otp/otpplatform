@@ -55,7 +55,29 @@ describe('supplier referral bonus', () => {
     expect(d.denyReason).toBe('DUPLICATE_CREDIT');
   });
 
-  it('credits ₹100 only after referred supplier OTP verification', () => {
+  it('denies supplier referrer without a completed OTP transaction', () => {
+    const d = evaluateSupplierReferralBonus({
+      referrerOrgId: 'org-1',
+      referredSupplierId: 'sup-2',
+      referredVerificationStatus: 'VERIFIED',
+      referrerHasCompletedOtpTransaction: false,
+    });
+    expect(d.eligible).toBe(false);
+    expect(d.denyReason).toBe('REFERRER_TRANSACTION_GATE');
+  });
+
+  it('uses referred profile for referral amount after OTP verification', () => {
+    const msme = evaluateSupplierReferralBonus({
+      referrerOrgId: 'org-1',
+      referredSupplierId: 'sup-2',
+      referredVerificationStatus: 'VERIFIED',
+      referredProfileKind: 'MSME',
+    });
+    expect(msme.eligible).toBe(true);
+    expect(msme.amountInr).toBe(50);
+  });
+
+  it('credits ₹100 for referred supplier profile by default', () => {
     const pending = evaluateSupplierReferralBonus({
       referrerOrgId: 'org-1',
       referredSupplierId: 'sup-2',

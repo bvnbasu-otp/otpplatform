@@ -43,6 +43,19 @@ describe('00220 — supplier wallet (REAL DATABASE)', () => {
       name: 'Wallet Test Org',
       org_type: 'MSME',
     });
+    const overrideSourceId = 'd0000000-0000-4000-8000-0000000000aa';
+    await service.from('suppliers').upsert({
+      id: sourceId,
+      business_name: 'Referred Supplier For Wallet Test',
+      source: 'DIRECT',
+      status: 'ACTIVE',
+    });
+    await service.from('suppliers').upsert({
+      id: overrideSourceId,
+      business_name: 'Override Probe Supplier',
+      source: 'DIRECT',
+      status: 'ACTIVE',
+    });
 
     const { data: ok, error: okErr } = await service.rpc(
       'credit_supplier_wallet_event_atomic' as never,
@@ -62,7 +75,7 @@ describe('00220 — supplier wallet (REAL DATABASE)', () => {
       {
         p_beneficiary_org_id: orgId,
         p_event_type: 'SUPPLIER_REFERRAL_BONUS',
-        p_source_entity_id: 'd0000000-0000-4000-8000-0000000000aa',
+        p_source_entity_id: overrideSourceId,
         p_idempotency_key: `${key}-override`,
         p_client_amount: 50,
       } as never,

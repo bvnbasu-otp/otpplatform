@@ -121,7 +121,7 @@ export function reconcilePortalSide(
     const hasSupplierRole =
       roles.some((r) => r.side === 'SUPPLIER') || activeRole.code.startsWith('SUPPLIER');
     if (hasBuyerRole && hasSupplierRole) {
-      return payloadSide;
+      return roleSide;
     }
     if (hasSupplierRole && !hasBuyerRole) {
       return 'SUPPLIER';

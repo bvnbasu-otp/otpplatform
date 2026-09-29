@@ -3,6 +3,11 @@
  * Supplier cashback was removed; buyer cashback/rewards are unchanged in buyer-reward.ts.
  */
 
+import {
+  referralBonusInrForReferredProfile,
+  type ReferredProfileKind,
+} from './persona-wallet';
+
 export const SUPPLIER_REFERRAL_BONUS_INR = 100;
 export const SUPPLIER_SUCCESS_REWARD_INR = 100;
 
@@ -23,7 +28,8 @@ export type SupplierReferralDenyReason =
   | 'DUPLICATE_CREDIT'
   | 'CIRCULAR_REFERRAL'
   | 'REFERRED_NOT_OTP_VERIFIED'
-  | 'MISSING_REFERRER';
+  | 'MISSING_REFERRER'
+  | 'REFERRER_TRANSACTION_GATE';
 
 export type SupplierSuccessRewardDenyReason =
   | 'DUPLICATE_REWARD'
@@ -41,6 +47,10 @@ export interface SupplierReferralBonusInput {
   existingCreditsForPair?: boolean;
   referrerEqualsReferred?: boolean;
   circularReferralDetected?: boolean;
+  /** Referred account profile — amount follows golden matrix (server SQL: private.otp_referral_bonus_inr). */
+  referredProfileKind?: ReferredProfileKind | string | null;
+  /** Supplier referrers need at least one completed OTP transaction before referral wallet credit. */
+  referrerHasCompletedOtpTransaction?: boolean;
   /** Ignored — amount is always server-derived. */
   clientRequestedAmount?: number;
 }
@@ -129,10 +139,18 @@ export function evaluateSupplierReferralBonus(
     return { ...base, denyReason: 'REFERRED_NOT_OTP_VERIFIED' };
   }
 
+  if (input.referrerHasCompletedOtpTransaction === false) {
+    return { ...base, denyReason: 'REFERRER_TRANSACTION_GATE' };
+  }
+
+  const amountInr = referralBonusInrForReferredProfile(
+    input.referredProfileKind ?? 'SUPPLIER',
+  );
+
   return {
     ...base,
     eligible: true,
-    amountInr: SUPPLIER_REFERRAL_BONUS_INR,
+    amountInr,
   };
 }
 

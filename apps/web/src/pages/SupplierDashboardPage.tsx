@@ -3,6 +3,7 @@ import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { ReferAndEarnCard } from '@/features/referral';
+import { useWalletEntitlement } from '@/features/subscription';
 import {
   useSupplierHomeData,
   HomeContextBar,
@@ -17,6 +18,8 @@ export function SupplierDashboardPage() {
   const { context } = useRoleContext();
   const { user } = useAuth();
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
+
+  const { entitledWalletOrgId, referSide, referIdentifier, referOrgName } = useWalletEntitlement();
 
   const {
     profile,
@@ -145,9 +148,9 @@ export function SupplierDashboardPage() {
 
       {/* Refer & Earn 10% Reward for Suppliers */}
       <ReferAndEarnCard
-        identifier={context.organizationId || user?.id || user?.email}
-        orgName={businessName}
-        side="supplier"
+        identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}
+        orgName={businessName || referOrgName}
+        side={referSide}
       />
 
       {/* Quick Capability Editor Modal for Suppliers */}

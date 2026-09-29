@@ -29,7 +29,7 @@ describe('reconcilePortalSide (supplier persona routing)', () => {
     expect(side).toBe('SUPPLIER');
   });
 
-  it('keeps BUYER when the person explicitly holds both buyer and supplier roles', () => {
+  it('keeps active SUPPLIER side when both buyer and supplier roles exist but active role is supplier', () => {
     const buyerRole: RoleDefinition = {
       code: 'PROCUREMENT_LEAD',
       side: 'BUYER',
@@ -43,7 +43,7 @@ describe('reconcilePortalSide (supplier persona routing)', () => {
       [held(SUPPLIER_FOUNDER), held(buyerRole)],
       'sup-1',
     );
-    expect(side).toBe('BUYER');
+    expect(side).toBe('SUPPLIER');
   });
 });
 

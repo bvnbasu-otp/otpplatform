@@ -40,9 +40,14 @@ const COMMON_CLAUSES: CharterClause[] = [
     body: 'Procurement value paid to suppliers, OTP subscription revenue, and non-cash OTP Wallet credits are recorded separately. Wallet credits are never mixed with procurement payments.',
   },
   {
-    id: 'pilot-referrals',
-    title: 'Referrals during the pilot',
-    body: 'Referrals are recorded for attribution only. No monetary or wallet credit (₹0) is issued for referrals during the controlled pilot.',
+    id: 'wallet-referrals',
+    title: 'Refer & Earn (OTP Wallet)',
+    body: 'Referrals use one engine: the referrer earns a non-cash OTP Wallet credit based on the referred profile (Individual ₹10, RWA ₹25, MSME ₹50, Supplier ₹100). The referred person is not paid for being referred. Wallet credits apply to OTP subscription and platform fees only — not cash, UPI, bank transfer, or supplier invoice settlement.',
+  },
+  {
+    id: 'buyer-success-cashback',
+    title: 'Buyer Success Cashback',
+    body: 'Buyers may earn Success Cashback as a non-cash wallet credit on qualifying transactions. This is separate from supplier success rewards.',
   },
 ];
 
@@ -116,7 +121,12 @@ const SUPPLIER_CHARTER: OrganizationCharter = {
       body: 'Quotes, acceptances and milestone submissions stay attributed to the individual who made them (rule PA-03).',
     },
     COMMON_CLAUSES.find((c) => c.id === 'financial-separation')!,
-    COMMON_CLAUSES.find((c) => c.id === 'pilot-referrals')!,
+    {
+      id: 'supplier-wallet-rewards',
+      title: 'Supplier wallet rewards',
+      body: 'Supplier OTP Wallet includes referral bonus and a one-time ₹100 success reward after your first qualifying settled OTP transaction. Referral wallet credit requires you to complete at least one valid end-to-end OTP transaction first; referral amounts follow the referred profile (Individual ₹10, RWA ₹25, MSME ₹50, Supplier ₹100) and are set only by OTP from their profile.',
+    },
+    COMMON_CLAUSES.find((c) => c.id === 'wallet-referrals')!,
   ],
   acceptanceNote: CHARTER_ACCEPTANCE_NOTE,
 };
