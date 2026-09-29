@@ -1,4 +1,5 @@
 import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { DecisionReceiptCard } from './components/DecisionReceiptCard';
 import { buildCanonicalDecisionReceipt, verifyDecisionReceiptIntegrity } from '@otp/domain';
@@ -190,5 +191,13 @@ describe('DecisionReceiptCard UI Component (Reveal Feature)', () => {
   it('verifies canonical IST date rendering in Decision Receipt header', () => {
     const isIST = true;
     expect(isIST).toBe(true);
+  });
+
+  it('R2-31: verified badge copy uses integrity wording (not statutory signature claim)', () => {
+    const html = renderToStaticMarkup(
+      React.createElement(DecisionReceiptCard, { receipt: sampleReceipt }),
+    );
+    expect(html).toContain('Tamper-evident integrity verified');
+    expect(html).not.toContain('SHA-256 Verified');
   });
 });

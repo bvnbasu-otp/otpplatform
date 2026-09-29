@@ -86,6 +86,8 @@ export * from './types/supplier-lifecycle-tier';
 export * from './types/supplier-network-refresh';
 export * from './types/requirement-intake';
 export * from './types/decision-receipt';
+export * from './types/procurement-document-input';
+export * from './types/issued-document';
 export * from './types/track-milestone';
 export * from './types/financial-settlement-controls';
 export * from './types/operational-oversight';

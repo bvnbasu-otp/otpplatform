@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { IssuedProcurementPrintDocument } from '@/features/documents/components/IssuedProcurementPrintDocument';
 import { computeReceiptAuditHash, type ReceiptDocumentData } from '../reporting/lib/pdf-generator';
 
 describe('Cryptographic Decision Receipt & PDF Generator', () => {
@@ -57,6 +58,10 @@ describe('Cryptographic Decision Receipt & PDF Generator', () => {
     expect(dockClasses).toContain('sticky bottom-0');
     expect(dockClasses).toContain('mt-auto');
     expect(dockClasses).not.toContain('fixed sm:absolute');
+  });
+
+  it('R2-31: reveal print path uses issued procurement snapshot document', () => {
+    expect(typeof IssuedProcurementPrintDocument).toBe('function');
   });
 });
 

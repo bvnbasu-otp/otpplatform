@@ -199,9 +199,10 @@ describe('PrintableProcurementDocument', () => {
     expect(src).toContain('formatDateTimeIST(generatedAt)');
   });
 
-  it('the purchase order page prints the A4 document built from the model', () => {
+  it('the purchase order page prints from issued snapshots with live fallback', () => {
     const page = readFileSync(resolve(__dirname, '../fulfillment/pages/PurchaseOrderDetailPage.tsx'), 'utf8');
-    expect(page).toContain('<PrintableProcurementDocument model={printModel} />');
-    expect(page).toContain('buildProcurementDocumentModel(');
+    expect(page).toContain('IssuedProcurementPrintDocument');
+    expect(page).toContain('fallbackModel={printModel}');
+    expect(page).toContain('documentKind="PURCHASE_ORDER"');
   });
 });

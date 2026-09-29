@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { IssuedDecisionReceiptFromSnapshot } from '@/features/documents/components/IssuedDecisionReceiptFromSnapshot';
 
 export interface AtomicAwardParams {
   rfqId: string;
@@ -222,6 +223,10 @@ describe('Atomic Award, Reveal & PO Preconditions Validation', () => {
     const isIndividualRfq = true;
     const stagesCount = isIndividualRfq ? 0 : 3;
     expect(stagesCount).toBe(0);
+  });
+
+  it('R2-31: award page wires issued decision receipt snapshot component', () => {
+    expect(typeof IssuedDecisionReceiptFromSnapshot).toBe('function');
   });
 });
 

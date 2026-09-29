@@ -117,30 +117,6 @@ export function AnalyticsCards({ summary, role, activeMetric, onSelectMetric }: 
             </span>
           </div>
         </div>
-
-        {/* On-Time Performance Card */}
-        <div
-          onClick={() => handleToggle('ON_TIME_PERF')}
-          className={`rounded-xl border bg-purple-50/50 dark:bg-purple-950/30 p-3 sm:p-3.5 shadow-xs cursor-pointer transition-all hover:border-purple-500 hover:shadow-md ${
-            activeMetric === 'ON_TIME_PERF'
-              ? 'ring-2 ring-purple-600 ring-offset-2 border-purple-600 bg-purple-100/60 dark:bg-purple-900/40'
-              : 'border-purple-200/80 dark:border-purple-800/60'
-          }`}
-        >
-          <div className="flex items-center justify-between text-purple-800 dark:text-purple-300 mb-1 text-xs font-semibold">
-            <span>On-Time Performance</span>
-            <span className="text-base">⭐</span>
-          </div>
-          <p className="text-lg sm:text-xl font-bold text-purple-950 dark:text-purple-100 truncate">
-            {summary.onTimeDeliveryRate}%
-          </p>
-          <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-purple-700 dark:text-purple-300 mt-1.5 sm:mt-2 pt-1.5 sm:pt-2 border-t border-purple-200/60 dark:border-purple-800/40">
-            <span>High SLA Tier</span>
-            <span className="font-bold">
-              {activeMetric === 'ON_TIME_PERF' ? '✓ Viewing' : 'Drill down →'}
-            </span>
-          </div>
-        </div>
       </div>
     );
   }
@@ -264,39 +240,13 @@ export function AnalyticsCards({ summary, role, activeMetric, onSelectMetric }: 
             </span>
           </div>
         </div>
-
-        {/* Audit Chain Integrity */}
-        <div className="rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 bg-indigo-50/50 dark:bg-indigo-950/30 p-4 shadow-xs">
-          <div className="flex items-center justify-between text-indigo-800 dark:text-indigo-300 mb-1 text-xs font-semibold">
-            <span>Audit Chain Integrity</span>
-            <span className="text-base">🔗</span>
-          </div>
-          <p className="text-2xl font-bold text-indigo-950 dark:text-indigo-100">100% Cryptographic</p>
-          <div className="flex items-center justify-between text-[11px] text-indigo-700 dark:text-indigo-300 mt-2 pt-2 border-t border-indigo-200/60 dark:border-indigo-800/40">
-            <span>Append-only hash chain</span>
-            <span className="font-bold">Active</span>
-          </div>
-        </div>
-
-        {/* Compliance Score */}
-        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="flex items-center justify-between text-muted-foreground mb-1 text-xs">
-            <span className="font-semibold text-foreground">Compliance Score</span>
-            <span className="text-base">🏆</span>
-          </div>
-          <p className="text-2xl font-bold text-foreground">{summary.complianceScorePercent}%</p>
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-2 pt-2 border-t border-border/40">
-            <span>Zero regulatory flags</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">Perfect</span>
-          </div>
-        </div>
       </div>
     );
   }
 
   // Default: Buyer
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3.5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3.5">
       {/* 1. Total Spend Commitment Card */}
       <div
         onClick={() => handleToggle('TOTAL_SPEND')}
@@ -389,30 +339,6 @@ export function AnalyticsCards({ summary, role, activeMetric, onSelectMetric }: 
           <span>No-penalty protected exits</span>
           <span className="font-bold">
             {activeMetric === 'CANCELLED_EXITS' ? '✓ Viewing' : 'Audit logs →'}
-          </span>
-        </div>
-      </div>
-
-      {/* 5. Estimated Competitive Sourcing Savings Card */}
-      <div
-        onClick={() => handleToggle('QUOTING_SAVINGS')}
-        className={`rounded-xl border bg-teal-50/50 dark:bg-teal-950/30 p-3 sm:p-3.5 shadow-xs cursor-pointer transition-all hover:border-teal-600 hover:shadow-md ${
-          activeMetric === 'QUOTING_SAVINGS'
-            ? 'ring-2 ring-teal-600 ring-offset-2 border-teal-600 bg-teal-100/60 dark:bg-teal-900/40'
-            : 'border-teal-200/80 dark:border-teal-800/60'
-        }`}
-      >
-        <div className="flex items-center justify-between text-teal-800 dark:text-teal-300 mb-1 text-xs font-bold">
-          <span>Quoting Savings</span>
-          <span className="text-base">📉</span>
-        </div>
-        <p className="text-lg sm:text-xl font-bold text-teal-950 dark:text-teal-100 truncate">
-          {formatMoney(summary.estimatedSavings, 'INR')}
-        </p>
-        <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-teal-700 dark:text-teal-300 mt-1.5 sm:mt-2 pt-1.5 sm:pt-2 border-t border-teal-200/60 dark:border-teal-800/40">
-          <span>12.5% market baseline savings</span>
-          <span className="font-bold">
-            {activeMetric === 'QUOTING_SAVINGS' ? '✓ Viewing' : 'Drill down →'}
           </span>
         </div>
       </div>

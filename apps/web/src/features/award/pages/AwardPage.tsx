@@ -23,6 +23,8 @@ import { fetchAward, lockAward, unlockAwardDecision } from '../api/awards';
 import { CancelRfqModal } from '@/features/rfq/components';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
 import { triggerPrintDialog } from '@/features/reporting/lib/pdf-generator';
+import { IssuedProcurementPrintDocument } from '@/features/documents/components/IssuedProcurementPrintDocument';
+import { IssuedDecisionReceiptFromSnapshot } from '@/features/documents/components/IssuedDecisionReceiptFromSnapshot';
 import { MultiTierApprovalGatePanel } from '@/features/governance/components/MultiTierApprovalGatePanel';
 import { useAuth } from '@/features/auth';
 import { supabase } from '@/lib/supabase';
@@ -497,7 +499,16 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
               </div>
             </div>
 
-            {/* Post-Award Cryptographic Decision Receipt */}
+            {rfqOrgId && (
+              <IssuedDecisionReceiptFromSnapshot
+                organizationId={rfqOrgId}
+                awardId={award.id}
+                identityState="POST_REVEAL"
+                perspective="BUYER"
+              />
+            )}
+
+            {/* Merit narrative (live comparison signals — not the issued institutional snapshot) */}
             <DecisionReceipt rfqId={rfqId} winningQuoteId={award.quoteId} showTable={true} />
           </section>
         )}
@@ -552,7 +563,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
               {/* Consensus Rationale */}
               <div className="space-y-1">
                 <span className="text-[10px] font-black uppercase text-muted-foreground block">
-                  Recorded Committee Consensus:
+                  {rfqOrgId ? 'Recorded committee consensus:' : 'Buyer award justification:'}
                 </span>
                 <p className="text-xs text-foreground bg-muted/20 p-3 rounded-xl border border-border/50 italic">
                   &ldquo;{award.justificationText}&rdquo;
@@ -581,6 +592,16 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 </div>
               </div>
             </div>
+
+            {rfqOrgId && award && (
+              <IssuedDecisionReceiptFromSnapshot
+                organizationId={rfqOrgId}
+                awardId={award.id}
+                identityState="PRE_REVEAL"
+                perspective="BUYER"
+                collapsible
+              />
+            )}
           </section>
         )}
 
@@ -888,6 +909,17 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
           </div>
         </div>
       </div>
+
+      {award && rfqOrgId && (
+        <IssuedProcurementPrintDocument
+          organizationId={rfqOrgId}
+          documentKind="DECISION_RECEIPT"
+          sourceEntityType="AWARD"
+          sourceEntityId={award.id}
+          identityState={award.status === 'REVEALED' ? 'POST_REVEAL' : 'PRE_REVEAL'}
+          perspective="BUYER"
+        />
+      )}
     </div>
   );
 }

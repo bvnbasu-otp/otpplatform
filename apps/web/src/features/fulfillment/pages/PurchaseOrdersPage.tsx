@@ -252,9 +252,6 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
       disputedAmount,
       disputedOrdersCount: disputedCount,
       averageOrderValue: filteredOrders.length > 0 ? totalAmount / filteredOrders.length : 0,
-      estimatedSavings: Math.round(totalAmount * 0.125), // 12.5% market baseline savings via competitive sourcing
-      onTimeDeliveryRate: 98.4,
-      complianceScorePercent: 100,
       categoryBreakdown,
       statusBreakdown: [],
     };

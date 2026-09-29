@@ -33,7 +33,7 @@ import {
 } from '../lib/settlement-state';
 import { buildPurchaseOrderDocumentInput } from '../lib/po-document';
 import { fetchInvoicesByWorkOrder, type InvoiceSummary } from '../api/invoices';
-import { PrintableProcurementDocument } from '@/features/reporting/components/PrintableProcurementDocument';
+import { IssuedProcurementPrintDocument } from '@/features/documents/components/IssuedProcurementPrintDocument';
 import { buildProcurementDocumentModel } from '@/features/reporting/lib/procurement-document';
 import { SupplierMilestoneStepper } from '../components/SupplierMilestoneStepper';
 import { FivePointMilestoneStepper } from '../components/FivePointMilestoneStepper';
@@ -1888,7 +1888,15 @@ export function PurchaseOrderDetailPage({
         </div>
       )}
 
-      <PrintableProcurementDocument model={printModel} />
+      <IssuedProcurementPrintDocument
+        organizationId={order.organizationId || order.buyerOrgId || ''}
+        documentKind="PURCHASE_ORDER"
+        sourceEntityType="PURCHASE_ORDER"
+        sourceEntityId={order.id}
+        identityState="POST_REVEAL"
+        perspective={role === 'supplier' ? 'SUPPLIER' : 'BUYER'}
+        fallbackModel={printModel}
+      />
 
       {/* PO Change Order Modal */}
       <ChangeOrderModal

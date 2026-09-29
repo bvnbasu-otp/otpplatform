@@ -1,4 +1,5 @@
 import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { DecisionReceiptCard } from '@/features/reveal/components/DecisionReceiptCard';
 import { buildCanonicalDecisionReceipt, verifyDecisionReceiptIntegrity } from '@otp/domain';
@@ -185,5 +186,13 @@ describe('DecisionReceiptCard UI Component', () => {
 
     expect(el.props.receipt.buyerPersona).toBe('INDIVIDUAL');
     expect(verifyDecisionReceiptIntegrity(indivReceipt).valid).toBe(true);
+  });
+
+  it('R2-31: verified badge copy uses integrity wording (not statutory signature claim)', () => {
+    const html = renderToStaticMarkup(
+      React.createElement(DecisionReceiptCard, { receipt: sampleReceipt }),
+    );
+    expect(html).toContain('Tamper-evident integrity verified');
+    expect(html).not.toContain('SHA-256 Verified');
   });
 });

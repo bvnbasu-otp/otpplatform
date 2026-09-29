@@ -68,7 +68,7 @@ export function DecisionReceiptCard({
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
                   </svg>
-                  Tamper-Evident SHA-256 Verified
+                  Tamper-evident integrity verified
                 </span>
               ) : (
                 <span
@@ -225,7 +225,7 @@ export function DecisionReceiptCard({
             {buyerPersona === 'MSME' && governanceRecord.msmeSpendGovernance && (
               <div className="text-xs space-y-2">
                 <div className="flex justify-between items-center bg-muted/30 p-2 rounded">
-                  <span className="font-semibold text-foreground">MSME Spend Governance & Anti-Self-Approval (PA-09)</span>
+                  <span className="font-semibold text-foreground">MSME spend governance &amp; anti-self-approval</span>
                   <span className="text-emerald-700 dark:text-emerald-400 font-bold">Policy Satisfied</span>
                 </div>
                 <div className="space-y-1">

@@ -12,7 +12,10 @@ import { DecisionReceipt } from '../components/DecisionReceipt';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
 import { CancelRfqModal } from '@/features/rfq/components';
 import { triggerPrintDialog } from '@/features/reporting/lib/pdf-generator';
+import { IssuedProcurementPrintDocument } from '@/features/documents/components/IssuedProcurementPrintDocument';
+import { IssuedDecisionReceiptFromSnapshot } from '@/features/documents/components/IssuedDecisionReceiptFromSnapshot';
 import { formatDateTimeIST } from '@/lib/date-utils';
+import { supabase } from '@/lib/supabase';
 
 export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
   const navigate = useNavigate();
@@ -26,10 +29,15 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [rfqOrgId, setRfqOrgId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
-    const awardRes = await fetchAwardForReveal(rfqId);
+    const [awardRes, rfqRes] = await Promise.all([
+      fetchAwardForReveal(rfqId),
+      supabase.from('rfqs').select('organization_id').eq('id', rfqId).maybeSingle(),
+    ]);
+    if (rfqRes.data?.organization_id) setRfqOrgId(rfqRes.data.organization_id);
     if (!awardRes.ok) {
       setError(awardRes.error);
       setIsLoading(false);
@@ -385,7 +393,15 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
           </section>
         )}
 
-        {/* DECISION RECEIPT COMPONENT */}
+        {award && rfqOrgId && (
+          <IssuedDecisionReceiptFromSnapshot
+            organizationId={rfqOrgId}
+            awardId={award.id}
+            identityState={isRevealed ? 'POST_REVEAL' : 'PRE_REVEAL'}
+            perspective="BUYER"
+          />
+        )}
+
         {isRevealed && award && (
           <DecisionReceipt rfqId={rfqId} winningQuoteId={award.quoteId} />
         )}
@@ -551,6 +567,28 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
           </div>
         </div>
       </div>
+
+      {award && rfqOrgId && (
+        <IssuedProcurementPrintDocument
+          organizationId={rfqOrgId}
+          documentKind="DECISION_RECEIPT"
+          sourceEntityType="AWARD"
+          sourceEntityId={award.id}
+          identityState={isRevealed ? 'POST_REVEAL' : 'PRE_REVEAL'}
+          perspective="BUYER"
+        />
+      )}
+
+      {isRevealed && existingPoId && rfqOrgId && (
+        <IssuedProcurementPrintDocument
+          organizationId={rfqOrgId}
+          documentKind="PURCHASE_ORDER"
+          sourceEntityType="PURCHASE_ORDER"
+          sourceEntityId={existingPoId}
+          identityState="POST_REVEAL"
+          perspective="BUYER"
+        />
+      )}
     </div>
   );
 }

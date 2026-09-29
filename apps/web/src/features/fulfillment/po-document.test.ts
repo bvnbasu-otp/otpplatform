@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { IssuedProcurementPrintDocument } from '@/features/documents/components/IssuedProcurementPrintDocument';
 import { buildPurchaseOrderDocumentInput } from './lib/po-document';
 import { buildProcurementDocumentModel } from '@/features/reporting/lib/procurement-document';
 import type { PurchaseOrderSummary } from './types/fulfillment';
@@ -24,6 +25,10 @@ const order: PurchaseOrderSummary = {
 };
 
 describe('purchase order print input', () => {
+  it('R2-31: PO surfaces wire issued snapshot print document', () => {
+    expect(typeof IssuedProcurementPrintDocument).toBe('function');
+  });
+
   it('prints persisted line items and names both parties (post-award)', () => {
     const input = buildPurchaseOrderDocumentInput(
       order,

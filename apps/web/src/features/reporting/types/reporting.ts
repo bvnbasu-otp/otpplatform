@@ -37,9 +37,7 @@ export interface PeriodReportingSummary {
   disputedAmount: number;
   disputedOrdersCount: number;
   averageOrderValue: number;
-  estimatedSavings: number;
-  onTimeDeliveryRate: number;
-  complianceScorePercent: number;
+  onTimeDeliveryRate?: number;
   categoryBreakdown: CategorySpendSummary[];
   statusBreakdown: StatusSpendSummary[];
 }
