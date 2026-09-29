@@ -62,6 +62,12 @@ export class OndcSupplierProvider implements SupplierNetworkProvider {
       title: request.category,
       category: request.category,
       cityCode: city ? `std:${city}` : 'std:080',
+      taxonomyContext: request.subcategoryCode
+        ? {
+            subcategoryCode: request.subcategoryCode,
+            requirementMode: request.requirementMode,
+          }
+        : undefined,
     });
 
     if (!broadcast.ok) {

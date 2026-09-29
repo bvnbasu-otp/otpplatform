@@ -5,6 +5,9 @@
  * Supreme Specification: docs/RECONSTRUCT-PRODUCT-CONSTITUTION-v1.0.md
  * Stage R2-13: Canonical Taxonomy & Classification Engine
  *
+ * Operational buyer intake authoritative source: DB `requirement_*` tables (TAXONOMY-03).
+ * This in-memory catalog is legacy mirror / admin reference only — not a second product tree.
+ *
  * Core Architecture & Invariants:
  * 1. Positioning: "OTP does the procurement work. The customer makes the decision."
  *    Taxonomy is internal intelligence and discovery mechanism — NOT a rigid form.

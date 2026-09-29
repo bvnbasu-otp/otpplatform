@@ -5,7 +5,10 @@ import {
   verifyOndcAuthHeader,
 } from '../crypto/ondc-auth-crypto';
 import { OndcBapReceiver } from '../receiver/ondc-bap-receiver';
-import { mapCategoryToOndcDomain } from '../ondc-network-service';
+import {
+  mapCategoryToOndcDomain,
+  resolveOndcSearchDomain,
+} from '../ondc-network-service';
 import type { OndcCatalog, OndcPayload } from '../types/ondc-beckn';
 
 describe('ONDC Beckn Real-time Cryptography & Protocol Suite', () => {
@@ -61,6 +64,22 @@ describe('ONDC Beckn Real-time Cryptography & Protocol Suite', () => {
     expect(mapCategoryToOndcDomain('Construction Ready Mix Concrete RMC')).toBe('ONDC:B2B10');
     expect(mapCategoryToOndcDomain('Clubhouse Gym Equipment AMC')).toBe('ONDC:SRV13');
     expect(mapCategoryToOndcDomain('Domestic RO Water Purifiers')).toBe('ONDC:SRV11');
+  });
+
+
+  it('resolveOndcSearchDomain honors RET14 pilot override', () => {
+    expect(resolveOndcSearchDomain('MOTOR_WINDING', 'ONDC:RET14')).toBe('ONDC:RET14');
+    expect(resolveOndcSearchDomain('MOTOR_WINDING')).toBe('ONDC:SRV11');
+    expect(resolveOndcSearchDomain('MOTOR_WINDING', 'not-a-domain')).toBe('ONDC:SRV11');
+  });
+
+  it('with explicit subcategory, does not fall back to SRV11 from title alone', () => {
+    expect(
+      resolveOndcSearchDomain('MOTOR_WINDING', undefined, {
+        subcategoryCode: 'motor_rewinding',
+        requirementMode: 'REPAIR_MAINTENANCE',
+      }),
+    ).toBeNull();
   });
 
   it('parses incoming ONDC /on_search catalog into OTP supplier candidates', () => {

@@ -85,17 +85,58 @@ function classify(text: string, taxonomy: TaxonomySnapshot): Classification {
     return { subcategory: null, matchedKeywords: [], confidence: 0 };
   }
 
+  const disambiguated = applyTaxonomy03Disambiguation(haystack, best, scored);
+
   // Two independent signals: how much evidence there is, and how clearly it
   // beats the next best reading. A long match that a rival also matches is not
   // a confident classification.
-  const strength = Math.min(1, best.score / 20);
-  const margin = runnerUp ? (best.score - runnerUp.score) / best.score : 1;
+  const strength = Math.min(1, disambiguated.score / 20);
+  const margin = runnerUp ? (disambiguated.score - runnerUp.score) / disambiguated.score : 1;
 
   return {
-    subcategory: best.subcategory,
-    matchedKeywords: [...best.hits].sort((a, b) => b.length - a.length),
+    subcategory: disambiguated.subcategory,
+    matchedKeywords: [...disambiguated.hits].sort((a, b) => b.length - a.length),
     confidence: round2(0.5 * strength + 0.5 * margin),
   };
+}
+
+function applyTaxonomy03Disambiguation(
+  haystack: string,
+  best: { subcategory: SubcategoryDef; hits: string[]; score: number },
+  scored: Array<{ subcategory: SubcategoryDef; hits: string[]; score: number }>,
+): { subcategory: SubcategoryDef; hits: string[]; score: number } {
+  const domesticSignals =
+    /\b(10\s*l|10l|domestic|home|kitchen|household|residential)\b/.test(haystack) ||
+    haystack.includes('water purifier');
+  if (best.subcategory.code === 'water_treatment_plant' && domesticSignals) {
+    const domestic = scored.find((c) => c.subcategory.code === 'domestic_ro_purifier');
+    if (domestic) return domestic;
+  }
+
+  const skuPaint =
+    /\b(\d+\s*(litre|liter|l)\b|litres of paint|litre paint)\b/.test(haystack) &&
+    haystack.includes('paint');
+  if (skuPaint) {
+    const paints = scored.find((c) => c.subcategory.code === 'paints_coatings');
+    if (paints) return paints;
+  }
+
+  const executionPainting =
+    /\b(paint our|repaint|painting work|interior painting|exterior painting|society painting|apartment painting)\b/.test(
+      haystack,
+    );
+  if (executionPainting && best.subcategory.code === 'paints_coatings') {
+    const execution = scored.find((c) =>
+      [
+        'home_interior_exterior_painting',
+        'rwa_society_exterior_repainting',
+        'commercial_office_painting',
+      ].includes(c.subcategory.code),
+    );
+    if (execution) return execution;
+  }
+
+  return best;
 }
 
 /** Blank out text already claimed by an attribute, so it is not read twice. */

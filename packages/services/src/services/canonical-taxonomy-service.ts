@@ -54,11 +54,19 @@ export class CanonicalTaxonomyService {
   constructor(
     private readonly repos: Repositories,
     private readonly audit: AuditAppService,
-    initialNodes: readonly CanonicalTaxonomyNode[] = ALL_CANONICAL_TAXONOMY_NODES,
+    initialNodes: readonly CanonicalTaxonomyNode[] = [],
   ) {
     for (const node of initialNodes) {
       this.nodes.set(node.code, { ...node });
     }
+  }
+
+  /** Legacy in-memory seed — intake wizard uses DB `requirement_*` tables instead. */
+  static withLegacySeedNodes(
+    repos: Repositories,
+    audit: AuditAppService,
+  ): CanonicalTaxonomyService {
+    return new CanonicalTaxonomyService(repos, audit, ALL_CANONICAL_TAXONOMY_NODES);
   }
 
   // ---------------------------------------------------------------------------

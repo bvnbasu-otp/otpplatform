@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   REQUIREMENT_MODE_LABELS,
   RequirementMode,
+  resolveDescribeOtherTaxonomyIds,
   type FulfilmentMode,
   type ParsedRequirement,
   type RequiredByMode,
@@ -46,6 +47,9 @@ export interface Tier1TellOtpCardProps {
   isExpanded?: boolean;
   onToggleExpand?: () => void;
 }
+
+const DESCRIBE_CATEGORY_SENTINEL = '__OTP_DESCRIBE_CATEGORY__';
+const DESCRIBE_SUBCATEGORY_SENTINEL = '__OTP_DESCRIBE_SUBCATEGORY__';
 
 const SUGGESTION_CHIPS = [
   {
@@ -220,6 +224,21 @@ export function Tier1TellOtpCard({
   const { isLocating, locationError, requestCurrentLocation } = useDeviceCapabilities();
   const [gpsNotice, setGpsNotice] = useState<string | null>(null);
 
+  const describeOther = useMemo(
+    () => resolveDescribeOtherTaxonomyIds(taxonomy),
+    [taxonomy],
+  );
+
+  const categorySelectValue =
+    describeOther && categoryId === describeOther.categoryId
+      ? DESCRIBE_CATEGORY_SENTINEL
+      : categoryId;
+
+  const subcategorySelectValue =
+    describeOther && subcategoryId === describeOther.subcategoryId
+      ? DESCRIBE_SUBCATEGORY_SENTINEL
+      : subcategoryId;
+
   const subcategories = useMemo(
     () => taxonomy.subcategories.filter((s) => s.categoryId === categoryId),
     [taxonomy.subcategories, categoryId],
@@ -260,6 +279,12 @@ export function Tier1TellOtpCard({
   }
 
   function handleCategorySelect(newCatId: string) {
+    if (newCatId === DESCRIBE_CATEGORY_SENTINEL && describeOther) {
+      onCategoryChange(describeOther.categoryId);
+      onSubcategoryChange(describeOther.subcategoryId);
+      onModeChange(describeOther.defaultMode);
+      return;
+    }
     onCategoryChange(newCatId);
     const stillValid = taxonomy.subcategories.some(
       (s) => s.id === subcategoryId && s.categoryId === newCatId,
@@ -268,6 +293,12 @@ export function Tier1TellOtpCard({
   }
 
   function handleSubcategorySelect(newSubCatId: string) {
+    if (newSubCatId === DESCRIBE_SUBCATEGORY_SENTINEL && describeOther) {
+      onCategoryChange(describeOther.categoryId);
+      onSubcategoryChange(describeOther.subcategoryId);
+      onModeChange(describeOther.defaultMode);
+      return;
+    }
     onSubcategoryChange(newSubCatId);
     const found = taxonomy.subcategories.find((s) => s.id === newSubCatId);
     if (!found) return;
@@ -540,9 +571,16 @@ export function Tier1TellOtpCard({
                     value: c.id,
                     label: c.name,
                   })),
-                  { value: 'OTHER', label: 'Not listed? Tell us what you need' },
+                  ...(describeOther
+                    ? [
+                        {
+                          value: DESCRIBE_CATEGORY_SENTINEL,
+                          label: 'Not listed? Tell us what you need',
+                        },
+                      ]
+                    : []),
                 ]}
-                value={categoryId}
+                value={categorySelectValue}
                 onChange={(e) => handleCategorySelect(e.target.value)}
               />
             )}
@@ -560,9 +598,16 @@ export function Tier1TellOtpCard({
                     ? subcategories
                     : taxonomy.subcategories
                   ).map((s) => ({ value: s.id, label: s.name })),
-                  { value: 'OTHER', label: 'Not listed? (Custom Specification)' },
+                  ...(describeOther
+                    ? [
+                        {
+                          value: DESCRIBE_SUBCATEGORY_SENTINEL,
+                          label: 'Not listed? (Custom Specification)',
+                        },
+                      ]
+                    : []),
                 ]}
-                value={subcategoryId}
+                value={subcategorySelectValue}
                 onChange={(e) => handleSubcategorySelect(e.target.value)}
               />
             )}

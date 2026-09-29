@@ -5,12 +5,19 @@ import {
   CANONICAL_TEMPLATES,
   CANONICAL_EXAMPLES,
 } from '../components/TemplatesAndExamplesModal';
+import { RequirementMode, mapLegacyTemplateProcurementMode } from '@otp/domain';
 
 describe('TemplatesAndExamplesModal & Buyer Confirmation Authority Suite', () => {
   it('exports component and canonical templates/examples', () => {
     expect(TemplatesAndExamplesModal).toBeDefined();
-    expect(CANONICAL_TEMPLATES.length).toBeGreaterThanOrEqual(4);
+    expect(CANONICAL_TEMPLATES.length).toBeGreaterThanOrEqual(13);
     expect(CANONICAL_EXAMPLES.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('maps legacy BUY templates to PRODUCT_MATERIAL at apply-time (D-08)', () => {
+    const buyTemplate = CANONICAL_TEMPLATES.find((t) => t.id === 'tmpl-cnc-flanges');
+    expect(buyTemplate?.mode).toBe('BUY');
+    expect(mapLegacyTemplateProcurementMode('BUY')).toBe(RequirementMode.PRODUCT_MATERIAL);
   });
 
   describe('Canonical Templates Data Model', () => {

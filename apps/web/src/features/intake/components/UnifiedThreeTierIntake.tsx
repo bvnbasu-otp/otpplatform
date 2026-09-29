@@ -8,6 +8,7 @@ import {
   type FulfilmentMode,
   type ParsedRequirement,
   type RequiredByMode,
+  mapLegacyTemplateProcurementMode,
   type RequirementMode,
   type SourcingMode,
   type TaxonomySnapshot,
@@ -347,16 +348,30 @@ export function UnifiedThreeTierIntake({
     (tmpl: ProcurementTemplate) => {
       setTitle(tmpl.title);
       setText(tmpl.description);
-      if (tmpl.mode) setMode(tmpl.mode as RequirementMode);
+      const mappedMode =
+        tmpl.canonicalRequirementMode ??
+        mapLegacyTemplateProcurementMode(tmpl.mode);
+      setMode(mappedMode);
       if (tmpl.defaultUnit) setUnit(tmpl.defaultUnit);
       if (tmpl.suggestedQuantity) setQuantity(tmpl.suggestedQuantity);
       if (tmpl.standardWarrantyMonths) setWarrantyMonths(tmpl.standardWarrantyMonths);
 
-      const foundSub = taxonomy.subcategories.find(
-        (s) =>
-          s.name.toLowerCase().includes(tmpl.subcategory.toLowerCase()) ||
-          tmpl.subcategory.toLowerCase().includes(s.name.toLowerCase()),
-      );
+      const foundSub =
+        (tmpl.subcategoryCode
+          ? taxonomy.subcategories.find((s) => s.code === tmpl.subcategoryCode)
+          : undefined) ??
+        (tmpl.categoryCode
+          ? taxonomy.subcategories.find(
+              (s) =>
+                s.code === tmpl.subcategoryCode &&
+                taxonomy.categories.find((c) => c.id === s.categoryId)?.code === tmpl.categoryCode,
+            )
+          : undefined) ??
+        taxonomy.subcategories.find(
+          (s) =>
+            s.name.toLowerCase().includes(tmpl.subcategory.toLowerCase()) ||
+            tmpl.subcategory.toLowerCase().includes(s.name.toLowerCase()),
+        );
       if (foundSub) {
         setSubcategoryId(foundSub.id);
         setCategoryId(foundSub.categoryId);
@@ -364,7 +379,7 @@ export function UnifiedThreeTierIntake({
 
       setIsTemplatesModalOpen(false);
     },
-    [taxonomy.subcategories],
+    [taxonomy.subcategories, taxonomy.categories],
   );
 
   // Clear all form inputs

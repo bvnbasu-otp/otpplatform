@@ -3,12 +3,19 @@ import { Modal } from '@/components/ui/StateViews';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 
+import type { RequirementMode } from '@otp/domain';
+
 export interface ProcurementTemplate {
   id: string;
   title: string;
   category: string;
   subcategory: string;
+  /** Stable OTP subcategory code from requirement_subcategories (preferred for apply). */
+  subcategoryCode?: string;
+  categoryCode?: string;
   mode: 'BUY' | 'SERVICE' | 'REPAIR' | 'RATE_CONTRACT';
+  /** When set, wins over legacy `mode` after template apply mapping. */
+  canonicalRequirementMode?: RequirementMode;
   defaultUnit: string;
   suggestedQuantity?: number;
   description: string;
@@ -48,9 +55,11 @@ export const CANONICAL_TEMPLATES: ProcurementTemplate[] = [
   {
     id: 'tmpl-hvac-maintenance',
     title: 'Comprehensive Annual HVAC Chiller Maintenance',
-    category: 'Facility & Building Services',
-    subcategory: 'HVAC Maintenance & Servicing',
-    mode: 'SERVICE',
+    category: 'Property & Facility Management',
+    subcategory: 'Facility AMC',
+    categoryCode: 'property_facility_management',
+    subcategoryCode: 'amc_facility',
+    mode: 'RATE_CONTRACT',
     defaultUnit: 'TR',
     suggestedQuantity: 50,
     description: 'Quarterly preventative maintenance, descaling of condenser tubes, refrigerant leak inspection, and compressor health telemetry.',
@@ -92,6 +101,171 @@ export const CANONICAL_TEMPLATES: ProcurementTemplate[] = [
       'Ponding Test': 'Mandatory 48-hour water holding test',
     },
     standardWarrantyMonths: 36,
+  },
+  {
+    id: 'tmpl-cctv-supply',
+    title: 'CCTV Cameras & NVR Equipment Supply',
+    category: 'Safety, Security & Surveillance',
+    subcategory: 'CCTV cameras & recording equipment',
+    categoryCode: 'safety_security',
+    subcategoryCode: 'cctv_surveillance',
+    mode: 'BUY',
+    defaultUnit: 'set',
+    suggestedQuantity: 1,
+    description: 'IP cameras, NVR/DVR, cabling and storage for society gate, lobby and perimeter coverage.',
+    specifications: {
+      'Camera Type': '4 MP IP dome / bullet mix',
+      'Recording': 'Minimum 30 days retention',
+      'Warranty': 'Manufacturer standard + installer workmanship',
+    },
+    standardWarrantyMonths: 12,
+  },
+  {
+    id: 'tmpl-cctv-install',
+    title: 'CCTV Turnkey Installation & Integration',
+    category: 'IT, Electronics & Digital',
+    subcategory: 'CCTV / NVR turnkey installation',
+    categoryCode: 'it_electronics_digital',
+    subcategoryCode: 'cctv_it_integration',
+    mode: 'SERVICE',
+    canonicalRequirementMode: 'PROJECT_CONTRACT',
+    defaultUnit: 'site',
+    suggestedQuantity: 1,
+    description: 'Site survey, mounting, cabling, NVR configuration, mobile viewing and handover documentation.',
+    specifications: {
+      'Scope': 'Supply + install or install-only per buyer inventory',
+      'Testing': 'Live view + playback sign-off',
+      'SLA': 'Defect rectification within 7 days of handover',
+    },
+    standardWarrantyMonths: 12,
+  },
+  {
+    id: 'tmpl-domestic-ro',
+    title: 'Domestic RO Water Purifier (Home / Kitchen)',
+    category: 'Water & Environmental Solutions',
+    subcategory: 'Domestic RO / home water purifier',
+    categoryCode: 'water_environmental',
+    subcategoryCode: 'domestic_ro_purifier',
+    mode: 'BUY',
+    defaultUnit: 'unit',
+    suggestedQuantity: 1,
+    description: 'Wall-mount or under-sink RO purifier with pre-filter set for apartment or independent home kitchen.',
+    specifications: {
+      Capacity: '7–12 L storage typical',
+      'TDS Handling': 'Up to 2000 ppm inlet (site dependent)',
+      'AMC': 'Optional annual filter service quoted separately',
+    },
+    standardWarrantyMonths: 12,
+  },
+  {
+    id: 'tmpl-office-furniture',
+    title: 'Office Workstations & Ergonomic Chairs',
+    category: 'Furniture, Fixtures & Interiors',
+    subcategory: 'Office furniture & modular workstations',
+    categoryCode: 'furniture_fixtures',
+    subcategoryCode: 'office_furniture_workstations',
+    mode: 'BUY',
+    defaultUnit: 'workstation',
+    suggestedQuantity: 10,
+    description: 'Modular workstations, pedestals and mesh-back ergonomic chairs for MSME or RWA admin office.',
+    specifications: {
+      'Finish': 'Commercial grade laminate / powder coat',
+      'Delivery': 'Knocked down with on-site assembly',
+      'Warranty': '12 months manufacturing defects',
+    },
+    standardWarrantyMonths: 12,
+  },
+  {
+    id: 'tmpl-painting-execution',
+    title: 'Apartment Interior & Exterior Painting',
+    category: 'Property & Facility Management',
+    subcategory: 'Home & apartment painting',
+    categoryCode: 'property_facility_management',
+    subcategoryCode: 'home_interior_exterior_painting',
+    mode: 'SERVICE',
+    canonicalRequirementMode: 'PROJECT_CONTRACT',
+    defaultUnit: 'sq ft',
+    suggestedQuantity: 2500,
+    description: 'Surface preparation, primer, putty and premium emulsion for occupied residential flats.',
+    specifications: {
+      'Coats': '2 primer + 2 emulsion typical',
+      'Brand Tier': 'Premium washable interior emulsion',
+      'Timeline': 'Phased room-wise to minimise disruption',
+    },
+    standardWarrantyMonths: 12,
+  },
+  {
+    id: 'tmpl-plumber-visit',
+    title: 'Plumber Visit — Leak & Fitting Repair',
+    category: 'Professional & Skilled Services',
+    subcategory: 'Plumber technician visit',
+    categoryCode: 'professional_skilled_services',
+    subcategoryCode: 'plumber_technician',
+    mode: 'SERVICE',
+    defaultUnit: 'visit',
+    suggestedQuantity: 1,
+    description: 'On-call plumber for tap leaks, choke clearing, minor CP fitting replacement and pressure checks.',
+    specifications: {
+      'Response': 'Same-day or next-day slot',
+      'Materials': 'Buyer-approved CP fittings billed separately if replaced',
+      'Visit Fee': 'Inclusive of first hour labour',
+    },
+    standardWarrantyMonths: 1,
+  },
+  {
+    id: 'tmpl-pool-amc',
+    title: 'Society Swimming Pool AMC',
+    category: 'Property & Facility Management',
+    subcategory: 'Swimming pool maintenance AMC',
+    categoryCode: 'property_facility_management',
+    subcategoryCode: 'swimming_pool_maintenance',
+    mode: 'RATE_CONTRACT',
+    defaultUnit: 'month',
+    suggestedQuantity: 12,
+    description: 'Chlorination, filtration backwash, water testing and pump health checks for clubhouse pool.',
+    specifications: {
+      Visits: 'Weekly chemical balance + monthly deep service',
+      Chemicals: 'Society account or contractor-supplied per quote',
+      Emergency: 'Breakdown attendance within 24 hours',
+    },
+    standardWarrantyMonths: 12,
+  },
+  {
+    id: 'tmpl-gym-equipment',
+    title: 'Clubhouse Gym Equipment Supply',
+    category: 'Property & Facility Management',
+    subcategory: 'Commercial gym equipment (supply)',
+    categoryCode: 'property_facility_management',
+    subcategoryCode: 'gym_fitness_equipment_supply',
+    mode: 'BUY',
+    defaultUnit: 'package',
+    suggestedQuantity: 1,
+    description: 'Treadmill, cross-trainer, multi-gym station and free weights package for RWA clubhouse.',
+    specifications: {
+      'Installation': 'Basic assembly included; civil flooring separate',
+      'Warranty': 'OEM parts warranty as per manufacturer',
+      'AMC': 'Optional AMC quoted separately',
+    },
+    standardWarrantyMonths: 12,
+  },
+  {
+    id: 'tmpl-describe-requirement',
+    title: 'Describe Your Requirement (Custom)',
+    category: 'Describe your requirement',
+    subcategory: 'Custom requirement',
+    categoryCode: 'general_other',
+    subcategoryCode: 'custom_requirement',
+    mode: 'SERVICE',
+    canonicalRequirementMode: 'OTHER',
+    defaultUnit: 'lot',
+    suggestedQuantity: 1,
+    description: 'Use free text to explain what you need. OTP will route to verified suppliers without forcing a wrong category.',
+    specifications: {
+      Detail: 'Include quantity, location, timeline and any brand or quality preferences',
+      Photos: 'Attach photos or drawings if available',
+      Budget: 'Optional indicative budget helps suppliers respond accurately',
+    },
+    standardWarrantyMonths: 0,
   },
 ];
 

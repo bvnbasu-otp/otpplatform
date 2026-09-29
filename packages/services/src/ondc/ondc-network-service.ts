@@ -1,6 +1,11 @@
 import { OndcGatewayClient, type OndcEnvironment } from './client/ondc-gateway-client';
 import { OndcBapReceiver, type NormalizedOndcSupplierCandidate } from './receiver/ondc-bap-receiver';
 import type { OndcDomain } from './types/ondc-beckn';
+import {
+  mapExplicitSubcategoryToOndcDomain,
+  shouldUseCategoryTitleHeuristicsForOndc,
+  type OndcTaxonomyContext,
+} from '@otp/domain';
 
 export interface OndcServiceOptions {
   environment?: OndcEnvironment;
@@ -10,6 +15,37 @@ export interface OndcServiceOptions {
   signingPrivateKeyPem?: string;
   gatewayUrl?: string;
   enabled?: boolean;
+}
+
+const ONDC_DOMAIN_PATTERN = /^ONDC:[A-Z0-9]+$/;
+
+/**
+ * Beckn search domain: optional pilot override, else category heuristic.
+ * RET14 pilot: set `ONDC_DISCOVERY_DOMAIN=ONDC:RET14` to match registry subscribe domain.
+ */
+export function resolveOndcSearchDomain(
+  category: string,
+  discoveryDomain?: string,
+  taxonomyContext?: OndcTaxonomyContext,
+): OndcDomain | null {
+  const override = discoveryDomain?.trim();
+  if (override && ONDC_DOMAIN_PATTERN.test(override)) {
+    return override as OndcDomain;
+  }
+
+  if (taxonomyContext?.subcategoryCode) {
+    const explicit = mapExplicitSubcategoryToOndcDomain(
+      taxonomyContext.subcategoryCode,
+      taxonomyContext.requirementMode,
+    );
+    return explicit as OndcDomain | null;
+  }
+
+  if (!shouldUseCategoryTitleHeuristicsForOndc(taxonomyContext)) {
+    return null;
+  }
+
+  return mapCategoryToOndcDomain(category);
 }
 
 /**
@@ -75,6 +111,7 @@ export class OndcNetworkService {
     title: string;
     category: string;
     cityCode?: string;
+    taxonomyContext?: OndcTaxonomyContext;
   }): Promise<{ ok: boolean; transactionId: string; error?: string }> {
     if (!this.client || !this.enabled) {
       return {
@@ -84,7 +121,18 @@ export class OndcNetworkService {
       };
     }
 
-    const domain = mapCategoryToOndcDomain(params.category);
+    const domain = resolveOndcSearchDomain(
+      params.category,
+      undefined,
+      params.taxonomyContext,
+    );
+    if (!domain) {
+      return {
+        ok: false,
+        transactionId: params.rfqId,
+        error: 'No approved ONDC domain mapping for this OTP taxonomy selection',
+      };
+    }
     const context = this.client.createContext({
       domain,
       action: 'search',

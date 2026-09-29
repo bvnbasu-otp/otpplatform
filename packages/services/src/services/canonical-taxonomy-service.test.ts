@@ -32,7 +32,7 @@ describe('CanonicalTaxonomyService', () => {
   beforeEach(() => {
     const repos = InMemoryRepositories.create().asRepositories();
     audit = new AuditAppService(new InMemoryAuditService());
-    service = new CanonicalTaxonomyService(repos, audit);
+    service = CanonicalTaxonomyService.withLegacySeedNodes(repos, audit);
   });
 
   describe('1. Buyer Intent Classification & Raw Intent Preservation', () => {

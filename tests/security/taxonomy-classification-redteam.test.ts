@@ -86,7 +86,7 @@ describe('Stage R2-13 Red Team Security Battery (RT-01 to RT-16)', () => {
   beforeEach(() => {
     const repos = InMemoryRepositories.create();
     audit = new AuditAppService(new InMemoryAuditService());
-    service = new CanonicalTaxonomyService(repos, audit);
+    service = CanonicalTaxonomyService.withLegacySeedNodes(repos, audit);
   });
 
   // ---------------------------------------------------------------------------

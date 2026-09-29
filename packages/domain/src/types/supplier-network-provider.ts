@@ -4,6 +4,9 @@ export interface SupplierDiscoveryRequest {
   category: string;
   location?: { city?: string; pinCode?: string };
   structuredSpecs?: Record<string, unknown>;
+  /** OTP requirement subcategory code — when set, ONDC domain uses allow-list only. */
+  subcategoryCode?: string;
+  requirementMode?: string;
 }
 
 export interface ExplainableMatchFactor {
