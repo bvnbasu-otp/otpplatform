@@ -20,8 +20,28 @@ import {
   BniNetworkAdapter,
   AssociationNetworkAdapter,
   DirectNetworkAdapter,
-  LocalRegistryNetworkAdapter,
+  createLocalRegistryNetworkAdapter,
 } from './networks/supplier-network-adapters';
+import type { SupplierRepository } from '../repositories/interfaces';
+
+/** OTP local registry returns no rows without a repository — tests wire a minimal repo. */
+function testLocalRegistryAdapter(category = 'MOTOR_WINDING') {
+  const repo: SupplierRepository = {
+    findActiveByCategory: async (cat: string) =>
+      cat === category
+        ? [
+            {
+              id: 'a1000000-0000-4000-8000-000000000099',
+              businessName: 'OTP Registry Test Supplier',
+              categories: [cat],
+              verificationStatus: 'VERIFIED',
+              lifecycleState: 'VERIFIED',
+            },
+          ]
+        : [],
+  } as SupplierRepository;
+  return createLocalRegistryNetworkAdapter(repo);
+}
 
 describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatcher', () => {
   describe('1. Provider-Neutral GIS Seam & Haversine Distance Calculation', () => {
@@ -126,10 +146,10 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
     it('dispatches discovery to all registered providers in parallel and normalizes candidates', async () => {
       const engine = new SupplierNetworkEngine({
         providers: [
-          { adapter: LocalRegistryNetworkAdapter, isLive: true },
           { adapter: DirectNetworkAdapter, isLive: true },
-          { adapter: BniNetworkAdapter },
-          { adapter: AssociationNetworkAdapter },
+          { adapter: BniNetworkAdapter, isLive: true },
+          { adapter: AssociationNetworkAdapter, isLive: true },
+          { adapter: testLocalRegistryAdapter('VALVE_FABRICATION'), isLive: true },
         ],
       });
 
@@ -139,7 +159,7 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
         location: { city: 'Bengaluru', pinCode: '560001' },
       });
 
-      expect(response.candidates.length).toBeGreaterThanOrEqual(4);
+      expect(response.candidates.length).toBeGreaterThanOrEqual(3);
       expect(response.providerSummaries.length).toBe(4);
       expect(response.hasPartialFailures).toBe(false);
 
@@ -162,7 +182,7 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
       const ondcDisabled = new OndcNetworkAdapter({ enabled: false });
       const engine = new SupplierNetworkEngine({
         providers: [
-          { adapter: LocalRegistryNetworkAdapter, isLive: true },
+          { adapter: testLocalRegistryAdapter('VALVE_FABRICATION'), isLive: true },
           { adapter: ondcDisabled },
         ],
       });
@@ -190,7 +210,7 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
         },
       };
 
-      const fastAdapter = LocalRegistryNetworkAdapter;
+      const fastAdapter = testLocalRegistryAdapter('MOTOR_WINDING');
 
       const engine = new SupplierNetworkEngine({
         defaultTimeoutMs: 50,
@@ -230,7 +250,7 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
 
       const engine = new SupplierNetworkEngine({
         providers: [
-          { adapter: LocalRegistryNetworkAdapter, isLive: true },
+          { adapter: testLocalRegistryAdapter('SOLAR_INVERTER'), isLive: true },
           { adapter: brokenAdapter },
         ],
       });
@@ -315,7 +335,7 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
     it('respects excludedSupplierIds filter in discovery requests', async () => {
       const engine = new SupplierNetworkEngine({
         providers: [
-          { adapter: LocalRegistryNetworkAdapter, isLive: true },
+          { adapter: testLocalRegistryAdapter('VALVE_FABRICATION'), isLive: true },
           { adapter: DirectNetworkAdapter, isLive: true },
         ],
       });

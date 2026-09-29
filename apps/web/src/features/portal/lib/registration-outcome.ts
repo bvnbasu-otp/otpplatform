@@ -4,7 +4,7 @@ import {
   type NotificationStatusCopy,
   type NotificationStatusResolution,
 } from '@otp/domain';
-import type { SignupResult } from '../api/signup';
+import type { SignupResult, VerificationChannel } from '../api/signup';
 
 /**
  * What the applicant is told after submitting the registration form.
@@ -44,10 +44,12 @@ export function deriveRegistrationOutcome(
       ? 'ACCOUNT_ACTIVE'
       : 'REGISTRATION_CREATED';
 
+  const verificationChannel: VerificationChannel = result.verificationChannel ?? 'WHATSAPP';
+
   const notification =
     result.notification ??
     resolveNotificationStatus({
-      channel: 'WHATSAPP',
+      channel: verificationChannel === 'EMAIL' ? 'EMAIL' : 'WHATSAPP',
       observation: { kind: 'NOT_ATTEMPTED', reason: 'No confirmation message was requested' },
     });
 
@@ -67,7 +69,9 @@ export function deriveRegistrationOutcome(
     accountState === 'ALREADY_REGISTERED'
       ? 'This email already has a registration under the reference below. No new account was created.'
       : accountState === 'ACCOUNT_ACTIVE'
-        ? 'Your account is ready. We sent a one-time activation code to your registered phone. On the sign-in screen, choose "Forgot password?" and enter that code to set your password.'
+        ? verificationChannel === 'EMAIL'
+          ? 'Your account is ready. We submitted a sign-in link to your email — open it to set your password. If nothing arrives within a few minutes, check spam or use Forgot password? on the sign-in screen.'
+          : 'Your account is ready. We sent a one-time activation code to your registered phone. On the sign-in screen, choose "Forgot password?" and enter that code to set your password.'
         : `Your registration was saved under the reference below. ${reviewSentence}`;
 
   return {

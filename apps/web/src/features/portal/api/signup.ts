@@ -62,6 +62,10 @@ export interface SignupResult {
   freeRfqCredits?: number;
   /** Outcome of the registration confirmation message, kept separate from the registration itself. */
   notification?: NotificationStatusResolution;
+  /** Applicant's stated verification channel (Email vs WhatsApp for codes). */
+  verificationChannel?: VerificationChannel;
+  /** Server-side WhatsApp guaranteed notice (B-01), when requested separately from email channel. */
+  guaranteedNotice?: NotificationStatusResolution;
 }
 
 export async function fetchServiceCategories(): Promise<
@@ -130,14 +134,29 @@ export async function submitSignupRequest(
   const autoApproved = Boolean(row.auto_approved || row.status === 'ONBOARDED');
 
   let notification: NotificationStatusResolution | undefined;
+  let guaranteedNotice: NotificationStatusResolution | undefined;
   if (requestId && !alreadySubmitted) {
-    // A self-provisioned account has an unusable password until the
-    // applicant redeems the single-use activation code sent to their phone.
-    const { delivery } = await invokeEdgeFunction('onboarding-notify', {
+    const notifyKind = autoApproved ? 'APPROVED' : 'SUBMITTED';
+    const { delivery: waDelivery } = await invokeEdgeFunction('onboarding-notify', {
       requestId,
-      kind: autoApproved ? 'APPROVED' : 'SUBMITTED',
+      kind: notifyKind,
     });
-    notification = delivery;
+
+    if (input.verificationChannel === 'EMAIL') {
+      const redirectUrl =
+        typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
+      const { error: emailErr } = await supabase.auth.signInWithOtp({
+        email: input.email.trim(),
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: redirectUrl,
+        },
+      });
+      notification = resolveSupabaseEmailDispatch(emailErr);
+      guaranteedNotice = waDelivery;
+    } else {
+      notification = waDelivery;
+    }
   }
 
   return {
@@ -152,6 +171,8 @@ export async function submitSignupRequest(
       email: (row.email as string) ?? input.email,
       freeRfqCredits: typeof row.free_rfq_credits === 'number' ? row.free_rfq_credits : undefined,
       notification,
+      verificationChannel: input.verificationChannel,
+      guaranteedNotice,
     },
   };
 }

@@ -102,7 +102,7 @@ export function GstinAutofillField({
                     ✓
                   </span>
                   <strong className="text-xs font-black text-emerald-900 dark:text-emerald-200">
-                    Live Verified GSTIN ({gstDetails.status})
+                    Valid GSTIN format — not a government registry lookup ({gstDetails.status})
                   </strong>
                 </div>
 

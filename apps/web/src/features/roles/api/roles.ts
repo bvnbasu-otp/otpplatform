@@ -88,13 +88,64 @@ export const SIGNED_OUT_CONTEXT: RoleContext = {
   status: 'ACTIVE',
 };
 
+export function normalizeRolePermissions(raw: unknown): RolePermission[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((p): p is RolePermission =>
+    p === 'READ' ||
+    p === 'WRITE' ||
+    p === 'PROPOSE' ||
+    p === 'VOTE' ||
+    p === 'APPROVE' ||
+    p === 'AWARD',
+  );
+}
+
+/**
+ * When `active_portal_side` was set to BUYER during personal-org auto-provision but
+ * the person only holds supplier roles, route guards and dashboards must follow the
+ * active role — not a stale portal-side column alone.
+ */
+export function reconcilePortalSide(
+  payloadSide: PortalSide | null,
+  activeRole: RoleDefinition | null,
+  roles: HeldRole[],
+  supplierId?: string | null,
+): PortalSide | null {
+  if (!activeRole) return payloadSide;
+
+  const roleSide = activeRole.side;
+  if (payloadSide === roleSide) return payloadSide;
+
+  if (payloadSide === 'BUYER' && roleSide === 'SUPPLIER') {
+    const hasBuyerRole = roles.some((r) => r.side === 'BUYER');
+    const hasSupplierRole =
+      roles.some((r) => r.side === 'SUPPLIER') || activeRole.code.startsWith('SUPPLIER');
+    if (hasBuyerRole && hasSupplierRole) {
+      return payloadSide;
+    }
+    if (hasSupplierRole && !hasBuyerRole) {
+      return 'SUPPLIER';
+    }
+    if (supplierId && !hasBuyerRole) {
+      return 'SUPPLIER';
+    }
+  }
+
+  if (payloadSide === 'SUPPLIER' && roleSide === 'BUYER') {
+    const hasSupplierRole = roles.some((r) => r.side === 'SUPPLIER');
+    if (!hasSupplierRole) return 'BUYER';
+  }
+
+  return payloadSide;
+}
+
 function toRoleDefinition(row: Record<string, unknown>): RoleDefinition {
   return {
     code: String(row.code),
     side: (row.side as PortalSide) ?? 'BUYER',
     label: String(row.label),
     description: String(row.description ?? ''),
-    permissions: ((row.permissions as RolePermission[]) ?? []),
+    permissions: normalizeRolePermissions(row.permissions),
   };
 }
 
@@ -102,26 +153,37 @@ function toContext(payload: Record<string, unknown>): RoleContext {
   if (!payload.signedIn) return SIGNED_OUT_CONTEXT;
 
   const active = payload.activeRole as Record<string, unknown> | null;
+  const roles = ((payload.roles as Array<Record<string, unknown>>) ?? []).map((row) => ({
+    ...toRoleDefinition(row),
+    assignedByAdmin: Boolean(row.assignedByAdmin),
+  }));
+  const supplierId = (payload.supplierId as string | null) ?? null;
+
+  const activeRole: RoleDefinition | null = active
+    ? {
+        code: String(active.code),
+        side: (active.side as PortalSide) ?? 'BUYER',
+        label: String(active.label),
+        description: String(active.description ?? ''),
+        permissions: normalizeRolePermissions(active.permissions),
+      }
+    : null;
+
+  const side = reconcilePortalSide(
+    (payload.side as PortalSide | null) ?? null,
+    activeRole,
+    roles,
+    supplierId,
+  );
 
   return {
     signedIn: true,
     profileId: (payload.profileId as string) ?? null,
-    side: (payload.side as PortalSide | null) ?? null,
+    side,
     isPlatformAdmin: Boolean(payload.isPlatformAdmin),
     needsOnboarding: Boolean(payload.needsOnboarding),
-    activeRole: active
-      ? {
-        code: String(active.code),
-        side: (payload.side as PortalSide) ?? 'BUYER',
-        label: String(active.label),
-        description: String(active.description ?? ''),
-        permissions: (active.permissions as RolePermission[]) ?? [],
-      }
-      : null,
-    roles: ((payload.roles as Array<Record<string, unknown>>) ?? []).map((row) => ({
-      ...toRoleDefinition(row),
-      assignedByAdmin: Boolean(row.assignedByAdmin),
-    })),
+    activeRole,
+    roles,
     organizations: ((payload.organizations as Array<Record<string, unknown>>) ?? []).map((row) => ({
       id: String(row.id),
       name: String(row.name),
@@ -134,7 +196,7 @@ function toContext(payload: Record<string, unknown>): RoleContext {
     organizationName: (payload.organizationName as string | null) ?? null,
     buyerType: (payload.buyerType as string | null) ?? null,
     committeeRfqCount: Number(payload.committeeRfqCount ?? 0),
-    supplierId: (payload.supplierId as string | null) ?? null,
+    supplierId,
     fullName: (payload.fullName as string | null) ?? null,
     title: (payload.title as string | null) ?? null,
     avatarUrl: (payload.avatarUrl as string | null) ?? null,

@@ -208,6 +208,33 @@ describe('Security & Route Guard Audit — ProtectedRoute & RBAC Enforcement', (
     expect(verdict.action).toBe('ALLOW');
   });
 
+  it('allows supplier founder with stale BUYER portal side to reach /supplier/quotes (persona reconciliation)', () => {
+    const supplierFounder = {
+      code: 'SUPPLIER_FOUNDER',
+      side: 'SUPPLIER' as const,
+      label: 'Supplier Founder',
+      description: '',
+      permissions: ['READ' as const, 'WRITE' as const],
+    };
+    const input: RouteAccessEvaluationInput = {
+      session: { user: { id: 'usr-supp-1', email: 'suppliera@example.com' } },
+      user: { id: 'usr-supp-1', email: 'suppliera@example.com' },
+      context: {
+        ...SIGNED_OUT_CONTEXT,
+        signedIn: true,
+        side: 'BUYER',
+        supplierId: 'sup-uuid-1',
+        activeRole: supplierFounder,
+        roles: [{ ...supplierFounder, assignedByAdmin: false }],
+        isPlatformAdmin: false,
+      },
+      pathname: '/supplier/quotes',
+      allowedRoles: ['BUYER', 'SUPPLIER', 'ADMIN'],
+    };
+
+    expect(evaluateRouteAccess(input).action).toBe('ALLOW');
+  });
+
   it('denies an authenticated buyer trying to access supplier-only /supplier/quotes within a dual-role config (F-RUN2-T4-02)', () => {
     const input: RouteAccessEvaluationInput = {
       session: { user: { id: 'usr-buyer-2', email: 'procurement2@apex.test' } },

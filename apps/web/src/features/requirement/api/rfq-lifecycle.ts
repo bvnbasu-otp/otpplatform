@@ -91,48 +91,40 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
   const suppliers: MatchedSupplier[] = (data ?? []).map((row, index) => {
     const rawScore = row.match_score !== null && row.match_score !== undefined
       ? Number(row.match_score)
-      : Math.max(70, 95 - index * 5);
+      : null;
 
-    let matchLevel: MatchedSupplier['matchLevel'] = 'RELEVANT';
-    if (rawScore >= 90) matchLevel = 'EXCELLENT';
-    else if (rawScore >= 75) matchLevel = 'STRONG';
-    else if (rawScore >= 60) matchLevel = 'RELEVANT';
-    else matchLevel = 'CANDIDATE';
+    let matchLevel: MatchedSupplier['matchLevel'] = 'CANDIDATE';
+    if (rawScore !== null) {
+      if (rawScore >= 90) matchLevel = 'EXCELLENT';
+      else if (rawScore >= 75) matchLevel = 'STRONG';
+      else if (rawScore >= 60) matchLevel = 'RELEVANT';
+      else matchLevel = 'CANDIDATE';
+    }
 
-    const reasons = Array.isArray(row.match_reasons) && row.match_reasons.length > 0
-      ? row.match_reasons
-      : ['category_match', 'verified_active', 'location_match'];
-
-    const isDirect = (row.anonymous_label || '').toLowerCase().includes('direct') || reasons.includes('direct_invite');
-    const isOndc = reasons.includes('ondc') || (row.anonymous_label || '').toLowerCase().includes('ondc');
+    const reasons = Array.isArray(row.match_reasons) ? (row.match_reasons as string[]) : [];
+    const isDirect = reasons.includes('direct_invite');
     const isLocal = reasons.includes('local') || reasons.includes('location_match');
 
     let network = 'OTP_REGISTERED';
-    let networkLabel = 'OTP Network';
+    let networkLabel = 'OTP invitation';
     if (isDirect) {
       network = 'DIRECT';
-      networkLabel = 'Direct Invite';
-    } else if (isOndc) {
-      network = 'ONDC';
-      networkLabel = 'ONDC Protocol';
-    } else if (isLocal && index % 3 === 2) {
-      network = 'LOCAL_REGISTRY';
-      networkLabel = 'Local Registry';
+      networkLabel = 'Direct invite';
     }
 
     return {
       invitationId: row.invitation_id as string,
       anonymousLabel: (row.anonymous_label as string) || `Supplier #${String(index + 1).padStart(2, '0')}`,
       status: (row.status as string) || 'INVITED',
-      matchScore: Math.round(rawScore),
+      matchScore: rawScore !== null ? Math.round(rawScore) : 0,
       matchLevel,
       matchReasons: reasons,
       network,
       networkLabel,
-      gstVerified: true,
+      gstVerified: false,
       isLocal,
-      distanceKm: isLocal ? (index === 0 ? 4 : index === 1 ? 8 : 14) : undefined,
-      availabilityText: index % 2 === 0 ? 'Available Immediately' : 'Available this week',
+      distanceKm: undefined,
+      availabilityText: 'Availability not confirmed before quote',
       invitedAt: (row.invited_at as string) || null,
       viewedAt: (row.viewed_at as string) || null,
       declinedAt: (row.declined_at as string) || null,

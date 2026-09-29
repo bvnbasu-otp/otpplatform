@@ -316,6 +316,7 @@ export function App() {
           */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/register" element={<Navigate to="/signup" replace />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           {/*
             The old per-side portals. They rendered the same sign-in form as

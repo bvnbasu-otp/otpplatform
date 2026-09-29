@@ -21,40 +21,64 @@ export interface EdgeDispatchResult {
   status?: string;
 }
 
+function deliveryFromResult(
+  channel: 'EMAIL' | 'WHATSAPP',
+  result: EdgeDispatchResult,
+): NotificationStatusResolution {
+  return resolveNotificationStatus({
+    channel,
+    observation: {
+      kind: 'HTTP_RESPONSE',
+      httpStatus: result.ok ? 200 : 400,
+      errorMessage: result.ok ? null : result.error ?? 'Request failed',
+    },
+  });
+}
+
+async function readHttpErrorBody(error: unknown): Promise<EdgeDispatchResult | null> {
+  if (!error || typeof error !== 'object') return null;
+  const ctx = (error as { context?: Response }).context;
+  if (!ctx || typeof ctx.json !== 'function') return null;
+  try {
+    const body = await ctx.json();
+    if (body && typeof body === 'object') {
+      return (body ?? { ok: false }) as EdgeDispatchResult;
+    }
+  } catch {
+    // ignore parse failures
+  }
+  return null;
+}
+
 export async function invokeEdgeFunction(
   name: string,
   body: Record<string, unknown>,
+  channel: 'WHATSAPP' | 'EMAIL' = 'WHATSAPP',
 ): Promise<{ result: EdgeDispatchResult; delivery: NotificationStatusResolution }> {
   try {
     const { data, error } = await supabase.functions.invoke(name, { body });
 
     if (error) {
+      const parsed = await readHttpErrorBody(error);
+      if (parsed) {
+        return { result: parsed, delivery: deliveryFromResult(channel, parsed) };
+      }
       return {
         result: { ok: false, error: 'We could not reach the notification service. Please try again shortly.' },
         delivery: resolveNotificationStatus({
-          channel: 'WHATSAPP',
+          channel,
           observation: { kind: 'NETWORK_ERROR', errorMessage: error.message },
         }),
       };
     }
 
     const result = (data ?? { ok: false }) as EdgeDispatchResult;
-    return {
-      result,
-      delivery: resolveNotificationStatus({
-        channel: 'WHATSAPP',
-        observation: {
-          kind: 'HTTP_RESPONSE',
-          httpStatus: result.ok ? 200 : 400,
-          errorMessage: result.ok ? null : result.error ?? 'Request failed',
-        },
-      }),
-    };
+    return { result, delivery: deliveryFromResult(channel, result) };
   } catch (err) {
     return {
       result: { ok: false, error: 'We could not reach the notification service. Please try again shortly.' },
       delivery: resolveNotificationStatus({
-        channel: 'WHATSAPP',
+        channel,
         observation: { kind: 'NETWORK_ERROR', errorMessage: err instanceof Error ? err.message : String(err) },
       }),
     };

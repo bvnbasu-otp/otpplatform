@@ -186,7 +186,7 @@ export async function runMigrations() {
   const isCheckOnly = args.includes('--check-only') || args.includes('-c');
   const isStatus = args.includes('--status') || args.includes('-s');
   const isDryRun = args.includes('--dry-run');
-  const isDeploy = args.includes('--deploy') || (!isCheckOnly && !isStatus);
+  const isDeploy = args.includes('--deploy');
 
   console.log('\n=================================================================');
   console.log('  🛡️  OTP PLATFORM — SUPABASE & DATABASE MIGRATION ENGINE');
@@ -210,9 +210,27 @@ export async function runMigrations() {
     process.exit(0);
   }
 
+  if (isDryRun && !isDeploy) {
+    console.log('\n[DRY-RUN] Migration files validated. No database connection required for file-only dry-run.');
+    console.log(`Would apply up to ${files.length} migrations when connected.\n`);
+    process.exit(0);
+  }
+
+  if (!isDeploy && !isStatus) {
+    console.error('\n\x1b[31m[ERROR] No action specified. Use --deploy, --status, --check-only, or --dry-run.\x1b[0m\n');
+    process.exit(1);
+  }
+
   // 2. Resolve database connection
   const { connectionString, source } = resolveDatabaseUrl();
   console.log(`Database Source : ${source}`);
+
+  if (isDeploy && !connectionString && (process.env.CI || process.env.GITHUB_ACTIONS)) {
+    console.error(
+      '\n\x1b[31m[ERROR] CI deploy requires DATABASE_URL (or equivalent). Migration push was not attempted.\x1b[0m\n',
+    );
+    process.exit(1);
+  }
 
   let pgModule: any = null;
   try {
@@ -334,7 +352,8 @@ export async function runMigrations() {
     console.log('\n\x1b[32m✓ Migrations deployed successfully via Supabase CLI.\x1b[0m\n');
     process.exit(0);
   } catch (cliErr: any) {
-    console.log(`\x1b[33m[INFO] Supabase CLI invocation note: ${cliErr.message}\x1b[0m`);
+    console.error(`\x1b[31m[ERROR] Supabase CLI migration failed: ${cliErr.message}\x1b[0m`);
+    process.exit(1);
   }
 
   // 4. Fallback: Docker execution if running locally
@@ -367,12 +386,12 @@ export async function runMigrations() {
 
   // If no database was accessible
   if (process.env.CI || process.env.GITHUB_ACTIONS) {
-    console.log('\n\x1b[33m[NOTE] CI environment detected without explicit database credentials. Migration file integrity verified (100% Contiguous: 187/187).\x1b[0m\n');
-    process.exit(0);
+    console.error('\n\x1b[31m[ERROR] CI deploy requires DATABASE_URL (or equivalent). Migration push was not attempted.\x1b[0m\n');
+    process.exit(1);
   }
 
-  console.log('\n\x1b[33m[INFO] To deploy migrations to Supabase Cloud or remote Postgres, set DATABASE_URL or SUPABASE_PROJECT_ID + SUPABASE_DB_PASSWORD.\x1b[0m\n');
-  process.exit(0);
+  console.error('\n\x1b[31m[ERROR] No database connection available for --deploy. Set DATABASE_URL or SUPABASE_PROJECT_ID + SUPABASE_DB_PASSWORD.\x1b[0m\n');
+  process.exit(1);
 }
 
 if (require.main === module || process.argv[1]?.includes('deploy-migrations')) {

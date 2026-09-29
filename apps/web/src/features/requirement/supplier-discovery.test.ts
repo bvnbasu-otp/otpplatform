@@ -204,7 +204,7 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
         expect(s1?.anonymousLabel).toBe('Supplier #01');
         expect(s1?.matchScore).toBe(95);
         expect(s1?.matchLevel).toBe('EXCELLENT');
-        expect(s1?.gstVerified).toBe(true);
+        expect(s1?.gstVerified).toBe(false);
         expect(s1?.isLocal).toBe(true);
         expect(s1?.network).toBe('OTP_REGISTERED');
 
@@ -213,8 +213,8 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
         expect(s2?.anonymousLabel).toBe('Supplier #02');
         expect(s2?.matchScore).toBe(88);
         expect(s2?.matchLevel).toBe('STRONG');
-        expect(s2?.network).toBe('ONDC');
-        expect(s2?.networkLabel).toBe('ONDC Protocol');
+        expect(s2?.network).toBe('OTP_REGISTERED');
+        expect(s2?.networkLabel).toBe('OTP invitation');
 
         const s3 = res.suppliers[2];
         expect(s3).toBeDefined();

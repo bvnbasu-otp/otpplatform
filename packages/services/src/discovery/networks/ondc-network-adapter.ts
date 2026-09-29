@@ -1,30 +1,34 @@
 import type { SupplierNetworkPort } from '../../interfaces/supplier-network-port';
-import { SupplierNetwork } from '@otp/domain';
-import { OndcNetworkService, type OndcServiceOptions } from '../../ondc/ondc-network-service';
+import { SupplierNetwork, OndcIntegrationState } from '@otp/domain';
+import { OndcSupplierProvider } from '../supplier-network-providers/ondc-supplier-provider';
 
-export interface OndcAdapterOptions extends OndcServiceOptions {
-  /** Overrides the ONDC_ENABLED env var. */
+export interface OndcAdapterOptions {
   enabled?: boolean;
+  subscriberId?: string;
+  signingPrivateKeyPem?: string;
 }
 
 function envFlag(): boolean {
-  const raw = typeof process !== 'undefined' && process?.env
-    ? process.env.ONDC_ENABLED
-    : undefined;
+  const raw = typeof process !== 'undefined' && process?.env ? process.env.ONDC_ENABLED : undefined;
   return raw === 'true';
 }
 
+/**
+ * Legacy SupplierNetworkPort wrapper over the real ONDC supplier provider boundary.
+ * Never fabricates production sellers when integration is NOT_CONFIGURED.
+ */
 export class OndcNetworkAdapter implements SupplierNetworkPort {
   readonly network = SupplierNetwork.ONDC;
-  readonly isTruthfulLive = false; // Flag-gated stub / dev integration; not live prod
+  readonly isTruthfulLive = false;
   private readonly enabled: boolean;
-  private readonly service: OndcNetworkService;
+  private readonly provider: OndcSupplierProvider;
 
   constructor(options: OndcAdapterOptions = {}) {
     this.enabled = options.enabled ?? envFlag();
-    this.service = new OndcNetworkService({
-      ...options,
+    this.provider = new OndcSupplierProvider({
       enabled: this.enabled,
+      subscriberId: options.subscriberId,
+      signingPrivateKeyPem: options.signingPrivateKeyPem,
     });
   }
 
@@ -32,48 +36,24 @@ export class OndcNetworkAdapter implements SupplierNetworkPort {
     return this.enabled;
   }
 
-  getService(): OndcNetworkService {
-    return this.service;
+  getIntegrationState(): OndcIntegrationState {
+    return this.provider.getIntegrationState();
   }
 
   async discover(criteria: Parameters<SupplierNetworkPort['discover']>[0]) {
-    if (!this.enabled) {
-      return [];
-    }
-
-    // When live client is available, trigger search on ONDC Gateway
-    const client = this.service.getClient();
-    if (client) {
-      const pin = criteria.location?.pinCode;
-      const city = criteria.location?.city;
-      const txId = pin ? `tx-rfq-${criteria.category}-${pin}` : `tx-rfq-${criteria.category}`;
-      await this.service.broadcastRfqToOndc({
-        rfqId: txId,
-        title: criteria.category,
-        category: criteria.category,
-        cityCode: city ? `std:${city}` : 'std:080',
-      });
-    }
-
-    return [
-      {
-        externalRef: `ondc:${criteria.category}`,
-        network: this.network,
-        businessName: 'ONDC Network Verified Supplier',
-        capability: { categories: [criteria.category] },
-        matchScore: 85,
-        matchReasons: ['ondc:live_gateway_search'],
-        canReceiveRfq: true,
-        canSubmitQuote: true,
-      },
-    ];
+    const result = await this.provider.discover(criteria);
+    return result.candidates.map((c) => ({
+      externalRef: c.externalRef,
+      network: this.network,
+      businessName: c.businessName,
+      capability: { categories: [criteria.category] },
+      matchScore: 0,
+      matchReasons: [`provenance:ONDC_SELLER`, `ondc_state:${result.integrationState || OndcIntegrationState.NOT_CONFIGURED}`],
+      canReceiveRfq: c.canReceiveRfq,
+      canSubmitQuote: c.canSubmitQuote,
+      canonicalSupplierId: c.ondcProviderId,
+    }));
   }
 }
 
-/**
- * Alias used in newer wiring. Reads exactly like `OndcNetworkAdapter` — the
- * two names refer to the same class so existing tests keep compiling while
- * new code can use the documented `Discovery` suffix that matches the other
- * ports in this package.
- */
 export { OndcNetworkAdapter as OndcDiscoveryAdapter };

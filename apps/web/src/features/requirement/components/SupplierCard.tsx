@@ -110,15 +110,21 @@ export function SupplierCard({
 
           {/* Evidence Badges Grid */}
           <div className="flex flex-wrap gap-1.5 pt-0.5 text-[11px]">
-            {gstVerified && (
+            {gstVerified ? (
               <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                 ✓ GST Verified
               </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground border">
+                GST not verified in this view
+              </span>
             )}
 
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 font-medium text-foreground border">
-              ✓ Category &amp; Domain Match
-            </span>
+            {matchReasons.length > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 font-medium text-foreground border">
+                Match signals: {matchReasons.slice(0, 3).join(', ')}
+              </span>
+            )}
 
             {isLocal && (
               <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 font-medium text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">

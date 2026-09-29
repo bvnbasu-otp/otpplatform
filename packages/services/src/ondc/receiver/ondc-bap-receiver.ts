@@ -45,6 +45,8 @@ export interface OndcReceiverOptions {
 export class OndcBapReceiver {
   private readonly options: OndcReceiverOptions;
   private readonly keyCache?: OndcPublicKeyCache;
+  /** Callback-ingested /on_search candidates keyed by Beckn transaction_id (not persisted). */
+  private readonly searchResultsByTransaction = new Map<string, NormalizedOndcSupplierCandidate[]>();
 
   constructor(options: OndcReceiverOptions = {}) {
     this.options = options;
@@ -156,10 +158,16 @@ export class OndcBapReceiver {
       });
     }
 
+    this.searchResultsByTransaction.set(context.transaction_id, candidates);
+
     return {
       transactionId: context.transaction_id,
       candidates,
     };
+  }
+
+  listPendingCandidates(transactionId: string): NormalizedOndcSupplierCandidate[] {
+    return this.searchResultsByTransaction.get(transactionId) ?? [];
   }
 
   /**

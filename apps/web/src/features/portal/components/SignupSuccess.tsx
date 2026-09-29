@@ -91,8 +91,19 @@ export function SignupSuccess({
 
       <div className="space-y-1">
         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Confirmation message</p>
-        <NotificationDeliveryNotice resolution={outcome.notification} purpose="REGISTRATION" />
+        <NotificationDeliveryNotice
+          resolution={outcome.notification}
+          purpose={result.verificationChannel === 'EMAIL' ? 'PASSWORD_RESET' : 'REGISTRATION'}
+        />
       </div>
+      {result.verificationChannel === 'EMAIL' && result.guaranteedNotice && (
+        <div className="space-y-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            Phone acknowledgement (separate from email verification)
+          </p>
+          <NotificationDeliveryNotice resolution={result.guaranteedNotice} purpose="REGISTRATION" />
+        </div>
+      )}
 
       <Button
         variant="primary"

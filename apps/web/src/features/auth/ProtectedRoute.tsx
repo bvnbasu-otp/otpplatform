@@ -6,7 +6,8 @@ import { isSuperAdminEmail, isFounderEmail } from './user-role';
 import { RoleOnboardingPage } from '@/features/roles/pages/RoleOnboardingPage';
 import { supabase } from '@/lib/supabase';
 
-import type { RoleContext } from '@/features/roles/api/roles';
+import type { RoleContext, HeldRole } from '@/features/roles/api/roles';
+import { reconcilePortalSide } from '@/features/roles/api/roles';
 
 export type AllowedRole = 'FOUNDER' | 'ADMIN' | 'BUYER' | 'SUPPLIER';
 
@@ -93,8 +94,11 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
 
   // 5. Specific Allowed Roles RBAC check
   if (input.allowedRoles && input.allowedRoles.length > 0) {
-    const userSide = (
-      input.context?.side || input.context?.activeRole?.side
+    const userSide = reconcilePortalSide(
+      input.context?.side ?? null,
+      input.context?.activeRole ?? null,
+      (input.context?.roles as HeldRole[]) ?? [],
+      input.context?.supplierId,
     )?.toUpperCase() as 'BUYER' | 'SUPPLIER' | undefined;
 
     const allowsFounder = input.allowedRoles.includes('FOUNDER');

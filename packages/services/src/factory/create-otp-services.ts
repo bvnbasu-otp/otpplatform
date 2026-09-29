@@ -7,7 +7,8 @@ import {
   BniNetworkAdapter,
   AssociationNetworkAdapter,
   DirectNetworkAdapter,
-  LocalRegistryNetworkAdapter,
+  createLocalRegistryNetworkAdapter,
+  GooglePlacesNetworkAdapter,
 } from '../discovery/networks/supplier-network-adapters';
 import { OndcNetworkAdapter } from '../discovery/networks/ondc-network-adapter';
 import { TruthfulProviderStatus } from '@otp/domain';
@@ -109,9 +110,14 @@ export function createOtpServices(
     locationIntelligence: new ProviderNeutralLocationIntelligence(),
     providers: [
       {
-        adapter: LocalRegistryNetworkAdapter,
+        adapter: createLocalRegistryNetworkAdapter(repos.suppliers),
         isLive: true,
         truthfulStatus: TruthfulProviderStatus.LIVE_ACTIVE,
+      },
+      {
+        adapter: GooglePlacesNetworkAdapter,
+        isLive: false,
+        truthfulStatus: TruthfulProviderStatus.CREDENTIAL_GATED,
       },
       {
         adapter: DirectNetworkAdapter,

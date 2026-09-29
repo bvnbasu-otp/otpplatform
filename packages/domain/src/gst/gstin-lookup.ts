@@ -144,9 +144,9 @@ export const KNOWN_GSTIN_REGISTRY: Record<string, GstTaxpayerInfo> = {
 };
 
 /**
- * Live GSTIN API verification & auto-population resolver.
- * Validates the checksum & structural integrity, then queries the GST registry
- * or generates synthetic authentic details for new verified GSTINs.
+ * GSTIN format validation and optional demo autofill hints.
+ * This is not a government GSTN registry lookup; checksum-valid GSTINs may receive
+ * illustrative placeholder business details for form prefill only.
  */
 export async function lookupGstinBusinessDetails(rawGstin: string): Promise<GstVerificationResult> {
   if (!rawGstin || typeof rawGstin !== 'string') {

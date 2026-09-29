@@ -205,7 +205,7 @@ export function RoleWorkspaceCard({
         grants the permission to vote; the right to vote on a particular enquiry
         comes from being assigned to it, and no title substitutes for that.
       */}
-      {role.permissions.includes('VOTE') && !canVoteSomewhere(context) && (
+      {role.permissions?.includes('VOTE') && !canVoteSomewhere(context) && (
         <p
           className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900"
           data-testid="no-committee-assignment"

@@ -121,6 +121,28 @@ export async function resolvePortalRole(
       return 'supplier';
     }
     if (personaRow?.active_portal_side === 'BUYER') {
+      if (
+        personaRow?.active_role_code &&
+        String(personaRow.active_role_code).startsWith('SUPPLIER')
+      ) {
+        const { data: held } = await supabase
+          .from('profile_roles')
+          .select('role_code')
+          .eq('profile_id', profileId);
+        const codes = (held ?? []).map((row: { role_code: string }) => row.role_code).filter(Boolean);
+        if (codes.length > 0) {
+          const { data: sides } = await supabase
+            .from('user_roles')
+            .select('code, side')
+            .in('code', codes);
+          const hasBuyerRole = (sides ?? []).some((row: { side?: string }) => row.side === 'BUYER');
+          if (!hasBuyerRole) {
+            return 'supplier';
+          }
+        } else {
+          return 'supplier';
+        }
+      }
       return 'buyer';
     }
   } catch {

@@ -22,10 +22,11 @@ export function PermissionChips({
   permissions,
   className,
 }: {
-  permissions: RolePermission[];
+  permissions?: RolePermission[] | null;
   className?: string;
 }) {
-  const sorted = ORDER.filter((permission) => permissions.includes(permission));
+  const safe = permissions ?? [];
+  const sorted = ORDER.filter((permission) => safe.includes(permission));
 
   return (
     <ul className={`flex flex-wrap gap-1.5 ${className ?? ''}`} data-testid="permission-chips">

@@ -8,6 +8,7 @@ export * from './enums/announcements';
 export * from './enums/status-badges';
 export * from './enums/supplier';
 export * from './enums/supplier-network';
+export * from './enums/supplier-discovery-source';
 export * from './enums/provider-execution';
 export * from './gis/location-intelligence-port';
 export * from './gis/google-places-quota-window';
@@ -90,6 +91,8 @@ export * from './types/financial-settlement-controls';
 export * from './types/operational-oversight';
 export * from './standards/indian-procurement-standards';
 export * from './types/referral-incentive';
+export * from './types/supplier-wallet';
+export * from './types/supplier-network-provider';
 export * from './types/funnel-analytics';
 
 

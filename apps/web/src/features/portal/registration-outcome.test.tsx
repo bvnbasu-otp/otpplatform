@@ -120,6 +120,10 @@ describe('signup API truthfulness', () => {
   beforeEach(() => {
     mockSupabase.rpc = vi.fn();
     mockSupabase.functions = { invoke: vi.fn() };
+    mockSupabase.auth = {
+      ...(mockSupabase.auth || {}),
+      signInWithOtp: vi.fn().mockResolvedValue({ error: null }),
+    };
   });
 
   it('submitSignupRequest does not invent free credits, and does not notify without a requestId', async () => {
@@ -158,7 +162,7 @@ describe('signup API truthfulness', () => {
       contactLastName: 'P',
       email: 'v@z.in',
       phone: '+919876543211',
-      verificationChannel: 'EMAIL',
+      verificationChannel: 'WHATSAPP',
     });
     expect(res.ok).toBe(true);
     expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
@@ -167,6 +171,41 @@ describe('signup API truthfulness', () => {
     );
     if (res.ok) {
       expect(res.result.notification?.status).toBe('SUBMITTED');
+    }
+    expect(mockSupabase.auth.signInWithOtp).not.toHaveBeenCalled();
+  });
+
+  it('EMAIL channel submits GoTrue mail and does not treat WhatsApp notice failure as the primary confirmation', async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: {
+        reference: 'REG-1',
+        requestId: 'req-1',
+        status: 'ONBOARDED',
+        already_submitted: false,
+        auto_approved: true,
+      },
+      error: null,
+    });
+    mockSupabase.functions.invoke.mockResolvedValue({
+      data: { ok: false, error: 'Messaging is not configured', status: 'FAILED' },
+      error: null,
+    });
+    const res = await submitSignupRequest({
+      side: 'BUYER',
+      businessName: 'Self',
+      contactFirstName: 'I',
+      contactLastName: 'R',
+      email: 'i@r.in',
+      phone: '+919876543212',
+      verificationChannel: 'EMAIL',
+      buyerType: 'INDIVIDUAL',
+    });
+    expect(res.ok).toBe(true);
+    expect(mockSupabase.auth.signInWithOtp).toHaveBeenCalled();
+    if (res.ok) {
+      expect(res.result.notification?.status).toBe('SUBMITTED');
+      expect(res.result.notification?.channel).toBe('EMAIL');
+      expect(res.result.guaranteedNotice?.status).toBe('FAILED');
     }
   });
 

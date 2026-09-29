@@ -85,11 +85,9 @@ export function BuyerRegisterForm({
     const pin = rawPin.replace(/\D/g, '').slice(0, 6);
     setPincode(pin);
     if (pin.length === 6) {
-      if (pin.startsWith('560') || pin.startsWith('400') || pin.startsWith('110') || pin.startsWith('600')) {
-        setCoverageNotice(`✓ OTP already has active suppliers discovered and ready in your area (${city} ${pin}).`);
-      } else {
-        setCoverageNotice(`⚡ New Location: Regional suppliers will be pre-warmed for ${city} (${pin}).`);
-      }
+      setCoverageNotice(
+        `Delivery PIN ${pin} recorded for ${city}. Supplier coverage depends on your category and RFQ — OTP does not guarantee suppliers in every PIN.`,
+      );
     } else {
       setCoverageNotice(null);
     }
