@@ -4,12 +4,12 @@ import {
   type ScopeFreshnessStatus,
   SupplierTruthfulVerificationStage,
 } from '@otp/domain';
-import { GooglePlacesDiscoveryAdapter } from '../gis/google-places-discovery-adapter';
-import { runManagedGooglePlacesDiscovery } from './google-places-managed-coverage';
+import { GooglePlacesDiscoveryAdapter } from '../gis/google-places-discovery-adapter.ts';
+import { runManagedGooglePlacesDiscovery } from './google-places-managed-coverage.ts';
 import type {
   LocationPinCoverageStore,
   PersistedCoverageSupplier,
-} from './location-pin-coverage-store';
+} from './location-pin-coverage-store.ts';
 
 export interface LocationPinCoverageRequest {
   state: string;

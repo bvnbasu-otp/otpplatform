@@ -11,8 +11,6 @@
  * 7. Multi-Entity Relational Models for Discovery Observations & Provenance.
  */
 
-import { STANDARD_PROCUREMENT_HSN_SAC_CATALOG, type HsnSacEntry } from '../tax/hsn-sac-catalog';
-
 /* ========================================================================= */
 /* 1. INDIAN PROCUREMENT STANDARDS (BIS, FSSAI, CPWD, BEE, HSN/SAC)           */
 /* ========================================================================= */

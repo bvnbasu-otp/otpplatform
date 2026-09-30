@@ -1,7 +1,7 @@
 {
   "//": "Deno project config for the edge functions. Discovered by `deno test` when run from this directory; kept out of the root so the Node tooling above ignores it.",
   "imports": {
-    "@otp/domain": "../../packages/domain/src/index.ts"
+    "@otp/domain": "../../packages/domain/src/edge/location-pin-coverage-domain.ts"
   },
   "compilerOptions": {
     "lib": ["deno.window", "esnext"],

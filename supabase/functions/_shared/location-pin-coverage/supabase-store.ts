@@ -6,7 +6,7 @@ import type {
   PersistedCoverageSupplier,
   ReserveCallsResult,
 } from '../../../../packages/services/src/discovery/location-pin-coverage-store.ts';
-import type { DiscoveryScopeDescriptor } from '../../../../packages/domain/src/index.ts';
+import type { DiscoveryScopeDescriptor } from '../../../../packages/domain/src/types/supplier-network-refresh.ts';
 import { buildLocationPinScopeKey } from '../../../../packages/services/src/discovery/location-pin-coverage-store.ts';
 
 export type CoverageScope = {

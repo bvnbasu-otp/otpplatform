@@ -3,12 +3,12 @@ import {
   buildGooglePlacesTextQuery,
   type DiscoveryScopeDescriptor,
 } from '@otp/domain';
-import type { QuotaRequestPriority } from '../gis/google-gis-safety-quota';
+import type { QuotaRequestPriority } from '../gis/google-gis-safety-quota.ts';
 import {
   GooglePlacesDiscoveryAdapter,
   type GooglePlacesDiscoveryCriteria,
   type GooglePlacesRawCandidate,
-} from '../gis/google-places-discovery-adapter';
+} from '../gis/google-places-discovery-adapter.ts';
 
 export interface PinGeocodeResult {
   lat: number;
