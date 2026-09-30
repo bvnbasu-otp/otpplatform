@@ -43,8 +43,8 @@ describe('ManagedSupplierNetworkService (R2-07 30-Day Refresh & Quota Engine)', 
       const prepResult = await manager.prepareLocationNetwork(scope);
       expect(prepResult.ok).toBe(true);
       expect(prepResult.status).toBe('FRESH');
-      expect(prepResult.externalCallsExecuted).toBe(2);
-      expect(prepResult.newSuppliersDiscovered).toBeGreaterThanOrEqual(2);
+      expect(prepResult.externalCallsExecuted).toBe(1);
+      expect(prepResult.newSuppliersDiscovered).toBeGreaterThanOrEqual(0);
       expect(prepResult.report.suppliers.length).toBeGreaterThanOrEqual(2);
 
       // Verify scope is now FRESH
@@ -143,8 +143,8 @@ describe('ManagedSupplierNetworkService (R2-07 30-Day Refresh & Quota Engine)', 
       const telemetry = manager.getTelemetrySnapshot();
       expect(telemetry.coverage.totalActivatedPincodes).toBeGreaterThanOrEqual(1);
       expect(telemetry.coverage.totalSuppliersInNetwork).toBeGreaterThanOrEqual(2);
-      expect(telemetry.providerUsage.todayRequests).toBe(2);
-      expect(telemetry.providerUsage.remainingDailyBudget).toBeLessThanOrEqual(1498);
+      expect(telemetry.providerUsage.todayRequests).toBe(1);
+      expect(telemetry.providerUsage.remainingDailyBudget).toBeLessThanOrEqual(1499);
       expect(telemetry.freshness.freshUnder30Days).toBe(1);
     });
   });

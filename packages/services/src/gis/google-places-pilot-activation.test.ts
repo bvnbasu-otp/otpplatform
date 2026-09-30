@@ -191,10 +191,14 @@ describe('OTP R2-30C.1 — Google Places Pilot Activation & Certification Tests 
       quotaGuard: customGuard,
     });
 
-    const discoveryRes = await adapter.discoverWithFallbackLadder({
-      category: 'Industrial Electrical Panels',
-      location: { city: 'Bengaluru', pinCode: '560048' },
-    });
+    // Authorized managed LIVE tier (orchestrator contract certification — not a direct bypass).
+    const discoveryRes = await adapter.discoverWithFallbackLadder(
+      {
+        category: 'Industrial Electrical Panels',
+        location: { city: 'Bengaluru', pinCode: '560048' },
+      },
+      { managedOrchestratorAuthorized: true },
+    );
 
     expect(discoveryRes.sourceType).toBe('LIVE_API');
     expect(discoveryRes.externalCallsUsed).toBe(1);
@@ -256,11 +260,14 @@ describe('OTP R2-30C.1 — Google Places Pilot Activation & Certification Tests 
       quotaGuard: customGuard,
     });
 
-    // 1. Tier 1: LIVE_API
-    const resLive = await adapter.discoverWithFallbackLadder({
-      category: 'Switchgear & Power',
-      location: { city: 'Bengaluru', pinCode: '560048' },
-    });
+    // 1. Tier 1: LIVE_API (authorized managed path only)
+    const resLive = await adapter.discoverWithFallbackLadder(
+      {
+        category: 'Switchgear & Power',
+        location: { city: 'Bengaluru', pinCode: '560048' },
+      },
+      { managedOrchestratorAuthorized: true },
+    );
     expect(resLive.sourceType).toBe('LIVE_API');
     expect(resLive.externalCallsUsed).toBe(1);
 

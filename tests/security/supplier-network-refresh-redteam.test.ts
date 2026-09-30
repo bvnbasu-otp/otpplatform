@@ -70,7 +70,7 @@ describe('Supplier Network Engine & Discovery Policy Red-Team Security Battery (
     // 1. Superadmin prepares location network
     const prepRes = await manager.prepareLocationNetwork(scope, SUPERADMIN_ACTOR);
     expect(prepRes.ok).toBe(true);
-    expect(prepRes.externalCallsExecuted).toBe(2);
+    expect(prepRes.externalCallsExecuted).toBe(1);
 
     // 2. Buyer creates RFQ in 560048
     const rfqRes = await manager.discoverForBuyerRfq(scope, BUYER_ACTOR);
