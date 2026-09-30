@@ -251,26 +251,201 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pin matches certified preflight CLI (2.118.0) for reproducible migration list/push.
+          version: 2.118.0
 
+      # Production CI migration authority: Supabase CLI (not pnpm db:migrate:deploy / deploy-migrations.ts).
       - name: Synchronize Supabase Database Migrations (Production)
         if: needs.resolve-env.outputs.target_env == 'PRODUCTION'
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE_DB_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
-          DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_REF }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD || secrets.DB_PASSWORD }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
+          set -euo pipefail
+          PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
+          EXPECTED_CEILING="00223"
+
           echo "================================================================="
-          echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS"
+          echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS (Supabase CLI)"
           echo "  Target Environment: PRODUCTION"
           echo "  Active Live Build Version Hash: ${{ env.BUILD_HASH }}"
+          echo "  Supabase project ref: ${PRODUCTION_PROJECT_REF}"
+          if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN: PRESENT"
+          else
+            echo "SUPABASE_ACCESS_TOKEN: MISSING"
+            exit 1
+          fi
           echo "================================================================="
-          pnpm db:migrate:deploy
+
+          supabase link --project-ref "${PRODUCTION_PROJECT_REF}" --yes
+
+          MIGRATION_LIST_JSON="$(mktemp)"
+          supabase migration list --linked --output-format json > "${MIGRATION_LIST_JSON}"
+
+          export MIGRATION_LIST_JSON
+          export EXPECTED_CEILING
+          export CI_VERIFY_POST_PUSH="false"
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const BLOCKED = `PRODUCTION MIGRATION BLOCKED:
+          Remote migration history does not match the repository's expected migration chain.
+          Manual investigation required.`.replace(/^          /gm, '');
+
+          const migrationsDir = path.join(process.cwd(), 'supabase', 'migrations');
+          const expected = fs
+            .readdirSync(migrationsDir)
+            .filter((f) => /^\d{5}_.+\.sql$/.test(f))
+            .sort()
+            .map((f) => f.slice(0, 5));
+
+          const ceiling = process.env.EXPECTED_CEILING || '00223';
+          const ceilingNum = parseInt(ceiling, 10);
+
+          if (expected.length !== ceilingNum || expected[expected.length - 1] !== ceiling) {
+            console.error(BLOCKED);
+            process.exit(1);
+          }
+          for (let i = 0; i < expected.length; i++) {
+            if (parseInt(expected[i], 10) !== i + 1) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+          }
+
+          const rows = JSON.parse(fs.readFileSync(process.env.MIGRATION_LIST_JSON, 'utf8')).migrations || [];
+          const expectedSet = new Set(expected);
+          const remoteApplied = [];
+
+          for (const row of rows) {
+            const local = row.local || '';
+            const remote = row.remote || '';
+            if (remote && !expectedSet.has(remote)) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote && local && remote !== local) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote && !local) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote) {
+              remoteApplied.push(remote);
+            }
+          }
+
+          remoteApplied.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+          for (let i = 0; i < remoteApplied.length; i++) {
+            if (parseInt(remoteApplied[i], 10) !== i + 1) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+          }
+
+          if (process.env.CI_VERIFY_POST_PUSH === 'true') {
+            if (remoteApplied.length !== ceilingNum || remoteApplied[remoteApplied.length - 1] !== ceiling) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            for (const version of expected) {
+              const row = rows.find((r) => r.local === version);
+              if (!row || row.remote !== version) {
+                console.error(BLOCKED);
+                process.exit(1);
+              }
+            }
+          }
+
+          console.log(`Migration chain verify (${process.env.CI_VERIFY_POST_PUSH === 'true' ? 'post-push' : 'pre-push'}): OK (remote applied: ${remoteApplied.length || 0}, repo ceiling: ${ceiling})`);
+          NODE
+
+          supabase db push --linked --yes
+
+          supabase migration list --linked --output-format json > "${MIGRATION_LIST_JSON}"
+          export CI_VERIFY_POST_PUSH="true"
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const BLOCKED = `PRODUCTION MIGRATION BLOCKED:
+          Remote migration history does not match the repository's expected migration chain.
+          Manual investigation required.`.replace(/^          /gm, '');
+
+          const migrationsDir = path.join(process.cwd(), 'supabase', 'migrations');
+          const expected = fs
+            .readdirSync(migrationsDir)
+            .filter((f) => /^\d{5}_.+\.sql$/.test(f))
+            .sort()
+            .map((f) => f.slice(0, 5));
+
+          const ceiling = process.env.EXPECTED_CEILING || '00223';
+          const ceilingNum = parseInt(ceiling, 10);
+
+          if (expected.length !== ceilingNum || expected[expected.length - 1] !== ceiling) {
+            console.error(BLOCKED);
+            process.exit(1);
+          }
+          for (let i = 0; i < expected.length; i++) {
+            if (parseInt(expected[i], 10) !== i + 1) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+          }
+
+          const rows = JSON.parse(fs.readFileSync(process.env.MIGRATION_LIST_JSON, 'utf8')).migrations || [];
+          const expectedSet = new Set(expected);
+          const remoteApplied = [];
+
+          for (const row of rows) {
+            const local = row.local || '';
+            const remote = row.remote || '';
+            if (remote && !expectedSet.has(remote)) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote && local && remote !== local) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote && !local) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote) {
+              remoteApplied.push(remote);
+            }
+          }
+
+          remoteApplied.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+          for (let i = 0; i < remoteApplied.length; i++) {
+            if (parseInt(remoteApplied[i], 10) !== i + 1) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+          }
+
+          if (process.env.CI_VERIFY_POST_PUSH === 'true') {
+            if (remoteApplied.length !== ceilingNum || remoteApplied[remoteApplied.length - 1] !== ceiling) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            for (const version of expected) {
+              const row = rows.find((r) => r.local === version);
+              if (!row || row.remote !== version) {
+                console.error(BLOCKED);
+                process.exit(1);
+              }
+            }
+          }
+
+          console.log(`Migration chain verify (${process.env.CI_VERIFY_POST_PUSH === 'true' ? 'post-push' : 'pre-push'}): OK (remote applied: ${remoteApplied.length || 0}, repo ceiling: ${ceiling})`);
+          NODE
+
+          echo "Production migration synchronization complete (ceiling ${EXPECTED_CEILING})."
 
       - name: Synchronize Supabase Database Migrations (Staging / Demo)
         if: needs.resolve-env.outputs.target_env == 'STAGING/DEMO'
