@@ -10,6 +10,7 @@ import {
   createLocalRegistryNetworkAdapter,
   GooglePlacesNetworkAdapter,
 } from '../discovery/networks/supplier-network-adapters';
+import { GooglePlacesDiscoveryAdapter } from '../gis/google-places-discovery-adapter';
 import { OndcNetworkAdapter } from '../discovery/networks/ondc-network-adapter';
 import { TruthfulProviderStatus } from '@otp/domain';
 import { DefaultApprovalPolicyService } from '../approval/default-approval-policy-service';
@@ -142,13 +143,37 @@ export function createOtpServices(
     ],
   });
 
-  const discoveryInner = new CompositeDiscoveryService(
-    [
-      new LocalRegistryDiscoveryService(repos.suppliers),
-      new MockNetworkDiscoveryService(),
-    ],
-    { engine: sneEngine },
-  );
+  const serverFetchFn =
+    process.env.VITEST === 'true'
+      ? undefined
+      : typeof fetch === 'function'
+        ? (url: string) => fetch(url).then((r) => r.json() as Promise<unknown>)
+        : undefined;
+
+  const managedSupplierNetwork = new ManagedSupplierNetworkService(repos, audit, undefined, undefined, {
+    supplierNetworkEngine: sneEngine,
+    serverFetchFn,
+    allowLegacyMockDiscovery: process.env.VITEST === 'true',
+  });
+
+  if (process.env.VITEST !== 'true' && serverFetchFn) {
+    const googlePlacesAdapterForManaged = new GooglePlacesDiscoveryAdapter({
+      fetchFn: serverFetchFn as any,
+      freshnessAuthority: managedSupplierNetwork,
+      freshnessWindowDays: 30,
+    });
+    managedSupplierNetwork.setGooglePlacesAdapter(googlePlacesAdapterForManaged);
+  }
+
+  const legacyDiscoveryServices: (LocalRegistryDiscoveryService | MockNetworkDiscoveryService)[] = [
+    new LocalRegistryDiscoveryService(repos.suppliers),
+  ];
+  // Mock external network rows are test-harness only — never mixed into pre-prod RFQ discovery.
+  if (process.env.VITEST === 'true') {
+    legacyDiscoveryServices.push(new MockNetworkDiscoveryService());
+  }
+
+  const discoveryInner = new CompositeDiscoveryService(legacyDiscoveryServices, { engine: sneEngine });
   const discovery = new SupplierDiscoveryAppService(discoveryInner);
 
   const requirements = new RequirementService(repos, audit, parser);
@@ -181,7 +206,6 @@ export function createOtpServices(
   const supplierAwardOnboarding = new SupplierAwardOnboardingService(repos, audit);
   const supplierLifecycle = new SupplierLifecycleService(repos, audit);
   const orgRoleLifecycle = new OrgRoleLifecycleService(repos, audit);
-  const managedSupplierNetwork = new ManagedSupplierNetworkService(repos, audit);
   const taxonomy = new CanonicalTaxonomyService(repos, audit);
   const blindViewPorts = blindViews ?? createInMemoryBlindViewPorts(repos);
 

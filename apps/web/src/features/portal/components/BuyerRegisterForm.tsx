@@ -18,6 +18,7 @@ import {
 import { BUYER_COPY } from '../types/portal';
 import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { VerificationChoice } from './VerificationChoice';
+import { queueBuyerPinDiscovery } from '../api/location-discovery';
 
 /**
  * Registering an organisation.
@@ -160,12 +161,22 @@ export function BuyerRegisterForm({
       buyerType,
       taxRegistrationId: taxId.trim() || undefined,
       referralCode: referral.trim() || undefined,
+      coverageCity: city.trim(),
+      coveragePincode: pincode.trim(),
     });
 
     if (!result.ok) {
       setBusy(false);
       setError(result.error);
       return;
+    }
+
+    if (pincode.trim().length === 6) {
+      queueBuyerPinDiscovery({
+        state: state.trim(),
+        city: city.trim(),
+        pincode: pincode.trim(),
+      });
     }
 
     // B-01: the acknowledgement notice is now a guaranteed server-side send

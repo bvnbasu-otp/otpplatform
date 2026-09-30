@@ -404,8 +404,8 @@ export class SupplierNetworkEngine {
       assertCandidateAntiLeak(cand);
     }
 
-    // Save into Sourcing Discovery Cache
-    if (this.cacheEnabled) {
+    // Save into Sourcing Discovery Cache (never cache empty composites for 30 days)
+    if (this.cacheEnabled && cappedCandidates.length > 0) {
       this.discoveryCache.set(cacheKey, {
         category: request.category,
         pinCode: request.location?.pinCode ?? undefined,

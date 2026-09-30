@@ -12,6 +12,7 @@ export * from './enums/supplier-discovery-source';
 export * from './enums/provider-execution';
 export * from './gis/location-intelligence-port';
 export * from './gis/google-places-quota-window';
+export * from './gis/google-places-category-search-terms';
 export * from './types/supplier-network-engine';
 export * from './confidence/discovery-confidence-engine';
 export * from './identity/canonical-identity-resolver';

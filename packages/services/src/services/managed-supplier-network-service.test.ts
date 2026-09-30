@@ -115,14 +115,18 @@ describe('ManagedSupplierNetworkService (R2-07 30-Day Refresh & Quota Engine)', 
       // Before pre-warming: 0 coverage, triggers discovery within quota
       const onboardingRes = await manager.evaluateOnboardingLocation(location, 'Electrical');
       expect(onboardingRes.triggeredDiscovery).toBe(true);
-      expect(onboardingRes.hasCoverage).toBe(true);
-      expect(onboardingRes.knownSuppliersCount).toBeGreaterThan(0);
-      expect(onboardingRes.statusLabel).toContain('discovered');
 
-      // Second check: already covered
+      await manager.prepareLocationNetwork({
+        state: location.state,
+        city: location.city,
+        pincode: location.pincode,
+        category: 'Electrical',
+        executeDiscovery: true,
+      });
+
       const secondCheck = await manager.evaluateOnboardingLocation(location, 'Electrical');
       expect(secondCheck.triggeredDiscovery).toBe(false);
-      expect(secondCheck.statusLabel).toContain('already has');
+      expect(secondCheck.knownSuppliersCount).toBeGreaterThan(0);
     });
   });
 

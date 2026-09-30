@@ -31,6 +31,13 @@ import {
 import type { Repositories } from '../repositories/interfaces';
 import type { AuditAppService } from './audit-service';
 import type { ActorContext } from '../types/actor-context';
+import { GooglePlacesDiscoveryAdapter } from '../gis/google-places-discovery-adapter';
+import { runManagedGooglePlacesDiscovery } from '../discovery/google-places-managed-coverage';
+import type {
+  LocationCoverageFreshnessAuthority,
+  ScopeFreshnessRecord,
+} from '../discovery/location-coverage-freshness-authority';
+import type { SupplierNetworkEngine } from '../discovery/supplier-network-engine';
 
 export interface PrepareLocationParams {
   state: string;
@@ -38,6 +45,8 @@ export interface PrepareLocationParams {
   pincode: string;
   category: string;
   forceRefresh?: boolean;
+  /** When false, assess coverage only (zero Google calls). Default true for prepare flows. */
+  executeDiscovery?: boolean;
   bypassSuperadminApproval?: boolean;
 }
 
@@ -98,12 +107,26 @@ export interface SupplierNetworkTelemetrySnapshot {
   };
 }
 
-export class ManagedSupplierNetworkService {
+export interface ManagedSupplierNetworkServiceOptions {
+  googlePlacesAdapter?: GooglePlacesDiscoveryAdapter;
+  supplierNetworkEngine?: SupplierNetworkEngine;
+  serverFetchFn?: (url: string, init?: RequestInit) => Promise<unknown>;
+  googleApiKey?: string;
+  allowLegacyMockDiscovery?: boolean;
+}
+
+export class ManagedSupplierNetworkService implements LocationCoverageFreshnessAuthority {
   private readonly refreshPolicy: SupplierNetworkRefreshPolicyConfig;
   private readonly providerBudgets: Map<string, ProviderQuotaBudgetConfig>;
   private readonly knownScopes = new Map<string, { lastDiscoveredAt: number; count: number }>();
   private readonly suppliers = new Map<string, NetworkSupplierEntity>();
   private readonly observations: NetworkDiscoveryObservation[] = [];
+  private googlePlacesAdapter?: GooglePlacesDiscoveryAdapter;
+  private readonly supplierNetworkEngine?: SupplierNetworkEngine;
+  private readonly serverFetchFn?: (url: string, init?: RequestInit) => Promise<unknown>;
+  private readonly googleApiKey?: string;
+  private readonly allowLegacyMockDiscovery: boolean;
+  private readonly generationInFlight = new Map<string, Promise<PrepareLocationResult>>();
   private dailyUsageCount = 0;
   private monthlyUsageCount = 0;
   private cacheHits = 0;
@@ -117,11 +140,50 @@ export class ManagedSupplierNetworkService {
     private readonly audit?: AuditAppService,
     policyConfig?: Partial<SupplierNetworkRefreshPolicyConfig>,
     providerBudgets?: Record<string, ProviderQuotaBudgetConfig>,
+    options?: ManagedSupplierNetworkServiceOptions,
   ) {
     this.refreshPolicy = { ...DEFAULT_SUPPLIER_REFRESH_POLICY, ...policyConfig };
     this.providerBudgets = new Map(
       Object.entries(providerBudgets ?? DEFAULT_PROVIDER_BUDGET_CONFIGS)
     );
+    this.googlePlacesAdapter = options?.googlePlacesAdapter;
+    this.supplierNetworkEngine = options?.supplierNetworkEngine;
+    this.serverFetchFn = options?.serverFetchFn;
+    this.googleApiKey = options?.googleApiKey;
+    this.allowLegacyMockDiscovery = options?.allowLegacyMockDiscovery ?? process.env.VITEST === 'true';
+  }
+
+  setGooglePlacesAdapter(adapter: GooglePlacesDiscoveryAdapter): void {
+    this.googlePlacesAdapter = adapter;
+  }
+
+  getManagedScopeKey(scope: DiscoveryScopeDescriptor): string {
+    return this.getScopeKey(scope);
+  }
+
+  getFreshnessRecord(scopeKey: string): ScopeFreshnessRecord | undefined {
+    const entry = this.knownScopes.get(scopeKey);
+    if (!entry) return undefined;
+    const ageInDays = Math.floor((Date.now() - entry.lastDiscoveredAt) / (1000 * 60 * 60 * 24));
+    const status: ScopeFreshnessStatus =
+      ageInDays < this.refreshPolicy.freshnessWindowDays ? 'FRESH' : 'REFRESH_ELIGIBLE';
+    return {
+      lastSuccessfulDiscoveryAt: entry.lastDiscoveredAt,
+      supplierCount: entry.count,
+      status,
+    };
+  }
+
+  isScopeFresh(scopeKey: string, freshnessWindowDays: number): boolean {
+    const entry = this.knownScopes.get(scopeKey);
+    if (!entry || entry.count <= 0) return false;
+    const ageInDays = Math.floor((Date.now() - entry.lastDiscoveredAt) / (1000 * 60 * 60 * 24));
+    return ageInDays < freshnessWindowDays;
+  }
+
+  markSuccessfulDiscovery(scopeKey: string, supplierCount: number, at = Date.now()): void {
+    if (supplierCount <= 0) return;
+    this.knownScopes.set(scopeKey, { lastDiscoveredAt: at, count: supplierCount });
   }
 
   public getScopeKey(scope: DiscoveryScopeDescriptor): string {
@@ -332,7 +394,7 @@ export class ManagedSupplierNetworkService {
 
     const freshness = this.assessScopeFreshness(scope);
 
-    if (freshness.knownSupplierCount > 0) {
+    if (freshness.status === 'FRESH' && freshness.knownSupplierCount > 0) {
       return {
         hasCoverage: true,
         knownSuppliersCount: freshness.knownSupplierCount,
@@ -342,25 +404,31 @@ export class ManagedSupplierNetworkService {
       };
     }
 
-    // Trigger controlled background discovery if within quota
     const quota = this.evaluateQuota('GOOGLE_PLACES', 'P2_NEW_BUYER_ONBOARDING', 1);
     let triggeredDiscovery = false;
-    if (quota.allowed && this.refreshPolicy.enableOnboardingPreWarm) {
-      this.buyerDemandDiscoveries++;
-      await this.executeControlledDiscovery(scope, 'BUYER_ONBOARDING', 1);
+    const scopeKey = this.getScopeKey(scope);
+    if (quota.allowed && this.refreshPolicy.enableOnboardingPreWarm && !this.generationInFlight.has(scopeKey)) {
       triggeredDiscovery = true;
+      void this.scheduleControlledDiscovery(scope, 'BUYER_ONBOARDING', 1, false).catch(() => undefined);
     }
 
-    const updatedFreshness = this.assessScopeFreshness(scope);
     return {
-      hasCoverage: updatedFreshness.knownSupplierCount > 0,
-      knownSuppliersCount: updatedFreshness.knownSupplierCount,
-      statusLabel: updatedFreshness.knownSupplierCount > 0
-        ? `OTP discovered ${updatedFreshness.knownSupplierCount} commercial suppliers for your onboarding location in ${location.city}.`
-        : `Location registered. Regional supplier network is being expanded for ${location.city} (${location.pincode}).`,
-      stageBreakdown: updatedFreshness.stageBreakdown,
+      hasCoverage: freshness.knownSupplierCount > 0,
+      knownSuppliersCount: freshness.knownSupplierCount,
+      statusLabel:
+        freshness.knownSupplierCount > 0
+          ? `OTP already has ${freshness.knownSupplierCount} suppliers active in ${location.city} (${location.pincode}).`
+          : `Location registered. Regional supplier network is being expanded for ${location.city} (${location.pincode}).`,
+      stageBreakdown: freshness.stageBreakdown,
       triggeredDiscovery,
     };
+  }
+
+  /**
+   * Read-only coverage assessment (admin "Check Existing Coverage").
+   */
+  public async checkLocationCoverage(params: PrepareLocationParams): Promise<PrepareLocationResult> {
+    return this.prepareLocationNetwork({ ...params, executeDiscovery: false, forceRefresh: false });
   }
 
   /**
@@ -379,6 +447,27 @@ export class ManagedSupplierNetworkService {
     };
     const scopeKey = this.getScopeKey(scope);
     const freshness = this.assessScopeFreshness(scope);
+    const executeDiscovery = params.executeDiscovery !== false;
+
+    if (!executeDiscovery) {
+      this.cacheHits++;
+      const report = this.generateCoverageReport(scope);
+      return {
+        ok: true,
+        scopeKey,
+        status: freshness.status,
+        externalCallsExecuted: 0,
+        knownSuppliersCount: freshness.knownSupplierCount,
+        newSuppliersDiscovered: 0,
+        updatedSuppliersCount: 0,
+        report,
+        quotaImpact: {
+          callsUsed: 0,
+          dailyRemaining: Math.max(0, 1500 - this.dailyUsageCount),
+        },
+        message: `Coverage status assessed: ${freshness.status}. ${freshness.explanation}`,
+      };
+    }
 
     if (freshness.status === 'FRESH' && !params.forceRefresh) {
       this.cacheHits++;
@@ -441,7 +530,26 @@ export class ManagedSupplierNetworkService {
     }
 
     this.superadminDiscoveries++;
-    return this.executeControlledDiscovery(scope, 'SUPERADMIN_PREPARE', 2);
+    return this.scheduleControlledDiscovery(scope, 'SUPERADMIN_PREPARE', 2, Boolean(params.forceRefresh));
+  }
+
+  private scheduleControlledDiscovery(
+    scope: DiscoveryScopeDescriptor,
+    context: string,
+    callsBudget: number,
+    forceRefresh: boolean,
+  ): Promise<PrepareLocationResult> {
+    const scopeKey = this.getScopeKey(scope);
+    const existing = this.generationInFlight.get(scopeKey);
+    if (existing) {
+      return existing;
+    }
+
+    const job = this.executeControlledDiscovery(scope, context, callsBudget, forceRefresh).finally(() => {
+      this.generationInFlight.delete(scopeKey);
+    });
+    this.generationInFlight.set(scopeKey, job);
+    return job;
   }
 
   /**
@@ -451,18 +559,96 @@ export class ManagedSupplierNetworkService {
     scope: DiscoveryScopeDescriptor,
     context: string,
     calls = 2,
+    forceRefresh = false,
   ): Promise<PrepareLocationResult> {
     const scopeKey = this.getScopeKey(scope);
-    this.dailyUsageCount += calls;
-    this.monthlyUsageCount += calls;
-    this.externalCalls += calls;
+    const priorCount = this.getSuppliersInScope(scope).length;
 
-    const mockExternalSuppliers = this.generateRealisticMockDiscovery(scope, context);
+    let externalSuppliers: Array<{
+      businessName: string;
+      phone: string;
+      address: string;
+      rating: number;
+      userRatingsTotal: number;
+      placeId: string;
+      isGstKnown: boolean;
+      isDetailsComplete: boolean;
+    }> = [];
+    let externalCallsExecuted = 0;
+
+    if (this.googlePlacesAdapter && this.serverFetchFn && this.resolveGoogleApiKey()) {
+      this.buyerDemandDiscoveries++;
+      const managed = await runManagedGooglePlacesDiscovery(scope, this.googlePlacesAdapter, {
+        fetchFn: this.serverFetchFn,
+        apiKey: this.resolveGoogleApiKey(),
+        forceRefresh,
+        maxQueries: Math.min(3, calls),
+        priority: context.includes('SUPERADMIN') ? 'BACKGROUND' : 'BUYER_DEMAND',
+      });
+      externalCallsExecuted = managed.externalCallsUsed;
+      this.dailyUsageCount += managed.externalCallsUsed;
+      this.monthlyUsageCount += managed.externalCallsUsed;
+      this.externalCalls += managed.externalCallsUsed;
+
+      if (managed.quotaExhausted) {
+        return {
+          ok: false,
+          scopeKey,
+          status: this.assessScopeFreshness(scope).status,
+          externalCallsExecuted: 0,
+          knownSuppliersCount: priorCount,
+          newSuppliersDiscovered: 0,
+          updatedSuppliersCount: 0,
+          report: this.generateCoverageReport(scope),
+          quotaImpact: {
+            callsUsed: 0,
+            dailyRemaining: Math.max(0, 1500 - this.dailyUsageCount),
+          },
+          message: managed.explanation,
+          error: 'QUOTA_EXHAUSTED',
+        };
+      }
+
+      externalSuppliers = managed.rawCandidates.map((raw) => ({
+        businessName: raw.businessName,
+        phone: raw.phone || '',
+        address: raw.formattedAddress || `${scope.city}, ${scope.state} ${scope.pincode}`,
+        rating: raw.rating ?? 0,
+        userRatingsTotal: raw.userRatingsTotal ?? 0,
+        placeId: raw.placeId,
+        isGstKnown: Boolean(raw.isGstKnown),
+        isDetailsComplete: Boolean(raw.isDetailsComplete),
+      }));
+    } else if (this.allowLegacyMockDiscovery) {
+      this.dailyUsageCount += calls;
+      this.monthlyUsageCount += calls;
+      this.externalCalls += calls;
+      externalCallsExecuted = calls;
+      externalSuppliers = this.generateRealisticMockDiscovery(scope, context);
+    } else {
+      return {
+        ok: false,
+        scopeKey,
+        status: this.assessScopeFreshness(scope).status,
+        externalCallsExecuted: 0,
+        knownSuppliersCount: priorCount,
+        newSuppliersDiscovered: 0,
+        updatedSuppliersCount: 0,
+        report: this.generateCoverageReport(scope),
+        quotaImpact: {
+          callsUsed: 0,
+          dailyRemaining: Math.max(0, 1500 - this.dailyUsageCount),
+        },
+        message: 'Google Places managed discovery is not configured (credentials/server fetch required).',
+        error: 'PROVIDER_UNAVAILABLE',
+      };
+    }
+
     let newSuppliersCount = 0;
     let updatedSuppliersCount = 0;
 
-    for (const raw of mockExternalSuppliers) {
-      const existing = this.findExistingSupplier(raw);
+    for (const raw of externalSuppliers) {
+      const existing = this.findExistingSupplierByPlaceId(raw.placeId);
       const nowIso = new Date().toISOString();
 
       // Record immutable Discovery Observation
@@ -574,28 +760,31 @@ export class ManagedSupplierNetworkService {
       }
     }
 
-    // Update Scope registry timestamp
-    this.knownScopes.set(scopeKey, {
-      lastDiscoveredAt: Date.now(),
-      count: this.getSuppliersInScope(scope).length,
-    });
+    // Update Scope registry timestamp only after successful non-empty coverage
+    const mergedCount = this.getSuppliersInScope(scope).length;
+    if (mergedCount > 0) {
+      this.markSuccessfulDiscovery(scopeKey, mergedCount);
+    }
 
     const report = this.generateCoverageReport(scope);
 
     return {
       ok: true,
       scopeKey,
-      status: 'FRESH',
-      externalCallsExecuted: calls,
+      status: mergedCount > 0 ? 'FRESH' : this.assessScopeFreshness(scope).status,
+      externalCallsExecuted,
       knownSuppliersCount: report.summary.totalKnown,
       newSuppliersDiscovered: newSuppliersCount,
       updatedSuppliersCount,
       report,
       quotaImpact: {
-        callsUsed: calls,
+        callsUsed: externalCallsExecuted,
         dailyRemaining: Math.max(0, 1500 - this.dailyUsageCount),
       },
-      message: `Successfully executed discovery for ${scope.city} (${scope.pincode}) — ${scope.category}. Added ${newSuppliersCount} new, updated ${updatedSuppliersCount} existing suppliers.`,
+      message:
+        mergedCount > 0
+          ? `Successfully executed discovery for ${scope.city} (${scope.pincode}) — ${scope.category}. Added ${newSuppliersCount} new, updated ${updatedSuppliersCount} existing suppliers.`
+          : `Discovery completed with zero suppliers for ${scope.city} (${scope.pincode}); prior coverage preserved.`,
     };
   }
 
@@ -733,20 +922,29 @@ export class ManagedSupplierNetworkService {
     return list;
   }
 
-  private findExistingSupplier(raw: { businessName: string; phone?: string; placeId?: string }): NetworkSupplierEntity | undefined {
+  private findExistingSupplierByPlaceId(placeId?: string): NetworkSupplierEntity | undefined {
+    if (!placeId) return undefined;
     for (const s of this.suppliers.values()) {
-      if (raw.placeId && s.provenanceProviders.includes('GOOGLE_PLACES')) {
-        const obs = this.observations.find((o) => o.supplierId === s.id && o.externalRef === raw.placeId);
-        if (obs) return s;
-      }
-      if (raw.phone && s.contactPhone && raw.phone.replace(/\D/g, '') === s.contactPhone.replace(/\D/g, '')) {
-        return s;
-      }
-      if (s.businessName.toLowerCase() === raw.businessName.toLowerCase()) {
-        return s;
-      }
+      const obs = this.observations.find((o) => o.supplierId === s.id && o.externalRef === placeId);
+      if (obs) return s;
     }
     return undefined;
+  }
+
+  private findExistingSupplier(raw: { businessName: string; phone?: string; placeId?: string }): NetworkSupplierEntity | undefined {
+    if (raw.placeId) {
+      return this.findExistingSupplierByPlaceId(raw.placeId);
+    }
+    return undefined;
+  }
+
+  private resolveGoogleApiKey(): string | undefined {
+    const key =
+      this.googleApiKey ??
+      process.env.GOOGLE_PLACES_API_KEY ??
+      process.env.GOOGLE_MAPS_API_KEY ??
+      undefined;
+    return key && key.trim().length > 0 ? key.trim() : undefined;
   }
 
   private generateRealisticMockDiscovery(

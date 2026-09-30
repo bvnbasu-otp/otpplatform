@@ -18,6 +18,7 @@ import {
   type QuotaRequestPriority,
 } from './google-gis-safety-quota';
 import { sanitizeGisLocationDescriptor } from './google-maps-location-adapter';
+import type { LocationCoverageFreshnessAuthority } from '../discovery/location-coverage-freshness-authority';
 
 export type GooglePlacesDiscoverySourceType =
   | 'LIVE_API'
@@ -70,6 +71,9 @@ export interface GooglePlacesDiscoveryAdapterOptions {
   quotaLimits?: Partial<GoogleGisQuotaLimits>;
   fetchFn?: (url: string, init?: any) => Promise<any>;
   cacheTtlMs?: number;
+  /** When set, adapter Tier-2 cache reads/writes reconcile to this authority (no independent TTL). */
+  freshnessAuthority?: LocationCoverageFreshnessAuthority;
+  freshnessWindowDays?: number;
 }
 
 /**
@@ -166,6 +170,8 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
   private readonly quotaGuard: GoogleGisSafetyQuotaGuard;
   private readonly fetchFn?: (url: string, init?: any) => Promise<any>;
   private readonly cacheTtlMs: number;
+  private readonly freshnessAuthority?: LocationCoverageFreshnessAuthority;
+  private readonly freshnessWindowDays: number;
   private readonly discoveryCache = new Map<
     string,
     { candidates: NetworkDiscoveryCandidate[]; cachedAt: number }
@@ -188,6 +194,8 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
       });
     this.fetchFn = options.fetchFn;
     this.cacheTtlMs = options.cacheTtlMs ?? 30 * 24 * 60 * 60 * 1000; // 30 days default
+    this.freshnessAuthority = options.freshnessAuthority;
+    this.freshnessWindowDays = options.freshnessWindowDays ?? 30;
 
     if (this.apiKey) {
       this.isTruthfulLive = true;
@@ -326,6 +334,115 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
   }
 
   /**
+   * Managed buyer/admin coverage: single live Text Search with optional geocode bias — no static/simulated tiers.
+   */
+  async discoverManagedCoverage(
+    criteria: GooglePlacesDiscoveryCriteria,
+    options: {
+      searchQuery: string;
+      geocodedCenter?: { lat: number; lng: number };
+      fetchFn: (url: string, init?: any) => Promise<any>;
+      apiKey: string;
+      forceRefresh?: boolean;
+    },
+  ): Promise<{
+    rawResults: GooglePlacesRawCandidate[];
+    externalCallsUsed: number;
+    errorCode?: 'QUOTA_EXHAUSTED' | 'AUTH_FAILURE' | 'PROVIDER_ERROR';
+    explanation: string;
+  }> {
+    const scopeKey = this.getScopeKey(criteria);
+    const priority = criteria.priority ?? 'BUYER_DEMAND';
+
+    if (!options.forceRefresh && this.freshnessAuthority?.isScopeFresh(scopeKey, this.freshnessWindowDays)) {
+      const cached = this.discoveryCache.get(scopeKey);
+      if (cached) {
+        return {
+          rawResults: cached.candidates.map((c) => ({
+            placeId: c.externalRef,
+            businessName: c.businessName,
+            formattedAddress: undefined,
+            phone: (c as { phone?: string }).phone,
+          })),
+          externalCallsUsed: 0,
+          explanation: 'Reused authoritative managed coverage cache (0 Google calls).',
+        };
+      }
+    }
+
+    const quotaEval = await this.quotaGuard.acquireReservation(new Date(), priority);
+    if (!quotaEval.allowed) {
+      return {
+        rawResults: [],
+        externalCallsUsed: 0,
+        errorCode: 'QUOTA_EXHAUSTED',
+        explanation: quotaEval.reason ?? 'Google daily quota exhausted.',
+      };
+    }
+
+    const radiusM = Math.min(50000, Math.max(1000, Math.round((criteria.radiusKm ?? 25) * 1000)));
+    const locationParam = options.geocodedCenter
+      ? `&location=${options.geocodedCenter.lat},${options.geocodedCenter.lng}&radius=${radiusM}`
+      : '';
+
+    const url = `${this.endpointUrl}?query=${encodeURIComponent(options.searchQuery)}${locationParam}&key=${encodeURIComponent(options.apiKey)}`;
+
+    try {
+      const json = await options.fetchFn(url);
+      if (json?.status === 'REQUEST_DENIED' || json?.error_message) {
+        return {
+          rawResults: [],
+          externalCallsUsed: 1,
+          errorCode: 'AUTH_FAILURE',
+          explanation: 'Google Places API rejected the request (auth/configuration).',
+        };
+      }
+      const rawResults: GooglePlacesRawCandidate[] = [];
+      if (Array.isArray(json?.results)) {
+        const seen = new Set<string>();
+        for (const r of json.results) {
+          const mapped = {
+            placeId: r.place_id || r.placeId || '',
+            businessName: r.name || r.businessName || 'Discovered Supplier',
+            formattedAddress: r.formatted_address || r.formattedAddress,
+            phone: r.formatted_phone_number || r.phone,
+            rating: r.rating,
+            userRatingsTotal: r.user_ratings_total || r.userRatingsTotal,
+            coordinates: r.geometry?.location || r.coordinates,
+            types: r.types || [],
+            isDetailsComplete: Boolean(r.formatted_address && r.formatted_phone_number),
+          };
+          if (mapped.placeId && !seen.has(mapped.placeId)) {
+            seen.add(mapped.placeId);
+            rawResults.push(mapped);
+          }
+        }
+      }
+
+      if (rawResults.length > 0) {
+        const normalized = rawResults.map((r) => this.normalizeCandidate(r, criteria.category, criteria.location));
+        this.discoveryCache.set(scopeKey, { candidates: this.deduplicateCandidates(normalized), cachedAt: Date.now() });
+      }
+
+      return {
+        rawResults,
+        externalCallsUsed: 1,
+        explanation:
+          rawResults.length > 0
+            ? `Live Text Search returned ${rawResults.length} results.`
+            : 'Live Text Search returned zero results (not cached).',
+      };
+    } catch {
+      return {
+        rawResults: [],
+        externalCallsUsed: 1,
+        errorCode: 'PROVIDER_ERROR',
+        explanation: 'Google Places Text Search failed.',
+      };
+    }
+  }
+
+  /**
    * Full discovery pipeline with authoritative 4-tier fallback ladder:
    * Tier 1: LIVE_API (if credentialed & quota available)
    * Tier 2: DATABASE_CACHE (cached recent discoveries)
@@ -409,17 +526,32 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
 
     // --- TIER 2: DATABASE_CACHE ---
     if (!options.forceCacheRefresh) {
-      const cached = this.discoveryCache.get(scopeKey);
-      if (cached && Date.now() - cached.cachedAt < this.cacheTtlMs) {
-        return {
-          candidates: cached.candidates,
-          sourceType: 'DATABASE_CACHE',
-          externalCallsUsed: 0,
-          truthfulStatus: this.truthfulStatus,
-          quotaEvaluation: quotaEval,
-          explanation: `Returned ${cached.candidates.length} cached candidate suppliers from local database cache.`,
-          scopeKey,
-        };
+      if (this.freshnessAuthority?.isScopeFresh(scopeKey, this.freshnessWindowDays)) {
+        const cached = this.discoveryCache.get(scopeKey);
+        if (cached) {
+          return {
+            candidates: cached.candidates,
+            sourceType: 'DATABASE_CACHE',
+            externalCallsUsed: 0,
+            truthfulStatus: this.truthfulStatus,
+            quotaEvaluation: quotaEval,
+            explanation: `Returned ${cached.candidates.length} candidates from authoritative managed coverage cache.`,
+            scopeKey,
+          };
+        }
+      } else if (!this.freshnessAuthority) {
+        const cached = this.discoveryCache.get(scopeKey);
+        if (cached && Date.now() - cached.cachedAt < this.cacheTtlMs) {
+          return {
+            candidates: cached.candidates,
+            sourceType: 'DATABASE_CACHE',
+            externalCallsUsed: 0,
+            truthfulStatus: this.truthfulStatus,
+            quotaEvaluation: quotaEval,
+            explanation: `Returned ${cached.candidates.length} cached candidate suppliers from local database cache.`,
+            scopeKey,
+          };
+        }
       }
     }
 

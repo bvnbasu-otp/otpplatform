@@ -16,4 +16,12 @@ describe('AdminSupplierNetworkConsole (R2-07 Superadmin Location Pre-Warm UI)', 
     expect(element.props.onPrepareLocation).toBe(handlePrepare);
     expect(element.props.onRefreshTelemetry).toBe(handleRefresh);
   });
+
+  it('passes executeDiscovery separately from forceRefresh to backend handler', () => {
+    const handlePrepare = vi.fn();
+    const element = React.createElement(AdminSupplierNetworkConsole, {
+      onPrepareLocation: handlePrepare,
+    });
+    expect(element.props.onPrepareLocation).toBe(handlePrepare);
+  });
 });

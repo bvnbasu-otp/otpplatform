@@ -16,6 +16,7 @@ export interface AdminSupplierNetworkConsoleProps {
     pincode: string;
     category: string;
     forceRefresh: boolean;
+    executeDiscovery: boolean;
   }) => Promise<any>;
   onRefreshTelemetry?: () => void;
 }
@@ -96,7 +97,8 @@ export function AdminSupplierNetworkConsole({
           city,
           pincode: pincode.trim(),
           category: activeCategory,
-          forceRefresh: executeDiscovery || forceRefresh,
+          forceRefresh,
+          executeDiscovery,
         });
 
         if (res && res.ok) {
@@ -112,8 +114,8 @@ export function AdminSupplierNetworkConsole({
             type: 'error',
           });
         }
-      } else {
-        // Fallback simulation for offline/standalone execution
+      } else if (import.meta.env.MODE === 'test') {
+        // Vitest-only fallback (production admin must wire onPrepareLocation).
         const mockSuppliers = [
           {
             id: 'sup-demo-01',
@@ -186,6 +188,11 @@ export function AdminSupplierNetworkConsole({
             ? `Successfully prepared supplier network for ${city} (${pincode}).`
             : `Coverage status assessed: ${mockReport.freshness.status}`,
           type: 'success',
+        });
+      } else {
+        setMessage({
+          text: 'Supplier network coverage backend is not connected. Configure location-pin-coverage edge function.',
+          type: 'error',
         });
       }
     } catch (err: any) {
