@@ -39,11 +39,8 @@ export async function runEdgeAuthoritativeLocationPinCoverage(
       serverFetchFn: apiKey
         ? async (url: string, init?: RequestInit) => {
             const res = await fetch(url, init);
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-              return { __httpStatus: res.status, ...data };
-            }
-            return data;
+            const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+            return { ...data, __httpStatus: res.status };
           }
         : undefined,
       allowLegacyMockDiscovery: false,

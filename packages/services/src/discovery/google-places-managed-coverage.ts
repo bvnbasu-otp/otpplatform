@@ -55,6 +55,83 @@ export interface ManagedGoogleDiscoveryResult {
 
 const GEOCODE_ENDPOINT = 'https://maps.googleapis.com/maps/api/geocode/json';
 
+function gap01SafeGeocodeErrorReason(message?: string): string | undefined {
+  if (!message || typeof message !== 'string') return undefined;
+  const trimmed = message.replace(/\s+/g, ' ').trim();
+  if (!trimmed || trimmed.length > 120) return undefined;
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.includes('key=') ||
+    lower.includes('authorization') ||
+    lower.includes('maps.googleapis.com') ||
+    lower.includes('http://') ||
+    lower.includes('https://')
+  ) {
+    return undefined;
+  }
+  return trimmed;
+}
+
+function gap01LogGeocodeDiagnostics(json: {
+    __httpStatus?: number;
+    status?: string;
+    error_message?: string;
+    results?: Array<{ geometry?: { location?: { lat?: number; lng?: number } } }>;
+  },
+): void {
+  const httpStatus = typeof json.__httpStatus === 'number' ? json.__httpStatus : 0;
+  console.log(`GAP01_GEOCODE_HTTP_STATUS httpStatus=${httpStatus}`);
+  const googleStatus = json.status ?? 'UNKNOWN_ERROR';
+  const resultCount = Array.isArray(json.results) ? json.results.length : 0;
+  console.log(`GAP01_GEOCODE_GOOGLE_STATUS googleStatus=${googleStatus}`);
+  console.log(`GAP01_GEOCODE_RESULT_COUNT count=${resultCount}`);
+  const loc = json.results?.[0]?.geometry?.location;
+  const coordsPresent =
+    googleStatus === 'OK' &&
+    loc !== undefined &&
+    typeof loc.lat === 'number' &&
+    typeof loc.lng === 'number';
+  console.log(`GAP01_GEOCODE_COORDINATES_PRESENT value=${coordsPresent}`);
+  if (googleStatus !== 'OK') {
+    console.log(`GAP01_GEOCODE_ERROR_CLASS=${googleStatus}`);
+    const safeReason = gap01SafeGeocodeErrorReason(json.error_message);
+    if (safeReason) {
+      console.log(`GAP01_GEOCODE_ERROR_REASON=${safeReason}`);
+    }
+  }
+}
+
+function gap01PlacesFetchWrapper(
+  fetchFn: (url: string, init?: RequestInit) => Promise<unknown>,
+): (url: string, init?: RequestInit) => Promise<unknown> {
+  return async (url: string, init?: RequestInit) => {
+    const isPlacesNew = url.includes('places.googleapis.com');
+    if (isPlacesNew) {
+      console.log('GAP01_PLACES_START api=places_api_new');
+    }
+    const json = (await fetchFn(url, init)) as Record<string, unknown>;
+    if (!isPlacesNew) {
+      return json;
+    }
+    const httpStatus = typeof json.__httpStatus === 'number' ? json.__httpStatus : 0;
+    console.log(`GAP01_PLACES_HTTP_STATUS httpStatus=${httpStatus}`);
+    const places = json.places;
+    const resultCount = Array.isArray(places) ? places.length : 0;
+    console.log(`GAP01_PLACES_RESULT_COUNT count=${resultCount}`);
+    const placesError = json.error as { status?: string; message?: string } | undefined;
+    if (placesError?.status) {
+      console.log(`GAP01_PLACES_ERROR_CLASS=${placesError.status}`);
+      const safeReason = gap01SafeGeocodeErrorReason(placesError.message);
+      if (safeReason) {
+        console.log(`GAP01_PLACES_ERROR_REASON=${safeReason}`);
+      }
+    } else if (typeof httpStatus === 'number' && (httpStatus < 200 || httpStatus >= 300)) {
+      console.log('GAP01_PLACES_ERROR_CLASS=HTTP_ERROR');
+    }
+    return json;
+  };
+}
+
 function geocodeFailureExplanation(kind: GeocodeFailureKind, pin: string): string {
   switch (kind) {
     case 'REQUEST_DENIED':
@@ -99,12 +176,14 @@ export async function geocodeIndianPinCode(
 
   const url = `${GEOCODE_ENDPOINT}?components=postal_code:${encodeURIComponent(pin)}|country:IN&key=${encodeURIComponent(key)}`;
   try {
+    console.log(`GAP01_GEOCODE_START pin=${pin}`);
     const json = (await options.fetchFn(url)) as {
       __httpStatus?: number;
       status?: string;
       error_message?: string;
       results?: Array<{ geometry?: { location?: { lat?: number; lng?: number } }; formatted_address?: string }>;
     };
+    gap01LogGeocodeDiagnostics(json);
 
     if (typeof json.__httpStatus === 'number' && (json.__httpStatus < 200 || json.__httpStatus >= 300)) {
       return {
@@ -207,7 +286,8 @@ export async function runManagedGooglePlacesDiscovery(
     };
   }
 
-  const geocodeOutcome = await geocodeIndianPinCode(pinCode, { apiKey, fetchFn });
+  const instrumentedFetchFn = gap01PlacesFetchWrapper(fetchFn);
+  const geocodeOutcome = await geocodeIndianPinCode(pinCode, { apiKey, fetchFn: instrumentedFetchFn });
   const geocodeAttempted = Boolean(apiKey && fetchFn);
   let externalCallsUsed = geocodeAttempted ? 1 : 0;
 
@@ -268,7 +348,7 @@ export async function runManagedGooglePlacesDiscovery(
     const result = await adapter.discoverManagedCoverage(criteria, {
       searchQuery: buildGooglePlacesTextQuery(term, city, pinCode),
       geocodedCenter: geocoded,
-      fetchFn,
+      fetchFn: instrumentedFetchFn,
       apiKey,
       forceRefresh: options.forceRefresh,
       orchestratorAuthorized: true,

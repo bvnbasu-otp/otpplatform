@@ -8,7 +8,7 @@ import {
   buildLocationPinScopeKey,
 } from './location-pin-coverage-store';
 import { runAuthoritativeLocationPinCoverage } from './location-pin-coverage-orchestrator';
-import { runManagedGooglePlacesDiscovery } from './google-places-managed-coverage';
+import { geocodeIndianPinCode, runManagedGooglePlacesDiscovery } from './google-places-managed-coverage';
 import {
   isVitestMockDiscoveryAllowed,
   resolveForceRefreshAuthorization,
@@ -367,6 +367,93 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
     expect(res.ok).toBe(true);
     expect(urls.some((u) => u.includes('places:searchText'))).toBe(true);
     expect(urls.some((u) => u.includes('textsearch/json'))).toBe(false);
+  });
+
+  it('diagnostic geocode logs omit secrets and URLs', async () => {
+    const secretKey = 'test-google-key';
+    const logs: string[] = [];
+    const logSpy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+      logs.push(args.map(String).join(' '));
+    });
+    try {
+      await geocodeIndianPinCode('560048', {
+        apiKey: secretKey,
+        fetchFn: async () => ({
+          __httpStatus: 200,
+          status: 'OK',
+          results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } } }],
+        }),
+      });
+      const joined = logs.join('\n');
+      expect(joined).toContain('GAP01_GEOCODE_START pin=560048');
+      expect(joined).toContain('GAP01_GEOCODE_HTTP_STATUS httpStatus=200');
+      expect(joined).toContain('GAP01_GEOCODE_GOOGLE_STATUS googleStatus=OK');
+      expect(joined).not.toContain(secretKey);
+      expect(joined).not.toMatch(/key=/i);
+      expect(joined).not.toContain('maps.googleapis.com');
+      expect(joined).not.toMatch(/authorization/i);
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('REQUEST_DENIED geocode still maps to PROVIDER_UNAVAILABLE auth path without logging secrets', async () => {
+    const logs: string[] = [];
+    const logSpy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+      logs.push(args.map(String).join(' '));
+    });
+    const manager = createManagedWithFetch(async (url) => {
+      if (url.includes('geocode')) {
+        return { __httpStatus: 200, status: 'REQUEST_DENIED', error_message: 'The provided API key is invalid.' };
+      }
+      throw new Error('places must not run');
+    });
+    try {
+      const res = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true });
+      expect(res.ok).toBe(false);
+      expect(res.error).toBe('PROVIDER_UNAVAILABLE');
+      const joined = logs.join('\n');
+      expect(joined).toContain('GAP01_GEOCODE_ERROR_CLASS=REQUEST_DENIED');
+      expect(joined).not.toContain('test-google-key');
+      expect(joined).not.toMatch(/key=/i);
+      expect(joined).not.toContain('maps.googleapis.com');
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('managed discovery logs Places API (New) markers without legacy textsearch', async () => {
+    const logs: string[] = [];
+    const logSpy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+      logs.push(args.map(String).join(' '));
+    });
+    const urls: string[] = [];
+    const manager = createManagedWithFetch(async (url: string, init?: RequestInit) => {
+      urls.push(url);
+      if (url.includes('geocode')) {
+        return {
+          __httpStatus: 200,
+          status: 'OK',
+          results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } } }],
+        };
+      }
+      expect(init?.method).toBe('POST');
+      return { __httpStatus: 200, ...mockPlacesSearchSuccess('ChIJ_diag_places') };
+    });
+    try {
+      const res = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true });
+      expect(res.ok).toBe(true);
+      expect(urls.some((u) => u.includes('places:searchText'))).toBe(true);
+      expect(urls.some((u) => u.includes('textsearch/json'))).toBe(false);
+      const joined = logs.join('\n');
+      expect(joined).toContain('GAP01_PLACES_START api=places_api_new');
+      expect(joined).toContain('GAP01_PLACES_HTTP_STATUS');
+      expect(joined).toContain('GAP01_PLACES_RESULT_COUNT');
+      expect(joined).not.toContain('test-google-key');
+      expect(joined).not.toMatch(/key=/i);
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
   it('deduplicates by Place ID only on merge', async () => {
