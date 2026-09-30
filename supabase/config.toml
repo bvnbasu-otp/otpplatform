@@ -111,6 +111,7 @@ content_path = "./supabase/templates/invite.html"
 
 [functions.location-pin-coverage]
 verify_jwt = false
+import_map = "./functions/location-pin-coverage/deno.json"
 
 [edge_runtime]
 enabled = false
