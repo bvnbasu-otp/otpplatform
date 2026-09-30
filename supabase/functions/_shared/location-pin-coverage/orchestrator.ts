@@ -37,9 +37,13 @@ export async function runEdgeAuthoritativeLocationPinCoverage(
       dailyLimit: DAILY_LIMIT,
       googleApiKey: apiKey || undefined,
       serverFetchFn: apiKey
-        ? async (url: string) => {
-            const res = await fetch(url);
-            return res.json();
+        ? async (url: string, init?: RequestInit) => {
+            const res = await fetch(url, init);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              return { __httpStatus: res.status, ...data };
+            }
+            return data;
           }
         : undefined,
       allowLegacyMockDiscovery: false,

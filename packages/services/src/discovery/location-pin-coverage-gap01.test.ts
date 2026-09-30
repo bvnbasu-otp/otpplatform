@@ -37,6 +37,20 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
     });
   }
 
+  function mockPlacesSearchSuccess(placeId = 'ChIJ_gap01_one') {
+    return {
+      places: [
+        {
+          id: `places/${placeId}`,
+          displayName: { text: 'Gap01 Electrical Hub' },
+          formattedAddress: 'Hoodi, Bengaluru 560048',
+          location: { latitude: 12.97, longitude: 77.71 },
+          googleMapsUri: `https://maps.google.com/?cid=${placeId}`,
+        },
+      ],
+    };
+  }
+
   function mockGoogleSuccess(placeId = 'ChIJ_gap01_one') {
     return async (url: string) => {
       if (url.includes('geocode')) {
@@ -45,21 +59,10 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
           results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } }, formatted_address: '560048' }],
         };
       }
-      return {
-        status: 'OK',
-        results: [
-          {
-            place_id: placeId,
-            name: 'Gap01 Electrical Hub',
-            formatted_address: 'Hoodi, Bengaluru 560048',
-            formatted_phone_number: '+91 9845012345',
-            rating: 4.5,
-            user_ratings_total: 10,
-            geometry: { location: { lat: 12.97, lng: 77.71 } },
-            types: ['store'],
-          },
-        ],
-      };
+      if (url.includes('textsearch/json')) {
+        throw new Error('legacy Places Text Search must not be called');
+      }
+      return mockPlacesSearchSuccess(placeId);
     };
   }
 
@@ -125,10 +128,7 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
           results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } } }],
         };
       }
-      return {
-        status: 'OK',
-        results: [{ place_id: 'ChIJ_concurrent', name: 'Concurrent Supplier', geometry: { location: { lat: 1, lng: 1 } } }],
-      };
+      return mockPlacesSearchSuccess('ChIJ_concurrent');
     };
     const deps = {
       store,
@@ -166,7 +166,7 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
     let failNext = false;
     const manager = createManagedWithFetch(async (url) => {
       if (failNext) {
-        return { status: 'ZERO_RESULTS', results: [] };
+        return { places: [] };
       }
       return mockGoogleSuccess('ChIJ_keep_old')(url);
     }, store);
@@ -346,6 +346,29 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
     expect(calls).toBe(0);
   });
 
+  it('authoritative adapter uses Places API (New) searchText, not legacy textsearch/json', async () => {
+    const urls: string[] = [];
+    const manager = createManagedWithFetch(async (url: string, init?: RequestInit) => {
+      urls.push(url);
+      if (url.includes('geocode')) {
+        return {
+          status: 'OK',
+          results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } } }],
+        };
+      }
+      expect(init?.method).toBe('POST');
+      const headers = init?.headers as Record<string, string> | undefined;
+      expect(headers?.['X-Goog-FieldMask']).toContain('places.id');
+      expect(headers?.['X-Goog-Api-Key']).toBeDefined();
+      expect(headers?.['X-Goog-FieldMask']).not.toBe('*');
+      return mockPlacesSearchSuccess('ChIJ_new_api_only');
+    });
+    const res = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true });
+    expect(res.ok).toBe(true);
+    expect(urls.some((u) => u.includes('places:searchText'))).toBe(true);
+    expect(urls.some((u) => u.includes('textsearch/json'))).toBe(false);
+  });
+
   it('deduplicates by Place ID only on merge', async () => {
     const manager = createManagedWithFetch(async (url: string) => {
       if (url.includes('geocode')) {
@@ -355,10 +378,19 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
         };
       }
       return {
-        status: 'OK',
-        results: [
-          { place_id: 'ChIJ_dedup', name: 'Alpha Traders', formatted_phone_number: '+91 1111111111' },
-          { place_id: 'ChIJ_dedup', name: 'Alpha Traders Duplicate Name', formatted_phone_number: '+91 2222222222' },
+        places: [
+          {
+            id: 'places/ChIJ_dedup',
+            displayName: { text: 'Alpha Traders' },
+            formattedAddress: 'Hoodi, Bengaluru 560048',
+            location: { latitude: 12.97, longitude: 77.71 },
+          },
+          {
+            id: 'places/ChIJ_dedup',
+            displayName: { text: 'Alpha Traders Duplicate Name' },
+            formattedAddress: 'Hoodi, Bengaluru 560048',
+            location: { latitude: 12.97, longitude: 77.71 },
+          },
         ],
       };
     });

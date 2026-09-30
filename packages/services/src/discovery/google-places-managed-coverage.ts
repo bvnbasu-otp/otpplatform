@@ -16,6 +16,20 @@ export interface PinGeocodeResult {
   formattedAddress?: string;
 }
 
+export type GeocodeFailureKind =
+  | 'REQUEST_DENIED'
+  | 'ZERO_RESULTS'
+  | 'INVALID_REQUEST'
+  | 'OVER_QUERY_LIMIT'
+  | 'UNKNOWN_ERROR'
+  | 'HTTP_ERROR'
+  | 'NETWORK_ERROR'
+  | 'MALFORMED_RESPONSE';
+
+export type PinGeocodeOutcome =
+  | { ok: true; result: PinGeocodeResult }
+  | { ok: false; failureKind: GeocodeFailureKind; explanation: string };
+
 export interface ManagedGoogleDiscoveryOptions {
   forceRefresh?: boolean;
   priority?: QuotaRequestPriority;
@@ -41,35 +55,107 @@ export interface ManagedGoogleDiscoveryResult {
 
 const GEOCODE_ENDPOINT = 'https://maps.googleapis.com/maps/api/geocode/json';
 
+function geocodeFailureExplanation(kind: GeocodeFailureKind, pin: string): string {
+  switch (kind) {
+    case 'REQUEST_DENIED':
+      return 'Geocoding API denied the request (auth, billing, or API restriction).';
+    case 'ZERO_RESULTS':
+      return `Geocoding API returned no location for Indian PIN ${pin}.`;
+    case 'INVALID_REQUEST':
+      return 'Geocoding API rejected the PIN geocode request (invalid request).';
+    case 'OVER_QUERY_LIMIT':
+      return 'Geocoding API quota exceeded for PIN lookup.';
+    case 'HTTP_ERROR':
+      return 'Geocoding API HTTP response indicated failure.';
+    case 'NETWORK_ERROR':
+      return 'Geocoding API PIN lookup failed (network error).';
+    case 'MALFORMED_RESPONSE':
+      return 'Geocoding API returned an unusable PIN geocode payload.';
+    default:
+      return 'Geocoding API PIN lookup failed (unknown error).';
+  }
+}
+
 export async function geocodeIndianPinCode(
   pinCode: string,
-  options: { apiKey?: string; fetchFn?: (url: string) => Promise<unknown> },
-): Promise<PinGeocodeResult | null> {
+  options: { apiKey?: string; fetchFn?: (url: string, init?: RequestInit) => Promise<unknown> },
+): Promise<PinGeocodeOutcome> {
   const pin = pinCode.trim();
-  if (!/^\d{6}$/.test(pin)) return null;
+  if (!/^\d{6}$/.test(pin)) {
+    return {
+      ok: false,
+      failureKind: 'INVALID_REQUEST',
+      explanation: geocodeFailureExplanation('INVALID_REQUEST', pin),
+    };
+  }
   const key = options.apiKey?.trim();
-  if (!key || !options.fetchFn) return null;
+  if (!key || !options.fetchFn) {
+    return {
+      ok: false,
+      failureKind: 'REQUEST_DENIED',
+      explanation: 'Geocoding credentials or server fetch handler unavailable.',
+    };
+  }
 
   const url = `${GEOCODE_ENDPOINT}?components=postal_code:${encodeURIComponent(pin)}|country:IN&key=${encodeURIComponent(key)}`;
   try {
     const json = (await options.fetchFn(url)) as {
+      __httpStatus?: number;
       status?: string;
+      error_message?: string;
       results?: Array<{ geometry?: { location?: { lat?: number; lng?: number } }; formatted_address?: string }>;
     };
-    if (json.status === 'REQUEST_DENIED' || json.status === 'INVALID_REQUEST') {
-      return null;
+
+    if (typeof json.__httpStatus === 'number' && (json.__httpStatus < 200 || json.__httpStatus >= 300)) {
+      return {
+        ok: false,
+        failureKind: 'HTTP_ERROR',
+        explanation: geocodeFailureExplanation('HTTP_ERROR', pin),
+      };
     }
-    const loc = json.results?.[0]?.geometry?.location;
-    if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
-      return null;
+
+    const status = json.status ?? 'UNKNOWN_ERROR';
+    if (status === 'OK') {
+      const loc = json.results?.[0]?.geometry?.location;
+      if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
+        return {
+          ok: false,
+          failureKind: 'MALFORMED_RESPONSE',
+          explanation: geocodeFailureExplanation('MALFORMED_RESPONSE', pin),
+        };
+      }
+      return {
+        ok: true,
+        result: {
+          lat: loc.lat,
+          lng: loc.lng,
+          formattedAddress: json.results?.[0]?.formatted_address,
+        },
+      };
     }
+
+    const failureKind: GeocodeFailureKind =
+      status === 'REQUEST_DENIED'
+        ? 'REQUEST_DENIED'
+        : status === 'ZERO_RESULTS'
+          ? 'ZERO_RESULTS'
+          : status === 'INVALID_REQUEST'
+            ? 'INVALID_REQUEST'
+            : status === 'OVER_QUERY_LIMIT'
+              ? 'OVER_QUERY_LIMIT'
+              : 'UNKNOWN_ERROR';
+
     return {
-      lat: loc.lat,
-      lng: loc.lng,
-      formattedAddress: json.results?.[0]?.formatted_address,
+      ok: false,
+      failureKind,
+      explanation: geocodeFailureExplanation(failureKind, pin),
     };
   } catch {
-    return null;
+    return {
+      ok: false,
+      failureKind: 'NETWORK_ERROR',
+      explanation: geocodeFailureExplanation('NETWORK_ERROR', pin),
+    };
   }
 }
 
@@ -121,21 +207,22 @@ export async function runManagedGooglePlacesDiscovery(
     };
   }
 
-  const geocoded = await geocodeIndianPinCode(pinCode, { apiKey, fetchFn });
+  const geocodeOutcome = await geocodeIndianPinCode(pinCode, { apiKey, fetchFn });
   const geocodeAttempted = Boolean(apiKey && fetchFn);
   let externalCallsUsed = geocodeAttempted ? 1 : 0;
 
-  if (!geocoded) {
+  if (!geocodeOutcome.ok) {
+    const authFailure = geocodeOutcome.failureKind === 'REQUEST_DENIED';
     return {
       rawCandidates: [],
       externalCallsUsed,
-      quotaExhausted: false,
-      authFailure: false,
-      errorCode: 'GEOCODE_FAILED',
-      explanation:
-        'Indian PIN geocode failed; geographic scoped Google Places discovery was not performed (no unrestricted text-only coverage).',
+      quotaExhausted: geocodeOutcome.failureKind === 'OVER_QUERY_LIMIT',
+      authFailure,
+      errorCode: authFailure ? 'AUTH_FAILURE' : 'GEOCODE_FAILED',
+      explanation: `${geocodeOutcome.explanation} Geographic scoped Places discovery was not performed.`,
     };
   }
+  const geocoded = geocodeOutcome.result;
 
   const seenPlaceIds = new Set<string>();
   const aggregated: GooglePlacesRawCandidate[] = [];
@@ -172,7 +259,7 @@ export async function runManagedGooglePlacesDiscovery(
         pinCode,
         state: scope.state,
         country: 'IN',
-        coordinates: geocoded ? { lat: geocoded.lat, lng: geocoded.lng } : undefined,
+        coordinates: { lat: geocoded.lat, lng: geocoded.lng },
       },
       radiusKm: 25,
       priority: options.priority ?? 'BUYER_DEMAND',
@@ -180,7 +267,7 @@ export async function runManagedGooglePlacesDiscovery(
 
     const result = await adapter.discoverManagedCoverage(criteria, {
       searchQuery: buildGooglePlacesTextQuery(term, city, pinCode),
-      geocodedCenter: geocoded ?? undefined,
+      geocodedCenter: geocoded,
       fetchFn,
       apiKey,
       forceRefresh: options.forceRefresh,

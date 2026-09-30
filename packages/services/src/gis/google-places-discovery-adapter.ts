@@ -63,6 +63,12 @@ export interface GooglePlacesDiscoveryResult {
   scopeKey: string;
 }
 
+export const GOOGLE_PLACES_API_NEW_SEARCH_TEXT_ENDPOINT =
+  'https://places.googleapis.com/v1/places:searchText';
+
+const PLACES_SEARCH_TEXT_FIELD_MASK =
+  'places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri';
+
 export interface GooglePlacesDiscoveryAdapterOptions {
   apiKey?: string;
   endpointUrl?: string;
@@ -184,8 +190,7 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
       process.env.GOOGLE_MAPS_API_KEY;
 
     this.apiKey = rawKey && rawKey.trim().length > 0 ? rawKey.trim() : undefined;
-    this.endpointUrl =
-      options.endpointUrl ?? 'https://maps.googleapis.com/maps/api/place/textsearch/json';
+    this.endpointUrl = options.endpointUrl ?? GOOGLE_PLACES_API_NEW_SEARCH_TEXT_ENDPOINT;
     this.timeoutMs = options.timeoutMs ?? 4000;
     this.quotaGuard =
       options.quotaGuard ??
@@ -333,8 +338,34 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
     return result.candidates;
   }
 
+  private normalizeGooglePlaceId(rawId: string): string {
+    const trimmed = rawId.trim();
+    return trimmed.startsWith('places/') ? trimmed.slice('places/'.length) : trimmed;
+  }
+
+  private mapPlacesApiNewResult(place: Record<string, unknown>): GooglePlacesRawCandidate | null {
+    const rawId = (place.id as string) || '';
+    const placeId = this.normalizeGooglePlaceId(rawId);
+    if (!placeId) return null;
+
+    const displayName = place.displayName as { text?: string } | undefined;
+    const location = place.location as { latitude?: number; longitude?: number } | undefined;
+    const lat = location?.latitude;
+    const lng = location?.longitude;
+
+    return {
+      placeId,
+      businessName: (displayName?.text || 'Discovered Supplier').trim(),
+      formattedAddress: place.formattedAddress as string | undefined,
+      coordinates:
+        typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : undefined,
+      types: [],
+      isDetailsComplete: Boolean(place.formattedAddress),
+    };
+  }
+
   /**
-   * Managed buyer/admin coverage: single live Text Search with optional geocode bias — no static/simulated tiers.
+   * Managed buyer/admin coverage: Places API (New) searchText with geocode location bias — no static/simulated tiers.
    */
   async discoverManagedCoverage(
     criteria: GooglePlacesDiscoveryCriteria,
@@ -358,48 +389,111 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
         externalCallsUsed: 0,
         errorCode: 'PROVIDER_ERROR',
         explanation:
-          'Google Places Text Search is orchestrator-only; adapter.discoverManagedCoverage requires orchestrator authorization.',
+          'Google Places searchText is orchestrator-only; adapter.discoverManagedCoverage requires orchestrator authorization.',
+      };
+    }
+
+    if (!options.geocodedCenter) {
+      return {
+        rawResults: [],
+        externalCallsUsed: 0,
+        errorCode: 'PROVIDER_ERROR',
+        explanation:
+          'Places searchText requires geocoded location bias; unrestricted global text search is not permitted.',
       };
     }
 
     const scopeKey = this.getScopeKey(criteria);
     const radiusM = Math.min(50000, Math.max(1000, Math.round((criteria.radiusKm ?? 25) * 1000)));
-    const locationParam = options.geocodedCenter
-      ? `&location=${options.geocodedCenter.lat},${options.geocodedCenter.lng}&radius=${radiusM}`
-      : '';
 
-    const url = `${this.endpointUrl}?query=${encodeURIComponent(options.searchQuery)}${locationParam}&key=${encodeURIComponent(options.apiKey)}`;
+    const requestBody: Record<string, unknown> = {
+      textQuery: options.searchQuery,
+      locationBias: {
+        circle: {
+          center: {
+            latitude: options.geocodedCenter.lat,
+            longitude: options.geocodedCenter.lng,
+          },
+          radius: radiusM,
+        },
+      },
+    };
 
     try {
-      const json = await options.fetchFn(url);
-      if (json?.status === 'REQUEST_DENIED' || json?.error_message) {
+      const json = (await options.fetchFn(this.endpointUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': options.apiKey,
+          'X-Goog-FieldMask': PLACES_SEARCH_TEXT_FIELD_MASK,
+        },
+        body: JSON.stringify(requestBody),
+      })) as Record<string, unknown>;
+
+      const httpStatus = json.__httpStatus as number | undefined;
+      if (typeof httpStatus === 'number' && (httpStatus < 200 || httpStatus >= 300)) {
         return {
           rawResults: [],
           externalCallsUsed: 1,
-          errorCode: 'AUTH_FAILURE',
-          explanation: 'Google Places API rejected the request (auth/configuration).',
+          errorCode: httpStatus === 429 ? 'QUOTA_EXHAUSTED' : 'PROVIDER_ERROR',
+          explanation: `Places API (New) HTTP ${httpStatus} — searchText did not succeed.`,
         };
       }
-      const rawResults: GooglePlacesRawCandidate[] = [];
-      if (Array.isArray(json?.results)) {
-        const seen = new Set<string>();
-        for (const r of json.results) {
-          const mapped = {
-            placeId: r.place_id || r.placeId || '',
-            businessName: r.name || r.businessName || 'Discovered Supplier',
-            formattedAddress: r.formatted_address || r.formattedAddress,
-            phone: r.formatted_phone_number || r.phone,
-            rating: r.rating,
-            userRatingsTotal: r.user_ratings_total || r.userRatingsTotal,
-            coordinates: r.geometry?.location || r.coordinates,
-            types: r.types || [],
-            isDetailsComplete: Boolean(r.formatted_address && r.formatted_phone_number),
+
+      const placesError = json.error as { status?: string; message?: string } | undefined;
+      if (placesError?.status) {
+        const status = placesError.status;
+        if (status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED') {
+          return {
+            rawResults: [],
+            externalCallsUsed: 1,
+            errorCode: 'AUTH_FAILURE',
+            explanation: 'Places API (New) denied the request (auth or API enablement).',
           };
-          if (mapped.placeId && !seen.has(mapped.placeId)) {
+        }
+        if (status === 'RESOURCE_EXHAUSTED' || status === 'QUOTA_EXCEEDED') {
+          return {
+            rawResults: [],
+            externalCallsUsed: 1,
+            errorCode: 'QUOTA_EXHAUSTED',
+            explanation: 'Places API (New) quota exceeded for searchText.',
+          };
+        }
+        if (status === 'INVALID_ARGUMENT') {
+          return {
+            rawResults: [],
+            externalCallsUsed: 1,
+            errorCode: 'PROVIDER_ERROR',
+            explanation: 'Places API (New) rejected searchText (invalid request).',
+          };
+        }
+        return {
+          rawResults: [],
+          externalCallsUsed: 1,
+          errorCode: 'PROVIDER_ERROR',
+          explanation: `Places API (New) searchText failed (${status}).`,
+        };
+      }
+
+      const rawResults: GooglePlacesRawCandidate[] = [];
+      const places = json.places;
+      if (Array.isArray(places)) {
+        const seen = new Set<string>();
+        for (const entry of places) {
+          if (!entry || typeof entry !== 'object') continue;
+          const mapped = this.mapPlacesApiNewResult(entry as Record<string, unknown>);
+          if (mapped?.placeId && !seen.has(mapped.placeId)) {
             seen.add(mapped.placeId);
             rawResults.push(mapped);
           }
         }
+      } else if (places !== undefined && places !== null) {
+        return {
+          rawResults: [],
+          externalCallsUsed: 1,
+          errorCode: 'PROVIDER_ERROR',
+          explanation: 'Places API (New) returned a malformed searchText payload.',
+        };
       }
 
       if (rawResults.length > 0) {
@@ -412,15 +506,15 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
         externalCallsUsed: 1,
         explanation:
           rawResults.length > 0
-            ? `Live Text Search returned ${rawResults.length} results.`
-            : 'Live Text Search returned zero results (not cached).',
+            ? `Places API (New) searchText returned ${rawResults.length} results.`
+            : 'Places API (New) searchText returned zero results (not cached).',
       };
     } catch {
       return {
         rawResults: [],
         externalCallsUsed: 1,
         errorCode: 'PROVIDER_ERROR',
-        explanation: 'Google Places Text Search failed.',
+        explanation: 'Places API (New) searchText failed (network or unexpected error).',
       };
     }
   }
@@ -453,12 +547,34 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
           let rawResults: GooglePlacesRawCandidate[] = [];
 
           if (this.fetchFn) {
-            // Custom or mocked fetch handler
-            const url = `${this.endpointUrl}?query=${encodeURIComponent(
-              `${criteria.category} suppliers in ${city} ${pinCode}`,
-            )}&key=${this.apiKey}`;
-            const json = await this.fetchFn(url);
-            if (Array.isArray(json?.results)) {
+            const coords = criteria.location?.coordinates;
+            const requestBody: Record<string, unknown> = {
+              textQuery: `${criteria.category} suppliers in ${city} ${pinCode}`,
+            };
+            if (coords) {
+              requestBody.locationBias = {
+                circle: {
+                  center: { latitude: coords.lat, longitude: coords.lng },
+                  radius: Math.min(50000, Math.max(1000, Math.round((criteria.radiusKm ?? 25) * 1000))),
+                },
+              };
+            }
+            const json = await this.fetchFn(this.endpointUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Goog-Api-Key': this.apiKey!,
+                'X-Goog-FieldMask': PLACES_SEARCH_TEXT_FIELD_MASK,
+              },
+              body: JSON.stringify(requestBody),
+            });
+            if (Array.isArray(json?.places)) {
+              for (const entry of json.places) {
+                if (!entry || typeof entry !== 'object') continue;
+                const mapped = this.mapPlacesApiNewResult(entry as Record<string, unknown>);
+                if (mapped) rawResults.push(mapped);
+              }
+            } else if (Array.isArray(json?.results)) {
               rawResults = json.results.map((r: any) => ({
                 placeId: r.place_id || r.placeId || `places:${Math.random().toString(36).slice(2, 10)}`,
                 businessName: r.name || r.businessName || 'Discovered Supplier',
