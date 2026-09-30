@@ -344,6 +344,7 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
       fetchFn: (url: string, init?: any) => Promise<any>;
       apiKey: string;
       forceRefresh?: boolean;
+      orchestratorAuthorized?: boolean;
     },
   ): Promise<{
     rawResults: GooglePlacesRawCandidate[];
@@ -351,35 +352,17 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
     errorCode?: 'QUOTA_EXHAUSTED' | 'AUTH_FAILURE' | 'PROVIDER_ERROR';
     explanation: string;
   }> {
-    const scopeKey = this.getScopeKey(criteria);
-    const priority = criteria.priority ?? 'BUYER_DEMAND';
-
-    if (!options.forceRefresh && this.freshnessAuthority?.isScopeFresh(scopeKey, this.freshnessWindowDays)) {
-      const cached = this.discoveryCache.get(scopeKey);
-      if (cached) {
-        return {
-          rawResults: cached.candidates.map((c) => ({
-            placeId: c.externalRef,
-            businessName: c.businessName,
-            formattedAddress: undefined,
-            phone: (c as { phone?: string }).phone,
-          })),
-          externalCallsUsed: 0,
-          explanation: 'Reused authoritative managed coverage cache (0 Google calls).',
-        };
-      }
-    }
-
-    const quotaEval = await this.quotaGuard.acquireReservation(new Date(), priority);
-    if (!quotaEval.allowed) {
+    if (!options.orchestratorAuthorized) {
       return {
         rawResults: [],
         externalCallsUsed: 0,
-        errorCode: 'QUOTA_EXHAUSTED',
-        explanation: quotaEval.reason ?? 'Google daily quota exhausted.',
+        errorCode: 'PROVIDER_ERROR',
+        explanation:
+          'Google Places Text Search is orchestrator-only; adapter.discoverManagedCoverage requires orchestrator authorization.',
       };
     }
 
+    const scopeKey = this.getScopeKey(criteria);
     const radiusM = Math.min(50000, Math.max(1000, Math.round((criteria.radiusKm ?? 25) * 1000)));
     const locationParam = options.geocodedCenter
       ? `&location=${options.geocodedCenter.lat},${options.geocodedCenter.lng}&radius=${radiusM}`
@@ -451,18 +434,17 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
    */
   async discoverWithFallbackLadder(
     criteria: GooglePlacesDiscoveryCriteria,
-    options: { forceCacheRefresh?: boolean } = {},
+    options: { forceCacheRefresh?: boolean; managedOrchestratorAuthorized?: boolean } = {},
   ): Promise<GooglePlacesDiscoveryResult> {
     const scopeKey = this.getScopeKey(criteria);
-    const categoryLower = criteria.category.trim().toLowerCase();
     const pinCode = criteria.location?.pinCode?.trim() || '560048';
     const city = criteria.location?.city?.trim() || 'Bengaluru';
     const priority = criteria.priority ?? 'BUYER_DEMAND';
 
     let quotaEval: GoogleGisReservationResult | undefined;
 
-    // --- TIER 1: LIVE_API ---
-    if (this.apiKey && this.isTruthfulLive) {
+    // --- TIER 1: LIVE_API (orchestrator-only; SNE/direct discover cannot bill Google) ---
+    if (options.managedOrchestratorAuthorized && this.apiKey && this.isTruthfulLive) {
       // PRE-CALL QUOTA CHECK: Must atomically acquire reservation BEFORE any network call
       quotaEval = await this.quotaGuard.acquireReservation(new Date(), priority);
 

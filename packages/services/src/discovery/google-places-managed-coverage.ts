@@ -22,6 +22,12 @@ export interface ManagedGoogleDiscoveryOptions {
   maxQueries?: number;
   apiKey?: string;
   fetchFn?: (url: string, init?: RequestInit) => Promise<unknown>;
+  /** Set only by runAuthoritativeLocationPinCoverage — blocks direct production callers. */
+  orchestratorAuthorized?: boolean;
+  /** Re-check Postgres/in-memory generation lock before each billable HTTP. */
+  assertLockHeld?: () => Promise<boolean>;
+  /** When set, each Text Search reserves 1 unit before the HTTP call (authoritative budget). */
+  reserveCallFn?: () => Promise<boolean>;
 }
 
 export interface ManagedGoogleDiscoveryResult {
@@ -29,7 +35,7 @@ export interface ManagedGoogleDiscoveryResult {
   externalCallsUsed: number;
   quotaExhausted: boolean;
   authFailure: boolean;
-  errorCode?: 'QUOTA_EXHAUSTED' | 'AUTH_FAILURE' | 'PROVIDER_ERROR';
+  errorCode?: 'QUOTA_EXHAUSTED' | 'AUTH_FAILURE' | 'PROVIDER_ERROR' | 'GEOCODE_FAILED';
   explanation: string;
 }
 
@@ -75,11 +81,19 @@ export async function runManagedGooglePlacesDiscovery(
   adapter: GooglePlacesDiscoveryAdapter,
   options: ManagedGoogleDiscoveryOptions = {},
 ): Promise<ManagedGoogleDiscoveryResult> {
-  const apiKey =
-    options.apiKey ??
-    process.env.GOOGLE_PLACES_API_KEY ??
-    process.env.GOOGLE_MAPS_API_KEY ??
-    undefined;
+  if (!options.orchestratorAuthorized) {
+    return {
+      rawCandidates: [],
+      externalCallsUsed: 0,
+      quotaExhausted: false,
+      authFailure: false,
+      errorCode: 'PROVIDER_ERROR',
+      explanation:
+        'Managed Google discovery is orchestrator-only; direct runManagedGooglePlacesDiscovery calls are blocked in production.',
+    };
+  }
+
+  const apiKey = options.apiKey;
   const fetchFn = options.fetchFn;
   const city = scope.city.trim() || 'Bengaluru';
   const pinCode = scope.pincode.trim();
@@ -96,13 +110,61 @@ export async function runManagedGooglePlacesDiscovery(
     };
   }
 
+  if (options.assertLockHeld && !(await options.assertLockHeld())) {
+    return {
+      rawCandidates: [],
+      externalCallsUsed: 0,
+      quotaExhausted: false,
+      authFailure: false,
+      errorCode: 'PROVIDER_ERROR',
+      explanation: 'Generation lock lost before geocode; aborted.',
+    };
+  }
+
   const geocoded = await geocodeIndianPinCode(pinCode, { apiKey, fetchFn });
-  let externalCallsUsed = geocoded ? 1 : 0;
+  const geocodeAttempted = Boolean(apiKey && fetchFn);
+  let externalCallsUsed = geocodeAttempted ? 1 : 0;
+
+  if (!geocoded) {
+    return {
+      rawCandidates: [],
+      externalCallsUsed,
+      quotaExhausted: false,
+      authFailure: false,
+      errorCode: 'GEOCODE_FAILED',
+      explanation:
+        'Indian PIN geocode failed; geographic scoped Google Places discovery was not performed (no unrestricted text-only coverage).',
+    };
+  }
 
   const seenPlaceIds = new Set<string>();
   const aggregated: GooglePlacesRawCandidate[] = [];
 
   for (const term of searchTerms) {
+    if (options.assertLockHeld && !(await options.assertLockHeld())) {
+      return {
+        rawCandidates: aggregated,
+        externalCallsUsed,
+        quotaExhausted: false,
+        authFailure: false,
+        errorCode: 'PROVIDER_ERROR',
+        explanation: 'Generation lock lost before Text Search; aborted.',
+      };
+    }
+    if (options.reserveCallFn) {
+      const allowed = await options.reserveCallFn();
+      if (!allowed) {
+        return {
+          rawCandidates: aggregated,
+          externalCallsUsed,
+          quotaExhausted: true,
+          authFailure: false,
+          errorCode: 'QUOTA_EXHAUSTED',
+          explanation: 'Google daily quota exhausted before Text Search.',
+        };
+      }
+    }
+
     const criteria: GooglePlacesDiscoveryCriteria = {
       category: scope.category,
       location: {
@@ -122,6 +184,7 @@ export async function runManagedGooglePlacesDiscovery(
       fetchFn,
       apiKey,
       forceRefresh: options.forceRefresh,
+      orchestratorAuthorized: true,
     });
 
     externalCallsUsed += result.externalCallsUsed;
