@@ -44,6 +44,17 @@ const CROSS_TENANT_ACTOR: ActorContext = {
   orgRole: 'MANAGER',
 };
 
+/** Authorization clock for currently-valid delegation fixtures. Negative tests keep their own times. */
+const TEST_NOW = new Date('2026-09-21T10:00:00Z');
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function validDelegationWindow(): { startsAt: string; expiresAt: string } {
+  return {
+    startsAt: new Date(TEST_NOW.getTime() - 20 * DAY_MS).toISOString(),
+    expiresAt: new Date(TEST_NOW.getTime() + 40 * DAY_MS).toISOString(),
+  };
+}
+
 describe('OTP Phase C8.4: Multi-Tier Spend Approval Orchestration & Delegation Signoff Chain', () => {
   let mem: InMemoryRepositories;
   let services: ReturnType<typeof createOtpServices>;
@@ -183,8 +194,7 @@ describe('OTP Phase C8.4: Multi-Tier Spend Approval Orchestration & Delegation S
         delegateeId: BUYER_DELEGATEE_ACTOR.profileId,
         permissions: ['APPROVE_TIER_1', 'APPROVE_TIER_2'],
         spendCapAmount: 2000000,
-        startsAt: '2026-09-01T00:00:00Z',
-        expiresAt: '2026-10-01T00:00:00Z',
+        ...validDelegationWindow(),
         isActive: true,
         createdAt: '2026-09-01T00:00:00Z',
       };
@@ -204,6 +214,7 @@ describe('OTP Phase C8.4: Multi-Tier Spend Approval Orchestration & Delegation S
           delegationId: delegation.id,
           delegation,
           notes: 'Signed via VP delegation proxy while on leave.',
+          currentTime: TEST_NOW,
         }
       );
 
@@ -265,8 +276,7 @@ describe('OTP Phase C8.4: Multi-Tier Spend Approval Orchestration & Delegation S
         delegateeId: BUYER_DELEGATEE_ACTOR.profileId,
         permissions: ['APPROVE_TIER_2'],
         spendCapAmount: 1000000, // Spend cap ₹10L, but RFQ is ₹18L
-        startsAt: '2026-09-01T00:00:00Z',
-        expiresAt: '2026-10-01T00:00:00Z',
+        ...validDelegationWindow(),
         isActive: true,
         createdAt: '2026-09-01T00:00:00Z',
       };
@@ -282,6 +292,7 @@ describe('OTP Phase C8.4: Multi-Tier Spend Approval Orchestration & Delegation S
           tierLevel: 'TIER_2_DEPT_HEAD',
           delegationId: smallCapDelegation.id,
           delegation: smallCapDelegation,
+          currentTime: TEST_NOW,
         })
       ).rejects.toThrow(/Delegation spend cap exceeded/i);
     });
@@ -373,8 +384,7 @@ describe('OTP Phase C8.4: Multi-Tier Spend Approval Orchestration & Delegation S
         delegateeId: BUYER_DELEGATEE_ACTOR.profileId,
         permissions: ['APPROVE_TIER_1', 'APPROVE_TIER_2', 'APPROVE_TIER_3'],
         spendCapAmount: 10000000,
-        startsAt: '2026-09-01T00:00:00Z',
-        expiresAt: '2026-10-01T00:00:00Z',
+        ...validDelegationWindow(),
         isActive: true,
         createdAt: '2026-09-01T00:00:00Z',
       };
@@ -396,6 +406,7 @@ describe('OTP Phase C8.4: Multi-Tier Spend Approval Orchestration & Delegation S
           tierLevel: 'TIER_3_EXECUTIVE',
           delegationId: execDelegation.id,
           delegation: execDelegation,
+          currentTime: TEST_NOW,
         })
       ).rejects.toThrow(/Tier 3 Executive Gate.*cannot be delegated to non-executive/i);
     });
