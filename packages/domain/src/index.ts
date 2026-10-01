@@ -37,6 +37,7 @@ export * from './taxonomy/canonical-taxonomy';
 export * from './taxonomy/legacy-template-mode';
 export * from './taxonomy/intake-other-taxonomy';
 export * from './ondc/ondc-taxonomy-boundary';
+export * from './ondc/ondc-provider-foundation';
 export * from './parser/requirement-parser-port';
 export * from './parser/extractors';
 export * from './parser/rule-based-requirement-parser';

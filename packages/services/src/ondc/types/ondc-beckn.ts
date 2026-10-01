@@ -74,12 +74,30 @@ export interface OndcProvider {
   categories?: Array<{ id: string; descriptor: OndcDescriptor }>;
   items?: OndcItem[];
   fulfillments?: Array<{ id: string; type: string }>;
-  locations?: Array<{ id: string; gps?: string; city?: { name: string; code: string } }>;
+  /** Present only when the provider reported a contact. Never defaulted. */
+  contact?: { phone?: string; email?: string };
+  locations?: Array<{
+    id: string;
+    gps?: string;
+    address?: {
+      door?: string;
+      building?: string;
+      street?: string;
+      locality?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      area_code?: string;
+    };
+    city?: { name?: string; code?: string };
+  }>;
   rateable?: boolean;
   rating?: string;
 }
 
 export interface OndcCatalog {
+  /** Catalogue id when the BPP reports one. Never invented. */
+  id?: string;
   descriptor?: OndcDescriptor;
   providers?: OndcProvider[];
 }
