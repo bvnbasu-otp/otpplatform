@@ -48,6 +48,25 @@ const CROSS_TENANT_ACTOR: ActorContext = {
   orgRole: 'OWNER',
 };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Window that contains the authorization clock used by Attacks 07 and 10.
+ * Relative to that clock so the proxy stays valid across calendar rollovers.
+ * Expiry-specific attacks keep their own fixed dates and injected times.
+ */
+function validSpendDelegationWindow(now: Date = new Date()): {
+  startsAt: string;
+  expiresAt: string;
+  currentTime: Date;
+} {
+  return {
+    startsAt: new Date(now.getTime() - DAY_MS).toISOString(),
+    expiresAt: new Date(now.getTime() + 30 * DAY_MS).toISOString(),
+    currentTime: now,
+  };
+}
+
 describe('MSME Spend Governance Red Team Security Test Suite (20 Attack Vectors)', () => {
   let mem: InMemoryRepositories;
   let services: ReturnType<typeof createOtpServices>;
@@ -253,6 +272,7 @@ describe('MSME Spend Governance Red Team Security Test Suite (20 Attack Vectors)
   // -------------------------------------------------------------------------
   it('Attack 07: Delegatee with ₹2 Lakhs cap attempts to approve ₹4 Lakhs transaction -> DENIED', async () => {
     const { rfq } = await seedRfq(400000);
+    const window = validSpendDelegationWindow();
 
     const delegation: OrganizationDelegation = {
       id: 'del-low-cap-01',
@@ -261,10 +281,10 @@ describe('MSME Spend Governance Red Team Security Test Suite (20 Attack Vectors)
       delegateeId: DELEGATEE_ACTOR.profileId,
       permissions: ['APPROVE_TIER_1'],
       spendCapAmount: 200000, // ₹2 Lakhs
-      startsAt: '2026-09-01T00:00:00Z',
-      expiresAt: '2026-09-30T23:59:59Z',
+      startsAt: window.startsAt,
+      expiresAt: window.expiresAt,
       isActive: true,
-      createdAt: '2026-09-01T00:00:00Z',
+      createdAt: window.startsAt,
     };
 
     await expect(
@@ -273,6 +293,7 @@ describe('MSME Spend Governance Red Team Security Test Suite (20 Attack Vectors)
         tierLevel: 'TIER_1_MANAGER',
         delegationId: delegation.id,
         delegation,
+        currentTime: window.currentTime,
       })
     ).rejects.toThrow(/exceeds spend cap/i);
   });
@@ -323,16 +344,17 @@ describe('MSME Spend Governance Red Team Security Test Suite (20 Attack Vectors)
       tierLevel: 'TIER_2_DEPT_HEAD',
     });
 
+    const window = validSpendDelegationWindow();
     const delegation: OrganizationDelegation = {
       id: 'del-exec-01',
       organizationId: ORG_MSME_A,
       delegatorId: PRIMARY_ACTOR.profileId,
       delegateeId: DELEGATEE_ACTOR.profileId,
       permissions: ['APPROVE_TIER_3'],
-      startsAt: '2026-09-01T00:00:00Z',
-      expiresAt: '2026-09-30T23:59:59Z',
+      startsAt: window.startsAt,
+      expiresAt: window.expiresAt,
       isActive: true,
-      createdAt: '2026-09-01T00:00:00Z',
+      createdAt: window.startsAt,
     };
 
     await expect(
@@ -341,6 +363,7 @@ describe('MSME Spend Governance Red Team Security Test Suite (20 Attack Vectors)
         tierLevel: 'TIER_3_EXECUTIVE',
         delegationId: delegation.id,
         delegation,
+        currentTime: window.currentTime,
       })
     ).rejects.toThrow(/Executive Gate.*cannot be delegated/i);
   });
