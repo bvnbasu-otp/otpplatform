@@ -7,6 +7,7 @@ import {
 import { OndcBapReceiver } from '../receiver/ondc-bap-receiver';
 import {
   mapCategoryToOndcDomain,
+  mergeOndcServiceOptionsFromEnv,
   resolveOndcSearchDomain,
 } from '../ondc-network-service';
 import type { OndcCatalog, OndcPayload } from '../types/ondc-beckn';
@@ -66,7 +67,6 @@ describe('ONDC Beckn Real-time Cryptography & Protocol Suite', () => {
     expect(mapCategoryToOndcDomain('Domestic RO Water Purifiers')).toBe('ONDC:SRV11');
   });
 
-
   it('resolveOndcSearchDomain honors RET14 pilot override', () => {
     expect(resolveOndcSearchDomain('MOTOR_WINDING', 'ONDC:RET14')).toBe('ONDC:RET14');
     expect(resolveOndcSearchDomain('MOTOR_WINDING')).toBe('ONDC:SRV11');
@@ -80,6 +80,29 @@ describe('ONDC Beckn Real-time Cryptography & Protocol Suite', () => {
         requirementMode: 'REPAIR_MAINTENANCE',
       }),
     ).toBeNull();
+  });
+
+  it('mergeOndcServiceOptionsFromEnv reads documented ONDC_* vars', () => {
+    const prev = {
+      ONDC_ENABLED: process.env.ONDC_ENABLED,
+      ONDC_ENVIRONMENT: process.env.ONDC_ENVIRONMENT,
+      ONDC_SUBSCRIBER_ID: process.env.ONDC_SUBSCRIBER_ID,
+      ONDC_DISCOVERY_DOMAIN: process.env.ONDC_DISCOVERY_DOMAIN,
+    };
+    process.env.ONDC_ENABLED = 'true';
+    process.env.ONDC_ENVIRONMENT = 'PREPROD';
+    process.env.ONDC_SUBSCRIBER_ID = 'otpplatform-theta.vercel.app';
+    process.env.ONDC_DISCOVERY_DOMAIN = 'ONDC:RET14';
+
+    const merged = mergeOndcServiceOptionsFromEnv({});
+    expect(merged.environment).toBe('PRE_PRODUCTION');
+    expect(merged.subscriberId).toBe('otpplatform-theta.vercel.app');
+    expect(merged.discoveryDomain).toBe('ONDC:RET14');
+
+    for (const [key, val] of Object.entries(prev)) {
+      if (val === undefined) delete process.env[key];
+      else process.env[key] = val;
+    }
   });
 
   it('parses incoming ONDC /on_search catalog into OTP supplier candidates', () => {
@@ -123,6 +146,8 @@ describe('ONDC Beckn Real-time Cryptography & Protocol Suite', () => {
     const result = receiver.handleOnSearch(payload);
     expect(result.transactionId).toBe('tx-rfq-water-001');
     expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0]?.businessName).not.toBe('ONDC Verified Supplier');
+    expect(result.candidates[0]?.bppId).not.toBe('unknown-bpp');
     expect(result.candidates[0]).toEqual({
       network: 'ONDC',
       externalRef: 'ondc:seller.pureaqua.in:prv-pureaqua-01',
@@ -135,6 +160,61 @@ describe('ONDC Beckn Real-time Cryptography & Protocol Suite', () => {
       samplePrice: 28000,
       categories: [],
     });
+  });
+
+  it('omits participant id, display name, and rating when the callback does not supply them', () => {
+    const receiver = new OndcBapReceiver();
+    const payload: OndcPayload<{ catalog: OndcCatalog }> = {
+      context: {
+        domain: 'ONDC:SRV11',
+        country: 'IND',
+        city: 'std:080',
+        action: 'on_search',
+        core_version: '1.2.0',
+        bap_id: 'bap.otp.in',
+        bap_uri: 'https://api.otp.in/ondc/bap',
+        transaction_id: 'tx-rfq-water-002',
+        message_id: 'msg-002',
+        timestamp: '2026-10-01T05:31:00.000Z',
+      },
+      message: {
+        catalog: {
+          providers: [
+            {
+              id: 'prv-unnamed',
+              descriptor: { name: '' },
+              items: [],
+            },
+          ],
+        },
+      },
+    };
+
+    const missingIdentity = receiver.handleOnSearch(payload);
+    expect(missingIdentity.candidates).toEqual([]);
+    expect(JSON.stringify(missingIdentity)).not.toContain('unknown-bpp');
+    expect(JSON.stringify(missingIdentity)).not.toContain('ONDC Verified Supplier');
+    expect(JSON.stringify(missingIdentity)).not.toContain('4.5');
+
+    const rated = receiver.handleOnSearch({
+      ...payload,
+      context: { ...payload.context, bpp_id: 'seller.example.test', bpp_uri: 'https://seller.example.test/ondc' },
+      message: {
+        catalog: {
+          providers: [
+            {
+              id: 'prv-named',
+              descriptor: { name: 'Reported Water Seller' },
+              items: [{ id: 'item-1', descriptor: { name: 'Filter' } }],
+            },
+          ],
+        },
+      },
+    });
+    expect(rated.candidates).toHaveLength(1);
+    expect(rated.candidates[0]?.bppId).toBe('seller.example.test');
+    expect(rated.candidates[0]?.businessName).toBe('Reported Water Seller');
+    expect(rated.candidates[0]?.rating).toBeUndefined();
   });
 
   it('parses incoming ONDC /on_select price breakup into OTP identity-protected quote format', () => {

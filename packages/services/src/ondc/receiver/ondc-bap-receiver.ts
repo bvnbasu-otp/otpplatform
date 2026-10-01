@@ -3,10 +3,10 @@ import type {
   OndcCatalog,
   OndcOrder,
   OndcPayload,
-  OndcProvider,
 } from '../types/ondc-beckn';
 import { verifyOndcAuthHeader } from '../crypto/ondc-auth-crypto';
 import { OndcPublicKeyCache } from '../crypto/ondc-key-cache';
+import { normalizeBecknOnSearchCatalog } from '../ondc-on-search-normalizer';
 
 export interface NormalizedOndcSupplierCandidate {
   network: 'ONDC';
@@ -39,6 +39,7 @@ export interface NormalizedOndcBlindQuote {
 export interface OndcReceiverOptions {
   lookupPublicKeyFn?: (keyId: string) => Promise<string | null>;
   keyCache?: OndcPublicKeyCache;
+  /** Ignored. Missing or invalid signatures fail closed, including when no public key is configured. */
   skipSignatureVerification?: boolean;
 }
 
@@ -90,17 +91,12 @@ export class OndcBapReceiver {
     authHeader: string | null | undefined,
     body: string | object,
   ): Promise<{ valid: boolean; error?: string }> {
-    if (this.options.skipSignatureVerification) {
-      return { valid: true };
-    }
-
-    if (!authHeader) {
+    if (!authHeader?.trim()) {
       return { valid: false, error: 'Missing Authorization header' };
     }
 
     if (!this.keyCache && !this.options.lookupPublicKeyFn) {
-      // In development or staging without lookup function, accept structure
-      return { valid: true };
+      return { valid: false, error: 'Public key is not configured' };
     }
 
     const keyIdMatch = authHeader.match(/keyId="([^"]+)"/);
@@ -124,41 +120,49 @@ export class OndcBapReceiver {
   }
 
   /**
-   * Handle /on_search: Parses incoming supplier catalogs into OTP candidates.
+   * Maps an /on_search callback through the canonical normalizer.
+   * Omitted participant id, display name, or rating stays omitted.
    */
-  handleOnSearch(payload: OndcPayload<{ catalog: OndcCatalog }>): {
+  handleOnSearch(payload: OndcPayload<{ catalog?: OndcCatalog }> | null | undefined): {
     transactionId: string;
     candidates: NormalizedOndcSupplierCandidate[];
   } {
-    const { context, message } = payload;
-    const bppId = context.bpp_id || 'unknown-bpp';
-    const bppUri = context.bpp_uri || '';
-    const providers: OndcProvider[] = message?.catalog?.providers || [];
-
+    const context = payload?.context;
+    if (!context || context.action !== 'on_search') {
+      return { transactionId: '', candidates: [] };
+    }
+    const observedAt = context.timestamp?.trim() || new Date().toISOString();
+    const normalized = normalizeBecknOnSearchCatalog(payload as OndcPayload<{ catalog?: OndcCatalog }>, observedAt);
+    const providers = payload?.message?.catalog?.providers ?? [];
     const candidates: NormalizedOndcSupplierCandidate[] = [];
 
-    for (const provider of providers) {
-      const items = provider.items || [];
-      const itemIds = items.map((i) => i.id);
-      const item0 = items[0];
-      const firstPrice = item0?.price?.value ? parseFloat(item0.price.value) : undefined;
-      const categories = (provider.categories || []).map((c) => c.descriptor?.name || c.id);
-
-      candidates.push({
+    for (const candidate of normalized) {
+      const sellerId = candidate.ondc.sellerId;
+      const provider = providers.find((row) => row?.id === sellerId);
+      const reportedRating = parseReportedRating(provider?.rating);
+      const firstPrice = provider?.items?.[0]?.price?.value;
+      const samplePrice = firstPrice != null && firstPrice !== '' ? Number(firstPrice) : undefined;
+      const categories = (provider?.categories ?? [])
+        .map((category) => category.descriptor?.name || category.id)
+        .filter((value): value is string => Boolean(value?.trim()));
+      const row: NormalizedOndcSupplierCandidate = {
         network: 'ONDC',
-        externalRef: `ondc:${bppId}:${provider.id}`,
-        bppId,
-        bppUri,
-        providerId: provider.id,
-        businessName: provider.descriptor?.name || 'ONDC Verified Supplier',
-        rating: provider.rating ? parseFloat(provider.rating) : 4.5,
-        itemIds,
-        samplePrice: firstPrice,
+        externalRef: `ondc:${candidate.providerParticipantId}:${sellerId}`,
+        bppId: candidate.providerParticipantId,
+        bppUri: candidate.ondc.endpoint ?? '',
+        providerId: sellerId,
+        businessName: candidate.displayName,
+        itemIds: [...candidate.ondc.itemIds],
         categories,
-      });
+      };
+      if (reportedRating !== undefined) row.rating = reportedRating;
+      if (samplePrice !== undefined && Number.isFinite(samplePrice)) row.samplePrice = samplePrice;
+      candidates.push(row);
     }
 
-    this.searchResultsByTransaction.set(context.transaction_id, candidates);
+    if (context.transaction_id) {
+      this.searchResultsByTransaction.set(context.transaction_id, candidates);
+    }
 
     return {
       transactionId: context.transaction_id,
@@ -244,4 +248,10 @@ export class OndcBapReceiver {
       },
     };
   }
+}
+
+function parseReportedRating(rating?: string | null): number | undefined {
+  if (rating == null || rating.trim() === '') return undefined;
+  const parsed = Number(rating);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }

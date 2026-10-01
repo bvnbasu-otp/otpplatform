@@ -1,6 +1,5 @@
 import {
   SupplierDiscoverySourceKind,
-  SUPPLIER_DISCOVERY_BUYER_LABELS,
   OndcIntegrationState,
   type SupplierDiscoveryRequest,
   type SupplierNetworkProvider,
@@ -44,61 +43,24 @@ export class OndcSupplierProvider implements SupplierNetworkProvider {
 
   async discover(request: SupplierDiscoveryRequest): Promise<SupplierNetworkProviderResult> {
     const integrationState = this.getIntegrationState();
-    if (integrationState === OndcIntegrationState.NOT_CONFIGURED) {
+    const decision = this.service.getEnvironmentDecision();
+    if (integrationState === OndcIntegrationState.NOT_CONFIGURED || !decision.realClientAllowed) {
       return {
         sourceKind: this.sourceKind,
-        integrationState,
+        integrationState: OndcIntegrationState.NOT_CONFIGURED,
         candidates: [],
         errorMessage:
+          decision.error ??
           'ONDC subscriber keys and gateway whitelist are not configured; OTP + Google discovery continue.',
       };
     }
 
-    const pin = request.location?.pinCode;
-    const city = request.location?.city;
-    const txId = pin ? `tx-rfq-${request.category}-${pin}` : `tx-rfq-${request.category}`;
-    const broadcast = await this.service.broadcastRfqToOndc({
-      rfqId: txId,
-      title: request.category,
-      category: request.category,
-      cityCode: city ? `std:${city}` : 'std:080',
-      taxonomyContext: request.subcategoryCode
-        ? {
-            subcategoryCode: request.subcategoryCode,
-            requirementMode: request.requirementMode,
-          }
-        : undefined,
-    });
-
-    if (!broadcast.ok) {
-      return {
-        sourceKind: this.sourceKind,
-        integrationState: OndcIntegrationState.UNAVAILABLE,
-        candidates: [],
-        errorMessage: broadcast.error,
-      };
-    }
-
-    const normalized = this.service.getReceiver().listPendingCandidates(txId);
-    const candidates = normalized.map((n) => ({
-      sourceKind: this.sourceKind,
-      externalRef: n.externalRef,
-      displayAliasSeed: n.providerId,
-      businessName: n.businessName,
-      matchFactors: [{ code: 'ondc_callback', label: 'ONDC network callback (Beckn)' }],
-      canReceiveRfq: true,
-      canSubmitQuote: false,
-      lifecycleTier: 'ONDC_DISCOVERED' as const,
-      provenanceLabel: SUPPLIER_DISCOVERY_BUYER_LABELS.ONDC_SELLER,
-      ondcProviderId: n.providerId,
-    }));
-
+    void request;
     return {
       sourceKind: this.sourceKind,
-      integrationState: candidates.length
-        ? OndcIntegrationState.PREPROD
-        : OndcIntegrationState.NO_RESULTS,
-      candidates,
+      integrationState: OndcIntegrationState.ONDC_INTEGRATION_CONFIGURED,
+      candidates: [],
+      errorMessage: 'ONDC /search is not dispatched from supplier discovery. Signed search stays on broadcastRfqToOndc.',
     };
   }
 }

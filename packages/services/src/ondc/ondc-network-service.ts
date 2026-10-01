@@ -1,11 +1,14 @@
 import { OndcGatewayClient, type OndcEnvironment } from './client/ondc-gateway-client';
-import { OndcBapReceiver, type NormalizedOndcSupplierCandidate } from './receiver/ondc-bap-receiver';
+import { OndcBapReceiver } from './receiver/ondc-bap-receiver';
 import type { OndcDomain } from './types/ondc-beckn';
 import {
   mapExplicitSubcategoryToOndcDomain,
   shouldUseCategoryTitleHeuristicsForOndc,
+  toPublicOndcEnvironmentDecision,
+  type OndcEnvironmentDecision,
   type OndcTaxonomyContext,
 } from '@otp/domain';
+import { resolveOndcEnvironmentFromEnv } from './ondc-environment-config';
 
 export interface OndcServiceOptions {
   environment?: OndcEnvironment;
@@ -15,9 +18,45 @@ export interface OndcServiceOptions {
   signingPrivateKeyPem?: string;
   gatewayUrl?: string;
   enabled?: boolean;
+  /** When set, Beckn `context.domain` for search (must match registry subscribe domain). */
+  discoveryDomain?: string;
 }
 
 const ONDC_DOMAIN_PATTERN = /^ONDC:[A-Z0-9]+$/;
+
+function parseOndcEnvironment(raw?: string): OndcEnvironment | undefined {
+  if (!raw) return undefined;
+  const normalized = raw.trim().toUpperCase().replace(/-/g, '_');
+  if (normalized === 'MOCK') return 'MOCK';
+  if (normalized === 'STAGING') return 'STAGING';
+  if (normalized === 'PREPROD' || normalized === 'PRE_PRODUCTION') return 'PRE_PRODUCTION';
+  if (normalized === 'PROD' || normalized === 'PRODUCTION') return 'PRODUCTION';
+  return undefined;
+}
+
+/** Merge explicit options with documented ONDC_* env vars (no secrets invented). */
+export function mergeOndcServiceOptionsFromEnv(options: OndcServiceOptions = {}): OndcServiceOptions {
+  const env = typeof process !== 'undefined' ? process.env : undefined;
+  if (!env) return options;
+
+  const discoveryDomain =
+    options.discoveryDomain ??
+    (env.ONDC_DISCOVERY_DOMAIN?.trim() && ONDC_DOMAIN_PATTERN.test(env.ONDC_DISCOVERY_DOMAIN.trim())
+      ? env.ONDC_DISCOVERY_DOMAIN.trim()
+      : undefined);
+
+  return {
+    ...options,
+    enabled: options.enabled ?? (env.ONDC_ENABLED === 'true' ? true : options.enabled),
+    environment: options.environment ?? parseOndcEnvironment(env.ONDC_ENVIRONMENT),
+    subscriberId: options.subscriberId ?? env.ONDC_SUBSCRIBER_ID?.trim(),
+    uniqueKeyId: options.uniqueKeyId ?? env.ONDC_UNIQUE_KEY_ID?.trim(),
+    bapUri: options.bapUri ?? env.ONDC_BAP_URI?.trim(),
+    signingPrivateKeyPem: options.signingPrivateKeyPem ?? env.ONDC_SIGNING_PRIVATE_KEY_PEM,
+    gatewayUrl: options.gatewayUrl ?? env.ONDC_GATEWAY_URL?.trim(),
+    discoveryDomain,
+  };
+}
 
 /**
  * Beckn search domain: optional pilot override, else category heuristic.
@@ -72,21 +111,29 @@ export class OndcNetworkService {
   private readonly client: OndcGatewayClient | null = null;
   private readonly receiver: OndcBapReceiver;
   private readonly enabled: boolean;
+  private readonly discoveryDomain?: string;
+  private readonly environmentDecision: Omit<OndcEnvironmentDecision, 'client'>;
+  private readonly searchAttempts: number;
+  private readonly issuedTransactions = new Set<string>();
 
   constructor(options: OndcServiceOptions = {}) {
-    this.enabled = options.enabled ?? (process.env.ONDC_ENABLED === 'true');
-    this.receiver = new OndcBapReceiver({
-      skipSignatureVerification: options.environment === 'MOCK',
-    });
+    const resolved = mergeOndcServiceOptionsFromEnv(options);
+    this.enabled = resolved.enabled ?? (process.env.ONDC_ENABLED === 'true');
+    this.discoveryDomain = resolved.discoveryDomain;
+    const decision = resolveOndcEnvironmentFromEnv(typeof process !== 'undefined' ? process.env : undefined);
+    this.environmentDecision = toPublicOndcEnvironmentDecision(decision);
+    this.receiver = new OndcBapReceiver();
+    this.searchAttempts = Math.max(1, decision.maxRetries + 1);
 
-    if (options.signingPrivateKeyPem && options.subscriberId) {
+    if (decision.realClientAllowed && decision.environment === 'PRE_PROD' && decision.client) {
       this.client = new OndcGatewayClient({
-        environment: options.environment || 'STAGING',
-        subscriberId: options.subscriberId,
-        uniqueKeyId: options.uniqueKeyId || 'key-01',
-        bapUri: options.bapUri || 'https://api.otp.in/ondc/bap',
-        signingPrivateKeyPem: options.signingPrivateKeyPem,
-        gatewayUrl: options.gatewayUrl,
+        environment: 'PRE_PRODUCTION',
+        subscriberId: decision.client.subscriberId,
+        uniqueKeyId: decision.client.uniqueKeyId,
+        bapUri: decision.client.callbackUrl,
+        signingPrivateKeyPem: decision.client.signingPrivateKey,
+        gatewayUrl: decision.client.gatewayUrl,
+        timeoutMs: decision.timeoutMs,
       });
     }
   }
@@ -103,8 +150,18 @@ export class OndcNetworkService {
     return this.client;
   }
 
+  getEnvironmentDecision(): Omit<OndcEnvironmentDecision, 'client'> {
+    return this.environmentDecision;
+  }
+
+  /** Transaction ids accepted by a later /on_search. Empty until a signed search is acknowledged. */
+  listIssuedTransactions(): readonly string[] {
+    return [...this.issuedTransactions];
+  }
+
   /**
-   * Broadcast an OTP RFQ into the real-time ONDC Gateway.
+   * Signed /search. Select, init, confirm, and status are not called here.
+   * A production decision never attaches a client in this service.
    */
   async broadcastRfqToOndc(params: {
     rfqId: string;
@@ -113,17 +170,18 @@ export class OndcNetworkService {
     cityCode?: string;
     taxonomyContext?: OndcTaxonomyContext;
   }): Promise<{ ok: boolean; transactionId: string; error?: string }> {
-    if (!this.client || !this.enabled) {
+    const client = this.client;
+    if (!client || !this.enabled || this.environmentDecision.environment !== 'PRE_PROD' || !this.environmentDecision.realClientAllowed) {
       return {
         ok: false,
         transactionId: params.rfqId,
-        error: 'ONDC live integration is disabled or credentials not configured',
+        error: this.environmentDecision.error ?? 'ONDC live integration is disabled or credentials not configured',
       };
     }
 
     const domain = resolveOndcSearchDomain(
       params.category,
-      undefined,
+      this.discoveryDomain,
       params.taxonomyContext,
     );
     if (!domain) {
@@ -133,14 +191,14 @@ export class OndcNetworkService {
         error: 'No approved ONDC domain mapping for this OTP taxonomy selection',
       };
     }
-    const context = this.client.createContext({
+    const context = client.createContext({
       domain,
       action: 'search',
       city: params.cityCode || 'std:080',
       transactionId: params.rfqId,
     });
 
-    const res = await this.client.search({
+    let res = await client.search({
       context,
       intent: {
         item: {
@@ -155,6 +213,18 @@ export class OndcNetworkService {
         },
       },
     });
+    for (let attempt = 1; attempt < this.searchAttempts && !res.ok; attempt += 1) {
+      if (res.errorCode !== 'TIMEOUT' && res.errorCode !== 'NETWORK_ERROR') break;
+      res = await client.search({
+        context,
+        intent: {
+          item: { descriptor: { name: params.title } },
+          category: { descriptor: { name: params.category } },
+        },
+      });
+    }
+
+    if (res.ok) this.issuedTransactions.add(params.rfqId);
 
     return {
       ok: res.ok,

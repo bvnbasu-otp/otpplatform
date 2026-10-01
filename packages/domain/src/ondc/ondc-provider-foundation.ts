@@ -6,8 +6,7 @@
  * This module does not call the network and does not invent sellers.
  *
  * Canonical candidate translation lives here and in the services /on_search
- * normalizer. OndcBapReceiver.handleOnSearch is not on this path: it still
- * fabricates unknown-bpp, "ONDC Verified Supplier", and rating 4.5.
+ * normalizer. Callback identity for persistence uses that normalizer.
  *
  * Geography: the buyer requested PIN is the authority for the discovery
  * request. The seller-reported PIN is preserved separately and may differ.
