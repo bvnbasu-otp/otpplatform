@@ -124,8 +124,12 @@ describe('ONDC provider foundation red team', () => {
     expect(admitted.admission.entered).toBe(false);
 
     const untouched = mustCandidate();
-    const rejected = rejectClientOndcOverrides(untouched, { reachability: 'NETWORK', networkReachable: true });
-    expect(rejected.rejected).toEqual(['reachability', 'networkReachable']);
+    const rejected = rejectClientOndcOverrides(untouched, {
+      reachability: 'NETWORK',
+      networkReachable: true,
+      networkAddressable: true,
+    });
+    expect(rejected.rejected).toEqual(['reachability', 'networkReachable', 'networkAddressable']);
     expect(rejected.candidate).toBe(untouched);
     expect(rejected.candidate.reachability).toEqual(untouched.reachability);
   });

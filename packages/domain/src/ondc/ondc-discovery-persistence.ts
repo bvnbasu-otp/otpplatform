@@ -7,7 +7,9 @@
  * callers that need durable storage use the 00230 observation tables instead.
  */
 import { SupplierNetworkProviderKind } from '../types/supplier-provider-identity';
-import type { OndcNormalizedCandidate } from './ondc-provider-foundation';
+import { buildOndcDiscoveryCorrelation, type OndcDiscoveryCorrelationRecord } from './ondc-discovery-scope';
+import { acceptBuyerRequestedPin } from './ondc-geography';
+import { classifyOndcNetworkReachability, type OndcNormalizedCandidate } from './ondc-provider-foundation';
 import {
   OndcRuntimeEnvironment,
   ondcProvenanceAllowed,
@@ -60,6 +62,7 @@ export interface OndcRetainedDiscovery {
   awardCreated: false;
   purchaseOrderCreated: false;
   paymentCreated: false;
+  correlation: OndcDiscoveryCorrelationRecord;
 }
 
 export interface OndcDiscoveryStore {
@@ -94,6 +97,11 @@ const CLIENT_INJECTION_KEYS = [
   'purchaseOrderId',
   'paymentId',
   'businessStatus',
+  'ondcDomain',
+  'ondcCategory',
+  'taxonomy',
+  'supportStatus',
+  'lifecycleCapability',
 ] as const;
 
 export function createOndcDiscoveryStore(): OndcDiscoveryStore {
@@ -174,6 +182,9 @@ export function retainOndcDiscoveryObservation(
   if (meta.environment === OndcRuntimeEnvironment.PRODUCTION && meta.productionActivated !== true) {
     return { ok: false, reason: 'ondc_production_disabled' };
   }
+  if (!acceptBuyerRequestedPin(candidate.requestedPin).ok) {
+    return { ok: false, reason: 'invalid_buyer_pin' };
+  }
   const discoveredAtMs = Date.parse(candidate.discoveredAt);
   if (!Number.isFinite(discoveredAtMs)) return { ok: false, reason: 'missing_discovery_timestamp' };
 
@@ -201,6 +212,16 @@ export function retainOndcDiscoveryObservation(
     provider: existing.provider,
     providerSupplierId: existing.providerSupplierId,
   };
+  retained.correlation = buildOndcDiscoveryCorrelation({
+    candidate,
+    environment: meta.environment,
+    source: meta.source,
+    buyerRequestedPin: retained.requestedPin,
+    sellerPin: retained.sellerPin,
+    sellerLocality: retained.sellerLocality,
+    sellerCity: retained.sellerCity,
+    sellerState: retained.sellerState,
+  });
   store.identities.set(identityKey, retained);
   return { ok: true, identityKey, replay: sameCorrelation, created: false, retained };
 }
@@ -235,7 +256,7 @@ function observationFromCandidate(
     requestedPin,
     requestedCategory: blank(candidate.requestedCategory),
     discoveredAt: candidate.discoveredAt,
-    bppUri: blank(candidate.ondc.endpoint),
+    bppUri: usableObservationEndpoint(candidate, meta),
     source: meta.source,
     environment: meta.environment,
     sellerPin,
@@ -262,7 +283,28 @@ function observationFromCandidate(
     awardCreated: false,
     purchaseOrderCreated: false,
     paymentCreated: false,
+    correlation: buildOndcDiscoveryCorrelation({
+      candidate,
+      environment: meta.environment,
+      source: meta.source,
+      buyerRequestedPin: requestedPin,
+      sellerPin,
+      sellerLocality: blank(candidate.location?.locality),
+      sellerCity: blank(candidate.location?.city),
+      sellerState: blank(candidate.location?.state),
+    }),
   };
+}
+
+function usableObservationEndpoint(
+  candidate: OndcNormalizedCandidate,
+  meta: OndcDiscoveryRetainMeta,
+): string | null {
+  return classifyOndcNetworkReachability({
+    endpoint: candidate.ondc.endpoint,
+    environment: meta.environment,
+    source: meta.source,
+  }).usableEndpoint;
 }
 
 function blank(value?: string | null): string | null {

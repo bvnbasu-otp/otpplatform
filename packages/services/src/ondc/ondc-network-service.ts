@@ -2,8 +2,7 @@ import { OndcGatewayClient, type OndcEnvironment } from './client/ondc-gateway-c
 import { OndcBapReceiver } from './receiver/ondc-bap-receiver';
 import type { OndcDomain } from './types/ondc-beckn';
 import {
-  mapExplicitSubcategoryToOndcDomain,
-  shouldUseCategoryTitleHeuristicsForOndc,
+  mapOndcDiscoveryCategory,
   toPublicOndcEnvironmentDecision,
   type OndcEnvironmentDecision,
   type OndcTaxonomyContext,
@@ -59,36 +58,31 @@ export function mergeOndcServiceOptionsFromEnv(options: OndcServiceOptions = {})
 }
 
 /**
- * Beckn search domain: optional pilot override, else category heuristic.
- * RET14 pilot: set `ONDC_DISCOVERY_DOMAIN=ONDC:RET14` to match registry subscribe domain.
+ * Canonical search domain. Allow-list only.
+ * A caller-supplied domain and the title heuristic are not consulted.
  */
 export function resolveOndcSearchDomain(
   category: string,
   discoveryDomain?: string,
   taxonomyContext?: OndcTaxonomyContext,
 ): OndcDomain | null {
-  const override = discoveryDomain?.trim();
-  if (override && ONDC_DOMAIN_PATTERN.test(override)) {
-    return override as OndcDomain;
+  const mapping = mapOndcDiscoveryCategory({
+    otpCategory: category,
+    subcategoryCode: taxonomyContext?.subcategoryCode,
+    requirementMode: taxonomyContext?.requirementMode,
+    ondcDomain: discoveryDomain,
+    title: category,
+    taxonomy: taxonomyContext,
+  });
+  if (mapping.ondcDomain === 'ONDC:RET12' || mapping.ondcDomain === 'ONDC:RET14') {
+    return mapping.ondcDomain;
   }
-
-  if (taxonomyContext?.subcategoryCode) {
-    const explicit = mapExplicitSubcategoryToOndcDomain(
-      taxonomyContext.subcategoryCode,
-      taxonomyContext.requirementMode,
-    );
-    return explicit as OndcDomain | null;
-  }
-
-  if (!shouldUseCategoryTitleHeuristicsForOndc(taxonomyContext)) {
-    return null;
-  }
-
-  return mapCategoryToOndcDomain(category);
+  return null;
 }
 
 /**
- * Domain category to ONDC Beckn domain mapping helper.
+ * Title heuristic kept for existing direct unit tests.
+ * resolveOndcSearchDomain does not call this. Canonical mapping is mapOndcDiscoveryCategory.
  */
 export function mapCategoryToOndcDomain(category: string): OndcDomain {
   const cat = category.toLowerCase();

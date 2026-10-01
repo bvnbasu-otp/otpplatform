@@ -67,10 +67,10 @@ describe('ONDC Beckn Real-time Cryptography & Protocol Suite', () => {
     expect(mapCategoryToOndcDomain('Domestic RO Water Purifiers')).toBe('ONDC:SRV11');
   });
 
-  it('resolveOndcSearchDomain honors RET14 pilot override', () => {
-    expect(resolveOndcSearchDomain('MOTOR_WINDING', 'ONDC:RET14')).toBe('ONDC:RET14');
-    expect(resolveOndcSearchDomain('MOTOR_WINDING')).toBe('ONDC:SRV11');
-    expect(resolveOndcSearchDomain('MOTOR_WINDING', 'not-a-domain')).toBe('ONDC:SRV11');
+  it('resolveOndcSearchDomain does not honor a title or injected domain (LOCAL/CI/MOCK)', () => {
+    expect(resolveOndcSearchDomain('MOTOR_WINDING', 'ONDC:RET14')).toBeNull();
+    expect(resolveOndcSearchDomain('MOTOR_WINDING')).toBeNull();
+    expect(resolveOndcSearchDomain('MOTOR_WINDING', 'not-a-domain')).toBeNull();
   });
 
   it('with explicit subcategory, does not fall back to SRV11 from title alone', () => {

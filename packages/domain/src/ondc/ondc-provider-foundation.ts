@@ -12,7 +12,21 @@
  * request. The seller-reported PIN is preserved separately and may differ.
  * A PIN difference is not a normalization failure and is not rewritten.
  */
-import { mapExplicitSubcategoryToOndcDomain } from './ondc-taxonomy-boundary';
+import {
+  mapOndcDiscoveryCategory,
+  type OndcDiscoveryCategoryMapping,
+} from './ondc-category-mapping';
+import {
+  OndcObservationSource,
+  OndcRuntimeEnvironment,
+  type OndcObservationSource as OndcObservationSourceName,
+  type OndcRuntimeEnvironment as OndcRuntimeEnvironmentName,
+} from './ondc-environment';
+import {
+  acceptBuyerRequestedPin,
+  classifyOndcBuyerSellerGeography,
+  type OndcGeographyClassification,
+} from './ondc-geography';
 import {
   ProviderContactabilityStatus,
   ProviderReachabilityKind,
@@ -178,6 +192,8 @@ export interface OndcNormalizedCandidate extends NormalizedProviderSupplierCandi
   requestedPin: string | null;
   requestedCategory: string | null;
   categoryClassification: OndcCategoryClassification;
+  categoryMapping: OndcDiscoveryCategoryMapping;
+  geography: OndcGeographyClassification;
   providerStatus: SupplierNetworkProviderOperationalStatus;
   contactability: (typeof ProviderContactabilityStatus)[keyof typeof ProviderContactabilityStatus];
   reachability: readonly ProviderReachabilityChannel[];
@@ -280,9 +296,11 @@ export function resolveOndcFoundationDiscoveryDomain(input: {
   subcategoryCode?: string | null;
   requirementMode?: string | null;
 }): string | null {
-  const subcategoryCode = cleanText(input.subcategoryCode);
-  if (!subcategoryCode) return null;
-  return mapExplicitSubcategoryToOndcDomain(subcategoryCode, input.requirementMode);
+  return mapOndcDiscoveryCategory({
+    otpCategory: input.subcategoryCode,
+    subcategoryCode: input.subcategoryCode,
+    requirementMode: input.requirementMode,
+  }).ondcDomain;
 }
 
 export function classifyOndcDiscoveryCategory(input: {
@@ -299,9 +317,14 @@ export function classifyOndcDiscoveryCategory(input: {
   const providerDomain = cleanText(input.providerDomain);
   const providerCategory = cleanText(input.providerCategory);
   const providerSubcategory = cleanText(input.providerSubcategory);
-  const allowListedDomain = requestedSubcategoryCode
-    ? mapExplicitSubcategoryToOndcDomain(requestedSubcategoryCode, requirementMode)
-    : null;
+  const allowListedDomain = mapOndcDiscoveryCategory({
+    otpCategory: requestedCategory,
+    subcategoryCode: requestedSubcategoryCode,
+    requirementMode,
+    ondcDomain: providerDomain,
+    title: providerCategory,
+    taxonomy: providerSubcategory,
+  }).ondcDomain;
 
   const providerDomainUnsupported = providerDomain !== null && !ALLOW_LISTED_ONDC_DOMAINS.has(providerDomain);
   const projectCctvExcluded =
@@ -415,7 +438,11 @@ export function normalizeOndcOnSearchRecord(
     coordinates,
   });
 
-  const requestedPin = cleanText(scope?.requestedPin !== undefined ? scope.requestedPin : record.requestedPin);
+  const pinGate = acceptBuyerRequestedPin(
+    cleanText(scope?.requestedPin !== undefined ? scope.requestedPin : record.requestedPin),
+  );
+  if (!pinGate.ok) return { ok: false, reason: 'invalid_buyer_pin' };
+  const requestedPin = pinGate.buyerRequestedPin;
   const requestedCategory = cleanText(
     scope?.requestedCategory !== undefined ? scope.requestedCategory : record.requestedCategory,
   );
@@ -428,7 +455,8 @@ export function normalizeOndcOnSearchRecord(
     scope?.requirementMode !== undefined ? scope.requirementMode : record.requirementMode,
   );
 
-  const endpoint = networkEndpoint(record.endpoint) ?? undefined;
+  const endpointDecision = classifyOndcNetworkReachability({ endpoint: record.endpoint });
+  const endpoint = endpointDecision.usableEndpoint ?? undefined;
   const reportedPhone = usablePhone(record.phone) ?? undefined;
   const reportedEmail = usableEmail(record.email) ?? undefined;
   const reachability = record.unavailable
@@ -436,9 +464,7 @@ export function normalizeOndcOnSearchRecord(
     : deriveReportedReachability({ endpoint, phone: reportedPhone, email: reportedEmail });
   const providerStatus = record.unavailable
     ? SupplierNetworkProviderOperationalStatus.UNAVAILABLE
-    : endpoint
-      ? SupplierNetworkProviderOperationalStatus.REACHABLE
-      : SupplierNetworkProviderOperationalStatus.UNAVAILABLE;
+    : endpointDecision.providerStatus;
 
   const itemIds = uniqueClean(record.itemIds);
   const category = cleanText(record.category) ?? undefined;
@@ -456,6 +482,22 @@ export function normalizeOndcOnSearchRecord(
     providerCategory: category,
     providerSubcategory,
   });
+  const categoryMapping = mapOndcDiscoveryCategory({
+    otpCategory: requestedCategory,
+    subcategoryCode: requestedSubcategoryCode,
+    requirementMode,
+    ondcDomain: domain,
+    title: category,
+    taxonomy: providerSubcategory,
+  });
+  const geographyDecision = classifyOndcBuyerSellerGeography({
+    buyerRequestedPin: requestedPin,
+    sellerPin: record.sellerPin,
+    sellerLocality: record.sellerLocality,
+    sellerCity: record.sellerCity,
+    sellerState: record.sellerState,
+  });
+  if (!geographyDecision.ok) return { ok: false, reason: 'invalid_buyer_pin' };
 
   const candidate: OndcNormalizedCandidate = {
     provider: SupplierNetworkProviderKind.ONDC,
@@ -470,6 +512,8 @@ export function normalizeOndcOnSearchRecord(
     requestedPin,
     requestedCategory,
     categoryClassification,
+    categoryMapping,
+    geography: geographyDecision.geography,
     reachability,
     contactability:
       reachability.length > 0
@@ -793,17 +837,163 @@ function compactLocation(location: ProviderNeutralLocation): ProviderNeutralLoca
   return Object.keys(compact).length > 0 ? compact : undefined;
 }
 
+/**
+ * Addressability is an http(s) URI decision. It does not probe DNS, TCP, TLS, HTTP, or ONDC.
+ * NETWORK_ADDRESSABLE means a syntactically usable URI. It is not a verified interaction.
+ * Phone, canReceiveRfq, provider kind, and supplier existence are ignored.
+ * Placeholder hosts are always invalid.
+ * localhost and example hosts are invalid only for a real pre-prod or production context.
+ * LOCAL and CI may still represent those hosts; callers must keep provenance MOCK or LOCAL_FIXTURE.
+ * NETWORK_UNREACHABLE is an explicit unavailable flag from the caller, not a live probe.
+ */
+export const OndcNetworkReachabilityState = {
+  NETWORK_ADDRESSABLE: 'NETWORK_ADDRESSABLE',
+  NETWORK_UNREACHABLE: 'NETWORK_UNREACHABLE',
+  ENDPOINT_MISSING: 'ENDPOINT_MISSING',
+  ENDPOINT_INVALID: 'ENDPOINT_INVALID',
+  NOT_SUPPORTED: 'NOT_SUPPORTED',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+export type OndcNetworkReachabilityState =
+  (typeof OndcNetworkReachabilityState)[keyof typeof OndcNetworkReachabilityState];
+
+/**
+ * Maps addressability onto the existing ONDC-02 provider status names.
+ * REACHABLE here is that status vocabulary, not a verified network interaction.
+ */
+export const ONDC_REACHABILITY_PROVIDER_STATUS = {
+  [OndcNetworkReachabilityState.NETWORK_ADDRESSABLE]: SupplierNetworkProviderOperationalStatus.REACHABLE,
+  [OndcNetworkReachabilityState.NETWORK_UNREACHABLE]: SupplierNetworkProviderOperationalStatus.UNAVAILABLE,
+  [OndcNetworkReachabilityState.ENDPOINT_MISSING]: SupplierNetworkProviderOperationalStatus.UNAVAILABLE,
+  [OndcNetworkReachabilityState.ENDPOINT_INVALID]: SupplierNetworkProviderOperationalStatus.UNAVAILABLE,
+  [OndcNetworkReachabilityState.NOT_SUPPORTED]: SupplierNetworkProviderOperationalStatus.NOT_IMPLEMENTED,
+  [OndcNetworkReachabilityState.UNKNOWN]: SupplierNetworkProviderOperationalStatus.UNAVAILABLE,
+} as const;
+
+export interface OndcNetworkReachabilityDecision {
+  state: OndcNetworkReachabilityState;
+  providerStatus: SupplierNetworkProviderOperationalStatus;
+  usableEndpoint: string | null;
+  endpointHost: string | null;
+  endpointPresent: boolean;
+  /** True only for a syntactically usable http(s) URI. Not a live network result. */
+  networkAddressable: boolean;
+}
+
+const ALWAYS_PLACEHOLDER_TOKENS = new Set([
+  'unknown-bpp',
+  'network',
+  'fake',
+  'synthetic',
+  'placeholder',
+  'example',
+]);
+
+export function classifyOndcNetworkReachability(input: {
+  endpoint?: unknown;
+  unavailable?: boolean | null;
+  environment?: OndcRuntimeEnvironmentName | null;
+  source?: OndcObservationSourceName | null;
+  phone?: string | null;
+  canReceiveRfq?: boolean | null;
+  provider?: string | null;
+  supplierExists?: boolean | null;
+}): OndcNetworkReachabilityDecision {
+  void input.phone;
+  void input.canReceiveRfq;
+  void input.provider;
+  void input.supplierExists;
+
+  if (input.unavailable === true) {
+    const host = endpointHost(input.endpoint);
+    return reachabilityDecision(OndcNetworkReachabilityState.NETWORK_UNREACHABLE, null, host, endpointPresent(input.endpoint));
+  }
+  if (input.endpoint == null || (typeof input.endpoint === 'string' && input.endpoint.trim() === '')) {
+    return reachabilityDecision(OndcNetworkReachabilityState.ENDPOINT_MISSING, null, null, false);
+  }
+  if (typeof input.endpoint !== 'string') {
+    return reachabilityDecision(OndcNetworkReachabilityState.UNKNOWN, null, null, true);
+  }
+
+  const raw = input.endpoint.trim();
+  const url = parseHttpUrl(raw);
+  const host = url?.hostname ?? null;
+  if (!url || isAlwaysPlaceholder(raw, url)) {
+    return reachabilityDecision(OndcNetworkReachabilityState.ENDPOINT_INVALID, null, host, true);
+  }
+  if (isRealNetworkContext(input.environment, input.source) && isSyntheticTestHost(url.hostname)) {
+    return reachabilityDecision(OndcNetworkReachabilityState.ENDPOINT_INVALID, null, url.hostname, true);
+  }
+  return reachabilityDecision(OndcNetworkReachabilityState.NETWORK_ADDRESSABLE, url.toString(), url.hostname, true);
+}
+
+function reachabilityDecision(
+  state: OndcNetworkReachabilityState,
+  usableEndpoint: string | null,
+  endpointHostValue: string | null,
+  present: boolean,
+): OndcNetworkReachabilityDecision {
+  return {
+    state,
+    providerStatus: ONDC_REACHABILITY_PROVIDER_STATUS[state],
+    usableEndpoint,
+    endpointHost: endpointHostValue,
+    endpointPresent: present,
+    networkAddressable: state === OndcNetworkReachabilityState.NETWORK_ADDRESSABLE,
+  };
+}
+
 function networkEndpoint(value?: string | null): string | null {
-  const trimmed = cleanText(value);
-  if (!trimmed) return null;
+  return classifyOndcNetworkReachability({ endpoint: value }).usableEndpoint;
+}
+
+function parseHttpUrl(value: string): URL | null {
   try {
-    const url = new URL(trimmed);
+    const url = new URL(value);
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
     if (!url.hostname) return null;
-    return url.toString();
+    return url;
   } catch {
     return null;
   }
+}
+
+function endpointPresent(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function endpointHost(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  return parseHttpUrl(value.trim())?.hostname ?? null;
+}
+
+function isAlwaysPlaceholder(raw: string, url: URL): boolean {
+  const token = raw.toLowerCase();
+  const host = url.hostname.toLowerCase();
+  if (ALWAYS_PLACEHOLDER_TOKENS.has(token) || ALWAYS_PLACEHOLDER_TOKENS.has(host)) return true;
+  if (host.includes('unknown-bpp') || token.includes('unknown-bpp')) return true;
+  return false;
+}
+
+function isRealNetworkContext(
+  environment?: OndcRuntimeEnvironmentName | null,
+  source?: OndcObservationSourceName | null,
+): boolean {
+  if (source === OndcObservationSource.REAL_NETWORK) return true;
+  return environment === OndcRuntimeEnvironment.PRE_PROD || environment === OndcRuntimeEnvironment.PRODUCTION;
+}
+
+function isSyntheticTestHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (host === 'localhost' || host.endsWith('.localhost')) return true;
+  if (host === '127.0.0.1' || host === '0.0.0.0' || host === '::1') return true;
+  if (host === 'example.com' || host.endsWith('.example.com')) return true;
+  if (host === 'example.net' || host.endsWith('.example.net')) return true;
+  if (host === 'example.org' || host.endsWith('.example.org')) return true;
+  if (host === 'example.test' || host.endsWith('.example.test')) return true;
+  if (host === 'example.invalid' || host.endsWith('.invalid')) return true;
+  return false;
 }
 
 function usablePhone(value?: string | null): string | null {

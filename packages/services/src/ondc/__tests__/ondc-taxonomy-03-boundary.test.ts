@@ -5,9 +5,10 @@ import {
 } from '../ondc-network-service';
 
 describe('resolveOndcSearchDomain with explicit OTP taxonomy (TAXONOMY-03)', () => {
-  it('still uses title heuristics only when subcategory is absent', () => {
+  it('does not let the title heuristic choose a domain when subcategory is absent (LOCAL/CI/MOCK)', () => {
     expect(mapCategoryToOndcDomain('Construction Ready Mix Concrete RMC')).toBe('ONDC:B2B10');
-    expect(resolveOndcSearchDomain('Construction Ready Mix Concrete RMC')).toBe('ONDC:B2B10');
+    expect(resolveOndcSearchDomain('Construction Ready Mix Concrete RMC')).toBeNull();
+    expect(resolveOndcSearchDomain('camera shirt textile')).toBeNull();
   });
 
   it('does not emit B2B10/SRV11/SRV13 when subcategory is explicit', () => {
@@ -31,11 +32,18 @@ describe('resolveOndcSearchDomain with explicit OTP taxonomy (TAXONOMY-03)', () 
     ).toBeNull();
   });
 
-  it('honors pilot override regardless of taxonomy context', () => {
+  it('does not let an injected domain override the allow-list (LOCAL/CI/MOCK)', () => {
     expect(
       resolveOndcSearchDomain('anything', 'ONDC:RET14', {
         subcategoryCode: 'custom_requirement',
       }),
-    ).toBe('ONDC:RET14');
+    ).toBeNull();
+    expect(resolveOndcSearchDomain('cotton yarn', 'ONDC:RET12')).toBeNull();
+    expect(
+      resolveOndcSearchDomain('cotton yarn', 'ONDC:SRV11', {
+        subcategoryCode: 'cotton_yarn',
+        requirementMode: 'PRODUCT_MATERIAL',
+      }),
+    ).toBe('ONDC:RET12');
   });
 });
