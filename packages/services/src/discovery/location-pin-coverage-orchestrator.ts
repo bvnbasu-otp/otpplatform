@@ -5,6 +5,7 @@ import {
   SupplierTruthfulVerificationStage,
 } from '@otp/domain';
 import { GooglePlacesDiscoveryAdapter } from '../gis/google-places-discovery-adapter.ts';
+import { evaluateGooglePlacesQuality, extractSupplierPostalPin } from './google-places-quality-gate.ts';
 import { runManagedGooglePlacesDiscovery } from './google-places-managed-coverage.ts';
 import type {
   LocationPinCoverageStore,
@@ -46,8 +47,8 @@ const DEFAULT_CATEGORY = 'General Commercial Supplies';
 
 function toScope(input: LocationPinCoverageRequest): DiscoveryScopeDescriptor {
   return {
-    state: (input.state ?? 'Karnataka').trim(),
-    city: (input.city ?? 'Bengaluru').trim(),
+    state: (input.state ?? '').trim(),
+    city: (input.city ?? '').trim(),
     pincode: input.pincode.trim(),
     category: (input.category ?? DEFAULT_CATEGORY).trim(),
     discoveryContext: 'SUPERADMIN_PREPARE',
@@ -120,10 +121,30 @@ function rawToPersisted(
     businessName: string;
     formattedAddress?: string;
     phone?: string;
+    rating?: number;
+    coordinates?: { lat: number; lng: number };
+    googleMapsUri?: string;
+    businessStatus?: string;
+    website?: string;
     isGstKnown?: boolean;
     isDetailsComplete?: boolean;
   },
-): PersistedCoverageSupplier {
+): PersistedCoverageSupplier | null {
+  const quality = evaluateGooglePlacesQuality({
+    channel: 'GOOGLE_PLACES',
+    displayName: raw.businessName,
+    formattedAddress: raw.formattedAddress,
+    phone: raw.phone,
+    lat: raw.coordinates?.lat,
+    lng: raw.coordinates?.lng,
+    placeId: raw.placeId,
+    googleMapsUri: raw.googleMapsUri,
+    businessStatus: raw.businessStatus,
+    website: raw.website,
+    rating: raw.rating,
+  });
+  if (!quality.storeDiscoveryIdentity) return null;
+  const supplierPostalPincode = extractSupplierPostalPin(raw.formattedAddress);
   return {
     placeId: raw.placeId,
     businessName: raw.businessName,
@@ -132,18 +153,34 @@ function rawToPersisted(
     locations: [
       {
         pincode: scope.pincode,
+        discoveryPincode: scope.pincode,
+        ...(supplierPostalPincode ? { supplierPostalPincode } : {}),
         city: scope.city,
         state: scope.state,
         isPrimary: true,
         serviceRadiusKm: 25,
         addressLine: raw.formattedAddress,
+        latitude: raw.coordinates?.lat ?? null,
+        longitude: raw.coordinates?.lng ?? null,
+        ...(raw.phone ? { phone: raw.phone } : {}),
       },
     ],
     categories: [{ categoryName: scope.category, isPrimary: true, confidenceScore: 75 }],
     observationsCount: 1,
-    isOtpRegistered: false,
+    isOtpRegistered: quality.otpRegistered,
     isGstVerified: Boolean(raw.isGstKnown),
     complianceStandards: [],
+    formattedAddress: raw.formattedAddress ?? null,
+    phone: raw.phone ?? null,
+    lat: raw.coordinates?.lat ?? null,
+    lng: raw.coordinates?.lng ?? null,
+    googleMapsUri: raw.googleMapsUri ?? null,
+    businessStatus: raw.businessStatus ?? null,
+    website: quality.website,
+    rating: quality.rating,
+    email: quality.email,
+    discoveryPincode: scope.pincode,
+    supplierPostalPincode,
   };
 }
 
@@ -316,9 +353,18 @@ export async function runAuthoritativeLocationPinCoverage(
         };
       }
 
+      const droppedPlaceIds: string[] = [];
       for (const raw of managed.rawCandidates) {
         if (!raw.placeId) continue;
-        discovered.push(rawToPersisted(scope, raw));
+        const persisted = rawToPersisted(scope, raw);
+        if (!persisted) {
+          droppedPlaceIds.push(raw.placeId);
+          continue;
+        }
+        discovered.push(persisted);
+      }
+      if (droppedPlaceIds.length > 0) {
+        await deps.store.dropUnreachablePlaces(scope, droppedPlaceIds);
       }
     } else if (deps.allowLegacyMockDiscovery && deps.mockDiscoveryFn) {
       externalCallsExecuted = 1;
@@ -356,16 +402,17 @@ export async function runAuthoritativeLocationPinCoverage(
     assessed = await deps.store.assess(scopeKey, deps.freshnessWindowDays);
     suppliers = await deps.store.listSuppliers(scopeKey);
 
+    const kept = suppliers.length;
     return {
-      ok: discovered.length > 0 || priorCount > 0,
+      ok: kept > 0,
       scopeKey,
       status: assessed.status,
       externalCallsExecuted,
-      knownSuppliersCount: suppliers.length,
+      knownSuppliersCount: kept,
       message:
         discovered.length > 0
           ? `Discovered ${discovered.length} Google Places suppliers for ${scope.pincode}.`
-          : priorCount > 0
+          : kept > 0
             ? 'Refresh returned zero new suppliers; prior coverage preserved.'
             : 'Discovery completed with zero suppliers (not cached as fresh).',
       report: toSuppliersReport(scope, assessed, suppliers),

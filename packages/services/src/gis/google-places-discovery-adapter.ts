@@ -34,6 +34,9 @@ export interface GooglePlacesRawCandidate {
   rating?: number;
   userRatingsTotal?: number;
   coordinates?: { lat: number; lng: number };
+  googleMapsUri?: string;
+  businessStatus?: string;
+  website?: string;
   types?: string[];
   isDetailsComplete?: boolean;
   isGstKnown?: boolean;
@@ -66,8 +69,36 @@ export interface GooglePlacesDiscoveryResult {
 export const GOOGLE_PLACES_API_NEW_SEARCH_TEXT_ENDPOINT =
   'https://places.googleapis.com/v1/places:searchText';
 
-const PLACES_SEARCH_TEXT_FIELD_MASK =
-  'places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri';
+/**
+ * Places API (New) searchText field mask — one request, no Place Details fan-out.
+ *
+ * `places.nationalPhoneNumber` and `places.internationalPhoneNumber` are valid Text Search
+ * Enterprise paths. `places.businessStatus` is a valid Text Search Pro path. The existing
+ * mask already requests Pro fields (displayName, formattedAddress, location, googleMapsUri),
+ * so this call was already Text Search Pro. Adding the two phone fields bills the same
+ * search once at Text Search Enterprise (highest SKU on the request). That is the cheaper
+ * reliable way to learn phone and operating status: a Place Details call per result would
+ * multiply quota and would be enrichment-to-rescue. Do not widen the mask to `*`.
+ * Do not request website or rating; their absence is allowed.
+ */
+export const PLACES_SEARCH_TEXT_FIELD_MASK =
+  'places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri,places.nationalPhoneNumber,places.internationalPhoneNumber,places.businessStatus';
+
+/**
+ * Prefer an already-present international number when it has at least 10 digits,
+ * otherwise the national number. Punctuation is stripped by normalizePhoneNumber.
+ * Short fragments are discarded. Digits are never invented or prefixed.
+ */
+export function selectGooglePlacesSearchPhone(
+  national?: string | null,
+  international?: string | null,
+): string | undefined {
+  const intl = normalizePhoneNumber(international);
+  const nat = normalizePhoneNumber(national);
+  if (intl.length >= 10) return intl;
+  if (nat.length >= 10) return nat;
+  return undefined;
+}
 
 export interface GooglePlacesDiscoveryAdapterOptions {
   apiKey?: string;
@@ -233,6 +264,10 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
     this.discoveryCache.set(scopeKey, { candidates, cachedAt });
   }
 
+  /**
+   * Pilot / fallback-ladder scope key only. A missing PIN defaults to the 560048 fixture.
+   * Authoritative managed coverage (discoverManagedCoverage) does not call this.
+   */
   getScopeKey(criteria: { category: string; location?: { city?: string; pinCode?: string } }): string {
     const city = (criteria.location?.city || 'bengaluru').trim().toLowerCase();
     const pin = (criteria.location?.pinCode || '560048').trim();
@@ -352,13 +387,26 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
     const location = place.location as { latitude?: number; longitude?: number } | undefined;
     const lat = location?.latitude;
     const lng = location?.longitude;
+    const mapsUri = typeof place.googleMapsUri === 'string' ? place.googleMapsUri : undefined;
+    const businessStatus = typeof place.businessStatus === 'string' ? place.businessStatus : undefined;
+    const website = typeof place.websiteUri === 'string' ? place.websiteUri : undefined;
+    const rating = typeof place.rating === 'number' ? place.rating : undefined;
+    const phone = selectGooglePlacesSearchPhone(
+      typeof place.nationalPhoneNumber === 'string' ? place.nationalPhoneNumber : undefined,
+      typeof place.internationalPhoneNumber === 'string' ? place.internationalPhoneNumber : undefined,
+    );
 
     return {
       placeId,
-      businessName: (displayName?.text || 'Discovered Supplier').trim(),
+      businessName: (displayName?.text || '').trim(),
       formattedAddress: place.formattedAddress as string | undefined,
+      phone,
+      rating,
       coordinates:
         typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : undefined,
+      googleMapsUri: mapsUri,
+      businessStatus,
+      website,
       types: [],
       isDetailsComplete: Boolean(place.formattedAddress),
     };
@@ -403,7 +451,6 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
       };
     }
 
-    const scopeKey = this.getScopeKey(criteria);
     const radiusM = Math.min(50000, Math.max(1000, Math.round((criteria.radiusKm ?? 25) * 1000)));
 
     const requestBody: Record<string, unknown> = {
@@ -494,11 +541,6 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
           errorCode: 'PROVIDER_ERROR',
           explanation: 'Places API (New) returned a malformed searchText payload.',
         };
-      }
-
-      if (rawResults.length > 0) {
-        const normalized = rawResults.map((r) => this.normalizeCandidate(r, criteria.category, criteria.location));
-        this.discoveryCache.set(scopeKey, { candidates: this.deduplicateCandidates(normalized), cachedAt: Date.now() });
       }
 
       return {

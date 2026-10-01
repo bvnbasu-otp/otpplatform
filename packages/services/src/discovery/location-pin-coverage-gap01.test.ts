@@ -37,27 +37,47 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
     });
   }
 
+  const mockGeocodeKarnataka560048 = {
+    status: 'OK',
+    results: [
+      {
+        geometry: { location: { lat: 12.97, lng: 77.71 } },
+        formatted_address: '560048',
+        address_components: [
+          { long_name: 'Bengaluru', types: ['locality'] },
+          { long_name: 'Karnataka', types: ['administrative_area_level_1'] },
+        ],
+      },
+    ],
+  };
+
+  function eligiblePlace(
+    placeId: string,
+    extra: Record<string, unknown> = {},
+  ) {
+    return {
+      id: placeId.startsWith('places/') ? placeId : `places/${placeId}`,
+      displayName: { text: 'Gap01 Electrical Hub' },
+      formattedAddress: 'Hoodi, Bengaluru 560048',
+      location: { latitude: 12.97, longitude: 77.71 },
+      googleMapsUri: `https://maps.google.com/?cid=${placeId}`,
+      nationalPhoneNumber: '080 4123 4567',
+      internationalPhoneNumber: '+91 80 4123 4567',
+      businessStatus: 'OPERATIONAL',
+      ...extra,
+    };
+  }
+
   function mockPlacesSearchSuccess(placeId = 'ChIJ_gap01_one') {
     return {
-      places: [
-        {
-          id: `places/${placeId}`,
-          displayName: { text: 'Gap01 Electrical Hub' },
-          formattedAddress: 'Hoodi, Bengaluru 560048',
-          location: { latitude: 12.97, longitude: 77.71 },
-          googleMapsUri: `https://maps.google.com/?cid=${placeId}`,
-        },
-      ],
+      places: [eligiblePlace(placeId)],
     };
   }
 
   function mockGoogleSuccess(placeId = 'ChIJ_gap01_one') {
     return async (url: string) => {
       if (url.includes('geocode')) {
-        return {
-          status: 'OK',
-          results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } }, formatted_address: '560048' }],
-        };
+        return mockGeocodeKarnataka560048;
       }
       if (url.includes('textsearch/json')) {
         throw new Error('legacy Places Text Search must not be called');
@@ -123,10 +143,7 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
       await new Promise((r) => setTimeout(r, 40));
       inFlight -= 1;
       if (url.includes('geocode')) {
-        return {
-          status: 'OK',
-          results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } } }],
-        };
+        return mockGeocodeKarnataka560048;
       }
       return mockPlacesSearchSuccess('ChIJ_concurrent');
     };
@@ -351,22 +368,27 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
     const manager = createManagedWithFetch(async (url: string, init?: RequestInit) => {
       urls.push(url);
       if (url.includes('geocode')) {
-        return {
-          status: 'OK',
-          results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } } }],
-        };
+        return mockGeocodeKarnataka560048;
       }
       expect(init?.method).toBe('POST');
       const headers = init?.headers as Record<string, string> | undefined;
       expect(headers?.['X-Goog-FieldMask']).toContain('places.id');
+      expect(headers?.['X-Goog-FieldMask']).toContain('places.googleMapsUri');
+      expect(headers?.['X-Goog-FieldMask']).toContain('places.nationalPhoneNumber');
+      expect(headers?.['X-Goog-FieldMask']).toContain('places.internationalPhoneNumber');
+      expect(headers?.['X-Goog-FieldMask']).toContain('places.businessStatus');
       expect(headers?.['X-Goog-Api-Key']).toBeDefined();
       expect(headers?.['X-Goog-FieldMask']).not.toBe('*');
+      expect(headers?.['X-Goog-FieldMask']).not.toContain('*');
       return mockPlacesSearchSuccess('ChIJ_new_api_only');
     });
     const res = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true });
     expect(res.ok).toBe(true);
     expect(urls.some((u) => u.includes('places:searchText'))).toBe(true);
     expect(urls.some((u) => u.includes('textsearch/json'))).toBe(false);
+    expect(urls.filter((u) => u.includes('places.googleapis.com')).every((u) => u.includes('places:searchText'))).toBe(
+      true,
+    );
   });
 
   it('diagnostic geocode logs omit secrets and URLs', async () => {
@@ -431,11 +453,7 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
     const manager = createManagedWithFetch(async (url: string, init?: RequestInit) => {
       urls.push(url);
       if (url.includes('geocode')) {
-        return {
-          __httpStatus: 200,
-          status: 'OK',
-          results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } } }],
-        };
+        return { __httpStatus: 200, ...mockGeocodeKarnataka560048 };
       }
       expect(init?.method).toBe('POST');
       return { __httpStatus: 200, ...mockPlacesSearchSuccess('ChIJ_diag_places') };
@@ -456,32 +474,156 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
     }
   });
 
-  it('deduplicates by Place ID only on merge', async () => {
+  it('K mismatched PIN geography blocks Places discovery (no textsearch calls)', async () => {
+    let placesCalls = 0;
     const manager = createManagedWithFetch(async (url: string) => {
       if (url.includes('geocode')) {
         return {
           status: 'OK',
-          results: [{ geometry: { location: { lat: 12.97, lng: 77.71 } } }],
+          results: [
+            {
+              geometry: { location: { lat: 12.97, lng: 77.71 } },
+              address_components: [
+                { long_name: 'Bengaluru', types: ['locality'] },
+                { long_name: 'Karnataka', types: ['administrative_area_level_1'] },
+              ],
+            },
+          ],
         };
+      }
+      if (url.includes('places:searchText')) {
+        placesCalls += 1;
+      }
+      return mockPlacesSearchSuccess();
+    });
+    const res = await manager.prepareLocationNetwork({
+      ...scope,
+      city: 'Mumbai',
+      executeDiscovery: true,
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error).toBe('GEOCODE_FAILED');
+    expect(placesCalls).toBe(0);
+  });
+
+  it('deduplicates by Place ID only on merge', async () => {
+    const manager = createManagedWithFetch(async (url: string) => {
+      if (url.includes('geocode')) {
+        return mockGeocodeKarnataka560048;
       }
       return {
         places: [
-          {
-            id: 'places/ChIJ_dedup',
-            displayName: { text: 'Alpha Traders' },
-            formattedAddress: 'Hoodi, Bengaluru 560048',
-            location: { latitude: 12.97, longitude: 77.71 },
-          },
-          {
-            id: 'places/ChIJ_dedup',
-            displayName: { text: 'Alpha Traders Duplicate Name' },
-            formattedAddress: 'Hoodi, Bengaluru 560048',
-            location: { latitude: 12.97, longitude: 77.71 },
-          },
+          eligiblePlace('ChIJ_dedup', { displayName: { text: 'Alpha Traders' } }),
+          eligiblePlace('ChIJ_dedup', { displayName: { text: 'Alpha Traders Duplicate Name' } }),
         ],
       };
     });
     const res = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true });
     expect(res.report.suppliers.length).toBe(1);
+  });
+
+  it('same display name with different Place IDs stays separate on the authoritative path', async () => {
+    const manager = createManagedWithFetch(async (url: string) => {
+      if (url.includes('geocode')) return mockGeocodeKarnataka560048;
+      return {
+        places: [
+          eligiblePlace('ChIJ_name_a', {
+            displayName: { text: 'Shared Name Traders' },
+            formattedAddress: 'Lane A, Bengaluru 560048',
+            googleMapsUri: 'https://maps.google.com/?cid=a',
+          }),
+          eligiblePlace('ChIJ_name_b', {
+            displayName: { text: 'Shared Name Traders' },
+            formattedAddress: 'Lane B, Mumbai 400001',
+            location: { latitude: 19.07, longitude: 72.87 },
+            googleMapsUri: 'https://maps.google.com/?cid=b',
+          }),
+        ],
+      };
+    });
+    const res = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true });
+    expect(res.report.suppliers.map((s) => s.id).sort()).toEqual(['ChIJ_name_a', 'ChIJ_name_b']);
+    const mumbai = res.report.suppliers.find((s) => s.id === 'ChIJ_name_b');
+    const loc = mumbai?.locations?.[0] as { discoveryPincode?: string; supplierPostalPincode?: string; pincode?: string };
+    expect(loc?.discoveryPincode).toBe('560048');
+    expect(loc?.pincode).toBe('560048');
+    expect(loc?.supplierPostalPincode).toBe('400001');
+  });
+
+  it('blank city is not rewritten to Bengaluru on the authoritative search query', async () => {
+    const bodies: string[] = [];
+    const manager = createManagedWithFetch(async (url: string, init?: RequestInit) => {
+      if (url.includes('geocode')) return mockGeocodeKarnataka560048;
+      bodies.push(String(init?.body ?? ''));
+      return mockPlacesSearchSuccess('ChIJ_blank_city');
+    });
+    const res = await manager.prepareLocationNetwork({
+      ...scope,
+      city: '',
+      executeDiscovery: true,
+    });
+    expect(res.ok).toBe(true);
+    expect(bodies.join('\n')).not.toMatch(/Bengaluru/i);
+    expect(bodies.join('\n')).toContain('560048');
+  });
+
+  it('does not persist a Google hit that has no phone, and a later phone result may insert', async () => {
+    const store = new InMemoryLocationPinCoverageStore();
+    let withPhone = false;
+    const manager = createManagedWithFetch(async (url: string) => {
+      if (url.includes('geocode')) return mockGeocodeKarnataka560048;
+      const place = eligiblePlace('ChIJ_phone_later');
+      if (!withPhone) {
+        delete (place as { nationalPhoneNumber?: string }).nationalPhoneNumber;
+        delete (place as { internationalPhoneNumber?: string }).internationalPhoneNumber;
+      }
+      return { places: [place] };
+    }, store);
+    const scopeKey = buildLocationPinScopeKey({ ...scope, discoveryContext: 'SUPERADMIN_PREPARE' });
+    const first = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true });
+    expect(first.knownSuppliersCount).toBe(0);
+    expect(await store.listSuppliers(scopeKey)).toEqual([]);
+
+    withPhone = true;
+    const second = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true, forceRefresh: true });
+    expect(second.knownSuppliersCount).toBe(1);
+    const stored = await store.listSuppliers(scopeKey);
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.phone).toBe('918041234567');
+    expect(stored[0]?.businessStatus).toBe('OPERATIONAL');
+  });
+
+  it('a later no-phone result removes the previously stored supplier', async () => {
+    const store = new InMemoryLocationPinCoverageStore();
+    let withPhone = true;
+    const manager = createManagedWithFetch(async (url: string) => {
+      if (url.includes('geocode')) return mockGeocodeKarnataka560048;
+      const place = eligiblePlace('ChIJ_phone_gone');
+      if (!withPhone) {
+        delete (place as { nationalPhoneNumber?: string }).nationalPhoneNumber;
+        delete (place as { internationalPhoneNumber?: string }).internationalPhoneNumber;
+      }
+      return { places: [place] };
+    }, store);
+    const scopeKey = buildLocationPinScopeKey({ ...scope, discoveryContext: 'SUPERADMIN_PREPARE' });
+    await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true });
+    expect(await store.listSuppliers(scopeKey)).toHaveLength(1);
+
+    withPhone = false;
+    const dropped = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true, forceRefresh: true });
+    expect(dropped.knownSuppliersCount).toBe(0);
+    expect(await store.listSuppliers(scopeKey)).toEqual([]);
+  });
+
+  it('does not persist a non-OPERATIONAL Google hit', async () => {
+    const store = new InMemoryLocationPinCoverageStore();
+    const manager = createManagedWithFetch(async (url: string) => {
+      if (url.includes('geocode')) return mockGeocodeKarnataka560048;
+      return { places: [eligiblePlace('ChIJ_closed', { businessStatus: 'CLOSED_PERMANENTLY' })] };
+    }, store);
+    const scopeKey = buildLocationPinScopeKey({ ...scope, discoveryContext: 'SUPERADMIN_PREPARE' });
+    const res = await manager.prepareLocationNetwork({ ...scope, executeDiscovery: true });
+    expect(res.knownSuppliersCount).toBe(0);
+    expect(await store.listSuppliers(scopeKey)).toEqual([]);
   });
 });

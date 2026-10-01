@@ -11,6 +11,19 @@ export interface PersistedCoverageSupplier {
   isOtpRegistered: boolean;
   isGstVerified: boolean;
   complianceStandards: string[];
+  formattedAddress?: string | null;
+  phone?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  googleMapsUri?: string | null;
+  businessStatus?: string | null;
+  website?: string | null;
+  rating?: number | null;
+  /** Always null for Google discovery. Never inferred from a website or domain. */
+  email?: string | null;
+  discoveryPincode?: string;
+  /** Postal PIN parsed from the supplier address. Not copied from the discovery PIN. */
+  supplierPostalPincode?: string | null;
 }
 
 export interface CoverageAssessResult {
@@ -44,6 +57,11 @@ export interface LocationPinCoverageStore {
     scope: DiscoveryScopeDescriptor,
     suppliers: PersistedCoverageSupplier[],
   ): Promise<number>;
+  /**
+   * Remove coverage rows that failed the Google SNE gate on this generation.
+   * A later result that passes the gate may be inserted again.
+   */
+  dropUnreachablePlaces(scope: DiscoveryScopeDescriptor, placeIds: string[]): Promise<number>;
   waitForGenerationIdle(scopeKey: string, maxWaitMs: number): Promise<void>;
   /** Re-check generation lock before each billable Google HTTP (prevents stale-lock double spend). */
   assertGenerationLock(scopeKey: string, lockToken: string): Promise<boolean>;
@@ -86,6 +104,10 @@ export class FailClosedLocationPinCoverageStore implements LocationPinCoverageSt
   }
 
   async upsertSuppliers(): Promise<number> {
+    return 0;
+  }
+
+  async dropUnreachablePlaces(): Promise<number> {
     return 0;
   }
 
@@ -192,6 +214,24 @@ export class InMemoryLocationPinCoverageStore implements LocationPinCoverageStor
     const count = byPlace.size;
     if (count > 0) {
       this.scopes.set(scopeKey, { lastSuccessfulDiscoveryAt: Date.now(), supplierCount: count });
+    }
+    return count;
+  }
+
+  async dropUnreachablePlaces(scope: DiscoveryScopeDescriptor, placeIds: string[]): Promise<number> {
+    const scopeKey = this.buildScopeKey(scope);
+    const byPlace = this.suppliersByScope.get(scopeKey);
+    if (!byPlace || placeIds.length === 0) {
+      return byPlace?.size ?? 0;
+    }
+    for (const placeId of placeIds) {
+      if (placeId) byPlace.delete(placeId);
+    }
+    const count = byPlace.size;
+    const row = this.scopes.get(scopeKey);
+    if (row) {
+      row.supplierCount = count;
+      if (count === 0) row.lastSuccessfulDiscoveryAt = null;
     }
     return count;
   }

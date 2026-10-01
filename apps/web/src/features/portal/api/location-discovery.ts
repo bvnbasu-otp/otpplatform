@@ -7,13 +7,17 @@ export function queueBuyerPinDiscovery(input: {
   pincode: string;
   category?: string;
 }): void {
+  const category = input.category?.trim();
+  if (!category) {
+    return;
+  }
   void supabase.functions
     .invoke('location-pin-coverage', {
       body: {
         state: input.state,
         city: input.city,
         pincode: input.pincode,
-        category: input.category ?? 'General Commercial Supplies',
+        category,
         forceRefresh: false,
         executeDiscovery: true,
         asyncMode: true,

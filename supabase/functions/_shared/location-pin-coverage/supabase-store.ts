@@ -198,6 +198,17 @@ export class SupabaseLocationPinCoverageStore implements LocationPinCoverageStor
     );
   }
 
+  async dropUnreachablePlaces(scope: DiscoveryScopeDescriptor, placeIds: string[]): Promise<number> {
+    if (placeIds.length === 0) return 0;
+    const scopeKey = this.buildScopeKey(scope);
+    const { data, error } = await this.client.rpc('location_pin_coverage_drop_unreachable', {
+      p_scope_key: scopeKey,
+      p_place_ids: placeIds,
+    });
+    if (error) throw error;
+    return Number(data ?? 0);
+  }
+
   async waitForGenerationIdle(scopeKey: string, maxWaitMs: number): Promise<void> {
     const deadline = Date.now() + maxWaitMs;
     while (Date.now() < deadline) {

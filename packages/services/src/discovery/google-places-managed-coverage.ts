@@ -3,6 +3,10 @@ import {
   buildGooglePlacesTextQuery,
   type DiscoveryScopeDescriptor,
 } from '@otp/domain';
+import {
+  assessPinGeographyAlignment,
+  extractStateCityFromGeocodeComponents,
+} from './pin-geography-alignment.ts';
 import type { QuotaRequestPriority } from '../gis/google-gis-safety-quota.ts';
 import {
   GooglePlacesDiscoveryAdapter,
@@ -14,6 +18,9 @@ export interface PinGeocodeResult {
   lat: number;
   lng: number;
   formattedAddress?: string;
+  resolvedState?: string;
+  resolvedCity?: string;
+  geocodeComponents?: Array<{ long_name?: string; short_name?: string; types?: string[] }>;
 }
 
 export type GeocodeFailureKind =
@@ -181,7 +188,11 @@ export async function geocodeIndianPinCode(
       __httpStatus?: number;
       status?: string;
       error_message?: string;
-      results?: Array<{ geometry?: { location?: { lat?: number; lng?: number } }; formatted_address?: string }>;
+      results?: Array<{
+        geometry?: { location?: { lat?: number; lng?: number } };
+        formatted_address?: string;
+        address_components?: Array<{ long_name?: string; short_name?: string; types?: string[] }>;
+      }>;
     };
     gap01LogGeocodeDiagnostics(json);
 
@@ -203,12 +214,17 @@ export async function geocodeIndianPinCode(
           explanation: geocodeFailureExplanation('MALFORMED_RESPONSE', pin),
         };
       }
+      const components = json.results?.[0]?.address_components;
+      const extracted = extractStateCityFromGeocodeComponents(components);
       return {
         ok: true,
         result: {
           lat: loc.lat,
           lng: loc.lng,
           formattedAddress: json.results?.[0]?.formatted_address,
+          resolvedState: extracted.state,
+          resolvedCity: extracted.city,
+          geocodeComponents: components,
         },
       };
     }
@@ -260,7 +276,6 @@ export async function runManagedGooglePlacesDiscovery(
 
   const apiKey = options.apiKey;
   const fetchFn = options.fetchFn;
-  const city = scope.city.trim() || 'Bengaluru';
   const pinCode = scope.pincode.trim();
   const searchTerms = buildGooglePlacesCategorySearchTerms(scope.category, options.maxQueries ?? 3);
 
@@ -303,6 +318,24 @@ export async function runManagedGooglePlacesDiscovery(
     };
   }
   const geocoded = geocodeOutcome.result;
+  const city = scope.city.trim();
+
+  const alignment = assessPinGeographyAlignment({
+    pincode: pinCode,
+    selectedState: scope.state?.trim() || undefined,
+    selectedCity: scope.city?.trim() || undefined,
+    geocodeComponents: geocoded.geocodeComponents,
+  });
+  if (alignment.status === 'MISMATCH' || alignment.status === 'UNRESOLVED') {
+    return {
+      rawCandidates: [],
+      externalCallsUsed,
+      quotaExhausted: false,
+      authFailure: false,
+      errorCode: 'GEOCODE_FAILED',
+      explanation: `PIN geography ${alignment.status}: ${alignment.explanation} Google Places discovery was not performed.`,
+    };
+  }
 
   const seenPlaceIds = new Set<string>();
   const aggregated: GooglePlacesRawCandidate[] = [];

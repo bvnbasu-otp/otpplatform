@@ -100,6 +100,7 @@ export * from './types/referral-incentive';
 export * from './types/supplier-wallet';
 export * from './types/persona-wallet';
 export * from './types/supplier-network-provider';
+export * from './types/supplier-provider-identity';
 export * from './types/funnel-analytics';
 
 
