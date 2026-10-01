@@ -1,14 +1,8 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { resolveForceRefreshAuthorization } from '../../../../packages/services/src/discovery/location-pin-coverage-request-auth.ts';
-
-function isSuperAdminProfile(profile: Record<string, unknown> | null, email?: string | null): boolean {
-  if (profile?.is_founder === true || profile?.is_platform_admin === true) {
-    return true;
-  }
-  const normalized = (profile?.email as string | undefined)?.trim().toLowerCase() ?? email?.trim().toLowerCase();
-  if (!normalized) return false;
-  return normalized === 'admin@otp.test' || normalized === 'ops@otp.test' || normalized.includes('founder');
-}
+import {
+  isSuperAdminProfile,
+  resolveForceRefreshAuthorization,
+} from '../../../../packages/services/src/discovery/location-pin-coverage-request-auth.ts';
 
 export async function authorizeLocationPinCoverageRequest(
   req: Request,
@@ -55,4 +49,31 @@ export async function authorizeLocationPinCoverageRequest(
   }
 
   return { ok: true, effectiveForceRefresh: authorizedRefresh.effectiveForceRefresh };
+}
+
+/**
+ * Operational phone on the coverage roster is SuperAdmin-only.
+ * Coverage reads (executeDiscovery false) stay open for counts and names;
+ * the phone field is applied separately from this viewer check.
+ */
+export async function resolveLocationPinCoveragePhoneViewer(
+  req: Request,
+  client: SupabaseClient,
+): Promise<{ isSuperAdmin: boolean }> {
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return { isSuperAdmin: false };
+
+  const { data: userData, error: userErr } = await client.auth.getUser(jwt);
+  if (userErr || !userData?.user) return { isSuperAdmin: false };
+
+  const { data: profile } = await client
+    .from('profiles')
+    .select('email, is_founder, is_platform_admin')
+    .or(`auth_user_id.eq.${userData.user.id},id.eq.${userData.user.id}`)
+    .maybeSingle();
+
+  return {
+    isSuperAdmin: isSuperAdminProfile(profile as Record<string, unknown> | null, userData.user.email),
+  };
 }

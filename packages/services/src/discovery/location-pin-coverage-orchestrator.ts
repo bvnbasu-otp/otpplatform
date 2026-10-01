@@ -11,6 +11,7 @@ import type {
   LocationPinCoverageStore,
   PersistedCoverageSupplier,
 } from './location-pin-coverage-store.ts';
+import { readPersistedCoveragePhone } from './supplier-phone-visibility.ts';
 
 export interface LocationPinCoverageRequest {
   state: string;
@@ -89,6 +90,7 @@ function suppliersToReport(
       return {
         id: s.placeId,
         businessName: s.businessName,
+        contactPhone: readPersistedCoveragePhone(s),
         verificationStage: s.verificationStage as SupplierTruthfulVerificationStage,
         firstDiscoveredAt: nowIso,
         lastSeenAt: nowIso,

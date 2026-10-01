@@ -40,6 +40,10 @@ import type {
 import type { SupplierNetworkEngine } from '../discovery/supplier-network-engine';
 import { runAuthoritativeLocationPinCoverage } from '../discovery/location-pin-coverage-orchestrator';
 import {
+  readPersistedCoveragePhone,
+  redactOperationalPhone,
+} from '../discovery/supplier-phone-visibility';
+import {
   FailClosedLocationPinCoverageStore,
   InMemoryLocationPinCoverageStore,
   type LocationPinCoverageStore,
@@ -362,7 +366,7 @@ export class ManagedSupplierNetworkService implements LocationCoverageFreshnessA
       this.cacheHits++;
       this.rfqsZeroCallsReused++;
       return {
-        suppliers: this.getSuppliersInScope(scope),
+        suppliers: this.buyerVisibleSuppliers(scope),
         reusedExistingNetwork: true,
         externalCallsUsed: 0,
         freshness,
@@ -374,7 +378,7 @@ export class ManagedSupplierNetworkService implements LocationCoverageFreshnessA
     if (!quota.allowed) {
       // Fail closed gracefully: Return existing cached suppliers if any, 0 external calls
       return {
-        suppliers: this.getSuppliersInScope(scope),
+        suppliers: this.buyerVisibleSuppliers(scope),
         reusedExistingNetwork: true,
         externalCallsUsed: 0,
         freshness,
@@ -389,7 +393,7 @@ export class ManagedSupplierNetworkService implements LocationCoverageFreshnessA
       skipSuperadminQuotaGates: true,
     });
     return {
-      suppliers: this.getSuppliersInScope(scope),
+      suppliers: this.buyerVisibleSuppliers(scope),
       reusedExistingNetwork: false,
       externalCallsUsed: res.externalCallsExecuted,
       freshness: this.assessScopeFreshness(scope),
@@ -695,6 +699,9 @@ export class ManagedSupplierNetworkService implements LocationCoverageFreshnessA
       if (existing) {
         existing.lastSeenAt = nowIso;
         existing.lastRefreshedAt = nowIso;
+        if (!existing.contactPhone) {
+          existing.contactPhone = readPersistedCoveragePhone(row);
+        }
         if (!existing.provenanceProviders.includes('GOOGLE_PLACES')) {
           existing.provenanceProviders.push('GOOGLE_PLACES');
         }
@@ -704,7 +711,7 @@ export class ManagedSupplierNetworkService implements LocationCoverageFreshnessA
       this.suppliers.set(newId, {
         id: newId,
         businessName: row.businessName,
-        contactPhone: '',
+        contactPhone: readPersistedCoveragePhone(row),
         verificationStage: row.verificationStage as SupplierTruthfulVerificationStage,
         firstDiscoveredAt: nowIso,
         lastSeenAt: nowIso,
@@ -880,6 +887,15 @@ export class ManagedSupplierNetworkService implements LocationCoverageFreshnessA
   }
 
   // --- Internal Helpers ---
+
+  /**
+   * Buyer RFQ sourcing is pre-reveal. Persisted phone stays on the internal
+   * entity for Admin/SuperAdmin and is omitted here. Disclosure is reveal_award
+   * when reveal_status is REVEALED, not this roster.
+   */
+  private buyerVisibleSuppliers(scope: DiscoveryScopeDescriptor): NetworkSupplierEntity[] {
+    return this.getSuppliersInScope(scope).map((supplier) => redactOperationalPhone(supplier));
+  }
 
   private getSuppliersInScope(scope: DiscoveryScopeDescriptor): NetworkSupplierEntity[] {
     const list: NetworkSupplierEntity[] = [];

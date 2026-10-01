@@ -1,7 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { corsHeaders, errorResponse, jsonResponse } from '../_shared/cors.ts';
 import { runEdgeAuthoritativeLocationPinCoverage } from '../_shared/location-pin-coverage/orchestrator.ts';
-import { authorizeLocationPinCoverageRequest } from '../_shared/location-pin-coverage/request-auth.ts';
+import { authorizeLocationPinCoverageRequest, resolveLocationPinCoveragePhoneViewer } from '../_shared/location-pin-coverage/request-auth.ts';
+import {
+  coveragePhoneVisibleToViewer,
+  redactOperationalPhone,
+} from '../../../packages/services/src/discovery/supplier-phone-visibility.ts';
 
 type CoverageRequest = {
   state?: string;
@@ -43,7 +47,9 @@ Deno.serve(async (req) => {
     }
 
     const result = await runEdgeAuthoritativeLocationPinCoverage(client, normalizedBody);
-    return jsonResponse(result);
+    const viewer = await resolveLocationPinCoveragePhoneViewer(req, client);
+    const response = coveragePhoneVisibleToViewer(viewer) ? result : redactOperationalPhone(result);
+    return jsonResponse(response);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Coverage failed';
     return errorResponse(msg, 500);
