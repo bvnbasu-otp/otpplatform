@@ -138,7 +138,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  v_writer text := current_setting('ondc.dispatch_writer', true);
+  v_writer text := current_setting('otp.ondc_dispatch_writer', true);
 BEGIN
   IF TG_OP = 'INSERT' THEN
     IF v_writer IS DISTINCT FROM 'dispatch_insert' THEN
@@ -273,7 +273,7 @@ BEGIN
   IF TG_OP <> 'INSERT' THEN
     RAISE EXCEPTION 'replay_immutable';
   END IF;
-  IF current_setting('ondc.dispatch_writer', true) IS DISTINCT FROM 'dispatch_callback' THEN
+  IF current_setting('otp.ondc_dispatch_writer', true) IS DISTINCT FROM 'dispatch_callback' THEN
     RAISE EXCEPTION 'untrusted_replay_insert';
   END IF;
   RETURN NEW;
@@ -387,7 +387,7 @@ BEGIN
 
   PERFORM pg_advisory_xact_lock(hashtext('ondc-discovery-dispatch'), hashtext(v_key));
 
-  PERFORM set_config('ondc.dispatch_writer', 'dispatch_insert', true);
+  PERFORM set_config('otp.ondc_dispatch_writer', 'dispatch_insert', true);
   INSERT INTO public.ondc_discovery_dispatches (
     provider,
     environment,
@@ -436,7 +436,7 @@ BEGIN
     FROM public.ondc_discovery_dispatches
     WHERE idempotency_key = v_key;
     IF v_row.id IS NULL THEN
-      PERFORM set_config('ondc.dispatch_writer', '', true);
+      PERFORM set_config('otp.ondc_dispatch_writer', '', true);
       RAISE EXCEPTION 'dispatch_not_durable';
     END IF;
     IF v_row.environment IS DISTINCT FROM v_environment
@@ -445,16 +445,16 @@ BEGIN
        OR v_row.domain IS DISTINCT FROM v_domain
        OR v_row.expected_bap_id IS DISTINCT FROM v_bap
        OR v_row.city IS DISTINCT FROM v_city THEN
-      PERFORM set_config('ondc.dispatch_writer', '', true);
+      PERFORM set_config('otp.ondc_dispatch_writer', '', true);
       RAISE EXCEPTION 'idempotency_conflict';
     END IF;
   END IF;
 
-  PERFORM set_config('ondc.dispatch_writer', '', true);
+  PERFORM set_config('otp.ondc_dispatch_writer', '', true);
   RETURN private.ondc_discovery_dispatch_json(v_row) || jsonb_build_object('recovered', v_recovered);
 EXCEPTION
   WHEN unique_violation THEN
-    PERFORM set_config('ondc.dispatch_writer', '', true);
+    PERFORM set_config('otp.ondc_dispatch_writer', '', true);
     RAISE EXCEPTION 'transaction_id_reused';
 END;
 $$;
@@ -506,7 +506,7 @@ BEGIN
     RAISE EXCEPTION 'invalid_lifecycle_status';
   END IF;
 
-  PERFORM set_config('ondc.dispatch_writer', 'dispatch_lifecycle', true);
+  PERFORM set_config('otp.ondc_dispatch_writer', 'dispatch_lifecycle', true);
   UPDATE public.ondc_discovery_dispatches
   SET
     status = v_status,
@@ -518,7 +518,7 @@ BEGIN
     updated_at = now()
   WHERE id = v_row.id
   RETURNING * INTO v_row;
-  PERFORM set_config('ondc.dispatch_writer', '', true);
+  PERFORM set_config('otp.ondc_dispatch_writer', '', true);
   RETURN private.ondc_discovery_dispatch_json(v_row);
 END;
 $$;
@@ -716,7 +716,7 @@ BEGIN
     RAISE EXCEPTION 'observation_not_retained';
   END IF;
 
-  PERFORM set_config('ondc.dispatch_writer', 'dispatch_callback', true);
+  PERFORM set_config('otp.ondc_dispatch_writer', 'dispatch_callback', true);
   INSERT INTO public.ondc_discovery_callback_replays (
     transaction_id,
     message_id,
@@ -738,7 +738,7 @@ BEGIN
     failure_reason = NULL,
     updated_at = now()
   WHERE id = v_row.id;
-  PERFORM set_config('ondc.dispatch_writer', '', true);
+  PERFORM set_config('otp.ondc_dispatch_writer', '', true);
 
   RETURN jsonb_build_object(
     'ok', true,
@@ -751,7 +751,7 @@ BEGIN
   );
 EXCEPTION
   WHEN unique_violation THEN
-    PERFORM set_config('ondc.dispatch_writer', '', true);
+    PERFORM set_config('otp.ondc_dispatch_writer', '', true);
     IF SQLERRM ILIKE '%ondc_discovery_callback_replays%' THEN
       RETURN jsonb_build_object(
         'ok', true,
@@ -765,7 +765,7 @@ EXCEPTION
     END IF;
     RAISE;
   WHEN OTHERS THEN
-    PERFORM set_config('ondc.dispatch_writer', '', true);
+    PERFORM set_config('otp.ondc_dispatch_writer', '', true);
     IF SQLERRM IN (
       'unknown_transaction',
       'unknown_message',

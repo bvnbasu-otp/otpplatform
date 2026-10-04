@@ -618,7 +618,7 @@ describe('00231 ONDC discovery dispatches (local postgres)', () => {
     await withPg(async (c) => {
       await c.query('BEGIN');
       try {
-        await c.query(`SELECT set_config('ondc.dispatch_writer', 'dispatch_insert', true)`);
+        await c.query(`SELECT set_config('otp.ondc_dispatch_writer', 'dispatch_insert', true)`);
         await c.query('SAVEPOINT bad_row');
         await expect(
           c.query(
@@ -704,7 +704,7 @@ describe('00231 ONDC discovery dispatches (local postgres)', () => {
           ],
         );
         await c.query('RESET ROLE');
-        await c.query(`SELECT set_config('ondc.dispatch_writer', 'dispatch_callback', true)`);
+        await c.query(`SELECT set_config('otp.ondc_dispatch_writer', 'dispatch_callback', true)`);
         await c.query(
           `INSERT INTO ondc_discovery_callback_replays (transaction_id, message_id, callback_subscriber, body_digest)
            VALUES ($1, $2, 'bpp.local.test', 'BLAKE-512=QUJDREVGRw==')`,
