@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 /**
  * ONDC Cryptographic Specification:
  * - Signing Algorithm: Ed25519
- * - Hashing: BLAKE2b-512 / SHA-256 Digest
+ * - Hashing: BLAKE2b-512
  * - Authorization Header Format:
  *   Signature keyId="subscriber_id|unique_key_id|ed25519",algorithm="ed25519",created="1234567890",expires="1234567990",headers="(created) (expires) digest",signature="..."
  */
@@ -45,12 +45,42 @@ export function generateOndcKeyPair(): {
 }
 
 /**
- * Create standard SHA-256 / BLAKE2b digest for ONDC message body.
+ * BLAKE2b-512 digest of the exact body bytes. Standard base64, BLAKE-512= prefix.
+ * A string body is hashed as UTF-8. An object is serialized once with JSON.stringify.
  */
 export function createBodyDigest(body: string | object): string {
   const payloadStr = typeof body === 'string' ? body : JSON.stringify(body);
-  const hash = crypto.createHash('sha256').update(payloadStr, 'utf8').digest('base64');
-  return `BLAKE-512=${hash}`; // Standard ONDC digest header format
+  const hash = crypto.createHash('blake2b512').update(payloadStr, 'utf8').digest('base64');
+  return `BLAKE-512=${hash}`;
+}
+
+const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
+
+/**
+ * PEM/SPKI text is returned unchanged for crypto.verify.
+ * A registry signing_public_key is accepted only as canonical base64 of 32 bytes,
+ * then wrapped as an Ed25519 SPKI key. Any other material fails closed.
+ */
+function verificationKey(material: string): string | crypto.KeyObject {
+  if (typeof material !== 'string' || material.length === 0) {
+    throw new Error('unsupported public key');
+  }
+  if (material.includes('-----BEGIN PUBLIC KEY-----')) {
+    return material;
+  }
+  const trimmed = material.trim();
+  if (!/^[A-Za-z0-9+/]{43}=?$/.test(trimmed)) {
+    throw new Error('unsupported public key');
+  }
+  const raw = Buffer.from(trimmed, 'base64');
+  if (raw.length !== 32 || raw.toString('base64').replace(/=+$/, '') !== trimmed.replace(/=+$/, '')) {
+    throw new Error('unsupported public key');
+  }
+  return crypto.createPublicKey({
+    key: Buffer.concat([ED25519_SPKI_PREFIX, raw]),
+    format: 'der',
+    type: 'spki',
+  });
 }
 
 /**
@@ -125,11 +155,12 @@ export function verifyOndcAuthHeader(params: {
 
     const digest = createBodyDigest(body);
     const signingString = `(created): ${created}\n(expires): ${expires}\ndigest: ${digest}`;
+    const publicKey = verificationKey(publicKeyPem);
 
     const isVerified = crypto.verify(
       null,
       Buffer.from(signingString, 'utf8'),
-      publicKeyPem,
+      publicKey,
       Buffer.from(signature, 'base64'),
     );
 
