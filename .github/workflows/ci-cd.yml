@@ -262,7 +262,7 @@ jobs:
         run: |
           set -euo pipefail
           PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
-          EXPECTED_CEILING="00230"
+          EXPECTED_CEILING="00231"
 
           echo "================================================================="
           echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS (Supabase CLI)"

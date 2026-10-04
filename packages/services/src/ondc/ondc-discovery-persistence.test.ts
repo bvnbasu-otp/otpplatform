@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createOndcDiscoveryStore, OndcObservationSource, OndcRuntimeEnvironment } from '@otp/domain';
+import {
+  createOndcDiscoveryStore,
+  OndcDispatchStatus,
+  OndcObservationSource,
+  OndcRuntimeEnvironment,
+  type OndcDispatchRecord,
+} from '@otp/domain';
+import type { OndcDiscoveryDispatchInsert, OndcDiscoveryDispatchStore } from './ondc-discovery-dispatch-store';
 import { createOndcAuthHeader, generateOndcKeyPair } from './crypto/ondc-auth-crypto';
 import { OndcBapReceiver } from './receiver/ondc-bap-receiver';
 import { ingestOndcOnSearchCallback } from './ondc-callback-ingress';
@@ -8,6 +15,78 @@ import { OndcNetworkService } from './ondc-network-service';
 import type { OndcCatalog, OndcPayload } from './types/ondc-beckn';
 
 const OBSERVED_AT = '2026-10-01T05:31:00.000Z';
+
+function serviceSearchStore(failCallbackPending = false): OndcDiscoveryDispatchStore & {
+  identity(): { transactionId: string; messageId: string; correlationId: string } | null;
+} {
+  let row: OndcDispatchRecord | null = null;
+  const created = (input: OndcDiscoveryDispatchInsert): OndcDispatchRecord => ({
+    correlationId: input.correlationId,
+    idempotencyKey: input.idempotencyKey,
+    otpTransactionId: input.otpTransactionId,
+    transactionId: input.transactionId,
+    messageId: input.messageId,
+    operation: 'search',
+    provider: 'ONDC',
+    environment: input.environment,
+    observationSource: input.observationSource,
+    buyerRequestedPin: input.buyerRequestedPin,
+    domain: input.domain,
+    city: input.city,
+    categoryLabel: input.categoryLabel ?? null,
+    subcategoryCode: input.subcategoryCode ?? null,
+    requirementMode: input.requirementMode ?? null,
+    initiatedAt: OBSERVED_AT,
+    initiatorId: '',
+    expectedBapId: input.expectedBapId,
+    status: OndcDispatchStatus.REFUSED,
+    transactionIssued: false,
+    gatewayAcknowledged: false,
+    realNetworkVerified: false,
+    failure: null,
+    reason: null,
+    callbackDigest: null,
+    canonicalObservedAt: null,
+    boundParticipantId: null,
+    persistence: 'NOT_STORED',
+  });
+  return {
+    identity() {
+      return row
+        ? { transactionId: row.transactionId, messageId: row.messageId, correlationId: row.correlationId }
+        : null;
+    },
+    async findByIdempotencyKey(idempotencyKey) {
+      return row?.idempotencyKey === idempotencyKey ? row : null;
+    },
+    async findByTransactionId(transactionId) {
+      return row?.transactionId === transactionId ? row : null;
+    },
+    async findByCorrelationId(correlationId) {
+      return row?.correlationId === correlationId ? row : null;
+    },
+    async insert(input) {
+      if (row?.idempotencyKey === input.idempotencyKey) return row;
+      row = created(input);
+      return row;
+    },
+    async advance(input) {
+      if (!row || row.transactionId !== input.transactionId || row.messageId !== input.messageId) {
+        throw new Error('unknown_transaction');
+      }
+      if (input.status === 'CALLBACK_PENDING' && failCallbackPending) throw new Error('dispatch_not_durable');
+      if (input.status === 'CALLBACK_PENDING') {
+        row.transactionIssued = true;
+        row.gatewayAcknowledged = row.observationSource === OndcObservationSource.REAL_NETWORK;
+        row.status = OndcDispatchStatus.PENDING_CALLBACK;
+      }
+      return row;
+    },
+    async acceptCallback() {
+      throw new Error('dispatch_not_durable');
+    },
+  };
+}
 
 function payload(transactionId = 'tx-mock-discovery'): OndcPayload<{ catalog: OndcCatalog }> {
   return {
@@ -212,27 +291,94 @@ describe('ONDC discovery persistence (MOCK)', () => {
       expect(legacy.getEnvironmentDecision().realClientAllowed).toBe(false);
 
       const preprodKeys = generateOndcKeyPair();
-      process.env.ONDC_PREPROD_GATEWAY_URL = 'https://preprod.example.test/gateway';
-      process.env.ONDC_PREPROD_SUBSCRIBER_ID = 'preprod-slot.example.test';
+      process.env.ONDC_PREPROD_GATEWAY_URL = 'https://gateway.preprod.otp.test/gateway';
+      process.env.ONDC_PREPROD_SUBSCRIBER_ID = 'preprod-slot.otp.test';
       process.env.ONDC_PREPROD_UNIQUE_KEY_ID = 'preprod-key';
       process.env.ONDC_PREPROD_SIGNING_PRIVATE_KEY = preprodKeys.privateKeyPem;
-      process.env.ONDC_PREPROD_REGISTRY_URL = 'https://preprod.example.test/registry';
-      process.env.ONDC_PREPROD_CALLBACK_URL = 'https://preprod.example.test/callback';
-      const preprod = new OndcNetworkService({ enabled: true });
+      process.env.ONDC_PREPROD_REGISTRY_URL = 'https://registry.preprod.otp.test';
+      process.env.ONDC_PREPROD_CALLBACK_URL = 'https://callback.preprod.otp.test/ondc';
+      const unstored = new OndcNetworkService({ enabled: true });
+      expect(unstored.getClient()).not.toBeNull();
+      const refusedSearch = await unstored.broadcastRfqToOndc({
+        rfqId: 'tx-preprod-unstored',
+        title: 'cotton yarn',
+        category: 'cotton yarn',
+        buyerRequestedPin: '560048',
+        cityCode: 'std:080',
+        initiatorId: 'operator-mock',
+        taxonomyContext: { subcategoryCode: 'cotton_yarn', requirementMode: 'PRODUCT_MATERIAL' },
+      });
+      expect(refusedSearch.ok).toBe(false);
+      expect(refusedSearch.error).toBe('dispatch_not_durable');
+      expect(unstored.listIssuedTransactions()).toEqual([]);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      const preprod = new OndcNetworkService({ enabled: true, dispatchStore: serviceSearchStore() });
       expect(preprod.getClient()).not.toBeNull();
       expect(preprod.getEnvironmentDecision().credentialSlot).toBe('PRE_PROD');
       const search = await preprod.broadcastRfqToOndc({
         rfqId: 'tx-preprod-mock',
         title: 'cotton yarn',
         category: 'cotton yarn',
+        buyerRequestedPin: '560048',
+        cityCode: 'std:080',
+        initiatorId: 'operator-mock',
         taxonomyContext: { subcategoryCode: 'cotton_yarn', requirementMode: 'PRODUCT_MATERIAL' },
       });
       expect(search.ok).toBe(true);
       const calledUrl = String(fetchSpy.mock.calls[0]?.[0] ?? '');
-      expect(calledUrl).toBe('https://preprod.example.test/gateway/search');
+      expect(calledUrl).toBe('https://gateway.preprod.otp.test/gateway/search');
       expect(calledUrl).not.toContain('production.example.test');
       expect(calledUrl).not.toContain('legacy.example.test');
       expect(preprod.listIssuedTransactions()).toEqual(['tx-preprod-mock']);
+      fetchSpy.mockClear();
+      const missingCity = await preprod.broadcastRfqToOndc({
+        rfqId: 'tx-preprod-no-city',
+        title: 'cotton yarn',
+        category: 'cotton yarn',
+        buyerRequestedPin: '560048',
+        initiatorId: 'operator-mock',
+        taxonomyContext: { subcategoryCode: 'cotton_yarn', requirementMode: 'PRODUCT_MATERIAL' },
+      });
+      expect(missingCity.ok).toBe(false);
+      expect(missingCity.error).toBe('city_unresolved');
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      fetchSpy.mockClear();
+      const flaky = serviceSearchStore(true);
+      const flakyService = new OndcNetworkService({ enabled: true, dispatchStore: flaky });
+      const acknowledged = {
+        rfqId: 'tx-ack-persist',
+        title: 'cotton yarn',
+        category: 'cotton yarn',
+        buyerRequestedPin: '560048',
+        cityCode: 'std:080',
+        initiatorId: 'operator-mock',
+        taxonomyContext: { subcategoryCode: 'cotton_yarn', requirementMode: 'PRODUCT_MATERIAL' },
+      };
+      const failedAck = await flakyService.broadcastRfqToOndc(acknowledged);
+      const identity = flaky.identity();
+      expect(failedAck.ok).toBe(false);
+      expect(failedAck.error).toBe('dispatch_not_durable');
+      expect(failedAck.transactionId).toBe('tx-ack-persist');
+      expect(flakyService.listIssuedTransactions()).toEqual([]);
+      expect(identity?.transactionId).toBe('tx-ack-persist');
+      expect(identity?.messageId.length).toBeGreaterThan(0);
+      expect(identity?.correlationId.length).toBeGreaterThan(0);
+      const firstBody = String((fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined)?.body ?? '');
+      expect(firstBody).toContain('"transaction_id":"tx-ack-persist"');
+      expect(firstBody).toContain(`"message_id":"${identity?.messageId}"`);
+      expect(String(fetchSpy.mock.calls[0]?.[0] ?? '')).not.toContain('prod.gateway.ondc.org');
+
+      const retried = await flakyService.broadcastRfqToOndc(acknowledged);
+      expect(retried.ok).toBe(false);
+      expect(retried.transactionId).toBe('tx-ack-persist');
+      expect(flaky.identity()).toEqual(identity);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      const secondBody = String((fetchSpy.mock.calls[1]?.[1] as RequestInit | undefined)?.body ?? '');
+      expect(secondBody).toContain('"transaction_id":"tx-ack-persist"');
+      expect(secondBody).toContain(`"message_id":"${identity?.messageId}"`);
+      expect(flakyService.listIssuedTransactions()).toEqual([]);
     } finally {
       fetchSpy.mockRestore();
       restore();

@@ -1,9 +1,14 @@
 import { OndcGatewayClient, type OndcEnvironment } from './client/ondc-gateway-client';
+import { executeOndcDiscoveryDispatch } from './ondc-discovery-dispatch';
+import type { OndcDiscoveryDispatchStore } from './ondc-discovery-dispatch-store';
 import { OndcBapReceiver } from './receiver/ondc-bap-receiver';
 import type { OndcDomain } from './types/ondc-beckn';
 import {
+  createOndcDispatchLedger,
+  isProductionOndcHost,
   mapOndcDiscoveryCategory,
   toPublicOndcEnvironmentDecision,
+  type OndcDispatchLedger,
   type OndcEnvironmentDecision,
   type OndcTaxonomyContext,
 } from '@otp/domain';
@@ -19,6 +24,8 @@ export interface OndcServiceOptions {
   enabled?: boolean;
   /** When set, Beckn `context.domain` for search (must match registry subscribe domain). */
   discoveryDomain?: string;
+  /** 00231 lifecycle. PRE_PROD /search refuses without it. LOCAL/CI may omit it. */
+  dispatchStore?: OndcDiscoveryDispatchStore;
 }
 
 const ONDC_DOMAIN_PATTERN = /^ONDC:[A-Z0-9]+$/;
@@ -107,19 +114,28 @@ export class OndcNetworkService {
   private readonly enabled: boolean;
   private readonly discoveryDomain?: string;
   private readonly environmentDecision: Omit<OndcEnvironmentDecision, 'client'>;
-  private readonly searchAttempts: number;
   private readonly issuedTransactions = new Set<string>();
+  private readonly dispatchLedger: OndcDispatchLedger = createOndcDispatchLedger();
+  private readonly dispatchStore?: OndcDiscoveryDispatchStore;
 
   constructor(options: OndcServiceOptions = {}) {
     const resolved = mergeOndcServiceOptionsFromEnv(options);
+    this.dispatchStore = resolved.dispatchStore;
     this.enabled = resolved.enabled ?? (process.env.ONDC_ENABLED === 'true');
     this.discoveryDomain = resolved.discoveryDomain;
+    void this.discoveryDomain;
     const decision = resolveOndcEnvironmentFromEnv(typeof process !== 'undefined' ? process.env : undefined);
     this.environmentDecision = toPublicOndcEnvironmentDecision(decision);
     this.receiver = new OndcBapReceiver();
-    this.searchAttempts = Math.max(1, decision.maxRetries + 1);
 
-    if (decision.realClientAllowed && decision.environment === 'PRE_PROD' && decision.client) {
+    if (
+      decision.realClientAllowed &&
+      decision.environment === 'PRE_PROD' &&
+      decision.client &&
+      !isProductionOndcHost(decision.client.gatewayUrl) &&
+      !isProductionOndcHost(decision.client.registryUrl) &&
+      !isProductionOndcHost(decision.client.callbackUrl)
+    ) {
       this.client = new OndcGatewayClient({
         environment: 'PRE_PRODUCTION',
         subscriberId: decision.client.subscriberId,
@@ -163,9 +179,10 @@ export class OndcNetworkService {
     category: string;
     cityCode?: string;
     taxonomyContext?: OndcTaxonomyContext;
+    buyerRequestedPin?: string | null;
+    initiatorId?: string | null;
   }): Promise<{ ok: boolean; transactionId: string; error?: string }> {
-    const client = this.client;
-    if (!client || !this.enabled || this.environmentDecision.environment !== 'PRE_PROD' || !this.environmentDecision.realClientAllowed) {
+    if (!this.client || !this.enabled || this.environmentDecision.environment !== 'PRE_PROD' || !this.environmentDecision.realClientAllowed) {
       return {
         ok: false,
         transactionId: params.rfqId,
@@ -173,57 +190,26 @@ export class OndcNetworkService {
       };
     }
 
-    const domain = resolveOndcSearchDomain(
-      params.category,
-      this.discoveryDomain,
-      params.taxonomyContext,
-    );
-    if (!domain) {
-      return {
-        ok: false,
-        transactionId: params.rfqId,
-        error: 'No approved ONDC domain mapping for this OTP taxonomy selection',
-      };
-    }
-    const context = client.createContext({
-      domain,
-      action: 'search',
-      city: params.cityCode || 'std:080',
-      transactionId: params.rfqId,
-    });
-
-    let res = await client.search({
-      context,
-      intent: {
-        item: {
-          descriptor: {
-            name: params.title,
-          },
-        },
-        category: {
-          descriptor: {
-            name: params.category,
-          },
-        },
+    const dispatched = await executeOndcDiscoveryDispatch({
+      request: {
+        otpTransactionId: params.rfqId,
+        subcategoryCode: params.taxonomyContext?.subcategoryCode,
+        requirementMode: params.taxonomyContext?.requirementMode,
+        buyerRequestedPin: params.buyerRequestedPin,
+        cityCode: params.cityCode,
+        itemName: params.title,
+        initiatorId: params.initiatorId,
       },
+      categoryLabel: params.category,
+      ledger: this.dispatchLedger,
+      dispatchStore: this.dispatchStore,
     });
-    for (let attempt = 1; attempt < this.searchAttempts && !res.ok; attempt += 1) {
-      if (res.errorCode !== 'TIMEOUT' && res.errorCode !== 'NETWORK_ERROR') break;
-      res = await client.search({
-        context,
-        intent: {
-          item: { descriptor: { name: params.title } },
-          category: { descriptor: { name: params.category } },
-        },
-      });
-    }
-
-    if (res.ok) this.issuedTransactions.add(params.rfqId);
+    if (dispatched.gatewayAcknowledged) this.issuedTransactions.add(dispatched.transactionId);
 
     return {
-      ok: res.ok,
-      transactionId: params.rfqId,
-      error: res.error,
+      ok: dispatched.gatewayAcknowledged,
+      transactionId: dispatched.transactionId || params.rfqId,
+      error: dispatched.gatewayAcknowledged ? undefined : dispatched.reason ?? dispatched.userMessage,
     };
   }
 }
