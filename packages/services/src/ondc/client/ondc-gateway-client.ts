@@ -90,6 +90,10 @@ export class OndcGatewayClient {
     return this.postSignedRequest(`${this.gatewayUrl}/search`, payload);
   }
 
+  async sendPreparedSearch(payload: object): Promise<OndcClientResponse> {
+    return this.postSignedRequest(`${this.gatewayUrl}/search`, payload);
+  }
+
   /**
    * Send /select to specific BPP to request a formal quotation.
    */
