@@ -45,6 +45,7 @@ export * from './ondc/ondc-environment';
 export * from './ondc/ondc-callback-guard';
 export * from './ondc/ondc-discovery-persistence';
 export * from './ondc/ondc-rfq-addressability';
+export * from './ondc/ondc-dispatch';
 export * from './parser/requirement-parser-port';
 export * from './parser/extractors';
 export * from './parser/rule-based-requirement-parser';
