@@ -237,6 +237,7 @@ describe('OTP Phase C8.3: Dynamic Spend Approval Matrix & Threshold Routing Engi
         rfqCreatorProfileId: 'usr-requester-id',
         completedStages: [completedStage1],
         activeDelegations: [delegation],
+        currentTime: new Date('2026-09-21T00:00:00Z'),
       });
 
       expect(res.authorized).toBe(true);
@@ -267,6 +268,7 @@ describe('OTP Phase C8.3: Dynamic Spend Approval Matrix & Threshold Routing Engi
         rfqCreatorProfileId: 'usr-requester-id',
         completedStages: [completedStage1],
         activeDelegations: [delegation],
+        currentTime: new Date('2026-09-21T00:00:00Z'),
       });
 
       expect(res.authorized).toBe(false);
