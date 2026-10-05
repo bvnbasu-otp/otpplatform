@@ -96,10 +96,35 @@ function fn203(key: string): string {
   return stripComments(hit?.body as string);
 }
 
+const SKIP_WALK_DIRS = new Set([
+  'node_modules',
+  'dist',
+  'build',
+  'coverage',
+  '.git',
+  '.turbo',
+  '.next',
+  '.cache',
+]);
+
+/** Source-controlled application files only. Does not descend into dependencies or build output. */
 function sourceFiles(root: string): string[] {
-  return (readdirSync(root, { recursive: true }) as string[]).filter(
-    (f) => /\.(ts|tsx)$/.test(f) && !/node_modules|\.test\./.test(f),
-  );
+  const out: string[] = [];
+  const walk = (dir: string, rel: string) => {
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      if (ent.isSymbolicLink()) continue;
+      const nextRel = rel ? `${rel}/${ent.name}` : ent.name;
+      if (ent.isDirectory()) {
+        if (SKIP_WALK_DIRS.has(ent.name)) continue;
+        walk(resolve(dir, ent.name), nextRel);
+        continue;
+      }
+      if (!/\.(ts|tsx)$/.test(ent.name) || /\.test\./.test(ent.name)) continue;
+      out.push(nextRel);
+    }
+  };
+  walk(root, '');
+  return out;
 }
 const APP_ROOTS = ['apps/web/src', 'packages', 'supabase/functions'].map((p) => resolve(ROOT, p));
 

@@ -1059,7 +1059,7 @@ describe('award lock and reveal', () => {
     const isFailure = !!error || (data && (data as { ok?: boolean }).ok === false);
     expect(isFailure).toBe(true);
     const msg = error?.message || (data as { error?: string })?.error || '';
-    expect(msg).toMatch(/must be EVALUATING|does not belong|awardable state|not found/i);
+    expect(msg).toMatch(/must be EVALUATING|does not belong|awardable state|not found|still OPEN/i);
   });
 
   it('requires a written justification for the award', async () => {

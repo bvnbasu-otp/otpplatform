@@ -33,7 +33,7 @@
     "deploy:prod": "powershell -ExecutionPolicy Bypass -File scripts/deploy-prod.ps1",
     "typecheck": "tsx scripts/typecheck.ts",
     "db:start": "supabase start",
-    "db:reset": "supabase db reset",
+    "db:reset": "node scripts/reset-local-database.mjs",
     "db:clean": "supabase db query --file supabase/clean_transactions.sql",
     "db:types": "tsx scripts/db-gen-types.ts",
     "db:migrate": "tsx scripts/deploy-migrations.ts --deploy",

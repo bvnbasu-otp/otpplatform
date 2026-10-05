@@ -20,6 +20,7 @@ import {
   signInAs,
 } from '../helpers/supabase-local';
 import { DEMO } from '../helpers/demo-fixtures';
+import { deleteFixtureRequirements } from '../helpers/fixture-teardown';
 
 type Client = ReturnType<typeof createAnonClient>;
 
@@ -69,11 +70,9 @@ afterEach(async () => {
     await service.from('notifications').delete().eq('payload->>rfqId', rfqId);
   }
 
-  for (const id of created.splice(0)) {
-    const { error } = await service.from('requirements').delete().eq('id', id);
-    if (error) {
-      throw new Error(`award fixture teardown failed: ${error.message}`);
-    }
+  const requirementIds = created.splice(0);
+  if (requirementIds.length > 0) {
+    await deleteFixtureRequirements(requirementIds);
   }
 });
 
@@ -196,6 +195,24 @@ async function makeRound(): Promise<Round> {
     .update({ status: 'EVALUATING' })
     .eq('id', rfq!.id);
   expect(statusError).toBeNull();
+
+  // Community awards require two unconflicted recommendations (00216 / 00222).
+  // These are the seeded Sunrise committee seats, voting for the quote that
+  // the fixture will lock.
+  const voters = [
+    await profileIdFor(DEMO.logins.sunriseCommittee),
+    await profileIdFor(DEMO.logins.sunriseCommittee2),
+  ];
+  for (const profileId of voters) {
+    const { error: voteError } = await service.from('committee_votes').insert({
+      rfq_id: rfq!.id,
+      profile_id: profileId,
+      recommended_quote_id: placed[0]!.quoteId,
+      choice: 'RECOMMEND',
+      voting_power: 1,
+    });
+    expect(voteError).toBeNull();
+  }
 
   return {
     rfqId: rfq!.id,

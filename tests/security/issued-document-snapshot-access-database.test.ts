@@ -9,6 +9,7 @@ import {
   signInAs,
 } from '../helpers/supabase-local';
 import { DEMO } from '../helpers/demo-fixtures';
+import { deleteFixtureRequirements } from '../helpers/fixture-teardown';
 
 let service: ReturnType<typeof createServiceClient>;
 let dbUp = false;
@@ -31,9 +32,8 @@ beforeEach((ctx) => {
 
 afterEach(async () => {
   if (!dbUp) return;
-  for (const id of createdReqs.splice(0)) {
-    await service.from('requirements').delete().eq('id', id);
-  }
+  const ids = createdReqs.splice(0);
+  if (ids.length > 0) await deleteFixtureRequirements(ids);
 });
 
 async function profileIdFor(email: string): Promise<string> {
@@ -116,7 +116,7 @@ async function seedRevealedAward(): Promise<{ orgId: string; awardId: string; rf
       .insert({
         rfq_id: rfq!.id,
         supplier_id: supplierId,
-        anonymous_label: `Alias-${supplierId.slice(-4)}`,
+        anonymous_label: `Supplier ${rfq!.id.replace(/-/g, '').slice(0, 8)}${supplierId.slice(-2)}`,
         status: 'QUOTED',
       })
       .select('id')
@@ -299,7 +299,7 @@ async function seedRevealedAwardMsme(): Promise<{ orgId: string; awardId: string
       .insert({
         rfq_id: rfq!.id,
         supplier_id: supplierId,
-        anonymous_label: `MSME-${supplierId.slice(-4)}`,
+        anonymous_label: `Supplier ${rfq!.id.replace(/-/g, '').slice(0, 8)}${supplierId.slice(-2)}`,
         status: 'QUOTED',
       })
       .select('id')

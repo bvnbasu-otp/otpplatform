@@ -986,6 +986,47 @@ SET requirement_id = EXCLUDED.requirement_id,
     created_by = EXCLUDED.created_by,
     is_demo = true;
 
+-- Attachment-test fixtures: canonical invitations and bidder quotes.
+INSERT INTO rfq_invitations (
+  id, rfq_id, supplier_id, anonymous_label, status, match_score, match_reasons
+) VALUES
+  ('0da00000-0000-0000-0000-000000000101',
+   '0d800000-0000-4000-8000-000000000001',
+   '0d500000-0000-4000-8000-000000000001',
+   'Supplier A', 'INVITED', 95.0, ARRAY['20HP capable', 'motor rewinding']),
+  ('0da00000-0000-0000-0000-000000000104',
+   '0d800000-0000-4000-8000-000000000003',
+   '0d500000-0000-4000-8000-000000000001',
+   'Supplier A', 'QUOTED', 90.0, ARRAY['20HP capable', 'CNC supplier']),
+  ('0da00000-0000-0000-0000-000000000105',
+   '0d800000-0000-4000-8000-000000000004',
+   '0d500000-0000-4000-8000-000000000001',
+   'Supplier A', 'QUOTED', 92.0, ARRAY['20HP capable', 'textile supplier'])
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO quotes (
+  id, rfq_id, supplier_id, invitation_id, status, current_version,
+  evaluation_score, submitted_at, is_demo
+)
+SELECT
+  '0da00000-0000-0000-0000-000000000102',
+  ri.rfq_id, ri.supplier_id, ri.id,
+  'FINAL', 1, 88.0, now() - interval '2 days', true
+FROM rfq_invitations ri
+WHERE ri.id = '0da00000-0000-0000-0000-000000000104'
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO quotes (
+  id, rfq_id, supplier_id, invitation_id, status, current_version,
+  evaluation_score, submitted_at, is_demo
+)
+SELECT
+  '0da00000-0000-0000-0000-000000000103',
+  ri.rfq_id, ri.supplier_id, ri.id,
+  'FINAL', 1, 91.0, now() - interval '2 days', true
+FROM rfq_invitations ri
+WHERE ri.id = '0da00000-0000-0000-0000-000000000105'
+ON CONFLICT (id) DO NOTHING;
 -- Committees. The individual trader has none — he decides alone, and the
 -- tally view should show that as honestly as it shows a five-member vote.
 INSERT INTO committee_assignments (id, rfq_id, profile_id) VALUES
@@ -1222,3 +1263,4 @@ BEGIN
   PERFORM set_config('request.jwt.claims', '', true);
 END;
 $$;
+

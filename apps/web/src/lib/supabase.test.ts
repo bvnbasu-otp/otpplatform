@@ -61,7 +61,8 @@ describe('Supabase Client Configuration & Resolver', () => {
       'otpplatform-theta.vercel.app',
       'https://otpplatform-theta.vercel.app'
     );
-    // When VITE_SUPABASE_URL is omitted during build, it falls back to LOCAL_SUPABASE_URL
+    // Dev and test mode keep the local API when no URL is configured.
+    // A production build returns before this fallback and does not emit it.
     expect(resolved).toBe('http://127.0.0.1:54321');
   });
 

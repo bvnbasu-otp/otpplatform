@@ -9,6 +9,12 @@ import type {
 import { fetchRequirementAttachments } from '@/features/attachments/api/attachments';
 import { fetchProcurementPolicy } from '@/features/procurement-os/api/fetch-procurement-os';
 import { formatDateIST } from '@/lib/date-utils';
+import {
+  classifyCoverageResponse,
+  discoveryRequirementIssues,
+  type DiscoveryNetwork,
+  type DiscoverySourceOutcome,
+} from '../lib/discovery-source';
 
 export type RequirementRfqContext = CompactRequirementContext;
 
@@ -103,13 +109,30 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
 
     const reasons = Array.isArray(row.match_reasons) ? (row.match_reasons as string[]) : [];
     const isDirect = reasons.includes('direct_invite');
-    const isLocal = reasons.includes('local') || reasons.includes('location_match');
+    const isPlacesDiscovery = reasons.includes('discovered_in_area') || reasons.includes('pin_coverage');
+    const isGstVerified = reasons.includes('gst_verified');
+    // Stamped only when supplier_discovery_trust_tier found a real OTP login.
+    const isOtpRegistered = reasons.includes('otp_registered') || isGstVerified;
+    const isLocal = reasons.includes('local') || reasons.includes('location_match') || isPlacesDiscovery;
 
-    let network = 'OTP_REGISTERED';
-    let networkLabel = 'OTP invitation';
+    let network = 'DISCOVERED_IN_AREA';
+    let networkLabel = 'Discovered in area';
     if (isDirect) {
       network = 'DIRECT';
       networkLabel = 'Direct invite';
+    } else if (isPlacesDiscovery && isOtpRegistered) {
+      network = 'GOOGLE_PLACES';
+      networkLabel = 'Google Places and OTP registered';
+    } else if (isPlacesDiscovery) {
+      // A geographic hit is not an OTP registration or a verification.
+      network = 'GOOGLE_PLACES';
+      networkLabel = 'Discovered in area';
+    } else if (isGstVerified) {
+      network = 'OTP_REGISTERED';
+      networkLabel = 'GST verified supplier';
+    } else if (isOtpRegistered) {
+      network = 'OTP_REGISTERED';
+      networkLabel = 'OTP registered supplier';
     }
 
     return {
@@ -121,7 +144,7 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
       matchReasons: reasons,
       network,
       networkLabel,
-      gstVerified: false,
+      gstVerified: isGstVerified,
       isLocal,
       distanceKm: undefined,
       availabilityText: 'Availability not confirmed before quote',
@@ -199,29 +222,178 @@ export async function ensureRfqForRequirement(requirementId: string): Promise<
       .eq('id', requirementId);
   }
 
-  // Auto-run discovery to populate matched verified suppliers immediately
-  if (rfq?.id) {
-    await discoverAndInvite(rfq.id);
-  }
-
   return { ok: true, rfqId: rfq.id, created: true };
 }
 
-export async function discoverAndInvite(rfqId: string): Promise<
-  { ok: true; invited: number; total: number } | { ok: false; error: string }
-> {
-  const res = await supabase.rpc('discover_and_invite_for_rfq', {
-    p_rfq_id: rfqId,
-  });
+export interface DiscoveryInviteResult {
+  ok: true;
+  invited: number;
+  total: number;
+  outcome: string | null;
+  quotingOpened: boolean;
+  googlePlacesInvited: number;
+  otpRegisteredInvited: number;
+}
 
-  if (!res || res.error) return { ok: false, error: res?.error?.message ?? 'Unknown RPC error' };
-
-  const result = (res.data ?? {}) as { invited?: number; total?: number };
+function readInvitePayload(data: unknown): DiscoveryInviteResult {
+  const result = (data ?? {}) as {
+    invited?: number;
+    total?: number;
+    outcome?: string;
+    quoting_opened?: boolean;
+    google_places_invited?: number;
+    otp_registered_invited?: number;
+    success?: boolean;
+  };
   return {
     ok: true,
     invited: result.invited ?? 0,
     total: result.total ?? 0,
+    outcome: result.outcome ?? null,
+    quotingOpened: Boolean(result.quoting_opened),
+    googlePlacesInvited: result.google_places_invited ?? 0,
+    otpRegisteredInvited: result.otp_registered_invited ?? 0,
   };
+}
+
+export async function discoverAndInvite(
+  rfqId: string,
+  network: DiscoveryNetwork = 'GOOGLE_PLACES',
+): Promise<DiscoveryInviteResult | { ok: false; error: string; outcome?: DiscoverySourceOutcome }> {
+  const args: { p_rfq_id: string; p_network?: DiscoveryNetwork } = { p_rfq_id: rfqId };
+  // The deployed function accepts p_rfq_id alone. p_network is sent only for the
+  // explicit OTP search, which exists after 00232. The default remains Google Places.
+  if (network === 'OTP_REGISTERED') args.p_network = 'OTP_REGISTERED';
+  const res = await supabase.rpc('discover_and_invite_for_rfq', args);
+
+  if (!res || res.error) return { ok: false, error: res?.error?.message ?? 'Unknown RPC error' };
+  const payload = readInvitePayload(res.data);
+  if (payload.outcome === 'INVALID_REQUIREMENT') {
+    return {
+      ok: false,
+      outcome: 'INVALID_REQUIREMENT',
+      error: 'Discovery could not use this requirement. Check the delivery PIN, city, state, and category.',
+    };
+  }
+  return payload;
+}
+
+function coverageState(row: {
+  delivery_city?: string | null;
+  delivery_pincode?: string | null;
+  attributes?: unknown;
+  structured_specs?: unknown;
+}): { city: string; state: string; pincode: string } {
+  const specs = (row.structured_specs ?? {}) as { deliveryLocation?: Record<string, string> };
+  const location = specs.deliveryLocation ?? {};
+  const attributes = (row.attributes ?? {}) as { delivery_state?: string };
+  return {
+    pincode: (row.delivery_pincode || location.pincode || location.postalCode || '').trim(),
+    city: (row.delivery_city || location.city || '').trim(),
+    state: (location.state || attributes.delivery_state || '').trim(),
+  };
+}
+
+/**
+ * Runs Google Places for this requirement's own PIN, city, state, and category.
+ * Does not invent a PIN and does not search the OTP network.
+ */
+export async function prepareGooglePlacesCoverage(rfqId: string): Promise<
+  | { ok: true; outcome: 'GOOGLE_PLACES_DISCOVERY' | 'ZERO_RESULTS' }
+  | { ok: false; outcome: DiscoverySourceOutcome; error: string }
+> {
+  const { data: rfq, error: rfqErr } = await supabase
+    .from('rfqs')
+    .select('requirement_id')
+    .eq('id', rfqId)
+    .maybeSingle();
+  if (rfqErr || !rfq?.requirement_id) {
+    return { ok: false, outcome: 'SERVICE_FAILURE', error: rfqErr?.message ?? 'RFQ not found' };
+  }
+
+  const { data: req, error: reqErr } = await supabase
+    .from('requirements')
+    .select('delivery_city, delivery_pincode, category_id, subcategory_id, attributes, structured_specs')
+    .eq('id', rfq.requirement_id)
+    .maybeSingle();
+  if (reqErr || !req) {
+    return { ok: false, outcome: 'SERVICE_FAILURE', error: reqErr?.message ?? 'Requirement not found' };
+  }
+
+  let category = '';
+  if (req.category_id) {
+    const { data: categoryRow } = await supabase
+      .from('requirement_categories')
+      .select('name')
+      .eq('id', req.category_id)
+      .maybeSingle();
+    category = (categoryRow?.name as string | undefined)?.trim() ?? '';
+  }
+  if (!category && req.subcategory_id) {
+    const { data: subcategoryRow } = await supabase
+      .from('requirement_subcategories')
+      .select('name')
+      .eq('id', req.subcategory_id)
+      .maybeSingle();
+    category = (subcategoryRow?.name as string | undefined)?.trim() ?? '';
+  }
+
+  const geo = coverageState(req);
+  const invalid = discoveryRequirementIssues({ ...geo, category });
+  if (invalid) {
+    return { ok: false, outcome: 'INVALID_REQUIREMENT', error: invalid };
+  }
+
+  const invoked = await supabase.functions.invoke('location-pin-coverage', {
+    body: {
+      state: geo.state,
+      city: geo.city,
+      pincode: geo.pincode,
+      category,
+      forceRefresh: false,
+      executeDiscovery: true,
+      asyncMode: false,
+    },
+  });
+
+  if (invoked.error) {
+    return {
+      ok: false,
+      outcome: 'SERVICE_FAILURE',
+      error: invoked.error.message || 'Google Places discovery did not finish',
+    };
+  }
+
+  const data = (invoked.data ?? {}) as {
+    ok?: boolean;
+    error?: string;
+    message?: string;
+    knownSuppliersCount?: number;
+  };
+  const outcome = classifyCoverageResponse(data);
+  if (outcome === 'GOOGLE_PLACES_DISCOVERY') return { ok: true, outcome };
+  if (outcome === 'ZERO_RESULTS') return { ok: true, outcome: 'ZERO_RESULTS' };
+  return {
+    ok: false,
+    outcome,
+    error: data.message || data.error || 'Google Places discovery did not finish',
+  };
+}
+
+export async function discoverForRequirement(
+  rfqId: string,
+  network: DiscoveryNetwork,
+): Promise<DiscoveryInviteResult | { ok: false; error: string; outcome?: DiscoverySourceOutcome }> {
+  if (network === 'OTP_REGISTERED') return discoverAndInvite(rfqId, 'OTP_REGISTERED');
+
+  const prepared = await prepareGooglePlacesCoverage(rfqId);
+  if (!prepared.ok) return prepared;
+  const invited = await discoverAndInvite(rfqId, 'GOOGLE_PLACES');
+  if (!invited.ok) return invited;
+  if (prepared.outcome === 'ZERO_RESULTS') {
+    return { ...invited, outcome: 'ZERO_RESULTS', quotingOpened: false };
+  }
+  return invited;
 }
 
 export async function fetchInvitationCount(rfqId: string): Promise<number> {

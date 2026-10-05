@@ -63,13 +63,16 @@ describe('the catalogue of roles', () => {
     expect(supplierCodes).not.toContain('PROCUREMENT_LEAD');
   });
 
-  it('is readable before there is a session, so the registration form can offer it', async () => {
+  it('is not executable before there is a session', async () => {
+    // 00217 revoked anonymous execute except the bootstrap allowlist.
+    // role_catalog is not on that list. Authenticated callers still read it above.
     const anon = createAnonClient();
 
     const { data, error } = await anon.rpc('role_catalog', { p_side: 'BUYER' });
 
-    expect(error).toBeNull();
-    expect((data as any[]).length).toBeGreaterThan(3);
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+    expect(error!.message).toMatch(/permission denied for function role_catalog/i);
   });
 
   it('gives every role a way to read, because a role that cannot read is a deactivation', async () => {
@@ -120,11 +123,14 @@ describe('what an account is told about itself', () => {
     expect(context.needsOnboarding).toBe(false);
   });
 
-  it('says nothing at all to a caller with no session', async () => {
-    const { data } = await createAnonClient().rpc('my_role_context');
+  it('does not answer a caller with no session', async () => {
+    // Anonymous execute is denied. The function is not allowed to return a
+    // signed-out payload to a session that was never granted.
+    const { data, error } = await createAnonClient().rpc('my_role_context');
 
-    expect((data as any).signedIn).toBe(false);
-    expect((data as any).roles).toBeUndefined();
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+    expect(error!.message).toMatch(/permission denied for function my_role_context/i);
   });
 });
 

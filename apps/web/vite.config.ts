@@ -6,6 +6,29 @@ export default defineConfig({
   plugins: [
     react(),
     {
+      name: 'production-public-env-guard',
+      configResolved(config) {
+        if (!config.isProduction || config.command !== 'build') return;
+        const url = config.env.VITE_SUPABASE_URL ?? '';
+        const demo = config.env.VITE_DEMO_MODE ?? '';
+        const key = config.env.VITE_SUPABASE_ANON_KEY ?? '';
+        const localDemoIssuer = 'c3VwYWJhc2UtZGVtbw';
+        if (!url.startsWith('https://') || /localhost|127\.0\.0\.1/i.test(url)) {
+          throw new Error(
+            'Production build refused: VITE_SUPABASE_URL must be an https URL that is not local.',
+          );
+        }
+        if (demo === 'true') {
+          throw new Error('Production build refused: VITE_DEMO_MODE must not be true.');
+        }
+        if (!key || key.includes('service_role') || key.includes(localDemoIssuer)) {
+          throw new Error(
+            'Production build refused: VITE_SUPABASE_ANON_KEY must be a public anon key, not the local demo key or a service role.',
+          );
+        }
+      },
+    },
+    {
       name: 'incoming-traffic-logger',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {

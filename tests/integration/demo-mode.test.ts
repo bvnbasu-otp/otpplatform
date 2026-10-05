@@ -101,14 +101,16 @@ describe('what the login screen can know before anyone signs in', () => {
     }
   });
 
-  it('reports demo mode to an unauthenticated visitor', async () => {
+  it('does not tell an unauthenticated visitor whether demo mode is on', async () => {
+    // 00217 removed anonymous execute on demo_status. The security suite
+    // requires that denial. The account list below is a view, not this RPC.
     const anon = createAnonClient();
 
     const { data, error } = await anon.rpc('demo_status');
 
-    expect(error).toBeNull();
-    expect((data as { enabled: boolean }).enabled).toBe(true);
-    expect((data as { run_id: string }).run_id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+    expect(error!.message).toMatch(/permission denied for function demo_status/i);
   });
 
   it('withdraws the account list the moment demo mode is switched off', async () => {
@@ -116,10 +118,8 @@ describe('what the login screen can know before anyone signs in', () => {
     try {
       const anon = createAnonClient();
 
-      const { data: status } = await anon.rpc('demo_status');
-      expect((status as { enabled: boolean }).enabled).toBe(false);
-
-      const { data } = await anon.from('demo_login_options').select('email');
+      const { data, error } = await anon.from('demo_login_options').select('email');
+      expect(error).toBeNull();
       expect(data ?? []).toEqual([]);
     } finally {
       await setDemoMode(true);
@@ -371,7 +371,10 @@ describe('the reset action', () => {
   });
 
   it('rebuilds the scenarios and hands back a new run id', async () => {
-    const client = await sessionFor(DEMO.logins.sunriseManager);
+    // demo_reset rewinds seeded RFQs from OPEN to DRAFT. Migration 00218
+    // allows that direct write only for a platform admin or service role,
+    // not for a demo secretary. The authorized actor is the platform admin.
+    const client = await sessionFor(DEMO.logins.admin);
 
     const { data: before } = await client.rpc('demo_status');
     const { data: result, error } = await client.rpc('demo_reset', { p_restage: true });

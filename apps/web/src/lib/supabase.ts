@@ -1,18 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
-// The local Supabase URL and the well-known demo anon JWT are baked in as
-// fallbacks for `pnpm dev` only. A production build must set both env vars —
-// shipping the demo key to real users would let anyone read the anon-visible
-// surface of the local dev database if the deployment ever pointed at it.
-const LOCAL_SUPABASE_URL = 'http://127.0.0.1:54321';
-const LOCAL_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
-
+// Local URL and the well-known demo anon JWT exist only for `pnpm dev`.
+// import.meta.env.PROD is folded to true in a production build, so those
+// literals are unreachable and are not emitted. A production build must set
+// VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the process environment.
 const envUrl = import.meta.env.VITE_SUPABASE_URL;
 const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Safe fallback for client anon key
-const supabaseAnonKey = envKey || LOCAL_ANON_KEY;
+function devLocalSupabaseUrl(): string {
+  if (import.meta.env.PROD) return '';
+  return 'http://127.0.0.1:54321';
+}
+
+function devLocalAnonKey(): string {
+  if (import.meta.env.PROD) return '';
+  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+}
+
+const supabaseAnonKey = envKey || devLocalAnonKey();
 
 export function resolveSupabaseUrl(
   envUrlOverride?: string | null,
@@ -22,6 +27,7 @@ export function resolveSupabaseUrl(
   // If explicitly provided (or overridden in test), prioritize it; otherwise use envUrl
   const targetEnvUrl = envUrlOverride !== undefined ? (envUrlOverride || '') : (envUrl || '');
   if (targetEnvUrl) return targetEnvUrl;
+  if (import.meta.env.PROD) return '';
 
   const host = hostnameOverride !== undefined
     ? hostnameOverride
@@ -30,8 +36,9 @@ export function resolveSupabaseUrl(
     ? originOverride
     : (typeof window !== 'undefined' ? window.location.origin : '');
 
-  // If running in a browser accessed through a self-hosted reverse-proxy monolith (not Vercel),
-  // route through the same-origin proxy (origin).
+  // Dev only. A self-hosted reverse proxy (not Vercel) uses the page origin.
+  // localhost, 127.0.0.1, and *.vercel.app without an explicit URL use the
+  // local Supabase API. Production never reaches this branch.
   if (
     host &&
     host !== 'localhost' &&
@@ -40,7 +47,7 @@ export function resolveSupabaseUrl(
   ) {
     return origin;
   }
-  return LOCAL_SUPABASE_URL;
+  return devLocalSupabaseUrl();
 }
 
 const supabaseUrl = resolveSupabaseUrl();
