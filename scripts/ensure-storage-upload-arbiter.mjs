@@ -14,12 +14,17 @@ import { execFileSync } from 'node:child_process';
 const sql =
   'CREATE UNIQUE INDEX IF NOT EXISTS bucketid_objname ON storage.objects USING btree (bucket_id, name);';
 
+// The container's local socket authenticates supabase_admin with a password.
+// 127.0.0.1 inside the container is trust, so the index can be created
+// without reading or printing a credential. Hosted projects are not contacted.
 execFileSync(
   'docker',
   [
     'exec',
     'supabase_db_otp-local',
     'psql',
+    '-h',
+    '127.0.0.1',
     '-U',
     'supabase_admin',
     '-d',
