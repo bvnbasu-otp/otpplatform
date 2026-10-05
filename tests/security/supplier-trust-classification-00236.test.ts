@@ -106,10 +106,34 @@ describe('00236 supplier trust classification', () => {
     const apex = byName.get('Apex High-Rise Painters & Society Waterproofing');
 
     expect(kongu?.verification_status).toBe('NOT_PROVIDED');
-    expect(kongu?.lifecycle_state).toBe('ONBOARDING_REQUIRED');
     expect(kongu?.logins).toBe('0');
     expect(kongu?.tier).toBe('DISCOVERED_IN_AREA');
     expect(kongu?.tier).not.toBe('OTP_REGISTERED');
+
+    const onboarding = await withPg(async (c) => {
+      await c.query('BEGIN');
+      try {
+        await c.query(`
+          UPDATE suppliers
+          SET lifecycle_state = 'ONBOARDING_REQUIRED',
+              verification_status = 'NOT_PROVIDED'
+          WHERE business_name = 'Kongu Cotton Suppliers'
+        `);
+        const res = await c.query<{ tier: string; lifecycle_state: string; verification_status: string }>(`
+          SELECT lifecycle_state,
+                 verification_status,
+                 private.supplier_discovery_trust_tier(id) AS tier
+          FROM suppliers
+          WHERE business_name = 'Kongu Cotton Suppliers'
+        `);
+        return res.rows[0];
+      } finally {
+        await c.query('ROLLBACK');
+      }
+    });
+    expect(onboarding?.lifecycle_state).toBe('ONBOARDING_REQUIRED');
+    expect(onboarding?.verification_status).toBe('NOT_PROVIDED');
+    expect(onboarding?.tier).toBe('DISCOVERED_IN_AREA');
 
     expect(Number(nandi?.logins)).toBeGreaterThan(0);
     expect(nandi?.gst_verified).toBe(false);
