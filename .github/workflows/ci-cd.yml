@@ -108,7 +108,17 @@ jobs:
       - name: Verify Supabase Migration Continuity & Integrity
         run: pnpm db:migrate:check
 
-      - name: Compile Production Web Bundle
+      # CI validation only — not the Vercel Production environment.
+      # GitHub Actions does not publish this bundle. Vercel Production builds the
+      # same command from main using its own Production environment variables.
+      # These non-secret placeholders are https and non-local so
+      # production-public-env-guard still runs and can pass. Vite process
+      # environment overrides apps/web/.env when a local file is present.
+      - name: Compile production web bundle (CI validation env)
+        env:
+          VITE_SUPABASE_URL: "https://ci-validation.invalid"
+          VITE_SUPABASE_ANON_KEY: "ci-validation-public-anon-placeholder"
+          VITE_DEMO_MODE: "false"
         run: pnpm --filter @otp/web build
 
   # ───────────────────────────────────────────────────────────────────────────
