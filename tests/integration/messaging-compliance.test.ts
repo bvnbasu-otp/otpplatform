@@ -89,6 +89,23 @@ async function resetChannelsToVerified(): Promise<void> {
   if (error) throw new Error(`could not reset channels: ${error.message}`);
 }
 
+/**
+ * Latest opted-out audit timestamp for this channel, from Postgres.
+ * A Node clock can sit a few milliseconds ahead of `now()`, so a client
+ * `.gte` drops the first legitimate row.
+ */
+async function latestOptedOutAt(channelId: string): Promise<string | null> {
+  const { data, error } = await service
+    .from('audit_events')
+    .select('occurred_at')
+    .eq('event_type', 'supplier.messaging_opted_out')
+    .eq('entity_id', channelId)
+    .order('occurred_at', { ascending: false })
+    .limit(1);
+  if (error) throw new Error(`audit bound query failed: ${error.message}`);
+  return (data?.[0]?.occurred_at as string | undefined) ?? null;
+}
+
 beforeAll(async () => {
   up = await isLocalSupabaseReachable();
   if (!up) return;
@@ -182,15 +199,16 @@ describe('STOP / START / HELP carrier compliance', () => {
   it('records an audit event a compliance review can find', async () => {
     if (!up) return;
 
-    const before = new Date().toISOString();
+    const before = await latestOptedOutAt(smsChannelId);
     await inbound({ channel: 'SMS', command: 'STOP' });
 
-    const { data: events, error } = await service
+    let eventsQuery = service
       .from('audit_events')
       .select('event_type, entity_type, entity_id, payload, occurred_at')
       .eq('event_type', 'supplier.messaging_opted_out')
-      .eq('entity_id', smsChannelId)
-      .gte('occurred_at', before);
+      .eq('entity_id', smsChannelId);
+    if (before) eventsQuery = eventsQuery.gt('occurred_at', before);
+    const { data: events, error } = await eventsQuery;
     if (error) throw new Error(`audit query failed: ${error.message}`);
 
     // Exactly one event per STOP, tied back to the channel a carrier can look up.
@@ -202,7 +220,7 @@ describe('STOP / START / HELP carrier compliance', () => {
   it('is idempotent — a second STOP does not error and does not double-audit', async () => {
     if (!up) return;
 
-    const before = new Date().toISOString();
+    const before = await latestOptedOutAt(smsChannelId);
     const first = await inbound({ channel: 'SMS', command: 'STOP' });
     const second = await inbound({ channel: 'SMS', command: 'STOP' });
 
@@ -215,12 +233,13 @@ describe('STOP / START / HELP carrier compliance', () => {
 
     // Two audit events, one per receipt: retries are still worth logging, but
     // the RPC never crashes and never leaves the channel half-suspended.
-    const { data: events } = await service
+    let eventsQuery = service
       .from('audit_events')
       .select('id')
       .eq('event_type', 'supplier.messaging_opted_out')
-      .eq('entity_id', smsChannelId)
-      .gte('occurred_at', before);
+      .eq('entity_id', smsChannelId);
+    if (before) eventsQuery = eventsQuery.gt('occurred_at', before);
+    const { data: events } = await eventsQuery;
     expect(events?.length).toBe(2);
   });
 

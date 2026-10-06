@@ -83,7 +83,18 @@ function runStep(name: string, category: string, command: string, testCount: num
   const start = Date.now();
   try {
     const resolvedCmd = getExecCommand(command);
-    const output = execSync(resolvedCmd, { stdio: 'pipe', encoding: 'utf8', env: process.env });
+    let env = process.env;
+    if (command.startsWith('pnpm --filter @otp/web build')) {
+      // CI validation placeholders, aligned with the workflow compile step.
+      // These are not Vercel Production credentials.
+      env = {
+        ...process.env,
+        VITE_SUPABASE_URL: 'https://ci-validation.invalid',
+        VITE_SUPABASE_ANON_KEY: 'ci-validation-public-anon-placeholder',
+        VITE_DEMO_MODE: 'false',
+      };
+    }
+    const output = execSync(resolvedCmd, { stdio: 'pipe', encoding: 'utf8', env });
     const durationMs = Date.now() - start;
     let actualCount = testCount;
     const cleanOutput = output.replace(/\x1b\[[0-9;]*m/g, '');
