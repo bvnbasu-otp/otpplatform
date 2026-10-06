@@ -250,19 +250,19 @@ export const SUPPLIER_CHANNELS: SupplierChannel[] = [
   {
     name: 'Direct suppliers',
     status: 'LIVE',
-    description: 'Buyers directly invite preferred vendors or known contractors via phone, email, or instant link to submit sealed quotes.',
+    description: 'Buyers directly invite preferred vendors or known contractors and share an invite link so they can submit sealed quotes.',
     badgeIcon: '⚡',
   },
   {
     name: 'WhatsApp and SMS',
-    status: 'LIVE',
-    description: 'Suppliers get the request on WhatsApp or SMS and can reply with a price — no app needed.',
+    status: 'PLANNED',
+    description: 'Not yet live. OTP does not currently send requests to suppliers by WhatsApp or SMS.',
     badgeIcon: '💬',
   },
   {
     name: 'ONDC',
     status: 'PLANNED',
-    description: 'Open Network for Digital Commerce inter-network discovery and procurement interoperability.',
+    description: 'Not connected. OTP does not discover or invite suppliers through ONDC.',
     badgeIcon: '🌐',
   },
   {
@@ -402,7 +402,7 @@ export const GENERAL_FAQS: FaqEntry[] = [
     question: 'How do suppliers take part?',
     answer:
       'Suppliers register once and say what they do and where they work. When a request matches, they are '
-      + 'invited to quote — on the website, or through the WhatsApp and SMS channel if they prefer their phone. '
+      + 'invited to quote on the website. WhatsApp and SMS invitations are planned but not yet live. '
       + 'Buyers can also invite suppliers they already know. Every supplier quotes under the same rules and deadline.',
   },
   {
@@ -472,8 +472,8 @@ export const BUYER_FAQS: FaqEntry[] = [
   {
     question: 'Can I invite suppliers I already work with?',
     answer:
-      'Yes. With the Direct suppliers option you can invite a contractor or vendor you already know by phone '
-      + 'number, email or a shared link. They quote on the same request, under the same rules and deadline as '
+      'Yes. With the Direct suppliers option you can invite a contractor or vendor you already know and share '
+      + 'the invite link with them yourself. They quote on the same request, under the same rules and deadline as '
       + 'everyone else, and appear to you under a label like any other supplier until you award.',
   },
   {
@@ -500,7 +500,7 @@ export const BUYER_FAQS: FaqEntry[] = [
     question: 'What happens if a quote arrives after the deadline?',
     answer:
       'It is refused. The deadline is enforced automatically on every quote, whether it comes through the '
-      + 'website or WhatsApp, and there is no button to accept a late quote — a deadline that can be quietly '
+      + 'website or an invite link, and there is no button to accept a late quote — a deadline that can be quietly '
       + 'waived is not a deadline.',
   },
   {
@@ -546,11 +546,11 @@ export const SUPPLIER_FAQS: FaqEntry[] = [
       + 'Favouring a name would have to be done openly and in writing.',
   },
   {
-    question: 'Can we quote from WhatsApp without registering first?',
+    question: 'Can we quote without registering first?',
     answer:
-      'Yes. Through the WhatsApp and SMS channel you receive the request on your phone, reply with your price '
-      + 'and delivery time, and it is recorded as your quote. You also get a secure one-time link to add item '
-      + 'details and documents without creating an account first. The buyer never sees your contact details, and '
+      'If a buyer invites you directly, they can share a secure one-time link that lets you add your price, item '
+      + 'details and documents without creating an account first. Quoting by replying to a WhatsApp or SMS '
+      + 'message is planned but not yet live. The buyer never sees your contact details, and '
       + 'you never see theirs, until the work is awarded.',
   },
   {
@@ -578,6 +578,6 @@ export const SUPPLIER_FAQS: FaqEntry[] = [
     answer:
       'Not yet. Connections to ONDC, BNI and local business associations are planned but not live, so no '
       + 'supplier can be reached through them today. Right now suppliers take part through the OTP supplier '
-      + 'registry, direct invitations from buyers, and the WhatsApp and SMS channel.',
+      + 'registry and direct invitations from buyers. WhatsApp and SMS are also planned but not yet live.',
   },
 ];

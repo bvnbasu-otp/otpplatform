@@ -295,7 +295,7 @@ export function SupplierRegisterForm({
 
         <PortalField
           label="Phone number"
-          help="Used for verification and WhatsApp RFQ alerts."
+          help="Used for verification and your supplier account."
           error={fieldErrors.phone}
           required
         >

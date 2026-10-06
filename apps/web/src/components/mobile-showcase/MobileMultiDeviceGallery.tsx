@@ -151,18 +151,18 @@ export function MobileMultiDeviceGallery() {
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                         Radar Active
                       </span>
-                      <span className="text-emerald-400">14 Nearby</span>
+                      <span className="text-emerald-400">Example</span>
                     </div>
-                    <p className="text-slate-400 text-[8px]">15 km radius around Whitefield</p>
+                    <p className="text-slate-400 text-[8px]">Uses the requirement location</p>
                   </div>
                   <div className="space-y-1 text-[9px]">
                     <div className="border bg-emerald-500/5 rounded p-1.5 flex justify-between font-bold">
-                      <span>💬 WhatsApp Broadcast</span>
-                      <span className="text-emerald-600">8 Sent</span>
+                      <span>💬 WhatsApp / SMS</span>
+                      <span className="text-emerald-600">Not yet live</span>
                     </div>
                     <div className="border bg-blue-500/5 rounded p-1.5 flex justify-between font-bold">
-                      <span>🌐 ONDC Protocol</span>
-                      <span className="text-blue-600">4 Synced</span>
+                      <span>Known supplier invite</span>
+                      <span className="text-blue-600">Separate from Google</span>
                     </div>
                   </div>
                   <div className="w-full bg-primary text-white text-[9px] font-bold py-1.5 rounded text-center">

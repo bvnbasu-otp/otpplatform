@@ -275,7 +275,7 @@ export function Tier3SourcingControlsCard({
                   <span>🏛️</span> Full Governance &amp; Multi-Member Committee:
                 </div>
                 <p className="text-muted-foreground text-[11px] leading-relaxed">
-                  As an RWA / Enterprise buyer, sealed quotes will be aggregated transparently for multi-member committee evaluation and audit recording following the quote submission deadline.
+                  As an RWA buyer, sealed quotes will be aggregated transparently for multi-member committee evaluation and audit recording following the quote submission deadline.
                 </p>
               </div>
             )}

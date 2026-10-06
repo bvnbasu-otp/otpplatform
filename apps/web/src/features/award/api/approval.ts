@@ -117,6 +117,23 @@ export async function fetchUserActiveDelegations(organizationId: string): Promis
   return { ok: true, delegations };
 }
 
+/**
+ * Evaluates the organisation approval policy for this RFQ + amount and materialises the required
+ * rfq_approval_stages rows (00237). Idempotent: existing stages are never duplicated or reset.
+ * The amount is re-checked server-side against the selected quote; callers must hold buyer authority.
+ */
+export async function evaluateApprovalRoute(
+  rfqId: string,
+  procurementAmount: number,
+): Promise<{ ok: true; result: Record<string, unknown> } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('evaluate_and_stamp_approval_route_atomic', {
+    p_rfq_id: rfqId,
+    p_procurement_amount: procurementAmount,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, result: (data ?? {}) as Record<string, unknown> };
+}
+
 export async function submitTierApprovalAtomic(params: {
   rfqId: string;
   tierLevel: string;

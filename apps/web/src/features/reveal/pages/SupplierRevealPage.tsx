@@ -83,7 +83,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
     const { winner } = result;
     setSuccess(
       winner.aliasBeforeReveal
-        ? `Identity unmasked: ${winner.aliasBeforeReveal} is ${winner.businessName}. Official Purchase Order generated!`
+        ? `Identity unmasked: ${winner.aliasBeforeReveal} is ${winner.businessName}.${winner.poId ? ' Official Purchase Order generated!' : ''}`
         : `Identity unmasked: The winner is ${winner.businessName}.`,
     );
     await load();
@@ -312,9 +312,6 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-bold">
-                  ✓ Verified
-                </span>
                 <span className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[10px] font-bold">
                   Alias: {winningQuote.anonymousLabel}
                 </span>
@@ -328,7 +325,7 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                   Legal Entity:
                 </span>
                 <strong className="text-foreground text-sm block truncate">
-                  {winningQuote.businessName || 'Verified Supplier'}
+                  {winningQuote.businessName || 'Awarded Supplier'}
                 </strong>
                 <span className="text-[10px] text-muted-foreground">Supplier ID: {winningQuote.supplierId ? winningQuote.supplierId.slice(0, 8) : 'Revealed'}</span>
               </div>

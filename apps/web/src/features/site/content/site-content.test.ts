@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AUDIENCES,
   BUYER_FAQS,
+  CHANNEL_STATUS_LABEL,
   CONTRASTS,
   CORE_MESSAGE,
   DEMO_RFQ,
@@ -368,11 +369,27 @@ describe('supplier channels, which are the easiest thing to overclaim', () => {
     }
   });
 
-  it('calls WhatsApp and SMS messaging available now', () => {
+  it('does not call WhatsApp and SMS messaging available now, since live delivery is not proven', () => {
     const messaging = SUPPLIER_CHANNELS.find((c) => /whatsapp|sms/i.test(c.name));
 
     expect(messaging, 'no channel covers WhatsApp or SMS').toBeDefined();
-    expect(messaging!.status).toBe('LIVE');
+    expect(messaging!.status).toBe('PLANNED');
+    expect(CHANNEL_STATUS_LABEL[messaging!.status]).not.toMatch(/available now/i);
+    expect(messaging!.description).toMatch(/not yet live/i);
+  });
+
+  it('does not promise phone delivery or replying with a price by WhatsApp or SMS in any FAQ', () => {
+    for (const entry of ALL_FAQS) {
+      expect(entry.answer, entry.question).not.toMatch(/receive the request on your phone/i);
+      expect(entry.answer, entry.question).not.toMatch(/reply with your price/i);
+      if (/whatsapp|sms/i.test(entry.answer)) {
+        expect(entry.answer, entry.question).toMatch(/not yet live/i);
+      }
+    }
+  });
+
+  it('does not offer Enterprise as a customer type in public site copy', () => {
+    expect(ALL_PROSE).not.toMatch(/enterprise/i);
   });
 
   it('has at least one channel that actually works today', () => {

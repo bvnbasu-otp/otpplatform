@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { GOOGLE_PLACES_QUOTA_RESET_LABEL } from '@otp/domain';
+import { DEFAULT_PROVIDER_BUDGET_CONFIGS, GOOGLE_PLACES_QUOTA_RESET_LABEL } from '@otp/domain';
 import { Card, Badge } from '@/components/ui';
 
 export type GooglePlacesProviderStatus =
@@ -27,14 +27,25 @@ export interface GooglePlacesOperationalVisibilityData {
   providerStatus: GooglePlacesProviderStatus;
   isCredentialConfigured: boolean;
   isCredentialVerifiedLive: boolean;
-  activeFallbackTier: GooglePlacesFallbackTier;
+  activeFallbackTier: GooglePlacesFallbackTier | null;
   dailySafetyLimit: number;
+  /** Real request count for the current UTC day, or null when no counter reported it. */
+  usedToday: number | null;
+  /** Discovery funnel metrics, or null when no persisted source reports them. */
+  metrics: GooglePlacesDiscoveryMetrics | null;
+}
+
+/** A real daily request count read from the persisted counter (google_places_daily_budget). */
+export interface GooglePlacesQuotaCounter {
   usedToday: number;
-  metrics: GooglePlacesDiscoveryMetrics;
+  dailySafetyLimit: number;
 }
 
 export interface GooglePlacesOperationalCardProps {
+  /** Full operational report. When omitted nothing is claimed: status is UNAVAILABLE and no usage is shown. */
   data?: GooglePlacesOperationalVisibilityData;
+  /** Optional real usage counter, used only when `data` is not supplied. Never changes provider status. */
+  quotaCounter?: GooglePlacesQuotaCounter | null;
   className?: string;
 }
 
@@ -92,34 +103,23 @@ export function evaluateGooglePlacesQuotaHealth(
 
 export function GooglePlacesOperationalCard({
   data,
+  quotaCounter = null,
   className = '',
 }: GooglePlacesOperationalCardProps) {
-  // Default values aligning with production safety config (default limit: 1,500 reqs/day)
-  const operationalData: GooglePlacesOperationalVisibilityData = data ?? {
-    providerStatus: 'LIVE',
-    isCredentialConfigured: true,
-    isCredentialVerifiedLive: true,
-    activeFallbackTier: 'LIVE_API',
-    dailySafetyLimit: 1500,
-    usedToday: 148,
-    metrics: {
-      sessionsToday: 42,
-      avgApiCallsPerSession: 3.5,
-      candidatesDiscoveredInArea: 312,
-      candidatesOtpRegistered: 84,
-      candidatesGstVerified: 46,
-    },
-  };
-
-  const {
-    providerStatus,
-    isCredentialConfigured,
-    isCredentialVerifiedLive,
-    activeFallbackTier,
-    dailySafetyLimit,
-    usedToday,
-    metrics,
-  } = operationalData;
+  // Truthfulness: with no report supplied nothing is claimed. Status is UNAVAILABLE, credential state is
+  // "not reported", and usage / discovery figures are absent (never defaulted to LIVE or invented counts).
+  const isReported = data !== undefined;
+  const providerStatus: GooglePlacesProviderStatus = data?.providerStatus ?? 'UNAVAILABLE';
+  const isCredentialConfigured = data?.isCredentialConfigured ?? false;
+  const isCredentialVerifiedLive = data?.isCredentialVerifiedLive ?? false;
+  const activeFallbackTier: GooglePlacesFallbackTier | null = data?.activeFallbackTier ?? null;
+  // The configured limit may be shown as a limit (it is configuration, not usage).
+  const dailySafetyLimit =
+    data?.dailySafetyLimit ??
+    quotaCounter?.dailySafetyLimit ??
+    DEFAULT_PROVIDER_BUDGET_CONFIGS.GOOGLE_PLACES!.dailyRequestLimit;
+  const usedToday: number | null = data ? data.usedToday : (quotaCounter?.usedToday ?? null);
+  const metrics: GooglePlacesDiscoveryMetrics | null = data?.metrics ?? null;
 
   // Strict Truthfulness Invariant: Never display LIVE unless verified live
   const effectiveStatus: GooglePlacesProviderStatus = useMemo(() => {
@@ -130,9 +130,12 @@ export function GooglePlacesOperationalCard({
   }, [providerStatus, isCredentialVerifiedLive, isCredentialConfigured]);
 
   const quota = useMemo(
-    () => evaluateGooglePlacesQuotaHealth(usedToday, dailySafetyLimit),
+    () => (usedToday === null ? null : evaluateGooglePlacesQuotaHealth(usedToday, dailySafetyLimit)),
     [usedToday, dailySafetyLimit],
   );
+  const gaugeColor: QuotaHealthColor | 'unknown' = quota?.healthColor ?? 'unknown';
+  const NOT_REPORTED = '—';
+  const NOT_INSTRUMENTED = 'Not instrumented';
 
   const statusBadgeInfo = useMemo(() => {
     switch (effectiveStatus) {
@@ -170,10 +173,12 @@ export function GooglePlacesOperationalCard({
           label: 'UNAVAILABLE',
           tone: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
           icon: '⚪',
-          description: 'Provider currently offline or unconfigured.',
+          description: isReported
+            ? 'Provider currently offline or unconfigured.'
+            : 'Provider status not reported: no trusted source is wired to this card.',
         };
     }
-  }, [effectiveStatus]);
+  }, [effectiveStatus, isReported]);
 
   const fallbackTiers: Array<{ tier: GooglePlacesFallbackTier; label: string; desc: string }> = [
     { tier: 'LIVE_API', label: 'Tier 1: Live API', desc: 'Authoritative Google Places REST' },
@@ -207,7 +212,9 @@ export function GooglePlacesOperationalCard({
             data-testid="places-credential-state"
             className="inline-flex items-center gap-1 font-mono text-[11px]"
           >
-            {isCredentialConfigured ? (
+            {!isReported ? (
+              <span className="text-muted-foreground font-semibold">○ Not reported</span>
+            ) : isCredentialConfigured ? (
               <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                 ● Configured ({isCredentialVerifiedLive ? 'Live' : 'Gated'})
               </span>
@@ -228,7 +235,9 @@ export function GooglePlacesOperationalCard({
         >
           <span className="text-base select-none">🚨</span>
           <div>
-            <p className="font-bold">Daily Safety Limit Exceeded (1,500/1,500 Calls)</p>
+            <p className="font-bold">
+              {`Daily Safety Limit Exceeded (${dailySafetyLimit.toLocaleString('en-IN')}/${dailySafetyLimit.toLocaleString('en-IN')} Calls)`}
+            </p>
             <p className="mt-0.5 text-[11px] opacity-90">
               Zero additional Google API charges incurred. All supplier discovery requests are automatically failing closed to Tier 2 (Database Cache) and Tier 3 (Static Regional Reference).
             </p>
@@ -248,16 +257,18 @@ export function GooglePlacesOperationalCard({
             <span
               data-testid="quota-health-badge"
               className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                quota.healthColor === 'green'
+                gaugeColor === 'unknown'
+                  ? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-200'
+                  : gaugeColor === 'green'
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
-                  : quota.healthColor === 'yellow'
+                  : gaugeColor === 'yellow'
                   ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300'
-                  : quota.healthColor === 'orange'
+                  : gaugeColor === 'orange'
                   ? 'bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-950/40 dark:text-orange-300'
                   : 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300'
               }`}
             >
-              {quota.healthLabel}
+              {quota ? quota.healthLabel : 'Usage not reported'}
             </span>
           </div>
 
@@ -265,7 +276,7 @@ export function GooglePlacesOperationalCard({
             <div className="min-w-0">
               <span className="text-[10px] font-semibold text-muted-foreground uppercase">Used Today</span>
               <p data-testid="quota-used-today" className="text-base font-black text-foreground">
-                {quota.used.toLocaleString('en-IN')}
+                {quota ? quota.used.toLocaleString('en-IN') : NOT_REPORTED}
               </p>
             </div>
             <div className="min-w-0 border-l border-border/50">
@@ -273,14 +284,16 @@ export function GooglePlacesOperationalCard({
               <p
                 data-testid="quota-remaining-today"
                 className={`text-base font-black ${
-                  quota.healthColor === 'red'
+                  gaugeColor === 'unknown'
+                    ? 'text-muted-foreground'
+                    : gaugeColor === 'red'
                     ? 'text-rose-600 dark:text-rose-400'
-                    : quota.healthColor === 'orange'
+                    : gaugeColor === 'orange'
                     ? 'text-orange-600 dark:text-orange-400'
                     : 'text-emerald-600 dark:text-emerald-400'
                 }`}
               >
-                {quota.remaining.toLocaleString('en-IN')}
+                {quota ? quota.remaining.toLocaleString('en-IN') : NOT_REPORTED}
               </p>
             </div>
             <div className="min-w-0 border-l border-border/50">
@@ -289,7 +302,7 @@ export function GooglePlacesOperationalCard({
                 data-testid="quota-percent-consumed"
                 className="text-base font-mono font-black text-foreground"
               >
-                {quota.percentageConsumed}%
+                {quota ? `${quota.percentageConsumed}%` : NOT_REPORTED}
               </p>
             </div>
           </div>
@@ -299,22 +312,24 @@ export function GooglePlacesOperationalCard({
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted/80">
               <div
                 data-testid="quota-progress-bar"
-                data-health-color={quota.healthColor}
+                data-health-color={gaugeColor}
                 className={`h-full transition-all duration-500 ${
-                  quota.healthColor === 'green'
+                  gaugeColor === 'unknown'
+                    ? 'bg-muted-foreground/30'
+                    : gaugeColor === 'green'
                     ? 'bg-emerald-500'
-                    : quota.healthColor === 'yellow'
+                    : gaugeColor === 'yellow'
                     ? 'bg-amber-500'
-                    : quota.healthColor === 'orange'
+                    : gaugeColor === 'orange'
                     ? 'bg-orange-500'
                     : 'bg-rose-500'
                 }`}
-                style={{ width: `${Math.min(100, Math.max(0, quota.percentageConsumed))}%` }}
+                style={{ width: `${quota ? Math.min(100, Math.max(0, quota.percentageConsumed)) : 0}%` }}
               />
             </div>
             <div className="flex justify-between text-[10px] text-muted-foreground">
               <span data-testid="quota-reset-label">0 ({GOOGLE_PLACES_QUOTA_RESET_LABEL})</span>
-              <span data-testid="quota-max-limit">Limit: {quota.limit.toLocaleString('en-IN')} reqs/day</span>
+              <span data-testid="quota-max-limit">Limit: {dailySafetyLimit.toLocaleString('en-IN')} reqs/day</span>
             </div>
           </div>
         </div>
@@ -374,7 +389,7 @@ export function GooglePlacesOperationalCard({
           <div className="rounded-lg border border-border/60 bg-card p-2.5 space-y-0.5 min-w-0">
             <span className="text-[10px] font-medium text-muted-foreground block truncate">Sessions Today</span>
             <p data-testid="metrics-sessions-today" className="text-sm sm:text-base font-black text-foreground">
-              {metrics.sessionsToday}
+              {metrics ? metrics.sessionsToday : NOT_INSTRUMENTED}
             </p>
             <span className="text-[9px] text-muted-foreground block truncate">Buyer discovery</span>
           </div>
@@ -382,7 +397,7 @@ export function GooglePlacesOperationalCard({
           <div className="rounded-lg border border-border/60 bg-card p-2.5 space-y-0.5 min-w-0">
             <span className="text-[10px] font-medium text-muted-foreground block truncate">Avg API Calls</span>
             <p data-testid="metrics-avg-calls" className="text-sm sm:text-base font-black text-foreground">
-              {metrics.avgApiCallsPerSession}
+              {metrics ? metrics.avgApiCallsPerSession : NOT_INSTRUMENTED}
             </p>
             <span className="text-[9px] text-muted-foreground block truncate">Per intake session</span>
           </div>
@@ -393,7 +408,7 @@ export function GooglePlacesOperationalCard({
               data-testid="metrics-discovered-in-area"
               className="text-sm sm:text-base font-black text-indigo-600 dark:text-indigo-400"
             >
-              {metrics.candidatesDiscoveredInArea}
+              {metrics ? metrics.candidatesDiscoveredInArea : NOT_INSTRUMENTED}
             </p>
             <span className="text-[9px] text-muted-foreground block truncate">External candidate</span>
           </div>
@@ -404,7 +419,7 @@ export function GooglePlacesOperationalCard({
               data-testid="metrics-otp-registered"
               className="text-sm sm:text-base font-black text-blue-600 dark:text-blue-400"
             >
-              {metrics.candidatesOtpRegistered}
+              {metrics ? metrics.candidatesOtpRegistered : NOT_INSTRUMENTED}
             </p>
             <span className="text-[9px] text-muted-foreground block truncate">Claimed profiles</span>
           </div>
@@ -415,7 +430,7 @@ export function GooglePlacesOperationalCard({
               data-testid="metrics-gst-verified"
               className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400"
             >
-              {metrics.candidatesGstVerified}
+              {metrics ? metrics.candidatesGstVerified : NOT_INSTRUMENTED}
             </p>
             <span className="text-[9px] text-muted-foreground block truncate">Govt API confirmed</span>
           </div>

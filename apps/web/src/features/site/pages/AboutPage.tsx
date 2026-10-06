@@ -48,7 +48,7 @@ export function AboutPage() {
           <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2">
             <h2 className="text-sm font-bold text-foreground">Works from your phone</h2>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Raise a request by typing or speaking. Suppliers can reply on WhatsApp without installing anything.
+              Raise a request by typing or speaking. Suppliers invited directly can quote from a secure link without installing anything. WhatsApp and SMS delivery is planned but not yet live.
             </p>
           </div>
           <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2">

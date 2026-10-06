@@ -81,10 +81,10 @@ export function MobileScreensShowcase() {
       tabLabel: 'Supplier Radar',
       icon: '📡',
       title: 'Multi-Channel Supplier Radar',
-      tagline: 'Broadcasts sealed RFQ invitations across WhatsApp, ONDC, and SMS.',
+      tagline: 'Matches suppliers to your request. WhatsApp and SMS delivery is not yet live.',
       badge: 'Supplier Radar',
       badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300',
-      description: 'Reaches local verified vendors without forcing them to create complicated portal accounts.',
+      description: 'Suppliers invited directly can quote from a secure link. A business found in the area is not automatically OTP-verified.',
       component: <ScreenBuyerSupplierRadar onNext={() => setActiveScreenIndex(3)} />,
     },
     {
@@ -93,7 +93,7 @@ export function MobileScreensShowcase() {
       tabLabel: 'Supplier Quoting',
       icon: '💬',
       title: '30-Minute Mobile Quoting',
-      tagline: 'WhatsApp & mobile-optimized 3-field numeric quote sheet with instant GST.',
+      tagline: 'Mobile-optimized 3-field numeric quote sheet with instant GST.',
       badge: 'Quoting Engine',
       badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
       description: 'Suppliers quote from their phones. All quotes stay sealed until the buyer decides.',
@@ -117,7 +117,7 @@ export function MobileScreensShowcase() {
       tabLabel: 'Committee Vote',
       icon: '🗳️',
       title: '1-Tap Committee Decision Room',
-      tagline: 'Preset rationale chips, live quorum meters, and fast-track solo approvals.',
+      tagline: 'Recorded committee votes, a quorum check, and a direct decision when there is no committee.',
       badge: 'Committee Governance',
       badgeColor: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-300',
       description: 'Eliminates endless WhatsApp committee arguments with transparent 1-tap recorded justifications.',
@@ -129,10 +129,10 @@ export function MobileScreensShowcase() {
       tabLabel: 'Digital PO & Tracking',
       icon: '📦',
       title: 'Digital PO & Live Tracking',
-      tagline: 'Instant GST Purchase Order execution and Swiggy-style milestone tracker.',
+      tagline: 'Purchase order after the decision, then milestone tracking through invoice.',
       badge: 'Digital PO & Ledger',
       badgeColor: 'bg-emerald-600/10 text-emerald-800 dark:text-emerald-300 border-emerald-400',
-      description: 'Unmask verified GST credentials, share PO via WhatsApp PDF, and track pickup to invoice settlement.',
+      description: 'After an award, share the purchase order and track the work through to the invoice. GST details appear only when the supplier has actually provided them.',
       component: <ScreenBuyerOrderTracking onRestart={() => setActiveScreenIndex(0)} />,
     },
   ];
@@ -147,7 +147,7 @@ export function MobileScreensShowcase() {
       tagline: 'View incoming sealed RFQ alerts filtered by location, taxonomy, capacity.',
       badge: 'Supplier Radar & Notification Hub',
       badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300',
-      description: 'Instant alerts received on WhatsApp and mobile app matched by domain taxonomy, HP rating, and radius.',
+      description: 'Requests matched by domain taxonomy, HP rating, and radius appear in the supplier workspace. WhatsApp alerts are not yet live.',
       component: <ScreenSupplierHub onNext={() => setActiveScreenIndex(1)} />,
     },
     {
@@ -252,7 +252,7 @@ export function MobileScreensShowcase() {
             Request, compare and decide from your phone
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Experience how Indian building committees, MSMEs, and verified suppliers execute sourcing—via voice, WhatsApp, and 1-tap thumb interactions.
+            Experience how Indian building committees, MSMEs, and verified suppliers execute sourcing—via voice and 1-tap thumb interactions.
           </p>
 
           {/* Top-Level Dual Role Switcher Toggle */}
@@ -402,15 +402,15 @@ export function MobileScreensShowcase() {
                       <>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
-                          <span><strong>WhatsApp Direct Channel:</strong> Dispatches quotes to local suppliers on WhatsApp.</span>
+                          <span><strong>WhatsApp Direct Channel:</strong> Planned, not yet live. Direct invite links can be shared by the buyer.</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
-                          <span><strong>ONDC Network Gateway:</strong> Open network interoperability without app install lock-in.</span>
+                          <span><strong>Known supplier:</strong> A buyer can invite a supplier they already know.</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
-                          <span><strong>Regional Radar:</strong> Scans verified suppliers within 15 km of delivery site.</span>
+                          <span><strong>Area discovery:</strong> OTP can look for businesses near the requirement PIN. That is not OTP verification.</span>
                         </li>
                       </>
                     )}
@@ -489,7 +489,7 @@ export function MobileScreensShowcase() {
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
-                          <span><strong>WhatsApp Deep Link:</strong> Tap once from WhatsApp alert directly into instant quoting interface.</span>
+                          <span><strong>Invite Link:</strong> Open a direct invite link to reach the quoting interface. WhatsApp alerts are not yet live.</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-500 font-bold">✓</span>
@@ -904,11 +904,11 @@ function ScreenBuyerSupplierRadar({ onNext }: { onNext: () => void }) {
             <h5 className="text-xs font-bold">Supplier Discovery Radar</h5>
           </div>
           <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-full">
-            14 Nearby
+            Example
           </span>
         </div>
         <p className="text-[10px] text-slate-300 leading-relaxed">
-          Broadcasting sealed requirement to verified motor rewinding vendors within 15 km of Whitefield, Bengaluru.
+          Example only. OTP can look for businesses near the requirement. A discovered business is not OTP-verified.
         </p>
       </div>
 
@@ -923,7 +923,7 @@ function ScreenBuyerSupplierRadar({ onNext }: { onNext: () => void }) {
             <span className="text-base">💬</span>
             <div>
               <h6 className="text-xs font-bold text-foreground">WhatsApp Direct Quoting</h6>
-              <span className="text-[9px] text-muted-foreground">8 Verified Regional Vendors</span>
+              <span className="text-[9px] text-muted-foreground">Planned, not yet live</span>
             </div>
           </div>
           <span className="text-[10px] font-bold text-emerald-600">✓ Sent</span>
@@ -933,11 +933,11 @@ function ScreenBuyerSupplierRadar({ onNext }: { onNext: () => void }) {
           <div className="flex items-center gap-2">
             <span className="text-base">🌐</span>
             <div>
-              <h6 className="text-xs font-bold text-foreground">ONDC Sourcing Protocol</h6>
-              <span className="text-[9px] text-muted-foreground">4 B2B Network Providers</span>
+              <h6 className="text-xs font-bold text-foreground">ONDC is not connected</h6>
+              <span className="text-[9px] text-muted-foreground">Not used for buyer discovery</span>
             </div>
           </div>
-          <span className="text-[10px] font-bold text-blue-600">✓ Synced</span>
+          <span className="text-[10px] font-bold text-muted-foreground">Not available</span>
         </div>
 
         <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-2.5 flex items-center justify-between">

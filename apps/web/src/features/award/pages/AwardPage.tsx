@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchPurchaseOrderByRfq } from '@/features/fulfillment/api/purchase-orders';
 import { fetchIdentityProtectedQuotesForVote } from '@/features/governance/api/rfq-governance';
@@ -18,7 +18,7 @@ import {
 import { revealSupplier, type RevealedWinner } from '@/features/reveal/api/reveal';
 import { fetchRevealedQuotes, type RevealedQuoteRow } from '@/features/reveal/api/fetch-revealed-quotes';
 import { DecisionReceipt } from '@/features/reveal/components/DecisionReceipt';
-import { approve, fetchApproval, requestApproval, fetchRfqApprovalStages, fetchUserActiveDelegations, submitTierApprovalAtomic } from '../api/approval';
+import { approve, evaluateApprovalRoute, fetchApproval, requestApproval, fetchRfqApprovalStages, fetchUserActiveDelegations, submitTierApprovalAtomic } from '../api/approval';
 import { fetchAward, lockAward, unlockAwardDecision } from '../api/awards';
 import { CancelRfqModal } from '@/features/rfq/components';
 import { ProcurementStageNavigator } from '@/features/lifecycle';
@@ -118,6 +118,23 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
     () => quotes.find((q) => q.quoteId === (award?.quoteId || selectedQuote)) || quotes[0],
     [quotes, award, selectedQuote],
   );
+
+  // Materialise the policy-driven approval stages for the selected quote's amount (00237).
+  // Without this the stage list stays empty, the tier UI is hidden and the award gate passes
+  // vacuously. The RPC is idempotent and server-validates the amount against the selected quote.
+  const routeEvaluatedKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (isLoading || award || !winningQuote?.quoteId || !(winningQuote.totalCost > 0)) return;
+    const key = `${rfqId}:${winningQuote.quoteId}:${winningQuote.totalCost}`;
+    if (routeEvaluatedKey.current === key) return;
+    routeEvaluatedKey.current = key;
+    void (async () => {
+      const res = await evaluateApprovalRoute(rfqId, winningQuote.totalCost);
+      if (!res.ok) return; // callers without buyer authority simply see the persisted stages
+      const stagesRes = await fetchRfqApprovalStages(rfqId);
+      if (stagesRes.ok) setStages(stagesRes.stages);
+    })();
+  }, [isLoading, award, winningQuote, rfqId]);
 
   const lockEligibility = useMemo(() => {
     return isAwardLockEligible(stages);
@@ -225,7 +242,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
     setRevealedWinner(result.winner);
     setSuccess(
       result.winner.aliasBeforeReveal
-        ? `Authoritative reveal complete: ${result.winner.aliasBeforeReveal} is ${result.winner.businessName}. Official Purchase Order generated!`
+        ? `Authoritative reveal complete: ${result.winner.aliasBeforeReveal} is ${result.winner.businessName}.${result.winner.poId ? ' Official Purchase Order generated!' : ''}`
         : `Identity unmasked: The winner is ${result.winner.businessName}.`,
     );
     await load();
@@ -410,10 +427,6 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-bold flex items-center gap-1">
-                    <span>✓</span>
-                    <span>GST Verified</span>
-                  </span>
                   <span className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[10px] font-bold">
                     Alias: {revealedWinner?.aliasBeforeReveal || winningQuote?.anonymousLabel || 'Supplier'}
                   </span>
@@ -427,7 +440,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                     Legal Business Name:
                   </span>
                   <strong className="text-foreground text-sm block truncate">
-                    {revealedWinner?.businessName || revealedWinnerQuote?.businessName || 'Verified Supplier Pvt Ltd'}
+                    {revealedWinner?.businessName || revealedWinnerQuote?.businessName || 'Awarded Supplier'}
                   </strong>
                   <span className="text-[10px] text-muted-foreground">Registered Entity</span>
                 </div>
@@ -437,10 +450,10 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                     Contact Channel:
                   </span>
                   <span className="font-semibold text-foreground block">
-                    {revealedWinner?.contactPhone || revealedWinnerQuote?.phone || 'Contact Verified'}
+                    {revealedWinner?.contactPhone || revealedWinnerQuote?.phone || 'Phone not on file'}
                   </span>
                   <span className="text-[10px] text-muted-foreground truncate block">
-                    {revealedWinner?.contactEmail || revealedWinnerQuote?.email || 'email@verified.com'}
+                    {revealedWinner?.contactEmail || revealedWinnerQuote?.email || 'Email not on file'}
                   </span>
                 </div>
 

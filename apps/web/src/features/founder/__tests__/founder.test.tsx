@@ -33,6 +33,7 @@ describe('OTP R2-C2: Founder / CEO Operational Visibility Suite (C2-01 to C2-12)
     },
     suppliers: {
       total: 35,
+      verified: 21,
       active: 18,
       repeat: 9,
       repeatPercentage: 50,
@@ -41,7 +42,8 @@ describe('OTP R2-C2: Founder / CEO Operational Visibility Suite (C2-01 to C2-12)
       totalRfqs: 45,
       activeRfqs: 6,
       awardedRfqs: 28,
-      completedOrders: 25,
+      purchaseOrdersIssued: 25,
+      completedOrders: 11,
       totalGmv: 1850000,
       totalPlatformFees: 9250,
       firstTransactionAt: '2026-09-01T10:00:00Z',
@@ -283,7 +285,7 @@ describe('OTP R2-C2: Founder / CEO Operational Visibility Suite (C2-01 to C2-12)
    * C2-07: Fallback status renders active tier across ladder.
    */
   it('C2-07: Fallback ladder correctly reflects active tier', () => {
-    const tiers: Array<GooglePlacesOperationalVisibilityData['activeFallbackTier']> = [
+    const tiers: Array<NonNullable<GooglePlacesOperationalVisibilityData['activeFallbackTier']>> = [
       'LIVE_API',
       'DATABASE_CACHE',
       'STATIC_REFERENCE',
@@ -420,31 +422,30 @@ describe('OTP R2-C2: Founder / CEO Operational Visibility Suite (C2-01 to C2-12)
       isCredentialVerifiedLive: true,
       activeFallbackTier: 'LIVE_API',
       dailySafetyLimit: 1500,
-      usedToday: 148,
+      usedToday: 210,
       metrics: {
-        sessionsToday: 42,
-        avgApiCallsPerSession: 3.5,
-        candidatesDiscoveredInArea: 312,
-        candidatesOtpRegistered: 84,
-        candidatesGstVerified: 46,
+        sessionsToday: 21,
+        avgApiCallsPerSession: 2.5,
+        candidatesDiscoveredInArea: 240,
+        candidatesOtpRegistered: 70,
+        candidatesGstVerified: 35,
       },
     };
 
     const html = renderToStaticMarkup(<GooglePlacesOperationalCard data={metricsData} />);
 
     expect(html).toContain('data-testid="metrics-discovered-in-area"');
-    expect(html).toContain('>312</p>');
+    expect(html).toContain('>240</p>');
     expect(html).toContain('data-testid="metrics-otp-registered"');
-    expect(html).toContain('>84</p>');
+    expect(html).toContain('>70</p>');
     expect(html).toContain('data-testid="metrics-gst-verified"');
-    expect(html).toContain('>46</p>');
+    expect(html).toContain('>35</p>');
 
     // Strict funnel invariant
-    expect(metricsData.metrics.candidatesDiscoveredInArea).toBeGreaterThanOrEqual(
-      metricsData.metrics.candidatesOtpRegistered,
-    );
-    expect(metricsData.metrics.candidatesOtpRegistered).toBeGreaterThanOrEqual(
-      metricsData.metrics.candidatesGstVerified,
+    const funnel = metricsData.metrics!;
+    expect(funnel.candidatesDiscoveredInArea).toBeGreaterThanOrEqual(funnel.candidatesOtpRegistered);
+    expect(funnel.candidatesOtpRegistered).toBeGreaterThanOrEqual(
+      funnel.candidatesGstVerified,
     );
   });
 });

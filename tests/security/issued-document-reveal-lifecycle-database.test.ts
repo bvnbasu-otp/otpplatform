@@ -57,6 +57,11 @@ async function recommendWinner(rfqId: string, quoteId: string): Promise<void> {
     await profileIdFor(DEMO.logins.sunriseCommittee),
     await profileIdFor(DEMO.logins.sunriseCommittee2),
   ];
+  // RFQ-level seat (normally added by close_clarification_for_evaluation, 00050); a vote needs appointment AND seat (00238).
+  const { error: seatError } = await service
+    .from('committee_assignments')
+    .upsert(voters.map((profile_id) => ({ rfq_id: rfqId, profile_id })), { onConflict: 'rfq_id,profile_id' });
+  expect(seatError).toBeNull();
   for (const profileId of voters) {
     const { error } = await service.from('committee_votes').insert({
       rfq_id: rfqId,

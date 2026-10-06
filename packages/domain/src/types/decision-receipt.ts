@@ -26,7 +26,8 @@ export interface DecisionReceiptBuyerContext {
   buyerPhone?: string | null;
   buyerGstin?: string | null;
   buyerPan?: string | null;
-  deliveryStateCode: string;
+  /** Only from the RFQ delivery address snapshot; null when not captured (never assumed). */
+  deliveryStateCode: string | null;
   deliveryAddressSnapshot?: AddressSnapshot | null;
   billingAddressSnapshot?: AddressSnapshot | null;
 }
@@ -34,7 +35,8 @@ export interface DecisionReceiptBuyerContext {
 export interface DecisionReceiptRequirementSnapshot {
   requirementId: string;
   title: string;
-  categoryName: string;
+  /** Requirement category name; null when the requirement is unclassified. */
+  categoryName: string | null;
   mode: string;
   budgetAmount?: number | null;
 }
@@ -48,31 +50,39 @@ export interface DecisionReceiptSelectedOffer {
   supplierGstin?: string | null;
   supplierStateCode?: string | null;
   baseAmount: number;
-  gstRate: number;
-  gstAmount: number;
+  /** null when the quote carries no GST figure. */
+  gstRate: number | null;
+  gstAmount: number | null;
+  /** How the CGST/SGST/IGST split was derived; 'UNAVAILABLE' means the split must not be shown. */
+  taxSplitBasis?: 'QUOTE_SNAPSHOT' | 'STATE_CODES' | 'UNAVAILABLE' | null;
   cgstAmount: number;
   sgstAmount: number;
   igstAmount: number;
   isInterState: boolean;
   totalLandedCost: number;
-  deliveryTimelineDays: number;
-  warrantyPeriodMonths: number;
+  /** Only from the quote; null when the supplier did not state it. */
+  deliveryTimelineDays: number | null;
+  warrantyPeriodMonths: number | null;
   paymentStructure: string;
 }
 
 export interface DecisionReceiptMeritEvaluation {
-  rank: number;
+  /** Only when every comparable quote has a calculated score; otherwise null. */
+  rank: number | null;
   score: number | null;
   totalQuotesEvaluated: number;
-  lowestTotalCost: number;
+  /** True minimum landed cost among comparable quotes; null when not computable. */
+  lowestTotalCost: number | null;
+  /** true / false when computable; null (unknown) otherwise. */
+  selectedIsLowestCost?: boolean | null;
   costAvoidedComparedToIncumbent?: number | null;
-  consensusJustification: string;
+  consensusJustification: string | null;
 }
 
 export interface DecisionReceiptAuthorityAttribution {
   awardedByProfileId: string;
   awardedByName: string;
-  awardedByRole: string;
+  awardedByRole: string | null;
   isDelegated: boolean;
   delegatorProfileId?: string | null;
   delegationId?: string | null;
@@ -335,8 +345,7 @@ ${msme.stages.map((s) => `  - Stage ${s.stageOrder} (${s.tierLevel}): ${s.status
 - **Buyer Persona:** ${receipt.buyerPersona}
 - **Buyer Organization:** ${buyerContext.organizationName || 'Personal Individual Account'}
 - **GSTIN / PAN:** ${buyerContext.buyerGstin || buyerContext.buyerPan || 'Unregistered / Exempt'}
-- **Delivery State:** Code ${buyerContext.deliveryStateCode}
-- **Authorizing Signatory:** ${authorityAttribution.awardedByName} (${authorityAttribution.awardedByRole})
+${buyerContext.deliveryStateCode ? `- **Delivery State:** Code ${buyerContext.deliveryStateCode}\n` : ''}- **Authorizing Signatory:** ${authorityAttribution.awardedByName}${authorityAttribution.awardedByRole ? ` (${authorityAttribution.awardedByRole})` : ''}
 ${authorityAttribution.isDelegated ? `- **Delegation Proxy:** Acting on behalf of Delegator \`${authorityAttribution.delegatorProfileId}\` (Delegation ID: \`${authorityAttribution.delegationId}\`)` : ''}
 
 ---
@@ -345,20 +354,14 @@ ${authorityAttribution.isDelegated ? `- **Delegation Proxy:** Acting on behalf o
 - **Winning Quote:** \`${selectedOffer.quoteId}\` (Quoted as **${selectedOffer.maskedSupplierLabel}**)
 - **Revealed Supplier:** ${selectedOffer.businessName || 'Masked (Pending Reveal Gate)'}
 - **Base Commercial Value:** ${inr(selectedOffer.baseAmount)}
-- **Statutory GST Rate:** ${selectedOffer.gstRate}% (${selectedOffer.isInterState ? `IGST: ${inr(selectedOffer.igstAmount)}` : `CGST: ${inr(selectedOffer.cgstAmount)} + SGST: ${inr(selectedOffer.sgstAmount)}`})
-- **Total Landed Cost:** **${inr(selectedOffer.totalLandedCost)}**
-- **Delivery Timeline:** ${selectedOffer.deliveryTimelineDays} calendar days
-- **Warranty Period:** ${selectedOffer.warrantyPeriodMonths} months
-- **Payment Structure:** ${selectedOffer.paymentStructure}
+${selectedOffer.gstRate != null ? `- **Statutory GST Rate:** ${selectedOffer.gstRate}%${selectedOffer.taxSplitBasis === 'UNAVAILABLE' ? '' : ` (${selectedOffer.isInterState ? `IGST: ${inr(selectedOffer.igstAmount)}` : `CGST: ${inr(selectedOffer.cgstAmount)} + SGST: ${inr(selectedOffer.sgstAmount)}`})`}\n` : ''}- **Total Landed Cost:** **${inr(selectedOffer.totalLandedCost)}**
+${selectedOffer.deliveryTimelineDays != null ? `- **Delivery Timeline:** ${selectedOffer.deliveryTimelineDays} calendar days\n` : ''}${selectedOffer.warrantyPeriodMonths != null ? `- **Warranty Period:** ${selectedOffer.warrantyPeriodMonths} months\n` : ''}- **Payment Structure:** ${selectedOffer.paymentStructure}
 
 ---
 
 ### 3. OBJECTIVE MERIT EVALUATION
-- **Merit Rank:** Rank #${meritEvaluation.rank} of ${meritEvaluation.totalQuotesEvaluated} evaluated offers
-- **Merit Score:** ${meritEvaluation.score !== null ? `${meritEvaluation.score.toFixed(1)}/10` : 'Top Evaluated'}
-- **Lowest Total Cost Available:** ${inr(meritEvaluation.lowestTotalCost)}
-${meritEvaluation.costAvoidedComparedToIncumbent ? `- **Cost Avoided vs Incumbent:** ${inr(meritEvaluation.costAvoidedComparedToIncumbent)} saved by choosing on merit` : ''}
-- **Consensus Justification:** ${meritEvaluation.consensusJustification}
+- **Offers Compared:** ${meritEvaluation.totalQuotesEvaluated}
+${meritEvaluation.rank != null ? `- **Merit Rank:** Rank #${meritEvaluation.rank} of ${meritEvaluation.totalQuotesEvaluated} evaluated offers\n` : ''}${meritEvaluation.score != null ? `- **Merit Score:** ${meritEvaluation.score.toFixed(1)}/10\n` : ''}${meritEvaluation.lowestTotalCost != null ? `- **Lowest Total Cost Available:** ${inr(meritEvaluation.lowestTotalCost)}${meritEvaluation.selectedIsLowestCost === true ? ' (selected offer)' : ''}\n` : ''}${meritEvaluation.costAvoidedComparedToIncumbent ? `- **Cost Avoided vs Incumbent:** ${inr(meritEvaluation.costAvoidedComparedToIncumbent)} saved by choosing on merit\n` : ''}${meritEvaluation.consensusJustification ? `- **Consensus Justification:** ${meritEvaluation.consensusJustification}` : ''}
 
 ---
 ${governanceSection}

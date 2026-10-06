@@ -31,7 +31,7 @@ import { queueBuyerPinDiscovery } from '../api/location-discovery';
 
 const BUYER_TYPES = [
   { value: 'INDIVIDUAL', label: 'Buying for Myself (Individual)' },
-  { value: 'MSME', label: 'Business / MSME Enterprise' },
+  { value: 'MSME', label: 'Business / MSME' },
   { value: 'COMMUNITY', label: 'Residential Welfare Association (RWA) / Society' },
 ];
 
@@ -602,7 +602,7 @@ export function BuyerRegisterForm({
           isOpen={isAgreementModalOpen}
           onClose={() => setIsAgreementModalOpen(false)}
           onAccept={() => setAgreementAccepted(true)}
-          businessName={organisation || 'Commercial Enterprise'}
+          businessName={organisation || 'Your business'}
           businessType={msmeBusinessType}
           primaryOfficerName={`${firstName} ${lastName}`.trim() || 'Primary Administrator'}
           primaryOfficerEmail={email}

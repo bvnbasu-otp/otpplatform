@@ -47,6 +47,16 @@ export interface PurchaseOrderSummary {
   sgstTotal?: number;
   utgstTotal?: number;
   igstTotal?: number;
+  // Buyer-selected payment plan frozen on the PO at award (00240).
+  paymentStructure?: string | null;
+  paymentTermsText?: string | null;
+  paymentSchedule?: Array<{
+    index: number;
+    label: string;
+    percentage: number;
+    amount: number;
+    cumulativePercentage?: number;
+  }> | null;
 }
 
 export interface WorkOrderSummary {

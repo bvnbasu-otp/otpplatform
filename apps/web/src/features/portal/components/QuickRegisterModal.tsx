@@ -38,7 +38,7 @@ export function QuickRegisterModal({ open, onClose }: QuickRegisterModalProps) {
                   I am a Buyer / Institution
                 </h4>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  For RWAs, MSMEs, Facility Managers &amp; Enterprises
+                  For Individuals, RWAs &amp; MSMEs
                 </p>
               </div>
             </div>
@@ -99,7 +99,7 @@ export function QuickRegisterModal({ open, onClose }: QuickRegisterModalProps) {
           <ul className="space-y-1.5 text-muted-foreground text-[11px] pt-1 border-t border-border/60">
             <li className="flex items-center gap-2">
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-              <span>30-Minute mobile quoting via WhatsApp &amp; Web</span>
+              <span>30-Minute mobile quoting on the web</span>
             </li>
             <li className="flex items-center gap-2">
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>

@@ -134,18 +134,26 @@ export function DecisionReceiptCard({
                 <span className="text-muted-foreground block">Base Amount</span>
                 <span className="font-mono font-bold text-foreground">{inr(selectedOffer.baseAmount)}</span>
               </div>
-              <div>
-                <span className="text-muted-foreground block">GST ({selectedOffer.gstRate}%)</span>
-                <span className="font-mono font-bold text-foreground">{inr(selectedOffer.gstAmount)}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block">Delivery TAT</span>
-                <span className="font-bold text-foreground">{selectedOffer.deliveryTimelineDays} Days</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block">Warranty</span>
-                <span className="font-bold text-foreground">{selectedOffer.warrantyPeriodMonths} Months</span>
-              </div>
+              {selectedOffer.gstAmount != null && (
+                <div>
+                  <span className="text-muted-foreground block">
+                    GST{selectedOffer.gstRate != null ? ` (${selectedOffer.gstRate}%)` : ''}
+                  </span>
+                  <span className="font-mono font-bold text-foreground">{inr(selectedOffer.gstAmount)}</span>
+                </div>
+              )}
+              {selectedOffer.deliveryTimelineDays != null && (
+                <div>
+                  <span className="text-muted-foreground block">Delivery TAT</span>
+                  <span className="font-bold text-foreground">{selectedOffer.deliveryTimelineDays} Days</span>
+                </div>
+              )}
+              {selectedOffer.warrantyPeriodMonths != null && (
+                <div>
+                  <span className="text-muted-foreground block">Warranty</span>
+                  <span className="font-bold text-foreground">{selectedOffer.warrantyPeriodMonths} Months</span>
+                </div>
+              )}
             </div>
 
             {selectedOffer.cgstAmount > 0 && (
@@ -169,23 +177,36 @@ export function DecisionReceiptCard({
             </span>
             <div className="flex flex-wrap items-baseline gap-4 text-xs">
               <div>
-                <span className="text-muted-foreground">Rank: </span>
-                <strong className="text-foreground">#{meritEvaluation.rank} of {meritEvaluation.totalQuotesEvaluated}</strong>
+                <span className="text-muted-foreground">Offers compared: </span>
+                <strong className="text-foreground">{meritEvaluation.totalQuotesEvaluated}</strong>
               </div>
-              {meritEvaluation.score !== null && (
+              {meritEvaluation.rank != null && (
+                <div>
+                  <span className="text-muted-foreground">Rank: </span>
+                  <strong className="text-foreground">#{meritEvaluation.rank} of {meritEvaluation.totalQuotesEvaluated}</strong>
+                </div>
+              )}
+              {meritEvaluation.score != null && (
                 <div>
                   <span className="text-muted-foreground">Merit Score: </span>
                   <strong className="text-foreground">{meritEvaluation.score.toFixed(1)}/10</strong>
                 </div>
               )}
-              <div>
-                <span className="text-muted-foreground">Lowest Available: </span>
-                <strong className="text-foreground">{inr(meritEvaluation.lowestTotalCost)}</strong>
-              </div>
+              {meritEvaluation.lowestTotalCost != null && (
+                <div>
+                  <span className="text-muted-foreground">Lowest Available: </span>
+                  <strong className="text-foreground">{inr(meritEvaluation.lowestTotalCost)}</strong>
+                  {meritEvaluation.selectedIsLowestCost === true && (
+                    <span className="ml-1 text-emerald-700 dark:text-emerald-300">(selected offer)</span>
+                  )}
+                </div>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border/40">
-              <strong className="text-foreground">Consensus Rationale:</strong> {meritEvaluation.consensusJustification}
-            </p>
+            {meritEvaluation.consensusJustification && (
+              <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border/40">
+                <strong className="text-foreground">Consensus Rationale:</strong> {meritEvaluation.consensusJustification}
+              </p>
+            )}
           </div>
 
           {/* Governance & Authority Attributions */}

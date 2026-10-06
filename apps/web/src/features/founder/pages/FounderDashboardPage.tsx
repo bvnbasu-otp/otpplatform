@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { DEFAULT_PROVIDER_BUDGET_CONFIGS } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
 import { Badge, Button, Card } from '@/components/ui';
 import {
@@ -25,6 +26,8 @@ interface FounderMetrics {
   };
   suppliers: {
     total: number;
+    /** Suppliers with lifecycle_state VERIFIED and verification_status VERIFIED (00244). Absent on older servers. */
+    verified?: number;
     active: number;
     repeat: number;
     repeatPercentage: number;
@@ -33,6 +36,9 @@ interface FounderMetrics {
     totalRfqs: number;
     activeRfqs: number;
     awardedRfqs: number;
+    /** POs in ISSUED, ACCEPTED or COMPLETED status (00244). Absent on older servers. */
+    purchaseOrdersIssued?: number;
+    /** POs in COMPLETED status only (00244 corrects the older ISSUED/ACCEPTED/COMPLETED count). */
     completedOrders: number;
     totalGmv: number;
     totalPlatformFees: number;
@@ -45,18 +51,43 @@ interface FounderMetrics {
   milestones: Milestone[];
 }
 
+/** Today's real Google Places request count from the persisted counter (get_founder_google_places_budget_today). */
+export interface FounderGoogleBudgetToday {
+  usageDate: string;
+  requestCount: number;
+}
+
 export interface FounderDashboardPageProps {
   initialMetrics?: FounderMetrics | null;
+  /** Pre-loaded counter reading (tests / SSR). When omitted the page reads it from the founder-only RPC. */
+  initialGoogleBudget?: FounderGoogleBudgetToday | null;
   placesData?: GooglePlacesOperationalVisibilityData;
 }
 
 export function FounderDashboardPage({
   initialMetrics = null,
+  initialGoogleBudget = null,
   placesData,
 }: FounderDashboardPageProps = {}) {
   const [metrics, setMetrics] = useState<FounderMetrics | null>(initialMetrics);
+  const [googleBudget, setGoogleBudget] = useState<FounderGoogleBudgetToday | null>(initialGoogleBudget);
+  // Configured limit (configuration, not usage): the same default the reservation RPC enforces.
+  const googleBudgetLimit = DEFAULT_PROVIDER_BUDGET_CONFIGS.GOOGLE_PLACES!.dailyRequestLimit;
   const [loading, setLoading] = useState(!initialMetrics);
   const [error, setError] = useState<string | null>(null);
+
+  // The counter is read from the existing persisted budget table; any failure leaves it "Unavailable".
+  async function loadGoogleBudget() {
+    try {
+      const { data, error: rpcError } = await supabase.rpc('get_founder_google_places_budget_today');
+      if (rpcError || !data) throw rpcError ?? new Error('no data');
+      const row = data as { usageDate?: string; requestCount?: number };
+      if (typeof row.requestCount !== 'number') throw new Error('malformed counter');
+      setGoogleBudget({ usageDate: String(row.usageDate ?? ''), requestCount: row.requestCount });
+    } catch {
+      setGoogleBudget(null);
+    }
+  }
 
   async function loadMetrics() {
     try {
@@ -77,7 +108,10 @@ export function FounderDashboardPage({
     if (!initialMetrics) {
       void loadMetrics();
     }
-  }, [initialMetrics]);
+    if (!initialGoogleBudget) {
+      void loadGoogleBudget();
+    }
+  }, [initialMetrics, initialGoogleBudget]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
@@ -103,7 +137,10 @@ export function FounderDashboardPage({
           variant="secondary"
           size="sm"
           disabled={loading}
-          onClick={() => void loadMetrics()}
+          onClick={() => {
+            void loadMetrics();
+            void loadGoogleBudget();
+          }}
           className="self-start sm:self-auto"
         >
           🔄 Refresh Realtime Data
@@ -144,16 +181,28 @@ export function FounderDashboardPage({
 
             <Card className="p-3.5 space-y-1">
               <span className="text-[11px] font-semibold text-muted-foreground">Verified Suppliers</span>
-              <p className="text-xl font-black text-foreground">{metrics.suppliers.total}</p>
+              <p className="text-xl font-black text-foreground" data-testid="kpi-verified-suppliers">
+                {typeof metrics.suppliers.verified === 'number' ? metrics.suppliers.verified : '—'}
+              </p>
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                {metrics.suppliers.active} quoting
+                {typeof metrics.suppliers.verified === 'number'
+                  ? `${metrics.suppliers.total} registered · ${metrics.suppliers.active} quoting`
+                  : 'Not reported by server'}
               </span>
             </Card>
 
             <Card className="p-3.5 space-y-1">
               <span className="text-[11px] font-semibold text-muted-foreground">Completed POs</span>
-              <p className="text-xl font-black text-foreground">{metrics.procurement.completedOrders}</p>
-              <span className="text-[10px] text-muted-foreground">{metrics.procurement.totalRfqs} total RFQs</span>
+              <p className="text-xl font-black text-foreground" data-testid="kpi-completed-pos">
+                {typeof metrics.procurement.purchaseOrdersIssued === 'number'
+                  ? metrics.procurement.completedOrders
+                  : '—'}
+              </p>
+              <span className="text-[10px] text-muted-foreground">
+                {typeof metrics.procurement.purchaseOrdersIssued === 'number'
+                  ? `${metrics.procurement.purchaseOrdersIssued} issued or later · ${metrics.procurement.totalRfqs} total RFQs`
+                  : `${metrics.procurement.totalRfqs} total RFQs`}
+              </span>
             </Card>
 
             <Card className="p-3.5 space-y-1">
@@ -235,35 +284,58 @@ export function FounderDashboardPage({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* No persisted source exists for these three rates; they are not instrumented. */}
               <Card className="p-3.5 space-y-1">
                 <span className="text-[11px] font-semibold text-muted-foreground">Network Cache Hit Rate</span>
-                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">94.2%</p>
-                <span className="text-[10px] text-muted-foreground">&lt;30d scope reuse</span>
+                <p className="text-sm font-bold text-muted-foreground">Not instrumented</p>
+                <span className="text-[10px] text-muted-foreground">No persisted source</span>
               </Card>
 
               <Card className="p-3.5 space-y-1">
                 <span className="text-[11px] font-semibold text-muted-foreground">Zero-Call RFQs</span>
-                <p className="text-xl font-black text-foreground">88.5%</p>
-                <span className="text-[10px] text-muted-foreground">Instant local fulfillment</span>
+                <p className="text-sm font-bold text-muted-foreground">Not instrumented</p>
+                <span className="text-[10px] text-muted-foreground">No persisted source</span>
               </Card>
 
               <Card className="p-3.5 space-y-1">
                 <span className="text-[11px] font-semibold text-muted-foreground">Organic Claim Rate</span>
-                <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">32.8%</p>
-                <span className="text-[10px] text-muted-foreground">Discovered -&gt; Registered</span>
+                <p className="text-sm font-bold text-muted-foreground">Not instrumented</p>
+                <span className="text-[10px] text-muted-foreground">No persisted source</span>
               </Card>
 
               <Card className="p-3.5 space-y-1">
                 <span className="text-[11px] font-semibold text-muted-foreground">Google API Daily Budget</span>
-                <p className="text-xl font-black text-foreground">148 / 1,500</p>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">90.1% remaining</span>
+                {googleBudget ? (
+                  <>
+                    <p className="text-xl font-black text-foreground">
+                      {`${googleBudget.requestCount.toLocaleString('en-IN')} / ${googleBudgetLimit.toLocaleString('en-IN')}`}
+                    </p>
+                    <span className="text-[10px] text-muted-foreground">
+                      Requests reserved today (UTC) · configured limit
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-bold text-muted-foreground">Unavailable</p>
+                    <span className="text-[10px] text-muted-foreground">
+                      {`Counter not readable · configured limit ${googleBudgetLimit.toLocaleString('en-IN')}/day`}
+                    </span>
+                  </>
+                )}
               </Card>
             </div>
           </div>
 
           {/* Google Places Supplier Discovery Operational Visibility Card */}
           <div className="space-y-3 pt-2">
-            <GooglePlacesOperationalCard data={placesData} />
+            <GooglePlacesOperationalCard
+              data={placesData}
+              quotaCounter={
+                googleBudget
+                  ? { usedToday: googleBudget.requestCount, dailySafetyLimit: googleBudgetLimit }
+                  : null
+              }
+            />
           </div>
         </>
       )}

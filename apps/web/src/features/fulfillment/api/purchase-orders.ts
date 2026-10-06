@@ -22,6 +22,9 @@ interface PoRow {
   sgst_total?: number | null;
   utgst_total?: number | null;
   igst_total?: number | null;
+  payment_structure?: string | null;
+  payment_terms_text?: string | null;
+  payment_schedule?: unknown;
   organizations?: {
     id?: string;
     name?: string;
@@ -226,6 +229,11 @@ function mapPo(row: PoRow): PurchaseOrderSummary {
     sgstTotal: row.sgst_total != null ? Number(row.sgst_total) : undefined,
     utgstTotal: row.utgst_total != null ? Number(row.utgst_total) : undefined,
     igstTotal: row.igst_total != null ? Number(row.igst_total) : undefined,
+    paymentStructure: row.payment_structure ?? null,
+    paymentTermsText: row.payment_terms_text ?? null,
+    paymentSchedule: Array.isArray(row.payment_schedule)
+      ? (row.payment_schedule as PurchaseOrderSummary['paymentSchedule'])
+      : null,
   };
 }
 
@@ -251,6 +259,9 @@ export async function fetchPurchaseOrders(): Promise<
       sgst_total,
       utgst_total,
       igst_total,
+      payment_structure,
+      payment_terms_text,
+      payment_schedule,
       issued_at,
       acknowledged_at,
       created_at,
@@ -358,6 +369,9 @@ export async function fetchPurchaseOrder(poId: string): Promise<
       sgst_total,
       utgst_total,
       igst_total,
+      payment_structure,
+      payment_terms_text,
+      payment_schedule,
       issued_at,
       acknowledged_at,
       created_at,
@@ -639,32 +653,23 @@ export async function cancelPurchaseOrder(
     return { ok: false, error: 'A valid cancellation reason is required (minimum 5 characters).' };
   }
 
-  const { data: po, error: poErr } = await supabase
-    .from('purchase_orders')
-    .select('id, status')
-    .eq('id', cleanId)
-    .maybeSingle();
+  // Authoritative boundary: cancel_purchase_order_atomic (00239) re-checks buyer authority,
+  // supplier-acceptance state and the required reason, writes the audit event, and the
+  // purchase_orders guard trigger rejects any direct status write that bypasses it.
+  const { error: rpcErr } = await supabase.rpc('cancel_purchase_order_atomic', {
+    p_po_id: cleanId,
+    p_reason: reason.trim(),
+  });
 
-  if (poErr) return { ok: false, error: poErr.message };
-  if (!po) return { ok: false, error: 'Purchase order not found' };
-
-  if (po.status === 'ACCEPTED' || po.status === 'COMPLETED' || po.status === 'DELIVERED') {
-    return {
-      ok: false,
-      error: `Purchase order cannot be cancelled after supplier acceptance (current status: ${po.status}).`,
-    };
+  if (rpcErr) {
+    const msg = rpcErr.message || 'Failed to cancel purchase order';
+    if (msg.includes('PO-CANCEL-STATE')) {
+      return { ok: false, error: 'Purchase order cannot be cancelled after supplier acceptance.' };
+    }
+    if (msg.includes('PO-CANCEL-UNAUTHORIZED')) {
+      return { ok: false, error: 'You are not authorised to cancel this purchase order.' };
+    }
+    return { ok: false, error: msg };
   }
-
-  const { error: updateErr } = await supabase
-    .from('purchase_orders')
-    .update({
-      status: 'CANCELLED',
-      cancellation_reason: reason.trim(),
-      cancelled_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', cleanId);
-
-  if (updateErr) return { ok: false, error: updateErr.message };
   return { ok: true };
 }

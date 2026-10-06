@@ -110,7 +110,7 @@ export function QuickQuotePage() {
             The buyer and committee will compare it anonymously on merit.
           </p>
           <div className="mt-3 rounded-lg border border-emerald-200 bg-card p-2.5 text-left text-xs text-muted-foreground">
-            💡 <strong>Need to update your quote?</strong> Just tap the WhatsApp link again or reply with a new price before the deadline.
+            💡 <strong>Need to update your quote?</strong> Just open your invite link again and submit a new price before the deadline.
           </div>
           <Link
             to="/signup?side=supplier"

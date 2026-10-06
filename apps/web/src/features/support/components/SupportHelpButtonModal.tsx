@@ -511,7 +511,7 @@ export function SupportHelpButtonModal({
                         }`}
                       >
                         <span className="block font-bold">💼 Commercial &amp; Onboarding</span>
-                        <span className="text-[10px] text-muted-foreground block mt-0.5">Enterprise fleet tiers &amp; GST verification</span>
+                        <span className="text-[10px] text-muted-foreground block mt-0.5">Plans, pricing &amp; GST verification</span>
                       </button>
                     </div>
                   </div>

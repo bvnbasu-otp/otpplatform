@@ -1248,7 +1248,7 @@ export function ProfilePage() {
             <p className="font-bold text-foreground">🛡️ Merit Governance Rules</p>
             <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
               <li>Committee Members evaluate and vote on sealed quotes using identity-protected scoring.</li>
-              <li>Quorum of 2+ votes required for Community, Institution, and Enterprise organizations.</li>
+              <li>Quorum of 2+ votes required for Community and Institution organizations.</li>
             </ul>
           </div>
         </div>
@@ -1301,11 +1301,11 @@ export function ProfilePage() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-foreground">WhatsApp Channel</span>
                       <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold px-1.5 py-0.2">
-                        Instant
+                        Verification
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                      Receive 1-tap OTP logins, RFQ quotation invites, and purchase order status alerts directly on WhatsApp.
+                      Use WhatsApp for verification codes. Request invites and order alerts on WhatsApp are planned but not yet live.
                     </p>
                   </div>
                 </div>

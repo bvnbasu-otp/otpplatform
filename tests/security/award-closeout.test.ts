@@ -203,6 +203,12 @@ async function makeRound(): Promise<Round> {
     await profileIdFor(DEMO.logins.sunriseCommittee),
     await profileIdFor(DEMO.logins.sunriseCommittee2),
   ];
+  // The RFQ-level seat that close_clarification_for_evaluation (00050) would add; this fixture flips
+  // status directly, and a vote now needs appointment AND seat (00238).
+  const { error: seatError } = await service
+    .from('committee_assignments')
+    .upsert(voters.map((profile_id) => ({ rfq_id: rfq!.id, profile_id })), { onConflict: 'rfq_id,profile_id' });
+  expect(seatError).toBeNull();
   for (const profileId of voters) {
     const { error: voteError } = await service.from('committee_votes').insert({
       rfq_id: rfq!.id,

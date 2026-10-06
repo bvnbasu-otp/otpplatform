@@ -117,6 +117,7 @@ export function EvaluationDecisionCockpit({
   const [existingPoId, setExistingPoId] = useState<string | null>(null);
   const [hasMyVote, setHasMyVote] = useState(false);
   const [isSoloBuyer, setIsSoloBuyer] = useState(false);
+  const [isIndividualBuyer, setIsIndividualBuyer] = useState(false);
   const [quorumMet, setQuorumMet] = useState(false);
   const [summaryVotes, setSummaryVotes] = useState<any>(null);
 
@@ -189,6 +190,7 @@ export function EvaluationDecisionCockpit({
       if (myVoteRes.ok && myVoteRes.vote) {
         setHasMyVote(true);
         if (myVoteRes.vote.buyerType === 'INDIVIDUAL') {
+          setIsIndividualBuyer(true);
           setIsSoloBuyer(true);
         }
       }
@@ -422,8 +424,10 @@ export function EvaluationDecisionCockpit({
     setShowAwardModal(false);
     setSuccess(
       res.result.businessName
-        ? `Tender awarded successfully! Winning supplier is unmasked: ${res.result.businessName}. Official Purchase Order generated.`
-        : 'Tender awarded successfully and Purchase Order created.',
+        ? `Tender awarded successfully! Winning supplier is unmasked: ${res.result.businessName}.${res.result.poId ? ' Official Purchase Order generated.' : ''}`
+        : res.result.poId
+          ? 'Tender awarded successfully and Purchase Order created.'
+          : 'Tender awarded successfully. The winning supplier is not yet verified, so identity reveal and the Purchase Order are pending.',
     );
 
     await loadCockpitStatus();
@@ -1007,8 +1011,10 @@ export function EvaluationDecisionCockpit({
                   <div className="text-xs">
                     <span className="font-extrabold text-foreground block">Governance Approval Status:</span>
                     <span className="text-[11px] text-muted-foreground">
-                      {isSoloBuyer
-                        ? 'Solo Buyer Direct Authorization — 100% quorum satisfied'
+                      {isIndividualBuyer
+                        ? 'You decide directly. No committee vote and no quorum.'
+                        : isSoloBuyer
+                        ? 'Solo Buyer Direct Authorization — one assigned member'
                         : quorumMet
                         ? `Committee Quorum Met (${summaryVotes?.membersVoted ?? 1}/${summaryVotes?.assignedMembers ?? 1} members voted)`
                         : 'Committee Quorum Pending'}

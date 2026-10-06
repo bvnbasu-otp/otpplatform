@@ -49,7 +49,7 @@ export function SupplierDashboardPage() {
   const businessName =
     performance?.supplierName ||
     context.organizationName ||
-    (context.fullName ? `${context.fullName} Enterprises` : 'Supplier Workspace');
+    'Supplier Workspace';
 
   return (
     <div

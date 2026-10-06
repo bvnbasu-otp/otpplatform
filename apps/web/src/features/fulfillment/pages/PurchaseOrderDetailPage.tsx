@@ -1060,6 +1060,25 @@ export function PurchaseOrderDetailPage({
             </div>
           </div>
 
+          {/* Buyer-selected payment plan (frozen on the PO at award) */}
+          {order.paymentSchedule && order.paymentSchedule.length > 0 && (
+            <div className="rounded-xl border bg-muted/10 p-3 space-y-1.5" data-testid="po-payment-plan">
+              <span className="text-[10px] uppercase font-extrabold text-muted-foreground">
+                Payment Plan{order.paymentTermsText ? ` — ${order.paymentTermsText}` : ''}
+              </span>
+              <ul className="space-y-0.5 text-[11px]">
+                {order.paymentSchedule.map((s) => (
+                  <li key={s.index} className="flex items-center justify-between">
+                    <span className="text-muted-foreground">{s.label}</span>
+                    <span className="font-mono font-bold">
+                      {s.percentage}% · {formatMoney(s.amount, order.currency)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Awarded Supplier Entity */}
           <div className="rounded-xl border bg-muted/10 p-3 space-y-1.5">
             <div className="flex items-center justify-between">

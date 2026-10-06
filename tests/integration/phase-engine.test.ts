@@ -523,6 +523,11 @@ describe('refusing a vote after the voting window', () => {
       .eq('id', fixture.rfqId);
 
     const voter = await profileIdFor(DEMO.logins.sunriseCommittee);
+    // Seated, so the voting-window guard (not the 00238 seat guard) is what refuses this vote.
+    const { error: seatError } = await service
+      .from('committee_assignments')
+      .upsert({ rfq_id: fixture.rfqId, profile_id: voter }, { onConflict: 'rfq_id,profile_id' });
+    expect(seatError).toBeNull();
 
     const { error } = await service.from('committee_votes').insert({
       rfq_id: fixture.rfqId,
