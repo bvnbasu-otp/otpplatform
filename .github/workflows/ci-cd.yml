@@ -288,10 +288,126 @@ jobs:
           fi
           echo "================================================================="
 
+          # Retries only read-only `supabase migration list --linked` after a transient
+          # pooler/network failure (run #205: EAUTHQUERY auth_query timeout). SQL, schema,
+          # history, permission, and auth-configuration failures return the original exit
+          # code immediately. `supabase link` and `supabase db push` stay outside this helper.
+          migration_list_output_is_transient() {
+            local log="${1:-}"
+            local haystack
+            if [ -z "${log}" ] || [ ! -f "${log}" ]; then
+              return 1
+            fi
+            # Flatten and lowercase so matching is literal and line breaks do not matter.
+            haystack="$(tr '[:upper:]' '[:lower:]' < "${log}")"
+            haystack="${haystack//$'\r'/}"
+            haystack="${haystack//$'\n'/ }"
+            # SQL, schema, history, and migration-file failures stay fatal even if a
+            # connection phrase is also present.
+            case "${haystack}" in
+              *'syntax error'*|*'duplicate key'*|*'checksum mismatch'*|*'permission denied'*|\
+              *'insufficient privilege'*|*'row-level security'*|*'row level security'*|\
+              *'violates unique constraint'*|*'violates foreign key constraint'*|\
+              *'violates check constraint'*|*'already exists'*|*'invalid migration'*|\
+              *'invalid project'*)
+                return 1
+                ;;
+            esac
+            # Run #205 pooler timeout. Retry this even when the line also says FATAL.
+            case "${haystack}" in
+              *'eauthquery'*|*'auth_query secret check timed out'*)
+                return 0
+                ;;
+            esac
+            # Auth configuration failures are not the pooler timeout above.
+            case "${haystack}" in
+              *'password authentication failed'*|*'authentication failed'*|\
+              *'invalid access token'*|*'unauthorized'*)
+                return 1
+                ;;
+            esac
+            case "${haystack}" in
+              *'failed to connect to postgres'*|*'could not connect to server'*|\
+              *'connection refused'*|*'connection reset'*|*'connection timed out'*|\
+              *'temporary network failure'*|*'temporary failure in name resolution'*|\
+              *'no route to host'*|*'network is unreachable'*|*'upstream connect error'*|\
+              *'i/o timeout'*|*'tls handshake timeout'*|*'502 bad gateway'*|\
+              *'503 service unavailable'*|*'504 gateway timeout'*|*'504 gateway time-out'*|\
+              *'status 502'*|*'status 503'*|*'status 504'*|*'bad gateway'*|\
+              *'service unavailable'*|*'gateway timeout'*|*'gateway time-out'*)
+                return 0
+                ;;
+            esac
+            return 1
+          }
+
+          retry_linked_migration_list() {
+            local dest="${1:-}"
+            local attempt=1
+            local max_attempts=4
+            local delay=5
+            local err_log stdout_log combined
+            local status=0
+            local action="fail"
+
+            if [ -z "${dest}" ]; then
+              echo "retry_linked_migration_list: destination path is required." >&2
+              return 1
+            fi
+
+            err_log="$(mktemp)"
+            stdout_log="$(mktemp)"
+            combined="$(mktemp)"
+
+            while true; do
+              status=0
+              supabase migration list --linked --output-format json >"${stdout_log}" 2>"${err_log}" || status=$?
+              cat "${stdout_log}" > "${dest}"
+              if [ -s "${err_log}" ]; then
+                cat "${err_log}" >&2
+              fi
+
+              if [ "${status}" -eq 0 ]; then
+                if [ "${attempt}" -gt 1 ]; then
+                  echo "supabase migration list --linked succeeded on attempt ${attempt}/${max_attempts}." >&2
+                fi
+                action="ok"
+                break
+              fi
+
+              if [ -s "${stdout_log}" ]; then
+                cat "${stdout_log}" >&2
+              fi
+              cat "${stdout_log}" "${err_log}" > "${combined}"
+
+              if migration_list_output_is_transient "${combined}"; then
+                if [ "${attempt}" -ge "${max_attempts}" ]; then
+                  echo "supabase migration list --linked failed after ${max_attempts} attempts (exit ${status}); preserving failure." >&2
+                  action="fail"
+                  break
+                fi
+                echo "Transient Supabase connection failure on migration list --linked (attempt ${attempt}/${max_attempts}, exit ${status}); retrying in ${delay}s." >&2
+                sleep "${delay}"
+                attempt=$((attempt + 1))
+                delay=$((delay * 2))
+              else
+                echo "supabase migration list --linked failed with a non-retryable error (exit ${status})." >&2
+                action="fail"
+                break
+              fi
+            done
+
+            rm -f "${err_log}" "${stdout_log}" "${combined}"
+            if [ "${action}" = "ok" ]; then
+              return 0
+            fi
+            return "${status}"
+          }
+
           supabase link --project-ref "${PRODUCTION_PROJECT_REF}" --yes
 
           MIGRATION_LIST_JSON="$(mktemp)"
-          supabase migration list --linked --output-format json > "${MIGRATION_LIST_JSON}"
+          retry_linked_migration_list "${MIGRATION_LIST_JSON}"
 
           export MIGRATION_LIST_JSON
           export EXPECTED_CEILING
@@ -376,7 +492,7 @@ jobs:
 
           supabase db push --linked --yes
 
-          supabase migration list --linked --output-format json > "${MIGRATION_LIST_JSON}"
+          retry_linked_migration_list "${MIGRATION_LIST_JSON}"
           export CI_VERIFY_POST_PUSH="true"
           node <<'NODE'
           const fs = require('fs');
