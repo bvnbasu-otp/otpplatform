@@ -220,5 +220,7 @@ describe('ENT-01 yearly quarterly RFQ bonus', () => {
     expect(second).toBe(first);
     expect(allowance(4, first, NOW_JAN).canPublish).toBe(false);
     expect(allowance(4, second, NOW_JAN).canPublish).toBe(false);
+    expect(allowance(3, 0, NOW_JAN).effectivePlan).toBe('YEARLY');
   });
 });
+
