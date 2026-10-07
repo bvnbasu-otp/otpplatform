@@ -111,9 +111,11 @@ describe('record_verified_payment execute boundary', () => {
       'supabase/migrations/00202_scope_invoice_work_order_updates_and_close_client_audit_notification_inserts.sql',
       'supabase/migrations/00247_revoke_record_verified_payment_client_execute.sql',
       'tests/security/invoice-work-order-linkage-and-client-inserts-00202-redteam.test.ts',
+      'tests/security/ondc-06r-discovery-dispatch-postgres.test.ts',
       'tests/security/payment-webhook-fail-closed.test.ts',
       'tests/security/record-verified-payment-00247.test.ts',
       'tests/security/signup-buyer-type-00246.test.ts',
+      'tests/security/verified-remediation-00216-redteam.test.ts',
     ]);
     const rpcCallers = rel.filter((path) =>
       /rpc\(\s*['"]record_verified_payment['"]/.test(readFileSync(resolve(ROOT, path), 'utf8')),
