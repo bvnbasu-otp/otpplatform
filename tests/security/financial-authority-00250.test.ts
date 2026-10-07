@@ -89,6 +89,48 @@ async function asRole<T>(
   }
 }
 
+type FinancialSnapshot = {
+  versions: string[];
+  subscriptionGuard: string | null;
+  platformFeeGuard: string | null;
+  yearlyPrice: string;
+  paymentDef: string;
+};
+
+async function financialSnapshot(c: Client): Promise<FinancialSnapshot> {
+  const versions = await c.query(`SELECT version FROM supabase_migrations.schema_migrations ORDER BY version`);
+  const triggers = await c.query<{ tgname: string; def: string }>(`
+    SELECT t.tgname, pg_get_triggerdef(t.oid) AS def
+    FROM pg_trigger t
+    JOIN pg_class rel ON rel.oid = t.tgrelid
+    JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
+    WHERE NOT t.tgisinternal
+      AND nsp.nspname = 'public'
+      AND t.tgname IN (
+        'trg_aa_guard_org_subscription_entitlement_fields',
+        'trg_guard_platform_fee_client_write'
+      )
+    ORDER BY t.tgname, t.oid
+  `);
+  const defFor = (name: string) => {
+    const row = triggers.rows.find((item) => item.tgname === name);
+    return row ? String(row.def) : null;
+  };
+  const price = await c.query(
+    `SELECT private.subscription_wallet_credit_inr('INDIVIDUAL', 'YEARLY') AS amount`,
+  );
+  const body = await c.query(
+    `SELECT pg_get_functiondef('public.process_subscription_payment(uuid,text,text,numeric,text,text)'::regprocedure) AS def`,
+  );
+  return {
+    versions: versions.rows.map((row) => String(row.version)),
+    subscriptionGuard: defFor('trg_aa_guard_org_subscription_entitlement_fields'),
+    platformFeeGuard: defFor('trg_guard_platform_fee_client_write'),
+    yearlyPrice: String(price.rows[0].amount),
+    paymentDef: String(body.rows[0].def),
+  };
+}
+
 describe('financial authority 00250', () => {
   const sql = readMigration(FILE);
   const payment = functionBody(sql, 'public.process_subscription_payment');
@@ -209,15 +251,14 @@ describe('financial authority 00250', () => {
     expect(sql).not.toMatch(/record_verified_payment/);
   });
 
-  it('rolls back a local session that proves the boundary and leaves 00245 installed', async () => {
+  it('rolls back a local session that proves the boundary and restores the prior database state', async () => {
     if (!dbUp || !owner) {
       expect(true).toBe(true);
       return;
     }
     const c = new Client(LOCAL_PG);
     await c.connect();
-    const before = await c.query(`SELECT version FROM supabase_migrations.schema_migrations ORDER BY version`);
-    const beforeVersions = before.rows.map((row) => String(row.version));
+    const before = await financialSnapshot(c);
     let fnError: unknown;
     let leaked = '';
     try {
@@ -354,24 +395,21 @@ describe('financial authority 00250', () => {
         leaked = `rollback failed: ${error instanceof Error ? error.message : String(error)}`;
       }
       try {
-        const after = await c.query(`SELECT version FROM supabase_migrations.schema_migrations ORDER BY version`);
-        const afterVersions = after.rows.map((row) => String(row.version));
-        if (afterVersions.join(',') !== beforeVersions.join(',')) leaked = 'schema_migrations changed';
-        if (afterVersions.includes('00248') || afterVersions.includes('00249') || afterVersions.includes('00250')) {
-          leaked = 'a new migration version was recorded';
+        const after = await financialSnapshot(c);
+        if (!leaked && after.versions.join(',') !== before.versions.join(',')) {
+          leaked = 'schema_migrations changed';
         }
-        if (afterVersions.at(-1) !== '00245') leaked = `ceiling is ${afterVersions.at(-1)}`;
-        const trigger = await c.query(
-          `SELECT tgname FROM pg_trigger WHERE tgname IN ('trg_aa_guard_org_subscription_entitlement_fields', 'trg_guard_platform_fee_client_write')`,
-        );
-        if ((trigger.rowCount ?? 0) > 0) leaked = 'a guard trigger remained installed';
-        const restored = await c.query(`SELECT private.subscription_wallet_credit_inr('INDIVIDUAL', 'YEARLY') AS amount`);
-        if (Number(restored.rows[0].amount) !== 1990) leaked = 'price function was left replaced';
-        const body = await c.query(
-          `SELECT pg_get_functiondef('public.process_subscription_payment(uuid,text,text,numeric,text,text)'::regprocedure) AS def`,
-        );
-        if (!String(body.rows[0].def).includes('subscription_plan = v_cycle_upper')) {
-          leaked = 'payment function was left replaced';
+        if (!leaked && after.subscriptionGuard !== before.subscriptionGuard) {
+          leaked = 'subscription entitlement guard trigger changed';
+        }
+        if (!leaked && after.platformFeeGuard !== before.platformFeeGuard) {
+          leaked = 'platform fee guard trigger changed';
+        }
+        if (!leaked && after.yearlyPrice !== before.yearlyPrice) {
+          leaked = `yearly catalog price changed from ${before.yearlyPrice} to ${after.yearlyPrice}`;
+        }
+        if (!leaked && after.paymentDef !== before.paymentDef) {
+          leaked = 'process_subscription_payment definition changed';
         }
       } catch (error) {
         leaked = leaked || (error instanceof Error ? error.message : String(error));

@@ -134,15 +134,24 @@ describe('00216/00217 — live database security (REAL DATABASE)', () => {
   it('authenticated buyer cannot mint wallet credit without platform fee tx id', async () => {
     const client = createAnonClient();
     await signInAs(client, 'manager@greenview.test');
-    const { error } = await client.rpc('credit_buyer_settlement_reward_atomic', {
+    const deniedArgs = {
       p_org_id: SEED.greenviewOrg,
       p_platform_fee_tx_id: null,
       p_base_amount: 50000,
       p_fee_rate: 0.5,
       p_reward_share_rate: 20,
-    });
+    };
+    const { error } = await client.rpc('credit_buyer_settlement_reward_atomic', deniedArgs);
     expect(error).toBeTruthy();
-    expect(error?.message ?? '').toMatch(/platform_fee_tx_id is required|WALLET-REWARD-FEE/i);
+    expect(error?.message ?? '').toMatch(
+      /permission denied for function (?:public\.)?credit_buyer_settlement_reward_atomic/i,
+    );
+
+    // 00250 leaves EXECUTE with service_role, so the 00216 body still rejects a missing fee.
+    const service = createServiceClient();
+    const { error: bodyError } = await service.rpc('credit_buyer_settlement_reward_atomic', deniedArgs);
+    expect(bodyError).toBeTruthy();
+    expect(bodyError?.message ?? '').toMatch(/platform_fee_tx_id is required|WALLET-REWARD-FEE/i);
   });
 
   it('authenticated buyer cannot activate subscription with arbitrary wallet amount', async () => {
@@ -162,12 +171,21 @@ describe('00216/00217 — live database security (REAL DATABASE)', () => {
     const client = createAnonClient();
     await signInAs(client, 'manager@greenview.test');
     const fakeFeeId = '00000000-0000-4000-8000-000000000099';
-    const { error } = await client.rpc('credit_buyer_settlement_reward_atomic', {
+    const deniedArgs = {
       p_org_id: SEED.greenviewOrg,
       p_platform_fee_tx_id: fakeFeeId,
-    });
+    };
+    const { error } = await client.rpc('credit_buyer_settlement_reward_atomic', deniedArgs);
     expect(error).toBeTruthy();
-    expect(error?.message ?? '').toMatch(/not found|does not belong/i);
+    expect(error?.message ?? '').toMatch(
+      /permission denied for function (?:public\.)?credit_buyer_settlement_reward_atomic/i,
+    );
+
+    // 00250 leaves EXECUTE with service_role, so the 00216 body still rejects a missing or foreign fee.
+    const service = createServiceClient();
+    const { error: bodyError } = await service.rpc('credit_buyer_settlement_reward_atomic', deniedArgs);
+    expect(bodyError).toBeTruthy();
+    expect(bodyError?.message ?? '').toMatch(/not found|does not belong/i);
   });
 
   it('COI-declared voter cannot cast committee vote (REAL DATABASE)', async () => {

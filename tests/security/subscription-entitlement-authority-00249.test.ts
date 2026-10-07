@@ -5,10 +5,10 @@
  * it back. They do not apply 00248, do not insert schema_migrations, and do
  * not contact a hosted database.
  *
- * The 00233 body of process_subscription_payment is what the local database
- * still runs. 00249 does not replace that function. 00250 does, and it does
- * not grant a plan. The database case below calls the installed 00233 body
- * inside a transaction and rolls it back.
+ * The committed process_subscription_payment body is 00250. A client payment
+ * reference does not grant a plan or extend expiry. 00249 does not replace
+ * that function. The database case observes the installed 00250 body inside
+ * the guard transaction and rolls that transaction back.
  */
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -120,11 +120,65 @@ async function versions(c: Client): Promise<string[]> {
   return result.rows.map((row) => String(row.version));
 }
 
+type GuardSnapshot = {
+  versions: string[];
+  triggerExists: boolean;
+  triggerDef: string | null;
+  triggerEnabled: string | null;
+  guardFunctionDef: string | null;
+};
+
+async function snapshotGuard(c: Client): Promise<GuardSnapshot> {
+  const vers = await versions(c);
+  const trigger = await c.query<{ def: string; enabled: string }>(`
+    SELECT pg_get_triggerdef(t.oid) AS def, t.tgenabled::text AS enabled
+    FROM pg_trigger t
+    JOIN pg_class rel ON rel.oid = t.tgrelid
+    JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
+    WHERE NOT t.tgisinternal
+      AND t.tgname = 'trg_aa_guard_org_subscription_entitlement_fields'
+      AND nsp.nspname = 'public'
+      AND rel.relname = 'organizations'
+    ORDER BY t.oid
+  `);
+  const fn = await c.query<{ def: string }>(`
+    SELECT pg_get_functiondef(p.oid) AS def
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'private'
+      AND p.proname = 'guard_org_subscription_entitlement_fields'
+      AND p.pronargs = 0
+    ORDER BY p.oid
+  `);
+  const row = trigger.rows[0];
+  return {
+    versions: vers,
+    triggerExists: trigger.rows.length > 0,
+    triggerDef: row ? String(row.def) : null,
+    triggerEnabled: row ? String(row.enabled) : null,
+    guardFunctionDef: fn.rows[0] ? String(fn.rows[0].def) : null,
+  };
+}
+
+function firstGuardLeak(before: GuardSnapshot, after: GuardSnapshot): string {
+  if (after.versions.join(',') !== before.versions.join(',')) return 'schema_migrations changed';
+  if (after.versions.includes('00248') && !before.versions.includes('00248')) return '00248 was applied';
+  if (after.triggerExists !== before.triggerExists) {
+    return after.triggerExists
+      ? 'subscription guard trigger was left installed'
+      : 'subscription guard trigger disappeared';
+  }
+  if (after.triggerDef !== before.triggerDef) return 'subscription guard trigger definition changed';
+  if (after.triggerEnabled !== before.triggerEnabled) return 'subscription guard trigger state changed';
+  if (after.guardFunctionDef !== before.guardFunctionDef) return 'subscription guard function definition changed';
+  return '';
+}
+
 async function withGuard(fn: (c: Client) => Promise<void>): Promise<void> {
   if (!dbUp || !owner) return;
   const c = new Client(LOCAL_PG);
   await c.connect();
-  const before = await versions(c);
+  const before = await snapshotGuard(c);
   let fnError: unknown;
   let leaked = '';
   try {
@@ -142,15 +196,9 @@ async function withGuard(fn: (c: Client) => Promise<void>): Promise<void> {
       leaked = `rollback failed: ${error instanceof Error ? error.message : String(error)}`;
     }
     try {
-      const after = await versions(c);
-      const trigger = await c.query(
-        `SELECT tgname FROM pg_trigger WHERE tgname = 'trg_aa_guard_org_subscription_entitlement_fields'`,
-      );
-      if (after.join(',') !== before.join(',')) leaked = 'schema_migrations changed';
-      if ((trigger.rowCount ?? 0) > 0) leaked = 'subscription guard trigger remained installed';
-      if (after.includes('00248') && !before.includes('00248')) leaked = '00248 was applied';
+      if (!leaked) leaked = firstGuardLeak(before, await snapshotGuard(c));
     } catch (error) {
-      leaked = leaked || (error instanceof Error ? error.message : String(error));
+      if (!leaked) leaked = error instanceof Error ? error.message : String(error);
     }
     await c.end();
   }
@@ -518,25 +566,28 @@ describe('subscription entitlement authority 00249', () => {
     });
   });
 
-  it('observes that the installed local payment function still grants until 00250 is applied', async () => {
+  it('observes that a client payment reference does not grant entitlement', async () => {
     await withGuard(async (c) => {
       const id = owner!.orgId;
       const price = await c.query(
         `SELECT private.subscription_wallet_credit_inr('INDIVIDUAL', 'YEARLY') AS amount`,
       );
       const amount = price.rows[0].amount;
+      const before = await c.query(
+        `SELECT subscription_plan, subscription_status, subscription_expires_at
+         FROM public.organizations WHERE id = $1`,
+        [id],
+      );
+      const started = before.rows[0] as {
+        subscription_plan: string;
+        subscription_status: string;
+        subscription_expires_at: string | null;
+      };
       const observed = await asRole(c, 'authenticated', owner!.authUserId, async (q) => {
-        await c.query('SAVEPOINT wrong_amount');
-        let wrong: Error | null = null;
-        try {
-          await q(
-            `SELECT public.process_subscription_payment($1, 'INDIVIDUAL', 'YEARLY', 1, 'UPI-TXN-FAKE-WRONG', 'pay@otp') AS result`,
-            [id],
-          );
-        } catch (error) {
-          wrong = error instanceof Error ? error : new Error(String(error));
-        }
-        await c.query('ROLLBACK TO SAVEPOINT wrong_amount');
+        const offCatalog = await q(
+          `SELECT public.process_subscription_payment($1, 'INDIVIDUAL', 'YEARLY', 1, 'UPI-TXN-FAKE-WRONG', 'pay@otp') AS result`,
+          [id],
+        );
         const first = await q(
           `SELECT public.process_subscription_payment($1, 'INDIVIDUAL', 'YEARLY', $2, 'UPI-TXN-FAKE-ENTAUTH', 'pay@otp') AS result`,
           [id, amount],
@@ -551,26 +602,49 @@ describe('subscription entitlement authority 00249', () => {
           [id, amount],
         );
         const end = await q(
-          `SELECT subscription_expires_at FROM public.organizations WHERE id = $1`,
+          `SELECT subscription_plan, subscription_status, subscription_expires_at
+           FROM public.organizations WHERE id = $1`,
           [id],
         );
         return {
-          wrong,
-          first: first.rows[0].result as { ok?: boolean },
-          replay: replay.rows[0].result as { ok?: boolean },
-          plan: String(mid.rows[0].subscription_plan),
-          status: String(mid.rows[0].subscription_status),
-          firstExpiry: String(mid.rows[0].subscription_expires_at),
-          replayExpiry: String(end.rows[0].subscription_expires_at),
+          offCatalog: offCatalog.rows[0].result as {
+            ok?: boolean;
+            simulated?: boolean;
+            entitlement_granted?: boolean;
+            message?: string;
+          },
+          first: first.rows[0].result as {
+            ok?: boolean;
+            simulated?: boolean;
+            entitlement_granted?: boolean;
+          },
+          replay: replay.rows[0].result as { entitlement_granted?: boolean },
+          mid: mid.rows[0] as {
+            subscription_plan: string;
+            subscription_status: string;
+            subscription_expires_at: string | null;
+          },
+          end: end.rows[0] as {
+            subscription_plan: string;
+            subscription_status: string;
+            subscription_expires_at: string | null;
+          },
         };
       });
-      expect(observed.wrong).toBeInstanceOf(Error);
-      expect(String((observed.wrong as Error).message)).toMatch(/catalog price/i);
+      expect(observed.offCatalog.ok).toBe(true);
+      expect(observed.offCatalog.simulated).toBe(true);
+      expect(observed.offCatalog.entitlement_granted).toBe(false);
+      expect(String(observed.offCatalog.message ?? '')).not.toMatch(/catalog price/i);
       expect(observed.first.ok).toBe(true);
-      expect(observed.plan).toBe('YEARLY');
-      expect(observed.status).toBe('ACTIVE');
-      expect(observed.replay.ok).toBe(true);
-      expect(new Date(observed.replayExpiry).getTime()).toBeGreaterThan(new Date(observed.firstExpiry).getTime());
+      expect(observed.first.simulated).toBe(true);
+      expect(observed.first.entitlement_granted).toBe(false);
+      expect(observed.replay.entitlement_granted).toBe(false);
+      expect(observed.mid.subscription_plan).toBe(started.subscription_plan);
+      expect(observed.mid.subscription_status).toBe(started.subscription_status);
+      expect(String(observed.mid.subscription_expires_at)).toBe(String(started.subscription_expires_at));
+      expect(observed.end.subscription_plan).toBe(started.subscription_plan);
+      expect(observed.end.subscription_status).toBe(started.subscription_status);
+      expect(String(observed.end.subscription_expires_at)).toBe(String(started.subscription_expires_at));
     });
   });
 });
