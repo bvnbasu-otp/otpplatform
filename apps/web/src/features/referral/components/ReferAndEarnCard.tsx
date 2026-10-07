@@ -130,14 +130,13 @@ export function ReferAndEarnCard({
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Invite peer buyers or verified suppliers. {creditDisplay.notice}
+              Invite peer buyers or suppliers. {creditDisplay.notice}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5 self-start sm:self-auto rounded-full bg-blue-500/10 text-blue-800 dark:text-blue-300 text-[10px] font-bold px-2.5 py-1 border border-blue-500/20">
-          <span>🛡️</span>
-          <span>Controlled Pilot Sandbox</span>
+          <span>Referral credit is not cash</span>
         </div>
       </div>
 

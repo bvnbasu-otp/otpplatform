@@ -1,5 +1,7 @@
 # 10. Deployment, Production Operations & Vercel Edge Hosting
 
+> **Superseded for hosted release.** This runbook is historical. It is not the hosted Supabase migration path and not the Vercel production deploy path. `scripts/deploy-prod.ps1` is LOCAL DOCKER ONLY. Sections below that say full deploy or a production deployment pipeline describe that local Docker script. Useful history is kept. HOSTED DATABASE CEILING NOT RE-VERIFIED. DEPLOYED REVISION NOT RE-VERIFIED.
+
 ## 1. Production Deployment Architecture
 
 The OTP Platform is deployed with a decoupled architecture utilizing containerized backend services, an atomic blue-green deployment pipeline, and Vercel Global Edge CDN for the web application:
@@ -49,7 +51,7 @@ To guarantee data preservation across all operational cycles, Migrations `00125`
 > [!CAUTION]
 > **Strict Promotion Gate**: Under no circumstances is code promoted to production without passing the Staging Verification Gate. If any test case fails in developer, tester, pre-prod, staging, or demo environments, **the production website continues running on the old code flow uninterrupted**.
 
-Before any production deployment or maintenance action, the full verification battery is executed via:
+Before the historical local Docker script runs, the full verification battery in this runbook is executed via:
 ```powershell
 Set-Location "G:\My Drive\otp"
 pnpm gate:verify
@@ -71,13 +73,13 @@ pnpm gate:verify
 **Staging Gate Certificate**:
 When all tests pass (100% green across 1,514+ automated verifications), the runner generates a digitally signed JSON certificate at:
 `G:\My Drive\otp\backups\staging-gate-cert.json`
-The production deployment pipeline validates this certificate timestamp before proceeding.
+The historical local Docker script, not the hosted path, is what this runbook describes as checking that certificate timestamp before proceeding.
 
 ---
 
 ## 4. Gated Atomic Blue-Green Deployment Pipeline (`scripts/deploy-prod.ps1`)
 
-The production deployment pipeline (`scripts/deploy-prod.ps1`) orchestrates an atomic release cycle designed to guarantee zero downtime and immediate rollback capability:
+Historical local Docker script, not the hosted path: `scripts/deploy-prod.ps1` is LOCAL DOCKER ONLY. The steps below are the historical local release cycle:
 
 ```powershell
 # Standard deployment (runs staging gate, snapshot, migrations, staged build, atomic swap, smoke test)

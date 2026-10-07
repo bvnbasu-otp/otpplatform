@@ -326,8 +326,8 @@ export function compileMsmeAgreementMarkdown(agreement: MsmeRegistrationAgreemen
 2. **Anti-Self-Approval Invariant (PA-09):** The creator of a purchase requirement or RFQ is strictly prohibited from approving their own transaction, whether exercising direct role authority or acting via a delegated proxy.
 3. **Spend Delegation Boundaries:** Delegations must be explicitly time-bounded and spend-capped. A delegate cannot appoint themselves, increase their own authority limit, or delegate further without authorization.
 4. **Role Continuity & Historical Audit (PA-03):** When a managerial role transitions to a successor, all historical approvals, RFQ publications, and PO sign-offs remain permanently and immutably attributed to the original individual actor.
-5. **Supplier Platform Fee Disclosure:** The MSME Enterprise acknowledges that OTP charges a platform service fee of **0.50% (+ applicable 18% GST)** on settled purchase orders, deducted from the supplier gross contract value upon disbursement.
-6. **Double-Entry GAAP Accounting Ledger:** Platform reward credits (Cashback, Referral Bonus, Share in Success) in the OTP Wallet are non-cash promotional credits and remain strictly segregated from bilateral procurement gross merchandise value (GMV).
+5. **Supplier platform fee:** The defined commercial fee is **0.50% of the purchase-order gross, plus 18% GST on that fee**. The purchase-order gross is not rewritten. **During this pilot OTP does not charge that fee and does not deduct it from supplier disbursement.**
+6. **Wallet credits are not the order amount:** A buyer wallet credit, when one exists, is non-cash and is not purchase-order value. **This pilot does not credit Success Cashback or a share of the platform fee.** Supplier cashback is not a product. Referral wallet credit is not issued during this pilot.
 
 ---
 

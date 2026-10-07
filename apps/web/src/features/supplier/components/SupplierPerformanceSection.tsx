@@ -126,7 +126,7 @@ export function SupplierPerformanceSection({
             </li>
             <li className="flex items-start gap-1.5">
               <span className="text-primary font-bold">2.</span>
-              <span><strong>Identity-Protected Evaluation Scoring:</strong> Your verified rating adds directly to your objective merit score in the Evaluation &amp; Committee Voting Room.</span>
+              <span><strong>Identity-protected comparison:</strong> A buyer rating is not OTP verification or GST verification. Committee buyers for an RWA or MSME record a decision; an individual buyer decides directly.</span>
             </li>
             <li className="flex items-start gap-1.5">
               <span className="text-primary font-bold">3.</span>

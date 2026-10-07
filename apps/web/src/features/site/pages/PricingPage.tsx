@@ -19,30 +19,20 @@ export function PricingPage() {
       <div className="mx-auto max-w-5xl px-4 py-10 sm:py-14 overflow-x-hidden">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2">
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <span className="rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 px-3 py-1 text-xs font-bold border border-emerald-500/30">
-              ⚡ Predictable Prepaid Access
-            </span>
-            <span className="rounded-full bg-blue-500/10 text-blue-800 dark:text-blue-300 px-2.5 py-1 text-[10px] font-bold border border-blue-500/30">
-              🛡️ Controlled Pilot Sandbox
-            </span>
-            <span className="text-[10px] text-muted-foreground font-medium">Institutional Procurement OS</span>
-          </div>
+          <p className="text-[11px] font-semibold text-muted-foreground">Identity-Protected Competitive Sourcing</p>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
             Simple, Transparent Pricing
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            30-day or 365-day prepaid access for buyers. Suppliers quote <strong>100% free forever</strong> with zero listing fees.
+            30-day or 365-day prepaid access for buyers. Suppliers have no listing fee. A 0.50% platform fee is defined, and this pilot does not charge it.
           </p>
 
-          {/* Controlled Pilot Commercial Mode Disclosure */}
           <div className="mt-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-3.5 text-xs text-blue-900 dark:text-blue-200 text-left shadow-2xs space-y-1">
             <div className="flex items-center gap-2 font-bold">
-              <span>🛡️</span>
-              <span>Pilot Mode — No real payment will be charged during this pilot.</span>
+              <span>Pilot pricing</span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Real commercial pricing is published for full transparency. During our 3-month controlled pilot, subscription activation grants genuine monthly sourcing allowances (3 RFQs/mo + 1 quarterly bonus on annual plans) with ₹0 charged and zero supplier platform fee deduction.
+              Published prices are shown for transparency. During the pilot, activating a plan is not charged. The allowance is 3 requests a month, with 1 extra request each quarter on a yearly plan. Suppliers are not charged a platform fee during the pilot.
             </p>
           </div>
 
@@ -202,7 +192,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Voting Room:</strong> Sealed ballots, quorum meters ($\ge 2$), COI clearance</span>
+                  <span><strong>Committee:</strong> Recorded votes, a quorum check, and conflict-of-interest clearance</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
@@ -280,7 +270,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Integration:</strong> GST split, Tally / Zoho ERP export &amp; double-entry ledger</span>
+                  <span><strong>Records:</strong> The purchase order records the GST split from the awarded quote.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
@@ -315,7 +305,7 @@ export function PricingPage() {
                   </span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Buyers earn Success Cashback on qualifying transactions plus referral bonuses on one engine. Credits apply to OTP Subscription and Platform Fees only — not cash withdrawal, UPI, bank transfer, or supplier invoice settlement.
+                  Buyer wallet credits are non-cash. This pilot does not pay Success Cashback or referral cash. Credits are not cash withdrawal, UPI, bank transfer, or supplier invoice settlement.
                 </p>
               </div>
             </div>
@@ -340,7 +330,7 @@ export function PricingPage() {
                   </span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Earn a non-cash wallet credit based on the profile they join as: Individual ₹10 · RWA ₹25 · MSME ₹50 · Supplier ₹100. OTP sets the amount from their profile — you cannot pick the reward. The referred person is not paid. Supplier referrers need a completed OTP transaction before referral credit; a separate one-time ₹100 success reward applies after a qualifying settled OTP transaction. Wallet credits are not cash.
+                  Referral amounts are defined by the profile they join as: Individual ₹10 · RWA ₹25 · MSME ₹50 · Supplier ₹100. This pilot does not pay referral cash or the one-time ₹100 success reward. OTP sets the amount from their profile — you cannot pick the reward. The referred person is not paid. Wallet credits are not cash withdrawal.
                 </p>
               </div>
             </div>
@@ -353,7 +343,7 @@ export function PricingPage() {
           </div>
         </div>
 
-        {/* Verified Supplier Free Quote Callout Banner */}
+        {/* OTP supplier registry */}
         <div className="mt-6 rounded-2xl border-2 border-emerald-500/40 bg-card p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xl font-bold">
@@ -361,13 +351,13 @@ export function PricingPage() {
             </span>
             <div>
               <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                <span>Verified Supplier Network</span>
+                <span>OTP supplier registry</span>
                 <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold px-2 py-0.5">
                   ₹0 Free Registration
                 </span>
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Free registration, discovery, and quote submission. Simple 0.50% Platform Fulfillment Fee only on confirmed Purchase Order awards.
+                Free registration and quote submission. A 0.50% platform fee is defined on a confirmed purchase order. This pilot does not charge that fee.
               </p>
             </div>
           </div>

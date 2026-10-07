@@ -24,10 +24,17 @@ export function SignupSuccess({
   const isBuyer = result.side === 'BUYER' || copy.side === 'BUYER';
   const outcome = deriveRegistrationOutcome(result, isBuyer ? 'BUYER' : 'SUPPLIER');
   const freeCredits = typeof result.freeRfqCredits === 'number' ? result.freeRfqCredits : 0;
+  const blocked = outcome.accountState === 'AUTH_SETUP_PENDING' && outcome.notification.status === 'FAILED';
+  const pendingAuth = outcome.accountState === 'AUTH_SETUP_PENDING';
+  const markClass = blocked
+    ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+    : pendingAuth
+      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+      : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
 
   return (
     <div data-testid="signup-success" data-account-state={outcome.accountState} className="space-y-4">
-      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+      <span className={`inline-flex h-11 w-11 items-center justify-center rounded-full ${markClass}`}>
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -73,7 +80,7 @@ export function SignupSuccess({
         <div className="flex items-center justify-between border-t border-border/40 pt-2">
           <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Registration status</dt>
           <dd className="font-extrabold text-foreground flex items-center gap-1" data-testid="signup-status">
-            <span>●</span> {outcome.serverStatus}
+            <span>●</span> {outcome.statusLabel}
           </dd>
         </div>
 
@@ -96,10 +103,10 @@ export function SignupSuccess({
           purpose={result.verificationChannel === 'EMAIL' ? 'PASSWORD_RESET' : 'REGISTRATION'}
         />
       </div>
-      {result.verificationChannel === 'EMAIL' && result.guaranteedNotice && (
-        <div className="space-y-1">
+      {result.whatsappFallbackAttempted && result.guaranteedNotice && (
+        <div className="space-y-1" data-testid="whatsapp-fallback-notice">
           <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            Phone acknowledgement (separate from email verification)
+            WhatsApp fallback — email was selected, and WhatsApp was tried only after that
           </p>
           <NotificationDeliveryNotice resolution={result.guaranteedNotice} purpose="REGISTRATION" />
         </div>

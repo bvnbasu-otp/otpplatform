@@ -5,6 +5,7 @@ import {
   ONDC_SUPPLIER_NETWORK_CONTRACT_STATUS,
   SupplierDiscoverySourceKind,
   SupplierNetworkProviderKind,
+  normalizeOndcOnSearchRecord,
 } from '@otp/domain';
 import {
   assertGooglePlacesInviteEligible,
@@ -161,6 +162,42 @@ describe('supplier provider identity guards (SNE)', () => {
     ]);
     const agg = await engine.discover({ category: 'TEST' });
     expect(agg.merged.map((m) => m.placeId).sort()).toEqual(['ChIJ_a', 'ChIJ_b']);
+  });
+
+  it('canonical ONDC normalization does not create a supplier, invitation, or Place ID', () => {
+    const otpSupplierId = '11111111-1111-4111-8111-111111111111';
+    const result = normalizeOndcOnSearchRecord(
+      {
+        participantId: 'participant-foundation-a',
+        sellerId: 'seller-foundation-a',
+        sellerName: 'Reported Seller A',
+        endpoint: 'https://bpp.invalid/on_search',
+        sellerPin: '641001',
+        correlationId: 'tx-foundation-a',
+        observedAt: '2026-10-01T05:31:00.000Z',
+        domain: 'ONDC:RET12',
+      },
+      {
+        requestedPin: '560048',
+        requestedCategory: 'cotton yarn',
+        requestedSubcategoryCode: 'cotton_yarn',
+        requirementMode: 'PRODUCT_MATERIAL',
+      },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.candidate.provider).toBe(SupplierNetworkProviderKind.ONDC);
+    expect(result.candidate.providerSupplierId).not.toBe(otpSupplierId);
+    expect(result.candidate.otpSupplierId).toBeUndefined();
+    expect(result.candidate.requestedPin).toBe('560048');
+    expect(result.candidate.location?.pinCode).toBe('641001');
+    expect(result.candidate.phone).toBeUndefined();
+    expect(result.candidate).not.toHaveProperty('placeId');
+    expect(result.candidate).not.toHaveProperty('rating');
+    expect(result.candidate).not.toHaveProperty('invitationId');
+    expect(result.candidate.registered).toBe(false);
+    expect(result.candidate.provenance).toBe('ONDC_ON_SEARCH');
+    expect(JSON.stringify(result.candidate)).not.toContain('GOOGLE_PLACES');
   });
 
   it('buyer blind invitation payload omits Place ID and provider identifiers', () => {

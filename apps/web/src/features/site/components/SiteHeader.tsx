@@ -50,7 +50,10 @@ export function SiteHeader() {
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : 'U';
 
   return (
-    <header className="shrink-0 z-40 border-b bg-card max-h-[48px] h-12 select-none w-full max-w-full overflow-x-hidden">
+    <header
+      className="shrink-0 z-40 border-b bg-card max-h-[48px] h-12 select-none w-full max-w-full overflow-x-hidden"
+      data-portal-side={isSupplier ? 'supplier' : 'buyer'}
+    >
       <div className="mx-auto flex w-full h-full items-center justify-between gap-2 px-3 max-w-7xl">
         {/* Left: Brand Logo & Desktop Nav Links */}
         <div className="flex items-center gap-3 shrink-0">

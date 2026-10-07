@@ -17,6 +17,7 @@ const LOCAL_PG: ClientConfig = {
 
 let dbUp = false;
 let migrationApplied = false;
+const createdRequirementIds: string[] = [];
 
 async function withPg<T>(fn: (c: Client) => Promise<T>): Promise<T> {
   const c = new Client(LOCAL_PG);
@@ -94,6 +95,7 @@ async function seedDraftRfq(c: Client, title: string): Promise<string> {
   expect(catRow.rowCount).toBeGreaterThan(0);
   const reqId = randomUUID();
   const rfqId = randomUUID();
+  createdRequirementIds.push(reqId);
   await c.query(
     `INSERT INTO requirements (
       id, organization_id, created_by, title, status, requirement_type,
@@ -127,7 +129,14 @@ describe('00225 RFQ pin coverage supplier bridge (local postgres)', () => {
   const placeId = `ChIJ_test_bridge_${randomUUID().slice(0, 8)}`;
 
   afterEach(async () => {
-    if (!dbUp || !migrationApplied || !scopeKey) return;
+    if (!dbUp || !migrationApplied) return;
+    const requirementIds = createdRequirementIds.splice(0);
+    if (requirementIds.length > 0) {
+      await withServiceRole(async (c) => {
+        await c.query(`DELETE FROM requirements WHERE id = ANY($1::uuid[])`, [requirementIds]);
+      });
+    }
+    if (!scopeKey) return;
     await withServiceRole(async (c) => {
       await c.query(
         `DELETE FROM rfq_invitations WHERE supplier_id IN (SELECT id FROM suppliers WHERE external_place_id = $1)`,

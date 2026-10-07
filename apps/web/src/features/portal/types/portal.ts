@@ -26,6 +26,26 @@ export interface PortalCopy {
   registerSubtitle: string;
 }
 
+/**
+ * Side-panel copy once the applicant has chosen Individual.
+ * RWA and MSME keep BUYER_COPY, including committee language.
+ */
+export const INDIVIDUAL_BUYER_SUBHEAD =
+  'Raise a request once. Suppliers quote against it, you compare them side by side, and you decide directly. One buyer, one decision — no committee, no quorum, and no delegates.';
+
+export function buyerPanelSubhead(side: PortalSide, buyerType: string | null | undefined): string {
+  if (side === 'BUYER' && buyerType === 'INDIVIDUAL') return INDIVIDUAL_BUYER_SUBHEAD;
+  return copyFor(side).subhead;
+}
+
+/** Help under "Who are you buying for?". Individual does not mention a committee. */
+export function buyerApprovalHelp(buyerType: string): string {
+  if (buyerType === 'INDIVIDUAL') {
+    return 'You decide directly. No committee, no quorum, and no delegates.';
+  }
+  return 'This sets how approvals work for your account, and what a committee vote is worth.';
+}
+
 export const BUYER_COPY: PortalCopy = {
   side: 'BUYER',
   switchLabel: 'I need work to be done',

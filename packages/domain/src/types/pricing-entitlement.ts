@@ -2,13 +2,12 @@
  * OTP Platform — Pricing, RFQ Entitlement, Supplier Fee, Buyer Reward & Billing Mode Domain Model
  *
  * Implements:
- *   1. Four Standardized Subscription Tiers (Individual, RWA, MSME, Enterprise)
+ *   1. Customer plans for Individual, RWA, and MSME. ENTERPRISE is an internal compatibility object.
  *   2. Programmatic GST Calculation with Decimal-Safe Arithmetic (Default 18%)
- *   3. Calendar-Month RFQ Entitlement Engine (1st to last day of month, no rollover, 6th bonus RFQ for annual)
- *   4. "Why 5 RFQs?" Procurement Discipline Rationale
- *   5. Supplier Platform Fee (0.5% deduction on settlement without altering PO gross value)
- *   6. Buyer Sourcing Reward & Non-Cash Wallet Invariants (Annual Reset, Non-Withdrawable)
- *   7. Dynamic Fail-Safe Billing Mode Engine (PILOT_FREE vs LIVE)
+ *   3. Calendar-Month RFQ Entitlement Engine (3 RFQs, no rollover; yearly adds 1 non-carrying quarterly bonus)
+ *   4. Supplier Platform Fee (0.5%; pilot mode waives collection without altering PO gross value)
+ *   5. Buyer Sourcing Reward & Non-Cash Wallet Invariants (Annual Reset, Non-Withdrawable)
+ *   6. Dynamic Fail-Safe Billing Mode Engine (PILOT_FREE vs LIVE)
  */
 
 export type SubscriptionTierId =
@@ -656,34 +655,6 @@ export function resolveBillingMode(envMode?: string | null): BillingMode {
   if (normalized === 'PILOT_FREE' || normalized === 'PILOT') return 'PILOT_FREE';
   return 'PILOT_FREE'; // Safe default
 }
-
-/**
- * "Why 5 RFQs?" Customer-Facing Procurement Philosophy Copy
- */
-export const WHY_5_RFQS_EXPLANATION = {
-  title: 'Why 5 RFQs Per Month?',
-  headline: 'Deliberate Procurement Drives Better Supplier Quotes',
-  summary:
-    'Quality commercial procurement starts with deliberate, high-intent requirements. 5 structured RFQs per month ensure serious buyer enquiry, high supplier response rates (>90%), and deep competitive comparison without marketplace spam.',
-  points: [
-    {
-      title: 'High Supplier Engagement (>90%)',
-      description: 'Verified contractors and distributors prioritize RFQs from serious buyers over low-intent window shoppers.',
-    },
-    {
-      title: 'Deeper Competitive Comparisons',
-      description: '3–5 scored, identity-protected proposals per enquiry provide comprehensive price, delivery speed, and warranty benchmarking.',
-    },
-    {
-      title: 'Zero Lead Waste & Zero Spam',
-      description: 'Eliminates noisy broadcast spam, ensuring regional suppliers submit sharp, competitive bids within 30 minutes.',
-    },
-    {
-      title: 'Instant Additional Top-Ups (From ₹149 + GST)',
-      description: 'Need more? Persona-tailored top-up credits (Individual ₹149, RWA ₹999, MSME ₹1,499 + GST) are available anytime for surge or emergency procurement.',
-    },
-  ],
-};
 
 /**
  * Supplier Platform Fee Constants & Disclosures

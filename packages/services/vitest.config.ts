@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 export default defineConfig({
   root: resolve(__dirname),
   resolve: {
+    extensions: ['.ts', '.tsx', '.mts', '.mjs', '.js', '.json'],
     alias: {
       '@otp/domain': resolve(__dirname, '../domain/src/index.ts'),
       '@otp/database': resolve(__dirname, '../database/src/index.ts'),

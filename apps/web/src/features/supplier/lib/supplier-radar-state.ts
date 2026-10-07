@@ -2,7 +2,10 @@ import type {
   SupplierCapabilityProfile,
   SupplierRadarMatchBreakdown,
 } from '../types/capability-profile';
-import { DEFAULT_SUPPLIER_CAPABILITY_PROFILE } from '../types/capability-profile';
+import {
+  DEFAULT_SUPPLIER_CAPABILITY_PROFILE,
+  FALSE_VERIFICATION_LABELS,
+} from '../types/capability-profile';
 
 const STORAGE_KEY = 'otp_supplier_capability_profile_v1';
 export const SUPPLIER_CAPABILITIES_UPDATED_EVENT = 'otp:supplier-capabilities-updated';
@@ -25,7 +28,7 @@ export function loadSupplierCapabilityProfile(): SupplierCapabilityProfile {
         ? parsed.slaBadges
         : DEFAULT_SUPPLIER_CAPABILITY_PROFILE.slaBadges,
       certifications: Array.isArray(parsed.certifications)
-        ? parsed.certifications
+        ? parsed.certifications.filter((label) => !FALSE_VERIFICATION_LABELS.has(label))
         : DEFAULT_SUPPLIER_CAPABILITY_PROFILE.certifications,
     };
   } catch {
@@ -53,6 +56,20 @@ export function saveSupplierCapabilityProfile(
   }
 
   return updated;
+}
+
+/**
+ * Declared catalogue scope only. Self-declared credentials do not change it,
+ * and a missing catalogue does not invent a percentage boost.
+ */
+export function capabilityVisibilityScore(profile: SupplierCapabilityProfile): number {
+  return Math.min(
+    99,
+    40 +
+      profile.categories.length * 6 +
+      (profile.isPanIndia ? 20 : Math.min(20, Math.round(profile.radiusKm / 5))) +
+      profile.slaBadges.length * 4,
+  );
 }
 
 export interface RfqMatchTarget {
@@ -142,11 +159,10 @@ export function calculateRfqMatchScore(
     reasons.push(`Active SLA: ${profile.slaBadges[0]}`);
   }
 
-  // 4. Trust & Certifications (0 - 15 pts)
-  let trustScore = 8;
+  // Self-declared credentials are not verification and do not raise a trust score.
+  const trustScore = 8;
   if (profile.certifications.length > 0) {
-    trustScore = Math.min(15, 8 + profile.certifications.length * 3);
-    reasons.push(`Verified: ${profile.certifications.join(', ')}`);
+    reasons.push('Self-declared credentials (not verification)');
   }
 
   const overallScore = Math.min(99, categoryScore + radiusScore + slaScore + trustScore);

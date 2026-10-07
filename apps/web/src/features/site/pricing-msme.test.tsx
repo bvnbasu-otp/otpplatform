@@ -110,5 +110,12 @@ describe('PricingPage (Canonical 3 Tiers: Individual, RWA, MSME)', () => {
     expect(text).not.toMatch(/withdrawable/i);
     expect(text).not.toMatch(/wallet used for supplier settlement/i);
     expect(text.replace(/not cash withdrawal/gi, '')).not.toMatch(/cash withdrawal/i);
+    expect(text).not.toMatch(/Tally|Zoho|double-entry/i);
+    expect(text.replace(/does not pay Success Cashback/gi, '')).not.toMatch(/Success Cashback/i);
+    expect(text).not.toMatch(/Verified Supplier/i);
+    expect(text).not.toMatch(/5 RFQ|>90%/i);
+    expect(text).toContain('This pilot does not charge that fee');
+    expect(text).not.toMatch(/free forever/i);
+    expect(text).toContain('This pilot does not pay Success Cashback or referral cash');
   });
 });

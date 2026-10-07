@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { SiteHeader } from './SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
-import { MobileSimulatorFrame } from '@/components/layout/MobileSimulatorFrame';
 import {
   SHELL_ROOT_CLASS,
   scrollContainerProps,
@@ -20,19 +19,17 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   const showBottomNav = shouldShowGlobalBottomNav(pathname);
 
   return (
-    <MobileSimulatorFrame>
-      <div className={SHELL_ROOT_CLASS}>
-        <SiteHeader />
-        <main ref={mainRef} className={shellScrollerClass(showBottomNav)} {...scrollContainerProps('site')}>
-          <div className="flex-1">
-            {children}
-          </div>
+    <div className={SHELL_ROOT_CLASS}>
+      <SiteHeader />
+      <main ref={mainRef} className={shellScrollerClass(showBottomNav)} {...scrollContainerProps('site')}>
+        <div className="flex-1">
+          {children}
+        </div>
 
-          <SiteFooter />
-        </main>
+        <SiteFooter />
+      </main>
 
-        {showBottomNav && <MobileBottomNav />}
-      </div>
-    </MobileSimulatorFrame>
+      {showBottomNav && <MobileBottomNav />}
+    </div>
   );
 }

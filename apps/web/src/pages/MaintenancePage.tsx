@@ -453,7 +453,7 @@ export function MaintenancePage() {
 
       {/* Footer */}
       <footer className="mx-auto w-full max-w-4xl text-center text-xs text-slate-500 space-y-2">
-        <p>© {new Date().getFullYear()} OTP Platform (Open Trade &amp; Procurement) · Zero Commission · Identity-Protected Competitive Sourcing</p>
+        <p>© {new Date().getFullYear()} OTP Platform (Open Trade &amp; Procurement) · A 0.5% supplier platform fee is defined and is not charged during this pilot · Identity-Protected Competitive Sourcing</p>
         <div className="flex justify-center gap-4">
           <button
             type="button"

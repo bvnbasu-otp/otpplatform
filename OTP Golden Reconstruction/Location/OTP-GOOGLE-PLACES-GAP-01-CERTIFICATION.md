@@ -79,3 +79,89 @@ Not added. Concurrent generation and freshness are enforced in-process (`generat
 ---
 
 **Certification line:** **CONDITIONALLY CERTIFIED — EXTERNAL GOOGLE CONFIGURATION REQUIRED**
+
+---
+
+## REMEDIATION (2026-09-30)
+
+- **Root cause confirmed:** `location-pin-coverage` edge implemented an independent Google path (in-memory `inFlight`, no 30-day freshness, no durable lock, no shared 1500/day budget, no SNE-aligned persistence). Buyer (`queueBuyerPinDiscovery`) and SuperAdmin (`prepareLocationNetworkViaCoverageService`) both invoked that edge.
+- **Unified authority:** `runAuthoritativeLocationPinCoverage` (`packages/services/src/discovery/location-pin-coverage-orchestrator.ts`) is the Node production orchestrator; edge delegates via `supabase/functions/_shared/location-pin-coverage/orchestrator.ts` + Postgres RPCs in migration `00224_location_pin_coverage_authority.sql` (freshness, generation lock, daily budget, supplier persistence by Place ID).
+- **GEO:** PIN geocode is mandatory before scoped Text Search; geocode failure returns `GEOCODE_FAILED` without unrestricted text-only discovery.
+- **Mocks:** `allowLegacyMockDiscovery` remains Vitest-only; production buyer/admin paths do not reach `generateRealisticMockDiscovery`.
+- **Tests:** `location-pin-coverage-gap01.test.ts` — 13 cases covering checks A–J (authoritative orchestrator + shared store).
+- **Migration 00224:** Added; **NOT APPLIED** to hosted production in this run (SQL file only).
+- **Live Google:** Not executed; no API key configured.
+
+---
+
+## GAP-01 Production Call-Path Containment Review (2026-09-30)
+
+| # | Control | Status | Evidence |
+|---|---------|--------|----------|
+| 1 | Single orchestrator (`runAuthoritativeLocationPinCoverage`); edge is thin entry | **CLOSED** | `supabase/functions/_shared/location-pin-coverage/orchestrator.ts` imports Node orchestrator; removed duplicate geocode/text-search HTTP ladder in edge. |
+| 2 | `executeControlledDiscovery` / buyer RFQ / onboarding / schedule paths cannot HTTP Google independently | **CLOSED** | `ManagedSupplierNetworkService` routes through `invokeAuthoritativeCoverage`; legacy `executeControlledDiscovery` body removed. |
+| 3 | `discover()` / `discoverWithFallbackLadder` not unrestricted production Google entry | **CLOSED** | Tier-1 LIVE_API gated on `managedOrchestratorAuthorized`; `discoverManagedCoverage` requires `orchestratorAuthorized`. |
+| 4 | `generateRealisticMockDiscovery` Vitest-only | **CLOSED** | `isVitestMockDiscoveryAllowed()` guard + factory default `allowLegacyMockDiscovery` only when `VITEST=true`. |
+| 5 | `forceRefresh` server-authorized (not body trust) | **CLOSED** | `resolveForceRefreshAuthorization` + edge `request-auth.ts` (JWT + `profiles.is_platform_admin` / `is_founder`). |
+| 6 | Postgres authority for freshness/lock/budget (no default in-memory prod store) | **CLOSED** | `FailClosedLocationPinCoverageStore` production default; edge uses `SupabaseLocationPinCoverageStore` RPCs. |
+| 7 | Stale 15m lock: token re-check before each billable HTTP | **CLOSED** | `assertGenerationLock` on store + orchestrator/`runManagedGooglePlacesDiscovery` hooks; SQL `location_pin_coverage_assert_generation_lock` added to **00224 file** (not hosted-applied). |
+| 8 | Reserve before every geocode + text search | **CLOSED** | Orchestrator `reserveGoogleCalls` before geocode and each search term (unchanged contract, enforced on unified path). |
+| 9 | Geocode failure → `GEOCODE_FAILED`, no text-only geographic claim | **CLOSED** | `runManagedGooglePlacesDiscovery` early return; tests J + managed path. |
+| 10 | Results `DISCOVERED_IN_AREA`, Place ID dedup, bounded search terms | **CLOSED** | `rawToPersisted` / adapter mapping; domain search-term map max 3. |
+| 11 | Buyer + admin share orchestrator | **CLOSED** | Vitest: shared orchestrator case + test H. |
+| 12 | Anonymous cannot spend Google budget on edge | **CLOSED** | Edge 401 when `executeDiscovery` without JWT. |
+| 13 | SNE not redesigned; no direct Google outside orchestrator | **CLOSED** | Adapter ladder Tier-1 blocked without orchestrator flag. |
+| 14 | No live Google / no key configured in agent run | **CLOSED** | No `GOOGLE_PLACES_API_KEY` set; tests use mocked `fetchFn` only. |
+| 15 | Migration 00224 hosted apply | **NOT APPLIED** | SQL file edited for lock assert RPC only; **no** `db push` / hosted SQL. |
+| 16 | Postgres concurrency/budget RPC proof | **NOT PROVEN** | Local `127.0.0.1:54322` not exercised; no in-memory results claimed as DB tests. |
+| 17 | Targeted tests + web build | **PASS** | `location-pin-coverage-gap01.test.ts` **18/18**; `managed-supplier-network-service.test.ts` **6/6**; `apps/web` build **pass**. |
+
+### Production call graph (after containment)
+
+```
+Client (buyer/admin edge invoke)
+  → location-pin-coverage/index.ts (JWT + forceRefresh policy)
+  → runEdgeAuthoritativeLocationPinCoverage
+  → runAuthoritativeLocationPinCoverage (packages/services)
+      → LocationPinCoverageStore (Postgres RPCs on edge; FailClosed/InMemory in Node tests)
+      → reserveGoogleCalls → tryAcquireGeneration → assertGenerationLock*
+      → geocodeIndianPinCode (managed module)
+      → runManagedGooglePlacesDiscovery (orchestratorAuthorized)
+          → GooglePlacesDiscoveryAdapter.discoverManagedCoverage (orchestratorAuthorized)
+      → upsertSuppliers → completeGeneration
+
+ManagedSupplierNetworkService (Node)
+  → prepareLocationNetwork / discoverForBuyerRfq / scheduleControlledDiscovery
+  → invokeAuthoritativeCoverage → runAuthoritativeLocationPinCoverage (same graph)
+
+Blocked paths:
+  → GooglePlacesDiscoveryAdapter.discover / discoverWithFallbackLadder (no Tier-1 LIVE without flag)
+  → runManagedGooglePlacesDiscovery without orchestratorAuthorized
+  → generateRealisticMockDiscovery outside Vitest
+```
+
+### Self-audit Q1–Q15 (containment)
+
+| Q | Answer | Note |
+|---|--------|------|
+| Q1 | NO | No production module may HTTP Google without orchestrator — **enforced in code**. |
+| Q2 | NO | Edge is not a second Google implementation — **delegates to Node orchestrator**. |
+| Q3 | NO | Legacy `executeControlledDiscovery` cannot HTTP Google — **removed / delegated**. |
+| Q4 | NO | Adapter `discover()` unrestricted LIVE — **Tier-1 gated**. |
+| Q5 | NO | Mock reachable from production factory — **Vitest gate + fail-closed store**. |
+| Q6 | YES | `forceRefresh` derived server-side for edge — **buyer 403, superadmin OK**. |
+| Q7 | YES | Anonymous discovery blocked on edge execute path. |
+| Q8 | YES | Default prod store is fail-closed, not `InMemoryLocationPinCoverageStore`. |
+| Q9 | YES | Lock token checked before billable HTTP (`assertGenerationLock`). |
+| Q10 | YES | Reserve-before-fetch on geocode + each text search. |
+| Q11 | YES | Geocode failure → `GEOCODE_FAILED`. |
+| Q12 | YES | `DISCOVERED_IN_AREA` + Place ID dedup preserved. |
+| Q13 | NO | Live Google called in this run. |
+| Q14 | NO | API key configured in agent environment. |
+| Q15 | **00224 NOT APPLIED to hosted**; local apply **NO**. |
+
+### Verdict (containment pass)
+
+**BLOCKED — CODE GAP**
+
+Code-path containment for GAP-01 is implemented and covered by Vitest (24 tests in targeted suites). **Remaining gate:** Postgres concurrency/daily-budget RPC proof against migration `00224` was **not executed** (local Docker Postgres not applied/tested). Do **not** treat as ready for hosted `00224` application until real RPC tests pass.

@@ -143,7 +143,7 @@ export function DashboardPage() {
       </div>
 
       {/* Subscription Expiry & Starter Credit Banner */}
-      {subscription && (
+      {subscription && !context.isPlatformAdmin && !context.isFounder && (
         <SubscriptionExpiryBanner
           subscription={subscription}
           onRenewClick={() => setIsPaymentModalOpen(true)}
@@ -238,7 +238,7 @@ export function DashboardPage() {
       />
 
       {/* Subscription Payment & Renewal Modal */}
-      {subscription && (
+      {subscription && !context.isPlatformAdmin && !context.isFounder && (
         <SubscriptionPaymentModal
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}

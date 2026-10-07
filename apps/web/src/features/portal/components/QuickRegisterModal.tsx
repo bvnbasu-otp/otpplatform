@@ -87,12 +87,12 @@ export function QuickRegisterModal({ open, onClose }: QuickRegisterModalProps) {
                   I am a Supplier / Contractor
                 </h4>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  For Verified Vendors, Fabricators &amp; Service Providers
+                  For suppliers, fabricators, and service providers
                 </p>
               </div>
             </div>
             <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 shrink-0">
-              ₹0 Free Forever
+              Pilot: fee not charged
             </span>
           </div>
 
@@ -103,11 +103,11 @@ export function QuickRegisterModal({ open, onClose }: QuickRegisterModalProps) {
             </li>
             <li className="flex items-center gap-2">
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-              <span>Zero commissions, zero lead fees, 100% fair score ranking</span>
+              <span>No lead fee. A 0.50% platform fee is defined and is not charged during this pilot.</span>
             </li>
             <li className="flex items-center gap-2">
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-              <span>Direct Purchase Orders and instant bank settlements</span>
+              <span>Purchase orders are issued to you. The buyer pays you. OTP does not make an instant bank settlement.</span>
             </li>
           </ul>
 
@@ -118,7 +118,7 @@ export function QuickRegisterModal({ open, onClose }: QuickRegisterModalProps) {
               data-testid="quick-register-supplier-btn"
               className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 px-4 py-2.5 font-bold text-white shadow-xs transition text-xs active:scale-98 mobile-touch-target"
             >
-              <span>Register as Verified Supplier</span>
+              <span>Register as Supplier</span>
               <span>→</span>
             </Link>
           </div>

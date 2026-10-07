@@ -113,6 +113,10 @@ content_path = "./supabase/templates/invite.html"
 verify_jwt = false
 import_map = "./functions/location-pin-coverage/deno.json"
 
+[functions.ondc-on-search]
+verify_jwt = false
+import_map = "./functions/ondc-on-search/deno.json"
+
 [edge_runtime]
 enabled = false
 policy = "oneshot"

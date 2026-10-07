@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    extensions: ['.ts', '.tsx', '.mts', '.mjs', '.js', '.json'],
     alias: {
       '@': resolve(__dirname, 'apps/web/src'),
       '@otp/domain': resolve(__dirname, 'packages/domain/src/index.ts'),

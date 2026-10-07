@@ -5,6 +5,7 @@ import { ProcurementStageNavigator } from '@/features/lifecycle';
 import type { SupplierNetworkSummary } from '@otp/domain';
 import {
   discoverAndInvite,
+  discoverForRequirement,
   ensureRfqForRequirement,
   fetchInvitationCount,
   fetchMatchedSuppliers,
@@ -17,6 +18,8 @@ import { CompactRequirementContextCard } from '../components/CompactRequirementC
 import { SupplierRadarPulseBanner, type RadarBannerState } from '../components/SupplierRadarPulseBanner';
 import { SupplierCard } from '../components/SupplierCard';
 import { DirectInviteModal } from '../components/DirectInviteModal';
+import { classifyDiscoveryEmpty, discoveryFailureCopy, displayedSupplierCount } from '../lib/discovery-empty-state';
+import { sourceSummary } from '../lib/discovery-source';
 
 interface DiscoverSuppliersPageProps {
   requirementId: string;
@@ -38,7 +41,8 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
   const [isLoading, setIsLoading] = useState(true);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
-  const loadNetworksAndSuppliers = useCallback(async (id: string) => {
+  const loadNetworksAndSuppliers = useCallback(async (id: string): Promise<string | null> => {
+    let discoveryError: string | null = null;
     let [netRes, count, supRes] = await Promise.all([
       fetchSupplierNetworkSummary(id),
       fetchInvitationCount(id),
@@ -47,7 +51,10 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
     // If 0 suppliers discovered yet, run discovery automatically
     if (count === 0 || (supRes.ok && supRes.suppliers.length === 0)) {
-      await discoverAndInvite(id);
+      const discovered = await discoverForRequirement(id, 'GOOGLE_PLACES');
+      if (!discovered.ok) {
+        discoveryError = discovered.error || 'Supplier discovery failed';
+      }
       [netRes, count, supRes] = await Promise.all([
         fetchSupplierNetworkSummary(id),
         fetchInvitationCount(id),
@@ -67,7 +74,12 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
         if (prev.size > 0) return prev;
         return new Set(supRes.suppliers.map((s) => s.invitationId));
       });
+    } else {
+      setSuppliers([]);
+      discoveryError = discoveryError ?? supRes.error;
     }
+
+    return discoveryError;
   }, []);
 
   const load = useCallback(async () => {
@@ -90,7 +102,8 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
       setInvitationCount(ctxRes.context.invitationCount);
     }
 
-    await loadNetworksAndSuppliers(ensure.rfqId);
+    const discoveryError = await loadNetworksAndSuppliers(ensure.rfqId);
+    if (discoveryError) setError(discoveryError);
     setIsLoading(false);
   }, [requirementId, loadNetworksAndSuppliers]);
 
@@ -154,7 +167,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
     ALL: 'All Matched',
     HIGH_MATCH: 'High Match (85%+)',
     GST_VERIFIED: 'GST Verified',
-    LOCAL: 'Local Radius',
+    LOCAL: 'Local',
     ONDC: 'ONDC Protocol',
     OTP_NETWORK: 'OTP Network',
     DIRECT: 'Direct Invitations',
@@ -173,13 +186,46 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
     ? 'FILTERED_EMPTY'
     : 'MATCHED';
 
+  const emptyKind = classifyDiscoveryEmpty({ supplierCount: suppliers.length, error });
+  const googleCount = suppliers.filter((s) => s.network === 'GOOGLE_PLACES').length;
+  const otpCount = suppliers.filter((s) => s.network === 'OTP_REGISTERED').length;
+  const sources = sourceSummary({ google: googleCount, otp: otpCount });
+  const nobodyInvited = suppliers.length === 0 && invitationCount === 0;
+
+  async function handleSearchOtpRegistered() {
+    if (!rfqId) return;
+    setError(null);
+    setSuccess(null);
+    const discovered = await discoverAndInvite(rfqId, 'OTP_REGISTERED');
+    if (!discovered.ok) {
+      setError(discovered.error);
+      return;
+    }
+    const supRes = await fetchMatchedSuppliers(rfqId);
+    const count = await fetchInvitationCount(rfqId);
+    setInvitationCount(count);
+    if (supRes.ok) setSuppliers(supRes.suppliers);
+    if (discovered.otpRegisteredInvited === 0 && discovered.invited === 0) {
+      setSuccess('OTP registered suppliers: 0. This was not a Google Places search.');
+    } else {
+      setSuccess('OTP registered suppliers were added. They are not Google Places discoveries.');
+    }
+  }
+
   async function handleBroadcastRfq() {
     if (!rfqId) return;
     setIsBroadcasting(true);
     setError(null);
     try {
       if (invitationCount === 0 || suppliers.length === 0) {
-        await discoverAndInvite(rfqId);
+        const discovered = await discoverForRequirement(rfqId, 'GOOGLE_PLACES');
+        if (!discovered.ok || discovered.invited < 1) {
+          setError(discovered.ok
+            ? 'No suppliers are invited, so this request is not open for quotes.'
+            : discovered.error);
+          setIsBroadcasting(false);
+          return;
+        }
       }
       const openRes = await openRfq(rfqId);
       if (!openRes.ok && !openRes.error?.toLowerCase().includes('cannot open rfq from status open')) {
@@ -231,7 +277,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
       {/* Supplier Radar Pulse Banner */}
       <SupplierRadarPulseBanner
-        totalCount={suppliers.length > 0 ? suppliers.length : (invitationCount || 4)}
+        totalCount={displayedSupplierCount(suppliers.length)}
         networks={networks}
         isBroadcasting={isQuotingActive}
         state={radarState}
@@ -265,10 +311,10 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
               <span aria-hidden="true">👥</span>
-              <span>Matched Supplier Pool ({suppliers.length || (invitationCount > 0 ? invitationCount : 4)})</span>
+              <span>Matched Supplier Pool ({displayedSupplierCount(suppliers.length)})</span>
             </h2>
-            <p className="text-[11px] text-muted-foreground">
-              Suppliers submit sealed quotes under protected aliases with responses expected within 30 minutes.
+            <p className="text-[11px] text-muted-foreground" data-testid="discovery-source-summary">
+              {sources.label}
             </p>
           </div>
 
@@ -324,7 +370,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
             }`}
           >
-            ✓ GST Verified
+            ✓ GST verified
           </button>
           <button
             type="button"
@@ -336,21 +382,8 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 ? 'bg-primary text-primary-foreground shadow-2xs'
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
             }`}
-          >
-            📍 Local Radius
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === 'ONDC'}
-            onClick={() => setFilter('ONDC')}
-            className={`min-h-[48px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition mobile-touch-target ${
-              filter === 'ONDC'
-                ? 'bg-primary text-primary-foreground shadow-2xs'
-                : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
-            }`}
-          >
-            🌐 ONDC
+            >
+            📍 Local
           </button>
         </div>
 
@@ -396,13 +429,25 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
       {/* Stacked Supplier Cards List */}
       <section className="space-y-2.5" aria-label="Matched Suppliers List">
-        {suppliers.length === 0 ? (
+        {discoveryFailureCopy(emptyKind) ? (
+          <div className="rounded-xl border border-dashed p-6 text-center space-y-3 bg-card" data-testid="discovery-not-a-zero-result">
+            <h3 className="text-sm font-bold text-foreground">{discoveryFailureCopy(emptyKind)?.title}</h3>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">{discoveryFailureCopy(emptyKind)?.body}</p>
+            <button
+              type="button"
+              onClick={() => void handleSearchOtpRegistered()}
+              className="min-h-[48px] px-3.5 py-2 rounded-lg border bg-muted/40 text-foreground text-xs font-semibold hover:bg-muted transition mobile-touch-target"
+            >
+              Search OTP Registered Suppliers
+            </button>
+          </div>
+        ) : suppliers.length === 0 ? (
           /* Granular Empty State 1: No suppliers discovered yet */
           <div className="rounded-xl border border-dashed p-6 text-center space-y-3 bg-card" data-testid="empty-suppliers-pool">
             <span className="text-3xl" aria-hidden="true">🔍</span>
-            <h3 className="text-sm font-bold text-foreground">No matching suppliers found yet</h3>
+            <h3 className="text-sm font-bold text-foreground">Google Places: 0 discovered</h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              We&apos;re scanning verified networks for your requirement. You can also invite a known supplier directly via phone or email.
+              No businesses were returned for this PIN and category, and no OTP supplier was substituted. The requirement is still here. You can retry Google Places, search OTP registered suppliers, invite a known vendor, or return to the specification to edit, resume later, or leave it.
             </p>
             <div className="flex flex-wrap justify-center gap-2 pt-1">
               <button
@@ -410,7 +455,15 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 onClick={() => void load()}
                 className="min-h-[48px] px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
               >
-                Scan Networks Again
+                Retry Google Places
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSearchOtpRegistered()}
+                className="min-h-[48px] px-3.5 py-2 rounded-lg border bg-muted/40 text-foreground text-xs font-semibold hover:bg-muted transition mobile-touch-target"
+                data-testid="search-otp-registered-suppliers"
+              >
+                Search OTP Registered Suppliers
               </button>
               <button
                 type="button"
@@ -429,7 +482,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
               No suppliers match active filter &ldquo;{filterLabelMap[filter]}&rdquo;
             </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              Try switching back to &ldquo;All Matched&rdquo; or invite a known vendor directly via phone or email.
+              Try switching back to &ldquo;All Matched&rdquo; or invite a known vendor directly.
             </p>
             <div className="flex flex-wrap justify-center gap-2 pt-1">
               <button
@@ -481,8 +534,12 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" />
                 <span data-testid="selected-suppliers-count">{selectedIds.size} Suppliers Selected</span>
               </div>
-              <span className="text-[10px] text-muted-foreground block">
-                {isQuotingActive ? 'Quoting is live • Sealed quotes incoming' : 'Ready to broadcast requirement'}
+              <span className="text-[10px] text-muted-foreground block" data-testid="zero-invite-waiting">
+                {nobodyInvited
+                  ? 'No suppliers are invited. This request is waiting for discovery or an invitation. It is not collecting quotes.'
+                  : isQuotingActive
+                    ? 'Quotes can arrive from invited suppliers'
+                    : 'Ready to request offers from the invited suppliers'}
               </span>
             </div>
 
@@ -498,7 +555,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {rfqId && (rfqStatus === 'DRAFT' || !isQuotingActive) ? (
+            {rfqId && !nobodyInvited && (rfqStatus === 'DRAFT' || !isQuotingActive) ? (
               <button
                 type="button"
                 disabled={isBroadcasting}

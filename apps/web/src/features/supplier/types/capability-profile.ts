@@ -70,12 +70,19 @@ export const PRESET_SLA_OPTIONS: SlaOption[] = [
 ];
 
 export const PRESET_CERTIFICATIONS: CertificationOption[] = [
-  { id: 'gst_verified', label: 'GST Verified', icon: '🛡️', code: 'GST', description: 'Active GSTIN with verified tax filing compliance' },
-  { id: 'msme_registered', label: 'MSME Udyam Registered', icon: '🏅', code: 'UDYAM', description: 'Government registered micro/small enterprise' },
-  { id: 'msme_zed_gold', label: 'MSME ZED Gold', icon: '🥇', code: 'ZED', description: 'Zero Defect Zero Effect certified manufacturing' },
-  { id: 'iso_9001', label: 'ISO 9001:2015', icon: '📜', code: 'ISO9001', description: 'Quality Management Systems certified' },
-  { id: 'iso_14001', label: 'ISO 14001', icon: '🌿', code: 'ISO14001', description: 'Environmental Management Systems certified' },
+  { id: 'gst_claim', label: 'GSTIN claim (not verified)', icon: '🛡️', code: 'GST', description: 'Self-declared GSTIN. A checksum is format validation only — not GST verified.' },
+  { id: 'msme_claim', label: 'Udyam claim (not verified)', icon: '🏅', code: 'UDYAM', description: 'Self-declared Udyam claim. Not a government registry check.' },
+  { id: 'zed_claim', label: 'ZED claim (not verified)', icon: '🥇', code: 'ZED', description: 'Self-declared ZED claim. Not platform-verified.' },
+  { id: 'iso_9001', label: 'ISO 9001 claimed (not verified)', icon: '📜', code: 'ISO9001', description: 'Self-declared quality claim. Not platform-verified.' },
+  { id: 'iso_14001', label: 'ISO 14001 claimed (not verified)', icon: '🌿', code: 'ISO14001', description: 'Self-declared environmental claim. Not platform-verified.' },
 ];
+
+/** Labels that asserted verification without an authoritative check. */
+export const FALSE_VERIFICATION_LABELS = new Set([
+  'GST Verified',
+  'MSME Udyam Registered',
+  'MSME ZED Gold',
+]);
 
 export const DEFAULT_SUPPLIER_CAPABILITY_PROFILE: SupplierCapabilityProfile = {
   categories: [
@@ -88,8 +95,7 @@ export const DEFAULT_SUPPLIER_CAPABILITY_PROFILE: SupplierCapabilityProfile = {
   baseCity: 'Bengaluru',
   pincode: '560001',
   slaBadges: ['24h Emergency SLA', '48h Standard SLA'],
-  certifications: ['GST Verified', 'MSME Udyam Registered'],
-  gstin: '29ABCDE1234F1Z5',
+  certifications: [],
   capacityNotes: 'Up to 25 HP motors and standard industrial HVAC units.',
   updatedAt: new Date().toISOString(),
 };

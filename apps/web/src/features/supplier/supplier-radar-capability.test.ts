@@ -1,4 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import {
   DEFAULT_SUPPLIER_CAPABILITY_PROFILE,
   PRESET_CAPABILITY_CATEGORIES,
@@ -10,6 +12,7 @@ import {
   loadSupplierCapabilityProfile,
   saveSupplierCapabilityProfile,
   calculateRfqMatchScore,
+  capabilityVisibilityScore,
   SUPPLIER_CAPABILITIES_UPDATED_EVENT,
 } from './lib/supplier-radar-state';
 import { SupplierCapabilityModal } from './components/SupplierCapabilityModal';
@@ -92,20 +95,20 @@ describe('Supplier Capability Modal & Radar Matching Engine', () => {
       expect(slaLabels).toContain('Same Day Dispatch');
     });
 
-    it('defines verified business certifications including GST, MSME, and ISO', () => {
+    it('does not offer GST Verified or MSME Udyam Registered as selectable trust badges', () => {
       const certLabels = PRESET_CERTIFICATIONS.map((c) => c.label);
-      expect(certLabels).toContain('GST Verified');
-      expect(certLabels).toContain('MSME Udyam Registered');
-      expect(certLabels).toContain('MSME ZED Gold');
-      expect(certLabels).toContain('ISO 9001:2015');
+      expect(certLabels.join(' ')).not.toMatch(/GST Verified/);
+      expect(certLabels.join(' ')).not.toMatch(/MSME Udyam Registered/);
+      expect(certLabels.some((label) => /not verified/i.test(label))).toBe(true);
     });
 
-    it('provides valid default supplier capability profile', () => {
+    it('provides a default profile without a sample GSTIN or verified badges', () => {
       expect(DEFAULT_SUPPLIER_CAPABILITY_PROFILE.categories.length).toBeGreaterThanOrEqual(2);
       expect(DEFAULT_SUPPLIER_CAPABILITY_PROFILE.radiusKm).toBe(50);
       expect(DEFAULT_SUPPLIER_CAPABILITY_PROFILE.baseCity).toBe('Bengaluru');
       expect(DEFAULT_SUPPLIER_CAPABILITY_PROFILE.slaBadges).toContain('24h Emergency SLA');
-      expect(DEFAULT_SUPPLIER_CAPABILITY_PROFILE.certifications).toContain('GST Verified');
+      expect(DEFAULT_SUPPLIER_CAPABILITY_PROFILE.certifications).toEqual([]);
+      expect(DEFAULT_SUPPLIER_CAPABILITY_PROFILE.gstin).toBeUndefined();
     });
   });
 
@@ -155,7 +158,7 @@ describe('Supplier Capability Modal & Radar Matching Engine', () => {
       baseCity: 'Bengaluru',
       pincode: '560001',
       slaBadges: ['24h Emergency SLA', '48h Standard SLA'],
-      certifications: ['GST Verified', 'MSME Udyam Registered'],
+      certifications: ['ISO 9001 claimed (not verified)'],
       gstin: '29ABCDE1234F1Z5',
       updatedAt: new Date().toISOString(),
     };
@@ -176,6 +179,22 @@ describe('Supplier Capability Modal & Radar Matching Engine', () => {
       expect(breakdown.badgeLabel).toMatch(/\d+% Radar Match/);
       expect(breakdown.matchReasons.some((r) => r.includes('Motor Rewind'))).toBe(true);
       expect(breakdown.matchReasons.some((r) => r.includes('Bengaluru'))).toBe(true);
+      expect(breakdown.matchReasons.join(' ')).not.toMatch(/GST Verified|Verified:/);
+    });
+
+    it('does not raise visibility when credentials are claimed', () => {
+      const bare = capabilityVisibilityScore({
+        ...testProfile,
+        certifications: [],
+        gstin: undefined,
+      });
+      const claimed = capabilityVisibilityScore({
+        ...testProfile,
+        certifications: ['GSTIN claim (not verified)', 'Udyam claim (not verified)'],
+        gstin: '29ABCDE1234F1Z5',
+      });
+      expect(claimed).toBe(bare);
+      expect(claimed).not.toBe(69);
     });
 
     it('awards Pan-India score boost when Pan-India is active', () => {
@@ -223,6 +242,19 @@ describe('Supplier Capability Modal & Radar Matching Engine', () => {
     it('exports SupplierCapabilityModal and useSupplierRadarCapabilities', () => {
       expect(SupplierCapabilityModal).toBeDefined();
       expect(useSupplierRadarCapabilities).toBeDefined();
+    });
+
+    it('does not show a fabricated visibility boost or GST verified badges', () => {
+      const html = renderToStaticMarkup(
+        React.createElement(SupplierCapabilityModal, { open: true, onClose: () => undefined }),
+      );
+      expect(html).not.toMatch(/Visibility Boost/);
+      expect(html).not.toMatch(/GST Verified/);
+      expect(html).not.toMatch(/MSME Udyam Registered/);
+      expect(html).not.toMatch(/Trust Badges/);
+      expect(html).not.toMatch(/69%/);
+      expect(html).toMatch(/Not verified/);
+      expect(html).toMatch(/format check only/i);
     });
   });
 });

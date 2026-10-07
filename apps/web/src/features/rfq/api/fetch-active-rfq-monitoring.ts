@@ -136,7 +136,7 @@ export function computeSourcingHealth({
     description:
       quotesCount > 0
         ? `${quotesCount} quote(s) received. Sourcing on track toward ${minQuotesRequired}-quote quorum.`
-        : `Broadcasting to ${invitedCount} verified supplier(s). Inbound responses expected with 30-min supplier target.`,
+        : `Broadcasting to ${invitedCount} invited supplier(s). Inbound responses expected with 30-min supplier target.`,
     tone: 'healthy',
   };
 }
@@ -469,7 +469,7 @@ export async function fetchActiveRfqMonitoringData(
     actionRequired = {
       type: 'AWAITING_QUOTES',
       title: 'Sourcing Active — Awaiting Quotes',
-      description: `Broadcasting to ${invitedCount} verified supplier(s). Initial responses are expected with a 30 Min Target from Supplier.`,
+      description: `Broadcasting to ${invitedCount} invited supplier(s). Initial responses are expected with a 30 Min Target from Supplier.`,
       actionLabel: 'View Market Intelligence →',
       actionUrl: `/rfq/${rfq.id}/market-intelligence`,
       severity: 'info',

@@ -271,8 +271,9 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           set -euo pipefail
+          # scripts/deploy-prod.ps1 is LOCAL DOCKER ONLY (otp-prod-db). It is not this hosted path.
           PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
-          EXPECTED_CEILING="00245"
+          EXPECTED_CEILING="00247"
 
           echo "================================================================="
           echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS (Supabase CLI)"

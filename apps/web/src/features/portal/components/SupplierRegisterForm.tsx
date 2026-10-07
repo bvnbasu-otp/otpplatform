@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { validateGstin, type GstTaxpayerInfo } from '@otp/domain';
 import { Button } from '@/components/ui';
 import { PortalField, useFormText, usePortalControl } from './FormDensity';
 import { GstinAutofillField } from './GstinAutofillField';
@@ -128,9 +127,8 @@ export function SupplierRegisterForm({
       return;
     }
 
-    // B-01: the acknowledgement notice is now a guaranteed server-side send
-    // (submitSignupRequest already asked onboarding-notify to send it and
-    // put the truthful outcome on result.result.notification).
+    // Confirmation follows the channel the applicant selected. Email does not
+    // also raise a WhatsApp acknowledgement.
     setBusy(false);
     onSuccess(result.result);
   }
@@ -322,7 +320,7 @@ export function SupplierRegisterForm({
           <PortalField
             label="GSTIN / Tax Registration"
             hint="recommended"
-            help="Enter 15-digit GSTIN to auto-populate legal name & registered address, unlocking instant Verified Seller badge."
+            help="Enter a 15-digit GSTIN for a format check only. This does not verify the taxpayer or fill your business name, city, or PIN."
           >
             {({ id, describedBy, invalid }) => (
               <GstinAutofillField
@@ -331,17 +329,6 @@ export function SupplierRegisterForm({
                 onChange={setTaxId}
                 describedBy={describedBy}
                 className={control(invalid)}
-                onAutofill={(details: GstTaxpayerInfo) => {
-                  if (details.legalName && !business.trim()) {
-                    setBusiness(details.legalName);
-                  }
-                  if (details.principalAddress?.city && !city.trim()) {
-                    setCity(details.principalAddress.city);
-                  }
-                  if (details.principalAddress?.pincode && !pincode.trim()) {
-                    setPincode(details.principalAddress.pincode);
-                  }
-                }}
               />
             )}
           </PortalField>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { validateGstin, type GstTaxpayerInfo, type MsmeBusinessType, MSME_BUSINESS_TYPES } from '@otp/domain';
+import { type MsmeBusinessType, MSME_BUSINESS_TYPES } from '@otp/domain';
 import { Button } from '@/components/ui';
 import { PortalField, useFormText, usePortalControl } from './FormDensity';
 import { RoleChoiceField } from './RoleChoiceField';
@@ -15,7 +15,7 @@ import {
   type SignupResult,
   type VerificationChannel,
 } from '../api/signup';
-import { BUYER_COPY } from '../types/portal';
+import { buyerApprovalHelp, BUYER_COPY } from '../types/portal';
 import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { VerificationChoice } from './VerificationChoice';
 import { queueBuyerPinDiscovery } from '../api/location-discovery';
@@ -40,10 +40,12 @@ export function BuyerRegisterForm({
   onSignIn,
   /** Off where the page already carries the title as its own heading. */
   showHeading = true,
+  onBuyerTypeChange,
 }: {
   onSuccess: (result: SignupResult) => void;
   onSignIn: () => void;
   showHeading?: boolean;
+  onBuyerTypeChange?: (buyerType: string) => void;
 }) {
   const [searchParams] = useSearchParams();
   const urlReferral = searchParams.get('ref') || searchParams.get('referral') || '';
@@ -96,6 +98,7 @@ export function BuyerRegisterForm({
 
   function handleBuyerTypeChange(selectedType: string) {
     setBuyerType(selectedType);
+    onBuyerTypeChange?.(selectedType);
     setAgreementAccepted(false);
     if (selectedType === 'INDIVIDUAL') {
       setOrganisation('Self');
@@ -179,12 +182,8 @@ export function BuyerRegisterForm({
       });
     }
 
-    // B-01: the acknowledgement notice is now a guaranteed server-side send
-    // (submitSignupRequest already asked onboarding-notify to send it and
-    // put the truthful outcome on result.result.notification) — there is no
-    // client-side WhatsApp call left to make here, and no gate on `channel`,
-    // since both registration forms require a phone number regardless of
-    // the applicant's stated acknowledgement-channel preference.
+    // Confirmation follows the channel the applicant selected. Email does not
+    // also raise a WhatsApp acknowledgement.
     setBusy(false);
     onSuccess(result.result);
   }
@@ -209,7 +208,7 @@ export function BuyerRegisterForm({
       >
         <PortalField
           label="Who are you buying for?"
-          help="This sets how approvals work for your account, and what a committee vote is worth."
+          help={buyerApprovalHelp(buyerType)}
           error={fieldErrors.buyerType}
           required
         >
@@ -368,7 +367,7 @@ export function BuyerRegisterForm({
         <PortalField
           label="GSTIN / Tax Registration"
           hint="optional"
-          help="Enter 15-digit GSTIN to auto-populate legal business name, address, and unlock instant verified badge."
+          help="Optional 15-digit GSTIN. A valid number is a format check only. It does not verify a taxpayer or replace your organisation name."
         >
           {({ id, describedBy, invalid }) => (
             <GstinAutofillField
@@ -377,14 +376,6 @@ export function BuyerRegisterForm({
               onChange={setTaxId}
               describedBy={describedBy}
               className={control(invalid)}
-              onAutofill={(details: GstTaxpayerInfo) => {
-                if (!isIndividual && details.legalName) {
-                  setOrganisation(details.legalName);
-                }
-                if (details.pan) {
-                  setPan(details.pan);
-                }
-              }}
             />
           )}
         </PortalField>

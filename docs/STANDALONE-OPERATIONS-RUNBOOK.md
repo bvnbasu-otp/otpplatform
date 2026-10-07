@@ -1,6 +1,8 @@
 # OTP Platform — Master Operations Runbook & Automation Guide
 
-This document is the **sole authoritative operational runbook** for maintaining, testing, deploying, backing up, and troubleshooting the OTP Platform standalone.
+> **Superseded for hosted release.** This document is historical standalone / local Docker operations. It is not the hosted Supabase or Vercel production path. `scripts/deploy-prod.ps1` is LOCAL DOCKER ONLY. A "Full Deploy" row below is that local script, not a hosted production deployment. Useful history is kept.
+
+This document records the historical standalone runbook for maintaining, testing, deploying, backing up, and troubleshooting the local Docker OTP Platform.
 
 ---
 
@@ -20,7 +22,7 @@ Set-Location "G:\My Drive\otp"
 | `.\scripts\otp.ps1 status` | Diagnostic check: displays container states, loopback port listeners (3000, 3008, 5432, 8000, 54321), DB integrity lock, and live URL response. | Anytime to verify system health. |
 | `.\scripts\otp.ps1 test` | Runs web unit test suite + live un-mocked smoke test battery. | Fast verification after local code edits. |
 | `.\scripts\otp.ps1 gate` | Executes the strict **12-Layer Staging Verification Gate** (1,514+ automated verifications, 100% green required). | Pre-flight check before production promotion. |
-| `.\scripts\otp.ps1 deploy` | **Full Production Deployment Pipeline**: Dispatches `STARTING` alert -> Gate (1,514+ verifications) -> DB Backup -> Migrations (185) -> Bundle build -> Live Smoke -> `COMPLETED` alert. | When deploying changes to production live. |
+| `.\scripts\otp.ps1 deploy` | **Historical local Docker command** (formerly described as a full production pipeline): Dispatches `STARTING` alert -> Gate -> DB Backup -> Migrations -> Bundle build -> Smoke -> `COMPLETED` alert. | Not the hosted path. `deploy-prod.ps1` is LOCAL DOCKER ONLY. |
 | `.\scripts\otp.ps1 rollback` | **Instant Rollback**: Swaps active `apps/web/dist` with `apps/web/dist_prev`, restarts web server, and dispatches emergency `ROLLBACK` email & WhatsApp alerts. | If production encounters an unexpected issue. |
 | `.\scripts\otp.ps1 backup` | Dumps production database (`otp-prod-db`) to `backups/` and prunes backups older than 30 days. | Before manual DB maintenance or on-demand snapshot. |
 | `.\scripts\otp.ps1 alert` | Dispatches test email (Gmail SMTP) and WhatsApp (WAHA) alerts to verify communication channels. | To test admin notification delivery. |
@@ -138,7 +140,7 @@ Set-Location "G:\My Drive\otp"
 | **Typecheck** | `pnpm typecheck` | Strict zero-error TypeScript typecheck across monorepo packages. |
 | **Vocabulary Check** | `pnpm test:vocab` | Scans for zero prohibited procurement terms (`bid`, `bids`, `bidder`, `blind`). |
 | **Live Smoke** | `pnpm test:smoke` | Runs un-mocked checks against live running containers. |
-| **Full Deploy** | `.\scripts\deploy-prod.ps1` | Production deployment script with Staging Gate, backup, build, and auto-rollback. |
+| **Full Deploy** | `.\scripts\deploy-prod.ps1` | Historical name. LOCAL DOCKER ONLY. Not a hosted production deployment. Staging gate, backup, build, and rollback apply to the local Docker target. |
 | **Fast Update** | `.\scripts\update-live.ps1` | Fast server refresh, backup, migration sync, bundle rebuild, and live smoke test. |
 | **DB Backup** | `.\scripts\backup-prod-db.ps1` | Timestamped dump of `otp-prod-db` to `backups/`. |
 | **Alerts** | `.\scripts\send-maintenance-alert.ps1 -Stage <STARTING|COMPLETED|ROLLBACK>` | Dispatches dual-channel Gmail SMTP and WAHA WhatsApp alerts. |

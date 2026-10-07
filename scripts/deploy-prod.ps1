@@ -1,8 +1,11 @@
 <#
 .SYNOPSIS
-  OTP Platform - Production Gated Deployment Pipeline with Zero-Data-Loss and Atomic Promotion
+  LOCAL DOCKER ONLY. This script is not the hosted Supabase migration path.
 .DESCRIPTION
-  Enforces the strict platform deployment policy:
+  LOCAL DOCKER ONLY. Target is the Docker container otp-prod-db.
+  Do not use this script for hosted Supabase project qsuvtcezffomtwzwyrso.
+  Hosted migrations use GitHub Actions: supabase db push --linked.
+  Enforces the local docker deployment policy:
   1. Staging Gate: Verifies 100% green across all 902+ tests in staging/dev before touching production.
   2. Zero Data Loss: Retains Production DB, Buyer/Supplier Orders, and Org/User records unconditionally.
   3. Pre-Deployment Backup: Takes automated physical snapshot of otp-prod-db before any migration.
@@ -21,9 +24,10 @@ $ErrorActionPreference = "Stop"
 $WorkspaceRoot = (Get-Item -Path "$PSScriptRoot\..").FullName
 Set-Location $WorkspaceRoot
 
-Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host "  OTP Platform - Production Gated Deployment Pipeline" -ForegroundColor Cyan
-Write-Host "=================================================================" -ForegroundColor Cyan
+Write-Host "=================================================================" -ForegroundColor Yellow
+Write-Host "  LOCAL DOCKER ONLY - NOT HOSTED SUPABASE qsuvtcezffomtwzwyrso" -ForegroundColor Yellow
+Write-Host "  Docker target: otp-prod-db. Do not use this script for hosted production." -ForegroundColor Yellow
+Write-Host "=================================================================" -ForegroundColor Yellow
 Write-Host "Workspace  : $WorkspaceRoot" -ForegroundColor DarkGray
 Write-Host "Live URL   : $SiteUrl" -ForegroundColor DarkGray
 $nowStr = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
@@ -129,7 +133,7 @@ if (-not $gateSuccess) {
   exit 1
 }
 
-Write-Host "[OK] Staging Gate passed with 100% green scorecard. Approved for production." -ForegroundColor Green
+Write-Host "[OK] Staging Gate passed. Continuing this LOCAL DOCKER ONLY script. This is not a hosted production deploy." -ForegroundColor Green
 
 if ($DryRun) {
   Write-Host "`n[DRY-RUN] Dry run requested. Exiting without modifying production." -ForegroundColor Cyan
@@ -302,7 +306,7 @@ if (-not $smokeSuccess) {
   exit 1
 }
 
-Write-Host "[OK] All 10/10 Live Operational Smoke Checks PASSED." -ForegroundColor Green
+Write-Host "[OK] LOCAL DOCKER ONLY smoke checks passed. This is not a hosted production deploy." -ForegroundColor Green
 
 # Clean up older releases keeping last 5
 $allReleases = Get-ChildItem -Path $releasesDir -Directory | Sort-Object CreationTime -Descending
@@ -316,16 +320,16 @@ if ($allReleases.Count -gt 5) {
 # Dispatch Completion Alerts (Email + WhatsApp)
 $alertScript = Join-Path $WorkspaceRoot "scripts\send-maintenance-alert.ps1"
 if (Test-Path $alertScript) {
-  $alertMsg = "Gated deployment complete. 631 tests verified green in staging, production DB retained with zero data loss, live smoke 10/10 passed."
+  $alertMsg = "LOCAL DOCKER ONLY script finished. This is not a hosted production deployment."
   & $alertScript -Stage "COMPLETED" -Details $alertMsg -SiteUrl $SiteUrl
 }
 
 Write-Host "`n=================================================================" -ForegroundColor Cyan
-Write-Host "  [SUCCESS] PRODUCTION DEPLOYMENT COMPLETE AND 100% VERIFIED!" -ForegroundColor Green
+Write-Host "  [SUCCESS] LOCAL DOCKER ONLY. Hosted production was not deployed." -ForegroundColor Green
 Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host "Public URL       : $SiteUrl" -ForegroundColor White
+Write-Host "Display URL      : $SiteUrl" -ForegroundColor White
+Write-Host "This URL is the script default. This run did not deploy that host." -ForegroundColor White
+Write-Host "Docker database  : otp-prod-db (local container, not hosted Supabase)" -ForegroundColor White
 Write-Host "Active Release   : release_$releaseTimestamp" -ForegroundColor White
-Write-Host "Staging Gate     : 631/631 Tests Passed (100% Green)" -ForegroundColor White
-Write-Host "Production DB    : Retained with Zero Data Loss (Orders and Orgs Intact)" -ForegroundColor White
-Write-Host "Live Smoke Tests : 10/10 Passed" -ForegroundColor White
+Write-Host "Staging Gate     : passed inside this local script" -ForegroundColor White
 Write-Host ""

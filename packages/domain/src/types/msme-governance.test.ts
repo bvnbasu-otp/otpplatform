@@ -151,7 +151,13 @@ describe('MSME Spend Governance, RACI & Agreement Domain Engine', () => {
       expect(markdown).toContain('Section 10A, Information Technology Act, 2000');
       expect(markdown).toContain('Apex Precision Engineering Private Limited');
       expect(markdown).toContain('Anti-Self-Approval Invariant (PA-09)');
-      expect(markdown).toContain('0.50% (+ applicable 18% GST)');
+      expect(markdown).toContain('0.50% of the purchase-order gross, plus 18% GST on that fee');
+      expect(markdown).toContain('During this pilot OTP does not charge that fee');
+      expect(markdown).toContain('does not credit Success Cashback or a share of the platform fee');
+      expect(markdown).toContain('Supplier cashback is not a product');
+      expect(markdown).not.toContain('OTP charges a platform service fee');
+      expect(markdown).not.toContain('Double-Entry GAAP');
+      expect(markdown).not.toContain('Cashback, Referral Bonus, Share in Success');
       expect(markdown).toContain(agreement.electronicAcceptanceHash);
     });
   });

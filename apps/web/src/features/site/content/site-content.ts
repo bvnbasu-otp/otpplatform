@@ -297,7 +297,7 @@ export const CONTRASTS = {
   otp: [
     'Eliminates favoritism and vendor lock-in',
     'Prevents predatory pricing: buyer identity is protected',
-    'Assures full GST & ITC compliance upon award',
+    'The order records the quote GST. OTP does not file ITC.',
     'One consistent scoring formula for every quote',
     'Votes carry a recorded reason and end-to-end audit trail',
   ],

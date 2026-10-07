@@ -244,6 +244,16 @@ export function ActiveRfqMonitoringPage({
                 <span>Market Intelligence →</span>
               </Link>
             )}
+            {isLive && (
+              <button
+                type="button"
+                onClick={() => setIsCancelModalOpen(true)}
+                className="min-h-[48px] w-full sm:w-auto inline-flex items-center justify-center rounded-xl border px-4 py-3 text-xs font-semibold text-foreground hover:bg-muted transition mobile-touch-target"
+                data-testid="cancel-rfq-button"
+              >
+                Cancel RFQ
+              </button>
+            )}
           </div>
         </div>
       </div>

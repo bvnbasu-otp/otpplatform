@@ -11,6 +11,7 @@ export type ReferAndEarnSide = 'buyer' | 'supplier';
 export interface WalletEntitlement {
   walletPersona: WalletPersona;
   isSupplierPersona: boolean;
+  customerWalletAllowed: boolean;
   entitledWalletOrgId: string | null;
   referSide: ReferAndEarnSide;
   referIdentifier: string | null;
@@ -22,28 +23,35 @@ export interface WalletEntitlement {
  * (Person → Identity → Persona → Context → Org → Wallet), not buyer org fallbacks.
  */
 export function walletEntitlementFromContext(context: RoleContext): WalletEntitlement {
+  const platformRole = Boolean(context.isPlatformAdmin || context.isFounder);
   const walletPersona = walletPersonaFromPortalSide(context.side);
-  const isSupplierPersona = walletPersona === 'SUPPLIER';
-  const entitledWalletOrgId = resolveWalletOrganizationId({
-    portalSide: walletPersona,
-    organizationId: context.organizationId,
-    supplierId: context.supplierId,
-    organizations: context.organizations.map((o) => ({
-      id: o.id,
-      orgType: o.orgType,
-      isPersonal: o.isPersonal,
-    })),
-  });
+  const isSupplierPersona = !platformRole && walletPersona === 'SUPPLIER';
+  const customerWalletAllowed = !platformRole;
+  const entitledWalletOrgId = customerWalletAllowed
+    ? resolveWalletOrganizationId({
+        portalSide: isSupplierPersona ? 'SUPPLIER' : 'BUYER',
+        organizationId: context.organizationId,
+        supplierId: context.supplierId,
+        organizations: context.organizations.map((o) => ({
+          id: o.id,
+          orgType: o.orgType,
+          isPersonal: o.isPersonal,
+        })),
+      })
+    : null;
 
   const referSide: ReferAndEarnSide = isSupplierPersona ? 'supplier' : 'buyer';
-  const referIdentifier = isSupplierPersona
-    ? entitledWalletOrgId || context.supplierId || context.email || null
-    : entitledWalletOrgId || context.organizationId || context.email || null;
-  const referOrgName = context.organizationName || null;
+  const referIdentifier = platformRole
+    ? context.email || context.profileId
+    : isSupplierPersona
+      ? entitledWalletOrgId || context.supplierId || context.email || null
+      : entitledWalletOrgId || context.organizationId || context.email || null;
+  const referOrgName = platformRole ? null : context.organizationName || null;
 
   return {
-    walletPersona,
+    walletPersona: platformRole ? 'BUYER' : walletPersona,
     isSupplierPersona,
+    customerWalletAllowed,
     entitledWalletOrgId,
     referSide,
     referIdentifier,

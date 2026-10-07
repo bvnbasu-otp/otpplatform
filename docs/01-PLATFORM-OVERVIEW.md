@@ -1,8 +1,10 @@
 # 01. OTP Platform Overview & Product Constitution
 
+> Historical architecture note. The current customer positioning is Identity-Protected Competitive Sourcing: OTP does the procurement work, and the customer makes the decision. "Institutional Procurement Operating System" is not the public name. ONDC is not connected. A Google Places discovery is not OTP registration, OTP verification, or GST verification. Sections below keep earlier design language and are not a claim that every mechanism is live.
+
 ## 1. Mission & Category Definition
 
-The **Open Trade & Procurement (OTP) Platform** is an **Identity-Protected Institutional Procurement Operating System**.
+The **Open Trade & Procurement (OTP) Platform** is **Identity-Protected Competitive Sourcing**.
 
 In India, residential societies (RWAs), housing cooperatives, educational trusts, hospitals, and MSMEs procure billions of rupees in goods, capital projects, and services annually through fragmented, informal channels:
 - Informal WhatsApp groups and personal phone calls.

@@ -35,7 +35,7 @@ export interface GstTaxpayerInfo {
 export interface GstVerificationResult {
   verified: boolean;
   verifiedAt: string;
-  source: 'MOCK_SANDBOX' | 'LIVE_GSTN' | 'MANUAL_AUDIT';
+  source: 'MOCK_SANDBOX' | 'LIVE_GSTN' | 'MANUAL_AUDIT' | 'FORMAT_ONLY';
   details?: GstTaxpayerInfo;
   error?: string;
 }

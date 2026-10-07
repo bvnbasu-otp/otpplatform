@@ -7,7 +7,7 @@ import { BUYER_GLYPHS, SUPPLIER_GLYPHS } from '../components/PortalGlyphs';
 import { SignupSuccess } from '../components/SignupSuccess';
 import { SupplierRegisterForm } from '../components/SupplierRegisterForm';
 import type { SignupResult } from '../api/signup';
-import { copyFor, sideFromParam, sideParam, type PortalSide } from '../types/portal';
+import { buyerPanelSubhead, copyFor, sideFromParam, sideParam, type PortalSide } from '../types/portal';
 import { PRODUCT_NAME, PRODUCT_PLATFORM_SUBTITLE, PRODUCT_TITLE } from '@/lib/brand';
 
 /**
@@ -38,6 +38,7 @@ export function SignupPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [submitted, setSubmitted] = useState<SignupResult | null>(null);
+  const [buyerType, setBuyerType] = useState('');
 
   // Buying is the common case, so a bare /signup opens on it. Both sides are
   // nameable in the URL all the same: ?side=buyer is the link you send someone
@@ -49,6 +50,7 @@ export function SignupPage() {
 
   function chooseSide(next: PortalSide) {
     setSubmitted(null);
+    setBuyerType('');
     const updated = new URLSearchParams(params);
     updated.set('side', sideParam(next));
     setParams(updated, { replace: true });
@@ -140,6 +142,7 @@ export function SignupPage() {
                         onSuccess={setSubmitted}
                         onSignIn={() => navigate('/login')}
                         showHeading={false}
+                        onBuyerTypeChange={setBuyerType}
                       />
                     ) : (
                       <SupplierRegisterForm
@@ -163,7 +166,7 @@ export function SignupPage() {
             </p>
             <h1 className="mt-1 text-xl font-bold leading-tight">{copy.headline}</h1>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {copy.subhead}
+              {buyerPanelSubhead(side, buyerType)}
             </p>
 
             <ul className="mt-4 space-y-3">

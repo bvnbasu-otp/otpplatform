@@ -64,8 +64,10 @@ export interface SignupResult {
   notification?: NotificationStatusResolution;
   /** Applicant's stated verification channel (Email vs WhatsApp for codes). */
   verificationChannel?: VerificationChannel;
-  /** Server-side WhatsApp guaranteed notice (B-01), when requested separately from email channel. */
+  /** Server-side WhatsApp notice, only when WhatsApp was an explicit fallback after email. */
   guaranteedNotice?: NotificationStatusResolution;
+  /** True only when WhatsApp was attempted because the selected email channel could not be used. */
+  whatsappFallbackAttempted?: boolean;
 }
 
 export async function fetchServiceCategories(): Promise<
@@ -92,16 +94,12 @@ export async function fetchServedCities(): Promise<string[]> {
 }
 
 /**
- * Submits the registration, then asks the server for a guaranteed
- * acknowledgement notice.
+ * Submits the registration, then requests confirmation on the channel the
+ * applicant selected.
  *
- * B-01: this notice used to be a browser-side WhatsApp send the register
- * form made itself, gated on the applicant having chosen the WHATSAPP
- * acknowledgement channel — an EMAIL-channel applicant got nothing at all.
- * Both registration forms require a phone number regardless of that
- * preference, so the server now sends the same guaranteed notice over
- * WhatsApp/SMS for every applicant; `verificationChannel` remains just a
- * preference, not a gate on whether any notice is sent.
+ * Email does not also fire a WhatsApp acknowledgement. A WhatsApp failure is
+ * recorded only when WhatsApp was the selected channel, or when a later
+ * explicit email fallback sets `whatsappFallbackAttempted`.
  */
 export async function submitSignupRequest(
   input: SignupSubmission,
@@ -135,13 +133,8 @@ export async function submitSignupRequest(
 
   let notification: NotificationStatusResolution | undefined;
   let guaranteedNotice: NotificationStatusResolution | undefined;
+  const whatsappFallbackAttempted = false;
   if (requestId && !alreadySubmitted) {
-    const notifyKind = autoApproved ? 'APPROVED' : 'SUBMITTED';
-    const { delivery: waDelivery } = await invokeEdgeFunction('onboarding-notify', {
-      requestId,
-      kind: notifyKind,
-    });
-
     if (input.verificationChannel === 'EMAIL') {
       const redirectUrl =
         typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
@@ -153,8 +146,12 @@ export async function submitSignupRequest(
         },
       });
       notification = resolveSupabaseEmailDispatch(emailErr);
-      guaranteedNotice = waDelivery;
     } else {
+      const notifyKind = autoApproved ? 'APPROVED' : 'SUBMITTED';
+      const { delivery: waDelivery } = await invokeEdgeFunction('onboarding-notify', {
+        requestId,
+        kind: notifyKind,
+      });
       notification = waDelivery;
     }
   }
@@ -173,6 +170,7 @@ export async function submitSignupRequest(
       notification,
       verificationChannel: input.verificationChannel,
       guaranteedNotice,
+      whatsappFallbackAttempted,
     },
   };
 }

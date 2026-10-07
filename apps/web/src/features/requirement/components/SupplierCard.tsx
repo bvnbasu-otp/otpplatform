@@ -120,9 +120,9 @@ export function SupplierCard({
               </span>
             )}
 
-            {matchReasons.length > 0 && (
+            {matchReasons.filter((reason) => reason !== 'verified_active').length > 0 && (
               <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 font-medium text-foreground border">
-                Match signals: {matchReasons.slice(0, 3).join(', ')}
+                Match signals: {matchReasons.filter((reason) => reason !== 'verified_active').slice(0, 3).join(', ')}
               </span>
             )}
 

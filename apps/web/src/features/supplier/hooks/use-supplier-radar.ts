@@ -7,6 +7,7 @@ import {
   loadSupplierCapabilityProfile,
   saveSupplierCapabilityProfile,
   calculateRfqMatchScore,
+  capabilityVisibilityScore,
   SUPPLIER_CAPABILITIES_UPDATED_EVENT,
   type RfqMatchTarget,
 } from '../lib/supplier-radar-state';
@@ -53,15 +54,7 @@ export function useSupplierRadarCapabilities() {
     [profile],
   );
 
-  // Compute aggregate visibility / match readiness score
-  const visibilityScore = Math.min(
-    99,
-    40 +
-      profile.categories.length * 6 +
-      (profile.isPanIndia ? 20 : Math.min(20, Math.round(profile.radiusKm / 5))) +
-      profile.slaBadges.length * 4 +
-      profile.certifications.length * 5,
-  );
+  const visibilityScore = capabilityVisibilityScore(profile);
 
   return {
     profile,

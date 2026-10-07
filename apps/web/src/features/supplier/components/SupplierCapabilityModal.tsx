@@ -4,10 +4,16 @@ import {
   PRESET_CAPABILITY_CATEGORIES,
   PRESET_SLA_OPTIONS,
   PRESET_CERTIFICATIONS,
+  FALSE_VERIFICATION_LABELS,
   type SupplierCapabilityProfile,
 } from '../types/capability-profile';
 import { useSupplierRadarCapabilities } from '../hooks/use-supplier-radar';
 import { validateGstin } from '@otp/domain';
+
+function declaredCertifications(labels: string[]): string[] {
+  const allowed = new Set(PRESET_CERTIFICATIONS.map((cert) => cert.label));
+  return labels.filter((label) => allowed.has(label) && !FALSE_VERIFICATION_LABELS.has(label));
+}
 
 export interface SupplierCapabilityModalProps {
   open: boolean;
@@ -20,7 +26,7 @@ export function SupplierCapabilityModal({
   onClose,
   onSaved,
 }: SupplierCapabilityModalProps) {
-  const { profile, updateProfile, visibilityScore } = useSupplierRadarCapabilities();
+  const { profile, updateProfile } = useSupplierRadarCapabilities();
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>(profile.categories);
   const [customCategoryInput, setCustomCategoryInput] = useState('');
@@ -29,7 +35,7 @@ export function SupplierCapabilityModal({
   const [baseCity, setBaseCity] = useState<string>(profile.baseCity || 'Bengaluru');
   const [pincode, setPincode] = useState<string>(profile.pincode || '560001');
   const [selectedSlas, setSelectedSlas] = useState<string[]>(profile.slaBadges);
-  const [selectedCerts, setSelectedCerts] = useState<string[]>(profile.certifications);
+  const [selectedCerts, setSelectedCerts] = useState<string[]>(declaredCertifications(profile.certifications));
   const [gstin, setGstin] = useState<string>(profile.gstin || '');
   const [capacityNotes, setCapacityNotes] = useState<string>(profile.capacityNotes || '');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -43,7 +49,7 @@ export function SupplierCapabilityModal({
       setBaseCity(profile.baseCity || 'Bengaluru');
       setPincode(profile.pincode || '560001');
       setSelectedSlas(profile.slaBadges);
-      setSelectedCerts(profile.certifications);
+      setSelectedCerts(declaredCertifications(profile.certifications));
       setGstin(profile.gstin || '');
       setCapacityNotes(profile.capacityNotes || '');
       setSaveSuccess(false);
@@ -102,17 +108,6 @@ export function SupplierCapabilityModal({
     }, 600);
   };
 
-  // Preview projected reach boost
-  const projectedBoost = Math.min(
-    99,
-    Math.round(
-      selectedCategories.length * 8 +
-        (isPanIndia ? 25 : Math.min(25, radiusKm / 3)) +
-        selectedSlas.length * 6 +
-        selectedCerts.length * 8,
-    ),
-  );
-
   const gstinValidation = gstin ? validateGstin(gstin.trim()) : null;
 
   return (
@@ -131,42 +126,40 @@ export function SupplierCapabilityModal({
           </div>
         </div>
       }
-      subtitle="Maximize Business Reach — Update your categories, travel radius, SLAs, and verified credentials to rank higher in buyer RFQ discovery."
+      subtitle="Declare categories, travel radius, and SLAs. Credentials you select are claims, not verification, and they do not change a visibility score."
       className="sm:max-w-2xl max-h-[92vh]"
     >
       <div className="space-y-4 pb-2" data-testid="supplier-capability-modal">
         {/* 1. Live Match Radar Impact Banner */}
-        <section className="rounded-2xl bg-gradient-to-br from-purple-900 via-indigo-950 to-slate-950 text-white p-3.5 shadow-md space-y-2 border border-purple-500/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-              <span className="text-xs font-black tracking-wide text-purple-200 uppercase">
-                Radar Match Readiness
-              </span>
-            </div>
-            <span className="rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2.5 py-0.5 text-[10px] font-black">
-              ★ {projectedBoost}% Visibility Boost
+        <section className="rounded-2xl bg-gradient-to-br from-purple-900 via-indigo-950 to-slate-950 text-white p-3.5 shadow-md space-y-2 border border-purple-500/30" data-testid="capability-scope-summary">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-black tracking-wide text-purple-200 uppercase">
+              Declared scope
+            </span>
+            <span className="rounded-full bg-slate-500/30 text-slate-100 border border-slate-400/40 px-2.5 py-0.5 text-[10px] font-black">
+              Not a visibility score
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-            <div className="rounded-xl bg-white/10 p-2 backdrop-blur-xs">
+            <div className="rounded-xl bg-white/10 p-2">
               <span className="text-[10px] text-purple-200 block font-bold">Categories</span>
-              <span className="text-sm font-black text-white">{selectedCategories.length} Active</span>
+              <span className="text-sm font-black text-white">{selectedCategories.length} declared</span>
             </div>
-            <div className="rounded-xl bg-white/10 p-2 backdrop-blur-xs">
+            <div className="rounded-xl bg-white/10 p-2">
               <span className="text-[10px] text-purple-200 block font-bold">Coverage</span>
               <span className="text-sm font-black text-white">
                 {isPanIndia ? 'Pan-India' : `${radiusKm} km`}
               </span>
             </div>
-            <div className="rounded-xl bg-white/10 p-2 backdrop-blur-xs">
-              <span className="text-[10px] text-purple-200 block font-bold">Trust Badges</span>
-              <span className="text-sm font-black text-white">
-                {selectedCerts.length + selectedSlas.length} Active
-              </span>
+            <div className="rounded-xl bg-white/10 p-2">
+              <span className="text-[10px] text-purple-200 block font-bold">Credentials</span>
+              <span className="text-sm font-black text-white">Not verified</span>
             </div>
           </div>
+          <p className="text-[10px] leading-snug text-purple-100">
+            Capabilities are not GST, MSME, or OTP verification.
+          </p>
         </section>
 
         {/* 2. Domain Taxonomy & Product/Service Categories */}
@@ -372,13 +365,13 @@ export function SupplierCapabilityModal({
         {/* 5. GSTIN & Business Certifications */}
         <section className="space-y-2 rounded-xl border p-3 bg-card shadow-2xs">
           <label className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
-            <span>🛡️</span> GSTIN &amp; Verified Business Badges
+            <span>🛡️</span> GSTIN (format check only)
           </label>
 
           {/* GSTIN Input */}
           <div className="space-y-1">
             <span className="text-[10px] font-bold text-muted-foreground block">
-              15-Digit GSTIN (Increases Buyer Match Score +30%):
+              15-digit GSTIN. A valid checksum checks the number only. It does not verify a taxpayer or fill a legal name, city, or PIN.
             </span>
             <div className="flex items-center gap-2">
               <input
@@ -386,20 +379,25 @@ export function SupplierCapabilityModal({
                 maxLength={15}
                 value={gstin}
                 onChange={(e) => setGstin(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ''))}
-                placeholder="29ABCDE1234F1Z5"
+                placeholder="15-character GSTIN"
                 className="flex-1 rounded-xl border px-3 py-1.5 text-xs font-mono bg-card"
+                data-testid="capability-gstin-input"
               />
               {gstin && (
                 <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${
-                  gstinValidation?.valid ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-300' : 'text-muted-foreground'
+                  gstinValidation?.valid ? 'bg-amber-500/10 text-amber-800 border border-amber-300' : 'text-muted-foreground'
                 }`}>
-                  {gstinValidation?.valid ? `✓ ${gstinValidation.stateName}` : `${15 - gstin.length} chars`}
+                  {gstinValidation?.valid
+                    ? `Format only · ${gstinValidation.stateName}. Not GST verified.`
+                    : `${15 - gstin.length} chars`}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Trust Badges */}
+          <p className="text-[10px] text-muted-foreground">
+            Selecting a credential records a claim. It does not verify GST, Udyam, ZED, or ISO.
+          </p>
           <div className="pt-1 flex flex-wrap gap-1.5">
             {PRESET_CERTIFICATIONS.map((cert) => {
               const isSelected = selectedCerts.includes(cert.label);
@@ -410,7 +408,7 @@ export function SupplierCapabilityModal({
                   onClick={() => toggleCert(cert.label)}
                   className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-semibold transition active:scale-95 mobile-touch-target ${
                     isSelected
-                      ? 'bg-emerald-600 text-white shadow-xs'
+                      ? 'bg-purple-600 text-white shadow-xs'
                       : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                   data-testid={`cert-chip-${cert.id}`}

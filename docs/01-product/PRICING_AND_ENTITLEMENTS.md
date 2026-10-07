@@ -1,0 +1,45 @@
+# Pricing and entitlements
+
+Source: `packages/domain/src/types/pricing-entitlement.ts`, function `evaluateRfqEntitlement`, constant `SUBSCRIPTION_TIERS`. Status: `IMPLEMENTED` in domain code. Hosted enforcement: `UNKNOWN`.
+
+## Allowances
+
+| Plan | Monthly RFQs | Quarterly bonus |
+| --- | --- | --- |
+| Monthly | 3 | 0 |
+| Yearly | 3 | 1 per calendar quarter |
+
+Rules inside `evaluateRfqEntitlement`:
+
+- The month window is the calendar month. Unused monthly allowance does not roll.
+- The quarterly bonus is added only when the plan is `YEARLY`.
+- Bonus remaining is `allowance - used this quarter`, floored at 0. It does not accumulate and does not carry. The caller passes `quarterlyBonusUsedInCurrentQuarter`; the function does not store that counter itself.
+- Purchased extra credits are added on top and are not cleared by the month or quarter boundary in this function.
+- In `PILOT_FREE`, the subscription is treated as active without a payment check.
+- If the subscription is expired and the mode is not pilot, only extra credits can publish an RFQ.
+
+`WHY_5_RFQS_EXPLANATION` was removed in Phase 3. Entitlement arithmetic is unchanged: 3 RFQs a calendar month, plus one non-carrying quarterly bonus on a yearly plan. `SubscriptionPaymentModal.tsx` displays “3 RFQs/mo” and “3 RFQs/mo + 1 quarterly bonus”.
+
+## Display prices (INR, before GST on the plan)
+
+GST rate constant: `DEFAULT_GST_RATE_PERCENT = 18`.
+
+| Tier | Monthly | Yearly | Extra RFQ base |
+| --- | --- | --- | --- |
+| Individual | 199 | 1999 | 149 |
+| RWA | 1499 | 14999 | 999 |
+| MSME | 1999 | 19999 | 1499 |
+
+Yearly savings figures in the tier objects are `(monthly * 12) - yearly` as commented in the file. They are display arithmetic, not a measured discount ledger.
+
+## Supplier fee
+
+Configured commercial rate: `0.5` percent of PO gross (`DEFAULT_SUPPLIER_PLATFORM_FEE_RATE`). `calculateSupplierPlatformFeeWithGst` also applies 18 percent GST on the fee and subtracts fee-plus-GST from a disbursement figure. The PO gross flag `poGrossUntouched` stays true.
+
+Pilot waiver: `calculateSupplierPlatformFeeWithPilotMode` sets the fee rate, fee, and GST on the fee to 0 when the billing mode resolves to pilot. `PILOT_COMMERCIAL_MODE_POLICY.supplierPlatformFeeCharged` is `false`.
+
+Whether a SQL settlement function deducts 0.5 percent on a hosted row was not traced to a replacement in `00240`–`00245`. Live fee collection: `UNKNOWN`. Status of the calculator: `IMPLEMENTED`. Status of the waiver function: `IMPLEMENTED` in domain code.
+
+## What the buyer pays the supplier
+
+The public disclaimer says OTP does not collect, hold, settle, or guarantee buyer–seller payments. Record that as the customer-facing money rule. Do not describe OTP as the merchant of record for the purchase order.

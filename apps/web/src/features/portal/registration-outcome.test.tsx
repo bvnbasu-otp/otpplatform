@@ -60,15 +60,34 @@ describe('deriveRegistrationOutcome', () => {
     expect(outcome.notification.status).toBe('NOT_ATTEMPTED');
   });
 
-  it('ONBOARDED server status → account created', () => {
-    const outcome = deriveRegistrationOutcome({ ...pending, status: 'ONBOARDED' }, 'BUYER');
-    expect(outcome.accountState).toBe('ACCOUNT_ACTIVE');
-    expect(outcome.headline).toBe('Account created');
-    expect(outcome.canSignInNow).toBe(true);
-    // The account's password is unusable until the activation code is redeemed.
-    expect(outcome.body).toMatch(/activation code/);
-    expect(outcome.body).toMatch(/Forgot password\?/);
-    expect(outcome.body).not.toMatch(/sign in now/i);
+  it('ONBOARDED server status is auth setup pending, not sign-in ready', () => {
+    const outcome = deriveRegistrationOutcome(
+      { ...pending, status: 'ONBOARDED', verificationChannel: 'EMAIL' },
+      'BUYER',
+    );
+    expect(outcome.accountState).toBe('AUTH_SETUP_PENDING');
+    expect(outcome.canSignInNow).toBe(false);
+    expect(outcome.statusLabel).toBe('PENDING EMAIL');
+    expect(outcome.statusLabel).not.toBe('ONBOARDED');
+    expect(outcome.headline).not.toMatch(/account created|account is ready/i);
+    expect(outcome.body).toMatch(/not onboarded/i);
+  });
+
+  it('a failed email does not mention WhatsApp and points at Forgot password', () => {
+    const failedEmail = resolveNotificationStatus({
+      channel: 'EMAIL',
+      observation: { kind: 'HTTP_RESPONSE', httpStatus: 500, errorMessage: 'Email request failed' },
+    });
+    const outcome = deriveRegistrationOutcome(
+      { ...pending, status: 'ONBOARDED', verificationChannel: 'EMAIL', notification: failedEmail },
+      'SUPPLIER',
+    );
+    expect(outcome.accountState).toBe('AUTH_SETUP_PENDING');
+    expect(outcome.canSignInNow).toBe(false);
+    expect(outcome.statusLabel).toMatch(/EMAIL NOT DELIVERED/);
+    expect(outcome.body).toMatch(/Forgot password/);
+    expect(outcome.body).not.toMatch(/WhatsApp/i);
+    expect(outcome.headline).not.toMatch(/account created/i);
   });
 
   it('already submitted → no new account claimed', () => {
@@ -202,10 +221,16 @@ describe('signup API truthfulness', () => {
     });
     expect(res.ok).toBe(true);
     expect(mockSupabase.auth.signInWithOtp).toHaveBeenCalled();
+    expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
     if (res.ok) {
       expect(res.result.notification?.status).toBe('SUBMITTED');
       expect(res.result.notification?.channel).toBe('EMAIL');
-      expect(res.result.guaranteedNotice?.status).toBe('FAILED');
+      expect(res.result.guaranteedNotice).toBeUndefined();
+      expect(res.result.whatsappFallbackAttempted).toBe(false);
+      const html = renderSuccess(res.result, 'BUYER');
+      expect(html).not.toMatch(/WhatsApp/i);
+      expect(html).not.toContain('ONBOARDED');
+      expect(html).toContain('PENDING EMAIL');
     }
   });
 
@@ -240,7 +265,9 @@ describe('signup API truthfulness', () => {
     );
     if (res.ok) {
       expect(res.result.autoApproved).toBe(true);
-      expect(deriveRegistrationOutcome(res.result, 'BUYER').accountState).toBe('ACCOUNT_ACTIVE');
+      const outcome = deriveRegistrationOutcome(res.result, 'BUYER');
+      expect(outcome.accountState).toBe('AUTH_SETUP_PENDING');
+      expect(outcome.canSignInNow).toBe(false);
     }
   });
 
@@ -260,7 +287,8 @@ describe('signup API truthfulness', () => {
       verificationChannel: 'EMAIL',
     });
     const kinds = mockSupabase.functions.invoke.mock.calls.map((c: unknown[]) => (c[1] as { body: { kind: string } }).body.kind);
-    expect(kinds).toEqual(['SUBMITTED']);
+    expect(kinds).toEqual([]);
+    expect(mockSupabase.auth.signInWithOtp).toHaveBeenCalled();
   });
 
   it('sendVerificationCode fails closed when the server cannot issue a code (no fallback code)', async () => {

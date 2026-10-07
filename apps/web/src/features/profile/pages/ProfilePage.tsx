@@ -487,6 +487,7 @@ export function ProfilePage() {
     }
   }
 
+  const showCustomerWallet = !context.isPlatformAdmin && !context.isFounder;
   const roleSuggestions = context.isPlatformAdmin
     ? ['Platform Super Administrator', 'Lead Operations Engineer', 'DevOps & Security Lead']
     : context.side === 'SUPPLIER'
@@ -626,7 +627,7 @@ export function ProfilePage() {
       {activeTab === 'profile' && (
         <div className="space-y-3">
           {/* Subscription Expiry & Starter Credit Banner */}
-          {subscription && !isSupplierPersona ? (
+          {subscription && showCustomerWallet && !isSupplierPersona ? (
             <SubscriptionExpiryBanner
               subscription={subscription}
               onRenewClick={() => setIsPaymentModalOpen(true)}
@@ -655,11 +656,13 @@ export function ProfilePage() {
           ) : null}
 
           {/* OTP Wallet Credits Widget */}
+          {showCustomerWallet && (
           <OtpWalletCreditsWidget
             organizationId={entitledWalletOrgId || undefined}
             persona={walletPersona}
             onApplyRenewal={() => setIsPaymentModalOpen(true)}
           />
+          )}
 
           <ReferAndEarnCard
             identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}

@@ -3,6 +3,9 @@ import { resolve } from 'node:path';
 
 export default defineConfig({
   root: resolve(__dirname),
+  resolve: {
+    extensions: ['.ts', '.tsx', '.mts', '.mjs', '.js', '.json'],
+  },
   esbuild: {
     tsconfigRaw: {
       compilerOptions: {

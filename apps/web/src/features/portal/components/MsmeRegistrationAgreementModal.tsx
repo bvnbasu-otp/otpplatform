@@ -40,12 +40,12 @@ export function MsmeRegistrationAgreementModal({
   const now = new Date();
   const agreementData: MsmeRegistrationAgreement = {
     organizationId: `msme-${Date.now().toString().slice(-6)}`,
-    businessName: businessName || 'Commercial Enterprise',
+    businessName: businessName || 'Your business',
     businessType,
     gstin: gstin || undefined,
     pan: pan || undefined,
     primaryOfficerName: primaryOfficerName || 'Authorized Primary Administrator',
-    primaryOfficerEmail: primaryOfficerEmail || 'officer@enterprise.in',
+    primaryOfficerEmail: primaryOfficerEmail || 'officer@example.com',
     primaryOfficerPhone: primaryOfficerPhone || '+91 98000 00000',
     registeredAddress,
     operationalAddress: registeredAddress,
@@ -79,7 +79,7 @@ export function MsmeRegistrationAgreementModal({
             <span className="text-lg">📜</span>
             <div>
               <h3 className="text-sm sm:text-base font-bold text-foreground">
-                MSME Institutional Procurement OS Agreement
+                MSME procurement agreement
               </h3>
               <p className="text-[11px] text-muted-foreground">
                 Official procurement governance agreement for MSMEs, commercial firms &amp; workshops
@@ -155,10 +155,10 @@ export function MsmeRegistrationAgreementModal({
 
               <div className="rounded-xl border border-border bg-card p-3.5 space-y-2">
                 <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  <span>💼</span> Transparent 0.50% Supplier Platform Fee
+                  <span>💼</span> Supplier platform fee, not charged in this pilot
                 </span>
                 <p className="text-muted-foreground">
-                  OTP charges an institutional platform fee of 0.50% (+ applicable 18% GST) on settled purchase orders, deducted from supplier disbursements. The buyer PO gross amount remains strictly untouched.
+                  The defined commercial fee is 0.50% of the purchase-order gross, plus 18% GST on that fee. The purchase-order gross is not rewritten. During this pilot OTP does not charge that fee and does not deduct it from supplier disbursement. Supplier cashback is not a product.
                 </p>
               </div>
             </div>

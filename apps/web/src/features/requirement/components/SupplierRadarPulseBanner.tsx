@@ -57,8 +57,8 @@ export function SupplierRadarPulseBanner({
   let statusBadge = displayTotal > 0 ? `${displayTotal} Suppliers found` : 'Discovery in progress';
   let descriptionText =
     displayTotal > 0
-      ? 'Suppliers found across OTP Verified, network, and local business sources.'
-      : 'Searching OTP Verified suppliers, network partners, and local businesses near your delivery PIN.';
+      ? 'Suppliers found across OTP suppliers, network partners, and local businesses.'
+      : 'Searching OTP suppliers, network partners, and local businesses near your delivery PIN.';
   let liveRegionText =
     displayTotal > 0
       ? `${displayTotal} suppliers found.`
@@ -70,7 +70,7 @@ export function SupplierRadarPulseBanner({
     case 'DISCOVERING':
       statusBadge = 'Scanning…';
       descriptionText =
-        'Searching OTP Verified suppliers, network partners, and local businesses near your delivery PIN.';
+        'Searching OTP suppliers, network partners, and local businesses near your delivery PIN.';
       liveRegionText = 'Discovering suppliers.';
       pulseColor = 'bg-blue-500';
       pingColor = 'bg-blue-400';
@@ -133,7 +133,15 @@ export function SupplierRadarPulseBanner({
             />
             <span className={`relative inline-flex rounded-full h-3 w-3 ${pulseColor}`} />
           </span>
-          <h2 className="text-xs sm:text-sm font-bold text-white tracking-wide">Suppliers found</h2>
+          <h2 className="text-xs sm:text-sm font-bold text-white tracking-wide">
+            {effectiveState === 'EMPTY'
+              ? 'No suppliers matched'
+              : effectiveState === 'ERROR'
+                ? 'Discovery unavailable'
+                : effectiveState === 'FILTERED_EMPTY'
+                  ? 'No suppliers in this filter'
+                  : 'Suppliers found'}
+          </h2>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -165,7 +173,7 @@ export function SupplierRadarPulseBanner({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 relative z-10" data-testid="supplier-discovery-counts">
         <div className="rounded-lg border border-slate-800 bg-slate-800/60 p-2 flex items-center justify-between text-xs">
-          <span className="text-[11px] font-bold text-slate-100">OTP Verified</span>
+          <span className="text-[11px] font-bold text-slate-100">OTP suppliers</span>
           <span className="text-[10px] font-bold text-emerald-400">{otpCount}</span>
         </div>
         <div className="rounded-lg border border-slate-800 bg-slate-800/60 p-2 flex items-center justify-between text-xs">

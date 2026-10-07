@@ -80,8 +80,8 @@ export function OtpWalletCreditsWidget({
 
   const title = isSupplier ? 'OTP Supplier Wallet' : 'OTP Buyer Wallet';
   const subtitle = isSupplier
-    ? 'Referral bonus and one-time success rewards only. Credits apply to OTP subscription and platform fees — not cash, GMV, or bank transfer.'
-    : 'Success Cashback and referral bonuses only. Redeemable for OTP subscription renewals and platform fees — not procurement GMV or cash-out.';
+    ? 'Referral and success-reward types are defined. A balance can be applied to an OTP subscription renewal. Not cash, and not a bank transfer.'
+    : 'Non-cash wallet balance. Redeemable for an OTP subscription renewal. This pilot does not credit Success Cashback or a referral wallet amount.';
 
   return (
     <div
@@ -158,7 +158,7 @@ export function OtpWalletCreditsWidget({
                 ₹{referralBonusCredits.toLocaleString('en-IN')}
               </p>
               <p className="text-[9px] text-muted-foreground">
-                After your first completed OTP transaction (server-set amounts)
+                Not issued as wallet credit during this pilot.
               </p>
             </div>
             <div className="rounded-xl bg-background/60 p-2.5 border border-border/60">
@@ -169,7 +169,7 @@ export function OtpWalletCreditsWidget({
               <p className="text-xs font-black text-foreground mt-0.5">
                 ₹{successRewardCredits.toLocaleString('en-IN')}
               </p>
-              <p className="text-[9px] text-muted-foreground">One-time ₹100 after first settled platform fee</p>
+              <p className="text-[9px] text-muted-foreground">Defined as ₹100 after a settled platform fee. This pilot does not settle that fee, so it is not credited.</p>
             </div>
           </>
         ) : (
@@ -182,7 +182,7 @@ export function OtpWalletCreditsWidget({
               <p className="text-xs font-black text-foreground mt-0.5">
                 ₹{successCashbackCredits.toLocaleString('en-IN')}
               </p>
-              <p className="text-[9px] text-muted-foreground">0.1% share of applicable platform fee (Share-in-Success)</p>
+              <p className="text-[9px] text-muted-foreground">Not credited during this pilot.</p>
             </div>
             <div className="rounded-xl bg-background/60 p-2.5 border border-border/60">
               <div className="flex items-center justify-between">
@@ -192,7 +192,7 @@ export function OtpWalletCreditsWidget({
               <p className="text-xs font-black text-foreground mt-0.5">
                 ₹{referralBonusCredits.toLocaleString('en-IN')}
               </p>
-              <p className="text-[9px] text-muted-foreground">One referral engine — amount follows referred profile</p>
+              <p className="text-[9px] text-muted-foreground">Not issued as wallet credit during this pilot.</p>
             </div>
           </>
         )}

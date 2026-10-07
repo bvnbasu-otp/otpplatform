@@ -1,5 +1,5 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { verifyAndExtractWebhook } from './index.ts';
+import { verifyAndExtractWebhook } from './verify-webhook.ts';
 import { hmacSha256Hex } from '../_shared/messaging/crypto.ts';
 
 Deno.test('Payment Webhook — Razorpay valid signature', async () => {
@@ -106,6 +106,21 @@ Deno.test('Payment Webhook — Stripe expired timestamp rejected', async () => {
   assertEquals(result.valid, false);
   assertEquals(result.provider, 'STRIPE');
   assertEquals(result.error?.includes('expired'), true);
+});
+
+Deno.test('Payment Webhook — missing secret and former compiled fallback are rejected', async () => {
+  const body = JSON.stringify({ event_id: 'evt_former' });
+  const former = 'otp_test_rzp_secret';
+  const signedWithFormer = await hmacSha256Hex(former, body);
+  const headers = new Headers({ 'x-razorpay-signature': signedWithFormer });
+
+  const missing = await verifyAndExtractWebhook(headers, body, {});
+  assertEquals(missing.valid, false);
+  assertEquals(missing.error?.includes('not configured'), true);
+
+  const configured = await verifyAndExtractWebhook(headers, body, { razorpaySecret: 'configured-razorpay-secret' });
+  assertEquals(configured.valid, false);
+  assertEquals(configured.error?.includes('Invalid Razorpay'), true);
 });
 
 Deno.test('Payment Webhook — Missing signature headers rejected', async () => {

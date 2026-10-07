@@ -9,6 +9,11 @@ describe('OtpWalletCreditsWidget persona visibility', () => {
     );
     expect(html).toContain('data-wallet-persona="BUYER"');
     expect(html).toContain('Success Cashback');
+    expect(html).toContain('Not credited during this pilot.');
+    expect(html).toContain('OTP subscription renewal');
+    expect(html).not.toContain('0.1%');
+    expect(html).not.toContain('Share-in-Success');
+    expect(html).not.toContain('platform fees');
     expect(html).not.toContain('Supplier Cashback');
     expect(html).not.toContain('Share in Success');
   });
@@ -19,7 +24,11 @@ describe('OtpWalletCreditsWidget persona visibility', () => {
     );
     expect(html).toContain('data-wallet-persona="SUPPLIER"');
     expect(html).toContain('Success Reward');
+    expect(html).toContain('Defined as ₹100');
+    expect(html).toContain('not credited');
     expect(html).not.toContain('Success Cashback');
+    expect(html).not.toContain('Supplier Cashback');
     expect(html).not.toContain('Share in Success');
+    expect(html).not.toContain('platform fees');
   });
 });

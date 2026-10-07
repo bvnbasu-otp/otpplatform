@@ -11,7 +11,6 @@ import {
   STANDARD_MONTHLY_RFQ_ALLOWANCE,
   SUBSCRIPTION_TIERS,
   SUPPLIER_FEE_POLICY,
-  WHY_5_RFQS_EXPLANATION,
   calculateGst,
   calculateSupplierPlatformFeeWithGst,
   calculateSupplierPlatformFeeWithPilotMode,
@@ -492,10 +491,11 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
   });
 
   describe('Policy Disclosures & Governance Invariants', () => {
-    it('provides clear customer-facing "Why 5 RFQs?" explanation without internal jargon', () => {
-      expect(WHY_5_RFQS_EXPLANATION.title).toBe('Why 5 RFQs Per Month?');
-      expect(WHY_5_RFQS_EXPLANATION.points.length).toBeGreaterThanOrEqual(4);
-      expect(WHY_5_RFQS_EXPLANATION.summary).toContain('high-intent requirements');
+    it('keeps the customer allowance at 3 RFQs a calendar month', () => {
+      expect(STANDARD_MONTHLY_RFQ_ALLOWANCE).toBe(3);
+      expect(SUBSCRIPTION_TIERS.INDIVIDUAL.monthlyRfqs).toBe(3);
+      expect(SUBSCRIPTION_TIERS.RWA.monthlyRfqs).toBe(3);
+      expect(SUBSCRIPTION_TIERS.MSME.monthlyRfqs).toBe(3);
     });
 
     it('enforces 0.5% supplier platform fee policy deducted only upon settlement', () => {

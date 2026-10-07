@@ -548,7 +548,7 @@ describe('Phase C.5 — Active Sourcing Telemetry & Quote Monitoring Cockpit Tes
   describe('8. Canonical Procurement Terminology & 30-Min SLA Policy', () => {
     it('strictly satisfies 30-minute supplier response proposition without 15-second claims', () => {
       const monitoringCopy = `
-        Broadcasting to 5 verified supplier(s). Initial responses are expected with a 30 Min Target from Supplier.
+        Broadcasting to 5 invited supplier(s). Initial responses are expected with a 30 Min Target from Supplier.
         Initial responses expected with a 30 Min Target from Supplier.
       `;
       expect(monitoringCopy).toContain('30 Min Target from Supplier');

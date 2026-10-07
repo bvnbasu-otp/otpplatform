@@ -7,7 +7,6 @@ import {
   resolveTierForOrgType,
   calculateGst,
   evaluateRfqEntitlement,
-  WHY_5_RFQS_EXPLANATION,
   SUPPLIER_FEE_POLICY,
   BUYER_REWARD_POLICY,
 } from './types';

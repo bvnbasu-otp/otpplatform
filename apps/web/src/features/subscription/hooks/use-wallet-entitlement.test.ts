@@ -91,4 +91,16 @@ describe('walletEntitlementFromContext', () => {
     expect(ent.referIdentifier).toBe('sup-1');
     expect(ent.referIdentifier).not.toBe('org-buyer-personal');
   });
+
+  it('does not give a platform role the customer procurement wallet', () => {
+    const ent = walletEntitlementFromContext({
+      ...baseContext,
+      isPlatformAdmin: true,
+      isFounder: true,
+      organizationId: 'org-buyer-personal',
+    });
+    expect(ent.customerWalletAllowed).toBe(false);
+    expect(ent.entitledWalletOrgId).toBeNull();
+    expect(ent.referIdentifier).toBe('user@example.com');
+  });
 });

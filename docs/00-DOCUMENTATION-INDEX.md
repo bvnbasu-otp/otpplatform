@@ -1,9 +1,9 @@
 > **HISTORICAL — NOT THE CURRENT PRODUCT TRUTH.**
-> This file and `docs/01` through `docs/15` record an earlier certification narrative (Phase 7.1, 185 migrations, commit `c5c97ca`).
-> They are preserved as evidence. They are not the baseline for remediation.
-> Start at [OTP Golden Reconstruction/OTP_GOLDEN_DOCUMENT_INDEX.md](../OTP%20Golden%20Reconstruction/OTP_GOLDEN_DOCUMENT_INDEX.md).
-> Repository HEAD when that baseline was written: `7b1afc12ac7761efc206c70db80486612a34d146`. Migration files on disk: `00001`–`00215`.
-> Live database version, live deployment SHA, and production security grants: UNKNOWN / REQUIRES VERIFICATION.
+> This file and `docs/01-PLATFORM-OVERVIEW.md` through `docs/15-PRODUCTION-READINESS-AND-CTO-CLEARANCE-REPORT.md` record an earlier certification narrative (Phase 7.1, 185 migrations, commit `c5c97ca`).
+> They are preserved as evidence. They are not the canonical pilot-freeze source.
+> Canonical documentation: [docs/README.md](./README.md). Capability statuses: [docs/13-truth/CAPABILITY_STATUS.md](./13-truth/CAPABILITY_STATUS.md).
+> `OTP Golden Reconstruction/` remains historical evidence. It does not override the canonical tree.
+> Inspected HEAD during the 2026-10-07 reconstruction: `b7fbcea22273f6045ac0fdd562a278107dcf34b1` on `main`. That snapshot listed local migrations `00001`–`00245`. Phase 3 added `00246` on disk. Hosted database version and the deployed Vercel SHA were not queried.
 
 # OTP Platform — Master Documentation Suite
 **Official Technical, Architectural & Operational Documentation Library**  

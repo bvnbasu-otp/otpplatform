@@ -164,15 +164,15 @@ export function SubscriptionPaymentModal({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2.5 py-0.5 text-xs font-bold border border-emerald-300 dark:border-emerald-700">
-                ⚡ Controlled Pilot Mode
+                Pilot pricing
               </span>
               <span className="text-xs text-muted-foreground font-mono">Real Entitlement (3 RFQs/mo)</span>
             </div>
             <h2 className="text-xl font-bold mt-1 text-foreground">
-              {isSuccess ? 'Controlled Pilot Plan Activated!' : 'Activate / Renew Sourcing Plan'}
+              {isSuccess ? 'Sourcing plan activated' : 'Activate or renew sourcing plan'}
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Buyer Org: <strong className="text-foreground">{organizationName}</strong> · Production-Like Pilot Sandbox
+              Buyer: <strong className="text-foreground">{organizationName}</strong>
             </p>
           </div>
           <button
@@ -205,7 +205,7 @@ export function SubscriptionPaymentModal({
             <div>
               <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 text-[10px] font-bold px-2.5 py-0.5 border border-blue-300 mb-2">
                 <span>🛡️</span>
-                <span>Controlled Pilot Mode Active</span>
+                <span>No charge during the pilot</span>
               </div>
               <h3 className="text-lg font-bold text-foreground">Sourcing Entitlement Successfully Activated!</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
@@ -460,7 +460,7 @@ export function SubscriptionPaymentModal({
             {/* Step 3: Simulation & Action Trigger */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
               <div className="text-xs text-muted-foreground text-center sm:text-left">
-                {isFullyCoveredByWallet ? 'Wallet Direct Activation' : 'Controlled Pilot Mode · ₹0 Payment Charged'}
+                {isFullyCoveredByWallet ? 'Use subscription credits' : 'Pilot: ₹0 charged'}
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">

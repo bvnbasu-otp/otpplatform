@@ -10,7 +10,7 @@
   .\scripts\otp.ps1 status      # System health, ports, containers, DB check
   .\scripts\otp.ps1 test        # Fast unit & live smoke test battery
   .\scripts\otp.ps1 gate        # Mandatory 12-layer staging verification gate (631 tests)
-  .\scripts\otp.ps1 deploy      # Full gated deployment (Gate -> Backup -> Build -> Smoke -> Alert)
+  .\scripts\otp.ps1 deploy      # LOCAL DOCKER ONLY helper for container otp-prod-db. Not hosted supabase db push --linked.
   .\scripts\otp.ps1 rollback    # Instant manual rollback to previous stable bundle + alert
   .\scripts\otp.ps1 backup      # On-demand production database backup
   .\scripts\otp.ps1 alert       # Test Email & WhatsApp notification delivery
@@ -143,7 +143,7 @@ if ($Command -eq "help" -or -not $Command) {
   Write-Host "  test       Executes web unit tests (616 tests) and live smoke battery (10/10)" -ForegroundColor White
   Write-Host "  gate       Runs the strict 12-layer staging verification gate (902+ tests, 100% green)" -ForegroundColor White
   Write-Host "  policy     Enforces mandatory 4-tier test coverage expansion policy (Coverage Append Rule)" -ForegroundColor White
-  Write-Host "  deploy     Full gated production deployment with zero-data-loss and auto-rollback" -ForegroundColor White
+  Write-Host "  deploy     LOCAL DOCKER ONLY helper for container otp-prod-db. Not the hosted production release (supabase db push --linked)." -ForegroundColor White
   Write-Host "  rollback   Instantly reverts active web bundle to previous stable release and notifies" -ForegroundColor White
   Write-Host "  backup     Dumps production database to backups\ with 30-day retention pruning" -ForegroundColor White
   Write-Host "  alert      Dispatches a test verification alert over Gmail SMTP and WhatsApp WAHA" -ForegroundColor White
@@ -151,8 +151,8 @@ if ($Command -eq "help" -or -not $Command) {
   Write-Host ""
   Write-Host "Examples:" -ForegroundColor DarkGray
   Write-Host "  .\scripts\otp.ps1 start                     # Run after system reboot" -ForegroundColor DarkGray
-  Write-Host "  .\scripts\otp.ps1 deploy                    # Run after any code or DB changes" -ForegroundColor DarkGray
-  Write-Host "  .\scripts\otp.ps1 deploy -SkipGate          # Fast deployment skipping the gate" -ForegroundColor DarkGray
+  Write-Host "  .\scripts\otp.ps1 deploy                    # Local Docker otp-prod-db helper. Not hosted production." -ForegroundColor DarkGray
+  Write-Host "  .\scripts\otp.ps1 deploy -SkipGate          # Same local Docker helper, skipping the gate. Not hosted production." -ForegroundColor DarkGray
   Write-Host "  .\scripts\otp.ps1 rollback                  # Emergency revert to last good build" -ForegroundColor DarkGray
   Write-Host ""
   exit 0

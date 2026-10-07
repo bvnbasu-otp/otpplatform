@@ -186,7 +186,7 @@ export function SupplierInvitationList({
             {/* Direct Prominent Touch CTA Button */}
             <div className="mt-3 pt-2 border-t border-border/40 flex items-center justify-between gap-2">
               <span className="text-[11px] text-muted-foreground hidden sm:inline-block">
-                {isQuoted ? 'Quote recorded under sealed evaluation' : 'Zero commission · Neutral quote review'}
+                {isQuoted ? 'Quote recorded under sealed evaluation' : 'Neutral quote review. A 0.5% platform fee is defined and is not charged during this pilot.'}
               </span>
 
               <div className="w-full sm:w-auto">

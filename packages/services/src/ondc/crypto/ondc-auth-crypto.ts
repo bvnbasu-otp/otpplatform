@@ -134,6 +134,11 @@ export function verifyOndcAuthHeader(params: {
       return match?.[1] ?? null;
     };
 
+    const algorithm = parseField('algorithm');
+    const keyId = parseField('keyId');
+    if (algorithm !== 'ed25519' || !keyId?.endsWith('|ed25519')) {
+      return { valid: false, error: 'Unsupported ONDC signature algorithm' };
+    }
     const created = parseField('created');
     const expires = parseField('expires');
     const signature = parseField('signature');
