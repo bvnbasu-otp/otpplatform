@@ -34,5 +34,6 @@ Milestone index only. Files `00001` through `00252` are on disk and contiguous. 
 | `00250_financial_authority_client_grant_boundary.sql` | Client payment reference does not write subscription entitlement. Fee client writes are rejected. Buyer reward execute is service_role only. Pilot supplier fee charged in SQL is 0. Catalog yearly prices match `SUBSCRIPTION_TIERS`. Present in the hosted history read on 2026-10-08. |
 | `00251_fresh_pin_coverage_otp_registered_fallback.sql` | Fresh pin coverage with no addressable supplier may invite OTP-registered suppliers. Non-fresh coverage does not. Present in the hosted history read on 2026-10-08. |
 | `00252_rwa_award_quorum_met.sql` | RWA/COMMUNITY award lock rejects when fewer than two unconflicted recommendations exist. Individual and MSME are not given that gate. Hosted proof is the function body, not a live award. |
+| `00253_cancelled_rfq_allowance_and_utgst.sql` | Cancelled RFQs do not consume the monthly allowance or the quarterly bonus. Intra-state Union Territory GST is CGST + UTGST. Inter-state stays IGST. |
 
-CI `EXPECTED_CEILING` in `.github/workflows/ci-cd.yml` is the string `00252`. Hosted `schema_migrations` ceiling read on 2026-10-08 is `00252`.
+CI `EXPECTED_CEILING` in `.github/workflows/ci-cd.yml` is the string `00253`. Hosted `schema_migrations` read after applying `00253` is count 253, ceiling `00253`, with `00251` still present.

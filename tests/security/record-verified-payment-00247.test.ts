@@ -10,7 +10,7 @@ const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
 // Repository ceiling. 00249, 00250, and 00251 do not grant this function back to clients.
-const REPOSITORY_CEILING = '00252_rwa_award_quorum_met.sql';
+const REPOSITORY_CEILING = '00253_cancelled_rfq_allowance_and_utgst.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';
@@ -79,7 +79,7 @@ describe('record_verified_payment execute boundary', () => {
     }
   }
 
-  it('keeps the 00247 boundary in the contiguous chain ending at 00252 and leaves only service_role', () => {
+  it('keeps the 00247 boundary in the contiguous chain ending at 00253 and leaves only service_role', () => {
     expect(files).toContain(FILE);
     expect(files.at(-1)).toBe(REPOSITORY_CEILING);
     files.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));

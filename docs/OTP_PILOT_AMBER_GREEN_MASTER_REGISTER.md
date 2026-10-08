@@ -4,6 +4,8 @@ Date: 2026-10-08. Repository `github.com/bvnbasu-otp/otpplatform`. Public host `
 
 Decision: **AMBER — MATERIAL PILOT GAPS REMAIN**.
 
+Later correction, 2026-10-08 evening: this register is the morning record. It is not the current certificate. `origin/main` moved past `9594a951`. Hosted history through `00252` was read, and `payment-webhook` and `otp-dispatch` answered 401 rather than 404. The table below is left as that morning's evidence.
+
 Git `HEAD` and `origin/main` remain `9594a951e5e4fe0431e3b052d15e96b30dc3a07b` (`fix(ci): retry transient production migration reads`). No commit. No push. No hosted `db push`. No production deploy. Local Docker ceiling is `00251`. Hosted `schema_migrations` was not read.
 
 | Gate | Previous State | Fix | Local Proof | Hosted Proof | Status | Evidence |

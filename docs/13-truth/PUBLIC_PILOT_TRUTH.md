@@ -2,7 +2,7 @@
 
 What a customer can be told from this repository. Capability labels: [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This page is the public story. It does not edit `site-content.ts` or any page component.
 
-Nothing here is `LIVE-VERIFIED`. HOSTED DATABASE CEILING NOT RE-VERIFIED IN THIS PHASE. Prior manual verification was `00245`. DEPLOYED REVISION NOT RE-VERIFIED.
+Nothing here is a live payment, ONDC, or Share-in-Success certification. Hosted `schema_migrations` read after `00253` is count 253, ceiling `00253`, with `00251` still present. The deployed website revision is certified only when production serves this commit.
 
 ## Positioning
 
@@ -20,7 +20,7 @@ Public words on the site: Request → Compare → Decide → Purchase → Track 
 - A buyer describes a requirement, reviews it, compares quotes without legal names, decides, and tracks the order.
 - RWA votes require an active qualifying appointment, a seat on that RFQ, and no `DECLARED_CONFLICT`. An estate or facility manager does not vote.
 - MSME approval stages are persisted. Award fails closed when a required route has no stage.
-- Allowances: 3 RFQs in the calendar month. A yearly plan adds 1 RFQ in the current quarter. Unused monthly allowance does not roll. The bonus does not carry.
+- Allowances: 3 RFQs in the calendar month. A cancelled RFQ does not use a monthly slot or the quarterly bonus. A yearly plan adds 1 RFQ in the current quarter. Unused monthly allowance does not roll. The bonus does not carry.
 - Published plan prices are in the product. Pilot policy does not charge the subscription and does not charge the 0.5% supplier platform fee. Live fee collection is `UNKNOWN`.
 - The purchase order total is base + GST + transport. Transport is not taxed again. Migration `00245` does not rewrite older purchase orders.
 - Payment structures the server knows: single, 30/50/20, 4×25, and custom with no invented schedule.
@@ -43,7 +43,7 @@ Public words on the site: Request → Compare → Decide → Purchase → Track 
 - Enterprise is not a customer type.
 - Supplier cashback is not a product capability.
 - Allowance copy is 3 RFQs a calendar month. The old 5-RFQ constant was removed. That is not a measured response rate.
-- Hosted `schema_migrations` ceiling verified in this freeze is `00251`. `00252` is the RWA award-quorum migration and is hosted only after its own apply check. Supplier cashback is not an active mechanism. Historical migrations still reject a `SUPPLIER_CASHBACK` ledger event.
+- Hosted `schema_migrations` ceiling read after this change is `00253`, with `00251` and `00252` still present. Intra-state Union Territory GST on a new purchase order and decision receipt is CGST + UTGST. Inter-state stays IGST. Supplier cashback is not an active mechanism. Historical migrations still reject a `SUPPLIER_CASHBACK` ledger event.
 
 ## Planned / roadmap
 

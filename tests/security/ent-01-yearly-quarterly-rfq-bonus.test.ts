@@ -48,7 +48,13 @@ describe('ENT-01 migration 00248 yearly quarterly RFQ bonus', () => {
     const definers = files.filter((f) =>
       /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+private\.enforce_pilot_rfq_allowance\s*\(/.test(readMigration(f)),
     );
-    expect(definers).toEqual([PRIOR, FILE]);
+    expect(definers).toEqual([PRIOR, FILE, '00253_cancelled_rfq_allowance_and_utgst.sql']);
+    const later = functionBody(
+      stripComments(readMigration('00253_cancelled_rfq_allowance_and_utgst.sql')),
+      'private.enforce_pilot_rfq_allowance',
+    );
+    expect(later).toContain('v_allowance CONSTANT integer := 3');
+    expect(later).toContain("status IS DISTINCT FROM 'CANCELLED'::public.rfq_status");
   });
 
   it('keeps the public yearly promise sentence unchanged', () => {

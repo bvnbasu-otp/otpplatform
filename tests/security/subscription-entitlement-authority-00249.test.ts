@@ -270,7 +270,8 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 1]).toBe('00250_financial_authority_client_grant_boundary.sql');
     expect(files[index + 2]).toBe('00251_fresh_pin_coverage_otp_registered_fallback.sql');
     expect(files[index + 3]).toBe('00252_rwa_award_quorum_met.sql');
-    expect(index).toBe(files.length - 4);
+    expect(files[index + 4]).toBe('00253_cancelled_rfq_allowance_and_utgst.sql');
+    expect(index).toBe(files.length - 5);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

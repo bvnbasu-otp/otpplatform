@@ -2,6 +2,8 @@
 
 Date: 2026-10-08. Repo `g:\My Drive\otp`. `HEAD` = `origin/main` = `9594a951e5e4fe0431e3b052d15e96b30dc3a07b` (`fix(ci): retry transient production migration reads`). No commit, push, migration apply, deploy, or hosted mutation was performed during this audit.
 
+Later correction, 2026-10-08 evening: this file is a historical audit. `00252` is committed and was present in hosted `schema_migrations` at ceiling `00252`. The statements below that call `00252` untracked, or that call `payment-webhook` and `otp-dispatch` missing, describe that morning's read and are not the current hosted state. Cancelled-RFQ allowance and Union Territory GST are migration `00253`, not an edit of this audit's findings.
+
 This audit is **source/migration-level white-box analysis only**. It explicitly builds on, and does not re-litigate, the hosted/runtime proof already captured the same day in `OTP_PILOT_AMBER_GREEN_MASTER_REGISTER.md` (Gates A–K), which this agent cannot independently reproduce (no hosted Supabase/HTTP access in this sandbox). Where this audit's findings overlap that register, the register's runtime evidence is treated as authoritative for *deployment/runtime* status; this report adds *source-correctness* findings underneath it.
 
 ---
