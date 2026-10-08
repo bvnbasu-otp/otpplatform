@@ -1,0 +1,474 @@
+============================================================
+OTP POST-00219 PRODUCTION CATALOG EVIDENCE (DETAILED)
+============================================================
+Generated : 2026-09-28 (agent audit attempt)
+Project   : qsuvtcezffomtwzwyrso
+Mode      : READ-ONLY (intended)
+Production: https://otpplatform-theta.vercel.app
+
+============================================================
+AGENT SHELL AUTHENTICATION FAILURE (NOT A PRODUCTION DEFECT)
+============================================================
+
+The independent evidence auditor agent shell is NOT authenticated to
+the Supabase Management API. This reflects missing credentials in the
+agent environment only. It does NOT prove production is misconfigured,
+unpatched, or insecure.
+
+Command attempted (read-only):
+  supabase migration list --project-ref qsuvtcezffomtwzwyrso
+Working directory:
+  G:\My Drive\otp
+CLI used:
+  supabase (on PATH)
+Exit code:
+  1
+Error name (only):
+  AccessTokenRequiredError
+
+No migration list output was obtained from this shell.
+No production catalog SQL was executed from this shell.
+No INSERT/UPDATE/DELETE/ALTER/GRANT/REVOKE/CREATE/DROP was attempted.
+
+Operator note: a prior summary file (OTP_POST_00219_PRODUCTION_CATALOG_EVIDENCE_20260928_192326.txt)
+reported migration ceiling 219, anon_execute_count 11, public_execute_count 0, and label PASS.
+That PASS label is NOT object-level evidence and is NOT reproduced here.
+
+============================================================
+SECTIONS 1A–1L — LIVE ROWS NOT CAPTURED (RUN USER SCRIPT BELOW)
+============================================================
+
+1A environment .............. PENDING (user script)
+1B migration history ........ PENDING
+1C anon EXECUTE functions ... PENDING
+1D PUBLIC EXECUTE functions . PENDING
+1E demo_status ................ PENDING
+1F sensitive routines ....... PENDING
+1G security definer/search_path PENDING
+1H 00218 rfqs trigger ........ PENDING
+1I 00219 rfq_approval_stages . PENDING
+1J RLS priority tables ....... PENDING
+1K consolidated grant table .. PENDING
+1L per-control classification PENDING
+
+============================================================
+HOW TO RUN (USER AUTHENTICATED POWERSHELL ONLY)
+============================================================
+
+Prerequisites:
+  - You are already logged in via `supabase login` in YOUR PowerShell, OR
+    SUPABASE_ACCESS_TOKEN is set in YOUR session (do not paste tokens into chat).
+  - Do NOT use local Docker postgres (127.0.0.1:54322) as production.
+
+Step 1 — Confirm remote migration pairing (read-only):
+  Set-Location "G:\My Drive\otp"
+  supabase migration list --project-ref qsuvtcezffomtwzwyrso
+
+  Record versions only. Expect local/remote pairs for 00215 through 00219 if applied.
+
+Step 2 — Run catalog evidence SQL against the linked remote database.
+  Save the script below to a file, e.g.:
+    G:\My Drive\otp\OTP Golden Reconstruction\PROD_CONTAINMENT\OTP_POST_00219_USER_CATALOG_READONLY.sql
+
+  Then execute (targets remote project; does not print connection secrets when using CLI login):
+  supabase db query --project-ref qsuvtcezffomtwzwyrso -f "OTP Golden Reconstruction\PROD_CONTAINMENT\OTP_POST_00219_USER_CATALOG_READONLY.sql"
+
+  If your CLI requires --linked instead of --project-ref, link once in your shell then:
+  supabase db query --linked -f "OTP Golden Reconstruction\PROD_CONTAINMENT\OTP_POST_00219_USER_CATALOG_READONLY.sql"
+
+  Capture full stdout to a new evidence file for the next auditor pass.
+
+Alternative (psql via Supabase connection pooler):
+  Use the Session pooler connection string from the Supabase dashboard (Settings → Database).
+  Do NOT commit or share the connection string. Example shape only:
+  psql "<your-session-pooler-uri>" -v ON_ERROR_STOP=1 -f "...\OTP_POST_00219_USER_CATALOG_READONLY.sql"
+
+============================================================
+EXACT READ-ONLY SQL SCRIPT (SELECT ONLY — COPY FROM HERE)
+============================================================
+
+-- OTP POST-00219 production catalog evidence — SELECT ONLY
+-- Project ref: qsuvtcezffomtwzwyrso
+-- Run in authenticated user shell only.
+
+-- ---------- 1A environment ----------
+SELECT '1A' AS section, 'postgres_version' AS item, version() AS value
+UNION ALL
+SELECT '1A', 'current_database', current_database()
+UNION ALL
+SELECT '1A', 'current_user', current_user
+UNION ALL
+SELECT '1A', 'session_user', session_user;
+
+SELECT '1A' AS section, 'otp_schema_migrations_exists' AS item,
+       (to_regclass('public.otp_schema_migrations') IS NOT NULL)::text AS value
+UNION ALL
+SELECT '1A', 'supabase_schema_migrations_exists',
+       (to_regclass('supabase_migrations.schema_migrations') IS NOT NULL)::text;
+
+SELECT '1A' AS section, src, max_version, row_count
+FROM (
+  SELECT 'otp_schema_migrations' AS src,
+         max(version) AS max_version,
+         count(*)::bigint AS row_count
+  FROM public.otp_schema_migrations
+  WHERE to_regclass('public.otp_schema_migrations') IS NOT NULL
+  UNION ALL
+  SELECT 'supabase_migrations.schema_migrations',
+         max(version),
+         count(*)::bigint
+  FROM supabase_migrations.schema_migrations
+  WHERE to_regclass('supabase_migrations.schema_migrations') IS NOT NULL
+) z;
+
+-- ---------- 1B migration history (00216–00219) ----------
+SELECT '1B' AS section, 'supabase_migrations' AS ledger, m.version, m.name
+FROM supabase_migrations.schema_migrations m
+WHERE left(btrim(m.version), 5) IN ('00216','00217','00218','00219')
+   OR m.version IN ('00216','00217','00218','00219')
+ORDER BY m.version;
+
+SELECT '1B' AS section, 'otp_schema_migrations' AS ledger, o.version, o.applied_at::text AS applied_at
+FROM public.otp_schema_migrations o
+WHERE to_regclass('public.otp_schema_migrations') IS NOT NULL
+  AND (
+    left(btrim(o.version), 5) IN ('00216','00217','00218','00219')
+    OR o.version LIKE '00216%'
+    OR o.version LIKE '00217%'
+    OR o.version LIKE '00218%'
+    OR o.version LIKE '00219%'
+  )
+ORDER BY o.version;
+
+-- ---------- 1C every function with EXECUTE to anon ----------
+SELECT '1C' AS section,
+       n.nspname AS schema_name,
+       p.proname AS function_name,
+       pg_get_function_identity_arguments(p.oid) AS identity_args,
+       a.privilege_type,
+       CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END AS grantee,
+       pg_get_userbyid(a.grantor) AS grantor
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+JOIN aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a ON true
+WHERE p.prokind IN ('f','p')
+  AND a.privilege_type = 'EXECUTE'
+  AND (
+    a.grantee = (SELECT oid FROM pg_roles WHERE rolname = 'anon')
+    OR has_function_privilege('anon', p.oid, 'EXECUTE')
+  )
+ORDER BY n.nspname, p.proname, identity_args;
+
+-- 1C classification vs expected names (repository intent; compare live signatures)
+WITH expected(name) AS (
+  VALUES
+    ('submit_signup_request'),
+    ('verify_profile_verification_otp'),
+    ('verify_whatsapp_password_reset'),
+    ('platform_heartbeat'),
+    ('service_categories'),
+    ('served_cities'),
+    ('get_maintenance_status'),
+    ('redeem_supplier_magic_link'),
+    ('messaging_quote_context'),
+    ('submit_messaging_quote'),
+    ('complete_supplier_onboarding_atomic')
+),
+anon_pub AS (
+  SELECT n.nspname AS schema_name, p.proname, p.oid,
+         pg_get_function_identity_arguments(p.oid) AS identity_args,
+         p.prosecdef,
+         has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_exec
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.prokind = 'f'
+),
+matched AS (
+  SELECT e.name AS expected_name,
+         a.schema_name, a.proname, a.identity_args, a.anon_exec,
+         CASE
+           WHEN a.oid IS NULL THEN 'MISSING'
+           WHEN NOT a.anon_exec THEN 'MISSING'
+           ELSE 'EXPECTED'
+         END AS classification
+  FROM expected e
+  LEFT JOIN anon_pub a ON a.proname = e.name
+),
+unexpected AS (
+  SELECT a.schema_name, a.proname, a.identity_args, 'UNEXPECTED' AS classification
+  FROM anon_pub a
+  WHERE a.anon_exec
+    AND NOT EXISTS (SELECT 1 FROM expected e WHERE e.name = a.proname)
+)
+SELECT '1C' AS section, expected_name, schema_name, proname, identity_args, classification
+FROM matched
+UNION ALL
+SELECT '1C', NULL, schema_name, proname, identity_args, classification
+FROM unexpected
+ORDER BY 2 NULLS LAST, 4;
+
+-- ---------- 1D every function with EXECUTE to PUBLIC ----------
+SELECT '1D' AS section,
+       n.nspname AS schema_name,
+       p.proname AS function_name,
+       pg_get_function_identity_arguments(p.oid) AS identity_args,
+       p.prosecdef AS security_definer,
+       a.privilege_type,
+       pg_get_userbyid(a.grantor) AS grantor
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+JOIN aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a ON true
+WHERE p.prokind IN ('f','p')
+  AND a.privilege_type = 'EXECUTE'
+  AND a.grantee = 0
+ORDER BY n.nspname, p.proname, identity_args;
+
+-- ---------- 1E demo_status (if present) ----------
+SELECT '1E' AS section, 'demo_status_regprocedure' AS item,
+       to_regprocedure('public.demo_status()')::text AS oid
+UNION ALL
+SELECT '1E', 'demo_status_exists',
+       EXISTS (
+         SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE n.nspname = 'public' AND p.proname = 'demo_status'
+       )::text;
+
+SELECT '1E' AS section, p.oid::regprocedure::text AS signature,
+       pg_get_userbyid(p.proowner) AS owner,
+       p.prosecdef,
+       has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_execute,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_execute,
+       EXISTS (
+         SELECT 1 FROM aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a
+         WHERE a.grantee = 0 AND a.privilege_type = 'EXECUTE'
+       ) AS public_execute
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND p.proname = 'demo_status';
+
+SELECT '1E' AS section, 'privilege_rows' AS item,
+       CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END AS grantee,
+       a.privilege_type, pg_get_userbyid(a.grantor) AS grantor
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+JOIN aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a ON true
+WHERE n.nspname = 'public' AND p.proname = 'demo_status'
+  AND a.privilege_type = 'EXECUTE';
+
+-- ---------- 1F sensitive routines (name filter) ----------
+SELECT '1F' AS section,
+       n.nspname AS schema_name,
+       p.proname AS function_name,
+       pg_get_function_identity_arguments(p.oid) AS identity_args,
+       pg_get_userbyid(p.proowner) AS owner,
+       p.prosecdef AS security_definer,
+       has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_execute,
+       EXISTS (
+         SELECT 1 FROM aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) ax
+         WHERE ax.grantee = 0 AND ax.privilege_type = 'EXECUTE'
+       ) AS public_execute,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_execute,
+       CASE
+         WHEN p.proname ILIKE '%wallet%' THEN 'wallet / ledger'
+         WHEN p.proname ILIKE '%reward%' OR p.proname ILIKE '%award%' THEN 'reward or award'
+         WHEN p.proname ILIKE '%reveal%' THEN 'sealed quote / reveal'
+         WHEN p.proname ILIKE '%purchase_order%' OR p.proname ILIKE '%invoice%' THEN 'PO or invoice'
+         WHEN p.proname ILIKE '%deploy%' OR p.proname ILIKE '%dry_run%' THEN 'deploy / dry_run'
+         WHEN p.proname ILIKE '%appoint%' OR p.proname ILIKE '%vote%' OR p.proname ILIKE '%delegat%' THEN 'governance'
+         WHEN p.proname ILIKE '%rfq%' THEN 'RFQ workflow'
+         ELSE 'matched keyword'
+       END AS relevance
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE p.prokind = 'f'
+  AND (
+    p.proname ILIKE '%wallet%'
+    OR p.proname ILIKE '%reward%'
+    OR p.proname ILIKE '%award%'
+    OR p.proname ILIKE '%reveal%'
+    OR p.proname ILIKE '%purchase_order%'
+    OR p.proname ILIKE '%invoice%'
+    OR p.proname ILIKE '%deploy%'
+    OR p.proname ILIKE '%dry_run%'
+    OR p.proname ILIKE '%appoint%'
+    OR p.proname ILIKE '%vote%'
+    OR p.proname ILIKE '%delegat%'
+    OR p.proname ILIKE '%rfq%'
+  )
+ORDER BY n.nspname, p.proname, identity_args;
+
+-- ---------- 1G security definer + proconfig search_path (sensitive + 00218/00219 guards) ----------
+SELECT '1G' AS section,
+       n.nspname AS schema_name,
+       p.proname,
+       pg_get_function_identity_arguments(p.oid) AS identity_args,
+       p.prosecdef,
+       (SELECT string_agg(unnest, ', ') FROM unnest(p.proconfig) AS unnest) AS proconfig,
+       has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_execute
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE p.prokind = 'f'
+  AND (
+    p.proname IN (
+      'guard_rfq_status_transition',
+      'rfq_status_transition_allowed',
+      'guard_rfq_approval_stage_direct_write'
+    )
+    OR p.proname ILIKE '%wallet%'
+    OR p.proname ILIKE '%reward%'
+    OR p.proname ILIKE '%reveal%'
+    OR p.proname ILIKE '%lock_and_reveal%'
+    OR p.proname ILIKE '%invoice%'
+    OR p.proname ILIKE '%purchase_order%'
+  )
+ORDER BY n.nspname, p.proname;
+
+-- Function bodies (SQL/plpgsql definitions; redact manually if any secret appears)
+SELECT '1G_BODY' AS section,
+       p.oid::regprocedure::text AS signature,
+       left(pg_get_functiondef(p.oid), 8000) AS functiondef_excerpt
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE p.proname IN (
+  'guard_rfq_status_transition',
+  'rfq_status_transition_allowed',
+  'guard_rfq_approval_stage_direct_write'
+)
+ORDER BY signature;
+
+-- ---------- 1H 00218 triggers on rfqs ----------
+SELECT '1H' AS section,
+       t.tgname AS trigger_name,
+       t.tgenabled AS enabled_code,
+       CASE t.tgenabled
+         WHEN 'O' THEN 'origin'
+         WHEN 'D' THEN 'disabled'
+         WHEN 'R' THEN 'replica'
+         WHEN 'A' THEN 'always'
+         ELSE t.tgenabled::text
+       END AS enabled_meaning,
+       c.relname AS table_name,
+       p.oid::regprocedure::text AS function_signature,
+       pg_get_userbyid(p.proowner) AS function_owner,
+       p.prosecdef
+FROM pg_trigger t
+JOIN pg_class c ON c.oid = t.tgrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN pg_proc p ON p.oid = t.tgfoid
+WHERE NOT t.tgisinternal
+  AND n.nspname = 'public'
+  AND c.relname = 'rfqs'
+  AND (t.tgname = 'trg_guard_rfq_status' OR p.proname = 'guard_rfq_status_transition');
+
+-- ---------- 1I 00219 trigger on rfq_approval_stages ----------
+SELECT '1I' AS section,
+       t.tgname AS trigger_name,
+       t.tgenabled AS enabled_code,
+       c.relname AS table_name,
+       p.oid::regprocedure::text AS function_signature,
+       p.prosecdef
+FROM pg_trigger t
+JOIN pg_class c ON c.oid = t.tgrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN pg_proc p ON p.oid = t.tgfoid
+WHERE NOT t.tgisinternal
+  AND n.nspname = 'public'
+  AND c.relname = 'rfq_approval_stages';
+
+-- ---------- 1J RLS priority tables ----------
+SELECT '1J' AS section,
+       n.nspname AS schema_name,
+       c.relname AS table_name,
+       c.relrowsecurity,
+       c.relforcerowsecurity
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relkind = 'r'
+  AND c.relname IN (
+    'rfqs', 'rfq_approval_stages', 'quotes', 'organizations', 'organization_members',
+    'votes', 'wallets', 'wallet_transactions', 'buyer_reward_allocations',
+    'purchase_orders', 'invoices', 'suppliers'
+  )
+ORDER BY c.relname;
+
+SELECT '1J' AS section,
+       schemaname, tablename, policyname, permissive, roles, cmd, qual AS using_expr, with_check
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename IN (
+    'rfqs', 'rfq_approval_stages', 'quotes', 'organizations', 'organization_members',
+    'votes', 'wallets', 'wallet_transactions', 'buyer_reward_allocations',
+    'purchase_orders', 'invoices', 'suppliers'
+  )
+ORDER BY tablename, policyname;
+
+-- ---------- 1K consolidated grant table (eleven expected + sensitive from 1F) ----------
+WITH targets AS (
+  SELECT unnest(ARRAY[
+    'submit_signup_request','verify_profile_verification_otp','verify_whatsapp_password_reset',
+    'platform_heartbeat','service_categories','served_cities','get_maintenance_status',
+    'redeem_supplier_magic_link','messaging_quote_context','submit_messaging_quote',
+    'complete_supplier_onboarding_atomic'
+  ]) AS proname
+  UNION
+  SELECT DISTINCT p.proname
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname IN ('public','private')
+    AND p.prokind = 'f'
+    AND (
+      p.proname ILIKE '%wallet%' OR p.proname ILIKE '%reward%' OR p.proname ILIKE '%reveal%'
+      OR p.proname ILIKE '%invoice%' OR p.proname ILIKE '%purchase_order%'
+      OR p.proname IN ('guard_rfq_status_transition','guard_rfq_approval_stage_direct_write')
+    )
+)
+SELECT '1K' AS section,
+       n.nspname || '.' || p.proname AS function_fqn,
+       pg_get_function_identity_arguments(p.oid) AS signature,
+       pg_get_userbyid(p.proowner) AS owner,
+       p.prosecdef AS security_definer,
+       EXISTS (
+         SELECT 1 FROM aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a
+         WHERE a.grantee = 0 AND a.privilege_type = 'EXECUTE'
+       ) AS public_execute,
+       has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_execute,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_execute,
+       CASE
+         WHEN p.proname IN ('guard_rfq_status_transition','guard_rfq_approval_stage_direct_write',
+                            'rfq_status_transition_allowed') THEN '00218/00219'
+         WHEN t.proname IN (
+           'submit_signup_request','verify_profile_verification_otp','verify_whatsapp_password_reset',
+           'platform_heartbeat','service_categories','served_cities','get_maintenance_status',
+           'redeem_supplier_magic_link','messaging_quote_context','submit_messaging_quote',
+           'complete_supplier_onboarding_atomic'
+         ) THEN '00216/00217 anon allowlist'
+         ELSE 'sensitive surface'
+       END AS relevant_to_00216_219
+FROM targets t
+JOIN pg_proc p ON p.proname = t.proname
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname IN ('public','private')
+ORDER BY function_fqn, signature;
+
+-- ---------- 1L classification placeholders (fill after capturing rows) ----------
+SELECT '1L' AS section, control_id, classification, notes
+FROM (VALUES
+  ('migration_ceiling_219', 'NOT PROVEN BY CATALOG', 'agent shell blocked; run 1B'),
+  ('anon_allowlist_eleven', 'NOT PROVEN BY CATALOG', 'run 1C; do not trust count-only PASS'),
+  ('public_execute_zero_public_schema', 'NOT PROVEN BY CATALOG', 'run 1D'),
+  ('demo_status_anon_denied', 'NOT PROVEN BY CATALOG', 'run 1E'),
+  ('00218_rfq_status_trigger', 'NOT PROVEN BY CATALOG', 'CATALOG vs RUNTIME: trigger != behaviour'),
+  ('00219_approval_stage_trigger', 'NOT PROVEN BY CATALOG', 'CATALOG vs RUNTIME: trigger != behaviour'),
+  ('priority_table_rls', 'NOT PROVEN BY CATALOG', 'run 1J')
+) AS v(control_id, classification, notes);
+
+============================================================
+END SQL SCRIPT
+============================================================
+
+After running the script, paste stdout (or CSV exports per section) into a
+follow-on evidence artifact or re-run the auditor with captured output.
+
+PHASE 1 STATUS:
+BLOCKED

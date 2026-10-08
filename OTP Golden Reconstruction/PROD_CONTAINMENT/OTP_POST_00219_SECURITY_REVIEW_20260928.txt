@@ -1,0 +1,66 @@
+﻿=== FILE METADATA ===
+
+FullName                                                                                                        Length LastWriteTime         
+--------                                                                                                        ------ -------------         
+G:\My Drive\otp\OTP Golden Reconstruction\PROD_CONTAINMENT\OTP_POST_00219_SINGLE_RESULT_EVIDENCE_20260928.txt 11303274 28-09-2026 07:55:19 PM
+
+
+
+
+=== KEY MARKERS ===
+
+--- "MIGRATION" ---
+NOT FOUND
+
+--- "ANON_EXECUTE" ---
+NOT FOUND
+
+--- "PUBLIC_EXECUTE" ---
+NOT FOUND
+
+--- "DEMO_STATUS" ---
+NOT FOUND
+
+--- "TARGET_ANON_FUNCTIONS" ---
+NOT FOUND
+
+--- "FINAL_COUNTS" ---
+NOT FOUND
+
+=== EXACT TARGET FUNCTION NAMES ===
+
+--- submit_signup_request ---
+NOT FOUND
+
+--- verify_profile_verification_otp ---
+NOT FOUND
+
+--- verify_whatsapp_password_reset ---
+NOT FOUND
+
+--- platform_heartbeat ---
+NOT FOUND
+
+--- service_categories ---
+NOT FOUND
+
+--- served_cities ---
+NOT FOUND
+
+--- get_maintenance_status ---
+NOT FOUND
+
+--- redeem_supplier_magic_link ---
+NOT FOUND
+
+--- messaging_quote_context ---
+NOT FOUND
+
+--- submit_messaging_quote ---
+NOT FOUND
+
+--- complete_supplier_onboarding_atomic ---
+NOT FOUND
+
+--- demo_status ---
+NOT FOUND

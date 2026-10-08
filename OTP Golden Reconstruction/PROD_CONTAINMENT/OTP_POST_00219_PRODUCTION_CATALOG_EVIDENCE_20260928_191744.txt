@@ -1,0 +1,23 @@
+﻿============================================================
+OTP POST-00219 PRODUCTION CATALOG EVIDENCE
+============================================================
+Generated: 2026-09-28 19:17:49 +05:30
+Project Ref: qsuvtcezffomtwzwyrso
+Mode: READ-ONLY
+STATUS: QUERY EXECUTION ERROR
+
+No intentional mutation was attempted.
+
+ERROR:
+node.exe : Initialising login role...
+At C:\Users\Dhiya\AppData\Roaming\npm\supabase.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/supabase/dist/supabase.js" $ ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Initialising login role...:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+
+============================================================
+END ERROR
+============================================================

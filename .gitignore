@@ -26,16 +26,29 @@ supabase/.temp
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs and disposable local output
 *.log
 npm-debug.log*
 pnpm-debug.log*
+*.tmp
+*.temp
+/regression-output.txt
+/deno.lock
+OTP Golden Reconstruction/_test_output_*.txt
+OTP Golden Reconstruction/R2-31/_pnpm_test_*.txt
+OTP Golden Reconstruction/R2-31/pnpm_test_cert_output.txt
+
+# Local one-off database hot-patch. Not source of truth.
+scripts/patch-00222-doc-id-local.mjs
 
 # Test
 coverage/
 
-# Vite
+# Vite / local runners
 apps/web/.vite/
+.next/
+playwright-report/
+test-results/
 
 # Large Local Backups, DB Snapshots & WhatsApp Session Data
 backups/
@@ -44,6 +57,7 @@ scratch/
 *.sql
 !supabase/migrations/*.sql
 !supabase/*.sql
+!OTP Golden Reconstruction/PROD_CONTAINMENT/*.sql
 *.sql.enc
 *.sql.enc.sha256
 *.sql.sha256

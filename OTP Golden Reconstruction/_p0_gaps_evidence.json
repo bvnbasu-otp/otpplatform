@@ -1,0 +1,544 @@
+{
+  "generatedAt": "2026-09-28T13:30:09.956Z",
+  "gap1": {
+    "overall": "PASS",
+    "pass": 6,
+    "fail": 0,
+    "rows": [
+      {
+        "id": "GAP1-AUTH-OK",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager@greenview.test",
+        "operation": "credit_buyer_settlement_reward_atomic",
+        "input": {
+          "feeId": "3ff27ff5-36a5-4745-b432-13db18efc85a",
+          "p_base_amount": 999999
+        },
+        "expected": "reward=100 from fee row",
+        "actual": "{\"ok\":true,\"message\":\"Buyer sourcing reward credited successfully\",\"wallet_id\":\"3af17b6d-20d3-46ce-9243-5250f2199d25\",\"fee_amount\":500,\"allocation_id\":\"8a5608be-ba52-48ac-bf4a-f58a51099a26\",\"reward_amount\":100,\"transaction_id\":\"d5b5a006-7ccd-41b9-ba73-a4f8323c71cb\",\"closing_balance\":1400,\"opening_balance\":1300}",
+        "before": {
+          "balance": "1300.00",
+          "ledger": "13",
+          "allocations": "13"
+        },
+        "after": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "status": "PASS",
+        "fixtureIds": {
+          "feeId": "3ff27ff5-36a5-4745-b432-13db18efc85a",
+          "orgId": "a0000000-0000-4000-8000-000000000001",
+          "policyId": "f1c18b46-042b-4820-ae28-fb1e08fe1409"
+        }
+      },
+      {
+        "id": "GAP1-REPLAY-SAME-FEE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "replay same platform_fee_tx_id",
+        "expected": "idempotent / no second ledger credit",
+        "actual": "{\"ok\":true,\"message\":\"Reward allocation already credited for this platform fee transaction\",\"replayed\":true,\"allocation_id\":\"8a5608be-ba52-48ac-bf4a-f58a51099a26\",\"reward_amount\":100}",
+        "before": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "after": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "status": "PASS"
+      },
+      {
+        "id": "GAP1-FAKE-FEE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "nonexistent fee id",
+        "expected": "error, no mutation",
+        "actual": "Platform fee transaction 00000000-0000-4000-8000-000000000099 not found",
+        "before": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "after": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "status": "PASS"
+      },
+      {
+        "id": "GAP1-NULL-FEE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "null fee id",
+        "expected": "WALLET-REWARD-FEE-REQUIRED",
+        "actual": "platform_fee_tx_id is required (WALLET-REWARD-FEE-REQUIRED)",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP1-WRONG-ORG-FEE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager + greenview org",
+        "operation": "fee row for other org",
+        "expected": "does not belong",
+        "actual": "Platform fee transaction e3211c3c-91cf-46fb-8f49-353ba8617095 not found",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP1-ANON",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "anon",
+        "operation": "credit_buyer_settlement_reward_atomic",
+        "expected": "permission denied",
+        "actual": "permission denied for function credit_buyer_settlement_reward_atomic",
+        "status": "PASS"
+      }
+    ]
+  },
+  "gap2": {
+    "overall": "PASS",
+    "pass": 9,
+    "fail": 0,
+    "rows": [
+      {
+        "id": "GAP2-DRAFT-OPEN",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "UPDATE status DRAFT→OPEN",
+        "expected": "OPEN",
+        "actual": "OPEN",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-TO-EVALUATING",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "discover_and_invite + advance_rfq_phases",
+        "expected": "EVALUATING with FINAL quotes",
+        "actual": "disc=ok seed={\"ok\":true,\"rfq_id\":\"2a3db601-fee5-4ba3-9ec5-570ecaa48ce7\",\"success\":true,\"total_quotes\":3,\"quotes_submitted\":3,\"evaluation_result\":{\"scored\":3,\"weights\":{\"price\":25,\"warranty\":35,\"delivery_time\":15,\"supplier_rating\":25}}} adv={\"rfqs\":[{\"to\":\"EVALUATING\",\"ref\":\"RFQ-590PBZ\",\"from\":\"OPEN\",\"rfqId\":\"2a3db601-fee5-4ba3-9ec5-570ecaa48ce7\",\"reason\":\"quoting window closed, proceeding to evaluation\"}],\"advanced\":1} status=EVALUATING finalQuotes=3",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-ONBOARD",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "service_role",
+        "operation": "complete_supplier_onboarding_atomic",
+        "expected": "VERIFIED on winning supplier",
+        "actual": "{\"ok\":true,\"supplier_id\":\"0d500000-0000-4000-8000-000000000001\",\"business_name\":\"Shakti Motors Verified Pvt Ltd\",\"lifecycle_state\":\"VERIFIED\",\"verification_status\":\"VERIFIED\"}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-ANON-PRE-REVEAL",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "anon",
+        "operation": "reveal_award",
+        "expected": "denied",
+        "actual": "permission denied for function reveal_award",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-AWARD",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "lock_and_reveal_award_atomic",
+        "expected": "AWARDED + award row",
+        "actual": "{\"ok\":true,\"award_id\":\"a4e19035-7bae-4ec8-98e7-81a3789f0033\",\"revealed\":false,\"supplier_verification_required\":false}",
+        "before": "EVALUATING",
+        "after": "AWARDED",
+        "status": "PASS",
+        "fixtureIds": {
+          "rfqId": "2a3db601-fee5-4ba3-9ec5-570ecaa48ce7",
+          "winQuote": "f44755b0-2ddb-43b2-a259-20100eef15de",
+          "awardId": "a4e19035-7bae-4ec8-98e7-81a3789f0033"
+        }
+      },
+      {
+        "id": "GAP2-REVEAL-AUTH",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "reveal_award",
+        "expected": "supplier legal identity fields",
+        "actual": "{\"po_id\":\"860f61d1-fbfd-4c28-8163-011b29806e3a\",\"po_number\":\"PO-2026-09-28-22F9342F\",\"revealed_at\":\"2026-09-28T13:30:07.045013+00:00\",\"supplier_id\":\"0d500000-0000-4000-8000-000000000009\",\"business_name\":\"Shakti Motors & Controls\",\"contact_email\":\"contact09@otpdemo.test\",\"contact_phone\":\"+919845000009\",\"alias_before_reveal\":\"Supplier 929M\",\"buyer_released_to_supplier\":true}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-PO-AUTH",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "create_purchase_order_from_award",
+        "expected": "PO created",
+        "actual": "{\"po_id\":\"860f61d1-fbfd-4c28-8163-011b29806e3a\",\"po_number\":\"PO-2026-09-28-22F9342F\"}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-PO-ANON",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "anon",
+        "operation": "create_purchase_order_from_award",
+        "expected": "denied",
+        "actual": "permission denied for function create_purchase_order_from_award",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-GOVERNANCE-NOTE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "n/a",
+        "operation": "committee quorum",
+        "expected": "COMMUNITY org: 2 RECOMMEND votes",
+        "actual": "Greenview COMMUNITY — committee1+committee2 voted before award",
+        "status": "PASS"
+      }
+    ]
+  },
+  "gap3": {
+    "overall": "PASS",
+    "pass": 8,
+    "fail": 0,
+    "rows": [
+      {
+        "id": "GAP3-IDENTITY-MAP",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "catalog",
+        "operation": "profile vs auth_user_id",
+        "expected": "auth_user_id distinct from profile id",
+        "actual": "manager@greenview.test:b0000000-0000-4000-8000-000000000001:c0000000-0000-4000-8000-000000000001\ncommittee1@greenview.test:b0000000-0000-4000-8000-000000000002:c0000000-0000-4000-8000-000000000002\ncommittee2@greenview.test:b0000000-0000-4000-8000-000000000003:c0000000-0000-4000-8000-000000000003\nbuyer@greenview.test:b0000000-0000-4000-8000-000000000004:c0000000-0000-4000-8000-000000000004",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-A-PRIMARY",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager@greenview.test (profile b0000000-0000-4000-8000-000000000001)",
+        "operation": "submit_rfq_tier_approval_atomic TIER_1",
+        "expected": "APPROVED",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":null,\"signatureMode\":\"DIRECT\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"delegatorProfileId\":null,\"digitalSignatureHash\":\"81ee563610c810bf1069e519e48d4bbfa837fb0f5d4bb8eba480d0bd61c2d96d\"}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-C-MEMBER",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "committee1",
+        "operation": "direct tier approval",
+        "expected": "Unauthorized",
+        "actual": "Unauthorized: Caller role COMMITTEE_MEMBER is not authorized for Tier 1 approval.",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-D-OUTSIDER",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "supplier-a",
+        "operation": "submit_rfq_tier_approval_atomic",
+        "expected": "denied",
+        "actual": "Cross-tenant violation: Caller does not belong to RFQ organization a0000000-0000-4000-8000-000000000001.",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-B-DELEGATION",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "committee2 + active delegation",
+        "operation": "delegated approval",
+        "expected": "APPROVED signatureMode DELEGATED",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":\"d1d1d1d1-0000-4000-8000-000000000001\",\"signatureMode\":\"DELEGATED\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000003\",\"delegatorProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"digitalSignatureHash\":\"19bd44bbfa42ff7983a41bee4297b18b1cce701fde118c712ff5626a5da36552\"}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-E-EXPIRED",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "committee2 + expired delegation",
+        "operation": "delegated approval",
+        "expected": "expired error",
+        "actual": "Delegation proxy has expired (expired at 2026-09-27 13:30:07.441076+00).",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-REJECT",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "submit_rfq_tier_approval_atomic REJECTED",
+        "expected": "REJECTED status",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"REJECTED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-DIRECT-WRITE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "UPDATE rfq_approval_stages.status=APPROVED",
+        "expected": "blocked if P0 defect",
+        "actual": "RFQ approval stages must be updated via submit_rfq_tier_approval_atomic (APPROVAL-STAGE-DIRECT-WRITE)",
+        "before": "PENDING",
+        "after": "PENDING",
+        "status": "PASS",
+        "needsMigration00219": false
+      }
+    ]
+  },
+  "gaps": {
+    "gap1": [
+      {
+        "id": "GAP1-AUTH-OK",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager@greenview.test",
+        "operation": "credit_buyer_settlement_reward_atomic",
+        "input": {
+          "feeId": "3ff27ff5-36a5-4745-b432-13db18efc85a",
+          "p_base_amount": 999999
+        },
+        "expected": "reward=100 from fee row",
+        "actual": "{\"ok\":true,\"message\":\"Buyer sourcing reward credited successfully\",\"wallet_id\":\"3af17b6d-20d3-46ce-9243-5250f2199d25\",\"fee_amount\":500,\"allocation_id\":\"8a5608be-ba52-48ac-bf4a-f58a51099a26\",\"reward_amount\":100,\"transaction_id\":\"d5b5a006-7ccd-41b9-ba73-a4f8323c71cb\",\"closing_balance\":1400,\"opening_balance\":1300}",
+        "before": {
+          "balance": "1300.00",
+          "ledger": "13",
+          "allocations": "13"
+        },
+        "after": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "status": "PASS",
+        "fixtureIds": {
+          "feeId": "3ff27ff5-36a5-4745-b432-13db18efc85a",
+          "orgId": "a0000000-0000-4000-8000-000000000001",
+          "policyId": "f1c18b46-042b-4820-ae28-fb1e08fe1409"
+        }
+      },
+      {
+        "id": "GAP1-REPLAY-SAME-FEE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "replay same platform_fee_tx_id",
+        "expected": "idempotent / no second ledger credit",
+        "actual": "{\"ok\":true,\"message\":\"Reward allocation already credited for this platform fee transaction\",\"replayed\":true,\"allocation_id\":\"8a5608be-ba52-48ac-bf4a-f58a51099a26\",\"reward_amount\":100}",
+        "before": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "after": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "status": "PASS"
+      },
+      {
+        "id": "GAP1-FAKE-FEE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "nonexistent fee id",
+        "expected": "error, no mutation",
+        "actual": "Platform fee transaction 00000000-0000-4000-8000-000000000099 not found",
+        "before": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "after": {
+          "balance": "1400.00",
+          "ledger": "14",
+          "allocations": "14"
+        },
+        "status": "PASS"
+      },
+      {
+        "id": "GAP1-NULL-FEE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "null fee id",
+        "expected": "WALLET-REWARD-FEE-REQUIRED",
+        "actual": "platform_fee_tx_id is required (WALLET-REWARD-FEE-REQUIRED)",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP1-WRONG-ORG-FEE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager + greenview org",
+        "operation": "fee row for other org",
+        "expected": "does not belong",
+        "actual": "Platform fee transaction e3211c3c-91cf-46fb-8f49-353ba8617095 not found",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP1-ANON",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "anon",
+        "operation": "credit_buyer_settlement_reward_atomic",
+        "expected": "permission denied",
+        "actual": "permission denied for function credit_buyer_settlement_reward_atomic",
+        "status": "PASS"
+      }
+    ],
+    "gap2": [
+      {
+        "id": "GAP2-DRAFT-OPEN",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "UPDATE status DRAFT→OPEN",
+        "expected": "OPEN",
+        "actual": "OPEN",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-TO-EVALUATING",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "discover_and_invite + advance_rfq_phases",
+        "expected": "EVALUATING with FINAL quotes",
+        "actual": "disc=ok seed={\"ok\":true,\"rfq_id\":\"2a3db601-fee5-4ba3-9ec5-570ecaa48ce7\",\"success\":true,\"total_quotes\":3,\"quotes_submitted\":3,\"evaluation_result\":{\"scored\":3,\"weights\":{\"price\":25,\"warranty\":35,\"delivery_time\":15,\"supplier_rating\":25}}} adv={\"rfqs\":[{\"to\":\"EVALUATING\",\"ref\":\"RFQ-590PBZ\",\"from\":\"OPEN\",\"rfqId\":\"2a3db601-fee5-4ba3-9ec5-570ecaa48ce7\",\"reason\":\"quoting window closed, proceeding to evaluation\"}],\"advanced\":1} status=EVALUATING finalQuotes=3",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-ONBOARD",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "service_role",
+        "operation": "complete_supplier_onboarding_atomic",
+        "expected": "VERIFIED on winning supplier",
+        "actual": "{\"ok\":true,\"supplier_id\":\"0d500000-0000-4000-8000-000000000001\",\"business_name\":\"Shakti Motors Verified Pvt Ltd\",\"lifecycle_state\":\"VERIFIED\",\"verification_status\":\"VERIFIED\"}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-ANON-PRE-REVEAL",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "anon",
+        "operation": "reveal_award",
+        "expected": "denied",
+        "actual": "permission denied for function reveal_award",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-AWARD",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "lock_and_reveal_award_atomic",
+        "expected": "AWARDED + award row",
+        "actual": "{\"ok\":true,\"award_id\":\"a4e19035-7bae-4ec8-98e7-81a3789f0033\",\"revealed\":false,\"supplier_verification_required\":false}",
+        "before": "EVALUATING",
+        "after": "AWARDED",
+        "status": "PASS",
+        "fixtureIds": {
+          "rfqId": "2a3db601-fee5-4ba3-9ec5-570ecaa48ce7",
+          "winQuote": "f44755b0-2ddb-43b2-a259-20100eef15de",
+          "awardId": "a4e19035-7bae-4ec8-98e7-81a3789f0033"
+        }
+      },
+      {
+        "id": "GAP2-REVEAL-AUTH",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "reveal_award",
+        "expected": "supplier legal identity fields",
+        "actual": "{\"po_id\":\"860f61d1-fbfd-4c28-8163-011b29806e3a\",\"po_number\":\"PO-2026-09-28-22F9342F\",\"revealed_at\":\"2026-09-28T13:30:07.045013+00:00\",\"supplier_id\":\"0d500000-0000-4000-8000-000000000009\",\"business_name\":\"Shakti Motors & Controls\",\"contact_email\":\"contact09@otpdemo.test\",\"contact_phone\":\"+919845000009\",\"alias_before_reveal\":\"Supplier 929M\",\"buyer_released_to_supplier\":true}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-PO-AUTH",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "create_purchase_order_from_award",
+        "expected": "PO created",
+        "actual": "{\"po_id\":\"860f61d1-fbfd-4c28-8163-011b29806e3a\",\"po_number\":\"PO-2026-09-28-22F9342F\"}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-PO-ANON",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "anon",
+        "operation": "create_purchase_order_from_award",
+        "expected": "denied",
+        "actual": "permission denied for function create_purchase_order_from_award",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP2-GOVERNANCE-NOTE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "n/a",
+        "operation": "committee quorum",
+        "expected": "COMMUNITY org: 2 RECOMMEND votes",
+        "actual": "Greenview COMMUNITY — committee1+committee2 voted before award",
+        "status": "PASS"
+      }
+    ],
+    "gap3": [
+      {
+        "id": "GAP3-IDENTITY-MAP",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "catalog",
+        "operation": "profile vs auth_user_id",
+        "expected": "auth_user_id distinct from profile id",
+        "actual": "manager@greenview.test:b0000000-0000-4000-8000-000000000001:c0000000-0000-4000-8000-000000000001\ncommittee1@greenview.test:b0000000-0000-4000-8000-000000000002:c0000000-0000-4000-8000-000000000002\ncommittee2@greenview.test:b0000000-0000-4000-8000-000000000003:c0000000-0000-4000-8000-000000000003\nbuyer@greenview.test:b0000000-0000-4000-8000-000000000004:c0000000-0000-4000-8000-000000000004",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-A-PRIMARY",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager@greenview.test (profile b0000000-0000-4000-8000-000000000001)",
+        "operation": "submit_rfq_tier_approval_atomic TIER_1",
+        "expected": "APPROVED",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":null,\"signatureMode\":\"DIRECT\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"delegatorProfileId\":null,\"digitalSignatureHash\":\"81ee563610c810bf1069e519e48d4bbfa837fb0f5d4bb8eba480d0bd61c2d96d\"}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-C-MEMBER",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "committee1",
+        "operation": "direct tier approval",
+        "expected": "Unauthorized",
+        "actual": "Unauthorized: Caller role COMMITTEE_MEMBER is not authorized for Tier 1 approval.",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-D-OUTSIDER",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "supplier-a",
+        "operation": "submit_rfq_tier_approval_atomic",
+        "expected": "denied",
+        "actual": "Cross-tenant violation: Caller does not belong to RFQ organization a0000000-0000-4000-8000-000000000001.",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-B-DELEGATION",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "committee2 + active delegation",
+        "operation": "delegated approval",
+        "expected": "APPROVED signatureMode DELEGATED",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":\"d1d1d1d1-0000-4000-8000-000000000001\",\"signatureMode\":\"DELEGATED\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000003\",\"delegatorProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"digitalSignatureHash\":\"19bd44bbfa42ff7983a41bee4297b18b1cce701fde118c712ff5626a5da36552\"}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-E-EXPIRED",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "committee2 + expired delegation",
+        "operation": "delegated approval",
+        "expected": "expired error",
+        "actual": "Delegation proxy has expired (expired at 2026-09-27 13:30:07.441076+00).",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-REJECT",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "submit_rfq_tier_approval_atomic REJECTED",
+        "expected": "REJECTED status",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"REJECTED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1}",
+        "status": "PASS"
+      },
+      {
+        "id": "GAP3-DIRECT-WRITE",
+        "classification": "DATABASE_RUNTIME",
+        "actor": "manager",
+        "operation": "UPDATE rfq_approval_stages.status=APPROVED",
+        "expected": "blocked if P0 defect",
+        "actual": "RFQ approval stages must be updated via submit_rfq_tier_approval_atomic (APPROVAL-STAGE-DIRECT-WRITE)",
+        "before": "PENDING",
+        "after": "PENDING",
+        "status": "PASS",
+        "needsMigration00219": false
+      }
+    ]
+  }
+}
