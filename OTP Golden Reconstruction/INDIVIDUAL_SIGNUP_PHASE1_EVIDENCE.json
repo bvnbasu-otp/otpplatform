@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-10-08T15:30:00.000Z",
+  "source": "Supabase Management API (read-only SQL)",
+  "projectRef": "qsuvtcezffomtwzwyrso",
+  "baselineSha": "2d1bd3a4ff825d7afdcfd4b1876e65ec40dd8b00",
+  "migrationCeilingBeforeFix": "00253",
+  "userRolesPropertyOwner": [],
+  "hostedPropertyOwnerMissing": true,
+  "submitSignupHasBlindAssign": true,
+  "blindAssignPattern": "IF v_side = 'BUYER' AND v_buyer_type = 'INDIVIDUAL' AND v_role IS NULL THEN v_role := 'PROPERTY_OWNER';",
+  "compareTo00246": "Hosted submit_signup_request matches 00246 Individual branch (blind assign present); PROPERTY_OWNER catalog row absent on hosted."
+}
