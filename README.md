@@ -22,9 +22,9 @@ This README is an entry point. It is not a certification. The canonical pilot-fr
 | | |
 | --- | --- |
 | Branch inspected | `main` |
-| HEAD inspected | `b7fbcea22273f6045ac0fdd562a278107dcf34b1` |
+| HEAD inspected | `472be38671da0f408b2c80bda06f9c531d15e209` |
 | Working tree | Dirty. This reconstruction did not commit. |
-| Migration files on disk | `00001`–`00247`, 247 files, contiguous. `00246` and `00247` not applied to hosted. |
+| Migration files on disk | `00001`–`00250` on disk. Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. `00246` through `00250` are pending migration, not applied, not deployed, not production. |
 | Hosted database migration | HOSTED DATABASE CEILING NOT RE-VERIFIED. Prior manual verification was `00245`. |
 | Public URL named in config and scripts | `https://otpplatform-theta.vercel.app` |
 | Deployed git SHA | DEPLOYED REVISION NOT RE-VERIFIED |
@@ -39,7 +39,7 @@ Monorepo (`pnpm` workspaces: `apps/*`, `packages/*`):
 - `packages/domain` — types, tax, entitlement, governance
 - `packages/services` — application services and provider adapters
 - `packages/database` — database access
-- `supabase/migrations` — SQL files `00001` through `00247`. Hosted apply of `00246` and `00247` was not done.
+- `supabase/migrations` — SQL files `00001` through `00250` on disk. Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. `00246` through `00250` are pending migration, not applied, not deployed, not production.
 - `supabase/functions` — edge functions
 
 Rules that must hold against a hostile client belong in database functions and row-level security, not only in React. A migration file on disk is not proof the hosted database has applied it.

@@ -49,7 +49,7 @@ export interface InvoicePaymentPanelProps {
   poAmount?: number;
   deliveryAccepted?: boolean;
   onUpdated?: () => void;
-  /** Counterparty legal/business name for statutory documents (Form 16A, TDS). */
+  /** Counterparty legal/business name shown on the TDS withholding panel. */
   supplierName?: string;
   /** INVOICE: GST invoices & TDS. SETTLEMENT: balances & off-platform payment recording. */
   view?: 'ALL' | 'INVOICE' | 'SETTLEMENT';
@@ -960,7 +960,7 @@ export function InvoicePaymentPanel({
               </div>
             )}
 
-            {/* Statutory TDS & Form 16A Withholding Panel */}
+            {/* TDS withholding. This panel does not issue a Form 16A certificate. */}
             {(activeInvoice.status === 'APPROVED' || activeInvoice.status === 'PARTIALLY_PAID' || activeInvoice.status === 'PAID') && (
               <div className="pt-2">
                 <TdsWithholdingPanel

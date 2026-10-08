@@ -13,8 +13,6 @@ import type {
   ZohoPaymentReceiptPayload,
   TdsSection,
   TdsLawVersion,
-  Form16ACertificate,
-  Form16AGeneratorParams,
   PoChangeOrder,
   PoChangeOrderItem,
   ChangeOrderStatus,
@@ -35,7 +33,6 @@ import {
   exportToZohoPaymentReceipt,
   generateFinancialAuditPackCsv,
   generateFinancialAuditPackJson,
-  generateForm16ACertificate,
   generatePoSettlementCertificate as generatePoSettlementCertDomain,
   reconcileBankRemittance,
 } from '@otp/domain';

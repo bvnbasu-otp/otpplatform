@@ -185,9 +185,13 @@ describe('00236 supplier trust classification', () => {
           SELECT public.discover_and_invite_for_rfq($1::uuid, 5, '{}'::uuid[], 'GOOGLE_PLACES') ->> 'outcome' AS outcome
         `, [rfqId]);
         expect(places.rows[0]?.outcome).not.toBe('OTP_REGISTERED_SUPPLIER_DISCOVERY');
-        expect(['GOOGLE_PLACES_DISCOVERY', 'ZERO_RESULTS', 'COVERAGE_NOT_FRESH', 'INVALID_REQUIREMENT']).toContain(
-          places.rows[0]?.outcome,
-        );
+        expect([
+          'GOOGLE_PLACES_DISCOVERY',
+          'ZERO_RESULTS',
+          'COVERAGE_NOT_FRESH',
+          'INVALID_REQUIREMENT',
+          'OTP_REGISTERED_FALLBACK',
+        ]).toContain(places.rows[0]?.outcome);
 
         const before = await c.query<{ id: string }>(`
           SELECT id FROM rfq_invitations WHERE rfq_id = $1

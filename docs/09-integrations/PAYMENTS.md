@@ -25,7 +25,7 @@ If those variables are unset, `verifyAndExtractWebhook` fails verification. `Den
 
 ## Subscription UI
 
-`SubscriptionPaymentModal.tsx` tells the user that commercial prices are displayed and that activation charges ₹0. The file is dirty relative to HEAD. The domain policy agrees that the pilot does not charge (`PILOT_COMMERCIAL_MODE_POLICY.realPaymentCharged = false`).
+`SubscriptionPaymentModal.tsx` displays commercial prices and tells the user the UPI reference is a simulation that does not change the stored plan. The domain policy agrees that the pilot does not charge (`PILOT_COMMERCIAL_MODE_POLICY.realPaymentCharged = false`). Local migration `00250` is the SQL that stops that RPC from writing entitlement. Hosted apply: NOT APPLIED.
 
 ## Out of scope
 

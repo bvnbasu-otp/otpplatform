@@ -1,6 +1,6 @@
 # Database overview
 
-Engine: Postgres via Supabase. Schema files: `supabase/migrations`. Local ceiling: `00001`–`00247`, 247 files, contiguous. HOSTED DATABASE CEILING NOT RE-VERIFIED. Prior manual verification was `00245`. `00246` and `00247` are on disk and were not applied to hosted.
+Engine: Postgres via Supabase. Schema files: `supabase/migrations`. Source ceiling on disk: `00001`–`00250`. Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. `00246` through `00250` are pending migration, not applied, not deployed, not production.
 
 `supabase/config.toml` exists. It was not treated as proof of a running local or hosted database.
 

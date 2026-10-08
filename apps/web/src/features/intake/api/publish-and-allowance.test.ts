@@ -135,38 +135,72 @@ describe('Issue 06: manual intake edits survive to publish', () => {
   });
 });
 
-function rfqCountChain(count: number | null, error: unknown = null) {
-  const chain: any = createSupabaseQueryMock({ data: null, error: null });
+const MONTHLY_ORG = {
+  subscription_plan: 'MONTHLY',
+  subscription_status: 'ACTIVE',
+  subscription_expires_at: '2027-01-01T00:00:00.000Z',
+  org_type: 'INDIVIDUAL',
+};
+
+function rfqChain(rows: { created_at: string }[] | null, error: unknown = null) {
+  const chain: any = createSupabaseQueryMock({ data: rows, error });
   chain.gte = vi.fn(() => chain);
   chain.lte = vi.fn(() => chain);
-  chain.then = (resolveFn: (v: unknown) => unknown, rejectFn?: (e: unknown) => unknown) =>
-    Promise.resolve({ data: null, count, error }).then(resolveFn, rejectFn);
   return chain;
+}
+
+function orgChain(row: Record<string, unknown> | null, error: unknown = null) {
+  return createSupabaseQueryMock({ data: row, error });
+}
+
+function mockAllowanceTables(options: {
+  rfqs?: { created_at: string }[] | null;
+  rfqError?: unknown;
+  org?: Record<string, unknown> | null;
+  orgError?: unknown;
+}) {
+  const rfqs = rfqChain(options.rfqs ?? [], options.rfqError ?? null);
+  const org = orgChain(options.org === undefined ? MONTHLY_ORG : options.org, options.orgError ?? null);
+  mock.from.mockImplementation((table: string) => {
+    if (table === 'rfqs') return rfqs;
+    if (table === 'organizations') return org;
+    throw new Error(`unexpected table ${table}`);
+  });
+  return { rfqs, org };
 }
 
 describe('Issue 22: pilot allowance display and publish gate share one source', () => {
   it('counts this UTC month\'s RFQs for the org and returns the exact label', async () => {
-    const chain = rfqCountChain(1);
-    mock.from.mockReturnValue(chain);
+    const { rfqs, org } = mockAllowanceTables({
+      rfqs: [{ created_at: '2026-09-10T00:00:00.000Z' }],
+    });
     const res = await fetchPilotAllowance('org-1', new Date('2026-09-26T10:00:00Z'));
 
     expect(mock.from).toHaveBeenCalledWith('rfqs');
-    expect(chain.select).toHaveBeenCalledWith('id', { count: 'exact', head: true });
-    expect(chain.eq).toHaveBeenCalledWith('organization_id', 'org-1');
-    expect(chain.gte).toHaveBeenCalledWith('created_at', '2026-09-01T00:00:00.000Z');
-    expect(chain.lte).toHaveBeenCalledWith('created_at', '2026-09-30T23:59:59.999Z');
+    expect(mock.from).toHaveBeenCalledWith('organizations');
+    expect(rfqs.select).toHaveBeenCalledWith('created_at');
+    expect(rfqs.eq).toHaveBeenCalledWith('organization_id', 'org-1');
+    expect(rfqs.gte).toHaveBeenCalledWith('created_at', '2026-07-01T00:00:00.000Z');
+    expect(rfqs.lte).toHaveBeenCalledWith('created_at', '2026-09-30T23:59:59.999Z');
+    expect(org.select).toHaveBeenCalledWith(
+      'subscription_plan, subscription_status, subscription_expires_at, org_type',
+    );
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.allowance.label).toBe(
         'Pilot Allowance: 2 of 3 RFQs remaining this month (₹0 charged in Pilot Mode)',
       );
       expect(res.allowance.chargedInr).toBe(0);
+      expect(res.allowance.effectivePlan).toBe('MONTHLY');
     }
   });
 
   it('gate blocks publishing when the allowance is used up, using the same label', async () => {
-    mock.from.mockReturnValue(rfqCountChain(3));
-    const res = await checkPilotAllowanceBeforePublish('org-1');
+    const now = new Date('2026-09-26T10:00:00Z');
+    mockAllowanceTables({
+      rfqs: [1, 2, 3].map((day) => ({ created_at: `2026-09-${10 + day}T00:00:00.000Z` })),
+    });
+    const res = await checkPilotAllowanceBeforePublish('org-1', now);
     expect(res.ok).toBe(false);
     if (!res.ok) {
       expect(res.error).toContain('Pilot Allowance: 0 of 3 RFQs remaining this month (₹0 charged in Pilot Mode)');
@@ -174,15 +208,53 @@ describe('Issue 22: pilot allowance display and publish gate share one source', 
   });
 
   it('gate fails closed when the count cannot be read', async () => {
-    mock.from.mockReturnValue(rfqCountChain(null, { message: 'rls' }));
+    mockAllowanceTables({ rfqs: null, rfqError: { message: 'rls' } });
     const res = await checkPilotAllowanceBeforePublish('org-1');
     expect(res).toEqual({ ok: false, error: PILOT_ALLOWANCE_UNVERIFIED_ERROR });
   });
 
+  it('gate fails closed when the stored plan cannot be read', async () => {
+    mockAllowanceTables({ org: null, orgError: { message: 'rls' } });
+    const res = await checkPilotAllowanceBeforePublish('org-1', new Date('2026-09-26T10:00:00Z'));
+    expect(res).toEqual({ ok: false, error: PILOT_ALLOWANCE_UNVERIFIED_ERROR });
+  });
+
   it('gate allows publishing with remaining allowance', async () => {
-    mock.from.mockReturnValue(rfqCountChain(2));
-    const res = await checkPilotAllowanceBeforePublish('org-1');
+    const now = new Date('2026-09-26T10:00:00Z');
+    mockAllowanceTables({
+      rfqs: [
+        { created_at: '2026-09-02T00:00:00.000Z' },
+        { created_at: '2026-09-03T00:00:00.000Z' },
+      ],
+    });
+    const res = await checkPilotAllowanceBeforePublish('org-1', now);
     expect(res.ok).toBe(true);
     if (res.ok) expect(res.allowance?.remaining).toBe(1);
+  });
+
+  it('reads the stored YEARLY plan and allows the one quarterly bonus', async () => {
+    const now = new Date('2026-01-15T12:00:00.000Z');
+    mockAllowanceTables({
+      org: { ...MONTHLY_ORG, subscription_plan: 'YEARLY', org_type: 'COMMUNITY' },
+      rfqs: [5, 6, 7].map((day) => ({ created_at: `2026-01-0${day}T00:00:00.000Z` })),
+    });
+    const res = await checkPilotAllowanceBeforePublish('org-1', now);
+    expect(checkPilotAllowanceBeforePublish.length).toBe(1);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.allowance?.effectivePlan).toBe('YEARLY');
+      expect(res.allowance?.quarterlyBonusRemaining).toBe(1);
+    }
+  });
+
+  it('does not treat a caller wish as YEARLY when the stored plan is monthly', async () => {
+    const clientSuppliedPlan = 'YEARLY';
+    const now = new Date('2026-01-15T12:00:00.000Z');
+    mockAllowanceTables({
+      rfqs: [5, 6, 7].map((day) => ({ created_at: `2026-01-0${day}T00:00:00.000Z` })),
+    });
+    const res = await checkPilotAllowanceBeforePublish('org-1', now);
+    expect(clientSuppliedPlan).toBe('YEARLY');
+    expect(res.ok).toBe(false);
   });
 });

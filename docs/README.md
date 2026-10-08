@@ -9,8 +9,8 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 | Item | Value |
 | --- | --- |
 | Branch | `main` |
-| SHA inspected | `b7fbcea22273f6045ac0fdd562a278107dcf34b1` |
-| Local migrations | `00001`–`00247`, 247 files, contiguous. `00246` and `00247` not applied to hosted. |
+| SHA inspected | `472be38671da0f408b2c80bda06f9c531d15e209` |
+| Local migrations | `00001`–`00250` on disk. Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. `00246` through `00250` are pending migration, not applied, not deployed, not production. |
 | Hosted database | HOSTED DATABASE CEILING NOT RE-VERIFIED. Prior manual verification was `00245`. |
 | Public URL named in repo | `https://otpplatform-theta.vercel.app` |
 | Deployed SHA | DEPLOYED REVISION NOT RE-VERIFIED |

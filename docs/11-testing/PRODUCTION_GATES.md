@@ -5,7 +5,7 @@ Status of the gate scripts: `IMPLEMENTED` as files. Last gate result: `UNKNOWN` 
 | Gate | Where |
 | --- | --- |
 | Vocabulary | `pnpm test:vocab` in CI `build-and-lint` |
-| Migration file continuity | `pnpm db:migrate:check` in CI. CI production job also checks that the file count equals ceiling `00247` before `supabase db push`. That check was not executed here. |
+| Migration file continuity | `pnpm db:migrate:check` in CI. CI production job also checks that the file count equals ceiling `00250` before `supabase db push`. That check was not executed here. `00248`, `00249`, and `00250` were not applied to hosted. |
 | Web build | `pnpm --filter @otp/web build` with non-secret placeholder env |
 | Coverage append | `pnpm test:policy --strict` |
 | Unit, module, functional | `test-suites` job |

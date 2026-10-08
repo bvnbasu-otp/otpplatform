@@ -1,14 +1,14 @@
 # Supabase
 
-Status of local migration files: `IMPLEMENTED` on disk through `00247`. HOSTED DATABASE CEILING NOT RE-VERIFIED. Prior manual verification was `00245`. This phase did not query the hosted database and did not run the Supabase CLI. `00246` and `00247` were not applied to hosted.
+Status of local migration files: `IMPLEMENTED` on disk through `00250` (`00001`–`00250`). Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. Prior manual verification was `00245`. This phase did not query the hosted database and did not run the Supabase CLI. `00246` through `00250` are pending migration, not applied, not deployed, not production.
 
 ## Project ref named in CI
 
-`.github/workflows/ci-cd.yml` sets `PRODUCTION_PROJECT_REF` to `qsuvtcezffomtwzwyrso` for `supabase link`, `supabase db push --linked`, and `supabase functions deploy location-pin-coverage`. That is the CI database target. It is not a confirmation the ref is at `00247`. `supabase/config.toml` sets `project_id = "otp-local"`. `scripts/deploy-prod.ps1` targets Docker container `otp-prod-db` and is labelled LOCAL DOCKER ONLY (DEFECT-02). It is not the hosted project ref. Local migration files now include `00247`. Hosted ceiling: NOT RE-VERIFIED. Prior manual verification remains `00245`.
+`.github/workflows/ci-cd.yml` sets `PRODUCTION_PROJECT_REF` to `qsuvtcezffomtwzwyrso` for `supabase link`, `supabase db push --linked`, and `supabase functions deploy location-pin-coverage`. That is the CI database target. It is not a confirmation the ref is at `00250`. `supabase/config.toml` sets `project_id = "otp-local"`. `scripts/deploy-prod.ps1` targets Docker container `otp-prod-db` and is labelled LOCAL DOCKER ONLY (DEFECT-02). It is not the hosted project ref. Local migration files on disk are `00001`–`00250`. Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. Prior manual verification remains `00245`.
 
 ## Migrations
 
-Directory `supabase/migrations`. 247 SQL files, numbers 00001 through 00247, no gaps. Milestone list: [MIGRATION_HISTORY.md](../07-database/MIGRATION_HISTORY.md). Hosted apply of `00246` and `00247`: not done.
+Directory `supabase/migrations`. 250 SQL files, numbers 00001 through 00250, no gaps. Milestone list: [MIGRATION_HISTORY.md](../07-database/MIGRATION_HISTORY.md). Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. `00246` through `00250` are pending migration, not applied, not deployed, not production.
 
 This reconstruction did not run the Supabase CLI, `db push`, or a hosted migration.
 

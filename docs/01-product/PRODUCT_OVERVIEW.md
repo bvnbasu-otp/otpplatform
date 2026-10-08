@@ -20,7 +20,7 @@ Individual, RWA / housing society, and MSME buyers, plus suppliers who quote. En
 | `packages/domain` | Personas, entitlement, tax, governance templates, payment-plan definitions. |
 | `packages/services` | Places adapter, email dispatcher, service layer. |
 | `packages/database` | Database access package. |
-| `supabase/migrations` | `00001`–`00247` on disk. Hosted apply of `00246` and `00247` was not done. Prior manual hosted verification was `00245`. |
+| `supabase/migrations` | `00001`–`00250` on disk. Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. `00246` through `00250` are pending migration, not applied, not deployed, not production. |
 | `supabase/functions` | Edge functions listed in [SUPABASE.md](../10-platform/SUPABASE.md). |
 
 ## What this overview will not claim

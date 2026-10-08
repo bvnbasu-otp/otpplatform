@@ -4,9 +4,9 @@
 | --- | --- |
 | Remote named by the mission | `github.com/bvnbasu-otp/otpplatform` |
 | Branch inspected | `main` (`git rev-parse --abbrev-ref HEAD`, tracking `origin/main`) |
-| SHA inspected | `b7fbcea22273f6045ac0fdd562a278107dcf34b1` |
+| SHA inspected | `472be38671da0f408b2c80bda06f9c531d15e209` |
 | Previous SHA named in the mission | `a71e7f3f590400c31322dcfcba722b800c4fe305` was not checked out. HEAD was the SHA above. |
-| Commit subject | `test: add feature-local copy coverage` (2026-10-06) |
+| Commit subject | `test: reconcile payment reference allowlist` (2026-10-07) |
 | Working tree | Dirty at inspection. This reconstruction did not commit, push, add, or reset. |
 
 ## Who operates git

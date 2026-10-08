@@ -28,6 +28,6 @@ Suppliers quote under an alias until reveal. Their wallet events are referral bo
 
 `submit_signup_request` in `00212` casts `p_request->>'buyer_type'` to `org_type`. The `00001` enum includes `ENTERPRISE` and `INSTITUTION`. The public form does not send those values. A crafted RPC body can. That residual is a DEFECT. Proposed later fix: reject those buyer types in the RPC. Not applied.
 
-`private.subscription_wallet_credit_inr` in `00216` prices `ENTERPRISE` and `TIER_2_ENTERPRISE` at 4999 monthly. Domain `TIER_2_ENTERPRISE` is priced like RWA (1499). That split is inside the leftover mapping. It is not a fourth customer price.
+`private.subscription_wallet_credit_inr` in local migration `00250` uses the same yearly and monthly figures as `SUBSCRIPTION_TIERS`, including `TIER_2_ENTERPRISE` at the RWA price. `00216` had yearly figures 9 rupees lower and priced that alias with Enterprise. Hosted apply of `00250`: NOT APPLIED. It is not a fourth customer price.
 
 `brand.ts` exports `BUYER_TYPES` including `Institution` and `Local business`. A page render of that array was not found. Do not treat it as the signup list. The signup list is `BuyerRegisterForm`.

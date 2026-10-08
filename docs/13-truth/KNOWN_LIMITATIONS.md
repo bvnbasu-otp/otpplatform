@@ -4,7 +4,7 @@ Statuses are defined in [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This pag
 
 ## Not observed
 
-- The hosted Supabase project was not queried. HOSTED DATABASE CEILING NOT RE-VERIFIED. Prior manual verification was `00245`. Local files `00001`–`00247` do not prove those migrations are applied. `00246` and `00247` were not applied to hosted.
+- The hosted Supabase project was not queried. HOSTED DATABASE CEILING NOT RE-VERIFIED. Prior manual verification was `00245`. Local files `00001`–`00250` do not prove those migrations are applied. `00246`, `00247`, `00248`, `00249`, and `00250` were not applied to hosted. The production workflow `EXPECTED_CEILING` is `00250`.
 - DEPLOYED REVISION NOT RE-VERIFIED. `https://otpplatform-theta.vercel.app` was not read from a Vercel deployment record.
 - Phase 2 executed no tests. Phase 1 ran 5 files / 78 tests (pricing entitlement, ONDC foundation, ONDC environment, Google GIS quota, Google Places pilot activation). That does not certify the hosted project.
 - Google Cloud billing usage is not instrumented in this repository. The Postgres counter `google_places_daily_budget` is a daily reservation counter. 1500 is the application daily limit, not usage. An OTP monthly Google limit is NOT AUTHORITATIVELY CONFIGURED.
@@ -21,7 +21,8 @@ Statuses are defined in [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This pag
 - WhatsApp and SMS are not a live supplier channel. The messaging resolver defaults to `MOCK` and fails closed if Twilio or Meta is selected without credentials.
 - ONDC foundation status is `CREDENTIAL_GATED`. The `on_search` ingress NACKs unless a complete pre-production slot is present and the hosts are not production hosts. That is not a live network.
 - Static Bengaluru electrical fixtures live in the library adapter. The buyer coverage edge path does not call them. They are not Google, OTP-registered, or GST-verified suppliers.
-- Entitlement arithmetic is 3 RFQs a calendar month, plus one non-carrying quarterly bonus on a yearly plan. The old `WHY_5_RFQS_EXPLANATION` constant was removed.
+- Entitlement arithmetic is 3 RFQs a calendar month, plus one non-carrying quarterly bonus on a yearly plan. The old `WHY_5_RFQS_EXPLANATION` constant was removed. Local migration `00248` is the insert enforcement for that bonus. It is NOT applied to hosted.
+- An ordinary client must not be the authority for that stored yearly plan. Local migration `00249` rejects an `anon` or `authenticated` change to `organizations.subscription_plan`, `subscription_status`, and `subscription_expires_at`, and rejects a client insert whose plan reads as `YEARLY`. Local migration `00250` makes `process_subscription_payment` return a simulation and does not write those columns. Source only. Hosted apply of both: NOT APPLIED. The local database still runs the `00233` body until `00250` is applied. A catalog-priced wallet debit remains a writer. TDS withholding stores the caller-supplied rate (0–20). OTP calculates withholding from that rate and does not determine or certify the legally applicable statutory TDS rate. The customer or their tax adviser remains responsible for that determination.
 - `scripts/deploy-prod.ps1` writes Docker `otp-prod-db` and is labelled LOCAL DOCKER ONLY. It must not be used for hosted Supabase `qsuvtcezffomtwzwyrso`. Runtime behavior of the script is unchanged.
 
 ## Operational limits

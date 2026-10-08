@@ -21,7 +21,7 @@ Push to `main`, `master`, `release/**`, `staging`, `develop`, tags `v*` and `rel
 
 The step “Deploy Direct to Production” only echoes text. It does not call Vercel. Web publication is not this job. Status of that step: `NOT-IMPLEMENTED` as a deploy.
 
-The Supabase push is in the file. Status: `IMPLEMENTED` as automation in the workflow. A successful hosted push was not observed here. The expected ceiling string is `00247`. That string is the workflow expectation, not a hosted observation.
+The Supabase push is in the file. Status: `IMPLEMENTED` as automation in the workflow. A successful hosted push was not observed here. The expected ceiling string is `00250`. That string is the workflow expectation, not a hosted observation. `00248`, `00249`, and `00250` are on disk and were not applied to hosted.
 
 ## Local scripts
 
