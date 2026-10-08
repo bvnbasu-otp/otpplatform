@@ -9,8 +9,8 @@ const ROOT = resolve('.');
 const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
-// Repository ceiling. 00249 and 00250 do not grant this function back to clients.
-const REPOSITORY_CEILING = '00250_financial_authority_client_grant_boundary.sql';
+// Repository ceiling. 00249, 00250, and 00251 do not grant this function back to clients.
+const REPOSITORY_CEILING = '00252_rwa_award_quorum_met.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';
@@ -79,7 +79,7 @@ describe('record_verified_payment execute boundary', () => {
     }
   }
 
-  it('keeps the 00247 boundary in the contiguous chain ending at 00250 and leaves only service_role', () => {
+  it('keeps the 00247 boundary in the contiguous chain ending at 00252 and leaves only service_role', () => {
     expect(files).toContain(FILE);
     expect(files.at(-1)).toBe(REPOSITORY_CEILING);
     files.forEach((f, i) => expect(f.slice(0, 5)).toBe(String(i + 1).padStart(5, '0')));
@@ -122,6 +122,8 @@ describe('record_verified_payment execute boundary', () => {
       'tests/security/payment-webhook-fail-closed.test.ts',
       'tests/security/record-verified-payment-00247.test.ts',
       'tests/security/signup-buyer-type-00246.test.ts',
+      // Proves authenticated EXECUTE is denied. Not a settlement caller.
+      'tests/security/subscription-persona-authority.test.ts',
     ]);
     const rpcCallers = rel.filter((path) =>
       /rpc\(\s*['"]record_verified_payment['"]/.test(readFileSync(resolve(ROOT, path), 'utf8')),

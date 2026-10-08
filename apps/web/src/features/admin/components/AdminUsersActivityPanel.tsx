@@ -545,10 +545,14 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
           .eq('id', org.id);
         if (error) throw error;
       } else {
+        const { error: statusError } = await supabase.rpc(
+          'platform_admin_set_organization_subscription_status',
+          { p_organization_id: org.id },
+        );
+        if (statusError) throw statusError;
         const { error } = await supabase
           .from('organizations')
           .update({
-            subscription_status: 'ACTIVE',
             gst_verified: true,
             updated_at: new Date().toISOString(),
           })

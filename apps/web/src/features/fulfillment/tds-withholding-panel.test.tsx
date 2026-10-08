@@ -108,6 +108,14 @@ describe('TDS withholding panel (GST-exclusive base, single deduction)', () => {
     expect(src).toMatch(/already recorded/);
   });
 
+  it('does not present a placeholder TAN or PAN as a Form 16A certificate', () => {
+    const src = readFileSync(resolve(__dirname, 'components/TdsWithholdingPanel.tsx'), 'utf8');
+    expect(src).not.toContain('BLR0998811');
+    expect(src).not.toContain('AAACB1234F');
+    expect(src).not.toContain('generateForm16ACertificate');
+    expect(src).toContain('not a Form 16A certificate');
+  });
+
   it('InvoicePaymentPanel passes the stored GST split to the TDS panel', () => {
     const src = readFileSync(resolve(__dirname, 'components/InvoicePaymentPanel.tsx'), 'utf8');
     expect(src).toMatch(/gstAmount=\{deriveInvoiceTdsBase\(activeInvoice\)\.gstAmount\}/);

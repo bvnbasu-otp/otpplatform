@@ -111,9 +111,10 @@ export function LegalPage() {
             <div>
               <h2 className="text-lg font-semibold text-navy">Third-Party Services</h2>
               <p className="mt-2">
-                We use Supabase (database & auth), Twilio/Meta (messaging), and optional
-                analytics tools. No data is sold to third parties. Service providers
-                process data only as necessary to provide platform functionality.
+                We use Supabase (database and auth) and optional analytics tools.
+                Messages are sent through the provider configured for this deployment.
+                No data is sold to third parties. Service providers process data only
+                as necessary to provide platform functionality.
               </p>
             </div>
 

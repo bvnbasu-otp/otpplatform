@@ -1,6 +1,6 @@
 # Purchase orders
 
-Status of the tax and payment-plan functions: `IMPLEMENTED` in `00240` and `00245`. Hosted apply: `UNKNOWN`. `00245` does not backfill old rows.
+Status of the tax and payment-plan functions: `IMPLEMENTED` in `00240` and `00245`. Hosted history ceiling read on 2026-10-08 is `00252`, which includes `00245`. `00245` does not backfill old rows.
 
 ## Creation
 
@@ -27,6 +27,8 @@ The awarded `quote_versions.snapshot` is the source.
 | Transport | Stays inside `total_amount`. It is not a second taxable base. The migration states GST in the quote model is computed on `basePrice`. |
 
 `private.issue_po_document_snapshots` is also replaced in `00245` so the issued document reads the stored tax instead of a hard-coded zero.
+
+Procurement GMV for a purchase order is `taxable_total + cgst_total + sgst_total + igst_total + utgst_total`. Those are the column names on `purchase_orders`. `total_amount` remains the quote `totalCost` and is not this sum added a second time. Transport stays inside `total_amount` only. This note does not rename columns and does not change the `00245` calculation.
 
 ## Payment structure
 

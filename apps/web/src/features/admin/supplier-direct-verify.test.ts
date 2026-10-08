@@ -32,4 +32,9 @@ describe('admin direct supplier verification', () => {
   it('surfaces a failed update instead of reporting success', () => {
     expect(block).toMatch(/if \(error\) throw error;/);
   });
+
+  it('does not set subscription status from the authenticated client update', () => {
+    expect(source).toContain('platform_admin_set_organization_subscription_status');
+    expect(source).not.toMatch(/subscription_status:\s*'ACTIVE'/);
+  });
 });

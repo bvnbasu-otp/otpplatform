@@ -116,9 +116,10 @@ $waText       = ($waText -replace '\u2014|\u2013', '-' -replace '[^\x20-\x7E\r\n
 
 # 2. Dispatch Email via Gmail SMTP
 try {
+  if (-not $env:SMTP_PASS) { throw "SMTP_PASS is required" }
   $smtp = New-Object System.Net.Mail.SmtpClient("smtp.gmail.com", 587)
   $smtp.EnableSsl = $true
-  $smtp.Credentials = New-Object System.Net.NetworkCredential("bvnbasu@gmail.com", "tthnhzwbkexabpda")
+  $smtp.Credentials = New-Object System.Net.NetworkCredential("bvnbasu@gmail.com", $env:SMTP_PASS)
 
   $mail = New-Object System.Net.Mail.MailMessage
   $mail.From = New-Object System.Net.Mail.MailAddress("bvnbasu@gmail.com", "OTP Platform Operations")

@@ -28,6 +28,9 @@ describe('8 Core Procurement States Lifecycle Engine', () => {
     ];
 
     expect(Object.keys(CORE_PROCUREMENT_STATES)).toEqual(states);
+    expect(CORE_PROCUREMENT_STATES.EVALUATING.key).toBe('EVALUATING');
+    expect(CORE_PROCUREMENT_STATES.EVALUATING.shortLabel).toBe('Decide');
+    expect(CORE_PROCUREMENT_STATES.EVALUATING.title).toBe('3. Decide');
     expect(CHRONOLOGICAL_STAGES).toEqual([
       'DRAFT',
       'QUOTING',

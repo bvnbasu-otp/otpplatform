@@ -12,6 +12,7 @@ import {
 } from 'https://deno.land/std@0.224.0/assert/mod.ts';
 import { MessagingConfigError, resolveProvider } from './resolve.ts';
 import { MockMessagingProvider } from './mock.ts';
+import { WahaMessagingProvider } from './waha.ts';
 
 Deno.test('resolveProvider defaults to MOCK', () => {
   const provider = resolveProvider({});
@@ -41,6 +42,46 @@ Deno.test('resolveProvider rejects an unknown provider id', () => {
     MessagingConfigError,
     'Unknown MESSAGING_PROVIDER',
   );
+});
+
+Deno.test('resolveProvider fails loudly on missing WAHA configuration', () => {
+  assertThrows(
+    () => resolveProvider({ MESSAGING_PROVIDER: 'WAHA' }),
+    MessagingConfigError,
+    'WAHA_BASE_URL',
+  );
+  assertThrows(
+    () => resolveProvider({ MESSAGING_PROVIDER: 'WAHA', WAHA_BASE_URL: 'http://127.0.0.1:3008' }),
+    MessagingConfigError,
+    'WAHA_SESSION',
+  );
+});
+
+Deno.test('resolveProvider rejects a WAHA URL that carries credentials', () => {
+  const secret = 'super-secret-pass';
+  let message = '';
+  try {
+    resolveProvider({
+      MESSAGING_PROVIDER: 'waha',
+      WAHA_BASE_URL: `http://user:${secret}@127.0.0.1:3008`,
+      WAHA_SESSION: 'default',
+    });
+  } catch (error) {
+    if (!(error instanceof MessagingConfigError)) throw error;
+    message = error.message;
+  }
+  assertEquals(message.includes('must not contain credentials'), true);
+  assertEquals(message.includes(secret), false);
+});
+
+Deno.test('resolveProvider selects WAHA only when URL and session are set', () => {
+  const provider = resolveProvider({
+    MESSAGING_PROVIDER: 'WAHA',
+    WAHA_BASE_URL: 'http://127.0.0.1:3008',
+    WAHA_SESSION: 'default',
+  });
+  assertInstanceOf(provider, WahaMessagingProvider);
+  assertEquals(provider.id, 'WAHA');
 });
 
 Deno.test('resolveProvider selects Twilio when both credentials are set', () => {

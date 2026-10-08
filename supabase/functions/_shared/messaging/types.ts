@@ -13,7 +13,7 @@
 
 export type MessagingChannel = 'SMS' | 'WHATSAPP';
 
-export type MessagingProviderId = 'TWILIO' | 'META' | 'MOCK';
+export type MessagingProviderId = 'TWILIO' | 'META' | 'WAHA' | 'MOCK';
 
 export interface OutboundMessage {
   /** E.164, always. Providers reject anything else and so do we. */

@@ -62,6 +62,8 @@ function messagingEnv() {
     META_PHONE_NUMBER_ID: Deno.env.get('META_PHONE_NUMBER_ID') ?? undefined,
     META_ACCESS_TOKEN: Deno.env.get('META_ACCESS_TOKEN') ?? undefined,
     META_APP_SECRET: Deno.env.get('META_APP_SECRET') ?? undefined,
+    WAHA_BASE_URL: Deno.env.get('WAHA_BASE_URL') ?? undefined,
+    WAHA_SESSION: Deno.env.get('WAHA_SESSION') ?? undefined,
     MESSAGING_MOCK_SECRET: Deno.env.get('MESSAGING_MOCK_SECRET') ?? undefined,
   };
 }
@@ -172,7 +174,7 @@ Deno.serve(async (req) => {
           p_credential_value: identifier,
         });
         if (error || !data?.ok) return jsonResponse({ ok: false, error: data?.error || GENERIC_ISSUE_ERROR });
-        return jsonResponse({ ok: true, debugCode: data.otp_code });
+        return jsonResponse({ ok: true });
       }
       return jsonResponse({
         ok: false,
@@ -220,6 +222,11 @@ Deno.serve(async (req) => {
     throw error;
   }
 
+  if (provider.id === 'MOCK') {
+    if (cleanup) await cleanup();
+    return jsonResponse({ ok: false, error: GENERIC_SEND_ERROR }, 503);
+  }
+
   const rendered = render();
   const receipt = await provider.send({ to: e164, channel: 'WHATSAPP', body: rendered.body });
 
@@ -229,9 +236,5 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, error: GENERIC_SEND_ERROR });
   }
 
-  const responseBody: Record<string, unknown> = { ok: true };
-  if (DEBUG_REVEAL_CODE) {
-    responseBody.debugCode = otpCode;
-  }
-  return jsonResponse(responseBody);
+  return jsonResponse({ ok: true });
 });

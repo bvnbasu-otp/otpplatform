@@ -63,6 +63,8 @@ function messagingEnv() {
     META_PHONE_NUMBER_ID: Deno.env.get('META_PHONE_NUMBER_ID') ?? undefined,
     META_ACCESS_TOKEN: Deno.env.get('META_ACCESS_TOKEN') ?? undefined,
     META_APP_SECRET: Deno.env.get('META_APP_SECRET') ?? undefined,
+    WAHA_BASE_URL: Deno.env.get('WAHA_BASE_URL') ?? undefined,
+    WAHA_SESSION: Deno.env.get('WAHA_SESSION') ?? undefined,
     MESSAGING_MOCK_SECRET: Deno.env.get('MESSAGING_MOCK_SECRET') ?? undefined,
   };
 }

@@ -160,12 +160,12 @@ Set-Location "G:\My Drive\otp"
 - **Kong Production Gateway**: `http://127.0.0.1:8000` (Port `8000`, strictly loopback)
 - **GoTrue Production Auth Engine**: `http://127.0.0.1:9999` (Port `9999`, strictly loopback)
 - **WAHA WhatsApp Gateway**: `http://127.0.0.1:3008` (Port `3008`, strictly loopback)
-- **Production PostgreSQL**: `127.0.0.1:5432` (`otp-prod-db`, strictly loopback) | Password: `SuperSecretProdPostgresPassword2026!`
+- **Production PostgreSQL**: `127.0.0.1:5432` (`otp-prod-db`, strictly loopback) | Password: `set via POSTGRES_PASSWORD; not stored in this document`
 - **Kong Staging Gateway**: `http://localhost:54321` (Port `54321`)
 - **Staging PostgreSQL**: `127.0.0.1:54322` (`supabase_db_otp-local`) | Password: `postgres`
 - **SuperAdmin Accounts**:
-  - `bvnbasu@gmail.com` / `Admin@OTP2026!`
-  - `admin@otp.test` / `password`
+  - `bvnbasu@gmail.com` / `not stored in this document`
+  - `admin@otp.test` / `not stored in this document`
 
 ---
 

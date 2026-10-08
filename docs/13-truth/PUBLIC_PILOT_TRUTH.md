@@ -30,17 +30,20 @@ Public words on the site: Request → Compare → Decide → Purchase → Track 
 ## Limitations (do not claim these as live)
 
 - No integration is `LIVE-VERIFIED`.
-- Google Places on the buyer path is the edge function `location-pin-coverage`: durable `00224` cache, then `places:searchText`, or `PROVIDER_UNAVAILABLE`. Daily application limit 1500 is not measured usage. Monthly limit: NOT AUTHORITATIVELY CONFIGURED. Discovery results are `DISCOVERED_IN_AREA`, not `OTP_REGISTERED` and not `GST_VERIFIED`.
+- Google Places on the buyer path is the edge function `location-pin-coverage`: durable `00224` cache, then `places:searchText`, or `PROVIDER_UNAVAILABLE`. Daily application limit 1500 is not measured usage. Monthly limit: NOT AUTHORITATIVELY CONFIGURED. A fresh pin with no addressable supplier can invite OTP-registered suppliers labeled `otp_registered` or `gst_verified` (`OTP_REGISTERED_FALLBACK`). Pin invitations stay `pin_coverage`. Non-fresh coverage does not use that fallback.
 - The library Places ladder (in-memory map labeled `DATABASE_CACHE`, then Bengaluru `560*` fixtures) is not the buyer edge path. Fixtures are not live Google.
-- WhatsApp and SMS default to `MOCK`. Public copy says they are not yet live.
+- Pilot messaging is WAHA through the operator's protected gateway. Hosted Edge and Vercel are not configured to call that gateway. Public pages do not name Twilio, Meta, or a hosted WhatsApp URL. SMS is not a pilot provider.
+- Share-in-Success is NOT IMPLEMENTED. Public copy must not call it live.
+- The buyer platform-fee reward is not credited in this pilot. The domain credit-lot helper, when a lot is constructed, sets `expiresAt` to 365 days after `creditedAt`. The pilot does not create those lots, so there is no separate live expiry to invent.
+- The customer stage label for internal `EVALUATING` is Decide. The state value remains `EVALUATING`.
 - Email delivery is `UNKNOWN`.
-- ONDC is `CREDENTIAL_GATED`. The `on_search` ingress NACKs production hosts.
+- ONDC is disabled (`ONDC_ENABLED=false`). It is not a live pilot network.
 - BNI is planned. The stub adapter is not a BNI network.
-- Razorpay and Stripe are config-gated. SECURITY-01 compiled fallback literals are removed in source. The edge function was not redeployed. Local migration `00247` leaves `record_verified_payment` executable by `service_role` only. Hosted apply of `00246` and `00247`, and the function deploy, are NOT RE-VERIFIED. Live collection remains `UNKNOWN`.
+- Razorpay and Stripe are config-gated. Local migration `00247` leaves `record_verified_payment` executable by `service_role` only. Live collection remains `UNKNOWN` until the payment webhook is deployed and a real event is verified. No settlement is claimed from a deploy alone.
 - Enterprise is not a customer type.
 - Supplier cashback is not a product capability.
 - Allowance copy is 3 RFQs a calendar month. The old 5-RFQ constant was removed. That is not a measured response rate.
-- Hosted migration ceiling and the deployed web revision were not re-verified. Local files reach `00247`. Hosted `00246` and `00247` were not applied.
+- Hosted `schema_migrations` ceiling verified in this freeze is `00251`. `00252` is the RWA award-quorum migration and is hosted only after its own apply check. Supplier cashback is not an active mechanism. Historical migrations still reject a `SUPPLIER_CASHBACK` ledger event.
 
 ## Planned / roadmap
 

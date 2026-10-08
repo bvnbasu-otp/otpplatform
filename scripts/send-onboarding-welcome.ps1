@@ -25,7 +25,8 @@ param (
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
 $adminEmail = "bvnbasu@gmail.com"
-$smtpPass = "tthnhzwbkexabpda"
+$smtpPass = $env:SMTP_PASS
+if (-not $env:SMTP_PASS) { throw "SMTP_PASS is required" }
 $loginUrl = "$PortalUrl/login"
 $entityLabel = if ($BusinessName) { $BusinessName } else { $FullName }
 

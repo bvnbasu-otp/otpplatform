@@ -79,9 +79,9 @@ export const CORE_PROCUREMENT_STATES: Record<CoreProcurementState, ProcurementSt
   EVALUATING: {
     key: 'EVALUATING',
     stepNumber: 3,
-    title: '3. Evaluation & Voting',
-    shortLabel: 'Evaluating',
-    tagline: 'Identity-protected comparison & committee quorum voting',
+    title: '3. Decide',
+    shortLabel: 'Decide',
+    tagline: 'Identity-protected comparison and the decision to award',
     description: 'Sealed quotes compared side-by-side on price, specs, and turnaround. Committee quorum vote decides the award.',
     icon: '⚖️',
     badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800/60',

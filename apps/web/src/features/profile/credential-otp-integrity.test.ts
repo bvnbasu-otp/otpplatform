@@ -20,9 +20,8 @@ vi.mock('@/lib/supabase', () => {
  * no longer calls `request_profile_credential_otp` directly (that RPC is
  * service_role-only as of migration 00208) nor dispatches WhatsApp itself.
  * It calls the `otp-dispatch` edge function and is told success/failure —
- * the plaintext code is never in its response unless the *server* env var
- * `OTP_DEBUG_REVEAL_CODE` put it there as `debugCode`, never a client build
- * flag.
+ * the plaintext code is never in its response. `otp-dispatch` does not
+ * return the code, including when `OTP_DEBUG_REVEAL_CODE` is set.
  */
 describe('Profile credential verification never proves ownership on screen', () => {
   beforeEach(() => {

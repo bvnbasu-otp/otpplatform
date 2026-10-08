@@ -16,4 +16,5 @@ export * from './crypto.ts';
 export * from './providers/mock.ts';
 export * from './providers/twilio.ts';
 export * from './providers/meta.ts';
+export * from './providers/waha.ts';
 export * from './providers/resolve.ts';

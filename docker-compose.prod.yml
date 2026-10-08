@@ -9,7 +9,7 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SuperSecretProdPostgresPassword2026!}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: postgres
     volumes:
       - db-data:/var/lib/postgresql/data
@@ -36,7 +36,7 @@ services:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: postgresql://supabase_auth_admin:${POSTGRES_PASSWORD:-SuperSecretProdPostgresPassword2026!}@db:5432/postgres?sslmode=disable
+      GOTRUE_DB_DATABASE_URL: postgresql://supabase_auth_admin:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/postgres?sslmode=disable
       GOTRUE_SITE_URL: ${SITE_URL:-https://otpplatform-theta.vercel.app}
       GOTRUE_URI_ALLOW_LIST: http://127.0.0.1:3000/*,http://localhost:3000/*,http://localhost:3000/reset-password,http://localhost:5173/*,${SITE_URL:-https://otpplatform-theta.vercel.app}/*,${SITE_URL:-https://otpplatform-theta.vercel.app}/reset-password,https://*.vercel.app/*
       API_EXTERNAL_URL: ${SITE_URL:-https://otpplatform-theta.vercel.app}/auth/v1
@@ -44,7 +44,7 @@ services:
       GOTRUE_JWT_ADMIN_ROLES: service_role
       GOTRUE_JWT_AUD: authenticated
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
-      GOTRUE_JWT_SECRET: ${JWT_SECRET:-your-long-production-jwt-secret-min-32-chars!}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DISABLE_SIGNUP: "false"
       GOTRUE_MAILER_AUTOCONFIRM: "false"
@@ -52,7 +52,7 @@ services:
       GOTRUE_SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
       GOTRUE_SMTP_USER: ${SMTP_USER:-bvnbasu@gmail.com}
-      GOTRUE_SMTP_PASS: ${SMTP_PASS:-tthnhzwbkexabpda}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:?SMTP_PASS is required}
       GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-bvnbasu@gmail.com}
       GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-OTP Platform}
       GOTRUE_MAILER_OTP_EXP: 600
@@ -74,10 +74,10 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD:-SuperSecretProdPostgresPassword2026!}@db:5432/postgres
+      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/postgres
       PGRST_DB_SCHEMAS: public,graphql_public
       PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${JWT_SECRET:-your-long-production-jwt-secret-min-32-chars!}
+      PGRST_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       PGRST_DB_USE_BUILTIN_RAISE: "true"
 
   # ---------------------------------------------------------------------------
@@ -95,13 +95,13 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-SuperSecretProdPostgresPassword2026!}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       DB_NAME: postgres
       DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
-      DB_ENC_KEY: ${REALTIME_ENC_KEY:-supabaserealtime}
-      API_JWT_SECRET: ${JWT_SECRET:-your-long-production-jwt-secret-min-32-chars!}
-      METRICS_JWT_SECRET: ${JWT_SECRET:-your-long-production-jwt-secret-min-32-chars!}
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-EAx3IQ/wRG1v47ZD4NE4/9RzBI8Jmil3x0yhcW4V2NHBP6c2iPIzwjofi2Ep4HIG}
+      DB_ENC_KEY: ${REALTIME_ENC_KEY:?REALTIME_ENC_KEY is required}
+      API_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      METRICS_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE is required}
       APP_NAME: realtime
       RUN_JANITOR: "true"
       SEED_SELF_HOST: "true"

@@ -3,7 +3,6 @@ import {
   calculateTds,
   type TdsSection,
   type TdsCalculationResult,
-  generateForm16ACertificate,
 } from '@otp/domain';
 import { applyTdsWithholdingRpc, type TdsDeductionRecord } from '../api/payments';
 
@@ -90,60 +89,22 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
     }
   };
 
-  const downloadForm16AData = (deduction: TdsDeductionRecord) => {
-    const cert = generateForm16ACertificate({
-      certificateNumber: `FORM16A-${deduction.id.slice(0, 8).toUpperCase()}`,
-      financialYear: deduction.financialYear,
-      assessmentYear: deduction.assessmentYear,
-      quarter: 'Q2',
-      deductor: {
-        tan: 'BLR0998811',
-        pan: 'AAACB1234F',
-        name: 'Authorized Buyer Enterprise',
-      },
-      deductee: {
-        pan: deduction.deducteePan || 'PANNOTAVBL',
-        name: supplierName,
-      },
-      section: deduction.section as TdsSection,
-      totalAmountPaidOrCredited: deduction.taxableAmount,
-      totalTdsDeducted: deduction.tdsAmount,
-      totalTdsDeposited: deduction.tdsAmount,
-      challans: [
-        {
-          challanBsnCode: '0510304',
-          challanDate: deduction.createdAt.slice(0, 10),
-          challanNumber: '00123',
-          amountDeposited: deduction.tdsAmount,
-          minorHead: '200',
-        },
-      ],
-    });
-
-    const blob = new Blob([JSON.stringify(cert, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Form16A_${invoiceNumber}_${deduction.financialYear}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div>
           <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <span>🛡️</span> Statutory TDS & Form 16A Compliance
+            <span>🛡️</span> TDS withholding preview
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Income-tax Act provisions, statutory withholding rates & nearest rupee rounding
+            This is not a Form 16A certificate and does not file a return. OTP does not issue a TAN or deductor PAN here.
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            OTP calculates this withholding from the rate the authorized buyer enters. OTP does not determine or certify the legally applicable statutory TDS rate. The customer or their tax adviser remains responsible for that determination.
           </p>
         </div>
         <span className="text-xs px-2.5 py-1 font-medium bg-primary/10 text-primary rounded-full">
-          Act 2025 Ready
+          Not a certificate
         </span>
       </div>
 
@@ -177,14 +138,9 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
                   <span className="font-bold text-foreground">
                     ₹{ded.tdsAmount.toLocaleString('en-IN')}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => downloadForm16AData(ded)}
-                    className="text-xs px-2.5 py-1 border border-border hover:bg-muted rounded font-medium transition"
-                    title="Download Form 16A Certificate Data"
-                  >
-                    Form 16A JSON
-                  </button>
+                  <span className="text-xs text-muted-foreground" data-testid="tds-not-a-certificate">
+                    Not a Form 16A certificate for {supplierName} ({invoiceNumber})
+                  </span>
                 </div>
               </div>
             ))}
@@ -234,7 +190,7 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Statutory Section
+                Withholding section
               </label>
               <select
                 value={section}
@@ -328,15 +284,15 @@ export const TdsWithholdingPanel: React.FC<TdsWithholdingPanelProps> = ({
               <span className="font-bold text-foreground">{preview.tdsRate}%</span>
               {preview.isHigherRateApplied && (
                 <span className="ml-2 text-destructive font-semibold">
-                  (Sec 206AA/AB Penalty Rate)
+                  (Higher rate from the entries on this form)
                 </span>
               )}
               <div className="text-muted-foreground mt-0.5">
-                {preview.rateDetails.reason}
+                Calculated from the rate entered on this form. OTP does not determine or certify the statutory rate.
               </div>
             </div>
             <div className="text-right">
-              <div className="text-muted-foreground">Statutory TDS (Sec 288B):</div>
+              <div className="text-muted-foreground">Withholding at the entered rate:</div>
               <div className="text-base font-bold text-primary">
                 ₹{preview.statutoryTdsAmount.toLocaleString('en-IN')}
               </div>
