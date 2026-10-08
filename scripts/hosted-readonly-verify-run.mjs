@@ -9,7 +9,7 @@ import pg from 'pg';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const AUTH_PATH = path.join(ROOT, '.env.auth');
+const AUTH_PATH = path.join(ROOT, '.env.otp.production.local');
 const OUT_PATH = path.join(ROOT, 'OTP Golden Reconstruction', '_hosted_readonly_evidence.json');
 
 const PROJECT_REF = 'qsuvtcezffomtwzwyrso';
@@ -51,7 +51,7 @@ function redactHostFromUrl(urlStr) {
 
 function classifyHosted(env, fileExists) {
   const meta = {
-    credentialFile: '.env.auth',
+    credentialFile: '.env.otp.production.local',
     credentialFileExists: Boolean(fileExists),
     keysPresent: Object.keys(env).sort(),
     hostedConnectionPossible: false,
@@ -443,7 +443,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     passwordPrinted: false,
     credentialPersisted: false,
-    credentialSource: '.env.auth',
+    credentialSource: '.env.otp.production.local',
   };
 
   const fileExists = fs.existsSync(AUTH_PATH);

@@ -127,7 +127,7 @@ supabase functions deploy process-attachment --project-ref <PROJECT_REF>
 supabase functions deploy supplier-magic-link --project-ref <PROJECT_REF>
 
 # 3. Re-assert function environment secrets if corrupted
-supabase secrets set --env-file .env.production
+supabase secrets set --env-file .env.otp.production.local
 ```
 
 ---

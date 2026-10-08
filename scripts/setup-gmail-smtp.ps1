@@ -57,18 +57,38 @@ try {
   exit 1
 }
 
-# 2. Save securely to gitignored .env.smtp
-Write-Host "`n[2/3] Storing credentials securely in .env.smtp..." -ForegroundColor Yellow
-$envContent = @"
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=$GmailAddress
-SMTP_PASS=$CleanPass
-SMTP_ADMIN_EMAIL=$GmailAddress
-SMTP_SENDER_NAME="OTP Platform"
-"@
-Set-Content -Path (Join-Path $WorkspaceRoot ".env.smtp") -Value $envContent -Encoding UTF8
-Write-Host "[OK] Stored in .env.smtp (Protected by .gitignore)" -ForegroundColor Green
+# 2. Save securely into the single local env file
+$EnvFile = Join-Path $WorkspaceRoot ".env.otp.production.local"
+Write-Host "`n[2/3] Storing credentials securely in .env.otp.production.local..." -ForegroundColor Yellow
+$smtpValues = [ordered]@{
+  SMTP_HOST = "smtp.gmail.com"
+  SMTP_PORT = "587"
+  SMTP_USER = $GmailAddress
+  SMTP_PASS = $CleanPass
+  SMTP_ADMIN_EMAIL = $GmailAddress
+  SMTP_SENDER_NAME = '"OTP Platform"'
+}
+$existing = @()
+if (Test-Path -LiteralPath $EnvFile) {
+  $existing = @(Get-Content -LiteralPath $EnvFile)
+}
+$updated = foreach ($line in $existing) {
+  $replaced = $false
+  foreach ($key in @($smtpValues.Keys)) {
+    if ($line -match "^$key=") {
+      "$key=$($smtpValues[$key])"
+      $smtpValues.Remove($key)
+      $replaced = $true
+      break
+    }
+  }
+  if (-not $replaced) { $line }
+}
+foreach ($key in @($smtpValues.Keys)) {
+  $updated += "$key=$($smtpValues[$key])"
+}
+Set-Content -LiteralPath $EnvFile -Value $updated -Encoding UTF8
+Write-Host "[OK] Stored in .env.otp.production.local (Protected by .gitignore)" -ForegroundColor Green
 
 # 3. Update auth container environment
 Write-Host "`n[3/3] Updating live authentication container with Gmail SMTP..." -ForegroundColor Yellow
@@ -79,8 +99,8 @@ try {
   })
 
   $LiveSite = "https://otpplatform-theta.vercel.app"
-  if (Test-Path (Join-Path $WorkspaceRoot ".env.auth")) {
-    $authLines = Get-Content (Join-Path $WorkspaceRoot ".env.auth")
+  if (Test-Path -LiteralPath $EnvFile) {
+    $authLines = Get-Content -LiteralPath $EnvFile
     foreach ($line in $authLines) {
       if ($line -match '^GOTRUE_SITE_URL=(.+)$') {
         $LiveSite = $matches[1].Trim()

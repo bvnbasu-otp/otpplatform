@@ -20,7 +20,7 @@
  *
  * Usage:
  *   npx tsx scripts/validate-prod-env.ts
- *   npx tsx scripts/validate-prod-env.ts --env-file .env.production
+ *   npx tsx scripts/validate-prod-env.ts --env-file .env.otp.production.local
  *   npx tsx scripts/validate-prod-env.ts --target-env production --strict
  *   npx tsx scripts/validate-prod-env.ts --sample
  *   npx tsx scripts/validate-prod-env.ts --json
@@ -762,7 +762,7 @@ export function runCli() {
     loadedEnv = { ...loadedEnv, ...parsed };
   } else {
     // Check standard files if no explicit file passed
-    const defaultFiles = ['.env.production', '.env.prod', '.env'];
+    const defaultFiles = ['.env.otp.production.local'];
     for (const df of defaultFiles) {
       const p = path.resolve(process.cwd(), df);
       if (fs.existsSync(p)) {
