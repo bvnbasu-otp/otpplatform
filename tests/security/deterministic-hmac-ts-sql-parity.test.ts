@@ -4,22 +4,21 @@
  */
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { Client, type ClientConfig } from 'pg';
+import { Client } from 'pg';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { computeDeterministicHmac } from '../../packages/domain/src/types/procurement-communications';
 import {
   DETERMINISTIC_HMAC_PARITY_SECRET,
   DETERMINISTIC_HMAC_PARITY_VECTORS,
 } from '../../packages/domain/src/types/deterministic-hmac-parity-vectors';
+import {
+  LOCAL_POSTGRES_CONFIG,
+  assertSqlParityInfrastructure,
+  skipSqlParityCaseUnlessReady,
+} from '../helpers/local-postgres-sql-parity';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
-const LOCAL_PG: ClientConfig = {
-  host: '127.0.0.1',
-  port: 54322,
-  database: 'postgres',
-  user: 'postgres',
-  password: 'postgres',
-};
+const LOCAL_PG = LOCAL_POSTGRES_CONFIG;
 
 let dbUp = false;
 let migrationApplied = false;
@@ -77,18 +76,17 @@ describe('deterministic HMAC — Postgres private.otp_deterministic_hmac (local)
     }
   });
 
-  it('requires local postgres and migration 00260 for SQL parity', () => {
-    if (!dbUp || !migrationApplied) {
-      console.warn(`[SKIP REASON] SQL parity unavailable: ${skipReason}`);
+  it('documents SQL parity infrastructure (skip locally, required in CI)', () => {
+    assertSqlParityInfrastructure(dbUp, migrationApplied, skipReason);
+    if (dbUp && migrationApplied) {
+      expect(migrationApplied).toBe(true);
     }
-    expect(migrationApplied, skipReason).toBe(true);
   });
 
   it.each(DETERMINISTIC_HMAC_PARITY_VECTORS.map((v) => [v.label, v] as const))(
     'SQL parity — %s',
     async (_label, vector) => {
-      if (!dbUp || !migrationApplied) {
-        console.warn(`[SKIP REASON] SQL parity — ${vector.label}: ${skipReason}`);
+      if (skipSqlParityCaseUnlessReady(dbUp, migrationApplied, skipReason, `SQL parity — ${vector.label}`)) {
         return;
       }
       await withPg(async (c) => {

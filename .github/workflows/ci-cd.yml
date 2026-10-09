@@ -176,6 +176,30 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup Supabase CLI (local Postgres for SQL parity)
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      - name: Start local Postgres and apply migrations (through 00260)
+        run: |
+          set -euo pipefail
+          supabase start -x edge-runtime,imgproxy,logflare,mailpit,realtime,storage-api,studio,vector,kong,auth,rest
+          DB_CONTAINER="supabase_db_otp-local"
+          for i in $(seq 1 60); do
+            if docker exec "${DB_CONTAINER}" pg_isready -U postgres >/dev/null 2>&1; then
+              echo "Local Postgres ready on 127.0.0.1:54322 (${DB_CONTAINER})"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Timed out waiting for local Postgres on 54322"
+              exit 1
+            fi
+            sleep 2
+          done
+          docker exec "${DB_CONTAINER}" psql -U postgres -v ON_ERROR_STOP=1 -c \
+            "SELECT to_regprocedure('private.js_string_utf16_length(text)') IS NOT NULL AS migration_00260_ready;"
+
       - name: Run Unit Tests (Domain, Utilities, Formulas)
         run: pnpm test:unit
 
@@ -183,6 +207,8 @@ jobs:
         run: pnpm test:module
 
       - name: Run Functional Tests (Workflows, Lifecycle, Invariants)
+        env:
+          REQUIRE_LOCAL_POSTGRES_SQL_PARITY: 'true'
         run: pnpm test:functional
 
   # ───────────────────────────────────────────────────────────────────────────
