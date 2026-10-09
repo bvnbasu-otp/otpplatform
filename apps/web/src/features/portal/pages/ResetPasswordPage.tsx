@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { describeNotificationStatus } from '@otp/domain';
+import {
+  AUTH_OTP_CODE_MAX_LENGTH,
+  authOtpDigitLabel,
+  authOtpDigitLabelTitleCase,
+  describeNotificationStatus,
+  isLikelyPkceOrLongRecoveryToken,
+  isLikelyShortOtpToken,
+} from '@otp/domain';
 import { useAuth } from '@/features/auth';
 import { SiteLayout } from '@/features/site/components/SiteLayout';
 import { Button, Field, controlClasses } from '@/components/ui';
@@ -24,7 +31,7 @@ export function ResetPasswordPage() {
   const [mode, setMode] = useState<ResetMode>(() => {
     const c = searchParams.get('code') || searchParams.get('token');
     // If short 6-digit code or explicit verify step in URL, start in verify mode
-    if ((c && c.length <= 8) || searchParams.get('step') === 'verify') return 'verify';
+    if ((c && isLikelyShortOtpToken(c)) || searchParams.get('step') === 'verify') return 'verify';
     return 'request';
   });
 
@@ -39,7 +46,7 @@ export function ResetPasswordPage() {
   );
   const [code, setCode] = useState(() => {
     const raw = searchParams.get('code') || searchParams.get('token') || '';
-    return raw.length <= 8 ? raw : '';
+    return isLikelyShortOtpToken(raw) ? raw : '';
   });
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -69,7 +76,7 @@ export function ResetPasswordPage() {
 
       // 2. Check for PKCE authorization code (?code=...)
       const pkceCode = searchParams.get('code');
-      if (pkceCode && pkceCode.length > 8) {
+      if (pkceCode && isLikelyPkceOrLongRecoveryToken(pkceCode)) {
         setVerifyingToken(true);
         try {
           const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(pkceCode);
@@ -156,7 +163,7 @@ export function ResetPasswordPage() {
         `${describeNotificationStatus(
           res.delivery ?? { status: 'SUBMITTED', channel: 'WHATSAPP' },
           'PASSWORD_RESET',
-        ).message} The 8-digit code was requested for ${res.phone || cleanInput}.`,
+        ).message} The ${authOtpDigitLabel()} code was requested for ${res.phone || cleanInput}.`,
       );
       setMode('verify');
     } else {
@@ -173,7 +180,7 @@ export function ResetPasswordPage() {
         `${describeNotificationStatus(
           res.delivery ?? { status: 'SUBMITTED', channel: 'EMAIL' },
           'PASSWORD_RESET',
-        ).message} It was requested for ${normalizedEmail}; if it arrives, use the link or enter the 8-digit code below.`,
+        ).message} It was requested for ${normalizedEmail}; if it arrives, use the link or enter the ${authOtpDigitLabel()} code below.`,
       );
       setMode('verify');
     }
@@ -212,9 +219,9 @@ export function ResetPasswordPage() {
         setError('Please enter your registered email address or phone number.');
         return;
       }
-      if (!code.trim() || code.trim().length < 6) {
+      if (!code.trim() || code.trim().length !== AUTH_OTP_CODE_MAX_LENGTH) {
         setBusy(false);
-        setError('Please enter the verification code received on WhatsApp or Email.');
+        setError(`Please enter the full ${authOtpDigitLabel()} verification code from WhatsApp or email.`);
         return;
       }
 
@@ -512,7 +519,7 @@ export function ResetPasswordPage() {
                       </Field>
 
                       <Field
-                        label="Verification Code (8 Digits)"
+                        label={`Verification Code (${authOtpDigitLabelTitleCase()})`}
                         required
                         help="From your WhatsApp message or reset email"
                       >
@@ -522,11 +529,13 @@ export function ResetPasswordPage() {
                             aria-describedby={describedBy}
                             type="text"
                             inputMode="numeric"
-                            maxLength={8}
+                            maxLength={AUTH_OTP_CODE_MAX_LENGTH}
                             value={code}
-                            onChange={(e) => setCode(e.target.value.trim())}
+                            onChange={(e) =>
+                              setCode(e.target.value.replace(/\D/g, '').slice(0, AUTH_OTP_CODE_MAX_LENGTH))
+                            }
                             className={`${controlClasses(invalid)} font-mono tracking-widest text-center text-lg`}
-                            placeholder="Enter 8-digit code"
+                            placeholder={`Enter ${authOtpDigitLabel()} code`}
                             required
                             autoFocus={Boolean(codeIdentifier && !code)}
                           />

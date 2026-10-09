@@ -41,7 +41,7 @@ export interface RegistrationOutcome {
 const ACTIVE_SERVER_STATUSES = new Set(['ONBOARDED', 'ACTIVE', 'APPROVED']);
 
 function pendingStatusLabel(result: SignupResult, notification: NotificationStatusResolution): string {
-  const channel = result.verificationChannel ?? 'WHATSAPP';
+  const channel = result.verificationChannel ?? 'EMAIL';
   if (notification.status === 'FAILED') {
     return channel === 'EMAIL' ? 'BLOCKED — EMAIL NOT DELIVERED' : 'BLOCKED — CONFIRMATION NOT DELIVERED';
   }
@@ -50,7 +50,7 @@ function pendingStatusLabel(result: SignupResult, notification: NotificationStat
 }
 
 function pendingBody(result: SignupResult, notification: NotificationStatusResolution): string {
-  const channel = result.verificationChannel ?? 'WHATSAPP';
+  const channel = result.verificationChannel ?? 'EMAIL';
   const saved = 'Your registration was saved under the reference below.';
   if (channel === 'EMAIL' && notification.status === 'FAILED') {
     return `${saved} The sign-in email could not be delivered, so password sign-in is blocked. This account is pending, not onboarded. Use Forgot password on the sign-in screen to request that email again. Sending the request is not proof the message arrived.`;
@@ -72,7 +72,7 @@ export function deriveRegistrationOutcome(
   side: 'BUYER' | 'SUPPLIER',
 ): RegistrationOutcome {
   const serverStatus = (result.status || 'PENDING').toUpperCase();
-  const verificationChannel: VerificationChannel = result.verificationChannel ?? 'WHATSAPP';
+  const verificationChannel: VerificationChannel = result.verificationChannel ?? 'EMAIL';
 
   const notification =
     result.notification ??

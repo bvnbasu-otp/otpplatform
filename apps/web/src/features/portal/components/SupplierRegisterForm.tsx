@@ -36,6 +36,9 @@ export function SupplierRegisterForm({
   const control = usePortalControl();
   const text = useFormText();
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [categoriesReloadKey, setCategoriesReloadKey] = useState(0);
   const [cities, setCities] = useState<string[]>([]);
 
   const [businessType, setBusinessType] = useState<'GST_REGISTERED' | 'MICRO_CONTRACTOR'>('GST_REGISTERED');
@@ -51,7 +54,7 @@ export function SupplierRegisterForm({
   const [referral, setReferral] = useState(urlReferral);
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
-  const [channel, setChannel] = useState<VerificationChannel>('WHATSAPP');
+  const [channel, setChannel] = useState<VerificationChannel>('EMAIL');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // F-RUN2-VAL-01: field-level messages shown next to the field that needs
@@ -59,15 +62,34 @@ export function SupplierRegisterForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    let cancelled = false;
+    setCategoriesLoading(true);
+    setCategoriesError(null);
+
     void (async () => {
       const [catalog, served] = await Promise.all([
         fetchServiceCategories(),
         fetchServedCities(),
       ]);
-      if (catalog.ok) setCategories(catalog.categories);
+      if (cancelled) return;
+
+      if (catalog.ok) {
+        setCategories(catalog.categories);
+        if (catalog.categories.length === 0) {
+          setCategoriesError('No service categories are available right now. Try again in a moment.');
+        }
+      } else {
+        setCategories([]);
+        setCategoriesError(catalog.error || 'Could not load service categories.');
+      }
+      setCategoriesLoading(false);
       setCities(served);
     })();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [categoriesReloadKey]);
 
   /**
    * F-RUN2-VAL-01: what used to silently disable the submit button, now
@@ -221,8 +243,27 @@ export function SupplierRegisterForm({
               className="mt-1 flex flex-wrap gap-2"
               data-testid="category-picker"
             >
-              {categories.length === 0 ? (
-                <p className={`text-slate-soft ${text.body}`}>Loading Categories…</p>
+              {categoriesLoading ? (
+                <p className={`text-slate-soft ${text.body}`} data-testid="category-picker-loading">
+                  Loading categories…
+                </p>
+              ) : categoriesError ? (
+                <div className="space-y-2" data-testid="category-picker-error">
+                  <p className={`text-red-600 ${text.body}`} role="alert">
+                    {categoriesError}
+                  </p>
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-action hover:underline"
+                    onClick={() => setCategoriesReloadKey((k) => k + 1)}
+                  >
+                    Retry loading categories
+                  </button>
+                </div>
+              ) : categories.length === 0 ? (
+                <p className={`text-slate-soft ${text.body}`} data-testid="category-picker-empty">
+                  No categories are published yet. Please try again later or contact support.
+                </p>
               ) : (
                 categories.map((category) => {
                   const selected = chosen.includes(category.code);

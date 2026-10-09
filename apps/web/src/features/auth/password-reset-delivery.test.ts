@@ -98,6 +98,18 @@ describe('password reset and sign-in code copy', () => {
     }
   });
 
+  it('password reset and sign-in OTP copy uses six-digit policy (not eight)', () => {
+    const files = [
+      resolve(__dirname, 'components/SignInForm.tsx'),
+      resolve(__dirname, '../portal/pages/ResetPasswordPage.tsx'),
+    ];
+    for (const file of files) {
+      const source = readFileSync(file, 'utf8');
+      expect(source, file).toMatch(/AUTH_OTP_CODE_MAX_LENGTH|authOtpDigitLabel/);
+      expect(source, file).not.toMatch(/8-digit|8 digit|Eight-digit|eight-digit|maxLength=\{8\}/i);
+    }
+  });
+
   it('password-reset-dispatch.ts never contains a plaintext OTP code or destination detail', () => {
     const source = readFileSync(resolve(__dirname, 'lib/password-reset-dispatch.ts'), 'utf8');
     expect(source).not.toMatch(/otp_code/);

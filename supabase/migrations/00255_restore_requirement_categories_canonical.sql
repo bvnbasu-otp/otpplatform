@@ -1,0 +1,61 @@
+-- Restore canonical requirement_categories rows from 00019_taxonomy_data.sql.
+-- Idempotent: re-activate and refresh published fields when rows exist but were purged or deactivated.
+
+BEGIN;
+
+INSERT INTO requirement_categories (code, name, icon, description, examples, sort_order, is_active) VALUES
+  ('construction_infrastructure', 'Construction & Infrastructure', 'building',
+   'Civil work, building materials, renovation and structural work',
+   'Cement, steel, tiles, RCC work, renovation, waterproofing', 1, true),
+  ('electrical_power', 'Electrical & Power', 'zap',
+   'Electrical materials, power equipment, wiring and energy systems',
+   'Cables, panels, DG sets, solar, transformers, electrical contracting', 2, true),
+  ('machinery_engineering', 'Machinery & Engineering', 'cog',
+   'Machines, spares, machining job work and mechanical services',
+   'CNC machining, motor rewinding, gearbox repair, machine spares', 3, true),
+  ('industrial_supplies_hardware', 'Industrial Supplies & Hardware', 'wrench',
+   'Fasteners, tools, consumables and general industrial hardware',
+   'Bolts, bearings, cutting tools, welding rods, steel, pipes', 4, true),
+  ('chemicals_process_materials', 'Chemicals & Process Materials', 'flask',
+   'Industrial chemicals, paints, dyes and process consumables',
+   'Caustic soda, dyes, water treatment chemicals, solvents, adhesives', 5, true),
+  ('textile_apparel', 'Textile & Apparel', 'shirt',
+   'Yarn, fabric, garments, dyeing and textile job work',
+   'Cotton yarn 40s combed, knitted fabric, dyeing, garment stitching', 6, true),
+  ('agriculture_commodities', 'Agriculture & Commodities', 'sprout',
+   'Agricultural produce, commodities, inputs and farm equipment',
+   'Turmeric, grains, spices, seeds, fertilizer, farm machinery', 7, true),
+  ('packaging_printing', 'Packaging & Printing', 'package',
+   'Packaging materials, printing and packaging machinery',
+   'Corrugated boxes, labels, flexible pouches, woven sacks, printing', 8, true),
+  ('property_facility_management', 'Property & Facility Management', 'home',
+   'Facility services, maintenance contracts and community operations',
+   'Housekeeping, lift AMC, pest control, gardening, security manpower', 9, true),
+  ('safety_security', 'Safety & Security', 'shield',
+   'Safety equipment, security systems and protective services',
+   'CCTV, fire extinguisher AMC, PPE, access control, alarm systems', 10, true),
+  ('water_environmental', 'Water & Environmental Solutions', 'droplet',
+   'Water supply, treatment, borewells, pumps and waste management',
+   'Borewell drilling, motor rewinding, STP, tank cleaning, RO plant', 11, true),
+  ('it_electronics_digital', 'IT, Electronics & Digital', 'monitor',
+   'Computers, networks, software, telecom and digital services',
+   'Laptops, switches, software licences, IT AMC, web development', 12, true),
+  ('logistics_transportation', 'Logistics & Transportation', 'truck',
+   'Freight, delivery, warehousing and vehicle hire',
+   'Local delivery, freight transport, warehousing, packers and movers', 13, true),
+  ('professional_skilled_services', 'Professional & Skilled Services', 'briefcase',
+   'Technicians, consultants and professional practices',
+   'Electrician, plumber, structural consultant, audit, design, legal', 14, true),
+  ('general_other', 'General / Other', 'grid',
+   'Anything that does not fit the categories above',
+   'Custom or one-off requirements', 15, true)
+ON CONFLICT (code) DO UPDATE SET
+  name = EXCLUDED.name,
+  icon = EXCLUDED.icon,
+  description = EXCLUDED.description,
+  examples = EXCLUDED.examples,
+  sort_order = EXCLUDED.sort_order,
+  is_active = true,
+  updated_at = now();
+
+COMMIT;

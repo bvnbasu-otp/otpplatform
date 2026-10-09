@@ -62,7 +62,7 @@ export function BuyerRegisterForm({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [referral, setReferral] = useState(urlReferral);
-  const [channel, setChannel] = useState<VerificationChannel>('WHATSAPP');
+  const [channel, setChannel] = useState<VerificationChannel>('EMAIL');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // F-RUN2-VAL-01: field-level messages shown next to the field that needs

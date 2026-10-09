@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, Field, controlClasses } from '@/components/ui';
-import { describeNotificationStatus, type NotificationStatusResolution } from '@otp/domain';
+import {
+  AUTH_OTP_CODE_MAX_LENGTH,
+  authOtpDigitLabel,
+  authOtpDigitLabelTitleCase,
+  describeNotificationStatus,
+  type NotificationStatusResolution,
+} from '@otp/domain';
 import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
 import { useAuth } from '../AuthProvider';
 import { isSuperAdminEmail } from '../user-role';
@@ -308,7 +314,7 @@ export function SignInForm({
     }
     setCodeSent(true);
     setNotice(
-      `${describeNotificationStatus(resolveSupabaseEmailDispatch(null), 'VERIFICATION_CODE').message} The eight-digit code was requested for ${normalizedEmail} and expires in a few minutes.`,
+      `${describeNotificationStatus(resolveSupabaseEmailDispatch(null), 'VERIFICATION_CODE').message} The ${authOtpDigitLabel()} code was requested for ${normalizedEmail} and expires in a few minutes.`,
     );
   }
 
@@ -440,7 +446,7 @@ export function SignInForm({
           <div>
             <h3 className="text-base font-semibold text-foreground">Reset your password</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Choose your preferred channel to receive an 8-digit verification code.
+              Choose your preferred channel to receive a {authOtpDigitLabel()} verification code.
             </p>
           </div>
 
@@ -496,7 +502,7 @@ export function SignInForm({
                 {resetChannel === 'WHATSAPP' ? (
                   <>Requested for <strong>{resetPhone}</strong>. Redirecting to set new password...</>
                 ) : (
-                  <>Requested for <strong>{email}</strong>. If it arrives, use the link or enter the 8-digit code on the reset page.</>
+                  <>Requested for <strong>{email}</strong>. If it arrives, use the link or enter the {authOtpDigitLabel()} code on the reset page.</>
                 )}
               </p>
               <div className="flex items-center gap-3 pt-1">
@@ -504,7 +510,7 @@ export function SignInForm({
                   to={`/reset-password?identifier=${encodeURIComponent(resetChannel === 'WHATSAPP' ? resetPhone : email)}`}
                   className="inline-flex items-center gap-1 font-bold text-action hover:underline"
                 >
-                  Enter 8-Digit Code Now →
+                  Enter {authOtpDigitLabelTitleCase()} Code Now →
                 </Link>
                 <button
                   type="button"
@@ -592,7 +598,7 @@ export function SignInForm({
                   to="/reset-password"
                   className="text-action hover:underline"
                 >
-                  Already have an 8-digit code? →
+                  Already have a {authOtpDigitLabel()} code? →
                 </Link>
               </div>
             </form>
@@ -679,7 +685,7 @@ export function SignInForm({
           )}
 
           {method === 'code' && codeSent && (
-            <Field label="Eight-digit code" required help="Check your inbox, including spam.">
+            <Field label={`${authOtpDigitLabelTitleCase()} code`} required help="Check your inbox, including spam.">
               {({ id, describedBy, invalid }) => (
                 <input
                   id={id}
@@ -687,12 +693,12 @@ export function SignInForm({
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={8}
+                  maxLength={AUTH_OTP_CODE_MAX_LENGTH}
                   value={code}
-                  onChange={(event) => setCode(event.target.value)}
+                  onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, AUTH_OTP_CODE_MAX_LENGTH))}
                   className={controlClasses(invalid, 'tracking-[0.3em]')}
                   data-testid="otp-code"
-                  placeholder="Enter 8-digit code"
+                  placeholder={`Enter ${authOtpDigitLabel()} code`}
                   required
                 />
               )}
