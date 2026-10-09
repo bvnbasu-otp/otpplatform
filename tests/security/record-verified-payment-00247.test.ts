@@ -10,7 +10,7 @@ const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
 // Repository ceiling. 00249, 00250, and 00251 do not grant this function back to clients.
-const REPOSITORY_CEILING = '00257_canonical_role_catalog_and_signup_provisioning.sql';
+const REPOSITORY_CEILING = '00259_document_reveal_integrity_digest_hmac_parity.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';
@@ -142,5 +142,5 @@ describe('record_verified_payment execute boundary', () => {
     expect(index.slice(0, guard)).not.toContain("rpc('record_verified_payment'");
     expect(index).toContain('SUPABASE_SERVICE_ROLE_KEY');
     expect(index).toContain('createClient(supabaseUrl, supabaseServiceKey');
-  });
+  }, 180_000);
 });

@@ -14,6 +14,8 @@ describe('00256 auth OTP eight-digit standardization', () => {
     const index = files.indexOf(FILE);
     expect(index).toBeGreaterThanOrEqual(0);
     expect(files[index + 1]).toBe('00257_canonical_role_catalog_and_signup_provisioning.sql');
+    expect(files[index + 2]).toBe('00258_rwa_committee_vote_authority_trigger_order.sql');
+    expect(files[index + 3]).toBe('00259_document_reveal_integrity_digest_hmac_parity.sql');
   });
 
   it('issues eight-digit codes and rejects non-eight-digit verify input before hash compare', () => {

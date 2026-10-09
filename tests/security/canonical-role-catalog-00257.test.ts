@@ -87,11 +87,13 @@ const catalog00039 = parseUserRolesCatalog(sql00039);
 const catalog00257 = parseUserRolesCatalog(sql);
 
 describe('Migration 00257 static SQL contract', () => {
-  it('follows 00256 in the contiguous migration chain', () => {
+  it('follows 00256 and precedes 00258 in the contiguous migration chain', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
-    expect(files.at(-1)).toBe(FILE);
     const index = files.indexOf(FILE);
     expect(files[index - 1]).toBe('00256_standardize_auth_otp_eight_digits.sql');
+    expect(files[index + 1]).toBe('00258_rwa_committee_vote_authority_trigger_order.sql');
+    expect(files[index + 2]).toBe('00259_document_reveal_integrity_digest_hmac_parity.sql');
+    expect(files.at(-1)).toBe('00259_document_reveal_integrity_digest_hmac_parity.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {
