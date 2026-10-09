@@ -249,9 +249,50 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup Supabase CLI (local Postgres for SQL parity)
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      - name: Start local Postgres for SQL parity
+        run: |
+          set -euo pipefail
+          supabase start -x edge-runtime,imgproxy,logflare,mailpit,realtime,storage-api,studio,vector,kong,gotrue,postgrest
+          DB_CONTAINER="supabase_db_otp-local"
+          for i in $(seq 1 60); do
+            if docker exec "${DB_CONTAINER}" pg_isready -U postgres >/dev/null 2>&1; then
+              echo "Local Postgres ready on 127.0.0.1:54322 (${DB_CONTAINER})"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "::error::Timed out waiting for local Postgres on 54322"
+              docker ps -a
+              docker logs "${DB_CONTAINER}" --tail 200 || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Apply migrations to disposable local database
+        run: |
+          set -euo pipefail
+          supabase db reset --local
+
+      - name: Verify SQL parity migration helper
+        run: |
+          set -euo pipefail
+          docker exec "supabase_db_otp-local" psql -U postgres -v ON_ERROR_STOP=1 -c \
+            "DO \$\$
+            BEGIN
+              IF to_regprocedure('private.js_string_utf16_length(text)') IS NULL THEN
+                RAISE EXCEPTION 'Migration 00260 verification failed: private.js_string_utf16_length(text) is missing';
+              END IF;
+            END
+            \$\$;"
       - name: Execute Quality Verification Gate
         env:
           ALLOW_OFFLINE: 'true'
+          REQUIRE_LOCAL_POSTGRES_SQL_PARITY: 'true'
         run: |
           pnpm gate:verify --env "${{ env.TARGET_ENV }}"
 

@@ -21,6 +21,25 @@ export function requireLocalPostgresSqlParity(): boolean {
   return process.env.CI === 'true' || process.env.CI === '1';
 }
 
+/** Human-readable failure when SQL parity cannot run (CI hard-fail messages). */
+export function formatSqlParityUnavailableReason(
+  dbUp: boolean,
+  migrationApplied: boolean,
+  skipReason: string,
+): string {
+  const lower = skipReason.toLowerCase();
+  if (lower.includes('refusing non-local') || lower.includes('non-local postgres')) {
+    return `SQL parity requires local Docker Postgres only (127.0.0.1:54322); hosted or remote DB is rejected (${skipReason})`;
+  }
+  if (dbUp && !migrationApplied) {
+    return `SQL parity migration/function missing on local Postgres: ${skipReason}. Apply repo migrations through 00260 (private.js_string_utf16_length).`;
+  }
+  if (!dbUp) {
+    return `Local Postgres unreachable at 127.0.0.1:54322 (${skipReason}). Start Supabase locally and wait for container supabase_db_otp-local.`;
+  }
+  return skipReason;
+}
+
 export function assertSqlParityInfrastructure(
   dbUp: boolean,
   migrationApplied: boolean,
@@ -28,12 +47,18 @@ export function assertSqlParityInfrastructure(
 ): void {
   if (dbUp && migrationApplied) return;
 
+  const detail = formatSqlParityUnavailableReason(dbUp, migrationApplied, skipReason);
+
   if (requireLocalPostgresSqlParity()) {
-    expect(migrationApplied, skipReason).toBe(true);
+    if (!dbUp) {
+      expect(dbUp, detail).toBe(true);
+    } else {
+      expect(migrationApplied, detail).toBe(true);
+    }
     return;
   }
 
-  console.warn(`[SKIP REASON] SQL parity unavailable: ${skipReason}`);
+  console.warn(`[SKIP REASON] SQL parity unavailable: ${detail}`);
 }
 
 export function skipSqlParityCaseUnlessReady(
@@ -44,12 +69,19 @@ export function skipSqlParityCaseUnlessReady(
 ): boolean {
   if (dbUp && migrationApplied) return false;
 
+  const detail = formatSqlParityUnavailableReason(dbUp, migrationApplied, skipReason);
+  const message = context ? `${context}: ${detail}` : detail;
+
   if (requireLocalPostgresSqlParity()) {
-    expect(migrationApplied, context ? `${context}: ${skipReason}` : skipReason).toBe(true);
+    if (!dbUp) {
+      expect(dbUp, message).toBe(true);
+    } else {
+      expect(migrationApplied, message).toBe(true);
+    }
     return true;
   }
 
   const prefix = context ? `[SKIP REASON] ${context}` : '[SKIP REASON] SQL parity';
-  console.warn(`${prefix}: ${skipReason}`);
+  console.warn(`${prefix}: ${detail}`);
   return true;
 }
