@@ -15,7 +15,8 @@ describe('00256 auth OTP eight-digit standardization', () => {
   });
 
   it('issues eight-digit codes and rejects non-eight-digit verify input before hash compare', () => {
-    expect(SQL).not.toMatch(/generate_numeric_otp\(6\)/);
+    const sqlNoComments = SQL.replace(/--.*$/gm, '');
+    expect(sqlNoComments).not.toMatch(/generate_numeric_otp\(6\)/);
     expect(SQL.match(/generate_numeric_otp\(8\)/g)?.length).toBe(4);
     expect(SQL).toContain("DEFAULT 8");
     expect(SQL.match(/\^\[0-9\]\{8\}\$/g)?.length).toBeGreaterThanOrEqual(3);

@@ -8,6 +8,6 @@ describe('ResetPasswordPage OTP policy', () => {
     expect(source).toMatch(/isCompleteAuthOtpCode/);
     expect(source).toMatch(/normalizeAuthOtpCodeInput/);
     expect(source).toMatch(/AUTH_OTP_CODE_MAX_LENGTH/);
-    expect(source).not.toMatch(/six-digit|6-digit|maxLength=\{6\}/i);
+    expect(source).not.toMatch(/six-digit|6-digit|6-Digit|maxLength=\{6\}/i);
   });
 });

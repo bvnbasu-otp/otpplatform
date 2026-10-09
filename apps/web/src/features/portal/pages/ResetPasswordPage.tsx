@@ -479,7 +479,7 @@ export function ResetPasswordPage() {
                         className="w-full mt-2"
                       >
                         {requestChannel === 'WHATSAPP'
-                          ? 'Send 6-Digit Code via WhatsApp →'
+                          ? `Send ${authOtpDigitLabelTitleCase()} Code via WhatsApp →`
                           : 'Send Password Reset Link & Code →'}
                       </Button>
 
