@@ -93,7 +93,8 @@ describe('Migration 00257 static SQL contract', () => {
     expect(files[index - 1]).toBe('00256_standardize_auth_otp_eight_digits.sql');
     expect(files[index + 1]).toBe('00258_rwa_committee_vote_authority_trigger_order.sql');
     expect(files[index + 2]).toBe('00259_document_reveal_integrity_digest_hmac_parity.sql');
-    expect(files.at(-1)).toBe('00259_document_reveal_integrity_digest_hmac_parity.sql');
+    expect(files[index + 3]).toBe('00260_otp_deterministic_hmac_utf16_code_units.sql');
+    expect(files.at(-1)).toBe('00260_otp_deterministic_hmac_utf16_code_units.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {

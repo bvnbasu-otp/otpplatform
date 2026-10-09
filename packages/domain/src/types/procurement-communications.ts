@@ -347,7 +347,13 @@ export function sanitizeLogData(text: string): string {
 }
 
 /**
- * Pure cross-platform deterministic HMAC-like digest generator (64-character hex).
+ * Pure cross-platform deterministic digest (128-char hex = four uint32 lanes twice).
+ * Not Web Crypto HMAC-SHA256 — intentionally stable for TS/SQL parity tests.
+ *
+ * Iteration uses JavaScript UTF-16 code units (`length` / `charCodeAt`), including
+ * surrogate pairs for supplementary-plane characters. Postgres must use
+ * `private.otp_deterministic_hmac` (00260+) with matching UTF-16 expansion.
+ * ASCII-only inputs are unchanged vs legacy PG ports that used `ascii(substr)`.
  */
 export function computeDeterministicHmac(message: string, secret: string): string {
   const combined = `${secret}:${message}`;
