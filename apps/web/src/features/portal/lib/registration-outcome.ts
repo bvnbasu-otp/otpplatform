@@ -49,11 +49,26 @@ function pendingStatusLabel(result: SignupResult, notification: NotificationStat
   return 'AUTH SETUP PENDING';
 }
 
-function pendingBody(result: SignupResult, notification: NotificationStatusResolution): string {
+function pendingBody(
+  result: SignupResult,
+  notification: NotificationStatusResolution,
+  guaranteed?: NotificationStatusResolution,
+): string {
   const channel = result.verificationChannel ?? 'EMAIL';
   const saved = 'Your registration was saved under the reference below.';
   if (channel === 'EMAIL' && notification.status === 'FAILED') {
-    return `${saved} The sign-in email could not be delivered, so password sign-in is blocked. This account is pending, not onboarded. Use Forgot password on the sign-in screen to request that email again. Sending the request is not proof the message arrived.`;
+    return `${saved} The activation email could not be handed to the mail provider, so password sign-in is blocked until you request it again from the sign-in screen. Sending the request is not proof the message arrived.`;
+  }
+  if (channel === 'EMAIL' && notification.status === 'NOT_ATTEMPTED') {
+    const serverStatus = (result.status || 'PENDING').toUpperCase();
+    if (ACTIVE_SERVER_STATUSES.has(serverStatus)) {
+      return `${saved} Email confirmation is pending and delivery is not confirmed. Password sign-in is not ready until that email is delivered and you finish setting a password. This account is pending, not onboarded.`;
+    }
+    const waHint =
+      guaranteed && guaranteed.status !== 'NOT_ATTEMPTED'
+        ? ' A WhatsApp registration acknowledgement was submitted to your phone number; delivery is not confirmed.'
+        : '';
+    return `${saved} Email sign-in setup is pending until your registration is approved.${waHint}`;
   }
   if (channel === 'EMAIL') {
     return `${saved} Email confirmation is pending and delivery is not confirmed. Password sign-in is not ready until that email is delivered and you finish setting a password. This account is pending, not onboarded.`;
@@ -80,6 +95,7 @@ export function deriveRegistrationOutcome(
       channel: verificationChannel === 'EMAIL' ? 'EMAIL' : 'WHATSAPP',
       observation: { kind: 'NOT_ATTEMPTED', reason: 'No confirmation message was requested' },
     });
+  const guaranteedNotice = result.guaranteedNotice;
 
   // A registration row — including one stored as ONBOARDED or one whose
   // message was delivered — is not authentication-ready. Password sign-in
@@ -110,7 +126,7 @@ export function deriveRegistrationOutcome(
     accountState === 'ALREADY_REGISTERED'
       ? 'This email already has a registration under the reference below. No new account was created.'
       : accountState === 'AUTH_SETUP_PENDING'
-        ? pendingBody(result, notification)
+        ? pendingBody(result, notification, guaranteedNotice)
         : `Your registration was saved under the reference below. ${reviewSentence}`;
 
   return {
@@ -122,9 +138,6 @@ export function deriveRegistrationOutcome(
     statusLabel: accountState === 'AUTH_SETUP_PENDING' ? pendingStatusLabel(result, notification) : serverStatus,
     canSignInNow: false,
     notification,
-    notificationCopy: describeNotificationStatus(
-      notification,
-      verificationChannel === 'EMAIL' ? 'PASSWORD_RESET' : 'REGISTRATION',
-    ),
+    notificationCopy: describeNotificationStatus(notification, 'REGISTRATION'),
   };
 }

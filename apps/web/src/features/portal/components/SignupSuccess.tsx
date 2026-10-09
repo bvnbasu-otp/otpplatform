@@ -98,15 +98,14 @@ export function SignupSuccess({
 
       <div className="space-y-1">
         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Confirmation message</p>
-        <NotificationDeliveryNotice
-          resolution={outcome.notification}
-          purpose={result.verificationChannel === 'EMAIL' ? 'PASSWORD_RESET' : 'REGISTRATION'}
-        />
+        <NotificationDeliveryNotice resolution={outcome.notification} purpose="REGISTRATION" />
       </div>
-      {result.whatsappFallbackAttempted && result.guaranteedNotice && (
-        <div className="space-y-1" data-testid="whatsapp-fallback-notice">
+      {result.guaranteedNotice && (
+        <div className="space-y-1" data-testid="whatsapp-guaranteed-notice">
           <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            WhatsApp fallback — email was selected, and WhatsApp was tried only after that
+            {result.whatsappFallbackAttempted
+              ? 'WhatsApp fallback — email was selected, and WhatsApp was tried only after that'
+              : 'WhatsApp registration acknowledgement (required phone on file)'}
           </p>
           <NotificationDeliveryNotice resolution={result.guaranteedNotice} purpose="REGISTRATION" />
         </div>

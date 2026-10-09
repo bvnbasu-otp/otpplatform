@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
+import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
 import {
   fetchUsersAndOrganizations,
   fetchSignupRequests,
@@ -31,9 +32,67 @@ import type {
   AdminUserItem,
   AdminOrganizationItem,
   AdminSignupRequest,
+  AdminReviewSignupResponse,
   AccountBlockReason,
   AccountLifecycleStatus,
 } from '../types/admin';
+
+/** RC-5: one post-approval activation path per verification channel (idempotent). */
+async function dispatchSignupApprovalActivation(
+  request: AdminSignupRequest,
+  review: AdminReviewSignupResponse,
+): Promise<{ summary: string; failed: boolean }> {
+  const authProvisioned =
+    review.status === 'ONBOARDED' || review.activation_required === true;
+  if (!authProvisioned) {
+    return {
+      summary:
+        ' (Activation notice skipped: auth user not provisioned — the applicant cannot sign in until approval is retried)',
+      failed: true,
+    };
+  }
+
+  const channel = request.verification_channel ?? 'EMAIL';
+  if (channel === 'EMAIL') {
+    const email = (review.email ?? request.email)?.trim();
+    if (!email) {
+      return {
+        summary:
+          ' (Activation email FAILED: no email on file — the applicant cannot sign in until this is retried)',
+        failed: true,
+      };
+    }
+    const { error: emailErr } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    const delivery = resolveSupabaseEmailDispatch(emailErr);
+    if (delivery.status === 'FAILED') {
+      return {
+        summary: ` (Activation email FAILED to send: ${emailErr?.message || 'unknown error'} — the applicant cannot sign in until this is retried)`,
+        failed: true,
+      };
+    }
+    return {
+      summary: ' (Activation email: submitted; delivery not confirmed)',
+      failed: false,
+    };
+  }
+
+  const { result: notifyRes } = await invokeEdgeFunction('onboarding-notify', {
+    requestId: request.id,
+    kind: 'APPROVED',
+  });
+  if (!notifyRes.ok) {
+    return {
+      summary: ` (Activation notice FAILED to send: ${notifyRes.error || 'unknown error'} — the applicant cannot sign in until this is retried)`,
+      failed: true,
+    };
+  }
+  return {
+    summary: ' (Activation notice: submitted; delivery not confirmed)',
+    failed: false,
+  };
+}
 
 const BLOCK_REASONS: AccountBlockReason[] = [
   'Suspicious Activity',
@@ -428,16 +487,11 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
   };
 
   /**
-   * B-01 + A-29: approval used to fire two independent, best-effort browser
-   * calls — `resetPasswordForEmail` (a GoTrue link that cannot reach a
-   * WhatsApp-only applicant) and a WhatsApp message containing the shared
-   * literal password whenever `admin_review_signup_request` handed one
-   * back. Neither was guaranteed, and the RPC no longer returns a password
-   * at all. There is now exactly one guaranteed notice for an approval:
-   * `onboarding-notify` (kind: 'APPROVED'), called synchronously right
-   * here, after the RPC has committed. It issues a fresh single-use
-   * activation code and sends it — fail-closed, so a delivery failure is
-   * reported to the admin rather than silently swallowed.
+   * B-01 + A-29 + RC-5: after `admin_review_signup_request` commits, send exactly
+   * one channel-appropriate activation handoff — GoTrue recovery mail for
+   * EMAIL verification_channel (only once auth.users exists), or onboarding-notify
+   * (kind: 'APPROVED') for WHATSAPP. Fail-closed: delivery failures surface to
+   * the admin instead of a blanket success banner.
    */
   const handleReview = async (request: AdminSignupRequest, action: 'APPROVE' | 'REJECT') => {
     setProcessingId(request.id);
@@ -447,20 +501,18 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         let notifSummary = '';
 
         if (action === 'APPROVE') {
-          const { result: notifyRes } = await invokeEdgeFunction('onboarding-notify', {
-            requestId: request.id,
-            kind: 'APPROVED',
-          });
-          notifSummary = notifyRes.ok
-            ? ' (Activation notice: submitted; delivery not confirmed)'
-            : ` (Activation notice FAILED to send: ${notifyRes.error || 'unknown error'} — the applicant cannot sign in until this is retried)`;
+          const activation = await dispatchSignupApprovalActivation(request, res);
+          notifSummary = activation.summary;
         }
 
+        const activationFailed =
+          action === 'APPROVE' &&
+          (notifSummary.includes('FAILED') || notifSummary.includes('skipped'));
         setBannerMessage({
-          type: notifSummary.includes('FAILED') ? 'error' : 'success',
+          type: activationFailed ? 'error' : 'success',
           text:
             action === 'APPROVE'
-              ? `${notifSummary.includes('FAILED') ? '⚠' : '✓'} Approved and onboarded "${request.business_name}" (${request.reference}). Workspace provisioned for ${request.email}.${notifSummary}`
+              ? `${activationFailed ? '⚠' : '✓'} Approved and onboarded "${request.business_name}" (${request.reference}). Workspace provisioned for ${request.email}.${notifSummary}`
               : `✕ Registration request "${request.business_name}" (${request.reference}) marked as rejected.`,
         });
         await loadData();
@@ -595,16 +647,10 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         if (!res.ok) continue;
         successCount++;
 
-        // Synchronous, awaited per item — deliberately not fired-and-forgotten
-        // and not batched — so a failure here is attributed to this item
-        // before the loop reports on the next one.
-        const { result: notifyRes } = await invokeEdgeFunction('onboarding-notify', {
-          requestId: req.id,
-          kind: 'APPROVED',
-        });
-        if (!notifyRes.ok) {
+        const activation = await dispatchSignupApprovalActivation(req, res);
+        if (activation.failed) {
           notifyFailureCount++;
-          console.warn('Bulk approve: activation notice failed to send for', req.id, notifyRes.error);
+          console.warn('Bulk approve: activation handoff failed for', req.id, activation.summary);
         }
       } catch (e) {
         console.warn('Bulk approve item failed:', req.id, e);
@@ -613,8 +659,8 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     setIsBulkExecuting(false);
     const notifySummary =
       notifyFailureCount > 0
-        ? ` ⚠ ${notifyFailureCount} activation notice(s) FAILED to send — those applicants cannot sign in until retried.`
-        : ' Activation notices submitted for all approved (delivery not confirmed).';
+        ? ` ⚠ ${notifyFailureCount} activation handoff(s) FAILED — those applicants cannot sign in until retried.`
+        : ' Activation handoffs submitted for all approved (delivery not confirmed).';
     setBannerMessage({
       type: notifyFailureCount > 0 ? 'error' : 'success',
       text: `${notifyFailureCount > 0 ? '⚠' : '✓'} Approved & activated ${successCount} of ${pendingReqs.length} pending registration(s).${notifySummary}`,

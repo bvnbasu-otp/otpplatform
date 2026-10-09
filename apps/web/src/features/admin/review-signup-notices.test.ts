@@ -131,6 +131,11 @@ describe('AdminUsersActivityPanel approval notices (B-01/A-29 source-level regre
     return source.slice(start, end);
   }
 
+  const dispatchActivation = extractHandler(
+    'async function dispatchSignupApprovalActivation(',
+    'const BLOCK_REASONS',
+  );
+
   const handleReview = extractHandler(
     "const handleReview = async (request: AdminSignupRequest, action: 'APPROVE' | 'REJECT') => {",
     'const handleDirectApproveUser',
@@ -141,34 +146,41 @@ describe('AdminUsersActivityPanel approval notices (B-01/A-29 source-level regre
     'const selectedCount =',
   );
 
-  it('single approve dispatches exactly one guaranteed onboarding-notify call, awaited, only on APPROVE', () => {
-    expect(handleReview).toMatch(/await invokeEdgeFunction\('onboarding-notify',/);
-    expect(handleReview).toMatch(/kind:\s*'APPROVED'/);
-    // Gated on the approve branch, not fired for REJECT.
-    expect(handleReview).toMatch(/if \(action === 'APPROVE'\)\s*\{[\s\S]*await invokeEdgeFunction/);
+  it('single approve awaits channel-specific activation handoff only on APPROVE', () => {
+    expect(handleReview).toMatch(/if \(action === 'APPROVE'\)\s*\{[\s\S]*await dispatchSignupApprovalActivation/);
+    expect(handleReview).not.toMatch(/if \(action === 'REJECT'\)[\s\S]*dispatchSignupApprovalActivation/);
   });
 
-  it('single approve reports a failed notice to the admin instead of a blanket success banner', () => {
-    expect(handleReview).toMatch(/notifyRes\.ok/);
-    expect(handleReview).toMatch(/FAILED to send/);
-    expect(handleReview).toMatch(/type: notifSummary\.includes\('FAILED'\) \? 'error' : 'success'/);
+  it('RC-5: EMAIL verification_channel uses GoTrue resetPasswordForEmail after auth provisioning', () => {
+    expect(dispatchActivation).toMatch(/verification_channel/);
+    expect(dispatchActivation).toMatch(/channel === 'EMAIL'/);
+    expect(dispatchActivation).toMatch(/resetPasswordForEmail/);
+    expect(dispatchActivation).toMatch(/resolveSupabaseEmailDispatch/);
+    expect(dispatchActivation).toMatch(/ONBOARDED.*activation_required/s);
   });
 
-  it('single approve no longer uses the removed resetPasswordForEmail / WhatsApp-with-password bypass', () => {
-    expect(handleReview).not.toMatch(/resetPasswordForEmail/);
-    expect(handleReview).not.toMatch(/sendWhatsAppNotification/);
-    expect(handleReview).not.toMatch(/temporary_password/);
+  it('WHATSAPP verification_channel still uses guaranteed onboarding-notify APPROVED', () => {
+    expect(dispatchActivation).toMatch(/kind:\s*'APPROVED'/);
+    expect(dispatchActivation).toMatch(/await invokeEdgeFunction\('onboarding-notify',/);
   });
 
-  it('bulk approve awaits the onboarding notice per item, sequentially inside the loop (not batched, not fire-and-forget)', () => {
+  it('single approve reports a failed activation handoff to the admin instead of a blanket success banner', () => {
+    expect(handleReview).toMatch(/activationFailed/);
+    expect(handleReview).toMatch(/FAILED|skipped/);
+    expect(handleReview).toMatch(/type: activationFailed \? 'error' : 'success'/);
+  });
+
+  it('approval handoff does not use removed WhatsApp-with-password bypass', () => {
+    expect(dispatchActivation).not.toMatch(/sendWhatsAppNotification/);
+    expect(dispatchActivation).not.toMatch(/temporary_password/);
+  });
+
+  it('bulk approve awaits the same activation handoff per item, sequentially inside the loop', () => {
     expect(handleApproveAllPending).toMatch(/for \(const req of pendingReqs\)/);
-    // The notify call must appear textually inside the for-loop body, after
-    // the RPC's own success check, and be awaited directly (no .then(),
-    // no Promise.all/allSettled across items).
     const loopBody = handleApproveAllPending.slice(handleApproveAllPending.indexOf('for (const req of pendingReqs)'));
     expect(loopBody).toMatch(/if \(!res\.ok\) continue;/);
-    expect(loopBody).toMatch(/await invokeEdgeFunction\('onboarding-notify',/);
-    expect(loopBody.indexOf('await invokeEdgeFunction')).toBeGreaterThan(loopBody.indexOf('successCount++'));
+    expect(loopBody).toMatch(/await dispatchSignupApprovalActivation/);
+    expect(loopBody.indexOf('dispatchSignupApprovalActivation')).toBeGreaterThan(loopBody.indexOf('successCount++'));
     expect(handleApproveAllPending).not.toMatch(/Promise\.all/);
     expect(handleApproveAllPending).not.toMatch(/\.then\(/);
   });
@@ -180,7 +192,7 @@ describe('AdminUsersActivityPanel approval notices (B-01/A-29 source-level regre
     // on successCount - a run where every RPC succeeded but every notice
     // failed must still surface as an error, not a green checkmark.
     expect(handleApproveAllPending).toMatch(/type: notifyFailureCount > 0 \? 'error' : 'success'/);
-    expect(handleApproveAllPending).toMatch(/activation notice\(s\) FAILED to send/);
+    expect(handleApproveAllPending).toMatch(/activation handoff\(s\) FAILED/);
   });
 
   it('bulk approve never swallows a per-item exception silently out of the loop', () => {

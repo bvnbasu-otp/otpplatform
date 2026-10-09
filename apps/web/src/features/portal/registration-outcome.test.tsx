@@ -73,7 +73,7 @@ describe('deriveRegistrationOutcome', () => {
     expect(outcome.body).toMatch(/not onboarded/i);
   });
 
-  it('a failed email does not mention WhatsApp and points at Forgot password', () => {
+  it('a failed activation email is separate from registration success copy', () => {
     const failedEmail = resolveNotificationStatus({
       channel: 'EMAIL',
       observation: { kind: 'HTTP_RESPONSE', httpStatus: 500, errorMessage: 'Email request failed' },
@@ -85,8 +85,9 @@ describe('deriveRegistrationOutcome', () => {
     expect(outcome.accountState).toBe('AUTH_SETUP_PENDING');
     expect(outcome.canSignInNow).toBe(false);
     expect(outcome.statusLabel).toMatch(/EMAIL NOT DELIVERED/);
-    expect(outcome.body).toMatch(/Forgot password/);
-    expect(outcome.body).not.toMatch(/WhatsApp/i);
+    expect(outcome.notificationCopy.message).toMatch(/registration confirmation/);
+    expect(outcome.notificationCopy.message).not.toMatch(/password reset/i);
+    expect(outcome.body).toMatch(/sign-in screen/);
     expect(outcome.headline).not.toMatch(/account created/i);
   });
 
@@ -142,6 +143,7 @@ describe('signup API truthfulness', () => {
     mockSupabase.auth = {
       ...(mockSupabase.auth || {}),
       signInWithOtp: vi.fn().mockResolvedValue({ error: null }),
+      resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
     };
   });
 
@@ -194,7 +196,7 @@ describe('signup API truthfulness', () => {
     expect(mockSupabase.auth.signInWithOtp).not.toHaveBeenCalled();
   });
 
-  it('EMAIL channel submits GoTrue mail and does not treat WhatsApp notice failure as the primary confirmation', async () => {
+  it('EMAIL auto-approved submits GoTrue recovery mail only (no WhatsApp activation duplicate)', async () => {
     mockSupabase.rpc.mockResolvedValue({
       data: {
         reference: 'REG-1',
@@ -203,10 +205,6 @@ describe('signup API truthfulness', () => {
         already_submitted: false,
         auto_approved: true,
       },
-      error: null,
-    });
-    mockSupabase.functions.invoke.mockResolvedValue({
-      data: { ok: false, error: 'Messaging is not configured', status: 'FAILED' },
       error: null,
     });
     const res = await submitSignupRequest({
@@ -220,17 +218,17 @@ describe('signup API truthfulness', () => {
       buyerType: 'INDIVIDUAL',
     });
     expect(res.ok).toBe(true);
-    expect(mockSupabase.auth.signInWithOtp).toHaveBeenCalled();
+    expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalled();
+    expect(mockSupabase.auth.signInWithOtp).not.toHaveBeenCalled();
     expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
     if (res.ok) {
       expect(res.result.notification?.status).toBe('SUBMITTED');
       expect(res.result.notification?.channel).toBe('EMAIL');
       expect(res.result.guaranteedNotice).toBeUndefined();
-      expect(res.result.whatsappFallbackAttempted).toBe(false);
       const html = renderSuccess(res.result, 'BUYER');
-      expect(html).not.toMatch(/WhatsApp/i);
       expect(html).not.toContain('ONBOARDED');
       expect(html).toContain('PENDING EMAIL');
+      expect(html).toMatch(/registration confirmation/);
     }
   });
 
@@ -271,13 +269,13 @@ describe('signup API truthfulness', () => {
     }
   });
 
-  it('a registration routed to admin review never requests an activation code', async () => {
+  it('a registration routed to admin review defers GoTrue mail and sends guaranteed WhatsApp received notice', async () => {
     mockSupabase.rpc.mockResolvedValue({
       data: { reference: 'REG-3', requestId: 'req-3', status: 'PENDING', already_submitted: false, auto_approved: false },
       error: null,
     });
     mockSupabase.functions.invoke.mockResolvedValue({ data: { ok: true, status: 'SUBMITTED' }, error: null });
-    await submitSignupRequest({
+    const res = await submitSignupRequest({
       side: 'SUPPLIER',
       businessName: 'Zenith',
       contactFirstName: 'V',
@@ -286,9 +284,15 @@ describe('signup API truthfulness', () => {
       phone: '+919876543213',
       verificationChannel: 'EMAIL',
     });
+    expect(mockSupabase.auth.signInWithOtp).not.toHaveBeenCalled();
+    expect(mockSupabase.auth.resetPasswordForEmail).not.toHaveBeenCalled();
     const kinds = mockSupabase.functions.invoke.mock.calls.map((c: unknown[]) => (c[1] as { body: { kind: string } }).body.kind);
-    expect(kinds).toEqual([]);
-    expect(mockSupabase.auth.signInWithOtp).toHaveBeenCalled();
+    expect(kinds).toEqual(['SUBMITTED']);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.result.notification?.status).toBe('NOT_ATTEMPTED');
+      expect(res.result.guaranteedNotice?.status).toBe('SUBMITTED');
+    }
   });
 
   it('sendVerificationCode fails closed when the server cannot issue a code (no fallback code)', async () => {

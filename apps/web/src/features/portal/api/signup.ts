@@ -1,4 +1,4 @@
-import type { NotificationStatusResolution } from '@otp/domain';
+import { resolveNotificationStatus, type NotificationStatusResolution } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
 import {
   resolveSupabaseEmailDispatch,
@@ -133,19 +133,38 @@ export async function submitSignupRequest(
 
   let notification: NotificationStatusResolution | undefined;
   let guaranteedNotice: NotificationStatusResolution | undefined;
-  const whatsappFallbackAttempted = false;
+  let whatsappFallbackAttempted = false;
   if (requestId && !alreadySubmitted) {
     if (input.verificationChannel === 'EMAIL') {
-      const redirectUrl =
-        typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
-      const { error: emailErr } = await supabase.auth.signInWithOtp({
-        email: input.email.trim(),
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: redirectUrl,
-        },
-      });
-      notification = resolveSupabaseEmailDispatch(emailErr);
+      // GoTrue mail only works once auth.users exists (after provisioning / approval).
+      // Pending supplier/buyer review must not call signInWithOtp — it fails closed and
+      // was wrongly surfaced as a "password reset" failure on the success screen.
+      if (autoApproved) {
+        const redirectUrl =
+          typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
+        const { error: emailErr } = await supabase.auth.resetPasswordForEmail(input.email.trim(), {
+          redirectTo: redirectUrl,
+        });
+        notification = resolveSupabaseEmailDispatch(emailErr);
+      } else {
+        notification = resolveNotificationStatus({
+          channel: 'EMAIL',
+          observation: {
+            kind: 'NOT_ATTEMPTED',
+            reason: 'Email sign-in setup is sent after your registration is approved',
+          },
+        });
+      }
+
+      // B-01: while auth email is deferred (admin review), still send the guaranteed
+      // WhatsApp "registration received" notice on the required phone number.
+      if (!autoApproved) {
+        const { delivery: waDelivery } = await invokeEdgeFunction('onboarding-notify', {
+          requestId,
+          kind: 'SUBMITTED',
+        });
+        guaranteedNotice = waDelivery;
+      }
     } else {
       const notifyKind = autoApproved ? 'APPROVED' : 'SUBMITTED';
       const { delivery: waDelivery } = await invokeEdgeFunction('onboarding-notify', {
