@@ -13,6 +13,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { Image } from 'https://deno.land/x/imagescript@1.3.0/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -134,38 +135,30 @@ serve(async (req) => {
   }
 });
 
+function uint8ArrayToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
 /**
- * Strip EXIF metadata from photos (GPS, camera model, device info)
- * Uses sharp library to re-encode image without metadata
+ * Strip EXIF metadata from photos (GPS, camera model, device info).
+ * Re-encodes via ImageScript (Edge-safe; npm sharp does not bundle on Supabase).
  */
 async function stripPhotoExif(buffer: ArrayBuffer, contentType: string): Promise<ArrayBuffer> {
   try {
-    // Import sharp dynamically (Deno will fetch from npm)
-    const sharp = (await import('npm:sharp@0.33.0')).default;
-
-    const image = sharp(Buffer.from(buffer));
-
-    // Get image metadata to preserve dimensions and format
-    const metadata = await image.metadata();
-
-    // Determine output format
-    let outputFormat: 'jpeg' | 'png' | 'webp' = 'jpeg';
-    if (contentType === 'image/png') outputFormat = 'png';
-    else if (contentType === 'image/webp') outputFormat = 'webp';
-
-    // Re-encode image without any metadata
-    const processed = await image
-      .rotate() // Auto-rotate based on EXIF (before stripping)
-      [outputFormat]({
-        quality: 92, // High quality to minimize visible changes
-        // Explicitly strip all metadata
-        keepExif: false,
-        keepIccProfile: false,
-        keepMetadata: false,
-      })
-      .toBuffer();
-
-    return processed.buffer;
+    const decoded = await Image.decode(new Uint8Array(buffer));
+    let encoded: Uint8Array;
+    if (contentType === 'image/png') {
+      encoded = await decoded.encode();
+    } else if (contentType === 'image/webp') {
+      // ImageScript 1.3.x exposes WebP encode on the prototype at runtime.
+      const encodeWebp = (decoded as Image & { encodeWEBP?(quality: number): Promise<Uint8Array> }).encodeWEBP;
+      encoded = encodeWebp ? await encodeWebp.call(decoded, 92) : await decoded.encodeJPEG(92);
+    } else {
+      encoded = await decoded.encodeJPEG(92);
+    }
+    return uint8ArrayToArrayBuffer(encoded);
   } catch (error) {
     console.error('Photo EXIF stripping failed:', error);
     // Return original if processing fails (better than blocking upload)
@@ -198,7 +191,7 @@ async function stripPdfMetadata(buffer: ArrayBuffer): Promise<ArrayBuffer> {
     // Save the cleaned PDF
     const pdfBytes = await pdfDoc.save();
 
-    return pdfBytes.buffer;
+    return uint8ArrayToArrayBuffer(pdfBytes);
   } catch (error) {
     console.error('PDF metadata stripping failed:', error);
     return buffer;
