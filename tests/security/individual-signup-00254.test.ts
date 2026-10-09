@@ -116,40 +116,29 @@ describe('Migration 00254 local database behaviour', () => {
     expect(error?.message).toMatch(/SIGNUP_INDIVIDUAL_ROLE_MISMATCH/);
   });
 
-  it('MSME with a supplier-side role_code is accepted but the role is dropped (not granted)', async () => {
+  it('MSME with a supplier-side role_code is rejected (00257 fail-closed side match)', async () => {
     const anon = createAnonClient();
-    const service = createServiceClient();
-    const addr = email('buyer.supplier.role');
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
         business_name: 'Side Mismatch MSME',
         contact_first_name: 'Ravi',
         contact_last_name: 'Kumar',
-        email: addr,
+        email: email('buyer.supplier.role'),
         phone: '9876500088',
         buyer_type: 'MSME',
         role_code: 'SUPPLIER_FOUNDER',
       },
     });
-    expect(error).toBeNull();
-    const { data: row } = await service.from('signup_requests').select('role_code').eq('email', addr).single();
-    expect(row!.role_code).toBeNull();
+    expect(error?.message).toMatch(/SIGNUP_ROLE_SIDE_MISMATCH/);
   });
 
-  it('INDIVIDUAL with a supplier-side role_code cannot keep that role (resolves to Property Owner)', async () => {
+  it('INDIVIDUAL with a supplier-side role_code is rejected (00257 fail-closed)', async () => {
     const anon = createAnonClient();
-    const service = createServiceClient();
-    const req = individual({ role_code: 'SUPPLIER_FOUNDER' });
-    const { data, error } = await anon.rpc('submit_signup_request', { p_request: req });
-    expect(error).toBeNull();
-    expect((data as { status: string }).status).toBe('ONBOARDED');
-    const { data: row } = await service
-      .from('signup_requests')
-      .select('role_code')
-      .eq('email', req.email)
-      .single();
-    expect(row!.role_code).toBe('PROPERTY_OWNER');
+    const { error } = await anon.rpc('submit_signup_request', {
+      p_request: individual({ role_code: 'SUPPLIER_FOUNDER' }),
+    });
+    expect(error?.message).toMatch(/SIGNUP_ROLE_SIDE_MISMATCH/);
   });
 
   it('fails explicitly when PROPERTY_OWNER catalog row is inactive (no blind assign)', async () => {

@@ -7,11 +7,13 @@ const FILE = '00256_standardize_auth_otp_eight_digits.sql';
 const SQL = readFileSync(resolve(ROOT, 'supabase/migrations', FILE), 'utf8');
 
 describe('00256 auth OTP eight-digit standardization', () => {
-  it('is the repository migration ceiling', () => {
+  it('precedes 00257 in the migration chain', () => {
     const files = readdirSync(resolve(ROOT, 'supabase/migrations'))
       .filter((f) => /^\d{5}_.*\.sql$/.test(f))
       .sort();
-    expect(files.at(-1)).toBe(FILE);
+    const index = files.indexOf(FILE);
+    expect(index).toBeGreaterThanOrEqual(0);
+    expect(files[index + 1]).toBe('00257_canonical_role_catalog_and_signup_provisioning.sql');
   });
 
   it('issues eight-digit codes and rejects non-eight-digit verify input before hash compare', () => {

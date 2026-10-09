@@ -274,7 +274,8 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 5]).toBe('00254_individual_signup_property_owner_catalog_and_rpc.sql');
     expect(files[index + 6]).toBe('00255_restore_requirement_categories_canonical.sql');
     expect(files[index + 7]).toBe('00256_standardize_auth_otp_eight_digits.sql');
-    expect(index).toBe(files.length - 8);
+    expect(files[index + 8]).toBe('00257_canonical_role_catalog_and_signup_provisioning.sql');
+    expect(index).toBe(files.length - 9);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);
