@@ -975,7 +975,7 @@ export async function runCompleteAuthAndConcurrencySimulation() {
       latencyMs: Number(duration.toFixed(2)),
       details: `OTP: ${otpRes.otpCode}, 15m validity verified, password successfully rotated`,
     });
-    console.log(`  ✓ [WhatsApp OTP] 6-digit WhatsApp OTP generation & reset (${duration.toFixed(2)}ms)`);
+    console.log(`  ✓ [WhatsApp OTP] 8-digit WhatsApp OTP generation & reset (${duration.toFixed(2)}ms)`);
   }
 
   // Test 1.4: Login Flow - JWT Issuance & Platform Admin Claims

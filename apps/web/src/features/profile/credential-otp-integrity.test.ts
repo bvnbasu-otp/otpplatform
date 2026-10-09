@@ -86,14 +86,34 @@ describe('Profile credential verification never proves ownership on screen', () 
     expect(res.ok && res.message).toMatch(/debug/i);
   });
 
-  it('a server-rejected code is never turned into "verified" by entering 123456', async () => {
+  it('rejects incomplete or over-long codes before calling verify RPC', async () => {
+    vi.mocked(supabase.rpc).mockReset();
+    const seven = await verifyAndUpdateProfileCredential('PHONE', '9840012345', '1234567');
+    expect(seven).toMatchObject({ ok: false });
+    expect(vi.mocked(supabase.rpc)).not.toHaveBeenCalled();
+
+    const nine = await verifyAndUpdateProfileCredential('PHONE', '9840012345', '123456789');
+    expect(nine).toMatchObject({ ok: false });
+    expect(vi.mocked(supabase.rpc)).not.toHaveBeenCalled();
+
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { ok: true, message: 'ok' }, error: null } as any);
+    const eight = await verifyAndUpdateProfileCredential('PHONE', '9840012345', ' 01-234-567 ');
+    expect(eight.ok).toBe(true);
+    expect(vi.mocked(supabase.rpc)).toHaveBeenCalledWith('verify_and_update_profile_credential', {
+      p_credential_type: 'PHONE',
+      p_credential_value: '9840012345',
+      p_otp_code: '01234567',
+    });
+  });
+
+  it('a server-rejected code is never turned into "verified" by entering a wrong eight-digit code', async () => {
     vi.mocked(supabase.rpc).mockReset();
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { ok: false, error: 'Invalid code' }, error: null } as any);
-    const rejected = await verifyAndUpdateProfileCredential('PHONE', '9840012345', '123456');
+    const rejected = await verifyAndUpdateProfileCredential('PHONE', '9840012345', '12345678');
     expect(rejected).toEqual({ ok: false, error: 'Invalid code' });
 
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: { message: 'offline' } } as any);
-    const offline = await verifyAndUpdateProfileCredential('PHONE', '9840012345', '123456');
+    const offline = await verifyAndUpdateProfileCredential('PHONE', '9840012345', '87654321');
     expect(offline.ok).toBe(false);
   });
 
@@ -101,6 +121,14 @@ describe('Profile credential verification never proves ownership on screen', () 
     const src = readFileSync(resolve(__dirname, 'pages/ProfilePage.tsx'), 'utf8');
     expect(src).not.toMatch(/\(Code: \$\{res\.otpCode\}\)/);
     expect(src).not.toMatch(/sent via WhatsApp!/);
+    expect(src).toMatch(/AUTH_OTP_CODE_MAX_LENGTH|isCompleteAuthOtpCode|normalizeAuthOtpCodeInput/);
+    expect(src).not.toMatch(/maxLength=\{6\}/);
+  });
+
+  it('ProfileEditModal uses eight-digit OTP policy helpers', () => {
+    const src = readFileSync(resolve(__dirname, 'components/ProfileEditModal.tsx'), 'utf8');
+    expect(src).toMatch(/AUTH_OTP_CODE_MAX_LENGTH|isCompleteAuthOtpCode|normalizeAuthOtpCodeInput/);
+    expect(src).not.toMatch(/maxLength=\{6\}|6-digit OTP/i);
   });
 
   it('no client-visible build flag controls whether the code is revealed', () => {

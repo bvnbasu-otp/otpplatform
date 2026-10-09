@@ -98,7 +98,14 @@ describe('password reset and sign-in code copy', () => {
     }
   });
 
-  it('password reset and sign-in OTP copy uses six-digit policy (not eight)', () => {
+  it('ResetPasswordPage rejects verify without a complete eight-digit code', () => {
+    const source = readFileSync(resolve(__dirname, '../portal/pages/ResetPasswordPage.tsx'), 'utf8');
+    expect(source).toMatch(/isCompleteAuthOtpCode/);
+    expect(source).toMatch(/normalizeAuthOtpCodeInput/);
+    expect(source).not.toMatch(/code\.trim\(\)\.length !== AUTH_OTP_CODE_MAX_LENGTH/);
+  });
+
+  it('password reset and sign-in OTP copy uses eight-digit policy via otp-policy', () => {
     const files = [
       resolve(__dirname, 'components/SignInForm.tsx'),
       resolve(__dirname, '../portal/pages/ResetPasswordPage.tsx'),
@@ -106,7 +113,7 @@ describe('password reset and sign-in code copy', () => {
     for (const file of files) {
       const source = readFileSync(file, 'utf8');
       expect(source, file).toMatch(/AUTH_OTP_CODE_MAX_LENGTH|authOtpDigitLabel/);
-      expect(source, file).not.toMatch(/8-digit|8 digit|Eight-digit|eight-digit|maxLength=\{8\}/i);
+      expect(source, file).not.toMatch(/six-digit|6-digit|Six-Digit|maxLength=\{6\}/i);
     }
   });
 

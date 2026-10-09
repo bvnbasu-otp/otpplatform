@@ -5,8 +5,10 @@ import {
   authOtpDigitLabel,
   authOtpDigitLabelTitleCase,
   describeNotificationStatus,
+  isCompleteAuthOtpCode,
   isLikelyPkceOrLongRecoveryToken,
   isLikelyShortOtpToken,
+  normalizeAuthOtpCodeInput,
 } from '@otp/domain';
 import { useAuth } from '@/features/auth';
 import { SiteLayout } from '@/features/site/components/SiteLayout';
@@ -30,7 +32,7 @@ export function ResetPasswordPage() {
   // Mode: either requesting a code, verifying a code, or setting a password with an authenticated recovery session
   const [mode, setMode] = useState<ResetMode>(() => {
     const c = searchParams.get('code') || searchParams.get('token');
-    // If short 6-digit code or explicit verify step in URL, start in verify mode
+    // If short auth OTP code or explicit verify step in URL, start in verify mode
     if ((c && isLikelyShortOtpToken(c)) || searchParams.get('step') === 'verify') return 'verify';
     return 'request';
   });
@@ -213,19 +215,19 @@ export function ResetPasswordPage() {
         return;
       }
     } else {
-      // Code verification (via 6-digit code from WhatsApp or Email)
+      // Code verification (via eight-digit code from WhatsApp or Email)
       if (!codeIdentifier.trim()) {
         setBusy(false);
         setError('Please enter your registered email address or phone number.');
         return;
       }
-      if (!code.trim() || code.trim().length !== AUTH_OTP_CODE_MAX_LENGTH) {
+      if (!isCompleteAuthOtpCode(code)) {
         setBusy(false);
         setError(`Please enter the full ${authOtpDigitLabel()} verification code from WhatsApp or email.`);
         return;
       }
 
-      const res = await verifyPasswordReset(codeIdentifier, code, password);
+      const res = await verifyPasswordReset(codeIdentifier, normalizeAuthOtpCodeInput(code), password);
       setBusy(false);
 
       if (!res.ok) {
@@ -532,7 +534,7 @@ export function ResetPasswordPage() {
                             maxLength={AUTH_OTP_CODE_MAX_LENGTH}
                             value={code}
                             onChange={(e) =>
-                              setCode(e.target.value.replace(/\D/g, '').slice(0, AUTH_OTP_CODE_MAX_LENGTH))
+                              setCode(normalizeAuthOtpCodeInput(e.target.value))
                             }
                             className={`${controlClasses(invalid)} font-mono tracking-widest text-center text-lg`}
                             placeholder={`Enter ${authOtpDigitLabel()} code`}

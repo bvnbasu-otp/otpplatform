@@ -1,4 +1,5 @@
-﻿import { supabase } from '@/lib/supabase';
+﻿import { authOtpDigitLabel, isCompleteAuthOtpCode, normalizeAuthOtpCodeInput } from '@otp/domain';
+import { supabase } from '@/lib/supabase';
 import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
 
 export interface UserProfileDetails {
@@ -182,10 +183,10 @@ export async function verifyAndUpdateProfileCredential(
   credentialValue: string,
   otpCode: string
 ): Promise<{ ok: true; message: string; formattedValue?: string } | { ok: false; error: string }> {
-  const cleanCode = otpCode.trim();
-  if (!cleanCode || cleanCode.length < 4) {
-    return { ok: false, error: 'Please enter a valid 6-digit verification code.' };
+  if (!isCompleteAuthOtpCode(otpCode)) {
+    return { ok: false, error: `Please enter a valid ${authOtpDigitLabel()} verification code.` };
   }
+  const cleanCode = normalizeAuthOtpCodeInput(otpCode);
 
   try {
     const { data, error } = await supabase.rpc('verify_and_update_profile_credential', {

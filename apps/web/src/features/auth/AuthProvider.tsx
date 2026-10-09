@@ -24,11 +24,11 @@ interface AuthContextValue {
   verifySignInCode: (email: string, code: string) => Promise<{ error: string | null }>;
   /** Sends a password recovery email with a reset link and code. */
   resetPasswordForEmail: (email: string) => Promise<{ error: string | null; delivery?: NotificationStatusResolution }>;
-  /** Requests a 6-digit password reset verification code via WhatsApp. */
+  /** Requests an eight-digit password reset verification code via WhatsApp. */
   requestPasswordResetWhatsApp: (
     identifier: string,
   ) => Promise<{ ok: boolean; phone?: string; email?: string; error?: string; delivery?: NotificationStatusResolution }>;
-  /** Verifies a 6-digit password reset code (from WhatsApp or Email) and sets a new password. */
+  /** Verifies an eight-digit password reset code (from WhatsApp or Email) and sets a new password. */
   verifyPasswordReset: (identifier: string, code: string, newPassword: string) => Promise<{ ok: boolean; error?: string; message?: string }>;
   /** Updates the password for the current authenticated session. */
   updatePassword: (password: string) => Promise<{ error: string | null }>;

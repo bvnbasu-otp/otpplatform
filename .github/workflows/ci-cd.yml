@@ -273,7 +273,7 @@ jobs:
           set -euo pipefail
           # scripts/deploy-prod.ps1 is LOCAL DOCKER ONLY (otp-prod-db). It is not this hosted path.
           PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
-          EXPECTED_CEILING="00253"
+          EXPECTED_CEILING="00256"
 
           echo "================================================================="
           echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS (Supabase CLI)"

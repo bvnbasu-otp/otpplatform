@@ -193,9 +193,9 @@ export async function runLiveSmokeTests(): Promise<{ passed: number; failed: num
       }
     }
 
-    if (!html.includes('{{ .Token }}')) throw new Error('Template missing {{ .Token }} 6-digit code placeholder');
+    if (!html.includes('{{ .Token }}')) throw new Error('Template missing {{ .Token }} 8-digit code placeholder');
     if (!html.includes('{{ .ConfirmationURL }}')) throw new Error('Template missing {{ .ConfirmationURL }} action link');
-    return fetchedOk ? 'Template served with 6-digit OTP & Action Link' : 'Template verified from disk (Web server offline)';
+    return fetchedOk ? 'Template served with 8-digit OTP & Action Link' : 'Template verified from disk (Web server offline)';
   });
 
   // 8. GoTrue Token Verification Direct Link Redirection (HTTP 303/302 to /reset-password or error redirect)
@@ -241,7 +241,7 @@ export async function runLiveSmokeTests(): Promise<{ passed: number; failed: num
     const res = data as { ok: boolean; error?: string; otp_code?: string; phone?: string };
     if (!res.ok) throw new Error(res.error || 'RPC returned ok: false');
     if (!res.otp_code || res.otp_code.length !== 6) throw new Error(`Invalid OTP generated: ${res.otp_code}`);
-    return `Generated 6-digit OTP: ${res.otp_code} for ${res.phone || 'admin'}`;
+    return `Generated 8-digit OTP: ${res.otp_code} for ${res.phone || 'admin'}`;
   });
 
   const passed = results.filter((r) => r.passed).length;

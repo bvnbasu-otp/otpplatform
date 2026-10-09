@@ -6,6 +6,8 @@ import {
   authOtpDigitLabel,
   authOtpDigitLabelTitleCase,
   describeNotificationStatus,
+  isCompleteAuthOtpCode,
+  normalizeAuthOtpCodeInput,
   type NotificationStatusResolution,
 } from '@otp/domain';
 import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
@@ -328,10 +330,18 @@ export function SignInForm({
       normalizedEmail = 'admin@otp.test';
     }
 
+    if (method === 'code') {
+      if (!isCompleteAuthOtpCode(code)) {
+        setBusy(false);
+        setError(`Please enter the full ${authOtpDigitLabel()} sign-in code from your email.`);
+        return;
+      }
+    }
+
     const result =
       method === 'password'
         ? await signIn(normalizedEmail, password)
-        : await verifySignInCode(normalizedEmail, code);
+        : await verifySignInCode(normalizedEmail, normalizeAuthOtpCodeInput(code));
 
     setBusy(false);
 
@@ -695,7 +705,7 @@ export function SignInForm({
                   autoComplete="one-time-code"
                   maxLength={AUTH_OTP_CODE_MAX_LENGTH}
                   value={code}
-                  onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, AUTH_OTP_CODE_MAX_LENGTH))}
+                  onChange={(event) => setCode(normalizeAuthOtpCodeInput(event.target.value))}
                   className={controlClasses(invalid, 'tracking-[0.3em]')}
                   data-testid="otp-code"
                   placeholder={`Enter ${authOtpDigitLabel()} code`}

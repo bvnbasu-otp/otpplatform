@@ -376,7 +376,7 @@ export function renderSignupVerificationOtp(input: OtpMessageInput): RenderedMes
     templateId: 'signup_verification_otp',
     body:
       `[OTP Platform] Verification Code\n\n` +
-      `Your verification code is: ${input.code}\n\n` +
+      `Your 8-digit verification code is: ${input.code}\n\n` +
       `Valid for ${input.minutesValid} minutes. Enter this code on the registration page to proceed.`,
   };
 }
@@ -391,7 +391,7 @@ export function renderPasswordResetOtp(input: PasswordResetOtpInput): RenderedMe
     body:
       `[OTP Platform] Password Reset Verification\n\n` +
       `Hello ${input.fullName},\n` +
-      `Your password reset verification code is: ${input.code}\n\n` +
+      `Your 8-digit password reset verification code is: ${input.code}\n\n` +
       `Valid for ${input.minutesValid} minutes. Enter this code on the password reset screen to set your new password.\n\n` +
       `If you did not request this, you can safely ignore this message.`,
   };
@@ -403,7 +403,7 @@ export function renderProfileCredentialOtp(input: PasswordResetOtpInput): Render
     body:
       `OTP Platform profile verification\n\n` +
       `Hello ${input.fullName},\n` +
-      `Your code to link this phone number to your profile is: ${input.code}\n\n` +
+      `Your 8-digit code to link this credential to your profile is: ${input.code}\n\n` +
       `Valid for ${input.minutesValid} minutes. Enter it in your Profile settings.`,
   };
 }
@@ -446,7 +446,7 @@ export function renderApprovalActivationNotice(input: ApprovalActivationInput): 
       `[OTP Platform] Account Approved — Set Your Password\n\n` +
       `Hello ${input.fullName},\n` +
       `Your registration for "${input.businessName}" has been approved.\n\n` +
-      `Your one-time activation code is: ${input.code}\n\n` +
+      `Your one-time 8-digit activation code is: ${input.code}\n\n` +
       `Valid for ${input.minutesValid} minutes. Go to the "Forgot password?" screen, enter this code, and choose your own password to sign in for the first time.`,
   };
 }

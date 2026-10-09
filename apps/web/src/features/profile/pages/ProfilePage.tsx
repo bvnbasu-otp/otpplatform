@@ -26,7 +26,13 @@ import { ReferAndEarnCard } from '@/features/referral';
 import { AddressBookManager } from '../components/AddressBookManager';
 import { OrganizationCharterPanel } from '@/features/governance/components/OrganizationCharterPanel';
 import { CommitteeTeamBuilder } from '@/features/org/components/CommitteeTeamBuilder';
-import { tryResolveBuyerPersona } from '@otp/domain';
+import {
+  AUTH_OTP_CODE_MAX_LENGTH,
+  authOtpDigitLabel,
+  isCompleteAuthOtpCode,
+  normalizeAuthOtpCodeInput,
+  tryResolveBuyerPersona,
+} from '@otp/domain';
 
 const ROLE_OPTIONS = [
   { value: 'COMMITTEE_MEMBER', label: 'Committee Member — evaluates & votes on RFQs' },
@@ -319,8 +325,8 @@ export function ProfilePage() {
   async function handleVerifyPhoneOtp() {
     setPhoneOtpError(null);
     setPhoneOtpSuccess(null);
-    if (!phoneOtpCode.trim() || phoneOtpCode.trim().length < 4) {
-      setPhoneOtpError('Please enter the 6-digit verification code.');
+    if (!isCompleteAuthOtpCode(phoneOtpCode)) {
+      setPhoneOtpError(`Please enter the ${authOtpDigitLabel()} verification code.`);
       return;
     }
 
@@ -369,8 +375,8 @@ export function ProfilePage() {
   async function handleVerifyEmailOtp() {
     setEmailOtpError(null);
     setEmailOtpSuccess(null);
-    if (!emailOtpCode.trim() || emailOtpCode.trim().length < 4) {
-      setEmailOtpError('Please enter the 6-digit verification code.');
+    if (!isCompleteAuthOtpCode(emailOtpCode)) {
+      setEmailOtpError(`Please enter the ${authOtpDigitLabel()} verification code.`);
       return;
     }
 
@@ -876,15 +882,15 @@ export function ProfilePage() {
                           <input
                             type="text"
                             inputMode="numeric"
-                            maxLength={6}
+                            maxLength={AUTH_OTP_CODE_MAX_LENGTH}
                             value={emailOtpCode}
-                            onChange={(e) => setEmailOtpCode(e.target.value.replace(/\D/g, ''))}
-                            placeholder="6-digit OTP"
+                            onChange={(e) => setEmailOtpCode(normalizeAuthOtpCodeInput(e.target.value))}
+                            placeholder={`${authOtpDigitLabel()} OTP`}
                             className="w-32 tracking-widest text-center font-mono font-bold rounded-xl border bg-background px-3 py-2 text-xs min-h-[44px]"
                           />
                           <button
                             type="button"
-                            disabled={emailOtpBusy || emailOtpCode.length < 4}
+                            disabled={emailOtpBusy || !isCompleteAuthOtpCode(emailOtpCode)}
                             onClick={() => void handleVerifyEmailOtp()}
                             className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 min-h-[44px] mobile-touch-target"
                           >
@@ -946,15 +952,15 @@ export function ProfilePage() {
                           <input
                             type="text"
                             inputMode="numeric"
-                            maxLength={6}
+                            maxLength={AUTH_OTP_CODE_MAX_LENGTH}
                             value={phoneOtpCode}
-                            onChange={(e) => setPhoneOtpCode(e.target.value.replace(/\D/g, ''))}
-                            placeholder="6-digit OTP"
+                            onChange={(e) => setPhoneOtpCode(normalizeAuthOtpCodeInput(e.target.value))}
+                            placeholder={`${authOtpDigitLabel()} OTP`}
                             className="w-32 tracking-widest text-center font-mono font-bold rounded-xl border bg-background px-3 py-2 text-xs min-h-[44px]"
                           />
                           <button
                             type="button"
-                            disabled={phoneOtpBusy || phoneOtpCode.length < 4}
+                            disabled={phoneOtpBusy || !isCompleteAuthOtpCode(phoneOtpCode)}
                             onClick={() => void handleVerifyPhoneOtp()}
                             className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 min-h-[44px] mobile-touch-target"
                           >

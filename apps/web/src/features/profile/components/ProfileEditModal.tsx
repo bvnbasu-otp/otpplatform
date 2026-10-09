@@ -10,6 +10,12 @@ import {
   type UserProfileDetails,
 } from '../api/profile';
 import { fetchUserOrganization } from '@/features/requirement/api/requirements';
+import {
+  AUTH_OTP_CODE_MAX_LENGTH,
+  authOtpDigitLabel,
+  isCompleteAuthOtpCode,
+  normalizeAuthOtpCodeInput,
+} from '@otp/domain';
 import { PERSONA_AVATARS, compressAndCropAvatar } from '../lib/avatars';
 
 interface ProfileEditModalProps {
@@ -191,8 +197,8 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
   async function handleVerifyPhoneOtp() {
     setPhoneOtpError(null);
     setPhoneOtpSuccess(null);
-    if (!phoneOtpCode.trim() || phoneOtpCode.trim().length < 4) {
-      setPhoneOtpError('Please enter the 6-digit verification code.');
+    if (!isCompleteAuthOtpCode(phoneOtpCode)) {
+      setPhoneOtpError(`Please enter the ${authOtpDigitLabel()} verification code.`);
       return;
     }
 
@@ -245,8 +251,8 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
   async function handleVerifyEmailOtp() {
     setEmailOtpError(null);
     setEmailOtpSuccess(null);
-    if (!emailOtpCode.trim() || emailOtpCode.trim().length < 4) {
-      setEmailOtpError('Please enter the 6-digit verification code.');
+    if (!isCompleteAuthOtpCode(emailOtpCode)) {
+      setEmailOtpError(`Please enter the ${authOtpDigitLabel()} verification code.`);
       return;
     }
 
@@ -637,15 +643,15 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
                         <input
                           type="text"
                           inputMode="numeric"
-                          maxLength={6}
+                          maxLength={AUTH_OTP_CODE_MAX_LENGTH}
                           value={emailOtpCode}
-                          onChange={(e) => setEmailOtpCode(e.target.value.replace(/\D/g, ''))}
-                          placeholder="Enter 6-digit OTP"
+                          onChange={(e) => setEmailOtpCode(normalizeAuthOtpCodeInput(e.target.value))}
+                          placeholder={`Enter ${authOtpDigitLabel()} OTP`}
                           className="w-full sm:w-40 tracking-widest text-center font-mono font-bold rounded-md border bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
                         />
                         <button
                           type="button"
-                          disabled={emailOtpBusy || emailOtpCode.length < 4}
+                          disabled={emailOtpBusy || !isCompleteAuthOtpCode(emailOtpCode)}
                           onClick={() => void handleVerifyEmailOtp()}
                           className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 disabled:opacity-50 whitespace-nowrap"
                         >
@@ -748,15 +754,15 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
                         <input
                           type="text"
                           inputMode="numeric"
-                          maxLength={6}
+                          maxLength={AUTH_OTP_CODE_MAX_LENGTH}
                           value={phoneOtpCode}
-                          onChange={(e) => setPhoneOtpCode(e.target.value.replace(/\D/g, ''))}
-                          placeholder="Enter 6-digit OTP"
+                          onChange={(e) => setPhoneOtpCode(normalizeAuthOtpCodeInput(e.target.value))}
+                          placeholder={`Enter ${authOtpDigitLabel()} OTP`}
                           className="w-full sm:w-40 tracking-widest text-center font-mono font-bold rounded-md border bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
                         />
                         <button
                           type="button"
-                          disabled={phoneOtpBusy || phoneOtpCode.length < 4}
+                          disabled={phoneOtpBusy || !isCompleteAuthOtpCode(phoneOtpCode)}
                           onClick={() => void handleVerifyPhoneOtp()}
                           className="rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
                         >

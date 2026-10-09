@@ -56,9 +56,9 @@ services:
       GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-bvnbasu@gmail.com}
       GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-OTP Platform}
       GOTRUE_MAILER_OTP_EXP: 600
-      GOTRUE_MAILER_OTP_LENGTH: 6
+      GOTRUE_MAILER_OTP_LENGTH: 8
       GOTRUE_MAILER_TEMPLATE_RELOADING_ENABLED: "true"
-      # Email Templates with 6-digit numeric OTP code support (served via HTTP)
+      # Email Templates with 8-digit numeric OTP code support (served via HTTP)
       GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: ${SITE_URL:-https://otpplatform-theta.vercel.app}/email-templates/magic_link.html
       GOTRUE_MAILER_TEMPLATES_RECOVERY: ${SITE_URL:-https://otpplatform-theta.vercel.app}/email-templates/recovery.html
       GOTRUE_MAILER_TEMPLATES_INVITE: ${SITE_URL:-https://otpplatform-theta.vercel.app}/email-templates/invite.html
