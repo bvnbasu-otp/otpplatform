@@ -30,6 +30,19 @@ export interface WahaConfig {
 const SESSION_TIMEOUT_MS = 5000;
 const SEND_TIMEOUT_MS = 10000;
 
+/** ngrok free tier returns an HTML interstitial unless this header is set. */
+export function wahaTunnelHeaders(baseUrl: string): Record<string, string> {
+  try {
+    const host = new URL(baseUrl).hostname.toLowerCase();
+    if (host.endsWith('.ngrok-free.app') || host.endsWith('.ngrok-free.dev') || host.endsWith('.ngrok.io')) {
+      return { 'ngrok-skip-browser-warning': 'true' };
+    }
+  } catch {
+    // baseUrl is validated upstream; ignore parse failures here
+  }
+  return {};
+}
+
 export class WahaMessagingProvider implements MessagingProvider {
   readonly id = 'WAHA' as const;
   readonly channels = ['WHATSAPP'] as const;
@@ -62,13 +75,18 @@ export class WahaMessagingProvider implements MessagingProvider {
     const session = await this.#sessionReady();
     if (session) return session;
 
+    const chatId = await this.#resolveChatId(to);
+
     try {
       const response = await this.#fetch(`${this.#baseUrl}/api/sendText`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        headers: {
+          ...wahaTunnelHeaders(this.#baseUrl),
+          'Content-Type': 'application/json; charset=utf-8',
+        },
         body: JSON.stringify({
           session: this.#session,
-          chatId: `${to.slice(1)}@c.us`,
+          chatId,
           text: body,
         }),
         signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
@@ -78,7 +96,16 @@ export class WahaMessagingProvider implements MessagingProvider {
         return this.#failed(`WAHA returned ${response.status}`);
       }
 
+      const contentType = response.headers.get('content-type') ?? '';
+      if (contentType.includes('text/html')) {
+        return this.#failed('WAHA returned a non-JSON response');
+      }
+
+      // This WAHA build often returns 201 with an empty body; that is still a successful send.
       const payload = await response.json().catch(() => null);
+      if (payload !== null && typeof payload !== 'object') {
+        return this.#failed('WAHA send returned a malformed response');
+      }
       const externalMessageId = messageId(payload);
       return { provider: this.id, externalMessageId, status: 'SENT' };
     } catch (error) {
@@ -102,11 +129,46 @@ export class WahaMessagingProvider implements MessagingProvider {
     return [];
   }
 
+  /**
+   * WhatsApp may require an @lid chat id; @c.us alone can return HTTP 201 without
+   * delivery. WAHA exposes the canonical id via check-exists when available.
+   */
+  async #resolveChatId(e164: string): Promise<string> {
+    const phone = e164.slice(1);
+    const fallback = `${phone}@c.us`;
+    try {
+      const url = new URL(`${this.#baseUrl}/api/contacts/check-exists`);
+      url.searchParams.set('session', this.#session);
+      url.searchParams.set('phone', phone);
+      const response = await this.#fetch(url.toString(), {
+        method: 'GET',
+        headers: wahaTunnelHeaders(this.#baseUrl),
+        signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+      });
+      if (!response.ok) return fallback;
+      const contentType = response.headers.get('content-type') ?? '';
+      if (contentType.includes('text/html')) return fallback;
+      const payload = await response.json().catch(() => null);
+      if (!payload || typeof payload !== 'object') return fallback;
+      const record = payload as { numberExists?: unknown; chatId?: unknown };
+      if (record.numberExists === true && typeof record.chatId === 'string' && record.chatId.trim()) {
+        return record.chatId.trim();
+      }
+    } catch {
+      // Use legacy @c.us when check-exists is unavailable or times out.
+    }
+    return fallback;
+  }
+
   async #sessionReady(): Promise<SendReceipt | null> {
     try {
       const response = await this.#fetch(
         `${this.#baseUrl}/api/sessions/${encodeURIComponent(this.#session)}`,
-        { method: 'GET', signal: AbortSignal.timeout(SESSION_TIMEOUT_MS) },
+        {
+          method: 'GET',
+          headers: wahaTunnelHeaders(this.#baseUrl),
+          signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+        },
       );
 
       if (!response.ok) {

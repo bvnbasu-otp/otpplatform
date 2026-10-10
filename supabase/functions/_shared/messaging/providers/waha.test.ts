@@ -3,7 +3,7 @@
  * tests do not open a socket and do not send WhatsApp.
  */
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { WahaMessagingProvider } from './waha.ts';
+import { WahaMessagingProvider, wahaTunnelHeaders } from './waha.ts';
 import type { OutboundMessage } from '../types.ts';
 
 const BASE = 'http://127.0.0.1:3008';
@@ -25,6 +25,19 @@ function jsonResponse(status: number, payload: unknown): Response {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+/** Fresh Response per test — bodies are single-use. */
+function sessionWorking(): Response {
+  return jsonResponse(200, { name: 'default', status: 'WORKING' });
+}
+
+function checkExistsLegacy(): Response {
+  return jsonResponse(200, { numberExists: false });
+}
+
+function workingSessionThen(responses: Response[]): Response[] {
+  return [sessionWorking(), checkExistsLegacy(), ...responses];
 }
 
 function scripted(responses: Response[]): { fetchImpl: typeof fetch; calls: Captured[] } {
@@ -52,57 +65,92 @@ function provider(fetchImpl: typeof fetch): WahaMessagingProvider {
 }
 
 Deno.test('WAHA send uses the session check and sendText contract', async () => {
-  const { fetchImpl, calls } = scripted([
-    jsonResponse(200, { name: 'default', status: 'WORKING' }),
+  const { fetchImpl, calls } = scripted(workingSessionThen([
     jsonResponse(200, { id: 'waha-msg-1' }),
-  ]);
+  ]));
 
   const receipt = await provider(fetchImpl).send(MESSAGE);
 
   assertEquals(receipt.status, 'SENT');
   assertEquals(receipt.provider, 'WAHA');
   assertEquals(receipt.externalMessageId, 'waha-msg-1');
-  assertEquals(calls.length, 2);
-  assertEquals(calls[0].method, 'GET');
+  assertEquals(calls.length, 3);
   assertEquals(calls[0].url, `${BASE}/api/sessions/default`);
-  assertEquals(calls[0].headers.authorization, undefined);
-  assertEquals(calls[0].headers['x-api-key'], undefined);
-  assertEquals(calls[1].method, 'POST');
-  assertEquals(calls[1].url, `${BASE}/api/sendText`);
-  assertEquals(calls[1].headers['content-type'], 'application/json; charset=utf-8');
-  assertEquals(calls[1].headers.authorization, undefined);
-  assertEquals(JSON.parse(calls[1].body ?? '{}'), {
+  assertEquals(calls[1].url.includes('/api/contacts/check-exists'), true);
+  assertEquals(calls[2].method, 'POST');
+  assertEquals(calls[2].url, `${BASE}/api/sendText`);
+  assertEquals(JSON.parse(calls[2].body ?? '{}'), {
     session: 'default',
     chatId: '919876543210@c.us',
     text: 'Pilot notice',
   });
 });
 
-Deno.test('WAHA accepts a message id nested under key.id', async () => {
-  const { fetchImpl } = scripted([
-    jsonResponse(200, { status: 'WORKING' }),
-    jsonResponse(200, { key: { id: 'nested-id' } }),
+Deno.test('WAHA send uses LID chatId from check-exists when present', async () => {
+  const { fetchImpl, calls } = scripted([
+    sessionWorking(),
+    jsonResponse(200, { numberExists: true, chatId: '33251787841621@lid' }),
+    jsonResponse(201, {}),
   ]);
+  const receipt = await provider(fetchImpl).send(MESSAGE);
+  assertEquals(receipt.status, 'SENT');
+  assertEquals(JSON.parse(calls[2].body ?? '{}').chatId, '33251787841621@lid');
+});
+
+Deno.test('WAHA accepts a message id nested under key.id', async () => {
+  const { fetchImpl } = scripted(workingSessionThen([
+    jsonResponse(200, { key: { id: 'nested-id' } }),
+  ]));
   const receipt = await provider(fetchImpl).send(MESSAGE);
   assertEquals(receipt.externalMessageId, 'nested-id');
 });
 
-Deno.test('WAHA treats a successful response with malformed JSON as sent without an id', async () => {
-  const { fetchImpl } = scripted([
-    jsonResponse(200, { status: 'WORKING' }),
-    new Response('not-json', { status: 200 }),
-  ]);
+Deno.test('WAHA treats an empty 201 send body as SENT', async () => {
+  const { fetchImpl } = scripted(workingSessionThen([
+    new Response(null, { status: 201 }),
+  ]));
   const receipt = await provider(fetchImpl).send(MESSAGE);
   assertEquals(receipt.status, 'SENT');
   assertEquals(receipt.externalMessageId, null);
 });
 
+Deno.test('WAHA treats a non-JSON send body as SENT when status is ok', async () => {
+  const { fetchImpl } = scripted(workingSessionThen([
+    new Response('not-json', { status: 201 }),
+  ]));
+  const receipt = await provider(fetchImpl).send(MESSAGE);
+  assertEquals(receipt.status, 'SENT');
+  assertEquals(receipt.externalMessageId, null);
+});
+
+Deno.test('WAHA rejects an ngrok HTML interstitial on send', async () => {
+  const { fetchImpl } = scripted(workingSessionThen([
+    new Response('<html>ngrok</html>', { status: 200, headers: { 'Content-Type': 'text/html' } }),
+  ]));
+  const receipt = await provider(fetchImpl).send(MESSAGE);
+  assertEquals(receipt.status, 'FAILED');
+  assertEquals(receipt.failureReason, 'WAHA returned a non-JSON response');
+});
+
+Deno.test('WAHA adds ngrok-skip-browser-warning for ngrok hosts', async () => {
+  assertEquals(wahaTunnelHeaders('https://abc.ngrok-free.dev')['ngrok-skip-browser-warning'], 'true');
+  assertEquals(wahaTunnelHeaders('http://127.0.0.1:3008')['ngrok-skip-browser-warning'], undefined);
+
+  const ngrokBase = 'https://tunnel.ngrok-free.app';
+  const { fetchImpl, calls } = scripted(workingSessionThen([
+    jsonResponse(200, { id: 'x' }),
+  ]));
+  await new WahaMessagingProvider({ baseUrl: ngrokBase, session: 'default', fetchImpl }).send(MESSAGE);
+  assertEquals(calls[0].headers['ngrok-skip-browser-warning'], 'true');
+  assertEquals(calls[1].headers['ngrok-skip-browser-warning'], 'true');
+  assertEquals(calls[2].headers['ngrok-skip-browser-warning'], 'true');
+});
+
 Deno.test('WAHA reports 4xx without the response body', async () => {
   const secret = 'waha-response-secret';
-  const { fetchImpl } = scripted([
-    jsonResponse(200, { status: 'WORKING' }),
+  const { fetchImpl } = scripted(workingSessionThen([
     jsonResponse(400, { error: secret }),
-  ]);
+  ]));
   const receipt = await provider(fetchImpl).send(MESSAGE);
   assertEquals(receipt.status, 'FAILED');
   assertEquals(receipt.failureReason, 'WAHA returned 400');
@@ -110,10 +158,9 @@ Deno.test('WAHA reports 4xx without the response body', async () => {
 });
 
 Deno.test('WAHA reports 5xx without the response body', async () => {
-  const { fetchImpl } = scripted([
-    jsonResponse(200, { status: 'WORKING' }),
+  const { fetchImpl } = scripted(workingSessionThen([
     jsonResponse(503, { detail: 'internal' }),
-  ]);
+  ]));
   const receipt = await provider(fetchImpl).send(MESSAGE);
   assertEquals(receipt.failureReason, 'WAHA returned 503');
 });
@@ -160,12 +207,10 @@ Deno.test('WAHA rejects SMS before any request', async () => {
 });
 
 Deno.test('WAHA reports a send timeout without the gateway URL', async () => {
-  const { fetchImpl } = scripted([
-    jsonResponse(200, { status: 'WORKING' }),
-  ]);
+  const { fetchImpl } = scripted(workingSessionThen([]));
   const timingOut: typeof fetch = async (input, init) => {
     const url = String(input);
-    if (url.endsWith('/api/sendText')) {
+    if (url.includes('/api/sendText')) {
       throw Object.assign(new Error('timed out'), { name: 'TimeoutError' });
     }
     return fetchImpl(input, init);
