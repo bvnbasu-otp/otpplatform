@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "amber-to-green-approval-packet-draft-2026-10-11",
+  "phase": "DRAFT_ONLY_NO_EXECUTION",
+  "executiveVerdictIfExecutedToday": "AMBER",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "repository": "github.com/bvnbasu-otp/otpplatform",
+  "hostedTargets": {
+    "web": "https://otpplatform-theta.vercel.app",
+    "supabaseProjectRef": "qsuvtcezffomtwzwyrso"
+  },
+  "migration00261": {
+    "draftPath": "OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql",
+    "sha256": "77CF59F716846368DD62F7F4A861133DA6DFEE86D4160BBDF4EC054C82ED494E",
+    "sha256Superseded": "0228A8F0BC283621B775C2B05827BC1042F3DC25C5E7C736E36AB5C12D4CEBA0",
+    "sha256SupersededReason": "Grouped security wave 00261 truthfulness edits (ec328d45)",
+    "proposedCanonicalName": "00261_admin_run_test_case_truthful_execution_and_auth.sql",
+    "readinessVerdict": "REQUIRES_REMEDIATION",
+    "blockers": [
+      "local Docker smoke not completed",
+      "hosted schema_migrations unread ENOTFOUND"
+    ],
+    "phaseACompletionRef": "OTP Golden Reconstruction/PHASE_A_00261_LOCAL_SMOKE_EVIDENCE.json",
+    "phaseACompletionSessionRef": "008e5c6c-b143-4175-a5e9-0a89e7b279ea",
+    "remediationBeforeApply": [
+      "DECLARE v_execution_status: FIXED in draft 2026-10-11 follow-up (Phase A gap closed in source).",
+      "Run local Docker apply + admin_run_test_case smoke as platform admin before hosted apply.",
+      "Promote draft into supabase/migrations/ only in authorized release commit; never apply from Golden Reconstruction path directly."
+    ],
+    "purposeSummary": "Remove admin_run_test_case unknown-ID auto-pass; restrict EXECUTE to platform admin/service_role; return execution_status truth (PASSED/FAILED/BLOCKED/NOT_IMPLEMENTED).",
+    "rollbackStrategy": "Forward-only: restore prior function body from 00115 (+ any 00199 guard rewrites) via new forward migration; do not edit 00115 in place.",
+    "verificationQueriesReadOnly": [
+      "SELECT version FROM supabase_migrations.schema_migrations WHERE version IN ('00257','00258','00259','00260','00261') ORDER BY version;",
+      "SELECT pg_get_functiondef('public.admin_run_test_case(text,text)'::regprocedure);",
+      "SELECT has_function_privilege('anon', 'public.admin_run_test_case(text,text)', 'EXECUTE') AS anon_can_execute;",
+      "SELECT public.admin_run_test_case('SEC-999', 'probe') ->> 'execution_status' AS unknown_id_status;"
+    ],
+    "abortCriteria": [
+      "Hosted schema_migrations ceiling < 00260 before 00261 attempt.",
+      "00261 CREATE FUNCTION fails or anon retains EXECUTE.",
+      "Unknown test ID returns passed=true or execution_status PASSED.",
+      "Post-apply CI migration sentinel or db:migrate:check fails.",
+      "Any production DDL/DML outside approved migration pipeline."
+    ]
+  },
+  "proposedCommitScope": {
+    "description": "Single release commit (authorized Phase B+) — not executed in Phase A.",
+    "include": [
+      "supabase/migrations/00261_admin_run_test_case_truthful_execution_and_auth.sql (remediated draft)",
+      "apps/web/src/features/admin/lib/admin-test-suite-runner.ts",
+      "apps/web/src/features/admin/admin-test-suite-runner.test.ts",
+      "apps/web/src/features/admin/components/AdminTestSuiteRunner.tsx",
+      "apps/web/src/features/admin/admin.test.ts",
+      "apps/web/src/features/auth/auth-profile-linkage.test.ts",
+      "supabase/functions/otp-dispatch/index.ts (resolveProfileIdForAuthUser parity)",
+      "OTP Golden Reconstruction evidence JSON updates (registers, parity, regression artifacts)",
+      ".github/workflows/ci-cd.yml if EXPECTED_CEILING bump to 00261 required"
+    ],
+    "exclude": [
+      "Workflow backup files (*.before-safe-repair, *.pre-migration-step.bak)",
+      "Untracked deno.lock unless explicitly approved",
+      "Any secret or .env.* contents"
+    ]
+  },
+  "ciCeiling": {
+    "repoLocalChain": "00263",
+    "repoLocalChainNote": "Pre-commit gate updated ci-cd.yml EXPECTED_CEILING and test-suites step title to 00263 (00260 SQL smoke retained in quality-gate).",
+    "githubWorkflowExpectedCeiling": "00263",
+    "file": ".github/workflows/ci-cd.yml"
+  },
+  "preCommitGate2026_10_11": {
+    "evidencePath": "OTP Golden Reconstruction/PHASE1_RELEASE_PRECOMMIT_EVIDENCE.json",
+    "verdict": "READY TO COMMIT",
+    "operatorDbReconciliation": "DEFERRED — forward supabase migration up on otp-local; do not blind schema_migrations INSERT",
+    "testsSummary": "db:migrate:check 0; isolated security 35/35; test:web 1821/1821; test:unit 1001; test:functions 63"
+  },
+  "formalizationGate00261_263": {
+    "evidencePath": "OTP Golden Reconstruction/MIGRATION_FORMALIZATION_00261_263_EVIDENCE.json",
+    "sessionRef": "formalization-gate-00261-263-2026-10-11",
+    "isolatedDbSessionRef": "isolated-clean-install-55321-55322",
+    "verdict": "READY FOR REVIEW",
+    "isolatedDatabaseIdentity": "supabase_db_otp-formalization-gate @ 127.0.0.1:55322 (operator supabase_db_otp-local @ :54322 untouched)",
+    "dbVerified": "11/11 required DB tests pass, 0 skips on isolated stack (see isolatedDbTests in evidence)",
+    "releaseCommitStillRequires": [
+      "CI EXPECTED_CEILING 00260→00263",
+      "Operator DB forward reconcile (schema_migrations max 00259 vs draft-applied semantics)"
+    ]
+  },
+  "hostedVerificationPrerequisites": [
+    "Resolvable Postgres host (Phase A: ENOTFOUND for db.<ref>.supabase.co from this network despite IPv6 DNS record)",
+    "SUPABASE_ACCESS_TOKEN for CLI OR working DATABASE_URL pooler/direct from operator network",
+    "Explicit authorization for migration apply and Vercel/edge deploy"
+  ],
+  "postDeployVerificationNotRunInPhaseA": [
+    "Authenticated otp-dispatch JWT flow (no real OTP send without separate approval)",
+    "Admin Test Center live RPC against hosted Postgres after 00261",
+    "payment-webhook signed payload acceptance",
+    "WAHA device E2E from hosted edge to operator loopback/ngrok bridge"
+  ],
+  "authorizationRequired": true,
+  "phaseACompleted": true,
+  "phaseBBlockedUntil": [
+    "00261 draft remediated and reviewed",
+    "Hosted migration ceiling independently read",
+    "Explicit operator sign-off on commit/push/deploy/migration apply"
+  ]
+}

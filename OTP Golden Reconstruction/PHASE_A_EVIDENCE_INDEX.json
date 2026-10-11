@@ -1,0 +1,115 @@
+{
+  "schemaVersion": "phase-a-evidence-index-2026-10-11",
+  "sessionId": "18b8b7bc-e9d4-4ccb-acaa-aa5ea69632ac",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "executiveOverall": "AMBER",
+  "artifacts": [
+    {
+      "path": "OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql",
+      "sha256": "77CF59F716846368DD62F7F4A861133DA6DFEE86D4160BBDF4EC054C82ED494E",
+      "supersededSha256": "0228A8F0BC283621B775C2B05827BC1042F3DC25C5E7C736E36AB5C12D4CEBA0",
+      "role": "Test Center draft 00261; grouped security wave truthfulness edits"
+    },
+    {
+      "path": "OTP Golden Reconstruction/AMBER_TO_GREEN_APPROVAL_PACKET_DRAFT.json",
+      "sha256": "048C6048E83E18E9769EAF84AB44EA277471FC547035542BF497EED28A989B0C",
+      "supersededSha256": "7A3C228222A0C822CDC85ADB031BB3FFB528E4597F33D40ADD007F1FD0E04FA0",
+      "role": "Authorization packet; pre-commit READY TO COMMIT (CI 00263; operator DB deferred)"
+    },
+    {
+      "path": "OTP Golden Reconstruction/PHASE1_RELEASE_PRECOMMIT_EVIDENCE.json",
+      "sha256": "82F347D8CD54CD37CD1F5402AD4B7ED1B3A98E405890DC639A3D61ECD98A44BC",
+      "role": "Phase 1 release pre-commit gate 00261–263 (tests, CI, operator DB decision)"
+    },
+    {
+      "path": "OTP Golden Reconstruction/PHASE_A_00261_LOCAL_SMOKE_EVIDENCE.json",
+      "sha256": "C77B31F89408993FC6C1524F62E6A12283CFC5D8D591E7915CEE76FD544E4A14",
+      "supersededSha256": "B92ADE3A6A1DA401B162DD250C94CE2DCAB642D5C26FF9D8B22970BB111C7363",
+      "role": "A6 local Docker smoke — BLOCKED; append rev2-verification-gate-2026-10-11 (historic runs preserved)"
+    },
+    {
+      "path": "OTP Golden Reconstruction/PHASE_A_MESSAGING_ACCEPTANCE_PLAN.json",
+      "sha256": "4E65A177705E6EE934B2FB7583B49AAAE7825A93BDCD63914B60E6DDE38EF462",
+      "role": "Messaging acceptance matrix (plan only)"
+    },
+    {
+      "path": "OTP Golden Reconstruction/_hosted_readonly_evidence.json",
+      "sha256": "CE7D78B58F83DF42C0A21A261FA154725E5621EFC56656C530BCC777E0AAA0AF",
+      "supersededSha256": "3ED0BA22D4D863F60990513AAF7873CAF9D0028B074D794D2296124792BC9595",
+      "role": "Hosted read-only; appendProbes pooler ECONNRESET + direct ENOTFOUND"
+    },
+    {
+      "path": "OTP Golden Reconstruction/PHASE_A_EVIDENCE_INDEX.json",
+      "sha256": "SELF_INDEX_V1",
+      "role": "This index; recompute after edits"
+    },
+    {
+      "path": "OTP Golden Reconstruction/test-center-parity.json",
+      "sha256": "UNCHANGED_THIS_SESSION",
+      "role": "38 UI probes vs 25 SQL branches parity register"
+    },
+    {
+      "path": "OTP Golden Reconstruction/WAVE1_CONSOLIDATED_FINDINGS_REGISTER.json",
+      "sha256": "336F0274F1302D207016E498E8FF91FC521840A66C002EB34B755ED888E70FF6",
+      "supersededSha256": "5384A1CFCF207DAE18E5094AC59E2865C977AEF946E987A473EACEADBF6522D7",
+      "role": "Wave 1 findings; pre-commit READY TO COMMIT notes (phase1-release-precommit-2026-10-11)"
+    }
+  ],
+  "followUpSessionRef": "06762683-4a97-4c45-a8c4-df57addb47a9",
+  "a6SmokeSessionRef": "25a085f2-e5a2-424d-a480-22750ca04f0a",
+  "groupedSecurityWaveRef": "ec328d45-e745-468e-8b4c-d0bf499c7cdd",
+  "draftRev2SessionRef": "75801f80-7cb2-412c-b03c-0325fb8624da",
+  "rev2VerificationGateRef": "rev2-verification-gate-2026-10-11",
+  "masterSurgicalSessionRef": "master-surgical-2026-10-11",
+  "phase1PreCommitSessionRef": "phase1-release-precommit-2026-10-11",
+  "groupedSecurityArtifacts": [
+    {
+      "path": "OTP Golden Reconstruction/MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql",
+      "sha256": "F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93",
+      "supersededSha256": "D4B2D6629A73B72EC1C5B61F34D2F4755527DBF84B6B055D1099EC2D460EBF2F",
+      "role": "REV2b allowlist; nested params.limit + legacy root limit; rejects free-form p_sql"
+    },
+    {
+      "path": "OTP Golden Reconstruction/MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql",
+      "sha256": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A",
+      "supersededSha256": "C8861C34DC0F6EA3454F2C1FB3096B84E0E60FD39FF4AFFE85CBB71ADC352D8E",
+      "role": "REV2 empty-role bypass fix + 00205 INSERT defaults"
+    },
+    {
+      "path": "OTP Golden Reconstruction/GROUPED_SECURITY_REMEDIATION_WAVE_EVIDENCE.json",
+      "sha256": "03E6A65DC8DBEE21491A537ADCC46B2B29DF4F4D5BCA63160BA3274A5169CDBA",
+      "supersededSha256": "7D30061F6EDA3E2D073808CFFFEC75C65AFEA00124B9A27CBF73BD93DB8FFB03",
+      "role": "Grouped security REV2b + rev2-verification-gate-2026-10-11 run block"
+    }
+  ],
+  "preservedRegisters": [
+    "OTP Golden Reconstruction/WAVE1_CONSOLIDATED_FINDINGS_REGISTER.json",
+    "OTP Golden Reconstruction/WAVE1_WAVE0_GIT_EVIDENCE.json"
+  ],
+  "formalizationGate00261_263": {
+    "sessionRef": "formalization-gate-00261-263-2026-10-11",
+    "evidencePath": "OTP Golden Reconstruction/MIGRATION_FORMALIZATION_00261_263_EVIDENCE.json",
+    "evidenceSha256": "B3B77067560BE00D9312DFB8DDB75EC5E52A6794840B9D894D8B1465B3FDDE40",
+    "evidenceSupersededSha256": "752F025EDA95DDC7AA58C8CD64668F31B67E0EAEB24C841FC15376FD401815DA",
+    "preCommitEvidencePath": "OTP Golden Reconstruction/PHASE1_RELEASE_PRECOMMIT_EVIDENCE.json",
+    "isolatedCleanInstallVerified": true,
+    "isolatedDbTestGate": "PASS (0 required skips)",
+    "activeChainMigrations": [
+      {
+        "path": "supabase/migrations/00261_admin_run_test_case_truthful_execution_and_auth.sql",
+        "sha256": "77CF59F716846368DD62F7F4A861133DA6DFEE86D4160BBDF4EC054C82ED494E",
+        "draftParity": "byte-identical to MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql"
+      },
+      {
+        "path": "supabase/migrations/00262_admin_run_diagnostic_query_allowlist_hardening.sql",
+        "sha256": "F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93",
+        "draftParity": "byte-identical to MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql"
+      },
+      {
+        "path": "supabase/migrations/00263_guard_profile_privileges_empty_role_bypass.sql",
+        "sha256": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A",
+        "draftParity": "byte-identical to MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql"
+      }
+    ]
+  }
+}

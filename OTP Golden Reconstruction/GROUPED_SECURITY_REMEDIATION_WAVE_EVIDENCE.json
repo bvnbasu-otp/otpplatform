@@ -1,0 +1,357 @@
+{
+  "schemaVersion": "grouped-security-remediation-wave-2026-10-11-rev2",
+  "waveId": "OTP-GROUPED-LOCAL-SECURITY-REMEDIATION",
+  "recordedAt": "2026-10-11T08:15:00+05:30",
+  "releaseRecommendation": "AMBER",
+  "dbMutated": false,
+  "migration00261InChain": false,
+  "revisions": [
+    {
+      "revisionId": "OTP-GROUPED-SECURITY-REMEDIATION-REV1",
+      "recordedAt": "2026-10-11T07:40:00+05:30",
+      "summary": "Initial 00262 keyword/schema denylist draft; 00263 empty-role fix without 00205 INSERT normalization."
+    },
+    {
+      "revisionId": "OTP-GROUPED-SECURITY-REMEDIATION-REV2",
+      "recordedAt": "2026-10-11T08:10:00+05:30",
+      "summaryBefore": "00262 still concatenated client SELECT/WITH into EXECUTE after prefix guards; 00263 removed empty-role IN list but omitted signup column normalization.",
+      "summaryAfter": "00262 replaces free-form SQL with seven named operations (+ profiles_active_count), JSON/bare-key shim on p_sql, platform-admin/service_role auth, redacted audit/errors. 00263 closes empty-role bypass while preserving 00205 INSERT defaults. AdminQueryTerminal sends allowlisted operation payloads.",
+      "fileSha256": {
+        "MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql": "D4B2D6629A73B72EC1C5B61F34D2F4755527DBF84B6B055D1099EC2D460EBF2F",
+        "MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A"
+      },
+      "limitations": [
+        "No supabase db reset or draft apply in this wave",
+        "Hosted JWT email allowlist vs profiles.is_platform_admin alignment not verified (WS-C-001)"
+      ],
+      "openItems": {
+        "P0": ["WS-C-002 runtime proof after 00263 apply in Docker/hosted"],
+        "P1": [
+          "WS-B-001 live RPC deny anon + operation-only path after 00262 apply",
+          "WS-C-001 is_platform_admin email allowlist audit on production"
+        ]
+      }
+    },
+    {
+      "revisionId": "OTP-GROUPED-SECURITY-REMEDIATION-REV2b",
+      "recordedAt": "2026-10-11T08:20:00+05:30",
+      "summaryBefore": "00262 JSON limit parser read root v_params->>'limit' while callers send params.limit nested object.",
+      "summaryAfter": "00262 parses nested params.limit (with legacy root limit fallback); rev2-verification-gate negative tests and UI↔allowlist parity assertions added.",
+      "fileSha256": {
+        "MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql": "F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93",
+        "MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A"
+      },
+      "limitations": [
+        "No supabase db reset or draft apply in this wave",
+        "Hosted JWT email allowlist vs profiles.is_platform_admin alignment not verified (WS-C-001)"
+      ],
+      "openItems": {
+        "P0": ["WS-C-002 runtime proof after 00263 apply in Docker/hosted"],
+        "P1": [
+          "WS-B-001 live RPC deny anon + operation-only path after 00262 apply",
+          "WS-C-001 is_platform_admin email allowlist audit on production"
+        ]
+      }
+    }
+  ],
+  "runs": [
+    {
+      "runId": "master-surgical-2026-10-11",
+      "recordedAt": "2026-10-11T08:15:00+05:30",
+      "parentPrompt": "OTP MASTER SURGICAL PROMPT Phases 0-7",
+      "baselineVerified": {
+        "headEqualsBaselineCommit": true,
+        "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+        "originMainSync": true
+      },
+      "draftSha256": {
+        "MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql": "77CF59F716846368DD62F7F4A861133DA6DFEE86D4160BBDF4EC054C82ED494E",
+        "MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql": "D4B2D6629A73B72EC1C5B61F34D2F4755527DBF84B6B055D1099EC2D460EBF2F",
+        "MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A"
+      },
+      "rootCauseReport": {
+        "A_admin_run_diagnostic_query": {
+          "chain": "00072_super_admin_backup_restore (introduces RPC) → 00074_robust_sql_terminal_execution (EXECUTE client SELECT/WITH; guard treats anon+authenticated as admin) → 00199 sweep (revokes anon EXECUTE on swept admin_* list; body still SELECT-prefix EXECUTE)",
+          "callers": [
+            "apps/web/src/features/admin/api/admin-ops.ts (runDiagnosticQuery → p_sql)",
+            "apps/web/src/features/admin/components/AdminQueryTerminal.tsx (template → buildDiagnosticRpcPayload)",
+            "tests/security/verified-remediation-00216-database.test.ts (anon deny probe with operation key)",
+            "tests/security/privileged-rpc-hardening-00199-redteam.test.ts (name in sweep list)"
+          ],
+          "rev2DesignGapsClosedThisRun": [
+            "AdminQueryTerminal no longer forwards non-matching editor SQL to RPC (client rejects; template or bare operation key only)",
+            "UI copy aligned to allowlist semantics",
+            "verified-remediation removed legacy p_query + service-role arbitrary SELECT probe"
+          ],
+          "residualRisk": "Applied chain still 00074 until 00262 promoted; service_role can still run SELECT-prefix SQL on local DB"
+        },
+        "B_is_platform_admin": {
+          "definition": "00179 private.is_platform_admin(): service_role JWT, postgres/supabase_admin session, JWT email allowlist (7 emails), profiles.is_platform_admin, auth.users email, profiles email whitelist",
+          "consumers": "00262 auth gate; 00263 bypass; numerous admin_* RPCs and RLS policies",
+          "trustModelRisk": "Email allowlist duplicated in guard_profile_privileges (00263), admin-ops normalizeAdminUserItem client-side, and is_platform_admin — drift if one list updated without others",
+          "grantAnomaly": "GRANT EXECUTE ON private.is_platform_admin() TO anon (00179) — function returns false for anon but expands attack surface for timing/probing",
+          "sourceFixWithoutDb": "Document only; no DB mutation this wave"
+        },
+        "C_guard_profile_privileges": {
+          "liveBug": "00203/00205 COALESCE(auth.role(), '') IN ('service_role', '') treats empty JWT role as bypass",
+          "draftFix": "00263: bypass only service_role equality OR is_platform_admin(); preserves 00205 INSERT ACTIVE/blocked_* clearing",
+          "relatedEmptyRolePatterns": "Also present in 00216 triggers, 00218/00219 RFQ guards, 00237/00239 P1 RPCs (grep inventory in run notes — separate remediation wave)"
+        },
+        "D_00261": {
+          "crossDep": "Test Center uses admin_run_test_case; no direct dependency on admin_run_diagnostic_query; 00261 draft sha unchanged this run"
+        },
+        "E_blastRadius": {
+          "coalesceAuthRoleEmptyInList": "11+ migration sites include ('service_role', '') bypass pattern (profile guard, RFQ triggers, invoice scope, 00216 triggers)",
+          "securityDefinerAdminPattern": "44+ admin_* functions in 00199 sweep; diagnostic is highest severity due to dynamic SQL in 00074 body"
+        }
+      },
+      "implementationDelta": [
+        "AdminQueryTerminal handleExecute client-side operation-key gate",
+        "verified-remediation-00216-database.test.ts anon diagnostic deny via p_sql operation key",
+        "Evidence + WAVE1 register refresh"
+      ]
+    },
+    {
+      "runId": "rev2-verification-gate-2026-10-11",
+      "recordedAt": "2026-10-11T08:20:00+05:30",
+      "parentPrompt": "OTP REV2 Security Draft Verification & Caller-Compatibility Gate",
+      "baselineVerified": {
+        "headEqualsBaselineCommit": true,
+        "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+        "originMainSync": true
+      },
+      "draftSha256": {
+        "MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql": "F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93",
+        "MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A"
+      },
+      "verificationLevels": {
+        "MIGRATION_00262": "SOURCE+TESTED-LOCAL",
+        "MIGRATION_00263": "SOURCE+TESTED-LOCAL",
+        "WS-C-001_is_platform_admin": "RESIDUAL-RISK",
+        "localDockerSmoke": "BLOCKED",
+        "postApplyDbProof": "BLOCKED"
+      },
+      "residualRiskNotes": [
+        "private.is_platform_admin() trusts JWT email allowlist (00179) parallel to profiles.is_platform_admin and duplicated v_admin_emails in 00263 — drift and hosted alignment unverified (WS-C-001)",
+        "runDiagnosticQuery() does not re-validate p_sql; AdminQueryTerminal + buildDiagnosticRpcPayload gate UI paths; arbitrary p_sql blocked only after 00262 apply on server",
+        "Local chain still 00074 diagnostic body until 00262 promoted; verified-remediation DB block skipped (Docker daemon down)"
+      ],
+      "implementationDelta": [
+        "00262 nested params.limit parsing aligned with admin-ops JSON payload",
+        "admin-diagnostic-query-draft.test.ts: UI allowlist parity + server error surface assertions",
+        "guard-profile-privileges-draft.test.ts: UPDATE/signup static coverage extended",
+        "admin-diagnostic-query-rpc.test.ts: negative keys + verbatim runDiagnosticQuery contract test"
+      ]
+    }
+  ],
+  "baseline": {
+    "branch": "main",
+    "head": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+    "syncWithOriginMain": true,
+    "preExistingModified": [
+      "OTP Golden Reconstruction/INDIVIDUAL_SIGNUP_PHASE1_EVIDENCE.json",
+      "OTP Golden Reconstruction/_hosted_readonly_evidence.json",
+      "apps/web/src/features/admin/admin.test.ts",
+      "apps/web/src/features/admin/components/AdminTestSuiteRunner.tsx",
+      "supabase/functions/otp-dispatch/index.ts"
+    ],
+    "preExistingUntrackedIncludes": [
+      "apps/web/src/features/admin/admin-test-suite-runner.test.ts",
+      "apps/web/src/features/admin/lib/admin-test-suite-runner.ts"
+    ]
+  },
+  "findingsRegister": [
+    {
+      "findingId": "WS-B-001",
+      "workstream": "B",
+      "severity": "P1",
+      "title": "admin_run_diagnostic_query arbitrary SQL execution",
+      "evidence": "00074 executes client SQL via EXECUTE; 00199 sweeps always-true guards but leaves text signature and SELECT-prefix pattern",
+      "rootCause": "Trust client-supplied SQL in SECURITY DEFINER context",
+      "paths": [
+        "supabase/migrations/00074_robust_sql_terminal_execution.sql",
+        "supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql",
+        "apps/web/src/features/admin/api/admin-ops.ts",
+        "apps/web/src/features/admin/components/AdminQueryTerminal.tsx"
+      ],
+      "fix": "DRAFT MIGRATION_00262 — named operation allowlist on p_sql (key or JSON), no user SQL to EXECUTE, REVOKE anon/PUBLIC, redacted audit",
+      "test": "tests/security/admin-diagnostic-query-draft.test.ts; apps/web admin-diagnostic-query-rpc.test.ts",
+      "status": "FIXED-DRAFT-NOT-APPLIED"
+    },
+    {
+      "findingId": "WS-C-001",
+      "workstream": "C",
+      "severity": "P1",
+      "title": "is_platform_admin JWT email allowlist parallel to profiles flag",
+      "evidence": "00179 private.is_platform_admin — service_role JWT, postgres session, email allowlist, profiles.is_platform_admin; 00263 bypass uses is_platform_admin()",
+      "rootCause": "Dual path (JWT email vs DB flag) increases misconfiguration surface; guard_profile_privileges depends on correct is_platform_admin()",
+      "paths": ["supabase/migrations/00179_phase6_group3_cross_cutting_remediation.sql"],
+      "fix": "Document dependency in 00263 header + evidence; hosted verify profiles + auth.users alignment",
+      "test": "privileged-rpc-hardening-00199-redteam.test.ts (existing)",
+      "status": "NOT_VERIFIED-HOSTED"
+    },
+    {
+      "findingId": "WS-C-002",
+      "workstream": "C",
+      "severity": "P0",
+      "title": "guard_profile_privileges empty auth.role bypass",
+      "evidence": "00203/00205: COALESCE(auth.role(), '') IN ('service_role', '') skips privilege checks",
+      "rootCause": "Empty role treated like trusted service context on INSERT/UPDATE profiles",
+      "paths": [
+        "supabase/migrations/00203_restrict_ops_metadata_guard_profile_privileges_and_one_live_tds.sql",
+        "supabase/migrations/00205_force_default_profile_status_on_insert.sql",
+        "OTP Golden Reconstruction/MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql"
+      ],
+      "fix": "DRAFT 00263 — service_role + is_platform_admin bypass only; preserves INSERT status/blocked_* normalization",
+      "test": "tests/security/guard-profile-privileges-draft.test.ts (static; 1 DB test skipped)",
+      "status": "FIXED-DRAFT-NOT-APPLIED"
+    },
+    {
+      "findingId": "WS-D-001",
+      "workstream": "D",
+      "severity": "P1",
+      "title": "00261 false-pass probes ID-001 ID-002 ID-005 INT-008",
+      "evidence": "Prior draft branches marked PASSED on schema/row counts without executing claimed controls",
+      "rootCause": "Test Center RPC used existence probes as functional proof",
+      "paths": ["OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql"],
+      "fix": "BLOCKED + NOT_VERIFIED messages when infrastructure present; FAILED when missing",
+      "test": "apps/web admin-test-suite-runner.test.ts static branch assertions (8 pass)",
+      "status": "FIXED-DRAFT-NOT-APPLIED"
+    },
+    {
+      "findingId": "WS-D-002",
+      "workstream": "D",
+      "severity": "P2",
+      "title": "UNIT-001 single-enum threshold",
+      "evidence": "typname IN (rfq_phase, requirement_status) but v_count < 1 allowed one enum to pass",
+      "rootCause": "Incorrect completeness threshold",
+      "paths": ["OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql"],
+      "fix": "Require v_count >= 2 with public schema join",
+      "test": "admin-test-suite-runner.test.ts UNIT-001 assertion",
+      "status": "FIXED-DRAFT-NOT-APPLIED"
+    },
+    {
+      "findingId": "WS-A-001",
+      "workstream": "A",
+      "severity": "P1",
+      "title": "Admin RPC EXECUTE grant drift (historical anon grants)",
+      "evidence": "Static migration grep: multiple admin_* GRANT TO anon before 00199 sweep; 00199 revokes anon on swept set at apply time",
+      "rootCause": "Early migrations granted EXECUTE to anon/authenticated; 00199 runtime rewrite not reflected as single forward file for all overloads",
+      "paths": ["supabase/migrations/00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql"],
+      "fixPlan": "LEAST-PRIVILEGE PLAN (evidence only): (1) inventory live grants via pg_proc_acl after hosted connect; (2) REVOKE EXECUTE FROM anon,PUBLIC on all admin_* and private.* guards; (3) GRANT EXECUTE TO authenticated, service_role only where is_platform_admin() gate exists; (4) never REVOKE on local container in this wave",
+      "test": "privileged-rpc-hardening-00199-redteam.test.ts",
+      "status": "PLAN-ONLY"
+    },
+    {
+      "findingId": "WS-E-001",
+      "workstream": "E",
+      "severity": "P2",
+      "title": "Test Center UI pass-rate semantics",
+      "evidence": "admin-test-suite-runner.ts maps BLOCKED/NOT_IMPLEMENTED without counting as passes",
+      "rootCause": "N/A — control in web layer",
+      "paths": ["apps/web/src/features/admin/lib/admin-test-suite-runner.ts"],
+      "fix": "Pre-existing untracked module; static tests added/extended this wave",
+      "test": "admin-test-suite-runner.test.ts 8/8 pass",
+      "status": "FIXED-TESTED-LOCAL"
+    }
+  ],
+  "filesChangedThisWave": [
+    "OTP Golden Reconstruction/MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql",
+    "OTP Golden Reconstruction/MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql",
+    "OTP Golden Reconstruction/GROUPED_SECURITY_REMEDIATION_WAVE_EVIDENCE.json",
+    "OTP Golden Reconstruction/PHASE_A_EVIDENCE_INDEX.json",
+    "OTP Golden Reconstruction/PHASE_A_00261_LOCAL_SMOKE_EVIDENCE.json",
+    "OTP Golden Reconstruction/WAVE1_CONSOLIDATED_FINDINGS_REGISTER.json",
+    "apps/web/src/features/admin/api/admin-ops.ts",
+    "apps/web/src/features/admin/components/AdminQueryTerminal.tsx",
+    "apps/web/src/features/admin/admin-diagnostic-query-rpc.test.ts",
+    "tests/security/admin-diagnostic-query-draft.test.ts",
+    "tests/security/guard-profile-privileges-draft.test.ts",
+    "tests/security/verified-remediation-00216-database.test.ts"
+  ],
+  "validation": {
+    "commands": [
+      {
+        "runId": "rev2-verification-gate-2026-10-11",
+        "command": "pnpm exec vitest run tests/security/admin-diagnostic-query-draft.test.ts tests/security/guard-profile-privileges-draft.test.ts",
+        "exitCode": 0,
+        "testsPassed": 19,
+        "testsFailed": 0,
+        "testsSkipped": 1,
+        "mode": "SOURCE/static SQL + simulated reject patterns"
+      },
+      {
+        "runId": "rev2-verification-gate-2026-10-11",
+        "command": "pnpm exec vitest run --config apps/web/vitest.config.ts apps/web/src/features/admin/admin-diagnostic-query-rpc.test.ts apps/web/src/features/admin/admin-test-suite-runner.test.ts apps/web/src/features/auth/auth-profile-linkage.test.ts",
+        "exitCode": 0,
+        "testsPassed": 13,
+        "testsFailed": 0,
+        "testsSkipped": 0,
+        "mode": "MOCK rpc (admin-diagnostic-query-rpc); static for runner/linkage"
+      },
+      {
+        "runId": "rev2-verification-gate-2026-10-11",
+        "command": "pnpm exec vitest run tests/security/verified-remediation-00216-database.test.ts",
+        "exitCode": 0,
+        "testsPassed": 2,
+        "testsFailed": 0,
+        "testsSkipped": 7,
+        "mode": "REAL DATABASE block skipped (local Supabase unreachable); UNIT deploy-migrations only executed"
+      },
+      {
+        "runId": "rev2-verification-gate-2026-10-11",
+        "command": "pnpm db:migrate:check",
+        "exitCode": 0,
+        "note": "260 migrations contiguous 00001-00260; drafts 00261-63 not in chain"
+      },
+      {
+        "runId": "rev2-verification-gate-2026-10-11",
+        "command": "docker info; supabase status",
+        "exitCode": 1,
+        "note": "Docker client present; daemon npipe missing — supabase status StatusDbInspectError"
+      },
+      {
+        "runId": "master-surgical-2026-10-11",
+        "command": "pnpm exec vitest run tests/security/admin-diagnostic-query-draft.test.ts tests/security/guard-profile-privileges-draft.test.ts",
+        "exitCode": 0,
+        "testsPassed": 15,
+        "testsFailed": 0,
+        "testsSkipped": 1
+      },
+      {
+        "runId": "master-surgical-2026-10-11",
+        "command": "pnpm exec vitest run --config apps/web/vitest.config.ts apps/web/src/features/admin/admin-diagnostic-query-rpc.test.ts apps/web/src/features/admin/admin-test-suite-runner.test.ts apps/web/src/features/auth/auth-profile-linkage.test.ts",
+        "exitCode": 0,
+        "testsPassed": 12,
+        "testsFailed": 0,
+        "testsSkipped": 0
+      },
+      {
+        "runId": "master-surgical-2026-10-11",
+        "command": "pnpm test:functions",
+        "exitCode": 0,
+        "passed": 63,
+        "failed": 0
+      },
+      {
+        "runId": "master-surgical-2026-10-11",
+        "command": "pnpm db:migrate:check",
+        "exitCode": 0,
+        "note": "260 migrations contiguous 00001-00260; drafts 00261-63 not in chain"
+      }
+    ],
+    "skipped": [
+      "supabase db reset",
+      "apply 00261/00262/00263",
+      "tests/security/verified-remediation-00216-database.test.ts full suite (requires local Supabase; not executed this run)",
+      "tests/security/guard-profile-privileges-draft.test.ts DB behavior block",
+      "pnpm exec tsc --noEmit -p apps/web (pre-existing errors in unrelated award/fulfillment tests)"
+    ]
+  },
+  "draftMigrationsOutsideChain": [
+    "MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql",
+    "MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql",
+    "MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql"
+  ],
+  "verdictRationale": "REV2b closes caller JSON params.limit drift; 19/1 static security tests and 4/4 admin-diagnostic RPC mock tests pass. AMBER remains: drafts not applied, Docker down (7/9 verified-remediation tests skipped), no DB-VERIFIED-LOCAL proof for 00262/00263, WS-C-001 is_platform_admin/JWT email trust documented as RESIDUAL-RISK."
+}

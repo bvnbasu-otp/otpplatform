@@ -51,6 +51,29 @@ function serviceClient() {
   );
 }
 
+/** Match `fetchCurrentProfile` linkage: auth_user_id, legacy id=auth id, then email. */
+async function resolveProfileIdForAuthUser(
+  db: ReturnType<typeof serviceClient>,
+  user: { id: string; email?: string | null },
+): Promise<string | null> {
+  const { data } = await db
+    .from('profiles')
+    .select('id')
+    .or(`auth_user_id.eq.${user.id},id.eq.${user.id}`)
+    .maybeSingle();
+  if (data?.id) return data.id as string;
+
+  const email = (user.email ?? '').trim();
+  if (!email) return null;
+
+  const { data: byEmail } = await db
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle();
+  return byEmail?.id ? (byEmail.id as string) : null;
+}
+
 function messagingEnv() {
   return {
     MESSAGING_PROVIDER: Deno.env.get('MESSAGING_PROVIDER') ?? undefined,
@@ -151,12 +174,8 @@ Deno.serve(async (req) => {
     if (userErr || !userData?.user) {
       return jsonResponse({ ok: false, error: 'Authentication required' }, 401);
     }
-    const { data: profile } = await db
-      .from('profiles')
-      .select('id')
-      .eq('auth_user_id', userData.user.id)
-      .maybeSingle();
-    if (!profile?.id) {
+    const profileId = await resolveProfileIdForAuthUser(db, userData.user);
+    if (!profileId) {
       return jsonResponse({ ok: false, error: 'Profile record not found' }, 404);
     }
 
@@ -169,7 +188,7 @@ Deno.serve(async (req) => {
       // still exercise the flow end-to-end via the server-side debug flag.
       if (DEBUG_REVEAL_CODE) {
         const { data, error } = await db.rpc('issue_profile_credential_otp', {
-          p_profile_id: profile.id,
+          p_profile_id: profileId,
           p_credential_type: 'EMAIL',
           p_credential_value: identifier,
         });
@@ -183,7 +202,7 @@ Deno.serve(async (req) => {
     }
 
     const { data, error } = await db.rpc('issue_profile_credential_otp', {
-      p_profile_id: profile.id,
+      p_profile_id: profileId,
       p_credential_type: 'PHONE',
       p_credential_value: identifier,
     });
@@ -198,7 +217,7 @@ Deno.serve(async (req) => {
       await db
         .from('profile_verification_otps')
         .delete()
-        .eq('profile_id', profile.id)
+        .eq('profile_id', profileId)
         .eq('credential_type', 'PHONE')
         .is('used_at', null);
     };

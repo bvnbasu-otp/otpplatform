@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "wave1-groupA-2026-10-10",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "summary": {
+    "documentedVitestInventoryTotal": 902,
+    "documentedVitestModuleCount": 12,
+    "documentedVitestFileCount": 116,
+    "liveUiRpcProbeCount": 38,
+    "postgresCaseBranchCount_repo00115": 25,
+    "postgresCaseBranchCount_after00261Draft": 25,
+    "relationship": "902 is the Platform Matrix denominator: estimated Vitest/CLI tests across 12 modules (MASTER_MODULE_INVENTORY). It is not the live Postgres RPC battery. The Live Database tab lists 38 interactive probes that call admin_run_test_case. Only 25 probes had explicit SQL CASE branches in 00115; the remaining 13 UI IDs previously hit the ELSE auto-pass bug (fixed in draft 00261 as NOT_IMPLEMENTED). After 00261, several of the 25 branches return BLOCKED when they only perform schema/fixture probes misaligned with E2E labels."
+  },
+  "effectiveRpcDefinitionChain": [
+    "00096_admin_test_suite_runner_rpc.sql (initial CREATE)",
+    "00115_seed_benchmark_org_and_fix_test_runner.sql (last full CREATE OR REPLACE in repo)",
+    "00199_harden_privileged_rpcs_supplier_masking_and_financial_enforcement.sql (runtime rewrite of auth guards on existing admin_* bodies when applied; does not replace admin_run_test_case body in repo)",
+    "OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql (DRAFT — not in supabase/migrations until release commit)"
+  ],
+  "authorization": {
+    "before_00115_and_hostedUnless00199Rewrite": "private.is_platform_admin() OR service_role OR authenticated OR anon",
+    "after_00261Draft": "private.is_platform_admin() OR service_role only; REVOKE EXECUTE FROM anon",
+    "clientGrantNote": "00217 grants EXECUTE on public routines to authenticated; enforcement must remain inside SECURITY DEFINER function."
+  },
+  "liveProbes": [
+    {"testId": "SEC-001", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE", "coverageRequired": "RLS enabled on core tables"},
+    {"testId": "SEC-002", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "SEC-003", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "SEC-004", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "SEC-005", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "BLOCKED", "note": "Org count only; not cross-org attack test"},
+    {"testId": "SEC-006", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "SEC-007", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "ID-001", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE", "note": "Attachments table; not EXIF execution"},
+    {"testId": "ID-002", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "ID-003", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "BLOCKED"},
+    {"testId": "ID-004", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "BLOCKED"},
+    {"testId": "ID-005", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "ID-006", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "ID-007", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "INT-001", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "INT-002", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "BLOCKED", "note": "Supplier count; not discovery E2E"},
+    {"testId": "INT-003", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "INT-004", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "INT-005", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "INT-006", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "INT-007", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "INT-008", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "INT-009", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "INT-010", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "INT-011", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "INT-012", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "E2E-001", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "BLOCKED", "note": "Allowlisted profile probe only"},
+    {"testId": "E2E-002", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "BLOCKED"},
+    {"testId": "E2E-003", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "BLOCKED", "note": "Phone format count; not WAHA delivery"},
+    {"testId": "E2E-004", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "BLOCKED"},
+    {"testId": "E2E-005", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "E2E-006", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "UNIT-001", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "UNIT-002", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "SCHEMA_PROBE"},
+    {"testId": "UNIT-003", "uiInventory": true, "sqlBranch": true, "executionAfter00261": "BLOCKED", "note": "buyer_type_config rows; not smart-default math"},
+    {"testId": "UNIT-004", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "UNIT-005", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"},
+    {"testId": "UNIT-006", "uiInventory": true, "sqlBranch": false, "executionAfter00261": "NOT_IMPLEMENTED"}
+  ],
+  "discrepancyLedger": {
+    "902_vs_38": "902 counts documented automated tests in repo modules; 38 is the admin UI live RPC catalog.",
+    "38_vs_25": "13 UI probes had no SQL CASE branch and relied on ELSE auto-pass until 00261.",
+    "32_vs_38": "Historical reports of 32 likely excluded categories or an older UI list; current ALL_TEST_CASES length is 38."
+  },
+  "wave1Verification": {
+    "groupAVerdict": "FIXED-TESTED",
+    "uiMapping": "apps/web/src/features/admin/lib/admin-test-suite-runner.ts — unknown/malformed RPC payloads never map to PASS; pass rate excludes NOT_RUN and counts BLOCKED/NOT_IMPLEMENTED as non-passes.",
+    "uiInventory": "AdminTestSuiteRunner ALL_TEST_CASES length 38; RPC_IMPLEMENTED_TEST_IDS length 25; liveRpcImplementedCount label 25/38.",
+    "sqlDraft": "00261 removes 00115 ELSE auto-pass and anon/authenticated auth bypass (static tests in admin-test-suite-runner.test.ts).",
+    "localTests": {
+      "command": "pnpm exec vitest run apps/web/src/features/admin/admin-test-suite-runner.test.ts apps/web/src/features/admin/admin.test.ts --config apps/web/vitest.config.ts",
+      "exitCode": 0,
+      "note": "Includes 38-probe catalog assertion and 902 matrix inventory assertion."
+    },
+    "hostedRpcBehavior": "NOT VERIFIED until 00261 applied on hosted Postgres"
+  }
+}

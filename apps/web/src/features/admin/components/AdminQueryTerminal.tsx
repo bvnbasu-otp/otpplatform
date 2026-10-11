@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { runDiagnosticQuery } from '../api/admin-ops';
+import { buildDiagnosticRpcPayload, runDiagnosticQuery } from '../api/admin-ops';
 import type { DiagnosticQueryResult } from '../types/admin';
 
 const QUERY_TEMPLATES = [
   {
     name: '1. Stalled Order Diagnostics (STALLED / Idle >24h)',
+    operation: 'stalled_order_diagnostics',
+    defaultLimit: 20,
     sql: `SELECT 
   r.id AS req_id,
   r.title,
@@ -35,6 +37,8 @@ LIMIT 20;`,
   },
   {
     name: '2. Quote Submission Integrity (QUOTING / EVALUATING)',
+    operation: 'quote_submission_integrity',
+    defaultLimit: 20,
     sql: `SELECT 
   rfq.id AS rfq_id,
   r.title AS requirement_title,
@@ -63,6 +67,8 @@ LIMIT 20;`,
   },
   {
     name: '3. Awarding & Lock Verification (AWARDED / PO_ISSUED)',
+    operation: 'awarding_lock_verification',
+    defaultLimit: 20,
     sql: `SELECT 
   aw.id AS award_id,
   aw.rfq_id,
@@ -93,6 +99,8 @@ LIMIT 20;`,
   },
   {
     name: '4. Financial & GST Reconciliation (INVOICED / SETTLED)',
+    operation: 'financial_gst_reconciliation',
+    defaultLimit: 20,
     sql: `SELECT 
   po.po_number,
   po.total_amount AS po_total,
@@ -121,6 +129,8 @@ LIMIT 20;`,
   },
   {
     name: '5. GST Verification Diagnostics (Buyer & Supplier)',
+    operation: 'gst_verification_diagnostics',
+    defaultLimit: 20,
     sql: `SELECT 
   po.po_number,
   r.title AS order_title,
@@ -152,6 +162,8 @@ LIMIT 20;`,
   },
   {
     name: '6. State Transition Audit Trail',
+    operation: 'state_transition_audit_trail',
+    defaultLimit: 30,
     sql: `SELECT 
   ae.id AS audit_event_id,
   ae.occurred_at,
@@ -192,7 +204,27 @@ export function AdminQueryTerminal() {
 
     setIsRunning(true);
     try {
-      const res = await runDiagnosticQuery(sql.trim());
+      const trimmed = sql.trim();
+      const matchedTemplate = QUERY_TEMPLATES.find((tmpl) => tmpl.sql.trim() === trimmed);
+      let rpcPayload: string;
+      if (matchedTemplate) {
+        rpcPayload = buildDiagnosticRpcPayload(matchedTemplate.operation, {
+          limit: matchedTemplate.defaultLimit,
+        });
+      } else if (/^[a-z][a-z0-9_]{0,63}$/.test(trimmed)) {
+        rpcPayload = buildDiagnosticRpcPayload(trimmed);
+      } else {
+        setResult({
+          success: false,
+          error:
+            'Safety Guard: Only named diagnostic operation keys are permitted. Load a template or enter a bare operation key (e.g. stalled_order_diagnostics).',
+          rowsCount: 0,
+          data: [],
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+      const res = await runDiagnosticQuery(rpcPayload);
       if (res.result) {
         setResult(res.result);
       }
@@ -213,7 +245,7 @@ export function AdminQueryTerminal() {
             <h3 className="text-sm sm:text-base font-bold text-foreground">Interactive Diagnostic SQL Query Terminal</h3>
           </div>
           <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
-            Safely execute read-only PostgreSQL queries across all schemas to inspect raw database states and troubleshoot reported issues.
+            Run allowlisted server-side diagnostic operations (templates map to fixed queries). Free-form SQL is not sent to the database.
           </p>
         </div>
       </div>
@@ -267,7 +299,7 @@ export function AdminQueryTerminal() {
       <form onSubmit={handleExecute} className="rounded-xl border bg-card p-4 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-            <span>SQL Query (SELECT only):</span>
+            <span>Template preview (read-only reference):</span>
           </label>
           <div className="flex items-center gap-2">
             <button
@@ -284,20 +316,20 @@ export function AdminQueryTerminal() {
           rows={6}
           value={sql}
           onChange={(e) => setSql(e.target.value)}
-          placeholder="SELECT * FROM rfqs LIMIT 10;"
+          placeholder="Load a template above, then Run — only allowlisted operation keys are sent to the server."
           className="w-full rounded-xl border bg-muted/20 p-3 font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
         />
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <span className="text-[11px] text-muted-foreground">
-            🛡️ Safety Guard: Only SELECT / WITH inspection queries are accepted.
+            🛡️ Safety Guard: Matched templates run named server operations; arbitrary SQL is not sent to the database.
           </span>
           <button
             type="submit"
             disabled={isRunning}
             className="rounded-xl bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition disabled:opacity-50 min-h-[44px] mobile-touch-target"
           >
-            {isRunning ? 'Executing SQL…' : '▶ Run Diagnostic Query'}
+            {isRunning ? 'Running operation…' : '▶ Run Diagnostic Operation'}
           </button>
         </div>
       </form>

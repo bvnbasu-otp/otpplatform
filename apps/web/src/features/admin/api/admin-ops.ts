@@ -777,8 +777,29 @@ export async function fixSellerIssue(
 }
 
 // ----------------------------------------------------
-// Diagnostic Query Runner API
+// Diagnostic Query Runner API (00262 allowlist: operation key or JSON payload)
 // ----------------------------------------------------
+export function buildDiagnosticRpcPayload(
+  operation: string,
+  params?: { limit?: number }
+): string {
+  const key = operation.trim();
+  if (!/^[a-z][a-z0-9_]{0,63}$/.test(key)) {
+    throw new Error('Invalid diagnostic operation key');
+  }
+  if (params?.limit === undefined) {
+    return key;
+  }
+  return JSON.stringify({ operation: key, params: { limit: params.limit } });
+}
+
+export async function runDiagnosticOperation(
+  operation: string,
+  params?: { limit?: number }
+): Promise<{ ok: boolean; result: DiagnosticQueryResult | null; error?: string }> {
+  return runDiagnosticQuery(buildDiagnosticRpcPayload(operation, params));
+}
+
 export async function runDiagnosticQuery(
   sql: string
 ): Promise<{ ok: boolean; result: DiagnosticQueryResult | null; error?: string }> {

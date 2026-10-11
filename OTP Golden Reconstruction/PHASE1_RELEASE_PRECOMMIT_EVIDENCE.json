@@ -1,0 +1,191 @@
+{
+  "schemaVersion": "phase1-release-precommit-00261-263-2026-10-11",
+  "sessionId": "phase1-release-precommit-00261-263-2026-10-11",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "headAtRun": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "originMainSync": true,
+  "releaseRecommendation": "READY TO COMMIT",
+  "authorizationNote": "No git commit, push, deploy, or hosted migration executed in this session.",
+  "formalizationEvidenceRef": {
+    "path": "OTP Golden Reconstruction/MIGRATION_FORMALIZATION_00261_263_EVIDENCE.json",
+    "priorEvidenceSha256": "752F025EDA95DDC7AA58C8CD64668F31B67E0EAEB24C841FC15376FD401815DA"
+  },
+  "migrationFileHashes": {
+    "00261": "77CF59F716846368DD62F7F4A861133DA6DFEE86D4160BBDF4EC054C82ED494E",
+    "00262": "F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93",
+    "00263": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A",
+    "indexMatch": true
+  },
+  "isolatedTestEnvironmentProof": {
+    "status": "PROVEN",
+    "isolated": {
+      "container": "supabase_db_otp-formalization-gate",
+      "postgresPort": 55322,
+      "apiPort": 55321,
+      "maxSchemaMigration": "00263"
+    },
+    "operatorUntouchedForProof": {
+      "container": "supabase_db_otp-local",
+      "postgresPort": 54322,
+      "maxSchemaMigration": "00259"
+    },
+    "command": "docker ps --format \"{{.Names}}|{{.Ports}}\" (filter supabase_db_otp)"
+  },
+  "ciChanges": {
+    "file": ".github/workflows/ci-cd.yml",
+    "expectedCeilingBefore": "00260",
+    "expectedCeilingAfter": "00263",
+    "testSuitesStepTitle": "Start local Postgres and apply migrations (through 00263)",
+    "qualityGateSmoke": "Retains Migration 00260 private.js_string_utf16_length verification"
+  },
+  "completedChecks": [
+    {
+      "id": "git-sync",
+      "status": "PASS",
+      "detail": "main @ 6e973c9 up to date with origin/main"
+    },
+    {
+      "id": "migration-hash-parity",
+      "status": "PASS",
+      "detail": "00261–00263 SHA256 match PHASE_A_EVIDENCE_INDEX and drafts"
+    },
+    {
+      "id": "db-migrate-check",
+      "status": "PASS",
+      "exitCode": 0,
+      "command": "pnpm db:migrate:check"
+    },
+    {
+      "id": "ci-ceiling-bump",
+      "status": "PASS",
+      "detail": "EXPECTED_CEILING 00260→00263 in ci-cd.yml"
+    },
+    {
+      "id": "security-focused-isolated",
+      "status": "PASS",
+      "exitCode": 0,
+      "target": "55321/55322",
+      "tests": "35 passed, 0 failed, 0 skipped"
+    },
+    {
+      "id": "web-admin-focused",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": "31 passed"
+    },
+    {
+      "id": "test-unit",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": "1001 passed (914 domain + 87 unit)"
+    },
+    {
+      "id": "test-functions",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": "63 passed (deno)"
+    },
+    {
+      "id": "test-web-full",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": "1821 passed",
+      "durationSeconds": 351
+    },
+    {
+      "id": "operator-db-reconcile",
+      "status": "DEFERRED",
+      "detail": "Semantics diverge; forward apply required — see operatorDbReconciliation"
+    }
+  ],
+  "skippedOrBlockedChecks": [
+    {
+      "id": "test-functional-full",
+      "status": "SKIPPED",
+      "reason": "Not run this session; security gate used isolated 55322 + test:web/unit/functions"
+    },
+    {
+      "id": "hosted-migration-read",
+      "status": "SKIPPED",
+      "reason": "WS-C-001 / Phase A ENOTFOUND; no hosted DDL"
+    },
+    {
+      "id": "typecheck",
+      "status": "FAIL_PREEXISTING",
+      "exitCode": 1,
+      "reason": "TS5097 .ts import extensions and unrelated web/services errors; unchanged by 00261–263 scope"
+    }
+  ],
+  "operatorDbReconciliation": {
+    "decision": "DEFERRED",
+    "executed": false,
+    "unsafeActionsAvoided": [
+      "schema_migrations blind INSERT",
+      "supabase db reset on supabase_db_otp-local"
+    ],
+    "proofCommands": [
+      "docker exec supabase_db_otp-local psql -U postgres -c \"SELECT version FROM supabase_migrations.schema_migrations WHERE version >= '00255' ORDER BY version;\"",
+      "docker exec supabase_db_otp-local psql -U postgres -c \"SELECT public.admin_run_test_case('SEC-999', 'probe');\"",
+      "docker exec supabase_db_otp-local psql -U postgres -t -A -c \"SELECT md5(pg_get_functiondef('public.admin_run_test_case(text,text)'::regprocedure));\""
+    ],
+    "forwardOnlyOperatorSteps": [
+      "Ensure supabase_db_otp-local is running (127.0.0.1:54322).",
+      "From repo: supabase migration up (apply 00258, 00260, 00261, 00262, 00263 in order).",
+      "Verify SEC-999 returns execution_status NOT_IMPLEMENTED and schema_migrations max 00263.",
+      "Optional: LOCAL_POSTGRES_PORT=54322 pnpm exec vitest run tests/security/migration-formalization-00261-263-database.test.ts"
+    ]
+  },
+  "intendedReleaseFileList": {
+    "include": [
+      ".github/workflows/ci-cd.yml",
+      "supabase/migrations/00261_admin_run_test_case_truthful_execution_and_auth.sql",
+      "supabase/migrations/00262_admin_run_diagnostic_query_allowlist_hardening.sql",
+      "supabase/migrations/00263_guard_profile_privileges_empty_role_bypass.sql",
+      "tests/security/migration-formalization-00261-263-database.test.ts",
+      "tests/security/admin-diagnostic-query-draft.test.ts",
+      "tests/security/guard-profile-privileges-draft.test.ts",
+      "tests/security/verified-remediation-00216-database.test.ts",
+      "apps/web/src/features/admin/lib/admin-test-suite-runner.ts",
+      "apps/web/src/features/admin/admin-test-suite-runner.test.ts",
+      "apps/web/src/features/admin/admin-diagnostic-query-rpc.test.ts",
+      "apps/web/src/features/admin/admin.test.ts",
+      "apps/web/src/features/admin/api/admin-ops.ts",
+      "apps/web/src/features/admin/components/AdminQueryTerminal.tsx",
+      "apps/web/src/features/admin/components/AdminTestSuiteRunner.tsx",
+      "apps/web/src/features/auth/auth-profile-linkage.test.ts",
+      "supabase/functions/otp-dispatch/index.ts",
+      "OTP Golden Reconstruction/MIGRATION_FORMALIZATION_00261_263_EVIDENCE.json",
+      "OTP Golden Reconstruction/PHASE1_RELEASE_PRECOMMIT_EVIDENCE.json",
+      "OTP Golden Reconstruction/PHASE_A_EVIDENCE_INDEX.json",
+      "OTP Golden Reconstruction/AMBER_TO_GREEN_APPROVAL_PACKET_DRAFT.json",
+      "OTP Golden Reconstruction/GROUPED_SECURITY_REMEDIATION_WAVE_EVIDENCE.json",
+      "OTP Golden Reconstruction/WAVE1_CONSOLIDATED_FINDINGS_REGISTER.json",
+      "OTP Golden Reconstruction/test-center-parity.json"
+    ],
+    "excludeFromReleaseCommit": [
+      "OTP Golden Reconstruction/INDIVIDUAL_SIGNUP_PHASE1_EVIDENCE.json",
+      "OTP Golden Reconstruction/_hosted_readonly_evidence.json",
+      ".github/workflows/ci-cd.yml.before-safe-repair",
+      ".github/workflows/ci-cd.yml.pre-migration-step.bak",
+      ".vitest-*.json",
+      ".vitest-*.txt",
+      "supabase/functions/deno.lock",
+      "supabase/functions/ondc-on-search/deno.lock",
+      "OTP Golden Reconstruction/WAHA_E2E_RCA_CERTIFICATION_2026-10-08.json",
+      "OTP Golden Reconstruction/wave2-supplier-trust-evidence.json",
+      "OTP Golden Reconstruction/auth-profile-otp-regression.json",
+      "OTP Golden Reconstruction/cross-cutting-security-regression.json"
+    ]
+  },
+  "diffStatTrackedOnly": {
+    "note": "Untracked migrations and new test files add ~thousands of lines; git diff --stat covers 7 modified tracked paths (+270/-160)",
+    "modifiedTrackedPaths": 7
+  },
+  "remainingRisks": [
+    "WS-C-001: is_platform_admin JWT email allowlist vs profiles flag — hosted audit still OPEN",
+    "Operator supabase_db_otp-local behind chain (00259 recorded; 00258/00260/261–263 not applied)",
+    "Production hosted ceiling not verified this session; CI deploy step will push through 00263 only when authorized",
+    "Pre-existing workspace typecheck failures not gate-blocking for this migration release"
+  ],
+  "proposedCommitMessageHeredoc": "feat(db): formalize migrations 00261–00263 (admin test truthfulness, diagnostic allowlist, profile guard)\n\nAdd forward migrations and security tests; align admin UI and otp-dispatch; bump CI EXPECTED_CEILING to 00263. Evidence in OTP Golden Reconstruction."
+}

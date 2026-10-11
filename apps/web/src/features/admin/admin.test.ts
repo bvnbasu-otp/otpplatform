@@ -492,7 +492,7 @@ describe('Super Admin & Ops Console Data Layer', () => {
       expect(mod.description.length).toBeGreaterThan(0);
       expect(mod.testCount).toBeGreaterThan(0);
       expect(mod.filesCount).toBeGreaterThan(0);
-      expect(mod.status).toBe('VERIFIED');
+      expect(mod.status).toBe('DOCUMENTED');
     }
   });
 

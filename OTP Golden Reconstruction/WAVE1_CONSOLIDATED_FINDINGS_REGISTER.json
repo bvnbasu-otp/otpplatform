@@ -1,0 +1,238 @@
+{
+  "schemaVersion": "wave1-consolidated-2026-10-11",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "lastSessionObservedAt": "2026-10-11T08:20:00+05:30",
+  "executiveVerdict": "AMBER",
+  "verdictRationale": "Local source fixes for Test Center (Group F), auth/profile otp-dispatch linkage (Group C), and supplier-trust static contracts (Wave 2) are FIXED-TESTED on a dirty tree at HEAD=origin/main. Draft 00261 remains outside supabase/migrations; hosted Postgres ceiling and admin_run_test_case behavior are NOT VERIFIED. Edge functions otp-dispatch and payment-webhook respond on hosted (401 without auth) but authenticated runtime and production web bundle parity remain OPEN.",
+  "findings": [
+    {
+      "id": "A-HOST-CEILING",
+      "severity": "P0",
+      "topic": "Hosted migration ceiling 00257-00260+",
+      "status": "NOT VERIFIED",
+      "note": "Local repo: 260 files contiguous 00001-00260 (pnpm db:migrate:check PASS). appendProbes (2026-10-11): direct db host ENOTFOUND; constructed ap-south-1 pooler ECONNRESET; schema_migrations not read. Evidence: _hosted_readonly_evidence.json appendProbes[]."
+    },
+    {
+      "id": "A-EDGE-DEPLOY",
+      "severity": "P0",
+      "topic": "otp-dispatch / payment-webhook deploy",
+      "status": "FIXED-HOSTED",
+      "hostedEvidenceRef": "OTP Golden Reconstruction/_hosted_readonly_evidence.json (edgeProbes2026_10_11)",
+      "hostedEvidenceScope": "deploy-reachable-only",
+      "note": "Hosted read-only HTTP probes only: POST otp-dispatch and payment-webhook without Authorization → HTTP 401 JSON (not 404). OPTIONS otp-dispatch → 200. Scope is deploy reachability, not full edge runtime. Authenticated dispatch, messaging, and webhook signature paths NOT VERIFIED (see C-AUTH-DISPATCH-HOSTED)."
+    },
+    {
+      "id": "A-STALE-BUNDLE",
+      "severity": "P1",
+      "topic": "Production web bundle vs working tree",
+      "status": "OPEN",
+      "note": "Uncommitted AdminTestSuiteRunner, admin-test-suite-runner.ts/.test.ts, otp-dispatch profile linkage, evidence JSONs. SPA HEAD 200 at otpplatform-theta.vercel.app; byte-level bundle compare NOT VERIFIED."
+    },
+    {
+      "id": "B-FIN-AUTH",
+      "severity": "P1",
+      "topic": "Financial authority / record_verified_payment",
+      "status": "FIXED-TESTED",
+      "note": "Chain sentinel record-verified-payment-00247 + financial-authority-00250 passed (38 tests, 4 skipped). Hosted grants NOT VERIFIED."
+    },
+    {
+      "id": "B-GST-BUDGET",
+      "severity": "P1",
+      "topic": "GST, pilot allowance, budget gates",
+      "status": "FIXED-TESTED",
+      "note": "Cross-cutting prior subset; pilot-allowance static tests in apps/web publish-and-allowance.test.ts."
+    },
+    {
+      "id": "C-OTP-8DIGIT",
+      "severity": "P2",
+      "topic": "8-digit OTP semantics",
+      "status": "FIXED-TESTED",
+      "files": ["00256_standardize_auth_otp_eight_digits.sql", "packages/domain/src/auth/otp-policy.ts"],
+      "note": "Included in chain sentinel auth-otp-eight-digits-00256 run."
+    },
+    {
+      "id": "C-AUTH-PROFILE",
+      "severity": "P1",
+      "topic": "Auth/profile linkage and Profile record not found",
+      "status": "FIXED-TESTED",
+      "evidence": "OTP Golden Reconstruction/auth-profile-otp-regression.json",
+      "note": "auth-profile-linkage.test.ts + otp-dispatch resolveProfileIdForAuthUser parity (uncommitted)."
+    },
+    {
+      "id": "C-AUTH-DISPATCH-HOSTED",
+      "severity": "P1",
+      "topic": "otp-dispatch hosted runtime with user JWT",
+      "status": "NOT VERIFIED",
+      "note": "Function reachable (401 without auth). No real OTP send; no handset proof."
+    },
+    {
+      "id": "D-WAHA-LID",
+      "severity": "P2",
+      "topic": "WAHA LID / check-exists bridge",
+      "status": "FIXED-TESTED",
+      "note": "At baseline SHA 6e973c9; Deno waha.test.ts in test:functions (63 pass). Device E2E NOT VERIFIED."
+    },
+    {
+      "id": "D-PLACES",
+      "severity": "P1",
+      "topic": "Google Places discovery",
+      "status": "NOT VERIFIED",
+      "note": "Client fallback chain in rfq-lifecycle.ts + discovery-empty-state; credential-gated; prior NEVER_DISCOVERED evidence preserved."
+    },
+    {
+      "id": "D-ONDC",
+      "severity": "P1",
+      "topic": "ONDC pre-prod",
+      "status": "OPEN",
+      "note": "ondc-on-search deploy NOT VERIFIED this session."
+    },
+    {
+      "id": "E-ROLES-00257",
+      "severity": "P1",
+      "topic": "Canonical role catalog / signup provisioning",
+      "status": "FIXED-TESTED",
+      "migration": "00257_canonical_role_catalog_and_signup_provisioning.sql",
+      "hostedApply": "NOT VERIFIED"
+    },
+    {
+      "id": "E-RWA-00258",
+      "severity": "P2",
+      "topic": "RWA committee vote trigger order",
+      "status": "FIXED-SOURCE",
+      "migration": "00258_rwa_committee_vote_authority_trigger_order.sql"
+    },
+    {
+      "id": "E-HMAC-00259-00260",
+      "severity": "P2",
+      "topic": "Reveal digest HMAC / UTF-16 OTP HMAC parity",
+      "status": "FIXED-TESTED",
+      "migrations": ["00259_document_reveal_integrity_digest_hmac_parity.sql", "00260_otp_deterministic_hmac_utf16_code_units.sql"],
+      "note": "deterministic-hmac-ts-sql-parity chain sentinel passed."
+    },
+    {
+      "id": "F-TEST-CENTER-001",
+      "severity": "P1",
+      "topic": "admin_run_test_case unknown ID auto-pass",
+      "status": "FIXED-SOURCE",
+      "note": "Draft OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql; NOT in supabase/migrations.",
+      "hostedApply": "BLOCKED until 00261 applied via pipeline"
+    },
+    {
+      "id": "F-TEST-CENTER-002",
+      "severity": "P2",
+      "topic": "Test Center truthful counts / pass rate",
+      "status": "FIXED-TESTED",
+      "evidence": "OTP Golden Reconstruction/test-center-parity.json",
+      "note": "admin-test-suite-runner.test.ts 5/5 pass this session."
+    },
+    {
+      "id": "G-SUPPLIER-CASHBACK",
+      "severity": "P0",
+      "topic": "Supplier cashback prohibition",
+      "status": "FIXED-TESTED",
+      "note": "verified-remediation-00216-redteam.test.ts passed this session."
+    },
+    {
+      "id": "G-PRIV-MASK",
+      "severity": "P1",
+      "topic": "Supplier masking / privileged RPCs",
+      "status": "FIXED-TESTED",
+      "note": "privileged-rpc-hardening-00199-redteam.test.ts passed this session."
+    },
+    {
+      "id": "H-CHAIN-00261",
+      "severity": "P3",
+      "topic": "Migration chain sentinel tests vs draft 00261",
+      "status": "FIXED-TESTED",
+      "note": "00261 draft outside active chain; five sentinels exit 0."
+    },
+    {
+      "id": "H-LOCAL-00261-SMOKE",
+      "severity": "P1",
+      "topic": "00261 local Postgres compile/runtime smoke",
+      "status": "BLOCKED",
+      "note": "A6 run a6-local-docker-smoke-2026-10-11: BLOCKED DOCKER_DAEMON_UNAVAILABLE (dockerDesktopLinuxEngine pipe). Static draft review PASS; apply/RPC probes not run. Evidence: PHASE_A_00261_LOCAL_SMOKE_EVIDENCE.json versions[]."
+    },
+    {
+      "id": "H-HOSTED-CEILING-00260",
+      "severity": "P1",
+      "topic": "Hosted schema_migrations ceiling vs repo 00260",
+      "status": "NOT VERIFIED",
+      "note": "Direct DB host ENOTFOUND; pooler aws-0-ap-south-1:6543 ECONNRESET (appendProbes 06762683 follow-up). supabase migration list blocked without access token. Cannot confirm hosted 00257-00260 before 00261 apply."
+    },
+    {
+      "id": "W2-GST-STATUS-ACTIVE-PENDING",
+      "severity": "P2",
+      "topic": "gst_status ACTIVE while verification_status PENDING",
+      "status": "SUPERSEDED",
+      "note": "Investigated as hypothesis; intentional per 00212 verify_supplier_gstin (format submit vs authoritative verification). See wave2-supplier-trust-evidence.json."
+    },
+    {
+      "id": "W2-SUPPLIER-ELIGIBILITY",
+      "severity": "P1",
+      "topic": "Supplier discovery / quote / award / PO matrix",
+      "status": "FIXED-SOURCE",
+      "note": "Quote allowed pre-VERIFIED; award/PO gated on lifecycle+verification VERIFIED in 00244+ chain. Hosted behavior NOT VERIFIED."
+    },
+    {
+      "id": "W2-SEED-GOVERNANCE",
+      "severity": "P2",
+      "topic": "Demo seed vs production supplier trust labels",
+      "status": "NOT VERIFIED",
+      "note": "Local demo personas documented in 00244 DB tests; hosted seed parity unread."
+    },
+    {
+      "id": "WS-B-001",
+      "severity": "P1",
+      "topic": "admin_run_diagnostic_query arbitrary SELECT",
+      "status": "FIXED-TESTED-LOCAL",
+      "verificationLevel": "SOURCE+TESTED-LOCAL",
+      "note": "Formal 00262 + isolated clean-install (55322): allowlist RPC matrix VERIFIED_ISOLATED_DB (11/11 DB tests, 0 skips); operator otp-local forward-apply still pending."
+    },
+    {
+      "id": "WS-C-001",
+      "severity": "P1",
+      "topic": "is_platform_admin dual trust paths (JWT email vs DB flag)",
+      "status": "RESIDUAL-RISK",
+      "verificationLevel": "RESIDUAL-RISK",
+      "note": "00179 JWT email allowlist + profiles flag; duplicated v_admin_emails in 00263 and client normalizeAdminUserItem; GRANT EXECUTE to anon on is_platform_admin(). Hosted alignment unread; documented rev2-verification-gate-2026-10-11."
+    },
+    {
+      "id": "WS-C-002",
+      "severity": "P0",
+      "topic": "guard_profile_privileges empty auth.role bypass",
+      "status": "FIXED-TESTED-LOCAL",
+      "verificationLevel": "SOURCE+TESTED-LOCAL",
+      "note": "Formal 00263 + isolated DB: empty JWT role blocked from is_platform_admin escalation (PROFILE-PRIVILEGE); DB-VERIFIED-ISOLATED (formalization-gate isolated-clean-install-55321-55322)."
+    },
+    {
+      "id": "WS-D-001",
+      "severity": "P1",
+      "topic": "00261 Test Center false-pass schema probes",
+      "status": "FIXED-SOURCE",
+      "note": "Draft 00261 ID-001/002/005 INT-008 UNIT-001 truthfulness (sha256 77CF59F7…); local smoke still BLOCKED (Docker)."
+    }
+  ],
+  "supersededOrDuplicate": [
+    {
+      "historicalRegister": "OTP Golden Reconstruction/PILOT_GREEN_RELEASE/MASTER_FINDINGS_REGISTER.md",
+      "historicalSha": "9594a951e5e4fe0431e3b052d15e96b30dc3a07b",
+      "relationship": "SUPERSEDED for SHA/deploy facts; retained for pilot-era evidence. Current HEAD is 6e973c9."
+    },
+    {
+      "historicalRegister": "docs/OTP_PILOT_AMBER_GREEN_MASTER_REGISTER.md",
+      "historicalDate": "2026-10-08",
+      "relationship": "SUPERSEDED for edge 404 claims; 2026-10-11 probes show 401 on otp-dispatch/payment-webhook."
+    }
+  ],
+  "sessionTestEvidence": {
+    "priorFullWebSuite": "OTP Golden Reconstruction/WAVE1_WAVE0_GIT_EVIDENCE.json — 213 files / 1811 tests at dirty HEAD; not re-run this session",
+    "thisSession": [
+      "OTP Golden Reconstruction/cross-cutting-security-regression.json",
+      "OTP Golden Reconstruction/wave2-supplier-trust-evidence.json",
+      "OTP Golden Reconstruction/PHASE_A_00261_LOCAL_SMOKE_EVIDENCE.json",
+      "OTP Golden Reconstruction/PHASE_A_MESSAGING_ACCEPTANCE_PLAN.json",
+      "OTP Golden Reconstruction/PHASE_A_EVIDENCE_INDEX.json"
+    ]
+  }
+}

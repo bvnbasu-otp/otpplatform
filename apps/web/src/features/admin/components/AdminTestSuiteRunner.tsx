@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import {
+  mapRpcPayloadToUiStatus,
+  summarizeLiveBattery,
+  RPC_IMPLEMENTED_TEST_IDS,
+  type LiveTestUiStatus,
+} from '../lib/admin-test-suite-runner';
 
 export interface TestCase {
   id: string;
@@ -11,7 +17,7 @@ export interface TestCase {
 
 export interface TestResult {
   testId: string;
-  status: 'PASS' | 'FAIL' | 'SKIP' | 'RUNNING';
+  status: Exclude<LiveTestUiStatus, 'NOT_RUN'>;
   duration?: number;
   error?: string;
   timestamp: string;
@@ -25,7 +31,7 @@ export interface ModuleTestInventory {
   testCount: number;
   category: 'CORE_DOMAIN' | 'INTEGRATION' | 'SECURITY' | 'WEB_UI' | 'COMMUNICATIONS' | 'GOVERNANCE';
   keySuites: string[];
-  status: 'VERIFIED' | 'RUNNING' | 'PENDING';
+  status: 'DOCUMENTED' | 'RUNNING' | 'PENDING';
 }
 
 export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
@@ -37,7 +43,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 1,
     category: 'SECURITY',
     keySuites: ['policy-scanner.ts', 'verify-vocabulary.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-DOMAIN',
@@ -47,7 +53,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 71,
     category: 'CORE_DOMAIN',
     keySuites: ['multilingual-parser.test.ts', 'smart-scoring.test.ts', 'gstin-validator.test.ts', 'taxonomy-cache.test.ts', 'accounting-export.test.ts', 'linear-pipeline.test.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-SERVICES',
@@ -57,7 +63,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 30,
     category: 'INTEGRATION',
     keySuites: ['ondc-realtime.test.ts', 'rate-limit.test.ts', 'retry-queue.test.ts', 'email-dispatcher.test.ts', 'gst-verification.test.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-DATABASE',
@@ -67,7 +73,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 1,
     category: 'CORE_DOMAIN',
     keySuites: ['identity-protected-quote-mapper.test.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-UNIT',
@@ -77,7 +83,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 75,
     category: 'CORE_DOMAIN',
     keySuites: ['messaging-core.test.ts', 'web-routes.test.ts', 'ondc-realtime.test.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-WEB-UI',
@@ -87,7 +93,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 616,
     category: 'WEB_UI',
     keySuites: ['supplier-home.test.ts', 'buyer-home.test.ts', 'active-rfq-monitoring.test.ts', 'rfq-review-publish.test.ts', 'supplier-discovery.test.ts', 'e2e-sourcing-lifecycle.test.ts', 'protected-route.test.ts', 'auth.test.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-INTEGRATION',
@@ -97,7 +103,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 35,
     category: 'SECURITY',
     keySuites: ['cross-organization.test.ts', 'award-closeout.test.ts', 'rls-security.test.ts', 'messaging-body-redaction.test.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-DEMO-E2E',
@@ -107,7 +113,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 12,
     category: 'INTEGRATION',
     keySuites: ['demo-scenario.test.ts', 'e2e-walkthrough.test.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-DB-RPC',
@@ -117,7 +123,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 25,
     category: 'SECURITY',
     keySuites: ['admin_run_test_case (Postgres RPC Battery)'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-SMOKE',
@@ -127,7 +133,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 10,
     category: 'COMMUNICATIONS',
     keySuites: ['test-live-smoke.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-LIVE-FLOWS',
@@ -137,7 +143,7 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 25,
     category: 'GOVERNANCE',
     keySuites: ['run_live_automated_tests.ts'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
   {
     id: 'MOD-BUILD',
@@ -147,11 +153,11 @@ export const MASTER_MODULE_INVENTORY: ModuleTestInventory[] = [
     testCount: 1,
     category: 'WEB_UI',
     keySuites: ['vite build'],
-    status: 'VERIFIED',
+    status: 'DOCUMENTED',
   },
 ];
 
-const ALL_TEST_CASES: TestCase[] = [
+export const ALL_TEST_CASES: TestCase[] = [
   // SECURITY TESTS (Critical for Production)
   {
     id: 'SEC-001',
@@ -344,8 +350,8 @@ const ALL_TEST_CASES: TestCase[] = [
   {
     id: 'E2E-001',
     category: 'E2E',
-    name: 'Complete Buyer Journey (Fast Track)',
-    description: 'Individual/MSME: Requirement → Quote → Award → PO (3-5 min)',
+    name: 'Fast Track buyer journey (hosted E2E — not RPC-verified)',
+    description: 'Full journey requires Vitest/Playwright or manual walkthrough; live RPC only checks fixture profiles when migration 00261 is applied',
     critical: true,
   },
   {
@@ -358,8 +364,8 @@ const ALL_TEST_CASES: TestCase[] = [
   {
     id: 'E2E-003',
     category: 'E2E',
-    name: 'Supplier Quote via WhatsApp',
-    description: 'Test SMS/WhatsApp messaging inbound quote parsing',
+    name: 'Supplier Quote via WhatsApp (delivery not RPC-verified)',
+    description: 'Inbound quote parsing and WAHA delivery require edge/live tests; RPC does not send messages',
     critical: false,
   },
   {
@@ -402,8 +408,8 @@ const ALL_TEST_CASES: TestCase[] = [
   {
     id: 'UNIT-003',
     category: 'UNIT',
-    name: 'Smart Defaults Calculation',
-    description: 'Test 50km radius, evaluation weights (60/30/10), network selection',
+    name: 'Smart Defaults Calculation (schema probe only in RPC)',
+    description: 'Live RPC checks buyer_type_config presence; radius/weight math is covered by domain unit tests',
     critical: false,
   },
   {
@@ -428,6 +434,51 @@ const ALL_TEST_CASES: TestCase[] = [
     critical: true,
   },
 ];
+
+function renderLiveProbeStatus(result: TestResult | undefined) {
+  if (!result) {
+    return <span className="text-muted-foreground text-xs">NOT RUN</span>;
+  }
+  switch (result.status) {
+    case 'RUNNING':
+      return (
+        <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-semibold text-xs">
+          <span className="inline-block animate-spin">⚙️</span> Running
+        </span>
+      );
+    case 'PASS':
+      return (
+        <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">
+          ✅ PASSED
+        </span>
+      );
+    case 'BLOCKED':
+      return (
+        <span className="inline-block rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold">
+          ⛔ BLOCKED
+        </span>
+      );
+    case 'NOT_IMPLEMENTED':
+      return (
+        <span className="inline-block rounded-full bg-slate-500/20 text-slate-700 dark:text-slate-300 px-2 py-0.5 text-[10px] font-bold">
+          🚧 NOT IMPLEMENTED
+        </span>
+      );
+    case 'SKIPPED':
+      return (
+        <span className="inline-block rounded-full bg-slate-500/20 text-slate-700 dark:text-slate-300 px-2 py-0.5 text-[10px] font-bold">
+          ⏭ SKIPPED
+        </span>
+      );
+    case 'FAIL':
+    default:
+      return (
+        <span className="inline-block rounded-full bg-red-500/20 text-red-700 dark:text-red-300 px-2 py-0.5 text-[10px] font-bold">
+          ❌ FAILED
+        </span>
+      );
+  }
+}
 
 export function AdminTestSuiteRunner() {
   const [activeView, setActiveView] = useState<'MATRIX' | 'LIVE_RPC'>('MATRIX');
@@ -454,14 +505,15 @@ export function AdminTestSuiteRunner() {
         p_test_name: testCase.name,
       });
 
-      if (error) throw error;
-
       const duration = Date.now() - startTime;
+      const mapped = mapRpcPayloadToUiStatus(data, error);
+      const status = mapped.uiStatus === 'NOT_RUN' ? 'FAIL' : mapped.uiStatus;
+
       return {
         testId: testCase.id,
-        status: data?.passed ? 'PASS' : 'FAIL',
+        status,
         duration,
-        error: data?.error_message || undefined,
+        error: mapped.error,
         timestamp: new Date().toISOString(),
       };
     } catch (err) {
@@ -507,12 +559,24 @@ export function AdminTestSuiteRunner() {
     setResults(new Map());
   };
 
-  const passCount = Array.from(results.values()).filter((r) => r.status === 'PASS').length;
-  const failCount = Array.from(results.values()).filter((r) => r.status === 'FAIL').length;
   const totalCount = filteredTests.length;
-  const criticalFailures = filteredTests
-    .filter((t) => t.critical && results.get(t.id)?.status === 'FAIL')
-    .length;
+  const batterySummary = summarizeLiveBattery(
+    filteredTests.map((t) => t.id),
+    new Map(Array.from(results.entries()).map(([id, r]) => [id, { status: r.status }]))
+  );
+  const passCount = batterySummary.passedCount;
+  const failCount = batterySummary.failedCount;
+  const blockedCount = batterySummary.blockedCount;
+  const notImplementedCount = batterySummary.notImplementedCount;
+  const criticalFailures = filteredTests.filter((t) => {
+    const s = results.get(t.id)?.status;
+    return t.critical && (s === 'FAIL' || s === 'BLOCKED' || s === 'NOT_IMPLEMENTED');
+  }).length;
+  const liveRpcImplementedCount = RPC_IMPLEMENTED_TEST_IDS.length;
+  const passRateLabel =
+    batterySummary.passRatePercent === null
+      ? '—'
+      : `${batterySummary.passRatePercent}%`;
 
   const categoryLabel =
     selectedCategory === 'ALL'
@@ -575,21 +639,27 @@ export function AdminTestSuiteRunner() {
           </div>
 
           <div className="rounded-xl p-3.5 sm:p-4 border border-emerald-500/30 bg-emerald-500/10">
-            <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">{ALL_TEST_CASES.length} / {ALL_TEST_CASES.length}</div>
-            <div className="text-xs font-semibold text-emerald-950 dark:text-emerald-200">Live DB Benchmarks</div>
-            <div className="text-[10px] text-emerald-800 dark:text-emerald-300/80 mt-0.5">100% In PostgreSQL</div>
+            <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">
+              {liveRpcImplementedCount} / {ALL_TEST_CASES.length}
+            </div>
+            <div className="text-xs font-semibold text-emerald-950 dark:text-emerald-200">Live RPC SQL branches</div>
+            <div className="text-[10px] text-emerald-800 dark:text-emerald-300/80 mt-0.5">UI inventory vs Postgres CASE arms</div>
           </div>
 
           <div className="rounded-xl p-3.5 sm:p-4 border border-purple-500/30 bg-purple-500/10">
-            <div className="text-xl sm:text-2xl font-black text-purple-700 dark:text-purple-300">100%</div>
-            <div className="text-xs font-semibold text-purple-950 dark:text-purple-200">Master Regression Pass</div>
-            <div className="text-[10px] text-purple-800 dark:text-purple-300/80 mt-0.5">{totalPlatformTests} Automated Checks</div>
+            <div className="text-xl sm:text-2xl font-black text-purple-700 dark:text-purple-300">{passRateLabel}</div>
+            <div className="text-xs font-semibold text-purple-950 dark:text-purple-200">Live battery pass rate</div>
+            <div className="text-[10px] text-purple-800 dark:text-purple-300/80 mt-0.5">
+              {batterySummary.executedCount > 0
+                ? batterySummary.passRateDenominatorLabel
+                : 'Run Live Database probes to compute'}
+            </div>
           </div>
 
-          <div className="rounded-xl p-3.5 sm:p-4 border border-emerald-500/30 bg-emerald-500/10">
-            <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">0 Violations</div>
-            <div className="text-xs font-semibold text-emerald-950 dark:text-emerald-200">Vocabulary Compliance</div>
-            <div className="text-[10px] text-emerald-800 dark:text-emerald-300/80 mt-0.5">Zero Prohibited Terms</div>
+          <div className="rounded-xl p-3.5 sm:p-4 border border-slate-500/30 bg-slate-500/10">
+            <div className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-300">CLI</div>
+            <div className="text-xs font-semibold text-slate-950 dark:text-slate-200">Vitest / gate inventory</div>
+            <div className="text-[10px] text-slate-800 dark:text-slate-300/80 mt-0.5">pnpm gate:verify (not auto-run here)</div>
           </div>
         </div>
       </div>
@@ -621,8 +691,8 @@ export function AdminTestSuiteRunner() {
               <div key={mod.id} className="rounded-xl border bg-card p-3.5 shadow-2xs space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-xs font-bold text-primary">{mod.id}</span>
-                  <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">
-                    ✅ VERIFIED
+                  <span className="inline-block rounded-full bg-slate-500/20 text-slate-700 dark:text-slate-300 px-2 py-0.5 text-[10px] font-bold">
+                    📚 DOCUMENTED
                   </span>
                 </div>
                 <div>
@@ -631,7 +701,7 @@ export function AdminTestSuiteRunner() {
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[11px]">
                   <span className="text-muted-foreground">{mod.filesCount} files</span>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{mod.testCount} Tests (100%)</span>
+                  <span className="font-mono font-bold text-slate-600 dark:text-slate-400">{mod.testCount} tests in CI inventory</span>
                 </div>
               </div>
             ))}
@@ -667,8 +737,8 @@ export function AdminTestSuiteRunner() {
                         {mod.testCount}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 text-[10px] font-bold">
-                          ✅ VERIFIED
+                        <span className="inline-block rounded-full bg-slate-500/20 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 text-[10px] font-bold">
+                          📚 DOCUMENTED
                         </span>
                       </td>
                     </tr>
@@ -679,7 +749,7 @@ export function AdminTestSuiteRunner() {
                     <td colSpan={4} className="px-4 py-3 text-right">Grand Total:</td>
                     <td className="px-4 py-3 text-center font-mono">{totalPlatformFiles} files</td>
                     <td className="px-4 py-3 text-center font-mono text-emerald-700 dark:text-emerald-300 text-sm">{totalPlatformTests} Tests</td>
-                    <td className="px-4 py-3 text-center text-emerald-700 dark:text-emerald-300">100% Passed</td>
+                    <td className="px-4 py-3 text-center text-muted-foreground">Run gate:verify locally</td>
                   </tr>
                 </tfoot>
               </table>
@@ -744,40 +814,53 @@ export function AdminTestSuiteRunner() {
 
           {/* Test Results Summary (When Executed) */}
           {results.size > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className={`rounded-xl p-3.5 border ${
-                passCount === totalCount && failCount === 0
-                  ? 'border-emerald-500/40 bg-emerald-500/10'
-                  : 'border-slate-300 bg-slate-100 dark:bg-slate-800/40 dark:border-slate-700'
-              }`}>
-                <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-400">{passCount}</div>
-                <div className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Passed</div>
-              </div>
-
-              <div className={`rounded-xl p-3.5 border ${
-                failCount > 0
-                  ? 'border-red-500/40 bg-red-500/10'
-                  : 'border-slate-300 bg-slate-100 dark:bg-slate-800/40 dark:border-slate-700'
-              }`}>
-                <div className="text-xl sm:text-2xl font-black text-red-700 dark:text-red-400">{failCount}</div>
-                <div className="text-xs font-semibold text-red-900 dark:text-red-200">Failed</div>
-              </div>
-
-              <div className="rounded-xl p-3.5 border border-amber-500/40 bg-amber-500/10">
-                <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-400">{criticalFailures}</div>
-                <div className="text-xs font-semibold text-amber-900 dark:text-amber-200">Critical Failures</div>
-              </div>
-
-              <div className={`rounded-xl p-3.5 border ${
-                criticalFailures === 0 && results.size === totalCount
-                  ? 'border-emerald-500/40 bg-emerald-500/10'
-                  : 'border-slate-300 bg-slate-100 dark:bg-slate-800/40 dark:border-slate-700'
-              }`}>
-                <div className="text-xl sm:text-2xl font-black">
-                  {criticalFailures === 0 && results.size === totalCount ? '✅' : '⚠️'}
+            <div className="space-y-2">
+              <p className="text-[10px] text-muted-foreground">
+                Executed {batterySummary.executedCount} of {batterySummary.selectedCount} selected ·{' '}
+                {batterySummary.notRunCount} not run · Pass rate {passRateLabel} ({batterySummary.passRateDenominatorLabel})
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className={`rounded-xl p-3.5 border ${
+                  passCount > 0 && failCount === 0
+                    ? 'border-emerald-500/40 bg-emerald-500/10'
+                    : 'border-slate-300 bg-slate-100 dark:bg-slate-800/40 dark:border-slate-700'
+                }`}>
+                  <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-400">{passCount}</div>
+                  <div className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Passed</div>
                 </div>
-                <div className="text-xs font-semibold text-foreground">
-                  {criticalFailures === 0 && results.size === totalCount ? 'Go-Live Ready' : 'Blocked'}
+
+                <div className={`rounded-xl p-3.5 border ${
+                  failCount > 0
+                    ? 'border-red-500/40 bg-red-500/10'
+                    : 'border-slate-300 bg-slate-100 dark:bg-slate-800/40 dark:border-slate-700'
+                }`}>
+                  <div className="text-xl sm:text-2xl font-black text-red-700 dark:text-red-400">{failCount}</div>
+                  <div className="text-xs font-semibold text-red-900 dark:text-red-200">Failed</div>
+                </div>
+
+                <div className="rounded-xl p-3.5 border border-amber-500/40 bg-amber-500/10">
+                  <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-400">{blockedCount}</div>
+                  <div className="text-xs font-semibold text-amber-900 dark:text-amber-200">Blocked</div>
+                </div>
+
+                <div className="rounded-xl p-3.5 border border-slate-400/40 bg-slate-500/10">
+                  <div className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-300">{notImplementedCount}</div>
+                  <div className="text-xs font-semibold text-slate-900 dark:text-slate-200">Not implemented</div>
+                </div>
+
+                <div className={`rounded-xl p-3.5 border ${
+                  batterySummary.goLiveReady
+                    ? 'border-emerald-500/40 bg-emerald-500/10'
+                    : 'border-slate-300 bg-slate-100 dark:bg-slate-800/40 dark:border-slate-700'
+                }`}>
+                  <div className="text-xl sm:text-2xl font-black">{batterySummary.goLiveReady ? '✅' : '⚠️'}</div>
+                  <div className="text-xs font-semibold text-foreground">
+                    {batterySummary.goLiveReady
+                      ? 'All selected probes passed'
+                      : criticalFailures > 0
+                        ? `${criticalFailures} critical issue(s)`
+                        : 'Incomplete or non-passing'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -843,25 +926,7 @@ export function AdminTestSuiteRunner() {
                       </div>
                       <h4 className="text-xs font-bold text-foreground leading-snug">{test.name}</h4>
                     </div>
-                    <div>
-                      {result ? (
-                        result.status === 'RUNNING' ? (
-                          <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-semibold text-xs">
-                            <span className="inline-block animate-spin">⚙️</span>
-                          </span>
-                        ) : result.status === 'PASS' ? (
-                          <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">
-                            ✅ PASS
-                          </span>
-                        ) : (
-                          <span className="inline-block rounded-full bg-red-500/20 text-red-700 dark:text-red-300 px-2 py-0.5 text-[10px] font-bold">
-                            ❌ FAIL
-                          </span>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </div>
+                    <div>{renderLiveProbeStatus(result)}</div>
                   </div>
                   <p className="text-[11px] text-muted-foreground">{test.description}</p>
                   <div className="flex items-center justify-between pt-1 border-t border-border/50">
@@ -939,25 +1004,7 @@ export function AdminTestSuiteRunner() {
                             <span className="text-muted-foreground">Standard</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          {result ? (
-                            result.status === 'RUNNING' ? (
-                              <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-semibold">
-                                <span className="inline-block animate-spin">⚙️</span> Running
-                              </span>
-                            ) : result.status === 'PASS' ? (
-                              <span className="inline-block rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">
-                                ✅ PASS
-                              </span>
-                            ) : (
-                              <span className="inline-block rounded-full bg-red-500/20 text-red-700 dark:text-red-300 px-2 py-0.5 text-[10px] font-bold">
-                                ❌ FAIL
-                              </span>
-                            )
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </td>
+                        <td className="px-4 py-3 text-center">{renderLiveProbeStatus(result)}</td>
                         <td className="px-4 py-3 text-right font-mono text-muted-foreground">
                           {result?.duration ? `${result.duration}ms` : '—'}
                         </td>
@@ -988,12 +1035,17 @@ export function AdminTestSuiteRunner() {
           </div>
 
           {/* Failure Details */}
-          {Array.from(results.values()).some(r => r.status === 'FAIL' && r.error) && (
+          {Array.from(results.values()).some(
+            (r) => r.status !== 'PASS' && r.status !== 'RUNNING' && r.error
+          ) && (
             <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 sm:p-6">
-              <h3 className="text-sm font-bold text-red-900 dark:text-red-300 mb-3">❌ Test Failure Details</h3>
+              <h3 className="text-sm font-bold text-red-900 dark:text-red-300 mb-3">Diagnostic details (non-passing probes)</h3>
               <div className="space-y-2">
                 {Array.from(results.entries())
-                  .filter(([_, result]) => result.status === 'FAIL' && result.error)
+                  .filter(
+                    ([_, result]) =>
+                      result.status !== 'PASS' && result.status !== 'RUNNING' && result.error
+                  )
                   .map(([testId, result]) => (
                     <div key={testId} className="rounded-xl bg-card p-3 border border-red-200 dark:border-red-900/40 shadow-2xs">
                       <div className="font-mono font-bold text-xs text-red-700 dark:text-red-400">{testId}</div>

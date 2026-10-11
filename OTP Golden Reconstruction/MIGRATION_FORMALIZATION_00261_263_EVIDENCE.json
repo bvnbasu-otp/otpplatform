@@ -1,0 +1,310 @@
+{
+  "schemaVersion": "migration-formalization-gate-00261-263-2026-10-11",
+  "sessionId": "formalization-gate-00261-263-2026-10-11",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "headAtRun": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "originMainSync": true,
+  "releaseRecommendation": "READY FOR REVIEW",
+  "releaseRecommendationNote": "Isolated clean-install through 00263 and required DB tests executed with 0 skips on disposable instance; CI ceiling bump and operator DB forward-apply remain release-commit prerequisites.",
+  "priorBlockedSession": {
+    "releaseRecommendation": "BLOCKED",
+    "blockReason": "CLEAN_INSTALL_VALIDATION_UNAVAILABLE",
+    "blockDetail": "Docker Desktop Linux engine pipe unavailable; 127.0.0.1:54321/54322 closed.",
+    "timestamp": "2026-10-11T09:00:18+05:30"
+  },
+  "isolatedDatabaseIdentity": {
+    "projectId": "otp-formalization-gate",
+    "workdir": "C:\\Users\\bloganat\\AppData\\Local\\Temp\\otp-formalization-gate-263",
+    "host": "127.0.0.1",
+    "apiPort": 55321,
+    "postgresPort": 55322,
+    "connectionPatternRedacted": "postgresql://postgres:***@127.0.0.1:55322/postgres",
+    "restUrlPatternRedacted": "http://127.0.0.1:55321",
+    "primaryDbContainer": "supabase_db_otp-formalization-gate",
+    "operatorDbContainerUntouched": "supabase_db_otp-local",
+    "operatorDbHostPort": 54322,
+    "hostedDatabaseUsed": false
+  },
+  "isolationProof": {
+    "status": "PROVEN",
+    "commands": [
+      {
+        "command": "docker ps --format \"{{.Names}}|{{.Ports}}\" (filter supabase_db_otp)",
+        "outputRedacted": "supabase_db_otp-formalization-gate|0.0.0.0:55322->5432/tcp; supabase_db_otp-local|0.0.0.0:54322->5432/tcp"
+      },
+      {
+        "command": "node isolation probe (127.0.0.1:55322 vs :54322)",
+        "isolated": { "maxMigration": "00263", "through263Count": 263 },
+        "operatorReadOnly": { "maxMigration": "00259", "through263Count": 258 },
+        "note": "Distinct schema_migrations tail proves operator patched DB was not reset or used for clean-install proof"
+      },
+      {
+        "command": "env scrub before tests",
+        "DATABASE_URL": "cleared",
+        "DIRECT_URL": "cleared",
+        "SUPABASE_DB_URL": "cleared",
+        "SUPABASE_URL": "http://127.0.0.1:55321"
+      }
+    ],
+    "operatorPatchedDbPolicy": "NOT reset; read-only identity probe on 127.0.0.1:54322 only"
+  },
+  "draftToMigrationReconciliation": [
+    {
+      "sequence": 261,
+      "draftPath": "OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql",
+      "draftSha256": "77CF59F716846368DD62F7F4A861133DA6DFEE86D4160BBDF4EC054C82ED494E",
+      "migrationPath": "supabase/migrations/00261_admin_run_test_case_truthful_execution_and_auth.sql",
+      "migrationSha256": "77CF59F716846368DD62F7F4A861133DA6DFEE86D4160BBDF4EC054C82ED494E",
+      "intentionalDeltas": "None — byte-identical copy from reviewed draft."
+    },
+    {
+      "sequence": 262,
+      "draftPath": "OTP Golden Reconstruction/MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql",
+      "draftSha256": "F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93",
+      "migrationPath": "supabase/migrations/00262_admin_run_diagnostic_query_allowlist_hardening.sql",
+      "migrationSha256": "F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93",
+      "intentionalDeltas": "None — byte-identical copy (REV2b nested params.limit)."
+    },
+    {
+      "sequence": 263,
+      "draftPath": "OTP Golden Reconstruction/MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql",
+      "draftSha256": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A",
+      "migrationPath": "supabase/migrations/00263_guard_profile_privileges_empty_role_bypass.sql",
+      "migrationSha256": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A",
+      "intentionalDeltas": "None — byte-identical copy."
+    }
+  ],
+  "dbMigrateCheck": {
+    "command": "pnpm db:migrate:check",
+    "exitCode": 0,
+    "totalFiles": 263,
+    "range": "00001_enums.sql -> 00263_guard_profile_privileges_empty_role_bypass.sql",
+    "contiguity": "PASS (Contiguous 00001 to 00263)",
+    "timestamp": "2026-10-11T03:27:13.244Z",
+    "note": "Not re-run this session (prior PASS retained)"
+  },
+  "cleanInstallProof": {
+    "status": "PASS",
+    "target": {
+      "kind": "supabase_local_disposable",
+      "projectId": "otp-formalization-gate",
+      "workdir": "C:\\Users\\bloganat\\AppData\\Local\\Temp\\otp-formalization-gate-263",
+      "host": "127.0.0.1",
+      "ports": [55321, 55322],
+      "dbContainer": "supabase_db_otp-formalization-gate"
+    },
+    "commands": [
+      {
+        "command": "Copy repo supabase/ to temp workdir; config.toml project_id=otp-formalization-gate; API/db ports 55321/55322",
+        "exitCode": 0
+      },
+      {
+        "command": "cd <temp>/otp-formalization-gate-263 && supabase start",
+        "exitCode": 0,
+        "note": "Initial start applied migrations 00001–00263 + seeds on isolated instance only"
+      },
+      {
+        "command": "cd <temp>/otp-formalization-gate-263 && supabase db reset --local",
+        "exitCode": 0,
+        "message": "Reset local database."
+      }
+    ],
+    "schemaMigrations": {
+      "maxVersion": "00263",
+      "countThrough263": 263,
+      "versions261To263": ["00261", "00262", "00263"]
+    },
+    "operatorPatchedDbPolicy": "NOT reset; supabase_db_otp-local left intact (max schema_migrations 00259 at read-only probe)"
+  },
+  "authorizationVerification": {
+    "database": "isolated-formalization-gate:55322",
+    "functionsPresent": [
+      "public.admin_run_test_case",
+      "public.admin_run_diagnostic_query",
+      "private.guard_profile_privileges"
+    ],
+    "executeGrants": {
+      "admin_run_test_case": { "anon": false, "authenticated": true, "service_role": true },
+      "admin_run_diagnostic_query": { "anon": false, "authenticated": true, "service_role": true },
+      "private.guard_profile_privileges": { "anon": false, "authenticated": false, "service_role": false }
+    },
+    "runtimeMatrixVerified": [
+      "00261 anon denied admin_run_test_case; unknown test id NOT_IMPLEMENTED for service_role (not false pass)",
+      "00261 authenticated non-admin Unauthorized",
+      "00262 free-form SQL rejected; allowlisted op profiles_active_count succeeds for service_role",
+      "00263 empty JWT role cannot escalate is_platform_admin (PROFILE-PRIVILEGE on UPDATE probe)",
+      "00216/00217 anon eleven-RPC allowlist and wallet/award denial matrix on same isolated DB"
+    ]
+  },
+  "isolatedDbTests": {
+    "env": {
+      "SUPABASE_URL": "http://127.0.0.1:55321",
+      "LOCAL_POSTGRES_PORT": "55322",
+      "DATABASE_URL": "",
+      "DIRECT_URL": "",
+      "SUPABASE_DB_URL": ""
+    },
+    "command": "pnpm exec vitest run tests/security/migration-formalization-00261-263-database.test.ts tests/security/verified-remediation-00216-database.test.ts --reporter=json --outputFile=.vitest-formalization-gate-isolated.json",
+    "exitCode": 0,
+    "timestamp": "2026-10-11T09:23:30+05:30",
+    "resultsTable": [
+      {
+        "file": "tests/security/migration-formalization-00261-263-database.test.ts",
+        "executed": 5,
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "requiredDbBlock": true
+      },
+      {
+        "file": "tests/security/verified-remediation-00216-database.test.ts",
+        "executed": 9,
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0,
+        "requiredDbBlock": true,
+        "note": "Includes 2 deploy-migrations process safety tests (non-DB)"
+      },
+      {
+        "file": "tests/security/guard-profile-privileges-draft.test.ts",
+        "executed": 8,
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0,
+        "requiredDbBlock": false,
+        "note": "Static draft parity; run for aggregate completeness"
+      },
+      {
+        "file": "tests/security/admin-diagnostic-query-draft.test.ts",
+        "executed": 13,
+        "passed": 13,
+        "failed": 0,
+        "skipped": 0,
+        "requiredDbBlock": false
+      }
+    ],
+    "gateDbCriterion": {
+      "requiredSkips": 0,
+      "requiredDbTestsExecuted": 11,
+      "requiredDbTestsPassed": 11,
+      "status": "PASS"
+    }
+  },
+  "focusedTests": {
+    "webConfigCommand": "pnpm exec vitest run apps/web/src/features/admin/admin-diagnostic-query-rpc.test.ts apps/web/src/features/admin/admin-test-suite-runner.test.ts apps/web/src/features/admin/admin.test.ts apps/web/src/features/auth/auth-profile-linkage.test.ts --config apps/web/vitest.config.ts",
+    "webConfigExitCode": 0,
+    "webConfigFilesPassed": 4,
+    "webConfigTestsPassed": 31,
+    "priorRootConfigWithoutDocker": {
+      "rootConfigCommand": "pnpm exec vitest run tests/security/admin-diagnostic-query-draft.test.ts tests/security/guard-profile-privileges-draft.test.ts tests/security/migration-formalization-00261-263-database.test.ts tests/security/verified-remediation-00216-database.test.ts",
+      "rootConfigExitCode": 0,
+      "rootConfigTestsPassed": 24,
+      "rootConfigTestsSkipped": 11,
+      "timestamp": "2026-10-11T09:00:18+05:30"
+    },
+    "isolatedDbRun": {
+      "see": "isolatedDbTests",
+      "realDatabasePassed": 11,
+      "realDatabaseSkipped": 0
+    },
+    "skipBehavior00263": "migration-formalization-00261-263-database.test.ts uses beforeEach ctx.skip(explicitReason) when target Supabase/Postgres unavailable — 0 skips when pointed at isolated 55321/55322"
+  },
+  "limitations": [
+    "WS-C-001 is_platform_admin JWT email allowlist vs profiles flag alignment still open (hosted audit)",
+    "Operator supabase_db_otp-local not forward-migrated to 00263 in this session (max schema_migrations 00259); reconcile separately with operator approval",
+    "Disposable isolated stack remains in temp workdir; stop/remove when no longer needed"
+  ],
+  "remainingSecurityFindings": [
+    {
+      "id": "WS-C-002",
+      "severity": "P0",
+      "summary": "Runtime proof empty-role guard after 00263 on disposable DB",
+      "status": "VERIFIED_ISOLATED_DB"
+    },
+    {
+      "id": "WS-B-001",
+      "severity": "P1",
+      "summary": "Live diagnostic allowlist RPC matrix after 00262 on disposable DB",
+      "status": "VERIFIED_ISOLATED_DB"
+    },
+    {
+      "id": "WS-C-001",
+      "severity": "P1",
+      "summary": "is_platform_admin email allowlist alignment audit",
+      "status": "OPEN"
+    }
+  ],
+  "changedFilesThisGate": {
+    "added": [
+      "supabase/migrations/00261_admin_run_test_case_truthful_execution_and_auth.sql",
+      "supabase/migrations/00262_admin_run_diagnostic_query_allowlist_hardening.sql",
+      "supabase/migrations/00263_guard_profile_privileges_empty_role_bypass.sql",
+      "tests/security/migration-formalization-00261-263-database.test.ts",
+      "OTP Golden Reconstruction/MIGRATION_FORMALIZATION_00261_263_EVIDENCE.json"
+    ],
+    "modified": [
+      "apps/web/src/features/admin/admin-test-suite-runner.test.ts",
+      "tests/security/admin-diagnostic-query-draft.test.ts",
+      "tests/security/guard-profile-privileges-draft.test.ts",
+      "tests/security/migration-formalization-00261-263-database.test.ts",
+      "OTP Golden Reconstruction/PHASE_A_EVIDENCE_INDEX.json"
+    ]
+  },
+  "secretsPrinted": false,
+  "releaseCommitPrerequisites": [
+    "Bump .github/workflows/ci-cd.yml EXPECTED_CEILING and migration smoke steps from 00260 to 00263 in the same authorized release commit",
+    "Reconcile operator patched DB schema_migrations with chain (forward-only; do not reset patched DB without operator approval)"
+  ],
+  "ciCeilingAtGateEnd": {
+    "workingTreeMigrationFiles": "00263",
+    "githubWorkflowExpectedCeiling": "00263",
+    "file": ".github/workflows/ci-cd.yml",
+    "note": "Pre-commit gate bumped EXPECTED_CEILING and test-suites step title to 00263; 00260 js_string_utf16_length smoke retained in quality-gate."
+  },
+  "preCommitGate2026_10_11": {
+    "sessionId": "phase1-release-precommit-00261-263-2026-10-11",
+    "headAtRun": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+    "originMainSync": true,
+    "releaseRecommendation": "READY TO COMMIT",
+    "primaryEvidencePath": "OTP Golden Reconstruction/PHASE1_RELEASE_PRECOMMIT_EVIDENCE.json",
+    "migrationSha256Verified": {
+      "00261": "77CF59F716846368DD62F7F4A861133DA6DFEE86D4160BBDF4EC054C82ED494E",
+      "00262": "F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93",
+      "00263": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A"
+    },
+    "dbMigrateCheck": {
+      "command": "pnpm db:migrate:check",
+      "exitCode": 0,
+      "totalFiles": 263,
+      "timestamp": "2026-10-11T04:29:04.494Z"
+    },
+    "isolatedDbTests55322": {
+      "target": "127.0.0.1:55322 / supabase_db_otp-formalization-gate",
+      "exitCode": 0,
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0,
+      "requiredDbBlockPassed": 11
+    },
+    "operatorDbReconciliation": {
+      "decision": "DEFERRED",
+      "executed": false,
+      "container": "supabase_db_otp-local",
+      "hostPort": "127.0.0.1:54322",
+      "schemaMigrationsMax": "00259",
+      "missingVersionsInTail": ["00258", "00260", "00261", "00262", "00263"],
+      "semanticsDiverge": true,
+      "proof": [
+        "admin_run_test_case('SEC-999') on operator: passed=true (pre-00261 auto-pass); isolated 55322: execution_status NOT_IMPLEMENTED",
+        "md5(pg_get_functiondef admin_run_test_case): operator b5390cac3353b1f6efc7bf1623dc1105 vs isolated b8a49611db338c525c371f8fe8e8557c",
+        "md5(pg_get_functiondef admin_run_diagnostic_query): operator ad4ded1bde1b916172467752a9745b7d vs isolated 2c0219a44517975b39a0c693a1fbe8d4",
+        "md5(pg_get_functiondef private.guard_profile_privileges): operator 5a6ac3d95198ec82a0559d4b1cd60d81 vs isolated 2986bc697ff1dc406f2e0a2ea7cc1f2b"
+      ],
+      "operatorSteps": [
+        "From repo root with Docker otp-local running: supabase migration up (or supabase db push --local) to apply 00258, 00260, 00261, 00262, 00263 forward-only.",
+        "Do NOT INSERT schema_migrations rows without applying migration SQL bodies.",
+        "Re-run tests/security/migration-formalization-00261-263-database.test.ts against LOCAL_POSTGRES_PORT=54322 after apply."
+      ]
+    }
+  }
+}
