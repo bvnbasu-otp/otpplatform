@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,13 +62,14 @@ describe('Migration 00261 (static authorization & unknown-ID guards)', () => {
     repoRoot,
     'supabase/migrations/00261_admin_run_test_case_truthful_execution_and_auth.sql'
   );
-  const draftPath = path.join(
-    repoRoot,
-    'OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql'
-  );
+  /** Pinned at e8f5e95 formalization; Golden Reconstruction drafts are *.sql gitignored (CI-safe). */
+  const FORMAL_00261_SHA256 =
+    'E5FA35856B9EA0BF546EBF625A668CE6A3D757E8FB43E5BED2ADFCD2BC263C79';
 
-  it('formal migration matches reviewed draft bytes', () => {
-    expect(fs.readFileSync(migrationPath)).toEqual(fs.readFileSync(draftPath));
+  it('formal migration SHA256 matches release-pinned digest', () => {
+    const bytes = fs.readFileSync(migrationPath);
+    const digest = createHash('sha256').update(bytes).digest('hex').toUpperCase();
+    expect(digest).toBe(FORMAL_00261_SHA256);
   });
 
   it('removes anon/authenticated bypass and auto-pass ELSE', () => {
