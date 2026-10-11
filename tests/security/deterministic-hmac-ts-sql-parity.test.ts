@@ -109,5 +109,8 @@ describe('00260 migration chain', () => {
     const idx = files.indexOf('00259_document_reveal_integrity_digest_hmac_parity.sql');
     expect(idx).toBeGreaterThanOrEqual(0);
     expect(files[idx + 1]).toBe('00260_otp_deterministic_hmac_utf16_code_units.sql');
+    expect(files[idx + 2]).toBe('00261_admin_run_test_case_truthful_execution_and_auth.sql');
+    expect(files[idx + 3]).toBe('00262_admin_run_diagnostic_query_allowlist_hardening.sql');
+    expect(files[idx + 4]).toBe('00263_guard_profile_privileges_empty_role_bypass.sql');
   });
 });

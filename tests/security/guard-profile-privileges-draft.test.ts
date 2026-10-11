@@ -1,15 +1,14 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const DRAFT = resolve(
-  __dirname,
-  '../../OTP Golden Reconstruction/MIGRATION_00263_GUARD_PROFILE_PRIVILEGES_EMPTY_ROLE_DRAFT.sql'
-);
 const FORMAL = resolve(
   __dirname,
   '../../supabase/migrations/00263_guard_profile_privileges_empty_role_bypass.sql'
 );
+/** Pinned at formalization; Golden Reconstruction *.sql drafts are gitignored (CI-safe). */
+const FORMAL_00263_SHA256 = '2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A';
 const LIVE203 = resolve(
   __dirname,
   '../../supabase/migrations/00203_restrict_ops_metadata_guard_profile_privileges_and_one_live_tds.sql'
@@ -29,8 +28,9 @@ function guardBodyFromMigration(sql: string): string {
 describe('00263 guard_profile_privileges empty-role (static)', () => {
   const sql = readFileSync(FORMAL, 'utf8');
 
-  it('formal migration matches reviewed draft bytes', () => {
-    expect(readFileSync(FORMAL)).toEqual(readFileSync(DRAFT));
+  it('formal migration SHA256 matches release-pinned digest', () => {
+    const digest = createHash('sha256').update(readFileSync(FORMAL)).digest('hex').toUpperCase();
+    expect(digest).toBe(FORMAL_00263_SHA256);
   });
   const live203 = readFileSync(LIVE203, 'utf8');
   const live205 = readFileSync(LIVE205, 'utf8');

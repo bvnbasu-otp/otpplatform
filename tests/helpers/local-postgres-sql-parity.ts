@@ -32,7 +32,7 @@ export function formatSqlParityUnavailableReason(
     return `SQL parity requires local Docker Postgres only (127.0.0.1:54322); hosted or remote DB is rejected (${skipReason})`;
   }
   if (dbUp && !migrationApplied) {
-    return `SQL parity migration/function missing on local Postgres: ${skipReason}. Apply repo migrations through 00260 (private.js_string_utf16_length).`;
+    return `SQL parity migration/function missing on local Postgres: ${skipReason}. Apply repo migrations through 00263 (guard_profile_privileges empty-role fix).`;
   }
   if (!dbUp) {
     return `Local Postgres unreachable at 127.0.0.1:54322 (${skipReason}). Start Supabase locally and wait for container supabase_db_otp-local.`;

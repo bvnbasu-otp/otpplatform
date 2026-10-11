@@ -1,15 +1,14 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const DRAFT = resolve(
-  __dirname,
-  '../../OTP Golden Reconstruction/MIGRATION_00262_ADMIN_RUN_DIAGNOSTIC_QUERY_ALLOWLIST_DRAFT.sql'
-);
 const FORMAL = resolve(
   __dirname,
   '../../supabase/migrations/00262_admin_run_diagnostic_query_allowlist_hardening.sql'
 );
+/** Pinned at formalization; Golden Reconstruction *.sql drafts are gitignored (CI-safe). */
+const FORMAL_00262_SHA256 = 'F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93';
 const LEGACY = resolve(__dirname, '../../supabase/migrations/00074_robust_sql_terminal_execution.sql');
 
 /** Extract WHEN 'op' branches from the draft CASE block. */
@@ -52,8 +51,9 @@ describe('00262 admin_run_diagnostic_query (static)', () => {
   const sql = readFileSync(FORMAL, 'utf8');
   const legacy = readFileSync(LEGACY, 'utf8');
 
-  it('formal migration matches reviewed draft bytes', () => {
-    expect(readFileSync(FORMAL)).toEqual(readFileSync(DRAFT));
+  it('formal migration SHA256 matches release-pinned digest', () => {
+    const digest = createHash('sha256').update(readFileSync(FORMAL)).digest('hex').toUpperCase();
+    expect(digest).toBe(FORMAL_00262_SHA256);
   });
 
   it('documents repo callers for admin_run_diagnostic_query', () => {

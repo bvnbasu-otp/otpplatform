@@ -9,8 +9,8 @@ const ROOT = resolve('.');
 const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
-// Repository ceiling. 00249, 00250, and 00251 do not grant this function back to clients.
-const REPOSITORY_CEILING = '00260_otp_deterministic_hmac_utf16_code_units.sql';
+// Repository ceiling. Later migrations (00249–00263) do not grant this function back to clients.
+const REPOSITORY_CEILING = '00263_guard_profile_privileges_empty_role_bypass.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';

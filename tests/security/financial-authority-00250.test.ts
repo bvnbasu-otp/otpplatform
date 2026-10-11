@@ -173,18 +173,21 @@ describe('financial authority 00250', () => {
 
   it('keeps 00248 byte-for-byte and does not apply any migration', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((file) => /^\d{5}_.*\.sql$/.test(file)).sort();
-    expect(files.at(-1)).toBe('00260_otp_deterministic_hmac_utf16_code_units.sql');
-    expect(files.at(-2)).toBe('00259_document_reveal_integrity_digest_hmac_parity.sql');
-    expect(files.at(-3)).toBe('00258_rwa_committee_vote_authority_trigger_order.sql');
-    expect(files.at(-4)).toBe('00257_canonical_role_catalog_and_signup_provisioning.sql');
-    expect(files.at(-5)).toBe('00256_standardize_auth_otp_eight_digits.sql');
-    expect(files.at(-6)).toBe('00255_restore_requirement_categories_canonical.sql');
-    expect(files.at(-7)).toBe('00254_individual_signup_property_owner_catalog_and_rpc.sql');
-    expect(files.at(-8)).toBe('00253_cancelled_rfq_allowance_and_utgst.sql');
-    expect(files.at(-9)).toBe('00252_rwa_award_quorum_met.sql');
-    expect(files.at(-10)).toBe('00251_fresh_pin_coverage_otp_registered_fallback.sql');
-    expect(files.at(-11)).toBe(FILE);
-    expect(files.at(-12)).toBe(FREEZE);
+    expect(files.at(-1)).toBe('00263_guard_profile_privileges_empty_role_bypass.sql');
+    expect(files.at(-2)).toBe('00262_admin_run_diagnostic_query_allowlist_hardening.sql');
+    expect(files.at(-3)).toBe('00261_admin_run_test_case_truthful_execution_and_auth.sql');
+    expect(files.at(-4)).toBe('00260_otp_deterministic_hmac_utf16_code_units.sql');
+    expect(files.at(-5)).toBe('00259_document_reveal_integrity_digest_hmac_parity.sql');
+    expect(files.at(-6)).toBe('00258_rwa_committee_vote_authority_trigger_order.sql');
+    expect(files.at(-7)).toBe('00257_canonical_role_catalog_and_signup_provisioning.sql');
+    expect(files.at(-8)).toBe('00256_standardize_auth_otp_eight_digits.sql');
+    expect(files.at(-9)).toBe('00255_restore_requirement_categories_canonical.sql');
+    expect(files.at(-10)).toBe('00254_individual_signup_property_owner_catalog_and_rpc.sql');
+    expect(files.at(-11)).toBe('00253_cancelled_rfq_allowance_and_utgst.sql');
+    expect(files.at(-12)).toBe('00252_rwa_award_quorum_met.sql');
+    expect(files.at(-13)).toBe('00251_fresh_pin_coverage_otp_registered_fallback.sql');
+    expect(files.at(-14)).toBe(FILE);
+    expect(files.at(-15)).toBe(FREEZE);
     expect(sha256(ENT01)).toBe(ENT01_SHA256);
     expect(sql).not.toMatch(/enforce_pilot_rfq_allowance/);
     expect(sql).not.toMatch(/schema_migrations/);
