@@ -1,25 +1,23 @@
 {
-  "testExecutedAt": "2026-10-11T08:09:16.335Z",
-  "durationMs": 3371,
+  "testExecutedAt": "2026-10-13T18:54:54.816Z",
+  "durationMs": 1529,
   "dispatchStatus": 200,
   "dispatchHeaders": {
-    "sb-request-id": "01a12a02-5418-7756-87d2-dd72a514ad0c",
-    "cf-ray": "a48c61c01a517ea0-MAA",
-    "x-deno-execution-id": "dc4826bd-b669-4270-8151-f2244b4b024c"
+    "sb-request-id": "01a1369e-291e-702f-80ea-a27764ae2660",
+    "cf-ray": "a4a08e482e0eb29d-MAA",
+    "x-deno-execution-id": "6a0aceab-ddcc-4bfc-8a3d-9010ab8e5340"
   },
   "dispatchBody": {
-    "ok": true
+    "ok": false,
+    "error": "We could not send the verification code. Please try again shortly."
   },
   "securityInvariants": {
     "zeroCodeLeakageInResponse": true,
-    "plaintextNotStoredInDb": true,
+    "plaintextNotStoredInDb": false,
     "invalidCodeRejected": true
   },
   "databaseRecord": {
-    "phone": "919972967530",
-    "otpCodePlaintext": null,
-    "hasHash": true,
-    "hasSalt": true,
-    "expiresAt": "2026-10-10T16:53:54.255349+00:00"
+    "hasHash": false,
+    "hasSalt": false
   }
 }

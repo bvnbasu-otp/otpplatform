@@ -243,15 +243,80 @@ export function Tier1TellOtpCard({
       ? DESCRIBE_SUBCATEGORY_SENTINEL
       : subcategoryId;
 
-  const subcategories = useMemo(
-    () => taxonomy.subcategories.filter((s) => s.categoryId === categoryId),
-    [taxonomy.subcategories, categoryId],
-  );
-
   const activeSubcategory = useMemo(
     () => taxonomy.subcategories.find((s) => s.id === subcategoryId),
     [taxonomy.subcategories, subcategoryId],
   );
+
+  const categoryOptions = useMemo(() => {
+    return [
+      ...taxonomy.categories
+        .filter((c) => c.id !== describeOther?.categoryId)
+        .map((c) => ({
+          value: c.id,
+          label: c.name,
+        })),
+      ...(describeOther
+        ? [
+            {
+              value: DESCRIBE_CATEGORY_SENTINEL,
+              label: 'Not listed? Tell us what you need',
+            },
+          ]
+        : []),
+    ];
+  }, [taxonomy.categories, describeOther]);
+
+  const subcategoryOptions = useMemo(() => {
+    // 1. In custom / unlisted mode: show only the custom sentinel
+    if (categorySelectValue === DESCRIBE_CATEGORY_SENTINEL) {
+      return describeOther
+        ? [
+            {
+              value: DESCRIBE_SUBCATEGORY_SENTINEL,
+              label: 'Not listed? (Custom Specification)',
+            },
+          ]
+        : [];
+    }
+
+    // 2. Specific category selected: show its subcategories + Custom option
+    if (categoryId) {
+      const items = taxonomy.subcategories
+        .filter(
+          (s) => s.categoryId === categoryId && s.id !== describeOther?.subcategoryId,
+        )
+        .map((s) => ({ value: s.id, label: s.name }));
+
+      if (describeOther) {
+        items.push({
+          value: DESCRIBE_SUBCATEGORY_SENTINEL,
+          label: 'Not listed? (Custom Specification)',
+        });
+      }
+      return items;
+    }
+
+    // 3. No category selected yet: list all verticals with their parent category name
+    const categoryMap = new Map(taxonomy.categories.map((c) => [c.id, c.name]));
+    const items = taxonomy.subcategories
+      .filter((s) => s.id !== describeOther?.subcategoryId)
+      .map((s) => {
+        const catName = categoryMap.get(s.categoryId);
+        return {
+          value: s.id,
+          label: catName ? `${s.name} (${catName})` : s.name,
+        };
+      });
+
+    if (describeOther) {
+      items.push({
+        value: DESCRIBE_SUBCATEGORY_SENTINEL,
+        label: 'Not listed? (Custom Specification)',
+      });
+    }
+    return items;
+  }, [taxonomy, categoryId, categorySelectValue, describeOther]);
 
   const activePreset = useMemo(() => {
     return (
@@ -283,6 +348,11 @@ export function Tier1TellOtpCard({
   }
 
   function handleCategorySelect(newCatId: string) {
+    if (!newCatId) {
+      onCategoryChange('');
+      onSubcategoryChange('');
+      return;
+    }
     if (newCatId === DESCRIBE_CATEGORY_SENTINEL && describeOther) {
       onCategoryChange(describeOther.categoryId);
       onSubcategoryChange(describeOther.subcategoryId);
@@ -293,18 +363,20 @@ export function Tier1TellOtpCard({
     const stillValid = taxonomy.subcategories.some(
       (s) => s.id === subcategoryId && s.categoryId === newCatId,
     );
-    if (!stillValid && subcategoryId !== describeOther?.subcategoryId) {
+    if (!stillValid) {
       onSubcategoryChange('');
     }
   }
 
   function handleSubcategorySelect(newSubCatId: string) {
+    if (!newSubCatId) {
+      onSubcategoryChange('');
+      return;
+    }
     if (newSubCatId === DESCRIBE_SUBCATEGORY_SENTINEL && describeOther) {
-      if (!categoryId) {
-        onCategoryChange(describeOther.categoryId);
-      }
+      onCategoryChange(describeOther.categoryId);
       onSubcategoryChange(describeOther.subcategoryId);
-      if (!mode) {
+      if (!mode || mode === RequirementMode.OTHER) {
         onModeChange(describeOther.defaultMode);
       }
       return;
@@ -524,6 +596,19 @@ export function Tier1TellOtpCard({
                     <span>📝 Title:</span> <strong>{parsed.title}</strong>
                   </span>
                 )}
+                {activeSubcategory && subcategoryId !== describeOther?.subcategoryId ? (
+                  <span className="inline-flex items-center gap-1 rounded bg-card px-2 py-0.5 font-medium text-foreground border shadow-2xs">
+                    <span>🏷️ Vertical:</span> <strong>{activeSubcategory.name}</strong>
+                  </span>
+                ) : (categorySelectValue === DESCRIBE_CATEGORY_SENTINEL || subcategorySelectValue === DESCRIBE_SUBCATEGORY_SENTINEL) ? (
+                  <span className="inline-flex items-center gap-1 rounded bg-primary/10 text-primary px-2 py-0.5 font-medium border border-primary/30 shadow-2xs">
+                    <span>✍️ Mode:</span> <strong>Custom Specification</strong>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 px-2 py-0.5 font-medium border border-amber-300/60 shadow-2xs">
+                    <span>🏷️ Vertical:</span> <strong>Select Category / Subcategory below or Custom</strong>
+                  </span>
+                )}
                 {parsed.deliveryCity && (
                   <span className="inline-flex items-center gap-1 rounded bg-card px-2 py-0.5 font-medium text-foreground border shadow-2xs">
                     <span>📍 City:</span> <strong>{parsed.deliveryCity}</strong>
@@ -576,20 +661,7 @@ export function Tier1TellOtpCard({
                 aria-describedby={describedBy}
                 invalid={invalid}
                 placeholder="Select category"
-                options={[
-                  ...taxonomy.categories.map((c) => ({
-                    value: c.id,
-                    label: c.name,
-                  })),
-                  ...(describeOther
-                    ? [
-                        {
-                          value: DESCRIBE_CATEGORY_SENTINEL,
-                          label: 'Not listed? Tell us what you need',
-                        },
-                      ]
-                    : []),
-                ]}
+                options={categoryOptions}
                 value={categorySelectValue}
                 onChange={(e) => handleCategorySelect(e.target.value)}
               />
@@ -603,20 +675,7 @@ export function Tier1TellOtpCard({
                 aria-describedby={describedBy}
                 invalid={invalid}
                 placeholder="Select specific vertical"
-                options={[
-                  ...(subcategories.length > 0
-                    ? subcategories
-                    : taxonomy.subcategories
-                  ).map((s) => ({ value: s.id, label: s.name })),
-                  ...(describeOther
-                    ? [
-                        {
-                          value: DESCRIBE_SUBCATEGORY_SENTINEL,
-                          label: 'Not listed? (Custom Specification)',
-                        },
-                      ]
-                    : []),
-                ]}
+                options={subcategoryOptions}
                 value={subcategorySelectValue}
                 onChange={(e) => handleSubcategorySelect(e.target.value)}
               />

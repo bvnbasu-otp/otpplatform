@@ -421,6 +421,9 @@ export function UnifiedThreeTierIntake({
     if (!title.trim()) {
       nextErrors.title = 'Requirement title is required.';
     }
+    if (!categoryId) {
+      nextErrors.categoryId = 'Please select a category.';
+    }
     if (!subcategoryId) {
       nextErrors.subcategoryId = 'Please choose the specific type of work (vertical).';
     }
@@ -471,6 +474,7 @@ export function UnifiedThreeTierIntake({
       const stage1Fields = [
         'text',
         'title',
+        'categoryId',
         'subcategoryId',
         'requirementMode',
         'deliveryCity',
@@ -574,6 +578,7 @@ export function UnifiedThreeTierIntake({
   const isTier1Complete = Boolean(
     text.trim().length >= 5 &&
     title.trim() &&
+    categoryId &&
     subcategoryId &&
     mode &&
     city.trim() &&

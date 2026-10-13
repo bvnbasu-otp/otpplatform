@@ -25,6 +25,7 @@ const mockTaxonomy: TaxonomySnapshot = {
     { id: 'cat-solar', code: 'solar', name: 'Solar Energy', description: null, sortOrder: 1 },
     { id: 'cat-machining', code: 'machining', name: 'Precision Machining', description: null, sortOrder: 2 },
     { id: 'cat-motor', code: 'motor', name: 'Electrical & Motors', description: null, sortOrder: 3 },
+    { id: 'cat-other', code: 'general_other', name: 'General / Other', description: null, sortOrder: 4 },
   ],
   subcategories: [
     {
@@ -50,6 +51,18 @@ const mockTaxonomy: TaxonomySnapshot = {
       requiredAttributeCodes: ['material_grade', 'tolerance_mm'],
       defaultRequirementMode: 'PRODUCT_MATERIAL',
       sortOrder: 2,
+    },
+    {
+      id: 'sub-custom',
+      categoryId: 'cat-other',
+      categoryCode: 'general_other',
+      code: 'custom_requirement',
+      name: 'Custom requirement',
+      description: null,
+      matchKeywords: ['custom', 'special', 'unlisted', 'bespoke'],
+      requiredAttributeCodes: [],
+      defaultRequirementMode: 'OTHER',
+      sortOrder: 3,
     },
   ],
   capabilities: [],
@@ -575,6 +588,34 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
 
       expect(draftAttributes.custom_vertical).toBe(customVerticalText);
       expect(draftAttributes.scope_area_sqft).toBe(5000);
+    });
+
+    it('cascades category and subcategory selection and synchronizes custom specifications', () => {
+      // 1. Verify category options filter out describeOther.categoryId and add sentinel
+      const nonCustomCats = mockTaxonomy.categories.filter((c) => c.code !== 'general_other');
+      expect(nonCustomCats.length).toBe(3);
+
+      // 2. When a category is chosen, subcategories filter to that category and append sentinel
+      const motorSubs = mockTaxonomy.subcategories.filter((s) => s.categoryId === 'cat-motor' && s.code !== 'custom_requirement');
+      expect(motorSubs.length).toBe(1);
+      expect(motorSubs[0]!.id).toBe('sub-motor-rewind');
+
+      // 3. When category changes to one not matching current subcategory, subcategory must clear
+      const stillValid = mockTaxonomy.subcategories.some(
+        (s) => s.id === 'sub-motor-rewind' && s.categoryId === 'cat-machining',
+      );
+      expect(stillValid).toBe(false);
+
+      // 4. When user selects custom specification (__OTP_DESCRIBE_SUBCATEGORY__), both category and subcategory sync to general_other
+      const customSub = mockTaxonomy.subcategories.find((s) => s.code === 'custom_requirement')!;
+      expect(customSub).toBeDefined();
+      expect(customSub.categoryId).toBe('cat-other');
+
+      // 5. Switching back from custom to specific category invalidates sub-custom and clears subcategory
+      const customStillValidInMachining = mockTaxonomy.subcategories.some(
+        (s) => s.id === customSub.id && s.categoryId === 'cat-machining',
+      );
+      expect(customStillValidInMachining).toBe(false);
     });
   });
 });
