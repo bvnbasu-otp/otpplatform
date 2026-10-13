@@ -463,6 +463,12 @@ async function runAllTests() {
   });
 
   await test('GOVERNANCE', '3. Cast Committee Votes in Evaluation & Voting Room', async () => {
+    // Assign committee seats on this RFQ to allow voting under migration 00238 authority boundary
+    await admin.from('committee_assignments').upsert([
+      { rfq_id: rwaRfqId, profile_id: rwaPresidentProfile.id },
+      { rfq_id: rwaRfqId, profile_id: rwaMember3Profile.id },
+    ]);
+
     // Voter 1 casts vote
     const { error: v1Err } = await admin.from('committee_votes').insert({
       rfq_id: rwaRfqId,
