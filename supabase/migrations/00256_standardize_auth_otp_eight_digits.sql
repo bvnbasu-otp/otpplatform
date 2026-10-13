@@ -159,6 +159,13 @@ BEGIN
     END IF;
 
     IF v_phone IS NULL THEN
+      SELECT p.phone INTO v_phone
+      FROM public.profiles p
+      WHERE lower(p.email) = lower(v_identifier) AND p.phone IS NOT NULL
+      LIMIT 1;
+    END IF;
+
+    IF v_phone IS NULL THEN
       SELECT o.contact_phone INTO v_phone
       FROM public.organizations o
       WHERE lower(o.contact_email) = lower(v_identifier) AND o.contact_phone IS NOT NULL
@@ -194,6 +201,14 @@ BEGIN
     FROM auth.users u
     WHERE RIGHT(regexp_replace(COALESCE(u.phone, u.raw_user_meta_data->>'phone', ''), '\D', '', 'g'), 10) = v_clean_phone
     LIMIT 1;
+
+    IF v_email IS NULL THEN
+      SELECT p.email, p.phone, p.full_name
+      INTO v_email, v_phone, v_full_name
+      FROM public.profiles p
+      WHERE RIGHT(regexp_replace(COALESCE(p.phone, ''), '\D', '', 'g'), 10) = v_clean_phone
+      LIMIT 1;
+    END IF;
 
     IF v_email IS NULL THEN
       SELECT o.contact_email, o.contact_phone, o.contact_person
