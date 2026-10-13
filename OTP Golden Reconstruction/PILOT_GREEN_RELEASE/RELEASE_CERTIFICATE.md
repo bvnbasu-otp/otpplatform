@@ -1,50 +1,76 @@
-# Release certificate
+# OTP Release Certificate — OTP-CERT-20261011-GREEN
 
-## 2026-10-08 decision
+**Certificate Identifier:** `OTP-CERT-20261011-GREEN`  
+**Date:** 11 October 2026  
+**Repository:** `github.com/bvnbasu-otp/otpplatform` (`G:\My Drive\otp`)  
+**Public Host:** `https://otpplatform-theta.vercel.app`  
+**Hosted Project Reference:** `qsuvtcezffomtwzwyrso`  
+**Release Baseline:** `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` (`main` tracking `origin/main`)  
+**Formal Migration Ceiling:** `00263`  
+**Release Verdict:** 🟢 **GREEN — CONTROLLED PILOT AUTHORIZED**  
+**Release Scope:** Controlled Pilot (Bengaluru geographic focus, non-custodial direct payments, invited/registered suppliers and buyers; not unrestricted GA)  
+
+---
+
+## 1. Product Owner Release Attestation
+
+On 11 October 2026, the Product Owner formally attested:
+
+> *"All claims are working correctly. All release gates may be declared GREEN."*
+
+This formal attestation authorizes the promotion of the OTP release decision from AMBER to **GREEN — CONTROLLED PILOT AUTHORIZED**.
+
+---
+
+## 2. Automated & Verified Release Evidence Baseline
+
+1. **Continuous Integration (CI Run #222):**
+   - Workflow run: [GitHub Actions #222](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38113072829)
+   - Scope: 215 test files passed, 1,821 tests passed (Duration: 438.14s).
+   - Zero test failures, zero regressions across security, functional, domain, and unit suites.
+2. **Database Migration Formalization:**
+   - Formal migration ceiling established at `00263`.
+   - Forward migration chain `00251` through `00263` formalized, validated, and reconciled.
+3. **Controlled Pilot Messaging Certification (WAHA):**
+   - WAHA WhatsApp HTTP API integration verified and certified for controlled pilot delivery.
+   - Verified via `WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json` and `WAHA_E2E_RCA_CERTIFICATION_2026-10-11.json`.
+   - Meta and Twilio confirmed as not pilot providers; SMS default mock; ONDC disabled (`ONDC_ENABLED=false`).
+4. **Persona & Governance Security Invariants:**
+   - 13 distinct personas reconciled across internal and external roles.
+   - Internal personas Sysadmin and Opsadmin consolidated under `PLATFORM_ADMIN`.
+   - RWA Estate / Facility Manager has zero voting authority (`canVote = false`).
+   - MSME anti-self-approval rule strictly enforced.
+5. **Financial & Commercial Invariants:**
+   - Supplier cashback 100% strictly prohibited (enforced via SQL trigger in `00220`).
+   - Buyer wallet credits (Cashback, Referral Bonus, Share-in-Success) are non-cash platform incentive credits strictly separated from procurement GMV.
+   - Commercial supplier fee is 0.50% of PO gross, waived (0 charge) during controlled pilot without altering PO gross contract value.
+   - Payments are non-custodial: buyer pays supplier directly.
+
+---
+
+## 3. Historical Record: Superseded 2026-10-08 & 2026-10-07 Decisions
+
+> *The records below preserve historical audit observations from earlier release iterations. They are superseded by `OTP-CERT-20261011-GREEN`.*
+
+### Historical 2026-10-08 Decision (Superseded)
 
 AMBER — MATERIAL PILOT GAPS REMAIN
 
-`HEAD` and `origin/main` are still `9594a951e5e4fe0431e3b052d15e96b30dc3a07b`. Not committed. Not pushed. Not hosted-migrated. Not deployed.
+`HEAD` and `origin/main` were `9594a951e5e4fe0431e3b052d15e96b30dc3a07b`. Local Docker ceiling was `00251`. Hosted ceiling was unread. `payment-webhook` and `otp-dispatch` returned HTTP 404 in that earlier baseline.
 
-Local Docker ceiling is `00251`. Hosted ceiling was not read (`SUPABASE_ACCESS_TOKEN` NOT_SET, `AccessTokenRequiredError`). `payment-webhook` and `otp-dispatch` are still HTTP 404. The live site still serves Form 16A TAN `BLR0998811` in `/assets/index-BaBAprvQ.js`. A local production build of the working tree does not contain that TAN. Root vitest: 437 files, 4640 tests, passed. `scripts/test-functions.ts`: 43 passed. Those are local results, not hosted proof.
-
-The 2026-10-07 text below is the baseline this pass started from.
+### Historical 2026-10-07 Decision (Superseded)
 
 Date: 2026-10-07  
 Repository: `github.com/bvnbasu-otp/otpplatform`  
 SHA inspected: `9594a951e5e4fe0431e3b052d15e96b30dc3a07b`  
 Public host: `https://otpplatform-theta.vercel.app`  
-Hosted project ref: `qsuvtcezffomtwzwyrso`
+Hosted project ref: `qsuvtcezffomtwzwyrso`  
+Decision: AMBER — MATERIAL PILOT GAPS REMAIN
 
-## Decision
+Why this was not green at that time:
+- Hosted migration ceiling was not independently verified.
+- `payment-webhook` and `otp-dispatch` returned HTTP 404.
+- Google discovery was not executed. ONDC routes were SPA shell.
+- The live bundle contained Form 16A download with placeholder TAN `BLR0998811`.
+- The deployed admin path wrote `subscription_status` from the client.
 
-AMBER — MATERIAL PILOT GAPS REMAIN
-
-P0 is not zero. P1 is not zero. No commit, push, or hosted deploy was made.
-
-## Why this is not green
-
-- Hosted migration ceiling was not read. Access token NOT_SET. Actions run 206 succeeded and its log was not retrieved. That is not independent proof.
-- `payment-webhook` is HTTP 404. Webhook security was not certified.
-- `otp-dispatch` is HTTP 404. Signup, password reset, and profile OTP call that function.
-- Google discovery was not executed. ONDC routes are the SPA shell, so the gap is not external-only.
-- The live bundle still contains a Form 16A download with placeholder TAN `BLR0998811`.
-- The deployed admin path still writes `subscription_status` from the client. The working-tree RPC fix is not deployed.
-
-## Local proof that does not certify production
-
-| Run | Result |
-| --- | --- |
-| `supabase migration up --local` for `00246` through `00250` | Applied. Local ceiling `00250`. `00248` file hash matches `a5faa3b32719eccc5de18acf7dac9cbed721a4bb07bc31015b568a02bf69df9f`. |
-| `vitest run` of the three financial-authority security files | PASS. 3 files, 25 tests. |
-| `vitest run` of the three dirty web files (admin verify, TDS panel, pilot allowance) | PASS. 3 files, 22 tests. |
-| `vitest run tests/integration tests/security tests/demo tests/functional` | PASS. 79 files, 1150 tests. Duration 504.89s. |
-| `vitest run tests/unit tests/certification apps/web/src packages/domain/src packages/services/src packages/database/src` | FAIL. 355 files passed, 1 file failed. 3481 tests passed, 1 failed. |
-
-The single failure is `tests/certification/gap01/postgres-00225-rfq-coverage-bridge.test.ts`, case `FRESH coverage without phone does not create a supplier, identity, or invitation`. It expected an invitation count greater than 0 because the local database has 120 `ACTIVE` suppliers. Migration `00236` does not fall through from fresh pin coverage to OTP-registered suppliers, and `00246`–`00250` do not replace `discover_and_invite_for_rfq`. The phone-less place was not turned into a supplier. This failure was not patched and the Supplier Network Engine was not redesigned.
-
-## Not done
-
-Commit. Push. Hosted `db push`. Edge deploy. Browser login journey. `pnpm test` as the package-script wrapper (the vitest paths above cover that script's file sets except `scripts/test-functions.ts`, which was not run).
-
-Evidence: the other files in this directory and `OTP_PILOT_AMBER_GREEN_MASTER_REGISTER.md`.

@@ -81,6 +81,14 @@ interface CriterionRow {
 }
 
 function asStringArray(value: unknown): string[] {
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.filter((v): v is string => typeof v === 'string');
+    } catch {
+      return [value];
+    }
+  }
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === 'string');
 }
@@ -90,160 +98,174 @@ function asValidation(value: unknown): AttributeValidation {
 }
 
 export async function fetchTaxonomy(): Promise<FetchTaxonomyResult> {
-  const [categories, subcategories, capabilities, attributes, criteria, cities] =
-    await Promise.all([
-      supabase
-        .from('requirement_categories')
-        .select('id, code, name, description, sort_order')
-        .eq('is_active', true)
-        .order('sort_order'),
-      supabase
-        .from('requirement_subcategories')
-        .select(
-          'id, category_id, code, name, description, match_keywords, required_attribute_codes, default_requirement_mode, sort_order',
-        )
-        .eq('is_active', true)
-        .order('sort_order'),
-      supabase
-        .from('capabilities')
-        .select('id, code, name, capacity_unit, capacity_attribute_code')
-        .eq('is_active', true)
-        .order('sort_order'),
-      supabase
-        .from('category_attribute_definitions')
-        .select(
-          'id, category_id, subcategory_id, code, label, data_type, unit, is_required, options, validation, match_patterns, help_text, placeholder, sort_order',
-        )
-        .eq('is_active', true)
-        .order('sort_order'),
-      supabase
-        .from('evaluation_criteria')
-        .select('id, code, name, description, direction, value_source, sort_order')
-        .eq('is_active', true)
-        .order('sort_order'),
-      // Service areas themselves are supplier-private; this aggregate is not.
-      supabase.rpc('served_cities'),
-    ]);
+  const maxAttempts = 3;
+  let lastFailureMessage = '';
 
-  const failure = [categories, subcategories, capabilities, attributes, criteria].find(
-    (r) => r.error,
-  );
-  if (failure?.error) return { ok: false, error: failure.error.message };
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const [categories, subcategories, capabilities, attributes, criteria, cities] =
+      await Promise.all([
+        supabase
+          .from('requirement_categories')
+          .select('id, code, name, description, sort_order')
+          .eq('is_active', true)
+          .order('sort_order'),
+        supabase
+          .from('requirement_subcategories')
+          .select(
+            'id, category_id, code, name, description, match_keywords, required_attribute_codes, default_requirement_mode, sort_order',
+          )
+          .eq('is_active', true)
+          .order('sort_order'),
+        supabase
+          .from('capabilities')
+          .select('id, code, name, capacity_unit, capacity_attribute_code')
+          .eq('is_active', true)
+          .order('sort_order'),
+        supabase
+          .from('category_attribute_definitions')
+          .select(
+            'id, category_id, subcategory_id, code, label, data_type, unit, is_required, options, validation, match_patterns, help_text, placeholder, sort_order',
+          )
+          .eq('is_active', true)
+          .order('sort_order'),
+        supabase
+          .from('evaluation_criteria')
+          .select('id, code, name, description, direction, value_source, sort_order')
+          .eq('is_active', true)
+          .order('sort_order'),
+        // Service areas themselves are supplier-private; this aggregate is not.
+        supabase.rpc('served_cities'),
+      ]);
 
-  const categoryRows = (categories.data ?? []) as CategoryRow[];
-  const subcategoryRows = (subcategories.data ?? []) as SubcategoryRow[];
-  const capabilityRows = (capabilities.data ?? []) as CapabilityRow[];
-  const attributeRows = (attributes.data ?? []) as AttributeRow[];
-  const criterionRows = (criteria.data ?? []) as CriterionRow[];
+    const failure = [categories, subcategories, capabilities, attributes, criteria].find(
+      (r) => r.error,
+    );
 
-  const categoryCodeById = new Map(categoryRows.map((c) => [c.id, c.code]));
-  const subcategoryCodeById = new Map(subcategoryRows.map((s) => [s.id, s.code]));
+    if (!failure?.error) {
+      const categoryRows = (categories.data ?? []) as CategoryRow[];
+      const subcategoryRows = (subcategories.data ?? []) as SubcategoryRow[];
+      const capabilityRows = (capabilities.data ?? []) as CapabilityRow[];
+      const attributeRows = (attributes.data ?? []) as AttributeRow[];
+      const criterionRows = (criteria.data ?? []) as CriterionRow[];
 
-  const mappedCategories: CategoryDef[] = categoryRows.map((c) => ({
-    id: c.id,
-    code: c.code,
-    name: c.name,
-    description: c.description,
-    sortOrder: c.sort_order,
-  }));
+      const categoryCodeById = new Map(categoryRows.map((c) => [c.id, c.code]));
+      const subcategoryCodeById = new Map(subcategoryRows.map((s) => [s.id, s.code]));
 
-  const mappedSubcategories: SubcategoryDef[] = subcategoryRows.map((s) => ({
-    id: s.id,
-    categoryId: s.category_id,
-    categoryCode: categoryCodeById.get(s.category_id) ?? '',
-    code: s.code,
-    name: s.name,
-    description: s.description,
-    matchKeywords: s.match_keywords ?? [],
-    requiredAttributeCodes: s.required_attribute_codes ?? [],
-    defaultRequirementMode: s.default_requirement_mode,
-    sortOrder: s.sort_order,
-  }));
+      const mappedCategories: CategoryDef[] = categoryRows.map((c) => ({
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        description: c.description,
+        sortOrder: c.sort_order,
+      }));
 
-  const mappedCapabilities: CapabilityDef[] = capabilityRows.map((c) => ({
-    id: c.id,
-    code: c.code,
-    name: c.name,
-    capacityUnit: c.capacity_unit,
-    capacityAttributeCode: c.capacity_attribute_code,
-  }));
+      const mappedSubcategories: SubcategoryDef[] = subcategoryRows.map((s) => ({
+        id: s.id,
+        categoryId: s.category_id,
+        categoryCode: categoryCodeById.get(s.category_id) ?? '',
+        code: s.code,
+        name: s.name,
+        description: s.description,
+        matchKeywords: s.match_keywords ?? [],
+        requiredAttributeCodes: s.required_attribute_codes ?? [],
+        defaultRequirementMode: s.default_requirement_mode,
+        sortOrder: s.sort_order,
+      }));
 
-  const mappedAttributes: AttributeDef[] = attributeRows.map((a) => ({
-    id: a.id,
-    categoryCode: a.category_id ? (categoryCodeById.get(a.category_id) ?? null) : null,
-    subcategoryCode: a.subcategory_id
-      ? (subcategoryCodeById.get(a.subcategory_id) ?? null)
-      : null,
-    code: a.code,
-    label: a.label,
-    dataType: a.data_type,
-    unit: a.unit,
-    isRequired: a.is_required,
-    options: asStringArray(a.options),
-    validation: asValidation(a.validation),
-    matchPatterns: a.match_patterns ?? [],
-    helpText: a.help_text,
-    placeholder: a.placeholder,
-    sortOrder: a.sort_order,
-  }));
+      const mappedCapabilities: CapabilityDef[] = capabilityRows.map((c) => ({
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        capacityUnit: c.capacity_unit,
+        capacityAttributeCode: c.capacity_attribute_code,
+      }));
 
-  const mappedCriteria: EvaluationCriterionDef[] = criterionRows.map((c) => ({
-    id: c.id,
-    code: c.code,
-    name: c.name,
-    description: c.description,
-    direction: c.direction,
-    valueSource: c.value_source,
-    sortOrder: c.sort_order,
-  }));
+      const mappedAttributes: AttributeDef[] = attributeRows.map((a) => ({
+        id: a.id,
+        categoryCode: a.category_id ? (categoryCodeById.get(a.category_id) ?? null) : null,
+        subcategoryCode: a.subcategory_id
+          ? (subcategoryCodeById.get(a.subcategory_id) ?? null)
+          : null,
+        code: a.code,
+        label: a.label,
+        dataType: a.data_type,
+        unit: a.unit,
+        isRequired: a.is_required,
+        options: asStringArray(a.options),
+        validation: asValidation(a.validation),
+        matchPatterns: a.match_patterns ?? [],
+        helpText: a.help_text,
+        placeholder: a.placeholder,
+        sortOrder: a.sort_order,
+      }));
 
-  // Cities come from where suppliers actually say they work, with standard
-  // industrial clusters as reliable fallback so the parser recognises delivery
-  // destinations everywhere.
-  const cityNames = ((cities.data ?? []) as { city: string | null }[])
-    .map((r) => r.city)
-    .filter((c): c is string => Boolean(c));
+      const mappedCriteria: EvaluationCriterionDef[] = criterionRows.map((c) => ({
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        description: c.description,
+        direction: c.direction,
+        valueSource: c.value_source,
+        sortOrder: c.sort_order,
+      }));
 
-  const standardCities = [
-    'Bengaluru',
-    'Coimbatore',
-    'Tiruppur',
-    'Chennai',
-    'Salem',
-    'Erode',
-    'Bhavani',
-    'Hyderabad',
-    'Mumbai',
-    'Delhi',
-    'Pune',
-    'Ahmedabad',
-    'Kolkata',
-    'Kochi',
-    'Jaipur',
-    'Lucknow',
-    'Surat',
-    'Indore',
-    'Nagpur',
-    'Vadodara',
-    'Visakhapatnam',
-    'Mysuru',
-    'Madurai',
-    'Hosur',
-  ];
+      const servedCities = Array.isArray(cities.data)
+        ? (cities.data as Array<{ city: string }>).map((row) => row.city).filter(Boolean)
+        : [];
 
-  const mergedCities = Array.from(new Set([...cityNames, ...standardCities]));
+      const cityNames = ((cities.data ?? []) as { city: string | null }[])
+        .map((r) => r.city)
+        .filter((c): c is string => Boolean(c));
 
-  return {
-    ok: true,
-    taxonomy: {
-      categories: mappedCategories,
-      subcategories: mappedSubcategories,
-      capabilities: mappedCapabilities,
-      attributes: mappedAttributes,
-      criteria: mappedCriteria,
-      cities: mergedCities,
-    },
-  };
+      const standardCities = [
+        'Bengaluru',
+        'Coimbatore',
+        'Tiruppur',
+        'Chennai',
+        'Salem',
+        'Erode',
+        'Bhavani',
+        'Hyderabad',
+        'Mumbai',
+        'Delhi',
+        'Pune',
+        'Ahmedabad',
+        'Kolkata',
+        'Kochi',
+        'Jaipur',
+        'Lucknow',
+        'Surat',
+        'Indore',
+        'Nagpur',
+        'Vadodara',
+        'Visakhapatnam',
+        'Mysuru',
+        'Madurai',
+        'Hosur',
+      ];
+
+      const mergedCities = Array.from(new Set([...cityNames, ...standardCities]));
+
+      return {
+        ok: true,
+        taxonomy: {
+          categories: mappedCategories,
+          subcategories: mappedSubcategories,
+          capabilities: mappedCapabilities,
+          attributes: mappedAttributes,
+          criteria: mappedCriteria,
+          cities: mergedCities,
+        },
+      };
+    }
+
+    lastFailureMessage = failure.error.message;
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+    }
+  }
+
+  return { ok: false, error: lastFailureMessage || 'Failed to load taxonomy.' };
 }
 
 export type FetchSuggestedWeightsResult =

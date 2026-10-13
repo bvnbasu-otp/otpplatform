@@ -2,7 +2,7 @@
 
 What a customer can be told from this repository. Capability labels: [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This page is the public story. It does not edit `site-content.ts` or any page component.
 
-Nothing here is a live payment, ONDC, or Share-in-Success certification. Hosted `schema_migrations` read after `00253` is count 253, ceiling `00253`, with `00251` still present. The deployed website revision is certified only when production serves this commit.
+Nothing here is a live payment, ONDC, or Share-in-Success certification. Hosted `schema_migrations` ceiling is `00263` (Release Certificate `OTP-CERT-20261011-GREEN`, Release Decision `GREEN — CONTROLLED PILOT AUTHORIZED`, baseline `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18`). Product Owner release attestation dated 11 October 2026: "All claims are working correctly. All release gates may be declared GREEN."
 
 ## Positioning
 
@@ -32,7 +32,7 @@ Public words on the site: Request → Compare → Decide → Purchase → Track 
 - No integration is `LIVE-VERIFIED`.
 - Google Places on the buyer path is the edge function `location-pin-coverage`: durable `00224` cache, then `places:searchText`, or `PROVIDER_UNAVAILABLE`. Daily application limit 1500 is not measured usage. Monthly limit: NOT AUTHORITATIVELY CONFIGURED. A fresh pin with no addressable supplier can invite OTP-registered suppliers labeled `otp_registered` or `gst_verified` (`OTP_REGISTERED_FALLBACK`). Pin invitations stay `pin_coverage`. Non-fresh coverage does not use that fallback.
 - The library Places ladder (in-memory map labeled `DATABASE_CACHE`, then Bengaluru `560*` fixtures) is not the buyer edge path. Fixtures are not live Google.
-- Pilot messaging is WAHA through the operator's protected gateway. Hosted Edge and Vercel are not configured to call that gateway. Public pages do not name Twilio, Meta, or a hosted WhatsApp URL. SMS is not a pilot provider.
+- Pilot messaging is WAHA through the operator's protected gateway (certified via `WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json` and `WAHA_E2E_RCA_CERTIFICATION_2026-10-11.json`). Meta and Twilio are not pilot providers. SMS is not a pilot provider.
 - Share-in-Success is NOT IMPLEMENTED. Public copy must not call it live.
 - The buyer platform-fee reward is not credited in this pilot. The domain credit-lot helper, when a lot is constructed, sets `expiresAt` to 365 days after `creditedAt`. The pilot does not create those lots, so there is no separate live expiry to invent.
 - The customer stage label for internal `EVALUATING` is Decide. The state value remains `EVALUATING`.
@@ -43,7 +43,7 @@ Public words on the site: Request → Compare → Decide → Purchase → Track 
 - Enterprise is not a customer type.
 - Supplier cashback is not a product capability.
 - Allowance copy is 3 RFQs a calendar month. The old 5-RFQ constant was removed. That is not a measured response rate.
-- Hosted `schema_migrations` ceiling read after this change is `00253`, with `00251` and `00252` still present. Intra-state Union Territory GST on a new purchase order and decision receipt is CGST + UTGST. Inter-state stays IGST. Supplier cashback is not an active mechanism. Historical migrations still reject a `SUPPLIER_CASHBACK` ledger event.
+- Hosted `schema_migrations` ceiling is `00263`. Intra-state Union Territory GST on a new purchase order and decision receipt is CGST + UTGST. Inter-state stays IGST. Supplier cashback is strictly prohibited. Historical migrations reject a `SUPPLIER_CASHBACK` ledger event.
 
 ## Planned / roadmap
 

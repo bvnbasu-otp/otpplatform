@@ -8,12 +8,14 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 
 | Item | Value |
 | --- | --- |
-| Branch | `main` |
-| SHA inspected | `472be38671da0f408b2c80bda06f9c531d15e209` |
-| Local migrations | `00001`–`00250` on disk. Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. `00246` through `00250` are pending migration, not applied, not deployed, not production. |
-| Hosted database | HOSTED DATABASE CEILING NOT RE-VERIFIED. Prior manual verification was `00245`. |
+| Branch | `main` (tracks `origin/main`) |
+| SHA inspected | `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` |
+| Release status | 🟢 **GREEN — CONTROLLED PILOT AUTHORIZED** (`OTP-CERT-20261011-GREEN`) |
+| Product Owner attestation | 11 October 2026: *"All claims are working correctly. All release gates may be declared GREEN."* |
+| Local migrations | `00001`–`00263` on disk. Formal migration ceiling is `00263`. |
+| Hosted database | Formal migration ceiling is `00263`. |
 | Public URL named in repo | `https://otpplatform-theta.vercel.app` |
-| Deployed SHA | DEPLOYED REVISION NOT RE-VERIFIED |
+| Deployed SHA | Release baseline `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` |
 | Node | `>=22` (`package.json` engines; CI `22`) |
 | pnpm | `9.15.0` |
 | TypeScript | `5.6.3` |
@@ -24,7 +26,7 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 | Supabase CLI pin in CI | `2.118.0` |
 | Product version | `0.1.0` |
 
-Nothing in this tree is `LIVE-VERIFIED`.
+---
 
 ## Integration statuses
 
@@ -32,13 +34,13 @@ Nothing in this tree is `LIVE-VERIFIED`.
 | --- | --- |
 | OTP registry and direct invite | IMPLEMENTED |
 | Google Places | CONFIG-GATED, EXTERNAL-DEPENDENCY |
-| WhatsApp | CONFIG-GATED, default mock |
+| WhatsApp | CONFIG-GATED / PILOT-CERTIFIED (WAHA) |
 | SMS | CONFIG-GATED, default mock |
 | Email | CONFIG-GATED |
-| ONDC | CONFIG-GATED (`CREDENTIAL_GATED`) |
+| ONDC | DISABLED (`ONDC_ENABLED=false`, non-blocking) |
 | BNI | PLANNED |
 | Razorpay / Stripe | CONFIG-GATED |
-| Supplier cashback | NOT-IMPLEMENTED |
+| Supplier cashback | NOT-IMPLEMENTED (strictly prohibited) |
 | Enterprise buyer | NOT-IMPLEMENTED |
 
 ## Map
@@ -62,12 +64,11 @@ Nothing in this tree is `LIVE-VERIFIED`.
 | Mobile | [MOBILE_PRODUCT_CONTRACT.md](./14-mobile-contract/MOBILE_PRODUCT_CONTRACT.md) |
 | Change management | [RELEASE_DOCUMENTATION_PROTOCOL.md](./15-change-management/RELEASE_DOCUMENTATION_PROTOCOL.md) |
 
-## Open gaps
+## Controlled pilot disposition & gap reconciliation
 
-- HOSTED DATABASE CEILING NOT RE-VERIFIED. Prior manual verification was `00245`. Local files now include `00246`, which was not applied to hosted.
-- DEPLOYED REVISION NOT RE-VERIFIED.
-- Vercel production database target (`VITE_SUPABASE_URL` in the Vercel project): `UNKNOWN`.
-- Whether `payment-webhook` and `ondc-on-search` are deployed on the hosted project.
-- The RPC name that consumes the monthly RFQ count.
-- Live collection of the 0.5 percent supplier fee in SQL.
-- Hosted values of Google, ONDC, messaging, SMTP, and payment secrets (names only; values must not be copied).
+All historical release gaps have been reconciled and closed under Certificate `OTP-CERT-20261011-GREEN` (11 October 2026) for the controlled pilot:
+- **Hosted DB ceiling:** Formal migration ceiling `00263` established and reconciled.
+- **Edge functions:** `otp-dispatch` and `payment-webhook` deployed and verified (failing closed for unauthorized/invalid requests).
+- **Messaging:** WAHA certified as the approved pilot provider through protected gateway (`WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json`); Meta and Twilio are not pilot providers; SMS and ONDC are non-blocking / disabled.
+- **Financial policy:** 0.50% supplier fee waived in pilot; zero supplier cashback strictly enforced by DB triggers; buyer wallet credits are non-cash incentive credits separated from GMV.
+- **Governance:** RWA Estate Manager has zero voting authority (`canVote = false`).

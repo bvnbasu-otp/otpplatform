@@ -61,16 +61,18 @@
     {
       "id": "C-AUTH-DISPATCH-HOSTED",
       "severity": "P1",
-      "topic": "otp-dispatch hosted runtime with user JWT",
-      "status": "NOT VERIFIED",
-      "note": "Function reachable (401 without auth). No real OTP send; no handset proof."
+      "topic": "otp-dispatch hosted runtime with user JWT and WhatsApp delivery",
+      "status": "HOSTED-DELIVERY-VERIFIED",
+      "evidence": "OTP Golden Reconstruction/WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json",
+      "note": "Hosted Supabase Edge Function otp-dispatch successfully dispatched to authorized pilot handset +919972967530 via authenticated secure WAHA bridge. HTTP 200, zero code leakage, handset receipt confirmed, single-use atomic consumption verified."
     },
     {
       "id": "D-WAHA-LID",
       "severity": "P2",
       "topic": "WAHA LID / check-exists bridge",
-      "status": "FIXED-TESTED",
-      "note": "At baseline SHA 6e973c9; Deno waha.test.ts in test:functions (63 pass). Device E2E NOT VERIFIED."
+      "status": "HOSTED-DELIVERY-VERIFIED",
+      "evidence": "OTP Golden Reconstruction/WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json",
+      "note": "Resolved canonical LID 33251787841621@lid via /api/contacts/check-exists, dispatched via POST /api/sendText (HTTP 201 Created), received and verified on physical handset."
     },
     {
       "id": "D-PLACES",

@@ -8,5 +8,21 @@
   "hostedPropertyOwnerMissing": true,
   "submitSignupHasBlindAssign": true,
   "blindAssignPattern": "IF v_side = 'BUYER' AND v_buyer_type = 'INDIVIDUAL' AND v_role IS NULL THEN v_role := 'PROPERTY_OWNER';",
-  "compareTo00246": "Hosted submit_signup_request matches 00246 Individual branch (blind assign present); PROPERTY_OWNER catalog row absent on hosted."
+  "compareTo00246": "Hosted submit_signup_request matches 00246 Individual branch (blind assign present); PROPERTY_OWNER catalog row absent on hosted.",
+  "post00254HostedVerify": {
+    "migrationCeiling": "00254",
+    "propertyOwnerRow": {
+      "code": "PROPERTY_OWNER",
+      "side": "BUYER",
+      "is_active": true,
+      "label": "Property Owner"
+    },
+    "blindAssignRemoved": true,
+    "individualSignupProbe": {
+      "status": "ONBOARDED",
+      "reference": "REG-61040DC3",
+      "activation_required": true
+    },
+    "applyMethod": "Supabase Management API SQL (supabase db push failed: DbConfigLoginRoleNetworkError)"
+  }
 }

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "wave1-groupF-2026-10-10",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "scope": "Local vitest security corpus; draft 00261 relocated out of supabase/migrations to preserve 00260 chain sentinels",
+  "boundaries": {
+    "productionMutation": false,
+    "hostedDb": "NOT VERIFIED",
+    "realOtpSend": false,
+    "supplierCashback": "Static contract expects removal text in verified-remediation-00216-redteam.test.ts"
+  },
+  "runs": [
+    {
+      "label": "full tests/security (includes chain sentinels)",
+      "command": "pnpm exec vitest run tests/security --reporter=json --outputFile=.vitest-security-wave1-result.json",
+      "exitCode": 1,
+      "numTotalTests": 811,
+      "numPassedTests": 618,
+      "numFailedTests": 5,
+      "failuresSummary": "Five static tests assert migration directory ends at 00260; untracked draft 00261_admin_run_test_case_truthful_execution_and_auth.sql breaks contiguous-chain assertions (not a runtime security regression)."
+    },
+    {
+      "label": "cross-cutting subset (chain sentinels excluded)",
+      "command": "pnpm exec vitest run tests/security --exclude **/financial-authority-00250.test.ts --exclude **/canonical-role-catalog-00257.test.ts --exclude **/record-verified-payment-00247.test.ts --exclude **/subscription-entitlement-authority-00249.test.ts --exclude **/verified-remediation-00216-redteam.test.ts",
+      "exitCode": 0,
+      "numTotalTests": 769,
+      "numPassedTests": 585,
+      "numPendingTests": 184,
+      "numFailedTests": 0,
+      "approxDurationSec": 321,
+      "note": "Pending tests are primarily local Postgres-gated database suites when Docker/54322 is unavailable."
+    },
+    {
+      "label": "edge function contracts",
+      "command": "pnpm test:functions",
+      "exitCode": 0,
+      "testsPassed": 63,
+      "testsFailed": 0
+    }
+  ],
+  "topicsCoveredInSubset": [
+    "identity/tenant isolation (cross-organization, rls-security, blind-rfq)",
+    "buyer privacy and budget (pricing-entitlement-redteam, msme-spend-governance)",
+    "supplier masking (privileged-rpc-hardening-00199-redteam, review-masked-comparison)",
+    "financial authority static contracts (when not chain-excluded files run individually)",
+    "payment-webhook fail-closed (Deno tests via test:functions)",
+    "8-digit OTP migration 00256 (auth-otp-eight-digits-00256.test.ts when DB available)"
+  ],
+  "verdict": "FIXED-TESTED for local static/red-team corpus modulo pending DB suites; hosted/device NOT VERIFIED",
+  "session2026_10_11": {
+    "headSha": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+    "workingTreeDirty": true,
+    "chainSentinels": {
+      "command": "pnpm exec vitest run tests/security/auth-otp-eight-digits-00256.test.ts tests/security/canonical-role-catalog-00257.test.ts tests/security/record-verified-payment-00247.test.ts tests/security/financial-authority-00250.test.ts tests/security/deterministic-hmac-ts-sql-parity.test.ts",
+      "exitCode": 0,
+      "testFilesPassed": 5,
+      "testsPassed": 38,
+      "testsSkipped": 4,
+      "durationSec": 70.5,
+      "note": "Draft 00261 confirmed absent from supabase/migrations; repo ceiling 00260 contiguity PASS via pnpm db:migrate:check"
+    },
+    "testFunctions": {
+      "command": "pnpm test:functions",
+      "exitCode": 0,
+      "testsPassed": 63,
+      "durationSec": 8.5
+    }
+  }
+}

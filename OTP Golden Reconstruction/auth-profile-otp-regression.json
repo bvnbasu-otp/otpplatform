@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "wave1-groupC-2026-10-10",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "canonicalIdentityKey": {
+    "primary": "auth.users.id linked via profiles.auth_user_id",
+    "legacyFallbacks": [
+      "profiles.id equals auth.users.id (pre-link rows)",
+      "profiles.email equals auth.users.email when auth_user_id row missing"
+    ],
+    "clientImplementation": "apps/web/src/features/auth/user-role.ts fetchCurrentProfile",
+    "serverOtpDispatch": "supabase/functions/otp-dispatch/index.ts resolveProfileIdForAuthUser (Wave 1 aligned with client)"
+  },
+  "eightDigitOtpSemantics": {
+    "goTrueEmailOtp": "GOTRUE_MAILER_OTP_LENGTH = 8 (packages/domain/src/auth/otp-policy.ts)",
+    "whatsappSmsRpcCodes": "Migration 00256_standardize_auth_otp_eight_digits.sql validation copy and generators",
+    "clientMaxLength": "AUTH_OTP_CODE_MAX_LENGTH = 8",
+    "hostedProof": "NOT VERIFIED"
+  },
+  "rateLimitsAndMockBoundaries": {
+    "otpDispatch": "Fails closed on provider errors; invalidates row on send failure; no plaintext code to browser unless OTP_DEBUG_REVEAL_CODE server flag",
+    "rpcGrants": "request_profile_verification_otp / request_whatsapp_password_reset / issue_profile_credential_otp service_role-only per 00208 design",
+    "liveSendProhibitedThisSession": true
+  },
+  "findings": [
+    {
+      "id": "C-AUTH-001",
+      "title": "Profile record not found despite session",
+      "rootCause": "otp-dispatch previously resolved profiles only by auth_user_id while the web client also falls back to id=auth id and email match.",
+      "status": "FIXED-SOURCE",
+      "tests": [
+        "apps/web/src/features/auth/auth-profile-linkage.test.ts (static parity)",
+        "apps/web/src/features/profile/credential-otp-integrity.test.ts",
+        "apps/web/src/features/auth/password-reset-delivery.test.ts",
+        "packages/domain/src/auth/otp-policy.test.ts"
+      ],
+      "hostedVerification": "NOT VERIFIED"
+    },
+    {
+      "id": "C-AUTH-002",
+      "title": "otp-dispatch edge function deploy/runtime",
+      "status": "FIXED-HOSTED",
+      "note": "2026-10-11: POST without Authorization → 401 UNAUTHORIZED_NO_AUTH_HEADER (function deployed). Authenticated profile OTP flows and messaging delivery NOT VERIFIED; no handset proof."
+    }
+  ],
+  "hostedProbes2026_10_11": {
+    "otpDispatchPostNoAuth": { "httpStatus": 401, "bodyCode": "UNAUTHORIZED_NO_AUTH_HEADER" },
+    "paymentWebhookPostNoAuth": { "httpStatus": 401 },
+    "realOtpSend": false
+  },
+  "testRunsThisSession": [
+    {
+      "command": "pnpm exec vitest run apps/web/src/features/admin/admin-test-suite-runner.test.ts apps/web/src/features/admin/admin.test.ts apps/web/src/features/auth/auth.test.ts apps/web/src/features/auth/auth-profile-linkage.test.ts packages/domain/src/auth/otp-policy.test.ts apps/web/src/features/profile/credential-otp-integrity.test.ts apps/web/src/features/auth/password-reset-delivery.test.ts --config apps/web/vitest.config.ts",
+      "exitCode": 0,
+      "testsPassed": 56,
+      "approxDurationSec": 21,
+      "exitCode": 0
+    },
+    {
+      "command": "pnpm test:functions",
+      "exitCode": 0,
+      "testsPassed": 63,
+      "testsFailed": 0
+    },
+    {
+      "command": "pnpm exec vitest run apps/web/src/features/auth/auth-profile-linkage.test.ts --config apps/web/vitest.config.ts",
+      "observedAt": "2026-10-11",
+      "exitCode": 0,
+      "testsPassed": 3
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "schemaVersion": "wave1-wave0-2026-10-10",
+  "observedAt": "2026-10-10T19:05:00+05:30",
+  "repositoryPath": "G:\\My Drive\\otp",
+  "githubRemote": "bvnbasu-otp/otpplatform",
+  "branch": "main",
+  "headSha": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "headSubject": "fix(messaging): resolve WAHA LID via check-exists for ngrok pilot bridge",
+  "originMainSha": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "baselineReconciliation": {
+    "requestedBaselineSha": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+    "headMatchesBaseline": true,
+    "commitsAheadOfBaseline": 0,
+    "note": "HEAD equals origin/main equals Wave 0 baseline SHA."
+  },
+  "workingTree": {
+    "staged": [],
+    "modified": [
+      "OTP Golden Reconstruction/INDIVIDUAL_SIGNUP_PHASE1_EVIDENCE.json",
+      "OTP Golden Reconstruction/_hosted_readonly_evidence.json",
+      "apps/web/src/features/admin/admin.test.ts",
+      "apps/web/src/features/admin/components/AdminTestSuiteRunner.tsx",
+      "apps/web/src/features/admin/admin-test-suite-runner.test.ts",
+      "supabase/functions/otp-dispatch/index.ts"
+    ],
+    "untracked": [
+      ".github/workflows/ci-cd.yml.before-safe-repair",
+      ".github/workflows/ci-cd.yml.pre-migration-step.bak",
+      ".vitest-hmac-sql-parity-evidence.txt",
+      ".vitest-security-result.json",
+      ".vitest-security-wave1-result.json",
+      ".vitest-security-crosscut-result.json",
+      "OTP Golden Reconstruction/MIGRATION_00257_SURGICAL_REMEDIATION_2026-10-09.json",
+      "OTP Golden Reconstruction/WAHA_E2E_RCA_CERTIFICATION_2026-10-08.json",
+      "OTP Golden Reconstruction/test-center-parity.json",
+      "OTP Golden Reconstruction/WAVE1_WAVE0_GIT_EVIDENCE.json",
+      "OTP Golden Reconstruction/WAVE1_CONSOLIDATED_FINDINGS_REGISTER.json",
+      "OTP Golden Reconstruction/auth-profile-otp-regression.json",
+      "OTP Golden Reconstruction/cross-cutting-security-regression.json",
+      "apps/web/src/features/admin/lib/admin-test-suite-runner.ts",
+      "apps/web/src/features/auth/auth-profile-linkage.test.ts",
+      "supabase/functions/deno.lock",
+      "supabase/functions/ondc-on-search/deno.lock",
+      "OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql"
+    ],
+    "preservedArtifactsNote": "CI workflow backups, deno.lock files, and vitest JSON outputs intentionally left untracked per Wave 0 instructions."
+  },
+  "priorFullWebSuiteEvidence": {
+    "command": "pnpm test:web (vitest run --config apps/web/vitest.config.ts; file args ignored — full suite)",
+    "exitCode": 0,
+    "testFilesPassed": 213,
+    "testsPassed": 1811,
+    "durationSeconds": 380.35,
+    "elapsedWallSeconds": 875.7,
+    "startedAtUtc": "2026-10-10T18:53:17.583Z",
+    "endedAtUtc": "2026-10-10T19:07:53.329Z",
+    "associatedCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+    "associationMethod": "Working tree at HEAD matched baseline SHA when suite completed; suite included uncommitted local changes present at run time.",
+    "locatorInRepo": "Cursor terminal capture task 281939 (not committed to repo as artifact).",
+    "rerunThisSession": false,
+    "rationale": "Post-relocation follow-up used focused chain tests only."
+  },
+  "pilotSession2026_10_11": {
+    "observedAt": "2026-10-11T06:40:00+05:30",
+    "headSha": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+    "workingTreeDirty": true,
+    "migrationChain": {
+      "activeCeiling": "00260",
+      "draft00261": "OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql",
+      "draftOutsideSupabaseMigrations": true
+    },
+    "focusedTestRuns": [
+      {
+        "label": "chain sentinels (5 files)",
+        "command": "pnpm exec vitest run tests/security/auth-otp-eight-digits-00256.test.ts tests/security/canonical-role-catalog-00257.test.ts tests/security/record-verified-payment-00247.test.ts tests/security/financial-authority-00250.test.ts tests/security/deterministic-hmac-ts-sql-parity.test.ts",
+        "exitCode": 0,
+        "testFilesPassed": 5,
+        "testsPassed": 38,
+        "testsSkipped": 4,
+        "durationSec": 70.5
+      },
+      {
+        "label": "admin test center runner",
+        "command": "pnpm exec vitest run apps/web/src/features/admin/admin-test-suite-runner.test.ts --config apps/web/vitest.config.ts",
+        "exitCode": 0,
+        "testsPassed": 5
+      },
+      {
+        "label": "wave2 supplier trust subset",
+        "command": "pnpm exec vitest run tests/security/canonical-role-catalog-00257.test.ts tests/security/verified-remediation-00216-redteam.test.ts tests/security/privileged-rpc-hardening-00199-redteam.test.ts",
+        "exitCode": 0,
+        "testFiles": 3,
+        "testsPassed": 81,
+        "testsSkipped": 4,
+        "durationSec": 31.4
+      },
+      {
+        "label": "edge function contracts",
+        "command": "pnpm test:functions",
+        "exitCode": 0,
+        "testsPassed": 63,
+        "durationSec": 8.5
+      }
+    ],
+    "evidenceCrossRefs": [
+      "OTP Golden Reconstruction/cross-cutting-security-regression.json (session2026_10_11)",
+      "OTP Golden Reconstruction/wave2-supplier-trust-evidence.json (testRuns)",
+      "OTP Golden Reconstruction/_hosted_readonly_evidence.json (edgeProbes2026_10_11)"
+    ],
+    "phaseA00261Extension": {
+      "sessionId": "18b8b7bc-e9d4-4ccb-acaa-aa5ea69632ac",
+      "observedAt": "2026-10-11T06:57:00+05:30",
+      "draft00261Sha256": "0228A8F0BC283621B775C2B05827BC1042F3DC25C5E7C736E36AB5C12D4CEBA0",
+      "localDockerSmoke": "BLOCKED — Docker Desktop daemon not running",
+      "hostedPostgresCeiling": "BLOCKED — getaddrinfo ENOTFOUND db.<ref>.supabase.co",
+      "artifactsAdded": [
+        "OTP Golden Reconstruction/PHASE_A_00261_LOCAL_SMOKE_EVIDENCE.json",
+        "OTP Golden Reconstruction/PHASE_A_MESSAGING_ACCEPTANCE_PLAN.json",
+        "OTP Golden Reconstruction/PHASE_A_EVIDENCE_INDEX.json",
+        "OTP Golden Reconstruction/AMBER_TO_GREEN_APPROVAL_PACKET_DRAFT.json"
+      ],
+      "focusedTestRuns": [
+        {
+          "label": "admin test center + admin.test (Phase A rerun)",
+          "command": "pnpm exec vitest run apps/web/src/features/admin/admin-test-suite-runner.test.ts apps/web/src/features/admin/admin.test.ts --config apps/web/vitest.config.ts",
+          "exitCode": 0,
+          "testsPassed": 23,
+          "durationSec": 4.75
+        }
+      ]
+    }
+  }
+}

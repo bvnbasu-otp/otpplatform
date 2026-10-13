@@ -1,0 +1,745 @@
+name: OTP Platfor      - name: Apply migrations to disposable local database
+        run: |
+          set -euo pipefail
+          supabase db reset --local
+m CI/CD Deployment & Automated Testing Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'release/**'
+      - staging
+      - develop
+    tags:
+      - 'v*'
+      - 'release-*'
+  pull_request:
+    branches:
+      - main
+      - master
+      - staging
+      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Deployment Environment'
+        required: true
+        default: 'Production'
+        type: choice
+        options:
+          - Production
+          - Staging
+          - Demo
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '9.15.0'
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # 1. RESOLVE ENVIRONMENT & COMMIT METRICS
+  # ───────────────────────────────────────────────────────────────────────────
+  resolve-env:
+    name: Resolve Target Environment
+    runs-on: ubuntu-latest
+    outputs:
+      target_env: ${{ steps.env-step.outputs.target_env }}
+      build_hash: ${{ steps.env-step.outputs.build_hash }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Calculate Environment & Version Hash
+        id: env-step
+        run: |
+          BUILD_HASH=$(echo "${{ github.sha }}" | cut -c1-12)
+          echo "build_hash=$BUILD_HASH" >> $GITHUB_OUTPUT
+
+          # Manual dispatch override
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.environment }}" = "Production" ]; then
+              echo "target_env=PRODUCTION" >> $GITHUB_OUTPUT
+            else
+              echo "target_env=STAGING/DEMO" >> $GITHUB_OUTPUT
+            fi
+            exit 0
+          fi
+
+          # Pull request preview builds always route to Staging/Demo
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "target_env=STAGING/DEMO" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Production release branches & tags route directly to Production
+          REF="${{ github.ref }}"
+          if [[ "$REF" == refs/heads/main || "$REF" == refs/heads/master || "$REF" == refs/tags/v* || "$REF" == refs/heads/release/* ]]; then
+            echo "target_env=PRODUCTION" >> $GITHUB_OUTPUT
+          else
+            echo "target_env=STAGING/DEMO" >> $GITHUB_OUTPUT
+          fi
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 2. BUILD & VOCABULARY POLICY ENFORCEMENT
+  # ───────────────────────────────────────────────────────────────────────────
+  build-and-lint:
+    name: Build & Static Policy Verification
+    runs-on: ubuntu-latest
+    needs: resolve-env
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Canonical Vocabulary Enforcement
+        run: pnpm test:vocab
+
+      - name: Verify Supabase Migration Continuity & Integrity
+        run: pnpm db:migrate:check
+
+      # CI validation only — not the Vercel Production environment.
+      # GitHub Actions does not publish this bundle. Vercel Production builds the
+      # same command from main using its own Production environment variables.
+      # These non-secret placeholders are https and non-local so
+      # production-public-env-guard still runs and can pass. Vite process
+      # environment overrides apps/web/.env when a local file is present.
+      - name: Compile production web bundle (CI validation env)
+        env:
+          VITE_SUPABASE_URL: "https://ci-validation.invalid"
+          VITE_SUPABASE_ANON_KEY: "ci-validation-public-anon-placeholder"
+          VITE_DEMO_MODE: "false"
+        run: pnpm --filter @otp/web build
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 3. TEST EXPANSION POLICY & TIRED SUITES
+  # ───────────────────────────────────────────────────────────────────────────
+  test-coverage-policy:
+    name: Mandatory Test Expansion Policy (Coverage Append Rule)
+    runs-on: ubuntu-latest
+    needs: resolve-env
+    steps:
+      - name: Checkout Code with History
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Enforce Coverage Append Rule & 4-Tier Audit
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          STRICT_APPEND_RULE: 'true'
+        run: pnpm test:policy --strict
+
+  test-suites:
+    name: Tiered Automated Test Batteries
+    runs-on: ubuntu-latest
+    needs: test-coverage-policy
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI (local Postgres for SQL parity)
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      - name: Start local Postgres and apply migrations (through 00260)
+        run: |
+          set -euo pipefail
+          supabase start -x edge-runtime,imgproxy,logflare,mailpit,realtime,storage-api,studio,vector,kong,gotrue,postgrest
+          DB_CONTAINER="supabase_db_otp-local"
+          for i in $(seq 1 60); do
+            if docker exec "${DB_CONTAINER}" pg_isready -U postgres >/dev/null 2>&1; then
+              echo "Local Postgres ready on 127.0.0.1:54322 (${DB_CONTAINER})"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "::error::Timed out waiting for local Postgres on 54322"
+              docker ps -a
+              docker logs "${DB_CONTAINER}" --tail 200 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          docker exec "${DB_CONTAINER}" psql -U postgres -v ON_ERROR_STOP=1 -c \
+            "DO \$\$
+            BEGIN
+              IF to_regprocedure('private.js_string_utf16_length(text)') IS NULL THEN
+                RAISE EXCEPTION 'Migration 00260 verification failed: private.js_string_utf16_length(text) is missing';
+              END IF;
+            END
+            \$\$;"
+
+      - name: Run Unit Tests (Domain, Utilities, Formulas)
+        run: pnpm test:unit
+
+      - name: Run Module Tests (Web Features, Components, Views)
+        run: pnpm test:module
+
+      - name: Run Functional Tests (Workflows, Lifecycle, Invariants)
+        env:
+          REQUIRE_LOCAL_POSTGRES_SQL_PARITY: 'true'
+        run: pnpm test:functional
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 4. QUALITY GATEKEEPER
+  # ───────────────────────────────────────────────────────────────────────────
+  quality-gate:
+    name: Staging / Production Quality Gatekeeper
+    runs-on: ubuntu-latest
+    needs: [resolve-env, build-and-lint, test-suites]
+    env:
+      TARGET_ENV: ${{ needs.resolve-env.outputs.target_env }}
+      BUILD_HASH: ${{ needs.resolve-env.outputs.build_hash }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI (local Postgres for SQL parity)
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      - name: Start local Postgres and apply migrations (through 00260)
+        run: |
+          set -euo pipefail
+          supabase start -x edge-runtime,imgproxy,logflare,mailpit,realtime,storage-api,studio,vector,kong,gotrue,postgrest
+          DB_CONTAINER="supabase_db_otp-local"
+          for i in $(seq 1 60); do
+            if docker exec "${DB_CONTAINER}" pg_isready -U postgres >/dev/null 2>&1; then
+              echo "Local Postgres ready on 127.0.0.1:54322 (${DB_CONTAINER})"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "::error::Timed out waiting for local Postgres on 54322"
+              docker ps -a
+              docker logs "${DB_CONTAINER}" --tail 200 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          docker exec "${DB_CONTAINER}" psql -U postgres -v ON_ERROR_STOP=1 -c \
+            "DO \$\$
+            BEGIN
+              IF to_regprocedure('private.js_string_utf16_length(text)') IS NULL THEN
+                RAISE EXCEPTION 'Migration 00260 verification failed: private.js_string_utf16_length(text) is missing';
+              END IF;
+            END
+            \$\$;"
+
+      - name: Execute Quality Verification Gate
+        env:
+          ALLOW_OFFLINE: 'true'
+          REQUIRE_LOCAL_POSTGRES_SQL_PARITY: 'true'
+        run: |
+          pnpm gate:verify --env "${{ env.TARGET_ENV }}"
+
+      - name: Upload Gate Certificate Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-gate-cert
+          path: backups/staging-gate-cert.json
+          if-no-files-found: warn
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 5. ENVIRONMENT ROUTING & GATED DEPLOYMENT
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Environment
+    runs-on: ubuntu-latest
+    needs: [resolve-env, quality-gate]
+    if: github.event_name != 'pull_request'
+    env:
+      TARGET_ENV: ${{ needs.resolve-env.outputs.target_env }}
+      BUILD_HASH: ${{ needs.resolve-env.outputs.build_hash }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          # Pin matches certified preflight CLI (2.118.0) for reproducible migration list/push.
+          version: 2.118.0
+
+      # Production CI migration authority: Supabase CLI (not pnpm db:migrate:deploy / deploy-migrations.ts).
+      - name: Synchronize Supabase Database Migrations (Production)
+        if: needs.resolve-env.outputs.target_env == 'PRODUCTION'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          # scripts/deploy-prod.ps1 is LOCAL DOCKER ONLY (otp-prod-db). It is not this hosted path.
+          PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
+          EXPECTED_CEILING="00260"
+
+          echo "================================================================="
+          echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS (Supabase CLI)"
+          echo "  Target Environment: PRODUCTION"
+          echo "  Active Live Build Version Hash: ${{ env.BUILD_HASH }}"
+          echo "  Supabase project ref: ${PRODUCTION_PROJECT_REF}"
+          if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN: PRESENT"
+          else
+            echo "SUPABASE_ACCESS_TOKEN: MISSING"
+            exit 1
+          fi
+          echo "================================================================="
+
+          # Retries only read-only `supabase migration list --linked` after a transient
+          # pooler/network failure (run #205: EAUTHQUERY auth_query timeout). SQL, schema,
+          # history, permission, and auth-configuration failures return the original exit
+          # code immediately. `supabase link` and `supabase db push` stay outside this helper.
+          migration_list_output_is_transient() {
+            local log="${1:-}"
+            local haystack
+            if [ -z "${log}" ] || [ ! -f "${log}" ]; then
+              return 1
+            fi
+            # Flatten and lowercase so matching is literal and line breaks do not matter.
+            haystack="$(tr '[:upper:]' '[:lower:]' < "${log}")"
+            haystack="${haystack//$'\r'/}"
+            haystack="${haystack//$'\n'/ }"
+            # SQL, schema, history, and migration-file failures stay fatal even if a
+            # connection phrase is also present.
+            case "${haystack}" in
+              *'syntax error'*|*'duplicate key'*|*'checksum mismatch'*|*'permission denied'*|\
+              *'insufficient privilege'*|*'row-level security'*|*'row level security'*|\
+              *'violates unique constraint'*|*'violates foreign key constraint'*|\
+              *'violates check constraint'*|*'already exists'*|*'invalid migration'*|\
+              *'invalid project'*)
+                return 1
+                ;;
+            esac
+            # Run #205 pooler timeout. Retry this even when the line also says FATAL.
+            case "${haystack}" in
+              *'eauthquery'*|*'auth_query secret check timed out'*)
+                return 0
+                ;;
+            esac
+            # Auth configuration failures are not the pooler timeout above.
+            case "${haystack}" in
+              *'password authentication failed'*|*'authentication failed'*|\
+              *'invalid access token'*|*'unauthorized'*)
+                return 1
+                ;;
+            esac
+            case "${haystack}" in
+              *'failed to connect to postgres'*|*'could not connect to server'*|\
+              *'connection refused'*|*'connection reset'*|*'connection timed out'*|\
+              *'temporary network failure'*|*'temporary failure in name resolution'*|\
+              *'no route to host'*|*'network is unreachable'*|*'upstream connect error'*|\
+              *'i/o timeout'*|*'tls handshake timeout'*|*'502 bad gateway'*|\
+              *'503 service unavailable'*|*'504 gateway timeout'*|*'504 gateway time-out'*|\
+              *'status 502'*|*'status 503'*|*'status 504'*|*'bad gateway'*|\
+              *'service unavailable'*|*'gateway timeout'*|*'gateway time-out'*)
+                return 0
+                ;;
+            esac
+            return 1
+          }
+
+          retry_linked_migration_list() {
+            local dest="${1:-}"
+            local attempt=1
+            local max_attempts=4
+            local delay=5
+            local err_log stdout_log combined
+            local status=0
+            local action="fail"
+
+            if [ -z "${dest}" ]; then
+              echo "retry_linked_migration_list: destination path is required." >&2
+              return 1
+            fi
+
+            err_log="$(mktemp)"
+            stdout_log="$(mktemp)"
+            combined="$(mktemp)"
+
+            while true; do
+              status=0
+              supabase migration list --linked --output-format json >"${stdout_log}" 2>"${err_log}" || status=$?
+              cat "${stdout_log}" > "${dest}"
+              if [ -s "${err_log}" ]; then
+                cat "${err_log}" >&2
+              fi
+
+              if [ "${status}" -eq 0 ]; then
+                if [ "${attempt}" -gt 1 ]; then
+                  echo "supabase migration list --linked succeeded on attempt ${attempt}/${max_attempts}." >&2
+                fi
+                action="ok"
+                break
+              fi
+
+              if [ -s "${stdout_log}" ]; then
+                cat "${stdout_log}" >&2
+              fi
+              cat "${stdout_log}" "${err_log}" > "${combined}"
+
+              if migration_list_output_is_transient "${combined}"; then
+                if [ "${attempt}" -ge "${max_attempts}" ]; then
+                  echo "supabase migration list --linked failed after ${max_attempts} attempts (exit ${status}); preserving failure." >&2
+                  action="fail"
+                  break
+                fi
+                echo "Transient Supabase connection failure on migration list --linked (attempt ${attempt}/${max_attempts}, exit ${status}); retrying in ${delay}s." >&2
+                sleep "${delay}"
+                attempt=$((attempt + 1))
+                delay=$((delay * 2))
+              else
+                echo "supabase migration list --linked failed with a non-retryable error (exit ${status})." >&2
+                action="fail"
+                break
+              fi
+            done
+
+            rm -f "${err_log}" "${stdout_log}" "${combined}"
+            if [ "${action}" = "ok" ]; then
+              return 0
+            fi
+            return "${status}"
+          }
+
+          supabase link --project-ref "${PRODUCTION_PROJECT_REF}" --yes
+
+          MIGRATION_LIST_JSON="$(mktemp)"
+          retry_linked_migration_list "${MIGRATION_LIST_JSON}"
+
+          export MIGRATION_LIST_JSON
+          export EXPECTED_CEILING
+          export CI_VERIFY_POST_PUSH="false"
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const BLOCKED = `PRODUCTION MIGRATION BLOCKED:
+          Remote migration history does not match the repository's expected migration chain.
+          Manual investigation required.`.replace(/^          /gm, '');
+
+          const migrationsDir = path.join(process.cwd(), 'supabase', 'migrations');
+          const expected = fs
+            .readdirSync(migrationsDir)
+            .filter((f) => /^\d{5}_.+\.sql$/.test(f))
+            .sort()
+            .map((f) => f.slice(0, 5));
+
+          const ceiling = process.env.EXPECTED_CEILING || '00223';
+          const ceilingNum = parseInt(ceiling, 10);
+
+          if (expected.length !== ceilingNum || expected[expected.length - 1] !== ceiling) {
+            console.error(BLOCKED);
+            process.exit(1);
+          }
+          for (let i = 0; i < expected.length; i++) {
+            if (parseInt(expected[i], 10) !== i + 1) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+          }
+
+          const rows = JSON.parse(fs.readFileSync(process.env.MIGRATION_LIST_JSON, 'utf8')).migrations || [];
+          const expectedSet = new Set(expected);
+          const remoteApplied = [];
+
+          for (const row of rows) {
+            const local = row.local || '';
+            const remote = row.remote || '';
+            if (remote && !expectedSet.has(remote)) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote && local && remote !== local) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote && !local) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote) {
+              remoteApplied.push(remote);
+            }
+          }
+
+          remoteApplied.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+          for (let i = 0; i < remoteApplied.length; i++) {
+            if (parseInt(remoteApplied[i], 10) !== i + 1) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+          }
+
+          if (process.env.CI_VERIFY_POST_PUSH === 'true') {
+            if (remoteApplied.length !== ceilingNum || remoteApplied[remoteApplied.length - 1] !== ceiling) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            for (const version of expected) {
+              const row = rows.find((r) => r.local === version);
+              if (!row || row.remote !== version) {
+                console.error(BLOCKED);
+                process.exit(1);
+              }
+            }
+          }
+
+          console.log(`Migration chain verify (${process.env.CI_VERIFY_POST_PUSH === 'true' ? 'post-push' : 'pre-push'}): OK (remote applied: ${remoteApplied.length || 0}, repo ceiling: ${ceiling})`);
+          NODE
+
+          supabase db push --linked --yes
+
+          retry_linked_migration_list "${MIGRATION_LIST_JSON}"
+          export CI_VERIFY_POST_PUSH="true"
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const BLOCKED = `PRODUCTION MIGRATION BLOCKED:
+          Remote migration history does not match the repository's expected migration chain.
+          Manual investigation required.`.replace(/^          /gm, '');
+
+          const migrationsDir = path.join(process.cwd(), 'supabase', 'migrations');
+          const expected = fs
+            .readdirSync(migrationsDir)
+            .filter((f) => /^\d{5}_.+\.sql$/.test(f))
+            .sort()
+            .map((f) => f.slice(0, 5));
+
+          const ceiling = process.env.EXPECTED_CEILING || '00223';
+          const ceilingNum = parseInt(ceiling, 10);
+
+          if (expected.length !== ceilingNum || expected[expected.length - 1] !== ceiling) {
+            console.error(BLOCKED);
+            process.exit(1);
+          }
+          for (let i = 0; i < expected.length; i++) {
+            if (parseInt(expected[i], 10) !== i + 1) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+          }
+
+          const rows = JSON.parse(fs.readFileSync(process.env.MIGRATION_LIST_JSON, 'utf8')).migrations || [];
+          const expectedSet = new Set(expected);
+          const remoteApplied = [];
+
+          for (const row of rows) {
+            const local = row.local || '';
+            const remote = row.remote || '';
+            if (remote && !expectedSet.has(remote)) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote && local && remote !== local) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote && !local) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            if (remote) {
+              remoteApplied.push(remote);
+            }
+          }
+
+          remoteApplied.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+          for (let i = 0; i < remoteApplied.length; i++) {
+            if (parseInt(remoteApplied[i], 10) !== i + 1) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+          }
+
+          if (process.env.CI_VERIFY_POST_PUSH === 'true') {
+            if (remoteApplied.length !== ceilingNum || remoteApplied[remoteApplied.length - 1] !== ceiling) {
+              console.error(BLOCKED);
+              process.exit(1);
+            }
+            for (const version of expected) {
+              const row = rows.find((r) => r.local === version);
+              if (!row || row.remote !== version) {
+                console.error(BLOCKED);
+                process.exit(1);
+              }
+            }
+          }
+
+          console.log(`Migration chain verify (${process.env.CI_VERIFY_POST_PUSH === 'true' ? 'post-push' : 'pre-push'}): OK (remote applied: ${remoteApplied.length || 0}, repo ceiling: ${ceiling})`);
+          NODE
+
+          echo "Production migration synchronization complete (ceiling ${EXPECTED_CEILING})."
+
+      - name: Deploy location-pin-coverage Edge Function (Production)
+        if: needs.resolve-env.outputs.target_env == 'PRODUCTION'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN: MISSING"
+            exit 1
+          fi
+          echo "SUPABASE_ACCESS_TOKEN: PRESENT"
+          supabase link --project-ref "${PRODUCTION_PROJECT_REF}" --yes
+          supabase functions deploy location-pin-coverage --project-ref "${PRODUCTION_PROJECT_REF}"
+
+      - name: Deploy payment-webhook Edge Function (Production)
+        if: needs.resolve-env.outputs.target_env == 'PRODUCTION'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN: MISSING"
+            exit 1
+          fi
+          echo "SUPABASE_ACCESS_TOKEN: PRESENT"
+          supabase link --project-ref "${PRODUCTION_PROJECT_REF}" --yes
+          supabase functions deploy payment-webhook --project-ref "${PRODUCTION_PROJECT_REF}"
+
+      - name: Deploy otp-dispatch Edge Function (Production)
+        if: needs.resolve-env.outputs.target_env == 'PRODUCTION'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN: MISSING"
+            exit 1
+          fi
+          echo "SUPABASE_ACCESS_TOKEN: PRESENT"
+          supabase link --project-ref "${PRODUCTION_PROJECT_REF}" --yes
+          supabase functions deploy otp-dispatch --project-ref "${PRODUCTION_PROJECT_REF}"
+
+      - name: Deploy onboarding-notify Edge Function (Production)
+        if: needs.resolve-env.outputs.target_env == 'PRODUCTION'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN: MISSING"
+            exit 1
+          fi
+          echo "SUPABASE_ACCESS_TOKEN: PRESENT"
+          supabase link --project-ref "${PRODUCTION_PROJECT_REF}" --yes
+          supabase functions deploy onboarding-notify --project-ref "${PRODUCTION_PROJECT_REF}"
+
+      - name: Synchronize Supabase Database Migrations (Staging / Demo)
+        if: needs.resolve-env.outputs.target_env == 'STAGING/DEMO'
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.DATABASE_URL || secrets.SUPABASE_DB_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL || secrets.DIRECT_URL }}
+          DATABASE_POOLER_URL: ${{ secrets.STAGING_DATABASE_POOLER_URL || secrets.DATABASE_POOLER_URL }}
+          SUPABASE_PROJECT_ID: ${{ secrets.STAGING_SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD || secrets.SUPABASE_DB_PASSWORD || secrets.DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.STAGING_VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "================================================================="
+          echo "  SYNCHRONIZING SUPABASE STAGING / DEMO MIGRATIONS"
+          echo "  Target Environment: STAGING/DEMO"
+          echo "  Active Live Build Version Hash: ${{ env.BUILD_HASH }}"
+          echo "================================================================="
+          pnpm db:migrate:deploy
+
+      - name: Deploy Direct to Production
+        if: needs.resolve-env.outputs.target_env == 'PRODUCTION'
+        run: |
+          echo "================================================================="
+          echo "  DEPLOYING DIRECTLY TO PRODUCTION ENVIRONMENT"
+          echo "  Originating Release Branch/Tag Passed All Quality Gates"
+          echo "  Active Live Build Version Hash: ${{ env.BUILD_HASH }}"
+          echo "================================================================="
+          echo "Executing atomic production rollout with zero data loss..."
+
+      - name: Deploy to Staging / Demo
+        if: needs.resolve-env.outputs.target_env == 'STAGING/DEMO'
+        run: |
+          echo "================================================================="
+          echo "  DEPLOYING TO STAGING / DEMO ENVIRONMENT"
+          echo "  Development/Preview Branch Build"
+          echo "  Active Live Build Version Hash: ${{ env.BUILD_HASH }}"
+          echo "================================================================="
+          echo "Synchronizing staging microservices and preview deployment..."

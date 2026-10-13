@@ -44,6 +44,8 @@ export interface Tier1TellOtpCardProps {
   onParse: (text: string) => Promise<ParsedRequirement>;
   onClearInput?: () => void;
   onOpenTemplates?: () => void;
+  customVertical?: string;
+  onCustomVerticalChange?: (value: string) => void;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
 }
@@ -216,6 +218,8 @@ export function Tier1TellOtpCard({
   onParse,
   onClearInput,
   onOpenTemplates,
+  customVertical,
+  onCustomVerticalChange,
   isExpanded = true,
   onToggleExpand,
 }: Tier1TellOtpCardProps) {
@@ -289,14 +293,20 @@ export function Tier1TellOtpCard({
     const stillValid = taxonomy.subcategories.some(
       (s) => s.id === subcategoryId && s.categoryId === newCatId,
     );
-    if (!stillValid) onSubcategoryChange('');
+    if (!stillValid && subcategoryId !== describeOther?.subcategoryId) {
+      onSubcategoryChange('');
+    }
   }
 
   function handleSubcategorySelect(newSubCatId: string) {
     if (newSubCatId === DESCRIBE_SUBCATEGORY_SENTINEL && describeOther) {
-      onCategoryChange(describeOther.categoryId);
+      if (!categoryId) {
+        onCategoryChange(describeOther.categoryId);
+      }
       onSubcategoryChange(describeOther.subcategoryId);
-      onModeChange(describeOther.defaultMode);
+      if (!mode) {
+        onModeChange(describeOther.defaultMode);
+      }
       return;
     }
     onSubcategoryChange(newSubCatId);
@@ -306,7 +316,7 @@ export function Tier1TellOtpCard({
     if (!categoryId || categoryId !== found.categoryId) {
       onCategoryChange(found.categoryId);
     }
-    if (!mode && found.defaultRequirementMode) {
+    if (found.defaultRequirementMode) {
       onModeChange(found.defaultRequirementMode as RequirementMode);
     }
   }
@@ -612,6 +622,25 @@ export function Tier1TellOtpCard({
               />
             )}
           </Field>
+
+          {(categorySelectValue === DESCRIBE_CATEGORY_SENTINEL ||
+            subcategorySelectValue === DESCRIBE_SUBCATEGORY_SENTINEL) && (
+            <div className="sm:col-span-2 rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-2">
+              <label htmlFor="custom-specification-input" className="block text-xs font-bold text-foreground">
+                ✍️ Custom Specification / Unlisted Item Details
+              </label>
+              <Input
+                id="custom-specification-input"
+                data-testid="custom-specification-input"
+                placeholder="Specify the exact category, work or item needed..."
+                value={customVertical ?? ''}
+                onChange={(e) => onCustomVerticalChange?.(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                💡 Nearest matching suppliers will receive these custom specifications during the request for quotation.
+              </p>
+            </div>
+          )}
 
           <Field label="Procurement Mode" error={errors.requirementMode} required className="sm:col-span-2">
             {({ id, describedBy, invalid }) => (

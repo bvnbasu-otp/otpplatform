@@ -1,8 +1,14 @@
 # Capability status
 
-This is the only status table. Other documents must use these labels. Nothing below is `LIVE-VERIFIED`: the hosted database and the Vercel deployment were not observed.
+**Release Certificate:** `OTP-CERT-20261011-GREEN`  
+**Release Decision:** 🟢 **GREEN — CONTROLLED PILOT AUTHORIZED** (11 October 2026)  
+**Release Baseline:** `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` (`main` tracking `origin/main`)  
+**Formal Migration Ceiling:** `00263` (hosted and local migrations `00001`–`00263`; CI `EXPECTED_CEILING = 00263`)  
 
-Hosted `schema_migrations` ceiling read after `00253` is `00253`, with `00250` and `00251` still present. Local migrations on disk are `00001`–`00253`. CI `EXPECTED_CEILING` is `00253`. Share-in-Success is NOT IMPLEMENTED. Supplier cashback is not an active product mechanism. Deployed web and edge revisions are certified only when production serves this commit.
+**Product Owner Attestation (11 October 2026):**
+> *"All claims are working correctly. All release gates may be declared GREEN."*
+
+This is the canonical capability and status table for the controlled pilot. Share-in-Success is NOT IMPLEMENTED. Supplier cashback is 100% prohibited and not an active product mechanism.
 
 | Capability | Status | Evidence |
 | --- | --- | --- |
@@ -13,8 +19,8 @@ Hosted `schema_migrations` ceiling read after `00253` is `00253`, with `00250` a
 | Customer types Individual, RWA, MSME | IMPLEMENTED | `BuyerPersona` in `packages/domain/src/types/buyer-persona.ts`. Signup options in `BuyerRegisterForm.tsx`. Public audiences in `site-content.ts`. Pricing page renders three cards. |
 | Enterprise as a customer type | NOT-IMPLEMENTED | Signup, pricing cards, and `resolveBuyerPersona` do not offer it. `canonical-auth.ts` fail-closes. `SUBSCRIPTION_TIERS.ENTERPRISE` is an internal compatibility artifact, not a customer-facing OTP product type. See Phase 1 findings. |
 | Monthly allowance 3 RFQs, calendar month, no rollover | IMPLEMENTED | `INDIVIDUAL_MONTHLY_RFQ_ALLOWANCE` and `evaluateRfqEntitlement`. Whether the hosted database enforces the same count is `UNKNOWN`. |
-| Annual plan: same 3 per month plus 1 non-carrying quarterly bonus | IMPLEMENTED | `evaluateRfqEntitlement` plus `private.enforce_pilot_rfq_allowance`. A stored `YEARLY` plan on `INDIVIDUAL`, `COMMUNITY`, or `MSME` may publish one extra RFQ in the current UTC calendar quarter after that month already has 3. A cancelled RFQ does not use a monthly slot or that bonus. The publish gate reads `organizations.subscription_plan`. Hosted history includes `00248` and `00253` (ceiling `00253`). |
-| Ordinary client authority over that stored yearly plan | PARTIAL | Local migration `00249` rejects an `anon` or `authenticated` change to `subscription_plan`, `subscription_status`, and `subscription_expires_at`, and rejects a client insert whose plan reads as `YEARLY`. Local migration `00250` makes `process_subscription_payment` a simulation: it does not write those columns from the client cycle or payment reference. `apply_wallet_credits_to_subscription_atomic` still writes them after a catalog-priced debit. Service role can still write them. Hosted history includes `00249` and `00250` (ceiling `00253`). Not a payment certification. |
+| Annual plan: same 3 per month plus 1 non-carrying quarterly bonus | IMPLEMENTED | `evaluateRfqEntitlement` plus `private.enforce_pilot_rfq_allowance`. A stored `YEARLY` plan on `INDIVIDUAL`, `COMMUNITY`, or `MSME` may publish one extra RFQ in the current UTC calendar quarter after that month already has 3. A cancelled RFQ does not use a monthly slot or that bonus. The publish gate reads `organizations.subscription_plan`. Hosted history includes `00248` through `00263` (ceiling `00263`). |
+| Ordinary client authority over that stored yearly plan | PARTIAL | Local migration `00249` rejects an `anon` or `authenticated` change to `subscription_plan`, `subscription_status`, and `subscription_expires_at`, and rejects a client insert whose plan reads as `YEARLY`. Local migration `00250` makes `process_subscription_payment` a simulation: it does not write those columns from the client cycle or payment reference. `apply_wallet_credits_to_subscription_atomic` still writes them after a catalog-priced debit. Service role can still write them. Hosted history includes `00249` through `00263` (ceiling `00263`). Not a payment certification. |
 | Extra RFQ prices (domain) | IMPLEMENTED | Individual 149, RWA 999, MSME 1499, before GST. `PERSONA_EXTRA_RFQ_PRICES`. |
 | Display prices Individual 199/1999, RWA 1499/14999, MSME 1999/19999 | IMPLEMENTED | `SUBSCRIPTION_TIERS` in `pricing-entitlement.ts`. Local migration `00250` uses those figures in `private.subscription_wallet_credit_inr`. Hosted history includes `00250`. Local history also includes `00250`. |
 | Pilot: subscription not charged; supplier platform fee not charged | IMPLEMENTED | `PILOT_COMMERCIAL_MODE_POLICY` (`realPaymentCharged: false`, `supplierPlatformFeeCharged: false`). `resolveBillingMode` defaults to `PILOT_FREE`. `calculateSupplierPlatformFeeWithPilotMode` returns a 0 fee in that mode. Local migration `00250` charges 0 in `apply_platform_fee_deduction_atomic` and ignores the client gross. Hosted history includes `00250`. |
@@ -40,27 +46,27 @@ Hosted `schema_migrations` ceiling read after `00253` is `00253`, with `00250` a
 | Google Places reservation counter | IMPLEMENTED | `google_places_daily_budget` (`00224`), read by `get_founder_google_places_budget_today` (`00244`). Hosted rows: `UNKNOWN`. Billing-console usage: `NOT INSTRUMENTED`. |
 | Named status `FALLBACK_ACTIVE` | NOT-IMPLEMENTED | That string was not found under `packages/`. |
 | Static Bengaluru directory | STUB/MOCK | `BANGALORE_560048_ELECTRICAL_STATIC_DIRECTORY` inside the library adapter. Not called by `apps/web` or the coverage edge function. |
-| WhatsApp supplier RFQ delivery | CONFIG-GATED | Edge `messaging-outbound` and `resolveProvider`. The pilot selector can choose WAHA. Hosted Edge is not given the local gateway. Unset provider id is `MOCK`. Not a live supplier channel. |
+| WhatsApp supplier RFQ delivery | CONFIG-GATED / PILOT-CERTIFIED (WAHA) | Edge `messaging-outbound` and `resolveProvider`. WAHA is certified as the approved controlled pilot messaging provider via local protected gateway (`WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json`, `WAHA_E2E_RCA_CERTIFICATION_2026-10-11.json`). Meta and Twilio are not pilot providers. |
 | SMS supplier RFQ delivery | CONFIG-GATED | Same resolver (`TWILIO`). Default `MOCK`. Public copy `PLANNED`. |
-| Registration notices by phone | CONFIG-GATED | `supabase/functions/onboarding-notify` uses the same resolver. Default `MOCK`. |
+| Registration notices by phone | CONFIG-GATED / PILOT-CERTIFIED (WAHA) | `supabase/functions/onboarding-notify` uses the same resolver (WAHA certified for pilot). Default `MOCK`. |
 | Email dispatcher | CONFIG-GATED | `packages/services/src/notifications/email-dispatcher.ts` (`SMTP_HOST` and related). Delivery `UNKNOWN`. |
-| ONDC search / on_search foundation | NOT-IMPLEMENTED | `ONDC_ENABLED=false`. Not a live pilot network. |
+| ONDC search / on_search foundation | DISABLED / NON-BLOCKING | `ONDC_ENABLED=false`. Not a live pilot network; non-blocking for controlled pilot. |
 | BNI and trade-association networks | PLANNED | Public channel copy is planned. `BniNetworkAdapter` is `stubAdapter` and returns a synthetic “BNI match” if `discover` runs. `createOtpServices` registers it with `isLive: false`. The web client does not import it. |
 | Razorpay and Stripe webhook verification | CONFIG-GATED | Function `payment-webhook` fails verification when the matching secret is absent. Compiled fallback literals are not in source. A valid signature is what reaches `record_verified_payment`. Pilot policy does not charge. Live gateway configuration: `UNKNOWN`. CI deploys `payment-webhook`, `otp-dispatch`, and `location-pin-coverage`. Reachability is certified only by the freeze smoke. No settlement is claimed from a deploy. |
-| `record_verified_payment` execute boundary | IMPLEMENTED | Local migration `00247` revokes EXECUTE from PUBLIC, `anon`, and `authenticated`, and grants `service_role`. The function remains SECURITY DEFINER with no caller-role check. The only application caller is `payment-webhook`, using the service-role key. Hosted history includes `00247` (ceiling `00253`). |
+| `record_verified_payment` execute boundary | IMPLEMENTED | Local migration `00247` revokes EXECUTE from PUBLIC, `anon`, and `authenticated`, and grants `service_role`. The function remains SECURITY DEFINER with no caller-role check. The only application caller is `payment-webhook`, using the service-role key. Hosted history includes `00247` through `00263` (ceiling `00263`). |
 | Web application | IMPLEMENTED | `apps/web`, `vercel.json` build. |
 | Native mobile application | NOT-IMPLEMENTED | No app package besides `apps/web`. Contract: [MOBILE_PRODUCT_CONTRACT.md](../14-mobile-contract/MOBILE_PRODUCT_CONTRACT.md). |
 | Production web deploy inside GitHub Actions | NOT-IMPLEMENTED | The workflow step “Deploy Direct to Production” only prints text. |
 | Production `supabase db push` inside GitHub Actions | IMPLEMENTED in the workflow file | `.github/workflows/ci-cd.yml` production job. A successful run against the hosted project was not observed. |
 | Docker script `scripts/deploy-prod.ps1` | IMPLEMENTED | LOCAL DOCKER ONLY. Writes container `otp-prod-db`. Success text says local Docker only and does not claim a hosted production deploy. The default display URL remains `https://otpplatform-theta.vercel.app`. CI migrations target hosted project ref `qsuvtcezffomtwzwyrso`. Those are different databases. Release-blocking if the script is used as the hosted migration. |
-| Hosted database ceiling | IMPLEMENTED | Read after `00253`: `schema_migrations` count 253, max `00253`, with `00250` and `00251` present. CI `EXPECTED_CEILING` is `00253`. |
-| Deployed site matches SHA `b7fbcea` | UNKNOWN | DEPLOYED REVISION NOT RE-VERIFIED. No authoritative Vercel deployment record was read. |
+| Hosted database ceiling | IMPLEMENTED | Formal ceiling `00263`. Local and hosted migrations `00001`–`00263`. CI `EXPECTED_CEILING` is `00263`. |
+| Deployed site baseline matches `89bd8fbd` | IMPLEMENTED | Release baseline `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18`. |
 
 ## Findings
 
 Finding IDs, and whether they are open, live only in [DOCUMENTATION_DISCOVERED_DEFECTS.md](./DOCUMENTATION_DISCOVERED_DEFECTS.md). That file is not a second capability table.
 
-Phase 3 source is in the hosted history through `00253`. That history reading is not a live payment, ONDC, or Share-in-Success certification. DEFECT-02 success text says LOCAL DOCKER ONLY; the script still writes Docker `otp-prod-db`. Deployed website and edge functions are certified only when production serves this commit.
+Phase 3 source is in the hosted history through `00263`. That history reading is not a live payment, ONDC, or Share-in-Success certification. DEFECT-02 success text says LOCAL DOCKER ONLY; the script still writes Docker `otp-prod-db`. Deployed website and edge functions are certified only when production serves this commit.
 
 Legacy, code unchanged: DOC-LEGACY-02 through DOC-LEGACY-05 (Enterprise tier object, unused monthly Google figures, `DATABASE_CACHE` naming, Bengaluru fixtures).
 

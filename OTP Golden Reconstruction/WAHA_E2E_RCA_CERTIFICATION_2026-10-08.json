@@ -1,0 +1,164 @@
+{
+  "generatedAt": "2026-10-08T17:50:00.000Z",
+  "git": {
+    "head": "0836ab99406af8aeb9a4b94789c8e3910c770a2c",
+    "originMain": "0836ab99406af8aeb9a4b94789c8e3910c770a2c",
+    "headMatchesOriginMain": true,
+    "branch": "main",
+    "workingTree": "two modified evidence JSON files; untracked this certification file"
+  },
+  "phase0": {
+    "node": "v24.18.1",
+    "docker": "29.8.0",
+    "pnpm": "NOT_ON_PATH",
+    "npm": "NOT_ON_PATH",
+    "envFilenames": [
+      "apps/web/.env.example",
+      ".env.otp.production.local"
+    ]
+  },
+  "constraints": {
+    "wahaScope": "LOCAL_ONLY",
+    "metaTwilio": false,
+    "publicWaha": false,
+    "tunnels": false
+  },
+  "phase1_dependencyMap": {
+    "ui": {
+      "passwordResetWhatsApp": "apps/web/src/features/auth/components/SignInForm.tsx → AuthProvider.requestPasswordResetWhatsApp → apps/web/src/features/auth/lib/password-reset-dispatch.ts",
+      "signupVerify": "apps/web/src/features/portal/api/signup.ts",
+      "profileCredential": "apps/web/src/features/profile/api/profile.ts"
+    },
+    "clientBridge": "apps/web/src/features/notifications/lib/edge-dispatch.ts → supabase.functions.invoke",
+    "edge": {
+      "otp-dispatch": "supabase/functions/otp-dispatch/index.ts",
+      "onboarding-notify": "supabase/functions/onboarding-notify/index.ts",
+      "messaging-outbound": "supabase/functions/messaging-outbound/index.ts"
+    },
+    "provider": "supabase/functions/_shared/messaging/providers/resolve.ts → WahaMessagingProvider (waha.ts) POST /api/sendText",
+    "legacyRemoved": "apps/web/src/features/notifications/lib/outbound-dispatch.ts — no browser /waha fetch; vite.config.ts proxies /functions to local Kong only"
+  },
+  "phase2_wahaConfig": {
+    "composeFile": "docker-compose.prod.yml",
+    "service": "whatsapp",
+    "image": "otp-waha-paired:latest",
+    "loopbackPort": "127.0.0.1:3008:3000",
+    "sessionName": "default",
+    "WHATSAPP_START_SESSION": "default",
+    "WAHA_API_KEY_in_compose": "MISSING",
+    "WAHA_API_KEY_in_operator_env": "MISSING",
+    "providerUsesApiKey": false,
+    "operatorEnv": {
+      "MESSAGING_PROVIDER": "PRESENT (WAHA)",
+      "WAHA_BASE_URL": "PRESENT (host 127.0.0.1)",
+      "WAHA_SESSION": "PRESENT (default)"
+    }
+  },
+  "phase3_localRuntime": {
+    "port3008Listening": false,
+    "Get-NetTCPConnection_3008": "no listeners",
+    "container_otp_whatsapp_gateway": "ABSENT",
+    "dockerImage_otp_waha_paired": "ABSENT",
+    "composeUpWhatsapp": "BLOCKED (POSTGRES_PASSWORD, JWT_SECRET, SMTP_PASS, REALTIME_ENC_KEY, SECRET_KEY_BASE required by docker-compose.prod.yml interpolation)",
+    "localSupabaseStack": "RUNNING (supabase_db_otp-local on 54322, kong 54321)"
+  },
+  "phase4_sessionState": "BLOCKED — gateway not running",
+  "phase5_directSendText": "BLOCKED — no listener on 127.0.0.1:3008",
+  "phase6_errorTrace": {
+    "uiMessage": "We could not send the verification code. Please try again shortly.",
+    "sourceConstant": "GENERIC_SEND_ERROR",
+    "sourceFile": "supabase/functions/otp-dispatch/index.ts",
+    "clientPassthrough": "apps/web/src/features/auth/lib/password-reset-dispatch.ts returns result.error unchanged",
+    "triggerPaths": [
+      "resolveProvider MessagingConfigError → 503 + GENERIC_SEND_ERROR",
+      "provider.id === MOCK → 503 + GENERIC_SEND_ERROR (scripts/sync-supabase-cloud.ps1 sets hosted MESSAGING_PROVIDER=mock)",
+      "provider.send receipt.status === FAILED (WAHA down, session not WORKING, unreachable host) → GENERIC_SEND_ERROR"
+    ],
+    "notThisMessage": "GENERIC_ISSUE_ERROR used for RPC issuance failures (unknown account / no phone)"
+  },
+  "phase7_executionBoundary": {
+    "classification": "ARCHITECTURAL_ENVIRONMENT_BOUNDARY",
+    "productionUi": "otpplatform-theta.vercel.app",
+    "viteSupabaseHost": "qsuvtcezffomtwzwyrso.supabase.co",
+    "dispatchExecutor": "hosted Supabase Edge otp-dispatch (not local edge_runtime; supabase/config.toml edge_runtime.enabled=false)",
+    "operatorWaha": "127.0.0.1:3008 on operator workstation",
+    "reachabilityFromHostedEdge": false,
+    "documentedInRepo": "docs/13-truth/PUBLIC_PILOT_TRUTH.md",
+    "hostedCloudScriptSetsMock": "scripts/sync-supabase-cloud.ps1 line MESSAGING_PROVIDER=mock",
+    "ciDeploysFunctionsOnly": ".github/workflows/ci-cd.yml deploys otp-dispatch/onboarding-notify; does not set WAHA secrets",
+    "conclusion": "Production password-reset WhatsApp cannot succeed against local WAHA by design; no code defect in adapter path"
+  },
+  "phase8_flowsSharedDispatcher": [
+    { "flow": "Signup phone verify", "edge": "otp-dispatch", "purpose": "SIGNUP_VERIFY" },
+    { "flow": "Password reset WhatsApp", "edge": "otp-dispatch", "purpose": "PASSWORD_RESET" },
+    { "flow": "Profile credential phone", "edge": "otp-dispatch", "purpose": "PROFILE_CREDENTIAL" },
+    { "flow": "Registration submitted/approved", "edge": "onboarding-notify", "kinds": ["SUBMITTED", "APPROVED"] },
+    { "flow": "Supplier RFQ outbound", "edge": "messaging-outbound", "provider": "resolveProvider" }
+  ],
+  "phase9_10_fixes": {
+    "codeChanges": "NONE — boundary and infra preconditions confirmed; exposing WAHA or switching to Meta/Twilio out of scope",
+    "localRecoveryPrerequisites": [
+      "Load docker-compose.prod.yml env (POSTGRES_PASSWORD, JWT_SECRET, etc.) and start whatsapp service or restore otp-waha-paired:latest image",
+      "Pair WAHA session to WORKING (QR if needed)",
+      "For true local E2E: run Edge Functions where WAHA_BASE_URL reaches the gateway (local Supabase functions serve + VITE_SUPABASE_URL to local Kong), not hosted project ref with 127.0.0.1 secrets"
+    ]
+  },
+  "phase11_tests": {
+    "deno_waha_resolve": "21 passed",
+    "tsx_test_functions": "59 passed",
+    "vitest_password_reset_delivery": "8 passed",
+    "pnpm_test_full": "NOT RUN (pnpm/npm not on PATH)",
+    "vitest_full_monorepo": "NOT RUN"
+  },
+  "phase12_liveRuntime": {
+    "phone": "9972967530",
+    "whatsappMessageDelivered": false,
+    "otpVerifyResetLogin": false,
+    "blockers": ["WAHA container absent", "hosted edge cannot reach local gateway"]
+  },
+  "phase13_failureInjection": {
+    "coveredByUnitTests": [
+      "WAHA session not WORKING",
+      "WAHA session check timeout",
+      "WAHA send 4xx/5xx/401",
+      "WAHA send timeout",
+      "invalid recipient",
+      "MOCK rejected in otp-dispatch"
+    ]
+  },
+  "phase14_15_opsEvidence": {
+    "hostedProbe": {
+      "target": "POST /functions/v1/otp-dispatch PASSWORD_RESET identifier 9972967530",
+      "httpStatus": 401,
+      "code": "UNAUTHORIZED_LEGACY_JWT",
+      "note": "Anon JWT in operator env rejected by hosted gateway; does not change boundary conclusion"
+    },
+    "runbooks": [
+      "docs/STANDALONE-OPERATIONS-RUNBOOK.md",
+      "scripts/start-platform.ps1",
+      "scripts/update-live.ps1",
+      "scripts/test-live-smoke.ts"
+    ]
+  },
+  "phase16_git": {
+    "diffCheck": "pass (no conflict markers in tracked diff)",
+    "surgicalCommit": "SKIPPED — no application code changes",
+    "push": "SKIPPED — HEAD already matches origin/main"
+  },
+  "phase17_certification": {
+    "gitBaseline": "GREEN",
+    "dependencyMap": "GREEN",
+    "wahaConfigDocumented": "GREEN",
+    "localWahaInfra": "RED",
+    "wahaSession": "BLOCKED",
+    "directSendTextProof": "BLOCKED",
+    "errorTrace": "GREEN",
+    "environmentBoundaryRCA": "GREEN",
+    "sharedDispatcherMap": "GREEN",
+    "unitTests": "GREEN",
+    "fullPnpmTest": "AMBER",
+    "liveWhatsAppE2E": "RED",
+    "productionWhatsAppReset": "RED",
+    "overallVerdict": "RED"
+  }
+}

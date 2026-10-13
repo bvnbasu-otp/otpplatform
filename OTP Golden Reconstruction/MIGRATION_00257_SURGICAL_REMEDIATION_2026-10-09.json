@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-10-09T09:50:00.000Z",
+  "workflow": "DISCOVER→BASELINE→FIX→TEST→RED-TEAM→REGRESSION→VERIFY→DOCUMENT→RELEASE_GATE",
+  "baselineGitHead": "31b5015d5ff3cff7069d31687f6ba81f6f26f024",
+  "branch": "main",
+  "migration": "00257_canonical_role_catalog_and_signup_provisioning.sql",
+  "outcome": "PASS_LOCAL",
+  "groupA_catalog": {
+    "source": "00039_role_based_access.sql",
+    "fix": "SUPPLIER_SALES_MANAGER sort_order 30, SUPPLIER_TECHNICAL_LEAD 40 (aligned to 00039)",
+    "upsert": "ON CONFLICT (code) DO UPDATE with IS DISTINCT FROM guard"
+  },
+  "groupB_resolve_signup_role": {
+    "failClosed": [
+      "SIGNUP_ROLE_UNKNOWN",
+      "SIGNUP_ROLE_SIDE_MISMATCH",
+      "SIGNUP_ROLE_INVALID",
+      "SIGNUP_INDIVIDUAL_ROLE_MISMATCH"
+    ],
+    "defaultsWhenOmitted": {
+      "INDIVIDUAL": "PROPERTY_OWNER",
+      "COMMUNITY": "COMMITTEE_MEMBER",
+      "otherBuyer": "FACILITY_MANAGER",
+      "supplier": "SUPPLIER_FOUNDER"
+    }
+  },
+  "groupC_provisioning": {
+    "submitVs00254": "Inline side-filter role SQL replaced by private.resolve_signup_role; omitted-role defaults added",
+    "provisionVs00212": "Role validated via resolve_signup_role before auth.users/profile_roles; removed COALESCE silent fallback"
+  },
+  "verification": {
+    "vitest": [
+      "tests/security/canonical-role-catalog-00257.test.ts (22/22 with local DB after docker apply)",
+      "tests/security/individual-signup-00254.test.ts (10/10)",
+      "tests/security/auth-otp-eight-digits-00256.test.ts (2/2)"
+    ],
+    "localDbApply": "docker exec supabase_db_otp-local psql (local only; not hosted)",
+    "gitDiffCheck": "clean aside from CRLF warnings",
+    "typecheck": "BLOCKED_PREEXISTING web/services TS errors unrelated to 00257"
+  },
+  "releaseGate": {
+    "ciCeiling": "00257",
+    "hostedApply": "NOT_RUN per safety (operator applies via CI db push)"
+  }
+}

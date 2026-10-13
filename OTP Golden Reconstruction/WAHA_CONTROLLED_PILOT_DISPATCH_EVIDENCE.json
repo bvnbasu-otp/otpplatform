@@ -1,0 +1,25 @@
+{
+  "testExecutedAt": "2026-10-11T08:09:16.335Z",
+  "durationMs": 3371,
+  "dispatchStatus": 200,
+  "dispatchHeaders": {
+    "sb-request-id": "01a12a02-5418-7756-87d2-dd72a514ad0c",
+    "cf-ray": "a48c61c01a517ea0-MAA",
+    "x-deno-execution-id": "dc4826bd-b669-4270-8151-f2244b4b024c"
+  },
+  "dispatchBody": {
+    "ok": true
+  },
+  "securityInvariants": {
+    "zeroCodeLeakageInResponse": true,
+    "plaintextNotStoredInDb": true,
+    "invalidCodeRejected": true
+  },
+  "databaseRecord": {
+    "phone": "919972967530",
+    "otpCodePlaintext": null,
+    "hasHash": true,
+    "hasSalt": true,
+    "expiresAt": "2026-10-10T16:53:54.255349+00:00"
+  }
+}

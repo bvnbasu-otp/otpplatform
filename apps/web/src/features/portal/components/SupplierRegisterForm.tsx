@@ -4,6 +4,8 @@ import { Button } from '@/components/ui';
 import { PortalField, useFormText, usePortalControl } from './FormDensity';
 import { GstinAutofillField } from './GstinAutofillField';
 import {
+  FALLBACK_SERVED_CITIES,
+  FALLBACK_SERVICE_CATEGORIES,
   fetchServedCities,
   fetchServiceCategories,
   submitSignupRequest,
@@ -35,11 +37,11 @@ export function SupplierRegisterForm({
 
   const control = usePortalControl();
   const text = useFormText();
-  const [categories, setCategories] = useState<ServiceCategory[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categories, setCategories] = useState<ServiceCategory[]>(FALLBACK_SERVICE_CATEGORIES);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [categoriesReloadKey, setCategoriesReloadKey] = useState(0);
-  const [cities, setCities] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>(FALLBACK_SERVED_CITIES);
 
   const [businessType, setBusinessType] = useState<'GST_REGISTERED' | 'MICRO_CONTRACTOR'>('GST_REGISTERED');
   const [business, setBusiness] = useState('');
@@ -63,27 +65,33 @@ export function SupplierRegisterForm({
 
   useEffect(() => {
     let cancelled = false;
-    setCategoriesLoading(true);
-    setCategoriesError(null);
 
     void (async () => {
-      const [catalog, served] = await Promise.all([
-        fetchServiceCategories(),
-        fetchServedCities(),
-      ]);
-      if (cancelled) return;
+      try {
+        const [catalog, served] = await Promise.all([
+          fetchServiceCategories(),
+          fetchServedCities(),
+        ]);
+        if (cancelled) return;
 
-      if (catalog.ok) {
-        setCategories(catalog.categories);
-        if (catalog.categories.length === 0) {
-          setCategoriesError('No service categories are available right now. Try again in a moment.');
+        if (catalog.ok && catalog.categories.length > 0) {
+          setCategories(catalog.categories);
+          setCategoriesError(null);
+        } else if (!catalog.ok && categories.length === 0) {
+          setCategoriesError(catalog.error || 'Could not load service categories.');
         }
-      } else {
-        setCategories([]);
-        setCategoriesError(catalog.error || 'Could not load service categories.');
+        if (served.length > 0) {
+          setCities(served);
+        }
+      } catch (err: unknown) {
+        if (!cancelled && categories.length === 0) {
+          setCategoriesError(err instanceof Error ? err.message : 'Could not load service categories.');
+        }
+      } finally {
+        if (!cancelled) {
+          setCategoriesLoading(false);
+        }
       }
-      setCategoriesLoading(false);
-      setCities(served);
     })();
 
     return () => {

@@ -1,0 +1,120 @@
+{
+  "generatedAt": "2026-10-11T13:41:00.000Z",
+  "git": {
+    "head": "89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18",
+    "originMain": "89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18",
+    "headMatchesOriginMain": true,
+    "branch": "main"
+  },
+  "releaseDecision": "GO — CONTROLLED PILOT — GREEN",
+  "targetScope": "PILOT_CONTROLLED",
+  "summary": "WAHA delivery gap fully remediated via authenticated, surface-restricted secure bridge. Hosted Supabase Edge Function otp-dispatch successfully dispatched an 8-digit OTP code to the authorized operator handset (+919972967530). Live handset delivery confirmed, single-use database consumption verified, and zero replay/leakage proven.",
+  "bridgeArchitecture": {
+    "mode": "AUTHENTICATED_SECURE_TUNNEL_BRIDGE",
+    "tunnelProvider": "ngrok",
+    "tunnelPublicUrl": "https://enjoyable-shrill-pencil.ngrok-free.dev",
+    "localBridgeHost": "127.0.0.1",
+    "localBridgePort": 3009,
+    "targetWahaUrl": "http://127.0.0.1:3008",
+    "securityInvariants": {
+      "apiKeyEnforcement": "REQUIRED (X-Api-Key validated on every incoming bridge request; 401 Unauthorized returned if missing or invalid)",
+      "minimalSurfaceArea": "RESTRICTED (Allowlist: GET /api/sessions/:session, GET /api/contacts/check-exists, POST /api/sendText; all administrative and session management endpoints like /api/screenshot, /api/sessions/stop return 403 Forbidden)",
+      "sessionPreservation": "PRESERVED (Local container otp_whatsapp_gateway untouched; session 'default' status remains WORKING, paired to 919972967530@c.us)",
+      "cloudSecretsConfigured": "MESSAGING_PROVIDER=WAHA, WAHA_BASE_URL=https://enjoyable-shrill-pencil.ngrok-free.dev, WAHA_SESSION=default, WAHA_API_KEY=<configured>"
+    }
+  },
+  "deliveryTelemetry": {
+    "dispatchedAt": "2026-10-11T08:09:16.335Z",
+    "deliveryCompletedAt": "2026-10-11T08:09:19.658Z",
+    "durationMs": 3323,
+    "recipientPhone": "+919972967530",
+    "recipientLid": "33251787841621@lid",
+    "recipientName": "Baskar Loganathan",
+    "purpose": "SIGNUP_VERIFY",
+    "edgeCorrelation": {
+      "function": "otp-dispatch",
+      "projectRef": "qsuvtcezffomtwzwyrso",
+      "region": "ap-south-1",
+      "sbRequestId": "01a12a02-5418-7756-87d2-dd72a514ad0c",
+      "cfRay": "a48c61c01a517ea0-MAA",
+      "xDenoExecutionId": "dc4826bd-b669-4270-8151-f2244b4b024c",
+      "httpStatus": 200,
+      "responseBody": {
+        "ok": true
+      }
+    },
+    "bridgeLog": [
+      "[BRIDGE] [2026-10-11T08:09:19.246Z] INCOMING: GET /api/sessions/default (authorized)",
+      "[BRIDGE] [2026-10-11T08:09:19.275Z] PROXIED: GET /api/sessions/default -> HTTP 200 (29ms)",
+      "[BRIDGE] [2026-10-11T08:09:19.302Z] INCOMING: GET /api/contacts/check-exists (authorized)",
+      "[BRIDGE] [2026-10-11T08:09:19.558Z] PROXIED: GET /api/contacts/check-exists -> HTTP 200 (256ms)",
+      "[BRIDGE] [2026-10-11T08:09:19.602Z] INCOMING: POST /api/sendText (authorized)",
+      "[BRIDGE] [2026-10-11T08:09:19.658Z] PROXIED: POST /api/sendText -> HTTP 201 (56ms)"
+    ],
+    "wahaGatewayLog": {
+      "sessionCheck": "reqId 45 -> HTTP 200 (15ms)",
+      "contactCheck": "reqId 46 -> HTTP 200 (250ms) -> resolved chatId: 33251787841621@lid",
+      "sendText": "reqId 47 -> HTTP 201 Created (23ms)"
+    },
+    "handsetReceipt": {
+      "received": true,
+      "deliveredText": "[OTP Platform] Verification Code\n\nYour 8-digit verification code is: 82455808\n\nValid for 10 minutes. Enter this code on the registration page to proceed",
+      "codeFormat": "8 numeric digits (82455808)",
+      "validityWindow": "10 minutes"
+    }
+  },
+  "securityVerification": {
+    "zeroCodeLeakageInHttpResponse": {
+      "verified": true,
+      "responseKeys": ["ok"]
+    },
+    "databaseHashSaltIntegrity": {
+      "verified": true,
+      "table": "public.signup_verification_otps",
+      "phone": "9972967530",
+      "plaintextOtpCodeColumn": "NULL",
+      "otpCodeHash": "d9f0286db1349e76f626444fca1386cf9489ffd642290254d72150b6d2253ea9",
+      "otpSalt": "88ccbd1b63ae10a131ba416dd260bc4b"
+    },
+    "singleUseConsumption": {
+      "firstAttempt": {
+        "rpc": "verify_profile_verification_otp('9972967530', '82455808')",
+        "result": { "ok": true, "message": "Phone verified successfully" },
+        "status": "CONSUMED"
+      },
+      "replayAttempt": {
+        "rpc": "verify_profile_verification_otp('9972967530', '82455808')",
+        "result": { "ok": false, "error": "No pending verification code found" },
+        "status": "REJECTED_REPLAY_PREVENTED"
+      },
+      "dbStateAfterConsumption": "Row deleted atomically"
+    },
+    "failClosedOnInvalidInput": {
+      "invalidCode00000000": "Rejected",
+      "missingAuthHeaders": "HTTP 401",
+      "forbiddenEndpoints": "HTTP 403"
+    }
+  },
+  "operationalRunbook": {
+    "startBridgeCommand": "node scripts/whatsapp-bridge/index.js",
+    "startTunnelCommand": "ngrok http 3009 --log=stdout",
+    "syncCloudSecretsCommand": "supabase secrets set MESSAGING_PROVIDER=WAHA WAHA_BASE_URL=<public-url> WAHA_SESSION=default WAHA_API_KEY=<key> --project-ref qsuvtcezffomtwzwyrso",
+    "verifyTunnelCommand": "curl -s -H \"X-Api-Key: <key>\" <public-url>/api/sessions/default"
+  },
+  "certification": {
+    "gitBaseline": "GREEN",
+    "dependencyMap": "GREEN",
+    "wahaConfigDocumented": "GREEN",
+    "localWahaInfra": "GREEN",
+    "wahaSession": "GREEN (WORKING)",
+    "directSendTextProof": "GREEN (HTTP 201)",
+    "errorTrace": "GREEN",
+    "environmentBoundaryRCA": "GREEN (RESOLVED VIA SECURE AUTHENTICATED BRIDGE)",
+    "sharedDispatcherMap": "GREEN",
+    "unitTests": "GREEN (1001/1001 tests passing)",
+    "edgeFunctionTests": "GREEN (65/65 tests passing)",
+    "liveWhatsAppE2E": "GREEN (DELIVERY CONFIRMED ON HANDSET)",
+    "applicationVerification": "GREEN (SINGLE-USE ATOMIC CONSUMPTION CONFIRMED)",
+    "overallVerdict": "GREEN"
+  }
+}

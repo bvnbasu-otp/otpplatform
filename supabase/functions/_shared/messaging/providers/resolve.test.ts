@@ -93,3 +93,15 @@ Deno.test('resolveProvider selects Twilio when both credentials are set', () => 
   });
   assertEquals(provider.id, 'TWILIO');
 });
+
+Deno.test('resolveProvider passes WAHA_API_KEY to WahaMessagingProvider', () => {
+  const provider = resolveProvider({
+    MESSAGING_PROVIDER: 'WAHA',
+    WAHA_BASE_URL: 'http://127.0.0.1:3008',
+    WAHA_SESSION: 'default',
+    WAHA_API_KEY: 'test-api-key',
+  });
+  assertInstanceOf(provider, WahaMessagingProvider);
+  assertEquals(provider.id, 'WAHA');
+});
+

@@ -27,6 +27,8 @@ export interface MessagingEnv {
   WAHA_BASE_URL?: string;
   /** WAHA session name. The local gateway uses the literal default. */
   WAHA_SESSION?: string;
+  /** Optional API key for secured WAHA gateway / bridge. */
+  WAHA_API_KEY?: string;
   MESSAGING_MOCK_SECRET?: string;
   APP_URL?: string;
 }
@@ -108,7 +110,8 @@ export function resolveProvider(env: MessagingEnv): MessagingProvider {
     case 'WAHA': {
       const baseUrl = wahaBaseUrl(env.WAHA_BASE_URL);
       const session = wahaSession(env.WAHA_SESSION);
-      return new WahaMessagingProvider({ baseUrl, session });
+      const apiKey = env.WAHA_API_KEY?.trim() || undefined;
+      return new WahaMessagingProvider({ baseUrl, session, apiKey });
     }
 
     case 'MOCK':

@@ -40,7 +40,12 @@ export function RequirementIntakePage() {
     sessionStorage.removeItem(REQUIREMENT_PROMPT_KEY);
   }, []);
 
-  const { taxonomy, isLoading: taxonomyLoading, error: taxonomyError } = useTaxonomy();
+  const {
+    taxonomy,
+    isLoading: taxonomyLoading,
+    error: taxonomyError,
+    refresh: refreshTaxonomy,
+  } = useTaxonomy();
   const { draft, setDraft, isLoading: draftLoading, isSaving, error: draftError, start, save } =
     useIntakeDraft(requirementId, context.organizationId);
 
@@ -198,9 +203,18 @@ export function RequirementIntakePage() {
   if (taxonomyError) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8" data-testid="requirement-intake-page">
-        <p className="rounded-md border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-          The category catalog could not be loaded: {taxonomyError}
-        </p>
+        <div className="rounded-xl border border-red-200 bg-red-50 p-6 space-y-3">
+          <p className="text-sm font-semibold text-red-800">
+            The category catalog could not be loaded: {taxonomyError}
+          </p>
+          <button
+            type="button"
+            onClick={() => void refreshTaxonomy()}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition cursor-pointer"
+          >
+            🔄 Retry Loading Categories
+          </button>
+        </div>
       </div>
     );
   }

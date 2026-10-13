@@ -337,4 +337,14 @@ describe('what the parser does when it is not sure', () => {
 
     expect(parsed.title).toBe('Rewind 10 HP submersible motor.');
   });
+
+  it('correctly classifies painting requirements and infers execution mode', async () => {
+    const parsed = await parse(
+      'Interior painting work for 3 BHK apartment, 2000 sq ft, premium emulsion, Bengaluru.'
+    );
+
+    expect(parsed.categoryCode).toBe('property_facility_management');
+    expect(parsed.subcategoryCode).toBe('painting_contracting');
+    expect(parsed.requirementMode).toBe(RequirementMode.SERVICE);
+  });
 });

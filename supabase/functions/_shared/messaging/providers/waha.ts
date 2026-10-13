@@ -24,6 +24,7 @@ export interface WahaConfig {
   /** Origin only, such as http://127.0.0.1:3008. */
   baseUrl: string;
   session: string;
+  apiKey?: string;
   fetchImpl?: typeof fetch;
 }
 
@@ -49,12 +50,25 @@ export class WahaMessagingProvider implements MessagingProvider {
 
   readonly #baseUrl: string;
   readonly #session: string;
+  readonly #apiKey?: string;
   readonly #fetch: typeof fetch;
 
   constructor(config: WahaConfig) {
     this.#baseUrl = config.baseUrl.replace(/\/+$/, '');
     this.#session = config.session;
+    this.#apiKey = config.apiKey?.trim() || undefined;
     this.#fetch = config.fetchImpl ?? fetch;
+  }
+
+  #headers(extra?: Record<string, string>): Record<string, string> {
+    const headers: Record<string, string> = {
+      ...wahaTunnelHeaders(this.#baseUrl),
+      ...(extra ?? {}),
+    };
+    if (this.#apiKey) {
+      headers['X-Api-Key'] = this.#apiKey;
+    }
+    return headers;
   }
 
   async send(message: OutboundMessage): Promise<SendReceipt> {
@@ -80,10 +94,9 @@ export class WahaMessagingProvider implements MessagingProvider {
     try {
       const response = await this.#fetch(`${this.#baseUrl}/api/sendText`, {
         method: 'POST',
-        headers: {
-          ...wahaTunnelHeaders(this.#baseUrl),
+        headers: this.#headers({
           'Content-Type': 'application/json; charset=utf-8',
-        },
+        }),
         body: JSON.stringify({
           session: this.#session,
           chatId,
@@ -142,7 +155,7 @@ export class WahaMessagingProvider implements MessagingProvider {
       url.searchParams.set('phone', phone);
       const response = await this.#fetch(url.toString(), {
         method: 'GET',
-        headers: wahaTunnelHeaders(this.#baseUrl),
+        headers: this.#headers(),
         signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
       });
       if (!response.ok) return fallback;
@@ -166,7 +179,7 @@ export class WahaMessagingProvider implements MessagingProvider {
         `${this.#baseUrl}/api/sessions/${encodeURIComponent(this.#session)}`,
         {
           method: 'GET',
-          headers: wahaTunnelHeaders(this.#baseUrl),
+          headers: this.#headers(),
           signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
         },
       );

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "wave2-supplier-trust-2026-10-11",
+  "observedAt": "2026-10-11T06:40:00+05:30",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "workingTreeDirty": true,
+  "lifecycleVocabulary": {
+    "source": "00212_reconcile_supplier_verification_buyer_addresses_and_self_service_signup.sql",
+    "lifecycleStates": [
+      "QUOTE_PARTICIPANT",
+      "ONBOARDING_REQUIRED",
+      "ONBOARDING_IN_PROGRESS",
+      "VERIFICATION_PENDING",
+      "VERIFIED",
+      "VERIFICATION_FAILED",
+      "REQUIRES_REVERIFICATION",
+      "SUSPENDED"
+    ],
+    "verificationStatuses": [
+      "NOT_PROVIDED",
+      "PENDING",
+      "VERIFIED",
+      "REQUIRES_REVERIFICATION"
+    ],
+    "accountStatusField": "suppliers.status (e.g. ACTIVE) — login/account, distinct from lifecycle_state and verification_status"
+  },
+  "provisioningChain": {
+    "00212": "private.provision_signup_request + admin_review_signup_request delegation; suppliers ACTIVE account, not verified at approval",
+    "00257": "Canonical role catalog; provision_signup_request superseded body with explicit GST/lifecycle defaults",
+    "grants": "provision_signup_request service_role-only (00212/00257)"
+  },
+  "gstPanVerificationTruth": {
+    "formatValidation": "verify_supplier_gstin enforces 15-char GSTIN and derives PAN from positions 3-10; no external GSTN API in migration",
+    "authoritativePromotion": "Platform admin / SECURITY DEFINER paths; supplier self-submit sets verification_status PENDING and lifecycle VERIFICATION_PENDING",
+    "gstStatusActiveWhilePendingHypothesis": {
+      "observed": "verify_supplier_gstin sets gst_status='ACTIVE' on submit while verification_status='PENDING'",
+      "verdict": "NOT A DEFECT — documented intent: gst_status reflects submitted registration identifier state; verification_status/lifecycle_state gate reveal/PO",
+      "evidenceFiles": [
+        "supabase/migrations/00212_reconcile_supplier_verification_buyer_addresses_and_self_service_signup.sql",
+        "supabase/migrations/00257_canonical_role_catalog_and_signup_provisioning.sql"
+      ]
+    },
+    "00257NewSupplierDefaults": {
+      "withGst": "verification_status PENDING, lifecycle VERIFICATION_PENDING, status ACTIVE, gst_status UNVERIFIED unless admin-verified at provision",
+      "withoutGst": "verification_status NOT_PROVIDED, lifecycle QUOTE_PARTICIPANT"
+    }
+  },
+  "eligibilityMatrix": {
+    "discoveryTrustTier": "00236: OTP_REGISTERED / GST_VERIFIED labels; lifecycle VERIFIED + verification_status VERIFIED for highest trust",
+    "quoteParticipation": "Unverified suppliers may quote (00212 comment: ACTIVE account can log in and quote)",
+    "awardRevealPo": "00244/00245/00246/00252+: lock_and_reveal_award_atomic and create_po require lifecycle_state=VERIFIED AND verification_status=VERIFIED",
+    "portalCapabilitiesTs": "apps/web/src/features/supplier/api/capabilities.ts reads gst_status/gst_verified for display; verifySupplierGstinRpc calls verify_supplier_gstin only"
+  },
+  "seedFixtureGovernance": {
+    "demoSeed": "tests/security/f07-reveal-award-verified-atomic-00244-database.test.ts documents aquaPrime VERIFIED vs nandi VERIFICATION_PENDING",
+    "note": "Hosted seed parity NOT VERIFIED this session"
+  },
+  "invariantChecks": {
+    "supplierCashbackProhibition": "verified-remediation-00216-redteam.test.ts expects 'Supplier cashback has been removed' in 00216 SQL",
+    "privateBudget": "pilot-allowance.ts PILOT_ALLOWANCE_UNVERIFIED_ERROR; publish-and-allowance.test.ts covers unverified buyer gate",
+    "supplierMasking": "privileged-rpc-hardening-00199-redteam.test.ts static chain at position 199",
+    "personasNoEnterpriseCustomer": "customer-type-and-messaging-copy.test.ts + subscription.test.ts canonical tiers exclude ENTERPRISE customer-facing",
+    "form16A": "tds-withholding-panel.test.tsx denies BLR0998811 placeholder in source",
+    "financialAuthority": "record-verified-payment-00247 + financial-authority-00250 chain sentinels pass at repo ceiling 00260"
+  },
+  "testRuns": [
+    {
+      "command": "pnpm exec vitest run tests/security/canonical-role-catalog-00257.test.ts tests/security/verified-remediation-00216-redteam.test.ts tests/security/privileged-rpc-hardening-00199-redteam.test.ts",
+      "exitCode": 0,
+      "testFiles": 3,
+      "testsPassed": 81,
+      "testsSkipped": 4,
+      "durationSec": 31.4
+    }
+  ]
+}

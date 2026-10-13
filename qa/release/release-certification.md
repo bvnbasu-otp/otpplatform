@@ -1,6 +1,10 @@
 # OTP Platform — Final Release & Certification Audit Document
 
-**Document Identifier:** `OTP-AUDIT-REL-2026-09-19-PHASE7.1-CERT`  
+> [!NOTE]
+> **SUPERSEDED BY CANONICAL RELEASE CERTIFICATE `OTP-CERT-20261011-GREEN` (11 OCTOBER 2026)**  
+> This Phase 7.1 audit document represents historical pre-pilot certification from September 2026. The canonical production release certificate is **`OTP-CERT-20261011-GREEN`** at release baseline `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18`, formal migration ceiling `00263`, with Product Owner attestation authorizing **GREEN — CONTROLLED PILOT AUTHORIZED**. Refer to [docs/OTP_PILOT_AMBER_GREEN_MASTER_REGISTER.md](../../docs/OTP_PILOT_AMBER_GREEN_MASTER_REGISTER.md) and [OTP Golden Reconstruction/PILOT_GREEN_RELEASE/RELEASE_CERTIFICATE.md](../../OTP%20Golden%20Reconstruction/PILOT_GREEN_RELEASE/RELEASE_CERTIFICATE.md) for current canonical status.
+
+**Document Identifier:** `OTP-AUDIT-REL-2026-09-19-PHASE7.1-CERT` (Historical)  
 **Security Classification:** Highly Confidential / Executive Release Board  
 **Effective Date:** Saturday, September 19, 2026  
 **Auditor in Charge:** Chief Release & Certification Auditor  

@@ -81,7 +81,7 @@ const categories: CategoryDef[] = [
   category('construction_infrastructure', 'Construction & Infrastructure', 2),
   category('machinery_engineering', 'Machinery & Engineering', 3),
   category('textile_apparel', 'Textile & Apparel', 6),
-  category('agriculture_commodities', 'Agriculture & Commodities', 7),
+  category('property_facility_management', 'Property & Facility Management', 9),
   category('water_environmental', 'Water & Environmental Solutions', 11),
   category('professional_skilled_services', 'Professional & Skilled Services', 14),
 ];
@@ -317,6 +317,27 @@ const subcategories: SubcategoryDef[] = [
       'wireman',
       'electrical repair visit',
       'electrical technician',
+    ],
+    RequirementMode.SERVICE,
+  ),
+
+  // Property & Facility Management
+  subcategory(
+    'property_facility_management',
+    'painting_contracting',
+    'Painting & coating work',
+    [
+      'painting',
+      'paint work',
+      'house painting',
+      'building painting',
+      'interior painting',
+      'exterior painting',
+      'whitewash',
+      'texture paint',
+      'wall painting',
+      'enamel painting',
+      'epoxy painting',
     ],
     RequirementMode.SERVICE,
   ),

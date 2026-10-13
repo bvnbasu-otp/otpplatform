@@ -51,6 +51,16 @@ const SUBCATEGORY_KEYWORD_AUGMENTATIONS: Record<string, string[]> = {
     'facility cleaning',
     'deep cleaning',
   ],
+  home_interior_exterior_painting: [
+    'painting',
+    'paint work',
+    'painting work',
+    'house painting',
+    'flat painting',
+    'room painting',
+    'wall painting',
+    'repainting',
+  ],
 };
 
 /**
@@ -122,7 +132,7 @@ function applyTaxonomy03Disambiguation(
   }
 
   const executionPainting =
-    /\b(paint our|repaint|painting work|interior painting|exterior painting|society painting|apartment painting)\b/.test(
+    /\b(paint(\s*(our|my|the|a|house|home|flat|wall|room))?|repaint|painting|paint work|painting work|interior painting|exterior painting|society painting|apartment painting|wall painting)\b/i.test(
       haystack,
     );
   if (executionPainting && best.subcategory.code === 'paints_coatings') {

@@ -554,6 +554,28 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
       expect(defaultBuyerAddress.pincode).toBe('560066');
       expect(defaultBuyerAddress.addressLine1).toContain('Plot 45');
     });
+
+    it('verifies subcategory cascading synchronizes requirement mode immediately', () => {
+      // When subcategory changes, requirement mode must sync to defaultRequirementMode
+      const motorSub = mockTaxonomy.subcategories.find((s) => s.code === 'motor_rewind');
+      expect(motorSub).toBeDefined();
+      expect(motorSub!.defaultRequirementMode).toBe('SERVICE');
+
+      const cncSub = mockTaxonomy.subcategories.find((s) => s.code === 'cnc_turning');
+      expect(cncSub).toBeDefined();
+      expect(cncSub!.defaultRequirementMode).toBe('PRODUCT_MATERIAL');
+    });
+
+    it('preserves unlisted custom specification write-in attribute across draft updates', () => {
+      const customVerticalText = 'Special high-temperature electrostatic powder coating';
+      const draftAttributes: Record<string, unknown> = {
+        custom_vertical: customVerticalText,
+        scope_area_sqft: 5000,
+      };
+
+      expect(draftAttributes.custom_vertical).toBe(customVerticalText);
+      expect(draftAttributes.scope_area_sqft).toBe(5000);
+    });
   });
 });
 

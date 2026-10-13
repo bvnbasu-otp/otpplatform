@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { AttributeDef, AttributeValue } from '@otp/domain';
 import {
   Checkbox,
@@ -99,23 +100,12 @@ function AttributeField({ attribute, value, error, onChange }: AttributeFieldPro
 
     case 'ENUM':
       return (
-        <Field {...common} hint={attribute.unit}>
-          {({ id, describedBy, invalid }) => (
-            <Select
-              id={id}
-              aria-describedby={describedBy}
-              invalid={invalid}
-              required={attribute.isRequired}
-              placeholder="Select one"
-              options={attribute.options.map((option) => ({
-                value: option,
-                label: option,
-              }))}
-              value={typeof value === 'string' ? value : ''}
-              onChange={(e) => onChange(e.target.value || null)}
-            />
-          )}
-        </Field>
+        <EnumAttributeField
+          attribute={attribute}
+          value={value}
+          common={common}
+          onChange={onChange}
+        />
       );
 
     case 'MULTI_ENUM': {
@@ -184,4 +174,75 @@ function AttributeField({ attribute, value, error, onChange }: AttributeFieldPro
         </Field>
       );
   }
+}
+
+interface EnumAttributeFieldProps {
+  attribute: AttributeDef;
+  value: AttributeValue | undefined;
+  common: {
+    label: string;
+    help: string | null;
+    error: string | null;
+    required: boolean;
+  };
+  onChange: (value: AttributeValue | null) => void;
+}
+
+function EnumAttributeField({ attribute, value, common, onChange }: EnumAttributeFieldProps) {
+  const strVal = typeof value === 'string' ? value : '';
+  const isPreset = attribute.options.includes(strVal);
+  const [customText, setCustomText] = useState(!isPreset && strVal ? strVal : '');
+  const [isOtherSelected, setIsOtherSelected] = useState(!isPreset && strVal.length > 0);
+
+  const selectValue = isPreset ? strVal : isOtherSelected || strVal ? '__OTHER__' : '';
+
+  function handleSelectChange(newVal: string) {
+    if (newVal === '__OTHER__') {
+      setIsOtherSelected(true);
+      onChange(customText.trim() || null);
+    } else {
+      setIsOtherSelected(false);
+      onChange(newVal || null);
+    }
+  }
+
+  function handleCustomTextChange(text: string) {
+    setCustomText(text);
+    onChange(text.trim() || null);
+  }
+
+  return (
+    <Field {...common} hint={attribute.unit}>
+      {({ id, describedBy, invalid }) => (
+        <div className="space-y-1.5">
+          <Select
+            id={id}
+            aria-describedby={describedBy}
+            invalid={invalid}
+            required={attribute.isRequired}
+            placeholder="Select one"
+            options={[
+              ...attribute.options.map((option) => ({
+                value: option,
+                label: option,
+              })),
+              { value: '__OTHER__', label: 'Other (Specify...)' },
+            ]}
+            value={selectValue}
+            onChange={(e) => handleSelectChange(e.target.value)}
+          />
+          {(selectValue === '__OTHER__' || isOtherSelected) && (
+            <Input
+              id={`${id}-custom`}
+              aria-label={`Custom value for ${attribute.label}`}
+              placeholder={`Specify custom ${attribute.label.toLowerCase()}...`}
+              value={customText}
+              onChange={(e) => handleCustomTextChange(e.target.value)}
+              className="mt-1"
+            />
+          )}
+        </div>
+      )}
+    </Field>
+  );
 }

@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "ci-run-222-grouped-remediation-2026-10-11",
+  "recordedAt": "2026-10-11T11:10:00+05:30",
+  "failedWorkflowRun": "https://github.com/bvnbasu-otp/otpplatform/actions/runs/38113072829",
+  "failedCommit": "8c0e5b45af25abe0b9e99da2c30440f4173297d1",
+  "headAtRemediation": "8c0e5b45af25abe0b9e99da2c30440f4173297d1",
+  "migrationCeiling": "00263",
+  "failedJob": "Tiered Automated Test Batteries → Run Functional Tests (pnpm test:functional)",
+  "ciAnnotationsCount": 10,
+  "failureRegister": [
+    {
+      "group": "A",
+      "file": "tests/security/record-verified-payment-00247.test.ts:84",
+      "expectation": "files.at(-1) === 00260 ceiling",
+      "rootCause": "Chain extended through 00261–00263",
+      "securitySignificance": "Grant-chain scan must cover full history",
+      "minimalFix": "REPOSITORY_CEILING → 00263"
+    },
+    {
+      "group": "A",
+      "file": "tests/security/financial-authority-00250.test.ts:176",
+      "expectation": "Tail ends at 00260",
+      "rootCause": "Ceiling drift; at(-N) off by 3",
+      "minimalFix": "Tail through 00263; 00251 at at(-13)"
+    },
+    {
+      "group": "A",
+      "file": "tests/security/canonical-role-catalog-00257.test.ts:97",
+      "expectation": "files.at(-1) === 00260",
+      "rootCause": "Missing 00261–00263",
+      "minimalFix": "index+4..+6 + at(-1) 00263"
+    },
+    {
+      "group": "A",
+      "file": "tests/security/subscription-entitlement-authority-00249.test.ts:281",
+      "expectation": "index === files.length - 12",
+      "rootCause": "Offset counted 00249→00260 (12 files). Three migrations 00261–00263 added; 00249 index stays 248",
+      "indexAlgorithmNote": "Contiguous list: index(00249)=248. When length=260, length-12=248. When length=263, length-15=248. Omitted from old tail math: 00261, 00262, 00263 — not IDs 248–251.",
+      "minimalFix": "length - 15; successors +12..+14"
+    },
+    {
+      "group": "A",
+      "file": "tests/security/verified-remediation-00216-redteam.test.ts:16",
+      "expectation": "CEILING 00260 (CI annotation set may truncate at 10)",
+      "rootCause": "Stale CEILING constant",
+      "minimalFix": "CEILING → 00263"
+    },
+    {
+      "group": "D",
+      "file": "tests/security/ondc-06r-discovery-dispatch-postgres.test.ts:48-49",
+      "expectation": "EXPECTED_CEILING 00260 in workflow policy cross-check",
+      "rootCause": "ci-cd.yml already 00263",
+      "minimalFix": "00263 in test strings"
+    },
+    {
+      "group": "B",
+      "file": "tests/security/guard-profile-privileges-draft.test.ts:33",
+      "expectation": "DRAFT byte parity",
+      "rootCause": "Gitignored Golden Reconstruction *.sql absent on CI",
+      "minimalFix": "FORMAL_00263_SHA256 pin"
+    },
+    {
+      "group": "B",
+      "file": "tests/security/admin-diagnostic-query-draft.test.ts:56",
+      "expectation": "DRAFT byte parity",
+      "rootCause": "Same",
+      "minimalFix": "FORMAL_00262_SHA256 pin"
+    },
+    {
+      "group": "B",
+      "file": "tests/security/migration-formalization-00261-263-database.test.ts:226",
+      "expectation": "SHA256 vs DRAFT files",
+      "rootCause": "ENOENT",
+      "minimalFix": "Triple formal SHA256 pins"
+    },
+    {
+      "group": "C",
+      "file": "tests/security/migration-formalization-00261-263-database.test.ts:131,145,158",
+      "expectation": "REST RPC auth proofs",
+      "rootCause": "CI Postgres-only stack (no gotrue/kong/postgrest)",
+      "minimalFix": "skip when !restUp with SKIP_REST_ONLY_CI; static invariants unchanged"
+    }
+  ],
+  "proposedCommitFiles": [
+    "tests/helpers/local-postgres-sql-parity.ts",
+    "tests/security/admin-diagnostic-query-draft.test.ts",
+    "tests/security/auth-otp-eight-digits-00256.test.ts",
+    "tests/security/canonical-role-catalog-00257.test.ts",
+    "tests/security/deterministic-hmac-ts-sql-parity.test.ts",
+    "tests/security/financial-authority-00250.test.ts",
+    "tests/security/guard-profile-privileges-draft.test.ts",
+    "tests/security/migration-formalization-00261-263-database.test.ts",
+    "tests/security/ondc-06r-discovery-dispatch-postgres.test.ts",
+    "tests/security/record-verified-payment-00247.test.ts",
+    "tests/security/subscription-entitlement-authority-00249.test.ts",
+    "tests/security/verified-remediation-00216-redteam.test.ts"
+  ],
+  "localVerification": [
+    {
+      "command": "pnpm exec vitest run (11 remediated security files)",
+      "exitCode": 0,
+      "testFilesPassed": 11,
+      "testsPassed": 92,
+      "testsSkipped": 4,
+      "testsFailed": 0
+    },
+    {
+      "command": "pnpm exec vitest run tests/security/migration-formalization-00261-263-database.test.ts",
+      "exitCode": 0,
+      "testsPassed": 1,
+      "testsSkipped": 4,
+      "testsFailed": 0
+    }
+  ],
+  "notInCiFailureSet": [
+    "Integration/demo DB suites (require full local Supabase; failures observed locally when REST/seed unavailable — not in GitHub 10-error annotation set)"
+  ],
+  "blockers": [
+    "Awaiting authorized commit/push of 12 test files only (exclude unrelated evidence edits)"
+  ],
+  "followUpVerification2026-10-11": {
+    "command11SecurityFiles": "pnpm exec vitest run (11 remediated security files)",
+    "exitCode": 0,
+    "testsPassed": 96,
+    "testsSkipped": 0,
+    "testsFailed": 0,
+    "note": "REST available locally — migration-formalization REST cases executed (CI postgres-only will skip 4)",
+    "testModule": {
+      "command": "pnpm test:module",
+      "exitCode": 0,
+      "testFilesPassed": 215,
+      "testsPassed": 1821
+    },
+    "testFunctional": {
+      "command": "pnpm test:functional",
+      "exitCode": 1,
+      "summary": "16 files failed, 43 tests failed (local run); primary noise: demo_reset statement timeout, integration DB suites without healthy local stack",
+      "ci222TargetSecuritySubset": {
+        "command": "vitest record-verified-payment-00247 + subscription-00249 + migration-formalization",
+        "exitCode": 0,
+        "testsPassed": 18
+      },
+      "note": "Full functional log predates or overlaps uncommitted #222 fixes; re-run on CI after commit"
+    }
+  },
+  "formalMigrationSha256": {
+    "00261": "E5FA35856B9EA0BF546EBF625A668CE6A3D757E8FB43E5BED2ADFCD2BC263C79",
+    "00262": "F606758AFBE05B09BDFFBBCCCEDBADA1262DF7FDA9B2367E8931EF522A92BF93",
+    "00263": "2B2E0AA46B3EFE3CA292EB88A7DD74F3E7D7B54BC7AA012876FDBB4FB908569A"
+  }
+}

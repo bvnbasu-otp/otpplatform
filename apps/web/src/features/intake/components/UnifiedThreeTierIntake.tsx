@@ -651,6 +651,8 @@ export function UnifiedThreeTierIntake({
         onParse={handleParse}
         onClearInput={handleClear}
         onOpenTemplates={() => setIsTemplatesModalOpen(true)}
+        customVertical={attributes.custom_vertical as string | undefined}
+        onCustomVerticalChange={(val) => handleAttributeChange('custom_vertical', val)}
         isExpanded={isStage1Expanded}
         onToggleExpand={() => setIsStage1Expanded(!isStage1Expanded)}
       />

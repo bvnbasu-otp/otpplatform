@@ -1,0 +1,203 @@
+{
+  "schemaVersion": "phase-a-00261-local-smoke-2026-10-11",
+  "sessionId": "18b8b7bc-e9d4-4ccb-acaa-aa5ea69632ac",
+  "phaseACompletionRef": "008e5c6c-b143-4175-a5e9-0a89e7b279ea",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "observedAt": "2026-10-11T07:06:30+05:30",
+  "latestRunId": "a6-local-docker-smoke-2026-10-11",
+  "verdict": "BLOCKED",
+  "blockReason": "DOCKER_DAEMON_UNAVAILABLE",
+  "draftSqlPath": "OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql",
+  "draftSqlSha256": "0228A8F0BC283621B775C2B05827BC1042F3DC25C5E7C736E36AB5C12D4CEBA0",
+  "draftAppliedToSupabaseMigrations": false,
+  "plannedLocalBaseline": "supabase db reset / migrations through 00260 then psql -f draft SQL",
+  "commands": [
+    {
+      "command": "docker info",
+      "exitCode": 0,
+      "timestamp": "2026-10-11T06:55:00+05:30",
+      "note": "Docker client 29.8.2 present; daemon pipe missing"
+    },
+    {
+      "command": "supabase status",
+      "exitCode": 1,
+      "timestamp": "2026-10-11T06:55:00+05:30",
+      "stderrRedacted": "failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified."
+    },
+    {
+      "command": "pnpm db:migrate:check",
+      "exitCode": 0,
+      "timestamp": "2026-10-11T01:27:32.760Z",
+      "note": "Repo chain contiguous 00001-00260; draft 00261 excluded from supabase/migrations"
+    }
+  ],
+  "testsNotExecuted": [
+    "CREATE OR REPLACE via draft SQL on local Postgres",
+    "pg_get_functiondef('public.admin_run_test_case(text,text)'::regprocedure)",
+    "admin_run_test_case('SEC-999') -> execution_status NOT_IMPLEMENTED, passed false",
+    "admin_run_test_case('') malformed empty id -> FAILED",
+    "has_function_privilege('anon', ...) EXECUTE false after REVOKE",
+    "platform admin vs anon role behavior"
+  ],
+  "staticSubstitutesRun": {
+    "command": "pnpm exec vitest run apps/web/src/features/admin/admin-test-suite-runner.test.ts apps/web/src/features/admin/admin.test.ts --config apps/web/vitest.config.ts",
+    "exitCode": 0,
+    "testsPassed": 23,
+    "timestamp": "2026-10-11T06:56:57+05:30",
+    "limitation": "Static file assertions only; not compile proof on PostgreSQL"
+  },
+  "unblockSteps": [
+    "Start Docker Desktop on operator workstation",
+    "pnpm db:start && pnpm db:reset (local disposable only)",
+    "Apply draft: psql $LOCAL_DB_URL -f \"OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql\"",
+    "Re-run RPC probes as service_role and confirm anon EXECUTE revoked"
+  ],
+  "secretsPrinted": false,
+  "versions": [
+    {
+      "versionTag": "initial-phase-a-2026-10-11",
+      "observedAt": "2026-10-11T06:55:00+05:30",
+      "verdict": "BLOCKED",
+      "blockReason": "DOCKER_DAEMON_UNAVAILABLE",
+      "commands": [
+        {
+          "command": "docker info",
+          "exitCode": 0,
+          "timestamp": "2026-10-11T06:55:00+05:30",
+          "note": "Docker client 29.8.2 present; daemon pipe missing"
+        },
+        {
+          "command": "supabase status",
+          "exitCode": 1,
+          "timestamp": "2026-10-11T06:55:00+05:30",
+          "stderrRedacted": "failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified."
+        }
+      ]
+    },
+    {
+      "versionTag": "follow-up-008e5c6c-b143-4175-a5e9-0a89e7b279ea",
+      "observedAt": "2026-10-11T06:58:30+05:30",
+      "verdict": "BLOCKED",
+      "blockReason": "DOCKER_DAEMON_UNAVAILABLE",
+      "commands": [
+        {
+          "command": "docker info",
+          "exitCode": 1,
+          "timestamp": "2026-10-11T07:00:00+05:30",
+          "note": "Docker client 29.8.2; Server section failed — dockerDesktopLinuxEngine pipe not found (daemon not running)"
+        }
+      ],
+      "localSmokeExecuted": false,
+      "testsNotExecuted": [
+        "pnpm db:start / db:reset",
+        "psql apply MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql",
+        "admin_run_test_case RPC probes on local Postgres"
+      ]
+    },
+    {
+      "versionTag": "a6-local-docker-smoke-2026-10-11",
+      "runId": "a6-local-docker-smoke-2026-10-11",
+      "observedAt": "2026-10-11T07:06:30+05:30",
+      "verdict": "BLOCKED",
+      "blockReason": "DOCKER_DAEMON_UNAVAILABLE",
+      "envIdentity": {
+        "gitBranch": "main",
+        "gitHead": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+        "localDbTarget": "127.0.0.1:54322 (supabase/config.toml project_id=otp-local)",
+        "supabaseLinkedProjectNote": "CLI reports linked hosted project; no db reset or hosted deploy attempted",
+        "draftAppliedToSupabaseMigrations": false,
+        "secretsPrinted": false
+      },
+      "baselineVersions": {
+        "pnpmDbMigrateCheck": "00001_enums.sql through 00260_otp_deterministic_hmac_utf16_code_units.sql contiguous PASS",
+        "localSchemaMigrationsApplied": "not_observed_docker_down",
+        "draftSqlSha256": "0228A8F0BC283621B775C2B05827BC1042F3DC25C5E7C736E36AB5C12D4CEBA0"
+      },
+      "staticDraftReview": {
+        "declareVExecutionStatus": true,
+        "securityDefiner": true,
+        "setSearchPath": "public, private",
+        "revokeAnonExecute": true,
+        "authGate": "private.is_platform_admin() OR COALESCE(auth.role(), '') = 'service_role'",
+        "unknownTestIdElseBranch": "NOT_IMPLEMENTED with passed false",
+        "emptyTestIdGuard": "FAILED Missing or empty test ID"
+      },
+      "commands": [
+        {
+          "command": "git branch --show-current; git rev-parse HEAD; git status --short",
+          "exitCode": 0,
+          "timestamp": "2026-10-11T07:05:30+05:30"
+        },
+        {
+          "command": "docker version",
+          "exitCode": 1,
+          "timestamp": "2026-10-11T07:05:45+05:30",
+          "note": "Client 29.8.2; Server connect failed dockerDesktopLinuxEngine pipe missing"
+        },
+        {
+          "command": "docker info",
+          "exitCode": 1,
+          "timestamp": "2026-10-11T07:06:00+05:30",
+          "stderrRedacted": "failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified."
+        },
+        {
+          "command": "supabase status",
+          "exitCode": 1,
+          "timestamp": "2026-10-11T07:06:10+05:30",
+          "stderrRedacted": "StatusDbInspectError: failed to inspect container health — same docker pipe error"
+        },
+        {
+          "command": "pnpm db:migrate:check",
+          "exitCode": 0,
+          "timestamp": "2026-10-11T07:06:22+05:30",
+          "note": "Repo chain 260 files 00001-00260; draft 00261 not in supabase/migrations"
+        }
+      ],
+      "testsExecuted": [],
+      "testResultsRedacted": [],
+      "testsNotExecuted": [
+        "pnpm db:start",
+        "pnpm db:reset (supabase db reset local otp-local only)",
+        "local schema_migrations baseline through 00260",
+        "psql apply OTP Golden Reconstruction/MIGRATION_00261_ADMIN_RUN_TEST_CASE_DRAFT.sql",
+        "pg_get_functiondef(public.admin_run_test_case(text,text))",
+        "admin_run_test_case('SEC-999') -> NOT_IMPLEMENTED passed false",
+        "admin_run_test_case('') empty id -> FAILED",
+        "has_function_privilege(anon, EXECUTE) false",
+        "SET ROLE anon unauthorized EXECUTE probe"
+      ],
+      "localSmokeExecuted": false,
+      "operatorUnblock": [
+        "Start Docker Desktop (Linux engine / desktop-linux context)",
+        "pnpm db:start then pnpm db:reset — confirm 127.0.0.1:54322 before reset",
+        "Apply draft via psql to local only; re-run RPC probes"
+      ]
+    },
+    {
+      "versionTag": "rev2-verification-gate-2026-10-11",
+      "observedAt": "2026-10-11T08:19:00+05:30",
+      "verdict": "BLOCKED",
+      "blockReason": "DOCKER_DAEMON_UNAVAILABLE",
+      "parentGate": "OTP REV2 Security Draft Verification & Caller-Compatibility Gate",
+      "commands": [
+        {
+          "command": "docker info",
+          "exitCode": 0,
+          "note": "Client 29.8.2; daemon pipe still missing"
+        },
+        {
+          "command": "supabase status",
+          "exitCode": 1,
+          "stderrRedacted": "failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine"
+        }
+      ],
+      "localSmokeExecuted": false,
+      "testsNotExecuted": [
+        "Read-only probe 127.0.0.1:54322",
+        "Post-apply admin_run_diagnostic_query anon deny",
+        "Post-apply guard_profile_privileges empty-role red-team"
+      ],
+      "prerequisite": "Docker Desktop running; optional local apply of 00262/00263 drafts via psql (not performed — no DB mutation policy)"
+    }
+  ]
+}

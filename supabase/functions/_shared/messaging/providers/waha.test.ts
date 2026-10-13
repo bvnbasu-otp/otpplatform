@@ -239,3 +239,21 @@ Deno.test('WAHA verify refuses unsigned inbound traffic', async () => {
   assertEquals(provider(fetch).parse({ method: 'POST', url: '', headers: {}, rawBody: '{}' }), []);
   assertEquals(provider(fetch).parseStatus({ method: 'POST', url: '', headers: {}, rawBody: '{}' }), []);
 });
+
+Deno.test('WAHA attaches X-Api-Key when configured', async () => {
+  const { fetchImpl, calls } = scripted(workingSessionThen([
+    jsonResponse(200, { id: 'auth-msg-1' }),
+  ]));
+  const configured = new WahaMessagingProvider({
+    baseUrl: BASE,
+    session: 'default',
+    apiKey: 'waha-secret-key-123',
+    fetchImpl,
+  });
+  const receipt = await configured.send(MESSAGE);
+  assertEquals(receipt.status, 'SENT');
+  assertEquals(calls[0].headers['x-api-key'], 'waha-secret-key-123');
+  assertEquals(calls[1].headers['x-api-key'], 'waha-secret-key-123');
+  assertEquals(calls[2].headers['x-api-key'], 'waha-secret-key-123');
+});
+

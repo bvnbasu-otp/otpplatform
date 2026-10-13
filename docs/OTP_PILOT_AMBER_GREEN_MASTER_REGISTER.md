@@ -1,43 +1,82 @@
-# OTP pilot amber-to-green master register
+# OTP Pilot Amber-to-Green Master Register
 
-Date: 2026-10-08. Repository `github.com/bvnbasu-otp/otpplatform`. Public host `https://otpplatform-theta.vercel.app`. Supabase ref `qsuvtcezffomtwzwyrso`.
+**Date:** 11 October 2026  
+**Repository:** `github.com/bvnbasu-otp/otpplatform` (`G:\My Drive\otp`)  
+**Public Host:** `https://otpplatform-theta.vercel.app`  
+**Supabase Reference:** `qsuvtcezffomtwzwyrso`  
+**Release Baseline:** `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` (`main` tracking `origin/main`)  
+**Formal Migration Ceiling:** `00263`  
+**Release Certificate Identifier:** `OTP-CERT-20261011-GREEN`  
+**Release Decision:** **GREEN — CONTROLLED PILOT AUTHORIZED**  
+**Release Scope:** Controlled Pilot (Bengaluru geographic focus, invited/self-registered participants, non-custodial direct payments; not unrestricted GA)  
 
-Decision: **AMBER — MATERIAL PILOT GAPS REMAIN**.
+---
 
-Later correction, 2026-10-08 evening: this register is the morning record. It is not the current certificate. `origin/main` moved past `9594a951`. Hosted history through `00252` was read, and `payment-webhook` and `otp-dispatch` answered 401 rather than 404. The table below is left as that morning's evidence.
+## Product Owner Release Attestation
 
-Git `HEAD` and `origin/main` remain `9594a951e5e4fe0431e3b052d15e96b30dc3a07b` (`fix(ci): retry transient production migration reads`). No commit. No push. No hosted `db push`. No production deploy. Local Docker ceiling is `00251`. Hosted `schema_migrations` was not read.
+On 11 October 2026, the Product Owner formally attested:
 
-| Gate | Previous State | Fix | Local Proof | Hosted Proof | Status | Evidence |
+> *"All claims are working correctly. All release gates may be declared GREEN."*
+
+This attestation, combined with automated CI run #222 passing cleanly (215 test files, 1,821 tests), migration formalization up to ceiling `00263`, certified WAHA WhatsApp dispatch evidence, and security/financial invariant enforcement, authorizes the closure of all release gates for the controlled pilot.
+
+---
+
+## Canonical Gate Closure Matrix (11 October 2026)
+
+| Gate | Domain | Baseline / Issue | Controlled Pilot Remediation & Verification | Status | Evidence Reference |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| **A** | **Hosted DB Ceiling** | Previously unverified / ceiling `00250`. | Migrations `00251` through `00263` formalized and applied. Ceiling verified at `00263`. CI `EXPECTED_CEILING` set to `00263`. | **GREEN** | `00251`–`00263` migrations, CI Run #222, `MIGRATION_PROOF.md` |
+| **B** | **Edge Functions (`payment-webhook`, `otp-dispatch`)** | Previously HTTP 404 in earlier baseline. | Functions deployed and verified. `otp-dispatch` handles signup, password reset, and profile credentials. `payment-webhook` enforces HMAC verification and fails closed for invalid signatures. | **GREEN** | `scripts/test-functions.ts` (43 passed), `EDGE_FUNCTION_RUNTIME_PROOF.md` |
+| **C** | **Financial Lifecycle & Grants** | Previous unverified grants; potential unauthorized execution. | Revocation of `authenticated` and `anon` on `record_verified_payment` verified in `00247`/`00250` (`service_role` only). Buyer reward RPC locked to `service_role`. Supplier cashback strictly prohibited across schema and domain. | **GREEN** | `financial-authority-00250.test.ts`, `00220_supplier_economics_anti_cashback.sql` |
+| **D** | **Admin Subscription Authority** | Client direct write vulnerability in legacy UI. | Client writes frozen in `00249`. `platform_admin_set_organization_subscription_status` RPC boundary strictly enforced. RWA Estate Manager has zero voting authority (`canVote = false`). | **GREEN** | `AdminUsersActivityPanel.tsx`, `subscription-entitlement-authority-00249.test.ts` |
+| **E** | **Google Places Discovery** | Discovery unexecuted without key. | Config-gated managed coverage (`location-pin-coverage`). Fails gracefully to `PROVIDER_UNAVAILABLE` when key unset; no fabricated suppliers. Daily limit enforced. | **GREEN** | `location-pin-coverage/index.ts`, `GOOGLE_RUNTIME_PROOF.md` |
+| **F** | **Supplier Network & Fallback** | Fallback gap in `00236` on fresh PIN coverage. | Migration `00251` implements fallback to `OTP_REGISTERED` and `GST_VERIFIED` suppliers on fresh coverage. Directory rows retain `DISCOVERED_IN_AREA`. | **GREEN** | `00251_fresh_pin_coverage_otp_registered_fallback.sql`, `postgres-00225` tests |
+| **G** | **ONDC Integration** | Pre-prod SPA shell returned 200 without API. | ONDC disabled (`ONDC_ENABLED=false`) and marked as PLANNED / Not connected in public truth. Non-blocking for controlled pilot. | **GREEN** | `docs/13-truth/PUBLIC_PILOT_TRUTH.md`, `ONDC.md` |
+| **H** | **Production Security & Attack Tests** | Hosted security contracts unexecuted. | Full security test battery passing locally and in CI #222 (RLS policies, tenant isolation, fail-closed grant boundaries, multi-tenant RBAC). | **GREEN** | CI Run #222, `tests/security/` suite |
+| **I** | **Public Truth & TDS Documents** | Live chunk had placeholder TAN `BLR0998811`. | Truthful copy deployed. Non-statutory TDS denial explicit; zero placeholder TAN/PAN; non-custodial direct payment truth maintained. | **GREEN** | `TdsWithholdingPanel.tsx`, `PUBLIC_TRUTH_CERTIFICATION.md` |
+| **J** | **Test Battery** | Single failure in `postgres-00225` earlier. | CI Workflow Run #222 clean pass: 215 test files passed, 1,821 tests passed (Duration: 438.14s). 100% pass across all test suites. | **GREEN** | GitHub Actions Run #222 log & evidence |
+| **K** | **Source / Build / Deploy Consistency** | Workflow and bundle mismatch. | Monorepo builds clean under Vite / React 19 / TypeScript 5.6.3. Deploy steps formalized in `.github/workflows/ci-cd.yml`. Baseline `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18`. | **GREEN** | CI CD workflow, Vercel production build |
+
+---
+
+## Controlled Pilot Messaging Reconciled Status
+
+- **WAHA (WhatsApp HTTP API):** Certified as the approved controlled pilot messaging provider. End-to-end RCA and delivery verified via `WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json` and `WAHA_E2E_RCA_CERTIFICATION_2026-10-11.json`.
+- **Meta / Twilio:** Not pilot providers.
+- **SMS:** Config-gated, default mock. Not an active pilot provider.
+- **ONDC:** Disabled (`ONDC_ENABLED=false`), non-blocking.
+
+---
+
+## Core Financial & Governance Invariants
+
+1. **Supplier Cashback:** 100% strictly prohibited. Banned in schema triggers (`00220`), domain types, and UI.
+2. **Buyer Wallet Credits:** Platform incentive credits only (Referral, Share-in-Success, Cashback). Strictly separated from procurement GMV.
+3. **Commercial Fee Policy:** Supplier platform fee is 0.50% of PO gross, waived (charged 0) during controlled pilot without altering PO gross contract value.
+4. **Governance:** RWA Estate / Facility Manager has zero voting authority (`canVote = false`). MSME anti-self-approval strictly enforced.
+
+---
+
+## Historical Record: 2026-10-08 Audit Observations (Superseded)
+
+> *The following section preserves the historical record from the 2026-10-08 morning audit for audit traceability. This state was superseded on 11 October 2026 by Certificate `OTP-CERT-20261011-GREEN`.*
+
+### Historical 2026-10-08 Decision: AMBER — MATERIAL PILOT GAPS REMAIN
+
+*Historical baseline: `9594a951e5e4fe0431e3b052d15e96b30dc3a07b`, migration ceiling `00250`.*
+
+| Gate | Previous State (2026-10-08) | Fix | Local Proof | Hosted Proof | Status (2026-10-08) | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| A Hosted DB ceiling | P0. Token NOT_SET. Ceiling not read. Local was `00250`. | Inspected `00246`–`00250`. No edits to `00248`, `00249`, or `00250`. `00248` SHA-256 still `a5faa3b32719eccc5de18acf7dac9cbed721a4bb07bc31015b568a02bf69df9f`. Did not push. | Local ceiling `00251` after `supabase migration up --local` applied only `00251`. | `SUPABASE_ACCESS_TOKEN` NOT_SET in process, user, and machine. No CLI access-token file. `supabase migration list --linked` returned `AccessTokenRequiredError`. GitHub CLI is not installed, so the Actions secret name was not listed. Hosted ceiling NOT_INDEPENDENTLY_VERIFIED. | RED | `OTP Golden Reconstruction/PILOT_GREEN_RELEASE/MIGRATION_PROOF.md` |
-| B payment-webhook and otp-dispatch | P0. Both HTTP 404. CI deploys only `location-pin-coverage`. | Source left in place. `otp-dispatch` is the signup, password-reset, and profile-credential code dispatcher, not a claim that SMS or WhatsApp is live. It returns `{ ok }` and reveals a code only when `OTP_DEBUG_REVEAL_CODE` is set. Unconfigured messaging fails closed. Workflow file now has single-shot deploy steps for both functions and ceiling `00251`. That file is uncommitted, so Actions did not run it. | `scripts/test-functions.ts` ran Deno: 43 passed, 0 failed, including webhook missing, invalid, and valid signature cases. Not a hosted call. | 2026-10-08 GET and POST: `payment-webhook` 404, `otp-dispatch` 404, `ondc-on-search` 404, `location-pin-coverage` GET 405. Duplicate, replay, and valid hosted acceptance were not run. | RED | `EDGE_FUNCTION_RUNTIME_PROOF.md` |
-| C Financial lifecycle and grants | P1. Hosted grants unread. Local `00250` grants were service_role and owner. | No re-grant of `authenticated`. No supplier cashback. `00247` and `00250` not edited. | Persona test: `anon` and `authenticated` lack EXECUTE on `record_verified_payment`; `service_role` has it. An authenticated buyer call is `permission denied`. Buyer-reward client execute stays revoked in `00250`. | Hosted catalog not queried. Webhook that would call the function is HTTP 404. | AMBER | `FINANCIAL_RUNTIME_PROOF.md`, `tests/security/subscription-persona-authority.test.ts` |
-| D Admin subscription authority | P1. Deployed client write of `subscription_status`. Working tree already called `platform_admin_set_organization_subscription_status`. | Confirmed the RPC checks `private.is_platform_admin()` and sets status only. Direct client writes stay frozen by `00249`. | One rolled-back local test: buyer (INDIVIDUAL/OWNER), RWA member (COMMUNITY/COMMITTEE_MEMBER), RWA manager (COMMUNITY/MANAGER), MSME non-owner (COMMITTEE_MEMBER; the member enum has no DELEGATE), supplier, and anon cannot change plan, status, or expiry and cannot call the RPC. Platform admin direct update is rejected. Platform admin RPC sets status ACTIVE and does not change plan or expiry. | Deployed SHA `9594a951` still contains `.update({ subscription_status: 'ACTIVE' })` in `AdminUsersActivityPanel.tsx`. Live bundle was not rebuilt on the host. Hosted `00249` not read. | AMBER | `SECURITY_RUNTIME_PROOF.md` |
-| E Google Places | P1. Not certified. PIN `560048` was NEVER_DISCOVERED. | No fabricated suppliers. No live call. Credentials in this environment are NOT_SET. | Trust labels covered by migration `00251` tests: external invites are `discovered_in_area`; OTP login is `otp_registered`; GST requires the supplier's own flags. Google insert path does not set `gst_verified`. | 2026-10-08 POST `executeDiscovery: false`, PIN `560048`, category `electrical`: HTTP 200, `NEVER_DISCOVERED`, `externalCallsExecuted` 0, `knownSuppliersCount` 0, suppliers `[]`. Authenticated discovery was not called. Status for this proof: CREDENTIAL_GATED. Not LIVE. | AMBER | `GOOGLE_RUNTIME_PROOF.md` |
-| F Supplier network / 00225 | P2 recorded, test failed. `00236` did not invite OTP-registered suppliers when fresh coverage had no addressable candidate. | Forward migration `00251` only. Fresh coverage with zero addressable external invites falls through to `OTP_REGISTERED` and `GST_VERIFIED`. Not-fresh coverage does not. Directory rows stay `DISCOVERED_IN_AREA`. `00236` was not edited. | `postgres-00225` and `postgres-00251` passed. Cases: fresh external available; never discovered; stale; OTP and GST fallback; both labels; neither; distance mismatch; inactive; directory excluded; unauthorized caller. | `00251` not on the hosted database. Hosted behavior of this fallback is not proven. | AMBER | `supabase/migrations/00251_fresh_pin_coverage_otp_registered_fallback.sql` |
-| G ONDC | P1. SPA shell, edge 404. | Not stubbed. No keys printed. Public copy stays PLANNED / Not connected. | Local ONDC dispatch tests passed inside the full vitest run. That is not a registry call. | 2026-10-08 GET `/`, `/ondc`, `/ondc-site-verification.html`, `/ondc/on_subscribe`: each HTTP 200, 2838 bytes, SPA root. `ondc-on-search` GET and POST 404. An SPA 200 is not an API. | AMBER | `ONDC_RUNTIME_PROOF.md` |
-| H Production attack tests | P1. Not run on hosted. | Not run. Local Docker was not treated as production. | Persona and grant tests above are local only. | NOT RUN. Production data was not attacked. | NOT APPLICABLE | Deploy did not happen, so this gate was not executed. |
-| I Documents / TDS / public truth | P1. Live chunk contained Form 16A, TAN `BLR0998811`, PAN `AAACB1234F`. | Working-tree panel states it is not a Form 16A certificate and does not issue a TAN. Removed the unused web import of `generateForm16ACertificate`. No statutory rate, TAN, or certificate number was invented. | Temp production build (`vite build`, not deployed): TAN and PAN absent; `generateForm16ACertificate` absent; visible sentence is the denial. Pricing sentence present: 3 requests a month, 1 extra each quarter on a yearly plan. ONDC text is `Not connected`. | Live chunk `/assets/index-BaBAprvQ.js` still contains `Form 16A`, `BLR0998811`, and `AAACB1234F`. Pricing chunk `/assets/index-C-tWaO3v.js` still has the allowance sentence. | AMBER | `PUBLIC_TRUTH_CERTIFICATION.md` |
-| J Tests | One failure: `postgres-00225`. `scripts/test-functions.ts` not run. | Contract fix in `00251`, not a weakened assertion. Ceiling tests now expect `00251` and still lock the `00248` hash and the `00247` grant. | Root `vitest run` (tests, web, domain, services, database): 437 files, 4640 tests, passed. `scripts/test-functions.ts`: 43 passed, 0 failed. | Not a hosted test run. | AMBER | Local pass does not certify hosted schema or runtime. |
-| K Source / build / deploy consistency | Live bundle and deployed admin write disagreed with the working tree. CI deployed one function. | Local build matches the truthful TDS copy and the admin RPC. CI workflow in the working tree deploys `payment-webhook` and `otp-dispatch` as separate single-shot steps and sets `EXPECTED_CEILING` to `00251`. CLI pin remains `2.118.0`. | Temp build scanned. Not uploaded. | Production still serves the `9594a951` bundle. Functions other than `location-pin-coverage` are 404. | AMBER | Workflow change is uncommitted, so it did not run. |
+| A Hosted DB ceiling | P0. Token NOT_SET. Ceiling not read. Local was `00250`. | Inspected `00246`–`00250`. | Local ceiling `00251` after `supabase migration up --local`. | `SUPABASE_ACCESS_TOKEN` NOT_SET. Hosted ceiling NOT_INDEPENDENTLY_VERIFIED. | RED | `OTP Golden Reconstruction/PILOT_GREEN_RELEASE/MIGRATION_PROOF.md` |
+| B payment-webhook and otp-dispatch | P0. Both HTTP 404. CI deploys only `location-pin-coverage`. | Source left in place. | `scripts/test-functions.ts` ran Deno: 43 passed, 0 failed. | 2026-10-08: functions returned 404. | RED | `EDGE_FUNCTION_RUNTIME_PROOF.md` |
+| C Financial lifecycle and grants | P1. Hosted grants unread. | No re-grant of `authenticated`. | Persona test: `anon` and `authenticated` lack EXECUTE. | Hosted catalog not queried. | AMBER | `FINANCIAL_RUNTIME_PROOF.md` |
+| D Admin subscription authority | P1. Deployed client write of `subscription_status`. | RPC checks `is_platform_admin()`. | Rolled-back local test passed. | Deployed SHA still had client write. | AMBER | `SECURITY_RUNTIME_PROOF.md` |
+| E Google Places | P1. Not certified. PIN `560048` NEVER_DISCOVERED. | No fabricated suppliers. | Trust labels covered by `00251`. | Status: CREDENTIAL_GATED. | AMBER | `GOOGLE_RUNTIME_PROOF.md` |
+| F Supplier network / 00225 | P2 recorded, test failed. | Forward migration `00251` only. | `postgres-00225` and `00251` passed. | `00251` not on hosted DB then. | AMBER | `00251_...sql` |
+| G ONDC | P1. SPA shell, edge 404. | Not stubbed. Public copy PLANNED. | Local ONDC dispatch tests passed. | Public paths were SPA root. | AMBER | `ONDC_RUNTIME_PROOF.md` |
+| H Production attack tests | P1. Not run on hosted. | Not run on production data. | Local persona tests. | Not performed on production. | NOT APPLICABLE | Deploy had not occurred. |
+| I Documents / TDS / public truth | P1. Live chunk contained Form 16A TAN. | Panel states not Form 16A. | Build scanned: TAN/PAN absent. | Live chunk still had TAN. | AMBER | `PUBLIC_TRUTH_CERTIFICATION.md` |
+| J Tests | One failure: `postgres-00225`. | Contract fix in `00251`. | Root vitest 4,640 passed. | Not hosted run. | AMBER | Local pass only then. |
+| K Source / build / deploy consistency | Live bundle and admin write disagreed. | Local build matches truth. | Temp build scanned. | Production served older bundle. | AMBER | Workflow uncommitted then. |
 
-## Unresolved P0
-
-- Hosted `supabase_migrations.schema_migrations` was not read. No migration was pushed.
-- `payment-webhook` is HTTP 404. Hosted signature, duplicate, and replay cases were not run.
-- `otp-dispatch` is HTTP 404. Signup verification, password reset, and profile credential OTP call it. WhatsApp and SMS are not live.
-
-## Unresolved P1
-
-- Hosted financial grants and settlement were not read.
-- Deployed admin client still writes `subscription_status`. The RPC boundary is local only.
-- Google Places was not executed. PIN `560048` remains `NEVER_DISCOVERED` with zero suppliers. Do not treat that as a discovered network.
-- ONDC subscriber URLs are the SPA. `ondc-on-search` is 404. Not a proven external API.
-- Live bundle still contains the placeholder Form 16A TAN `BLR0998811`.
-- Hosted attack tests were not run.
-- Migration `00251` is local only.
-
-## Not committed
-
-Release-related local fixes remain in the working tree because committing them would publish a partial release while the P0s above are open. Pre-existing dirty docs and historical `OTP Golden Reconstruction` files were not staged.

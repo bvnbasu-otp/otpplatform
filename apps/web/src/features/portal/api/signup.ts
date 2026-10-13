@@ -70,27 +70,109 @@ export interface SignupResult {
   whatsappFallbackAttempted?: boolean;
 }
 
+export const FALLBACK_SERVICE_CATEGORIES: ServiceCategory[] = [
+  { code: 'property_facility_management', name: 'Property & Facility Management', description: 'Facility maintenance, painting, housekeeping, plumbing & security manpower' },
+  { code: 'construction_infrastructure', name: 'Construction & Infrastructure', description: 'Civil works, fabrication, waterproofing & structural repairs' },
+  { code: 'electrical_power', name: 'Electrical & Power', description: 'Electrical materials, power equipment, wiring and energy systems' },
+  { code: 'machinery_engineering', name: 'Machinery & Engineering', description: 'Machines, spares, CNC machining, pumps & mechanical services' },
+  { code: 'industrial_supplies_hardware', name: 'Industrial Supplies & Hardware', description: 'Fasteners, tools, consumables, cutting tools & industrial hardware' },
+  { code: 'chemicals_process_materials', name: 'Chemicals & Process Materials', description: 'Industrial chemicals, paints, dyes, solvents & water treatment chemicals' },
+  { code: 'textile_apparel', name: 'Textile & Apparel', description: 'Yarn, fabric, apparel, dyeing, printing & garment job work' },
+  { code: 'agriculture_commodities', name: 'Agriculture & Commodities', description: 'Agricultural produce, grains, spices, seeds & farm equipment' },
+  { code: 'packaging_printing', name: 'Packaging & Printing', description: 'Corrugated boxes, labels, pouches, woven sacks & commercial printing' },
+  { code: 'furniture_fixtures', name: 'Furniture, Fixtures & Interiors', description: 'Home & office furniture, modular workstations & carpentry' },
+  { code: 'safety_security', name: 'Safety & Security', description: 'CCTV, fire fighting equipment, access control & safety gear' },
+  { code: 'water_environmental', name: 'Water & Environmental Solutions', description: 'Water supply, treatment, borewells, pumps & waste management' },
+  { code: 'it_electronics_digital', name: 'IT, Electronics & Digital', description: 'Computers, networks, software, telecom & IT maintenance' },
+  { code: 'logistics_transportation', name: 'Logistics & Transportation', description: 'Freight, local delivery, warehousing & vehicle hire' },
+  { code: 'professional_skilled_services', name: 'Professional & Skilled Services', description: 'Electrician, plumber, structural consultant, audit, design & technicians' },
+  { code: 'general_other', name: 'General / Other', description: 'Specialized requirements and custom services' },
+];
+
+export const FALLBACK_SERVED_CITIES: string[] = [
+  'Bengaluru',
+  'Coimbatore',
+  'Tiruppur',
+  'Chennai',
+  'Salem',
+  'Erode',
+  'Bhavani',
+  'Hyderabad',
+  'Mumbai',
+  'Delhi',
+  'Pune',
+  'Ahmedabad',
+  'Kolkata',
+  'Kochi',
+  'Jaipur',
+  'Lucknow',
+  'Surat',
+  'Indore',
+  'Nagpur',
+  'Vadodara',
+  'Visakhapatnam',
+  'Mysuru',
+  'Madurai',
+  'Hosur',
+];
+
 export async function fetchServiceCategories(): Promise<
   { ok: true; categories: ServiceCategory[] } | { ok: false; error: string }
 > {
-  const { data, error } = await supabase.rpc('service_categories');
+  const maxAttempts = 2;
+  let lastError = '';
 
-  if (error) return { ok: false, error: error.message };
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: { message: 'Timed out acquiring connection from connection pool.' } }), 2000)
+      );
+      const queryPromise = supabase.rpc('service_categories');
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
+      if (!error && data && Array.isArray(data) && data.length > 0) {
+        return {
+          ok: true,
+          categories: (data as Record<string, unknown>[]).map((row) => ({
+            code: row.code as string,
+            name: row.name as string,
+            description: (row.description as string | null) ?? null,
+          })),
+        };
+      }
+      if (error) {
+        lastError = error.message;
+      }
+    } catch (err: unknown) {
+      lastError = err instanceof Error ? err.message : String(err);
+    }
+
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+  }
+
+  // Gracefully fallback to static catalog on connection pool exhaustion, network timeouts, or RPC failures
   return {
     ok: true,
-    categories: ((data ?? []) as Record<string, unknown>[]).map((row) => ({
-      code: row.code as string,
-      name: row.name as string,
-      description: (row.description as string | null) ?? null,
-    })),
+    categories: FALLBACK_SERVICE_CATEGORIES,
   };
 }
 
 export async function fetchServedCities(): Promise<string[]> {
-  const { data, error } = await supabase.rpc('served_cities');
-  if (error || !data) return [];
-  return ((data ?? []) as { city: string }[]).map((row) => row.city).filter(Boolean);
+  try {
+    const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 2000)
+    );
+    const queryPromise = supabase.rpc('served_cities');
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+    if (error || !data) return FALLBACK_SERVED_CITIES;
+    const cities = ((data ?? []) as { city: string }[]).map((row) => row.city).filter(Boolean);
+    return cities.length > 0 ? cities : FALLBACK_SERVED_CITIES;
+  } catch {
+    return FALLBACK_SERVED_CITIES;
+  }
 }
 
 /**

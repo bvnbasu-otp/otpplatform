@@ -65,6 +65,7 @@ function messagingEnv() {
     META_APP_SECRET: Deno.env.get('META_APP_SECRET') ?? undefined,
     WAHA_BASE_URL: Deno.env.get('WAHA_BASE_URL') ?? undefined,
     WAHA_SESSION: Deno.env.get('WAHA_SESSION') ?? undefined,
+    WAHA_API_KEY: Deno.env.get('WAHA_API_KEY') ?? undefined,
     MESSAGING_MOCK_SECRET: Deno.env.get('MESSAGING_MOCK_SECRET') ?? undefined,
   };
 }

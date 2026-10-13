@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "phase-a-messaging-acceptance-2026-10-11",
+  "sessionId": "18b8b7bc-e9d4-4ccb-acaa-aa5ea69632ac",
+  "phase": "PLAN_ONLY_NOT_EXECUTED",
+  "baselineCommit": "6e973c917d3e4cd13015832ab25aa3c913620d5d",
+  "scope": "OTP credential dispatch and WAHA pilot bridge; excludes Meta Cloud API and Twilio production sends",
+  "globalRules": [
+    "HTTP 401 or 403 on edge functions is failure, not success, for go-live acceptance",
+    "No live OTP to production handsets without explicit operator authorization",
+    "Use local Supabase + mock WAHA or ngrok loopback bridge only in Phase B+",
+    "Do not use META_* or Twilio credentials in automated acceptance runs"
+  ],
+  "matrix": [
+    {
+      "id": "MSG-AUTH-001",
+      "layer": "auth_edge",
+      "scenario": "otp-dispatch POST without Authorization header",
+      "environment": "hosted_safe_probe",
+      "expected": { "httpStatus": 401, "bodyCode": "UNAUTHORIZED_NO_AUTH_HEADER", "successFieldMustBe": false },
+      "phaseAStatus": "OBSERVED_401",
+      "liveOtpSend": false
+    },
+    {
+      "id": "MSG-AUTH-002",
+      "layer": "auth_edge",
+      "scenario": "otp-dispatch POST with invalid JWT",
+      "environment": "local_or_hosted_after_auth",
+      "expected": { "httpStatus": 401, "successFieldMustBe": false },
+      "phaseAStatus": "NOT_RUN",
+      "liveOtpSend": false
+    },
+    {
+      "id": "MSG-AUTH-003",
+      "layer": "auth_edge",
+      "scenario": "otp-dispatch authenticated user with no resolvable profile row",
+      "environment": "local_mock_supabase",
+      "expected": { "httpStatus": 404, "errorContains": "Profile record not found" },
+      "phaseAStatus": "NOT_RUN",
+      "notes": "resolveProfileIdForAuthUser parity with fetchCurrentProfile"
+    },
+    {
+      "id": "MSG-AUTH-004",
+      "layer": "auth_edge",
+      "scenario": "payment-webhook POST without signature",
+      "environment": "hosted_safe_probe",
+      "expected": { "httpStatus": 401 },
+      "phaseAStatus": "OBSERVED_401_PRIOR_SESSION",
+      "liveOtpSend": false
+    },
+    {
+      "id": "MSG-WAHA-001",
+      "layer": "waha_reachability",
+      "scenario": "Edge runtime can reach WAHA_BASE_URL (health or session status)",
+      "environment": "local_edge_runtime_or_staging",
+      "expected": { "reachable": true, "provider": "waha" },
+      "phaseAStatus": "NOT_RUN",
+      "notes": "Requires WAHA on loopback/ngrok; MESSAGING_PROVIDER=waha"
+    },
+    {
+      "id": "MSG-WAHA-002",
+      "layer": "waha_reachability",
+      "scenario": "check-exists / LID resolution path for pilot phone",
+      "environment": "local_waha_test_session",
+      "expected": { "dispatchDoesNotThrow": true, "noMetaTwilioCalls": true },
+      "phaseAStatus": "NOT_RUN"
+    },
+    {
+      "id": "MSG-DEVICE-001",
+      "layer": "device_receipt",
+      "scenario": "OTP message received on operator test handset (pilot number only)",
+      "environment": "staging_with_approval",
+      "expected": { "messageDelivered": true, "codeRedactedInLogs": true },
+      "phaseAStatus": "NOT_RUN",
+      "liveOtpSend": false,
+      "blockedUntil": "Explicit messaging E2E authorization"
+    },
+    {
+      "id": "MSG-DEVICE-002",
+      "layer": "device_receipt",
+      "scenario": "DEBUG_REVEAL_CODE local path issues RPC without outbound send",
+      "environment": "local_supabase_debug",
+      "expected": { "rpcCalled": true, "externalProviderCall": false },
+      "phaseAStatus": "NOT_RUN"
+    },
+    {
+      "id": "MSG-NEG-001",
+      "layer": "negative",
+      "scenario": "Treat OPTIONS 200 on otp-dispatch as insufficient for messaging go-live",
+      "environment": "any",
+      "expected": { "acceptanceRequires": "authenticated POST success path or documented mock" },
+      "phaseAStatus": "DOCUMENTED"
+    }
+  ],
+  "dependencies": [
+    "00261 apply not required for messaging edge auth probes",
+    "Profile linkage fix in otp-dispatch requires edge redeploy to take effect on hosted",
+    "WAHA_E2E_RCA_CERTIFICATION_2026-10-08.json for prior pilot bridge context"
+  ],
+  "authorizationSeparated": {
+    "migration00261Apply": "NOT AUTHORIZED in Phase A",
+    "edgeDeploy": "NOT AUTHORIZED in Phase A",
+    "liveDeviceOtp": "NOT AUTHORIZED in Phase A",
+    "localDockerMessagingMock": "ALLOWED when Docker available"
+  }
+}
