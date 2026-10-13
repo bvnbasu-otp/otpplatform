@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   SIGNED_OUT_CONTEXT,
+  fetchRoleContext,
   can,
   canVoteSomewhere,
   hasMultipleRoles,
@@ -333,6 +334,47 @@ describe('highlighting the page someone is on', () => {
     expect(isSupplierEmail('water03@otpdemo.test')).toBe(true);
     expect(isSupplierEmail('secretary@sunrise.test')).toBe(false);
     expect(isSupplierEmail('owner@kovaiprecision.test')).toBe(false);
+  });
+});
+
+describe('fetchRoleContext resilience', () => {
+  it('gracefully recovers with synthesized admin context when RPC fails but superadmin user is signed in', async () => {
+    vi.spyOn(supabase, 'rpc').mockResolvedValueOnce({
+      data: null,
+      error: { message: '504 Gateway Timeout' } as any,
+    } as any);
+
+    vi.spyOn(supabase.auth, 'getUser').mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'admin-uuid-1',
+          email: 'bvnbasu@gmail.com',
+          user_metadata: { full_name: 'Baskar Loganathan' },
+        } as any,
+      },
+      error: null,
+    } as any);
+
+    // Profile query also returns null (e.g. missing profile row)
+    vi.spyOn(supabase, 'from').mockReturnValue({
+      select: () => ({
+        or: () => ({
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+        }),
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+        }),
+      }),
+    } as any);
+
+    const result = await fetchRoleContext();
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.context.signedIn).toBe(true);
+      expect(result.context.isPlatformAdmin).toBe(true);
+      expect(result.context.email).toBe('bvnbasu@gmail.com');
+      expect(result.context.needsOnboarding).toBe(false);
+    }
   });
 });
 

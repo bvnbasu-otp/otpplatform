@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRoleContext } from './hooks/use-role-context';
 import { RoleOnboardingPage } from './pages/RoleOnboardingPage';
@@ -12,12 +12,48 @@ import { RoleOnboardingPage } from './pages/RoleOnboardingPage';
  * a deep link into a bookmarked enquiry lands here too.
  */
 export function RequireRole({ children }: { children: ReactNode }) {
-  const { context, isLoading } = useRoleContext();
+  const { context, isLoading, refresh } = useRoleContext();
+  const [delayed, setDelayed] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setDelayed(false);
+      return;
+    }
+    const timer = setTimeout(() => setDelayed(true), 4000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading your workspace…
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+        <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span>Loading your workspace…</span>
+          {delayed && (
+            <div className="mt-4 flex flex-col items-center gap-2 max-w-sm text-center animate-in fade-in duration-300">
+              <p className="text-xs text-muted-foreground">
+                Connecting to the workspace is taking longer than expected.
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => { void refresh(); }}
+                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition"
+                >
+                  Retry
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void supabase.auth.signOut().then(() => { window.location.href = '/login'; })}
+                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted transition"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }

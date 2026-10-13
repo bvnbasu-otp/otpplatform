@@ -29,6 +29,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     setIsLoading(true);
 
+    const watchdogTimer = setTimeout(() => {
+      if (!cancelled) {
+        console.warn('RoleProvider: context resolution took longer than 7s, releasing loading gate.');
+        setIsLoading(false);
+      }
+    }, 7000);
+
     void (async () => {
       // DEF-004: If returning to admin routes with a cached pre-switch org context, restore role context seamlessly
       if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
@@ -41,6 +48,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       }
 
       const result = await fetchRoleContext();
+      clearTimeout(watchdogTimer);
       if (cancelled) return;
       setContext(result.ok ? result.context : SIGNED_OUT_CONTEXT);
       setIsLoading(false);
@@ -48,6 +56,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      clearTimeout(watchdogTimer);
     };
   }, [user, authLoading]);
 

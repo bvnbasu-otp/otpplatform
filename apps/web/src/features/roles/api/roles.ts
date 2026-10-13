@@ -1,4 +1,12 @@
 import { supabase } from '@/lib/supabase';
+import { isSuperAdminEmail, isFounderEmail } from '@/features/auth/user-role';
+
+function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, fallbackValue: T): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallbackValue), timeoutMs)),
+  ]);
+}
 
 /**
  * A person's job role, and what it lets them do.
@@ -212,9 +220,16 @@ export async function fetchRoleContext(): Promise<
   { ok: true; context: RoleContext } | { ok: false; error: string }
 > {
   try {
-    const { data, error } = await supabase.rpc('my_role_context');
+    const { data, error } = (await withTimeout(
+      supabase.rpc('my_role_context') as unknown as PromiseLike<{ data: unknown; error: unknown }>,
+      5000,
+      { data: null, error: { message: 'my_role_context RPC timeout after 5000ms' } },
+    )) as { data: unknown; error: { message: string } | null };
     if (!error && data) {
-      return { ok: true, context: toContext((data ?? {}) as Record<string, unknown>) };
+      const parsed = toContext((data ?? {}) as Record<string, unknown>);
+      if (parsed.signedIn) {
+        return { ok: true, context: parsed };
+      }
     }
     if (error) {
       console.warn('my_role_context RPC failed, using fallback query:', error.message);
@@ -225,7 +240,12 @@ export async function fetchRoleContext(): Promise<
 
   // Fallback direct read for profile and blocking status
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const authResult = await withTimeout(
+      supabase.auth.getUser(),
+      3000,
+      { data: { user: null }, error: new Error('auth.getUser timeout') } as any,
+    );
+    const user = authResult?.data?.user;
     if (!user) return { ok: true, context: SIGNED_OUT_CONTEXT };
 
     let { data: profile } = await supabase
@@ -356,6 +376,25 @@ export async function fetchRoleContext(): Promise<
           isBlocked,
           blockedReason: profile.blocked_reason || null,
           status: isBlocked ? 'BLOCKED' : profile.status || 'ACTIVE',
+        },
+      };
+    }
+
+    // Authenticated user but profile row not yet created: synthesize graceful fallback
+    if (!profile && user) {
+      const email = user.email || '';
+      const isAdmin = isSuperAdminEmail(email) || isFounderEmail(email);
+      return {
+        ok: true,
+        context: {
+          ...SIGNED_OUT_CONTEXT,
+          signedIn: true,
+          profileId: user.id,
+          email,
+          fullName: (user.user_metadata?.full_name as string) || (email ? email.split('@')[0] : 'User'),
+          isPlatformAdmin: isAdmin,
+          needsOnboarding: !isAdmin,
+          status: 'ACTIVE',
         },
       };
     }
