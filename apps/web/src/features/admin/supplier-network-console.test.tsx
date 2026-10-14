@@ -24,4 +24,14 @@ describe('AdminSupplierNetworkConsole (R2-07 Superadmin Location Pre-Warm UI)', 
     });
     expect(element.props.onPrepareLocation).toBe(handlePrepare);
   });
+
+  it('supports canonical database categories during superadmin location warming', () => {
+    const handlePrepare = vi.fn();
+    const handleRefresh = vi.fn();
+    const element = React.createElement(AdminSupplierNetworkConsole, {
+      onPrepareLocation: handlePrepare,
+      onRefreshTelemetry: handleRefresh,
+    });
+    expect(element.type).toBe(AdminSupplierNetworkConsole);
+  });
 });

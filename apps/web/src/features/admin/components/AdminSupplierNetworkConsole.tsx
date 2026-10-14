@@ -46,16 +46,28 @@ const POPULAR_CITIES: Record<string, string[]> = {
 };
 
 const CANONICAL_CATEGORIES = [
+  'Electrical & Power',
+  'Construction & Infrastructure',
+  'Agriculture & Commodities',
+  'Chemicals & Process Materials',
+  'General / Other',
+  'Industrial Supplies & Hardware',
+  'IT, Electronics & Digital',
+  'Logistics & Transportation',
+  'Machinery & Engineering',
+  'Packaging & Printing',
+  'Professional & Skilled Services',
+  'Property & Facility Management',
+  'Safety & Security',
+  'Textile & Apparel',
+  'Water & Environmental Solutions',
+  // Subcategory/Common Profiles
   'Electrical & Automation',
   'Construction & Civil Works',
   'Plumbing & Water Systems',
   'Painting & Waterproofing',
   'Security & Surveillance',
-  'Elevator & Lift Maintenance',
   'HVAC & Air Conditioning',
-  'Food, Catering & Hospitality',
-  'Office Furniture & Fixtures',
-  'Solar Power & Inverters',
 ];
 
 export function AdminSupplierNetworkConsole({
@@ -65,7 +77,7 @@ export function AdminSupplierNetworkConsole({
   const [state, setState] = useState('Karnataka');
   const [city, setCity] = useState('Bengaluru');
   const [pincode, setPincode] = useState('560048');
-  const [category, setCategory] = useState('Electrical & Automation');
+  const [category, setCategory] = useState('Electrical & Power');
   const [customCategory, setCustomCategory] = useState('');
   const [forceRefresh, setForceRefresh] = useState(false);
 

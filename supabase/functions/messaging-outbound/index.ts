@@ -110,11 +110,29 @@ Deno.serve(async (req) => {
   if (channelError) return errorResponse(channelError.message, 400);
 
   // WhatsApp first when both are verified: richer message, same price.
-  const chosen = (channels ?? []).find((c) => c.channel === 'WHATSAPP')
+  let chosen = (channels ?? []).find((c) => c.channel === 'WHATSAPP')
     ?? (channels ?? []).find((c) => c.channel === 'SMS');
 
   if (!chosen) {
-    return jsonResponse({ skipped: true, reason: 'No verified messaging channel for this supplier' });
+    const { data: supplier } = await db
+      .from('suppliers')
+      .select('contact_phone')
+      .eq('id', supplierId)
+      .maybeSingle();
+
+    if (supplier?.contact_phone) {
+      const rawDigits = supplier.contact_phone.replace(/[^0-9]/g, '');
+      const phoneE164 = rawDigits.length === 10
+        ? `+91${rawDigits}`
+        : rawDigits.length === 12 && rawDigits.startsWith('91')
+        ? `+${rawDigits}`
+        : `+${rawDigits}`;
+      chosen = { channel: 'WHATSAPP', phone_e164: phoneE164 };
+    }
+  }
+
+  if (!chosen) {
+    return jsonResponse({ skipped: true, reason: 'No verified messaging channel or contact phone for this supplier' });
   }
 
   const { data: rawPayload, error: payloadError } = await db.rpc('supplier_rfq_message_payload', {

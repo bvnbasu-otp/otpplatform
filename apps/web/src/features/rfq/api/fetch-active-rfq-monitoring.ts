@@ -74,13 +74,23 @@ export function computeSourcingHealth({
   isDeadlineExpired: boolean;
   rfqStatus?: string;
 }): SourcingHealthIndicator {
-  if (isQuorumMet || rfqStatus === 'EVALUATING' || (isDeadlineExpired && quotesCount >= 1)) {
+  if (isQuorumMet || rfqStatus === 'EVALUATING') {
     return {
       status: 'READY FOR EVALUATION',
       label: 'Ready for Evaluation',
       badgeLabel: 'READY FOR EVALUATION',
       description: `Quorum reached (${quotesCount}/${minQuotesRequired} quotes received). Proceed to evaluate sealed quotes.`,
       tone: 'ready',
+    };
+  }
+
+  if (isDeadlineExpired && quotesCount >= 1 && !isQuorumMet) {
+    return {
+      status: 'ATTENTION',
+      label: 'Quorum Unmet (Deadline Expired)',
+      badgeLabel: 'QUORUM AT RISK',
+      description: `Quote deadline has passed with ${quotesCount}/${minQuotesRequired} quotes received. Quorum unmet. Extend deadline, invite more suppliers, or record a quorum waiver.`,
+      tone: 'attention',
     };
   }
 

@@ -3,6 +3,81 @@
  */
 
 const CATEGORY_QUERY_MAP: Record<string, readonly string[]> = {
+  // 15 Canonical Database Categories
+  'electrical & power': [
+    'electrical suppliers',
+    'industrial switchgear transformer dealer',
+    'power equipment store',
+  ],
+  'construction & infrastructure': [
+    'building material suppliers',
+    'civil construction contractors',
+    'cement steel hardware suppliers',
+  ],
+  'agriculture & commodities': [
+    'agricultural suppliers',
+    'agro commodities wholesale dealers',
+    'fertilizer seed suppliers',
+  ],
+  'chemicals & process materials': [
+    'industrial chemical suppliers',
+    'process raw materials chemical dealers',
+    'laboratory chemical store',
+  ],
+  'general / other': ['commercial wholesale suppliers', 'industrial store'],
+  'general_other': ['commercial wholesale suppliers', 'industrial store'],
+  'industrial supplies & hardware': [
+    'industrial hardware tools suppliers',
+    'fasteners bearings tools dealers',
+    'industrial equipment store',
+  ],
+  'it, electronics & digital': [
+    'it networking equipment suppliers',
+    'electronic component distributors',
+    'computer hardware suppliers',
+  ],
+  'logistics & transportation': [
+    'transportation logistics services',
+    'freight forwarding cargo movers',
+    'commercial fleet transport',
+  ],
+  'machinery & engineering': [
+    'industrial machinery suppliers',
+    'engineering tools equipment dealers',
+    'workshop machinery store',
+  ],
+  'packaging & printing': [
+    'packaging material corrugated box suppliers',
+    'commercial printing packaging dealers',
+    'industrial packaging store',
+  ],
+  'professional & skilled services': [
+    'professional engineering consultancy',
+    'skilled industrial technical services',
+    'commercial maintenance services',
+  ],
+  'property & facility management': [
+    'facility management services',
+    'commercial building maintenance',
+    'property housekeeping security services',
+  ],
+  'safety & security': [
+    'cctv fire safety equipment suppliers',
+    'industrial safety security systems dealers',
+    'ppe safety gear store',
+  ],
+  'textile & apparel': [
+    'textile fabric wholesale suppliers',
+    'industrial uniform apparel manufacturers',
+    'garment fabric store',
+  ],
+  'water & environmental solutions': [
+    'water treatment plant equipment suppliers',
+    'ro water filtration dealers',
+    'environmental pollution control suppliers',
+  ],
+
+  // Legacy / Subcategory Aliases
   'electrical & automation': [
     'electrical suppliers',
     'industrial automation suppliers',

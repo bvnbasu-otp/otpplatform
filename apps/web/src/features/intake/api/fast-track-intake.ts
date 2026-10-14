@@ -3,8 +3,8 @@ import {
   type ParsedRequirement,
   type TaxonomySnapshot,
 } from '@otp/domain';
-import { discoverAndInvite } from '@/features/requirement/api/rfq-lifecycle';
-import { createDraft, publishDraft, type DraftPatch } from './draft';
+import { discoverAndInvite, discoverForRequirement } from '@/features/requirement/api/rfq-lifecycle';
+import { createDraft, publishDraft, inferIndianState, type DraftPatch } from './draft';
 import { fetchTaxonomy } from './taxonomy';
 import { fetchPrimaryDeliveryLocation, resolveLocationPrefill } from './primary-address';
 
@@ -121,6 +121,7 @@ export function parsedToPatch(
   patch.unit = parsed.unit || 'units';
   patch.deliveryCity = resolveDeliveryCity(parsed.deliveryCity, originalText);
   patch.deliveryPincode = parsed.deliveryPincode?.trim() || null;
+  patch.deliveryState = inferIndianState(patch.deliveryPincode, patch.deliveryCity);
   patch.requiredByMode = 'WITHIN_DAYS';
   patch.requiredByDays = parsed.timing?.requiredByDays ?? 3;
 
@@ -195,6 +196,10 @@ export async function fastTrackExpressIntake(
     return { ok: false, error: FAST_TRACK_LOCATION_REQUIRED_ERROR };
   }
 
+  if (!parsedPatch.deliveryState) {
+    parsedPatch.deliveryState = inferIndianState(parsedPatch.deliveryPincode, parsedPatch.deliveryCity);
+  }
+
   const draftRes = await createDraft({
     title,
     originalText: trimmed,
@@ -210,10 +215,14 @@ export async function fastTrackExpressIntake(
     return { ok: false, error: publishRes.error };
   }
 
-  // 1. Auto-discover and invite verified suppliers for this published RFQ
-  const discoverRes = await discoverAndInvite(publishRes.rfqId);
-  if (!discoverRes.ok) {
-    return { ok: false, error: discoverRes.error };
+  // 1. Auto-discover and invite eligible registered suppliers first
+  await discoverAndInvite(publishRes.rfqId, 'OTP_REGISTERED').catch(() => undefined);
+
+  // 2. Discover and invite Google Places suppliers for this published RFQ
+  const discoverRes = await discoverForRequirement(publishRes.rfqId, 'GOOGLE_PLACES');
+  if (!discoverRes.ok && discoverRes.outcome !== 'ZERO_RESULTS') {
+    // If external discovery hit an issue, fall back to base discoverAndInvite
+    await discoverAndInvite(publishRes.rfqId).catch(() => undefined);
   }
 
   return {

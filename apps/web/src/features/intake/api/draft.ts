@@ -39,13 +39,14 @@ interface RequirementRow {
   required_by_date: string | null;
   fulfilment_mode: string | null;
   delivery_city: string | null;
+  delivery_state?: string | null;
   delivery_pincode: string | null;
   delivery_line1: string | null;
   site_notes: string | null;
 }
 
 const DRAFT_COLUMNS =
-  'id, organization_id, title, description, status, category_id, subcategory_id, requirement_mode, quantity, unit, attributes, quality, commercial, required_by_mode, required_by_days, required_by_date, fulfilment_mode, delivery_city, delivery_pincode, delivery_line1, site_notes';
+  'id, organization_id, title, description, status, category_id, subcategory_id, requirement_mode, quantity, unit, attributes, quality, commercial, required_by_mode, required_by_days, required_by_date, fulfilment_mode, delivery_city, delivery_state, delivery_pincode, delivery_line1, site_notes';
 
 /**
  * Sourcing choices ride inside `commercial` under one reserved key. They are
@@ -68,7 +69,56 @@ function readCommercial(
   return rest as CommercialDetails;
 }
 
+export function inferIndianState(
+  pincode?: string | null,
+  city?: string | null,
+): string | null {
+  if (pincode && /^[0-9]{6}$/.test(pincode.trim())) {
+    const p2 = pincode.trim().slice(0, 2);
+    if (p2 === '11') return 'Delhi';
+    if (p2 === '12' || p2 === '13') return 'Haryana';
+    if (p2 === '14' || p2 === '15') return 'Punjab';
+    if (p2 === '16') return 'Chandigarh';
+    if (p2 === '17') return 'Himachal Pradesh';
+    if (p2 === '18' || p2 === '19') return 'Jammu and Kashmir';
+    if (['20', '21', '22', '23', '25', '26', '27', '28'].includes(p2)) return 'Uttar Pradesh';
+    if (p2 === '24') return 'Uttarakhand';
+    if (['30', '31', '32', '33', '34'].includes(p2)) return 'Rajasthan';
+    if (['36', '37', '38', '39'].includes(p2)) return 'Gujarat';
+    if (p2 === '40') return pincode.trim().startsWith('403') ? 'Goa' : 'Maharashtra';
+    if (['41', '42', '43', '44'].includes(p2)) return 'Maharashtra';
+    if (['45', '46', '47', '48'].includes(p2)) return 'Madhya Pradesh';
+    if (p2 === '49') return 'Chhattisgarh';
+    if (p2 === '50') return 'Telangana';
+    if (['51', '52', '53'].includes(p2)) return 'Andhra Pradesh';
+    if (['56', '57', '58', '59'].includes(p2)) return 'Karnataka';
+    if (['60', '61', '62', '63', '64'].includes(p2)) return 'Tamil Nadu';
+    if (['67', '68', '69'].includes(p2)) return 'Kerala';
+    if (['70', '71', '72', '73', '74'].includes(p2)) return 'West Bengal';
+    if (['75', '76', '77'].includes(p2)) return 'Odisha';
+    if (p2 === '78') return 'Assam';
+    if (['80', '84', '85'].includes(p2)) return 'Bihar';
+    if (['81', '82', '83'].includes(p2)) return 'Jharkhand';
+  }
+  if (city) {
+    const c = city.trim().toLowerCase();
+    if (['bengaluru', 'bangalore', 'mysuru', 'hubballi', 'belagavi', 'mangaluru'].includes(c)) return 'Karnataka';
+    if (['chennai', 'coimbatore', 'madurai', 'salem', 'tiruppur', 'erode'].includes(c)) return 'Tamil Nadu';
+    if (['mumbai', 'pune', 'nagpur', 'nashik', 'thane'].includes(c)) return 'Maharashtra';
+    if (['delhi', 'new delhi'].includes(c)) return 'Delhi';
+    if (['hyderabad', 'secunderabad', 'warangal'].includes(c)) return 'Telangana';
+    if (['ahmedabad', 'surat', 'vadodara', 'rajkot'].includes(c)) return 'Gujarat';
+    if (['kolkata', 'howrah', 'siliguri'].includes(c)) return 'West Bengal';
+  }
+  return null;
+}
+
 function toDraft(row: RequirementRow): IntakeDraft {
+  const state =
+    row.delivery_state ??
+    (row.attributes?.delivery_state as string | undefined) ??
+    inferIndianState(row.delivery_pincode, row.delivery_city);
+
   return {
     requirementId: row.id,
     organizationId: row.organization_id,
@@ -88,6 +138,7 @@ function toDraft(row: RequirementRow): IntakeDraft {
     requiredByDate: row.required_by_date,
     fulfilmentMode: row.fulfilment_mode as IntakeDraft['fulfilmentMode'],
     deliveryCity: row.delivery_city,
+    deliveryState: state,
     deliveryPincode: row.delivery_pincode,
     deliveryLine1: row.delivery_line1,
     siteNotes: row.site_notes,
@@ -193,12 +244,27 @@ function columnsFor(
   if (patch.fulfilmentMode !== undefined) {
     columns.fulfilment_mode = patch.fulfilmentMode;
   }
+  const derivedState =
+    patch.deliveryState ??
+    inferIndianState(patch.deliveryPincode, patch.deliveryCity);
+
   if (patch.deliveryCity !== undefined) columns.delivery_city = patch.deliveryCity;
+  if (derivedState !== undefined && derivedState !== null) {
+    columns.delivery_state = derivedState;
+  }
   if (patch.deliveryPincode !== undefined) {
     columns.delivery_pincode = patch.deliveryPincode;
   }
   if (patch.deliveryLine1 !== undefined) columns.delivery_line1 = patch.deliveryLine1;
   if (patch.siteNotes !== undefined) columns.site_notes = patch.siteNotes;
+
+  if (derivedState !== undefined && derivedState !== null) {
+    const existingAttrs = (columns.attributes as Record<string, unknown> | undefined) ?? patch.attributes ?? {};
+    columns.attributes = {
+      ...existingAttrs,
+      delivery_state: derivedState,
+    };
+  }
 
   return columns;
 }

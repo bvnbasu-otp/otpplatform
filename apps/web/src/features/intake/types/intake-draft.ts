@@ -39,6 +39,7 @@ export interface IntakeDraft {
   fulfilmentMode: FulfilmentMode | null;
 
   deliveryCity: string | null;
+  deliveryState?: string | null;
   deliveryPincode: string | null;
   deliveryLine1: string | null;
   /** Buyer-private. Never reaches a supplier before award reveal. */

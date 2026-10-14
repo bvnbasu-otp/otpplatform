@@ -245,6 +245,26 @@ describe('Phase C.5 — Active Sourcing Telemetry & Quote Monitoring Cockpit Tes
       expect(stage).toBe('READY FOR EVALUATION');
     });
 
+    it('computes QUORUM AT RISK when deadline is expired with partial quotes', () => {
+      const health = computeSourcingHealth({
+        invitedCount: 5,
+        viewedCount: 3,
+        quotesCount: 1,
+        declinedCount: 0,
+        minQuotesRequired: 3,
+        isQuorumMet: false,
+        unansweredClarificationsCount: 0,
+        isDeadlineApproaching: false,
+        isDeadlineExpired: true,
+        rfqStatus: 'OPEN',
+      });
+      expect(health.status).toBe('ATTENTION');
+      expect(health.badgeLabel).toBe('QUORUM AT RISK');
+      expect(health.label).toBe('Quorum Unmet (Deadline Expired)');
+      expect(health.tone).toBe('attention');
+      expect(health.description).toContain('Quorum unmet');
+    });
+
     it('computes STALLED when zero quotes received and majority of suppliers declined', () => {
       const health = computeSourcingHealth({
         invitedCount: 4,
