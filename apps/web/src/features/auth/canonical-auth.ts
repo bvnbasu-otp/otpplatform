@@ -54,9 +54,8 @@ export interface WebAuthorizationState {
  * Pure authorization resolver mapping raw RoleContext to consolidated WebAuthorizationState.
  */
 export function evaluateWebAuthorization(context: RoleContext): WebAuthorizationState {
-  const userEmail = context.email?.trim().toLowerCase();
-  const isFounder = Boolean(context.isFounder || isFounderEmail(userEmail));
-  const isPlatformAdmin = Boolean(isFounder || context.isPlatformAdmin || isSuperAdminEmail(userEmail));
+  const isFounder = Boolean(context.isFounder);
+  const isPlatformAdmin = Boolean(isFounder || context.isPlatformAdmin);
   const isAdmin = isPlatformAdmin;
 
   // Resolve Persona

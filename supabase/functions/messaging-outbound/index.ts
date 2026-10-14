@@ -21,7 +21,7 @@ import { resolveProvider, MessagingConfigError } from '../_shared/messaging/prov
 import { renderRfqNotification } from '../_shared/messaging/templates.ts';
 import type { MessagingChannel, MessagingProvider } from '../_shared/messaging/types.ts';
 
-const APP_URL = Deno.env.get('APP_URL') ?? 'http://opentradeprocurement.ai:3000';
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://otpplatform-theta.vercel.app';
 
 function serviceClient() {
   return createClient(
@@ -154,11 +154,27 @@ Deno.serve(async (req) => {
     throw error;
   }
 
+  // Issue an ephemeral single-use supplier magic link for quoting capability
+  let magicLinkToken: string | null = null;
+  try {
+    const { data: tokenData, error: tokenError } = await db.rpc('issue_supplier_magic_link', {
+      p_supplier_id: supplierId,
+      p_rfq_id: rfqId,
+      p_channel: channel,
+    });
+    if (!tokenError && typeof tokenData === 'string' && tokenData.length > 0) {
+      magicLinkToken = tokenData;
+    }
+  } catch (tokenErr) {
+    console.warn('Could not issue magic link token for rfq notification:', tokenErr);
+  }
+
   let rendered;
   try {
     rendered = renderRfqNotification(rawPayload as Record<string, unknown>, {
       channel,
       appUrl: APP_URL,
+      magicLinkToken,
     });
   } catch (error) {
     return errorResponse(error instanceof Error ? error.message : 'Could not render message', 500);

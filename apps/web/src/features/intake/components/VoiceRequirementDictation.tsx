@@ -7,7 +7,15 @@ export interface VoiceRequirementDictationProps {
   onPermissionError?: (errorMsg: string) => void;
 }
 
-export type SupportedSpeechLanguage = 'ta-IN' | 'hi-IN' | 'en-IN';
+export type SupportedSpeechLanguage =
+  | 'ta-IN'
+  | 'hi-IN'
+  | 'en-IN'
+  | 'te-IN'
+  | 'kn-IN'
+  | 'ml-IN'
+  | 'mr-IN'
+  | 'bn-IN';
 
 export type RecordingState = 'IDLE' | 'LISTENING' | 'PROCESSING' | 'TRANSCRIPT_AVAILABLE';
 
@@ -40,6 +48,41 @@ const LANGUAGES: LanguageOption[] = [
     nativeLabel: 'தமிழ்',
     flag: '🇮🇳',
     samplePhrase: '10 HP சப்மெர்சிபிள் மோட்டார் வைண்டிங் கோயம்புத்தூரில் 3 நாட்களுக்குள்',
+  },
+  {
+    code: 'te-IN',
+    label: 'Telugu',
+    nativeLabel: 'తెలుగు',
+    flag: '🇮🇳',
+    samplePhrase: '10 HP సబ్‌మెర్సిబుల్ మోటారు వైండింగ్ 3 రోజుల్లో కావాలి',
+  },
+  {
+    code: 'kn-IN',
+    label: 'Kannada',
+    nativeLabel: 'ಕನ್ನಡ',
+    flag: '🇮🇳',
+    samplePhrase: '10 HP ಸಬ್‌ಮರ್ಸಿಬಲ್ ಮೋಟಾರ್ ರಿವೈಂಡಿಂಗ್ 3 ದಿನಗಳಲ್ಲಿ ಬೇಕು',
+  },
+  {
+    code: 'ml-IN',
+    label: 'Malayalam',
+    nativeLabel: 'മലയാളം',
+    flag: '🇮🇳',
+    samplePhrase: '10 HP സബ്മേർസിബിൾ മോട്ടോർ റീവൈൻഡിംഗ് 3 ദിവസത്തിനകം വേണം',
+  },
+  {
+    code: 'mr-IN',
+    label: 'Marathi',
+    nativeLabel: 'मराठी',
+    flag: '🇮🇳',
+    samplePhrase: '10 HP सबमर्सिबल मोटर वाइंडिंग 3 दिवसात हवी आहे',
+  },
+  {
+    code: 'bn-IN',
+    label: 'Bengali',
+    nativeLabel: 'বাংলা',
+    flag: '🇮🇳',
+    samplePhrase: '10 HP সাবমার্সিবল মোটর রিওয়াইন্ডিং ৩ দিনের মধ্যে চাই',
   },
 ];
 

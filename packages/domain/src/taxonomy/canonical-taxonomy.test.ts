@@ -69,6 +69,22 @@ describe('Canonical Sourcing Taxonomy & Classification Engine', () => {
       expect(msmeRes.subcategoryCode).toBe('turmeric_polishing_sterilization');
       expect(msmeRes.regionalClusterCode).toBe('erode_agro_textile');
     });
+
+    it('classifies bulk commodities and industrial packaging requirements', () => {
+      const agroRes = classifyRawBuyerIntent(
+        'Need 50 quintal refined palm oil and 100 quintal wheat supply',
+        CanonicalBuyerContext.MSME,
+      );
+      expect(agroRes.categoryCode).toBe('bulk_agro_commodities');
+      expect(agroRes.subcategoryCode).toBe('edible_oils_grains');
+
+      const packRes = classifyRawBuyerIntent(
+        'Requirement for 500 corrugated carton boxes and 50 HDPE barrels',
+        CanonicalBuyerContext.MSME,
+      );
+      expect(packRes.categoryCode).toBe('industrial_packaging');
+      expect(packRes.subcategoryCode).toBe('corrugated_boxes_drums');
+    });
   });
 
   describe('2. 5 Primary Procurement Types & Recurring Frequencies', () => {

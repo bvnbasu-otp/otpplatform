@@ -127,15 +127,38 @@ export class WahaMessagingProvider implements MessagingProvider {
   }
 
   /**
-   * There is no signature on the current WAHA calls. Unsigned inbound traffic
-   * is discarded.
+   * Verifies the inbound WAHA webhook request against the configured API key header.
    */
-  async verify(_request: WebhookRequest): Promise<boolean> {
-    return false;
+  async verify(request: WebhookRequest): Promise<boolean> {
+    if (!this.#apiKey) return false;
+    const headerKey = request.headers['x-api-key']
+      ?? request.headers['authorization']
+      ?? request.headers['X-Api-Key'];
+    if (!headerKey) return false;
+    const cleanKey = headerKey.replace(/^Bearer\s+/i, '').trim();
+    return cleanKey === this.#apiKey;
   }
 
-  parse(_request: WebhookRequest): InboundMessage[] {
-    return [];
+  parse(request: WebhookRequest): InboundMessage[] {
+    try {
+      const parsed = JSON.parse(request.rawBody);
+      const payload = parsed?.payload ?? parsed;
+      const rawFrom = payload?.from ?? '';
+      const body = payload?.body ?? '';
+      const digits = String(rawFrom).replace(/@.*$/, '').replace(/[^0-9]/g, '');
+      if (!digits || !body) return [];
+
+      return [{
+        provider: this.id,
+        channel: 'WHATSAPP',
+        externalMessageId: payload?.id ? String(payload.id) : null,
+        from: `+${digits}`,
+        body: String(body),
+        raw: typeof parsed === 'object' && parsed !== null ? parsed : {},
+      }];
+    } catch {
+      return [];
+    }
   }
 
   parseStatus(_request: WebhookRequest): DeliveryStatusUpdate[] {

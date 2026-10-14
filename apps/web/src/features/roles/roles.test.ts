@@ -376,5 +376,33 @@ describe('fetchRoleContext resilience', () => {
       expect(result.context.needsOnboarding).toBe(false);
     }
   });
+
+  it('SEC-P0-02: does not synthesize platform admin for unprivileged accounts without profile', async () => {
+    vi.mocked(supabase.auth.getUser).mockResolvedValueOnce({
+      data: { user: { id: 'regular-user-id', email: 'regular@example.com', user_metadata: {} } as any },
+      error: null,
+    });
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: null,
+      error: { message: '504 Gateway Timeout' } as any,
+    });
+    vi.mocked(supabase.from).mockReturnValueOnce({
+      select: () => ({
+        or: () => ({
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+        }),
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+        }),
+      }),
+    } as any);
+
+    const result = await fetchRoleContext();
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.context.isPlatformAdmin).toBe(false);
+      expect(result.context.needsOnboarding).toBe(true);
+    }
+  });
 });
 

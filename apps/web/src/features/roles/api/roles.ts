@@ -380,7 +380,7 @@ export async function fetchRoleContext(): Promise<
       };
     }
 
-    // Authenticated user but profile row not yet created: synthesize graceful fallback
+    // Authenticated user but profile row not yet created / network error: synthesize graceful fallback
     if (!profile && user) {
       const email = user.email || '';
       const isAdmin = isSuperAdminEmail(email) || isFounderEmail(email);

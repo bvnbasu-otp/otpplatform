@@ -58,15 +58,8 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
         .eq('email', authUser.email)
         .maybeSingle();
       if (fallbackData) {
-        const isFounder = Boolean(
-          fallbackData.is_founder || isFounderEmail(fallbackData.email) || isFounderEmail(authUser.email)
-        );
-        const isAdmin = Boolean(
-          isFounder ||
-            fallbackData.is_platform_admin ||
-            isSuperAdminEmail(fallbackData.email) ||
-            isSuperAdminEmail(authUser.email)
-        );
+        const isFounder = Boolean(fallbackData.is_founder);
+        const isAdmin = Boolean(isFounder || fallbackData.is_platform_admin);
         return {
           profileId: fallbackData.id,
           email: fallbackData.email,
@@ -80,15 +73,8 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
     return null;
   }
 
-  const isFounder = Boolean(
-    data.is_founder || isFounderEmail(data.email) || isFounderEmail(authUser.email)
-  );
-  const isAdmin = Boolean(
-    isFounder ||
-      data.is_platform_admin ||
-      isSuperAdminEmail(data.email) ||
-      isSuperAdminEmail(authUser.email)
-  );
+  const isFounder = Boolean(data.is_founder);
+  const isAdmin = Boolean(isFounder || data.is_platform_admin);
 
   return {
     profileId: data.id,

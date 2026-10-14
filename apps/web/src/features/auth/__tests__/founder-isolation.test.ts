@@ -56,4 +56,16 @@ describe('Founder vs Operations Red-Team Security & Isolation', () => {
 
     expect(adminResult.action).toBe('ALLOW');
   });
+
+  it('SEC-P0-02: requires authoritative database isFounder claim rather than email string alone', () => {
+    const spoofResult = evaluateRouteAccess({
+      session: { user: { id: 'unprivileged-user', email: 'bvnbasu@gmail.com' } },
+      user: { id: 'unprivileged-user', email: 'bvnbasu@gmail.com' },
+      context: { isPlatformAdmin: false, isFounder: false },
+      pathname: '/founder',
+      allowedRoles: ['FOUNDER'],
+    });
+
+    expect(spoofResult.action).toBe('REDIRECT');
+  });
 });

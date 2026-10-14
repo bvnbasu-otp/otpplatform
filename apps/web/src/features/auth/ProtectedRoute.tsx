@@ -57,13 +57,8 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
     };
   }
 
-  const userEmail = input.user?.email || input.context?.email;
-  const isFounder = Boolean(
-    input.context?.isFounder || isFounderEmail(userEmail)
-  );
-  const isPlatformAdmin = Boolean(
-    isFounder || input.context?.isPlatformAdmin || isSuperAdminEmail(userEmail)
-  );
+  const isFounder = Boolean(input.context?.isFounder);
+  const isPlatformAdmin = Boolean(isFounder || input.context?.isPlatformAdmin);
 
   // 2. Blocked account hold check
   if (input.context?.isBlocked && !isPlatformAdmin) {

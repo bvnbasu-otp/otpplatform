@@ -67,4 +67,8 @@ describe('discovery source separation', () => {
     const client = readFileSync(join(root, 'apps/web/src/features/requirement/api/rfq-lifecycle.ts'), 'utf8');
     expect(client).toContain("if (network === 'OTP_REGISTERED') args.p_network = 'OTP_REGISTERED'");
   });
+
+  it('validates discovery requirements with full nationwide state support', () => {
+    expect(discoveryRequirementIssues({ pincode: '795001', city: 'Imphal', state: 'Manipur', category: 'Packaging' })).toBeNull();
+  });
 });

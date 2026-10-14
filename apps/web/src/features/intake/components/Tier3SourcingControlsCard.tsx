@@ -38,24 +38,15 @@ export interface Tier3SourcingControlsCardProps {
 const SOURCING_OPTIONS = [
   {
     value: 'IDENTITY_PROTECTED',
-    label: '🛡️ Identity-Protected (Recommended)',
+    label: '🛡️ Identity-Protected Sourcing (Recommended & Default)',
     description:
-      'Suppliers quote with sealed identity protection on technical and commercial merit. Identity is only revealed upon final award confirmation.',
+      'Pure merit evaluation with zero pre-award identity leak. Counterparty identities remain completely sealed until post-award contract execution.',
   },
   {
     value: 'OPEN_RFQ',
     label: '📢 Open RFQ Tender',
-    description: 'Your organization name and requirement are visible upfront to all verified suppliers.',
-  },
-  {
-    value: 'INVITE_SELECTED',
-    label: '🎯 Direct Curated Invite',
-    description: 'Manually invite specific verified suppliers on the discovery screen.',
-  },
-  {
-    value: 'PREVIOUS_SUPPLIERS',
-    label: '🤝 Existing Supplier Network',
-    description: 'Limit invitations exclusively to suppliers who have delivered for your organization before.',
+    description:
+      'Public tender mode: Your organization name is displayed upfront to maximize participation, while supplier quotations remain sealed until evaluation.',
   },
 ];
 

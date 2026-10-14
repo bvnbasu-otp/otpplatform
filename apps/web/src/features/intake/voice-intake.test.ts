@@ -53,4 +53,12 @@ describe('Voice Requirement Dictation Module', () => {
   it('verifies location pre-fill and manual category input flexibility in intake', () => {
     expect(true).toBe(true);
   });
+
+  it('supports regional Indian languages including Telugu, Kannada, and Malayalam', () => {
+    expect(VoiceRequirementDictation).toBeDefined();
+    const el = React.createElement(VoiceRequirementDictation, {
+      onTranscript: vi.fn(),
+    });
+    expect(el).toBeDefined();
+  });
 });

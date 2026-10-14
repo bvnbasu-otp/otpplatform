@@ -92,6 +92,7 @@ export interface TemplateContext {
   channel: MessagingChannel;
   /** Base URL for magic links, e.g. https://app.otp.example. */
   appUrl: string;
+  magicLinkToken?: string | null;
 }
 
 export interface RenderedMessage {
@@ -140,6 +141,9 @@ export function renderRfqNotification(
     : null;
   const deadline = formatDeadline(payload.quoteDeadline);
   const prefix = payload.isDemo ? '[DEMO] ' : '';
+  const magicLink = ctx.magicLinkToken
+    ? `${ctx.appUrl.replace(/\/$/, '')}/q/${ctx.magicLinkToken}`
+    : null;
 
   if (ctx.channel === 'SMS') {
     const lines = [
@@ -147,7 +151,7 @@ export function renderRfqNotification(
       quantity ? `Qty ${quantity}` : null,
       payload.location ? `at ${payload.location}` : null,
       deadline ? `by ${deadline}` : null,
-      `Reply: QUOTE ${payload.publicRef} <price>`,
+      magicLink ? `Quote online: ${magicLink}` : `Reply: QUOTE ${payload.publicRef} <price>`,
     ].filter(Boolean);
     return { templateId: 'rfq_notification_sms', body: lines.join('. ') };
   }
@@ -161,6 +165,7 @@ export function renderRfqNotification(
     deadline ? `*Quote by:* ${deadline}` : null,
     `*Buyer:* ${payload.buyerDisplay ?? 'Identity protected'}`,
     '',
+    magicLink ? `*Quote online:*\n${magicLink}\n` : null,
     `Reply with your price to quote, for example:`,
     `QUOTE ${payload.publicRef} 8500`,
     '',

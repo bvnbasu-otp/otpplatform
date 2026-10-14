@@ -281,6 +281,7 @@ export async function discoverAndInvite(
 function coverageState(row: {
   delivery_city?: string | null;
   delivery_pincode?: string | null;
+  delivery_state?: string | null;
   attributes?: unknown;
   structured_specs?: unknown;
 }): { city: string; state: string; pincode: string } {
@@ -290,7 +291,7 @@ function coverageState(row: {
   return {
     pincode: (row.delivery_pincode || location.pincode || location.postalCode || '').trim(),
     city: (row.delivery_city || location.city || '').trim(),
-    state: (location.state || attributes.delivery_state || '').trim(),
+    state: (row.delivery_state || location.state || attributes.delivery_state || '').trim(),
   };
 }
 
@@ -313,7 +314,7 @@ export async function prepareGooglePlacesCoverage(rfqId: string): Promise<
 
   const { data: req, error: reqErr } = await supabase
     .from('requirements')
-    .select('delivery_city, delivery_pincode, category_id, subcategory_id, attributes, structured_specs')
+    .select('delivery_city, delivery_pincode, delivery_state, category_id, subcategory_id, attributes, structured_specs')
     .eq('id', rfq.requirement_id)
     .maybeSingle();
   if (reqErr || !req) {

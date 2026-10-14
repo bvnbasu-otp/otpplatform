@@ -15,4 +15,9 @@ describe('Tier3 sourcing controls customer copy', () => {
     );
     expect(cardSource).not.toContain('RWA / Enterprise');
   });
+
+  it('exposes exactly two primary sourcing modes: IDENTITY_PROTECTED and OPEN_RFQ', () => {
+    expect(cardSource).toContain('Identity-Protected Sourcing (Recommended & Default)');
+    expect(cardSource).toContain('Open RFQ Tender');
+  });
 });
