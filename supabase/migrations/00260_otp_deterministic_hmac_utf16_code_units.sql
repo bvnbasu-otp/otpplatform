@@ -114,9 +114,10 @@ SET search_path = public, private
 AS $$
 DECLARE
   v_combined text;
-  v_i integer;
-  v_n integer;
-  v_ch integer;
+  v_ch text;
+  v_cp integer;
+  v_u1 integer;
+  v_u2 integer;
   h1 integer := (-559038737)::integer;   -- int32(0xDEADBEEF)
   h2 integer := 1103547991;              -- int32(0x41C6CE57)
   h3 integer := (-2048144789)::integer;  -- int32(0x85EBCA6B)
@@ -124,14 +125,30 @@ DECLARE
   v_hex text;
 BEGIN
   v_combined := p_secret || ':' || p_message;
-  v_n := private.js_string_utf16_length(v_combined);
-  FOR v_i IN 1 .. v_n LOOP
-    v_ch := private.js_string_utf16_code_unit_at(v_combined, v_i);
-    h1 := private.js_imul(h1 # v_ch, (-1640531535)::integer);
-    h2 := private.js_imul(h2 # v_ch, 1597334677);
-    h3 := private.js_imul(h3 # v_ch, (-2048144789)::integer);
-    h4 := private.js_imul(h4 # v_ch, (-1028477387)::integer);
-  END LOOP;
+  IF v_combined <> '' THEN
+    FOR v_ch IN SELECT (m)[1] FROM regexp_matches(v_combined, '.', 'g') AS m LOOP
+      v_cp := private.utf8_char_to_codepoint(v_ch);
+      IF v_cp > 65535 THEN
+        -- UTF-16 surrogate pair
+        v_u1 := (55296 + ((v_cp - 65536) >> 10))::integer;
+        h1 := private.js_imul(h1 # v_u1, (-1640531535)::integer);
+        h2 := private.js_imul(h2 # v_u1, 1597334677);
+        h3 := private.js_imul(h3 # v_u1, (-2048144789)::integer);
+        h4 := private.js_imul(h4 # v_u1, (-1028477387)::integer);
+
+        v_u2 := (56320 + ((v_cp - 65536) & 1023))::integer;
+        h1 := private.js_imul(h1 # v_u2, (-1640531535)::integer);
+        h2 := private.js_imul(h2 # v_u2, 1597334677);
+        h3 := private.js_imul(h3 # v_u2, (-2048144789)::integer);
+        h4 := private.js_imul(h4 # v_u2, (-1028477387)::integer);
+      ELSE
+        h1 := private.js_imul(h1 # v_cp, (-1640531535)::integer);
+        h2 := private.js_imul(h2 # v_cp, 1597334677);
+        h3 := private.js_imul(h3 # v_cp, (-2048144789)::integer);
+        h4 := private.js_imul(h4 # v_cp, (-1028477387)::integer);
+      END IF;
+    END LOOP;
+  END IF;
 
   h1 := private.js_imul(h1 # private.js_urshift32(h1, 16), (-2048144789)::integer)
       # private.js_imul(h2 # private.js_urshift32(h2, 13), (-1028477387)::integer);
