@@ -23,6 +23,8 @@ describe('00256 auth OTP eight-digit standardization', () => {
     expect(files[index + 8]).toBe('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
     expect(files[index + 9]).toBe('00265_remediate_buyer_taxonomy_and_rls_integrity.sql');
     expect(files[index + 10]).toBe('00266_remediate_supplier_coverage_and_dispatch.sql');
+    expect(files[index + 11]).toBe('00267_authoritative_founder_and_admin_claims.sql');
+    expect(files[index + 12]).toBe('00268_complete_nationwide_pincode_resolution.sql');
   });
 
   it('issues eight-digit codes and rejects non-eight-digit verify input before hash compare', () => {

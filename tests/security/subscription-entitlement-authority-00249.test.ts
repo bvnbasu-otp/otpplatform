@@ -284,7 +284,9 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 15]).toBe('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
     expect(files[index + 16]).toBe('00265_remediate_buyer_taxonomy_and_rls_integrity.sql');
     expect(files[index + 17]).toBe('00266_remediate_supplier_coverage_and_dispatch.sql');
-    expect(index).toBe(files.length - 18);
+    expect(files[index + 18]).toBe('00267_authoritative_founder_and_admin_claims.sql');
+    expect(files[index + 19]).toBe('00268_complete_nationwide_pincode_resolution.sql');
+    expect(index).toBe(files.length - 20);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

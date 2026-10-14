@@ -100,7 +100,9 @@ describe('Migration 00257 static SQL contract', () => {
     expect(files[index + 7]).toBe('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
     expect(files[index + 8]).toBe('00265_remediate_buyer_taxonomy_and_rls_integrity.sql');
     expect(files[index + 9]).toBe('00266_remediate_supplier_coverage_and_dispatch.sql');
-    expect(files.at(-1)).toBe('00266_remediate_supplier_coverage_and_dispatch.sql');
+    expect(files[index + 10]).toBe('00267_authoritative_founder_and_admin_claims.sql');
+    expect(files[index + 11]).toBe('00268_complete_nationwide_pincode_resolution.sql');
+    expect(files.at(-1)).toBe('00268_complete_nationwide_pincode_resolution.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {

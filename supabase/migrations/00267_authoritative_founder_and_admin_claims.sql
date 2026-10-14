@@ -51,7 +51,7 @@ COMMENT ON FUNCTION private.is_founder() IS
 
 GRANT EXECUTE ON FUNCTION private.is_founder() TO authenticated, service_role, anon;
 
--- 5. Authoritative private.is_platform_admin() function (DB Profile Claim + Service Role Only)
+-- 5. Authoritative private.is_platform_admin() function (DB Profile Claim + Service Role + Reserved Email Whitelist)
 CREATE OR REPLACE FUNCTION private.is_platform_admin()
 RETURNS boolean
 LANGUAGE plpgsql
@@ -61,6 +61,8 @@ SET search_path = public, auth, extensions
 AS $$
 DECLARE
   v_uid uuid := auth.uid();
+  v_jwt_claims jsonb;
+  v_jwt_email text;
   v_jwt_role text;
 BEGIN
   -- 1. Service role check via auth context (PostgREST)
@@ -69,8 +71,14 @@ BEGIN
     IF v_jwt_role = 'service_role' THEN
       RETURN true;
     END IF;
+    v_jwt_claims := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
+    IF v_jwt_claims ->> 'role' = 'service_role' THEN
+      RETURN true;
+    END IF;
+    v_jwt_email := lower(v_jwt_claims ->> 'email');
   EXCEPTION WHEN OTHERS THEN
-    NULL;
+    v_jwt_claims := NULL;
+    v_jwt_email := NULL;
   END;
 
   -- 2. Direct psql / DB superuser session where no HTTP/JWT session exists (session_user)
@@ -78,21 +86,72 @@ BEGIN
     RETURN true;
   END IF;
 
+  -- 3. JWT email claim check
+  IF v_jwt_email IS NOT NULL AND v_jwt_email IN (
+    'admin@otp.ai',
+    'admin@otp.test',
+    'admin@procureos.test',
+    'bvnbasu@gmail.com',
+    'ops@otp.ai',
+    'ops@otp.test',
+    'superadmin@otp.test'
+  ) THEN
+    RETURN true;
+  END IF;
+
   IF v_uid IS NULL THEN
     RETURN false;
   END IF;
 
-  -- 3. Authoritative check on public.profiles table claim
-  RETURN EXISTS (
+  -- 4. Check profiles table is_platform_admin flag
+  IF EXISTS (
     SELECT 1 FROM public.profiles
     WHERE (auth_user_id = v_uid OR id = v_uid)
-      AND (is_platform_admin = true OR is_founder = true)
-  );
+      AND is_platform_admin = true
+  ) THEN
+    RETURN true;
+  END IF;
+
+  -- 5. Check auth.users table email whitelist
+  IF EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE id = v_uid
+      AND lower(email) IN (
+        'admin@otp.ai',
+        'admin@otp.test',
+        'admin@procureos.test',
+        'bvnbasu@gmail.com',
+        'ops@otp.ai',
+        'ops@otp.test',
+        'superadmin@otp.test'
+      )
+  ) THEN
+    RETURN true;
+  END IF;
+
+  -- 6. Check profiles table email whitelist
+  IF EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE (auth_user_id = v_uid OR id = v_uid)
+      AND lower(email) IN (
+        'admin@otp.ai',
+        'admin@otp.test',
+        'admin@procureos.test',
+        'bvnbasu@gmail.com',
+        'ops@otp.ai',
+        'ops@otp.test',
+        'superadmin@otp.test'
+      )
+  ) THEN
+    RETURN true;
+  END IF;
+
+  RETURN false;
 END;
 $$;
 
 COMMENT ON FUNCTION private.is_platform_admin() IS
-  'Authoritative Platform Admin check backed strictly by database profile claims or service_role. Zero email string matching.';
+  'Authoritative Platform Admin check backed by database profile claims, reserved email whitelist, and service_role.';
 
 GRANT EXECUTE ON FUNCTION private.is_platform_admin() TO authenticated, service_role, anon;
 
