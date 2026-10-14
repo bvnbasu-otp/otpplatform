@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T08:23:52.027Z",
+  "generatedAt": "2026-10-14T08:46:01.467Z",
   "gap1": {
     "overall": "PASS",
     "pass": 7,
@@ -11,24 +11,24 @@
         "actor": "service_role (00250 boundary)",
         "operation": "credit_buyer_settlement_reward_atomic",
         "input": {
-          "feeId": "edb59d7e-1fee-41f8-9d86-9ada85dd7e12",
+          "feeId": "4409d94d-cafa-4585-83c9-c1774d733f71",
           "p_base_amount": 999999
         },
         "expected": "reward=100 from fee row",
-        "actual": "{\"ok\":true,\"message\":\"Buyer sourcing reward credited successfully\",\"wallet_id\":\"195d948b-ceab-49d1-bb45-6e08e68e2a9f\",\"fee_amount\":500,\"allocation_id\":\"cfc4163f-c265-4ae2-9468-4a86149d5a40\",\"reward_amount\":100,\"transaction_id\":\"503856cb-9686-4e0c-ab27-ef5dbf6b6a56\",\"closing_balance\":100,\"opening_balance\":0}",
+        "actual": "{\"ok\":true,\"message\":\"Buyer sourcing reward credited successfully\",\"wallet_id\":\"195d948b-ceab-49d1-bb45-6e08e68e2a9f\",\"fee_amount\":500,\"allocation_id\":\"ffc93e3f-7448-4dff-9a42-7c4b3bb82aa2\",\"reward_amount\":100,\"transaction_id\":\"14e0c6f5-989a-44ac-a2f0-866d93189d2f\",\"closing_balance\":300,\"opening_balance\":200}",
         "before": {
-          "balance": "0",
-          "ledger": "0",
-          "allocations": "0"
+          "balance": "200.00",
+          "ledger": "2",
+          "allocations": "2"
         },
         "after": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "status": "PASS",
         "fixtureIds": {
-          "feeId": "edb59d7e-1fee-41f8-9d86-9ada85dd7e12",
+          "feeId": "4409d94d-cafa-4585-83c9-c1774d733f71",
           "orgId": "a0000000-0000-4000-8000-000000000001",
           "policyId": "dcc1739d-a95e-4999-84a4-2289e1713f18"
         }
@@ -39,16 +39,16 @@
         "actor": "service_role",
         "operation": "replay same platform_fee_tx_id",
         "expected": "idempotent / no second ledger credit",
-        "actual": "{\"ok\":true,\"message\":\"Reward allocation already credited for this platform fee transaction\",\"replayed\":true,\"allocation_id\":\"cfc4163f-c265-4ae2-9468-4a86149d5a40\",\"reward_amount\":100}",
+        "actual": "{\"ok\":true,\"message\":\"Reward allocation already credited for this platform fee transaction\",\"replayed\":true,\"allocation_id\":\"ffc93e3f-7448-4dff-9a42-7c4b3bb82aa2\",\"reward_amount\":100}",
         "before": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "after": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "status": "PASS"
       },
@@ -60,14 +60,14 @@
         "expected": "error, no mutation",
         "actual": "Platform fee transaction 00000000-0000-4000-8000-000000000099 not found",
         "before": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "after": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "status": "PASS"
       },
@@ -86,7 +86,7 @@
         "actor": "service_role + greenview org",
         "operation": "fee row for other org",
         "expected": "does not belong",
-        "actual": "Platform fee transaction 60cee508-2212-47da-8620-0cd6262edf05 not found",
+        "actual": "Platform fee transaction 187f6e45-e437-4766-bdab-30645757d7b8 not found",
         "status": "PASS"
       },
       {
@@ -129,7 +129,7 @@
         "actor": "manager",
         "operation": "discover_and_invite + advance_rfq_phases",
         "expected": "EVALUATING with FINAL quotes",
-        "actual": "disc=ok seed={\"ok\":true,\"rfq_id\":\"90ed62a2-e526-4ba5-917d-ef8300f9061c\",\"success\":true,\"total_quotes\":3,\"quotes_submitted\":3,\"evaluation_result\":{\"scored\":3,\"weights\":{\"price\":35,\"warranty\":20,\"delivery_time\":15,\"response_time\":10,\"supplier_rating\":20}}} adv={\"rfqs\":[{\"to\":\"EVALUATING\",\"ref\":\"RFQ-J87KP8\",\"from\":\"OPEN\",\"rfqId\":\"90ed62a2-e526-4ba5-917d-ef8300f9061c\",\"reason\":\"quoting window closed, proceeding to evaluation\"}],\"advanced\":1} status=EVALUATING finalQuotes=3",
+        "actual": "disc=ok seed={\"ok\":true,\"rfq_id\":\"75608b75-7ab1-4e27-89b8-1a6eb8315bb9\",\"success\":true,\"total_quotes\":3,\"quotes_submitted\":3,\"evaluation_result\":{\"scored\":3,\"weights\":{\"price\":35,\"warranty\":20,\"delivery_time\":15,\"response_time\":10,\"supplier_rating\":20}}} adv={\"rfqs\":[{\"to\":\"EVALUATING\",\"ref\":\"RFQ-QP93DG\",\"from\":\"OPEN\",\"rfqId\":\"75608b75-7ab1-4e27-89b8-1a6eb8315bb9\",\"reason\":\"quoting window closed, proceeding to evaluation\"}],\"advanced\":1} status=EVALUATING finalQuotes=3",
         "status": "PASS"
       },
       {
@@ -156,14 +156,14 @@
         "actor": "manager",
         "operation": "lock_and_reveal_award_atomic",
         "expected": "AWARDED + award row",
-        "actual": "{\"ok\":true,\"award_id\":\"22b7267f-bafc-4783-a55f-cd3cb94761b2\",\"revealed\":false,\"supplier_verification_required\":false}",
+        "actual": "{\"ok\":true,\"award_id\":\"2b8f0d74-b87a-4d88-99cf-298dd833f2ab\",\"revealed\":false,\"supplier_verification_required\":false}",
         "before": "EVALUATING",
         "after": "AWARDED",
         "status": "PASS",
         "fixtureIds": {
-          "rfqId": "90ed62a2-e526-4ba5-917d-ef8300f9061c",
-          "winQuote": "c1e50548-6c2c-4769-b4f4-6f3b93ef98ee",
-          "awardId": "22b7267f-bafc-4783-a55f-cd3cb94761b2"
+          "rfqId": "75608b75-7ab1-4e27-89b8-1a6eb8315bb9",
+          "winQuote": "108467d7-5ce8-47f4-aca6-2986d59dff23",
+          "awardId": "2b8f0d74-b87a-4d88-99cf-298dd833f2ab"
         }
       },
       {
@@ -172,7 +172,7 @@
         "actor": "manager",
         "operation": "reveal_award",
         "expected": "supplier legal identity fields",
-        "actual": "{\"po_id\":\"3528b2bc-500e-47d5-9015-eab76e699708\",\"po_number\":\"PO-2026-10-14-3195AE6D\",\"revealed_at\":\"2026-10-14T08:23:50.732019+00:00\",\"supplier_id\":\"0d500000-0000-4000-8000-000000000322\",\"business_name\":\"Shakti Motors Verified Pvt Ltd\",\"contact_email\":\"verified-supplier@gap2.test.local\",\"contact_phone\":\"+919876543210\",\"alias_before_reveal\":\"Supplier 0S16\",\"buyer_released_to_supplier\":true}",
+        "actual": "{\"po_id\":\"7d8e8a06-7a5c-4e31-bbee-a728a497b46a\",\"po_number\":\"PO-2026-10-14-A1E3354B\",\"revealed_at\":\"2026-10-14T08:46:00.196192+00:00\",\"supplier_id\":\"0d500000-0000-4000-8000-000000000322\",\"business_name\":\"Shakti Motors Verified Pvt Ltd\",\"contact_email\":\"verified-supplier@gap2.test.local\",\"contact_phone\":\"+919876543210\",\"alias_before_reveal\":\"Supplier WPGM\",\"buyer_released_to_supplier\":true}",
         "status": "PASS"
       },
       {
@@ -181,7 +181,7 @@
         "actor": "manager",
         "operation": "create_purchase_order_from_award",
         "expected": "PO created",
-        "actual": "{\"po_id\":\"3528b2bc-500e-47d5-9015-eab76e699708\",\"po_number\":\"PO-2026-10-14-3195AE6D\"}",
+        "actual": "{\"po_id\":\"7d8e8a06-7a5c-4e31-bbee-a728a497b46a\",\"po_number\":\"PO-2026-10-14-A1E3354B\"}",
         "status": "PASS"
       },
       {
@@ -224,7 +224,7 @@
         "actor": "manager@greenview.test (profile b0000000-0000-4000-8000-000000000001)",
         "operation": "submit_rfq_tier_approval_atomic TIER_1",
         "expected": "APPROVED",
-        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":null,\"signatureMode\":\"DIRECT\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"delegatorProfileId\":null,\"digitalSignatureHash\":\"55e16112c613a6136a267434ce135023dd09bc49ad060afe40bb1aad2ff69717\"}",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":null,\"signatureMode\":\"DIRECT\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"delegatorProfileId\":null,\"digitalSignatureHash\":\"965f052868bc9151ce9c0ec4a4c93326e255c48a53a8cb533c586aa4c2c433f1\"}",
         "status": "PASS"
       },
       {
@@ -251,7 +251,7 @@
         "actor": "committee2 + active delegation",
         "operation": "delegated approval",
         "expected": "APPROVED signatureMode DELEGATED",
-        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":\"d1d1d1d1-0000-4000-8000-000000000001\",\"signatureMode\":\"DELEGATED\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000003\",\"delegatorProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"digitalSignatureHash\":\"6e9a4c5c1cad0e8d04e44b156522154103a2c318bea947b64b9faa1f95c41aac\"}",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":\"d1d1d1d1-0000-4000-8000-000000000001\",\"signatureMode\":\"DELEGATED\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000003\",\"delegatorProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"digitalSignatureHash\":\"ae60f4848aa289227d8f7010e535459db0e1e94e3efcbf0e3b68c4a5778c32da\"}",
         "status": "PASS"
       },
       {
@@ -260,7 +260,7 @@
         "actor": "committee2 + expired delegation",
         "operation": "delegated approval",
         "expected": "expired error",
-        "actual": "Delegation proxy has expired (expired at 2026-10-13 08:23:50.940827+00).",
+        "actual": "Delegation proxy has expired (expired at 2026-10-13 08:46:00.408262+00).",
         "status": "PASS"
       },
       {
@@ -294,24 +294,24 @@
         "actor": "service_role (00250 boundary)",
         "operation": "credit_buyer_settlement_reward_atomic",
         "input": {
-          "feeId": "edb59d7e-1fee-41f8-9d86-9ada85dd7e12",
+          "feeId": "4409d94d-cafa-4585-83c9-c1774d733f71",
           "p_base_amount": 999999
         },
         "expected": "reward=100 from fee row",
-        "actual": "{\"ok\":true,\"message\":\"Buyer sourcing reward credited successfully\",\"wallet_id\":\"195d948b-ceab-49d1-bb45-6e08e68e2a9f\",\"fee_amount\":500,\"allocation_id\":\"cfc4163f-c265-4ae2-9468-4a86149d5a40\",\"reward_amount\":100,\"transaction_id\":\"503856cb-9686-4e0c-ab27-ef5dbf6b6a56\",\"closing_balance\":100,\"opening_balance\":0}",
+        "actual": "{\"ok\":true,\"message\":\"Buyer sourcing reward credited successfully\",\"wallet_id\":\"195d948b-ceab-49d1-bb45-6e08e68e2a9f\",\"fee_amount\":500,\"allocation_id\":\"ffc93e3f-7448-4dff-9a42-7c4b3bb82aa2\",\"reward_amount\":100,\"transaction_id\":\"14e0c6f5-989a-44ac-a2f0-866d93189d2f\",\"closing_balance\":300,\"opening_balance\":200}",
         "before": {
-          "balance": "0",
-          "ledger": "0",
-          "allocations": "0"
+          "balance": "200.00",
+          "ledger": "2",
+          "allocations": "2"
         },
         "after": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "status": "PASS",
         "fixtureIds": {
-          "feeId": "edb59d7e-1fee-41f8-9d86-9ada85dd7e12",
+          "feeId": "4409d94d-cafa-4585-83c9-c1774d733f71",
           "orgId": "a0000000-0000-4000-8000-000000000001",
           "policyId": "dcc1739d-a95e-4999-84a4-2289e1713f18"
         }
@@ -322,16 +322,16 @@
         "actor": "service_role",
         "operation": "replay same platform_fee_tx_id",
         "expected": "idempotent / no second ledger credit",
-        "actual": "{\"ok\":true,\"message\":\"Reward allocation already credited for this platform fee transaction\",\"replayed\":true,\"allocation_id\":\"cfc4163f-c265-4ae2-9468-4a86149d5a40\",\"reward_amount\":100}",
+        "actual": "{\"ok\":true,\"message\":\"Reward allocation already credited for this platform fee transaction\",\"replayed\":true,\"allocation_id\":\"ffc93e3f-7448-4dff-9a42-7c4b3bb82aa2\",\"reward_amount\":100}",
         "before": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "after": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "status": "PASS"
       },
@@ -343,14 +343,14 @@
         "expected": "error, no mutation",
         "actual": "Platform fee transaction 00000000-0000-4000-8000-000000000099 not found",
         "before": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "after": {
-          "balance": "100.00",
-          "ledger": "1",
-          "allocations": "1"
+          "balance": "300.00",
+          "ledger": "3",
+          "allocations": "3"
         },
         "status": "PASS"
       },
@@ -369,7 +369,7 @@
         "actor": "service_role + greenview org",
         "operation": "fee row for other org",
         "expected": "does not belong",
-        "actual": "Platform fee transaction 60cee508-2212-47da-8620-0cd6262edf05 not found",
+        "actual": "Platform fee transaction 187f6e45-e437-4766-bdab-30645757d7b8 not found",
         "status": "PASS"
       },
       {
@@ -407,7 +407,7 @@
         "actor": "manager",
         "operation": "discover_and_invite + advance_rfq_phases",
         "expected": "EVALUATING with FINAL quotes",
-        "actual": "disc=ok seed={\"ok\":true,\"rfq_id\":\"90ed62a2-e526-4ba5-917d-ef8300f9061c\",\"success\":true,\"total_quotes\":3,\"quotes_submitted\":3,\"evaluation_result\":{\"scored\":3,\"weights\":{\"price\":35,\"warranty\":20,\"delivery_time\":15,\"response_time\":10,\"supplier_rating\":20}}} adv={\"rfqs\":[{\"to\":\"EVALUATING\",\"ref\":\"RFQ-J87KP8\",\"from\":\"OPEN\",\"rfqId\":\"90ed62a2-e526-4ba5-917d-ef8300f9061c\",\"reason\":\"quoting window closed, proceeding to evaluation\"}],\"advanced\":1} status=EVALUATING finalQuotes=3",
+        "actual": "disc=ok seed={\"ok\":true,\"rfq_id\":\"75608b75-7ab1-4e27-89b8-1a6eb8315bb9\",\"success\":true,\"total_quotes\":3,\"quotes_submitted\":3,\"evaluation_result\":{\"scored\":3,\"weights\":{\"price\":35,\"warranty\":20,\"delivery_time\":15,\"response_time\":10,\"supplier_rating\":20}}} adv={\"rfqs\":[{\"to\":\"EVALUATING\",\"ref\":\"RFQ-QP93DG\",\"from\":\"OPEN\",\"rfqId\":\"75608b75-7ab1-4e27-89b8-1a6eb8315bb9\",\"reason\":\"quoting window closed, proceeding to evaluation\"}],\"advanced\":1} status=EVALUATING finalQuotes=3",
         "status": "PASS"
       },
       {
@@ -434,14 +434,14 @@
         "actor": "manager",
         "operation": "lock_and_reveal_award_atomic",
         "expected": "AWARDED + award row",
-        "actual": "{\"ok\":true,\"award_id\":\"22b7267f-bafc-4783-a55f-cd3cb94761b2\",\"revealed\":false,\"supplier_verification_required\":false}",
+        "actual": "{\"ok\":true,\"award_id\":\"2b8f0d74-b87a-4d88-99cf-298dd833f2ab\",\"revealed\":false,\"supplier_verification_required\":false}",
         "before": "EVALUATING",
         "after": "AWARDED",
         "status": "PASS",
         "fixtureIds": {
-          "rfqId": "90ed62a2-e526-4ba5-917d-ef8300f9061c",
-          "winQuote": "c1e50548-6c2c-4769-b4f4-6f3b93ef98ee",
-          "awardId": "22b7267f-bafc-4783-a55f-cd3cb94761b2"
+          "rfqId": "75608b75-7ab1-4e27-89b8-1a6eb8315bb9",
+          "winQuote": "108467d7-5ce8-47f4-aca6-2986d59dff23",
+          "awardId": "2b8f0d74-b87a-4d88-99cf-298dd833f2ab"
         }
       },
       {
@@ -450,7 +450,7 @@
         "actor": "manager",
         "operation": "reveal_award",
         "expected": "supplier legal identity fields",
-        "actual": "{\"po_id\":\"3528b2bc-500e-47d5-9015-eab76e699708\",\"po_number\":\"PO-2026-10-14-3195AE6D\",\"revealed_at\":\"2026-10-14T08:23:50.732019+00:00\",\"supplier_id\":\"0d500000-0000-4000-8000-000000000322\",\"business_name\":\"Shakti Motors Verified Pvt Ltd\",\"contact_email\":\"verified-supplier@gap2.test.local\",\"contact_phone\":\"+919876543210\",\"alias_before_reveal\":\"Supplier 0S16\",\"buyer_released_to_supplier\":true}",
+        "actual": "{\"po_id\":\"7d8e8a06-7a5c-4e31-bbee-a728a497b46a\",\"po_number\":\"PO-2026-10-14-A1E3354B\",\"revealed_at\":\"2026-10-14T08:46:00.196192+00:00\",\"supplier_id\":\"0d500000-0000-4000-8000-000000000322\",\"business_name\":\"Shakti Motors Verified Pvt Ltd\",\"contact_email\":\"verified-supplier@gap2.test.local\",\"contact_phone\":\"+919876543210\",\"alias_before_reveal\":\"Supplier WPGM\",\"buyer_released_to_supplier\":true}",
         "status": "PASS"
       },
       {
@@ -459,7 +459,7 @@
         "actor": "manager",
         "operation": "create_purchase_order_from_award",
         "expected": "PO created",
-        "actual": "{\"po_id\":\"3528b2bc-500e-47d5-9015-eab76e699708\",\"po_number\":\"PO-2026-10-14-3195AE6D\"}",
+        "actual": "{\"po_id\":\"7d8e8a06-7a5c-4e31-bbee-a728a497b46a\",\"po_number\":\"PO-2026-10-14-A1E3354B\"}",
         "status": "PASS"
       },
       {
@@ -497,7 +497,7 @@
         "actor": "manager@greenview.test (profile b0000000-0000-4000-8000-000000000001)",
         "operation": "submit_rfq_tier_approval_atomic TIER_1",
         "expected": "APPROVED",
-        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":null,\"signatureMode\":\"DIRECT\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"delegatorProfileId\":null,\"digitalSignatureHash\":\"55e16112c613a6136a267434ce135023dd09bc49ad060afe40bb1aad2ff69717\"}",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":null,\"signatureMode\":\"DIRECT\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"delegatorProfileId\":null,\"digitalSignatureHash\":\"965f052868bc9151ce9c0ec4a4c93326e255c48a53a8cb533c586aa4c2c433f1\"}",
         "status": "PASS"
       },
       {
@@ -524,7 +524,7 @@
         "actor": "committee2 + active delegation",
         "operation": "delegated approval",
         "expected": "APPROVED signatureMode DELEGATED",
-        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":\"d1d1d1d1-0000-4000-8000-000000000001\",\"signatureMode\":\"DELEGATED\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000003\",\"delegatorProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"digitalSignatureHash\":\"6e9a4c5c1cad0e8d04e44b156522154103a2c318bea947b64b9faa1f95c41aac\"}",
+        "actual": "{\"ok\":true,\"rfqId\":\"f100f301-0000-4000-8000-000000000003\",\"status\":\"APPROVED\",\"stageId\":\"c1c1c1c1-0000-4000-8000-000000000001\",\"tierLevel\":\"TIER_1_MANAGER\",\"stageOrder\":1,\"delegationId\":\"d1d1d1d1-0000-4000-8000-000000000001\",\"signatureMode\":\"DELEGATED\",\"allStagesApproved\":true,\"approverProfileId\":\"b0000000-0000-4000-8000-000000000003\",\"delegatorProfileId\":\"b0000000-0000-4000-8000-000000000001\",\"digitalSignatureHash\":\"ae60f4848aa289227d8f7010e535459db0e1e94e3efcbf0e3b68c4a5778c32da\"}",
         "status": "PASS"
       },
       {
@@ -533,7 +533,7 @@
         "actor": "committee2 + expired delegation",
         "operation": "delegated approval",
         "expected": "expired error",
-        "actual": "Delegation proxy has expired (expired at 2026-10-13 08:23:50.940827+00).",
+        "actual": "Delegation proxy has expired (expired at 2026-10-13 08:46:00.408262+00).",
         "status": "PASS"
       },
       {

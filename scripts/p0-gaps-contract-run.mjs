@@ -231,8 +231,8 @@ DELETE FROM rfq_invitations WHERE rfq_id='${rfqId}';
 DELETE FROM committee_assignments WHERE rfq_id='${rfqId}';
 DELETE FROM rfqs WHERE id='${rfqId}';
 DELETE FROM requirements WHERE id='${reqId}';
-INSERT INTO requirements (id, organization_id, created_by, requirement_type, status, title, description, subcategory_id)
-VALUES ('${reqId}', '${GREENVIEW}', '${PROFILE_BUYER}', 'SERVICE', 'RFQ_CREATED', 'P0 GAP2 Award Path', 'ephemeral', '${SUBCATEGORY}');
+INSERT INTO requirements (id, organization_id, created_by, requirement_type, status, title, description, category_id, subcategory_id, requirement_mode)
+VALUES ('${reqId}', '${GREENVIEW}', '${PROFILE_BUYER}', 'SERVICE', 'RFQ_CREATED', 'P0 GAP2 Award Path', 'ephemeral', (SELECT category_id FROM requirement_subcategories WHERE id='${SUBCATEGORY}'), '${SUBCATEGORY}', 'SERVICE');
 INSERT INTO rfqs (id, requirement_id, organization_id, status, reveal_status, title, quote_deadline, evaluation_deadline, buyer_anonymous_to_suppliers, min_quotes_required, created_by, is_demo)
 VALUES ('${rfqId}', '${reqId}', '${GREENVIEW}', 'DRAFT', 'BLIND', 'P0 GAP2 RFQ', now() + interval '1 day', now() + interval '2 days', true, 2, '${PROFILE_BUYER}', true);
   INSERT INTO committee_assignments (rfq_id, profile_id) VALUES
@@ -388,8 +388,8 @@ DELETE FROM rfq_approval_stages WHERE rfq_id='${rfqId}';
 DELETE FROM organization_delegations WHERE id IN ('${delActive}','${delExpired}');
 DELETE FROM rfqs WHERE id='${rfqId}';
 DELETE FROM requirements WHERE id='${reqId}';
-INSERT INTO requirements (id, organization_id, created_by, requirement_type, status, title, subcategory_id)
-VALUES ('${reqId}', '${GREENVIEW}', '${PROFILE_BUYER}', 'SERVICE', 'RFQ_CREATED', 'P0 GAP3 Approval', '${SUBCATEGORY}');
+INSERT INTO requirements (id, organization_id, created_by, requirement_type, status, title, description, category_id, subcategory_id, requirement_mode)
+VALUES ('${reqId}', '${GREENVIEW}', '${PROFILE_BUYER}', 'SERVICE', 'RFQ_CREATED', 'P0 GAP3 Approval', 'ephemeral', (SELECT category_id FROM requirement_subcategories WHERE id='${SUBCATEGORY}'), '${SUBCATEGORY}', 'SERVICE');
 INSERT INTO rfqs (id, requirement_id, organization_id, status, reveal_status, title, min_quotes_required, created_by)
 VALUES ('${rfqId}', '${reqId}', '${GREENVIEW}', 'OPEN', 'BLIND', 'P0 GAP3 RFQ', 1, '${PROFILE_BUYER}');
 INSERT INTO rfq_approval_stages (id, rfq_id, organization_id, tier_level, stage_order, status, threshold_min_amount, procurement_amount)
