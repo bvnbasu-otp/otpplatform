@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   generateCrockfordAlias,
@@ -536,5 +537,15 @@ describe('Supplier Network Engine Domain Contracts & SN.3 Intelligence Models', 
     it('supports GOOGLE_PLACES supplier network and location execution modes', () => {
       expect(SupplierNetwork.GOOGLE_PLACES).toBe('GOOGLE_PLACES');
     });
+
+    it('preserves explicit .ts extensions for Deno runtime bundling', () => {
+      const source = readFileSync(new URL('./supplier-network-engine.ts', import.meta.url), 'utf8');
+      expect(source).toMatch(/from '\.\.\/enums\/supplier-network\.ts'/);
+      expect(source).toMatch(/from '\.\.\/enums\/provider-execution\.ts'/);
+      expect(source).toMatch(/from '\.\.\/errors\/blind-violation\.ts'/);
+      expect(source).toMatch(/from '\.\.\/gis\/location-intelligence-port\.ts'/);
+      expect(source).toMatch(/from '\.\/vendor-intelligence\.ts'/);
+    });
   });
 });
+

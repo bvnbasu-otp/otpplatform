@@ -6,13 +6,13 @@ import {
 import {
   assessPinGeographyAlignment,
   extractStateCityFromGeocodeComponents,
-} from './pin-geography-alignment';
-import type { QuotaRequestPriority } from '../gis/google-gis-safety-quota';
+} from './pin-geography-alignment.ts';
+import type { QuotaRequestPriority } from '../gis/google-gis-safety-quota.ts';
 import {
   GooglePlacesDiscoveryAdapter,
   type GooglePlacesDiscoveryCriteria,
   type GooglePlacesRawCandidate,
-} from '../gis/google-places-discovery-adapter';
+} from '../gis/google-places-discovery-adapter.ts';
 
 export interface PinGeocodeResult {
   lat: number;

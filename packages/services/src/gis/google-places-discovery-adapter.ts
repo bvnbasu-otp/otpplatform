@@ -10,15 +10,15 @@ import type {
   SupplierNetworkPort,
   NetworkDiscoveryCandidate,
   NetworkSupplierCapability,
-} from '../interfaces/supplier-network-port';
+} from '../interfaces/supplier-network-port.ts';
 import {
   GoogleGisSafetyQuotaGuard,
   type GoogleGisQuotaLimits,
   type GoogleGisReservationResult,
   type QuotaRequestPriority,
-} from './google-gis-safety-quota';
-import { sanitizeGisLocationDescriptor } from './google-maps-location-adapter';
-import type { LocationCoverageFreshnessAuthority } from '../discovery/location-coverage-freshness-authority';
+} from './google-gis-safety-quota.ts';
+import { sanitizeGisLocationDescriptor } from './google-maps-location-adapter.ts';
+import type { LocationCoverageFreshnessAuthority } from '../discovery/location-coverage-freshness-authority.ts';
 
 export type GooglePlacesDiscoverySourceType =
   | 'LIVE_API'

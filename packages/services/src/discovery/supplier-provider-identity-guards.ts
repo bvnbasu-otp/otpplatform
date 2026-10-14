@@ -5,7 +5,7 @@ import {
   type ContactabilityClassification,
   type NormalizedProviderSupplierCandidate,
 } from '@otp/domain';
-import { evaluateGooglePlacesQuality, type GooglePlacesQualityInput } from './google-places-quality-gate';
+import { evaluateGooglePlacesQuality, type GooglePlacesQualityInput } from './google-places-quality-gate.ts';
 
 export { ONDC_SUPPLIER_NETWORK_CONTRACT_STATUS };
 

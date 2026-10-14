@@ -7,7 +7,9 @@
       "@otp/database": ["../database/src/index.ts"]
     },
     "lib": ["ES2022", "DOM"],
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "include": ["src/**/*"]
 }

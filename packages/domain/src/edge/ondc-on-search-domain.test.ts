@@ -14,6 +14,11 @@ describe('ondc-on-search edge entry', () => {
     const edge = readFileSync(new URL('../../../../supabase/functions/ondc-on-search/index.ts', import.meta.url), 'utf8');
     const map = readFileSync(new URL('../../../../supabase/functions/ondc-on-search/deno.json', import.meta.url), 'utf8');
     expect(source).not.toMatch(/from ['"][^'"]*\/index\.ts['"]/);
+    expect(source).toMatch(/from '\.\.\/ondc\/ondc-dispatch\.ts'/);
+    expect(source).toMatch(/from '\.\.\/ondc\/ondc-environment\.ts'/);
+    expect(source).toMatch(/from '\.\.\/ondc\/ondc-callback-guard\.ts'/);
+    expect(source).toMatch(/from '\.\.\/ondc\/ondc-discovery-persistence\.ts'/);
+    expect(source).toMatch(/from '\.\.\/ondc\/ondc-provider-foundation\.ts'/);
     expect(edge).not.toContain('packages/domain/src/index.ts');
     expect(edge).not.toContain('prod.gateway.ondc.org');
     expect(edge).not.toContain('prod.registry.ondc.org');
@@ -29,4 +34,4 @@ describe('ondc-on-search edge entry', () => {
       production: {},
     }).realClientAllowed).toBe(false);
   });
-});
+});

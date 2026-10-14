@@ -24,10 +24,10 @@ export async function runEdgeAuthoritativeLocationPinCoverage(
 
   const result = await runAuthoritativeLocationPinCoverage(
     {
-      state: body.state,
-      city: body.city,
+      state: body.state ?? '',
+      city: body.city ?? '',
       pincode: body.pincode ?? '',
-      category: body.category,
+      category: body.category ?? '',
       forceRefresh: body.forceRefresh,
       executeDiscovery: body.executeDiscovery,
     },
@@ -47,5 +47,5 @@ export async function runEdgeAuthoritativeLocationPinCoverage(
     },
   );
 
-  return result as Record<string, unknown>;
+  return result as unknown as Record<string, unknown>;
 }
