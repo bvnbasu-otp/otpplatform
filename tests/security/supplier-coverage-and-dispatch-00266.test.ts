@@ -1,0 +1,61 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+const ROOT = resolve(__dirname, '../..');
+const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
+const FILE = '00266_remediate_supplier_coverage_and_dispatch.sql';
+const SQL = readFileSync(resolve(MIGRATIONS_DIR, FILE), 'utf8');
+
+describe('00266 supplier coverage, dispatch & quorum remediation (static security & schema contract)', () => {
+  it('exists as the repository migration ceiling immediately following 00265', () => {
+    const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
+    expect(files.at(-1)).toBe(FILE);
+    const idx265 = files.indexOf('00265_remediate_buyer_taxonomy_and_rls_integrity.sql');
+    expect(idx265).toBeGreaterThan(0);
+    expect(files[idx265 + 1]).toBe(FILE);
+  });
+
+  it('proves public.infer_indian_state_from_pincode is immutable and secure', () => {
+    expect(SQL).toContain('CREATE OR REPLACE FUNCTION public.infer_indian_state_from_pincode(p_pincode text)');
+    expect(SQL).toContain('RETURNS text');
+    expect(SQL).toContain('IMMUTABLE');
+  });
+
+  it('updates coverage scope key to safely fall back to inferred state', () => {
+    expect(SQL).toContain('CREATE OR REPLACE FUNCTION private.rfq_requirement_coverage_scope_key(');
+    expect(SQL).toContain('public.infer_indian_state_from_pincode(v_pincode)');
+    expect(SQL).toContain('public.location_pin_coverage_build_scope_key(v_state, v_city, v_pincode, v_category)');
+  });
+
+  it('creates private.platform_secrets with strict security barriers', () => {
+    expect(SQL).toContain('CREATE TABLE IF NOT EXISTS private.platform_secrets');
+    expect(SQL).toContain('key text PRIMARY KEY');
+    expect(SQL).toContain('value text NOT NULL');
+  });
+
+  it('secures dispatch_supplier_invitation_notification with phone fallback and hosted url', () => {
+    expect(SQL).toContain('CREATE OR REPLACE FUNCTION private.dispatch_supplier_invitation_notification(');
+    expect(SQL).toContain('SECURITY DEFINER');
+    expect(SQL).toContain('SET search_path = public, private');
+    expect(SQL).toContain('SELECT contact_phone INTO v_supp_phone');
+    expect(SQL).toContain('FROM suppliers');
+  });
+
+  it('ranks registered suppliers by category match even before capability ceiling declaration', () => {
+    expect(SQL).toContain('CREATE OR REPLACE FUNCTION private.rank_discovery_candidates(');
+    expect(SQL).toContain('v_cat_code = ANY(s.categories)');
+    expect(SQL).toContain('sc.declared_caps_count = 0 AND sc.category_match');
+  });
+
+  it('authorizes public.waive_rfq_quote_quorum RPC with strict actor checks and canonical audit logging', () => {
+    expect(SQL).toContain('CREATE OR REPLACE FUNCTION public.waive_rfq_quote_quorum(');
+    expect(SQL).toContain('SECURITY DEFINER');
+    expect(SQL).toContain('SET search_path = public');
+    expect(SQL).toContain("v_caller_role NOT IN ('SUPERADMIN', 'ADMIN', 'CEO')");
+    expect(SQL).toContain("'RFQ_QUORUM_WAIVED'");
+    // Verify canonical audit_events schema compliance: must NOT use deprecated actor_role
+    expect(SQL).not.toMatch(/INSERT\s+INTO\s+public\.audit_events[^;]*\bactor_role\b/i);
+    expect(SQL).toContain('GRANT EXECUTE ON FUNCTION public.waive_rfq_quote_quorum(uuid, text) TO authenticated;');
+  });
+});

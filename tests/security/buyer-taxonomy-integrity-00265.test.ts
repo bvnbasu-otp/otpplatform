@@ -8,9 +8,10 @@ const FILE = '00265_remediate_buyer_taxonomy_and_rls_integrity.sql';
 const SQL = readFileSync(resolve(MIGRATIONS_DIR, FILE), 'utf8');
 
 describe('00265 buyer taxonomy and RLS integrity (static security & schema contract)', () => {
-  it('exists as the contiguous migration ceiling after 00264', () => {
+  it('exists as the contiguous migration after 00264 followed by 00266', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
-    expect(files.at(-1)).toBe(FILE);
+    expect(files.at(-2)).toBe(FILE);
+    expect(files.at(-1)).toBe('00266_remediate_supplier_coverage_and_dispatch.sql');
     const idx264 = files.indexOf('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
     expect(idx264).toBeGreaterThan(0);
     expect(files[idx264 + 1]).toBe(FILE);
