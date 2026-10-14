@@ -8,9 +8,10 @@ const FILE = '00264_remediate_privileged_lifecycle_and_audit_contracts.sql';
 const SQL = readFileSync(resolve(MIGRATIONS_DIR, FILE), 'utf8');
 
 describe('00264 privileged lifecycle and audit contracts (static security & schema integrity)', () => {
-  it('exists as the contiguous migration ceiling after 00263', () => {
+  it('exists as the contiguous migration after 00263 followed by 00265', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
-    expect(files.at(-1)).toBe(FILE);
+    expect(files.at(-2)).toBe(FILE);
+    expect(files.at(-1)).toBe('00265_remediate_buyer_taxonomy_and_rls_integrity.sql');
     const idx263 = files.indexOf('00263_guard_profile_privileges_empty_role_bypass.sql');
     expect(idx263).toBeGreaterThan(0);
     expect(files[idx263 + 1]).toBe(FILE);

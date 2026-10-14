@@ -341,6 +341,30 @@ const subcategories: SubcategoryDef[] = [
     ],
     RequirementMode.SERVICE,
   ),
+  subcategory(
+    'property_facility_management',
+    'amc_facility',
+    'Facility AMC',
+    [
+      'amc',
+      'annual maintenance',
+      'maintenance contract',
+      'facility amc',
+      'hvac',
+      'hvac maintenance',
+      'hvac servicing',
+      'air conditioning',
+      'ac maintenance',
+      'chiller',
+      'chiller amc',
+      'chiller maintenance',
+      'ahu',
+      'air handling unit',
+      'ventilation',
+      'central ac',
+    ],
+    RequirementMode.AMC,
+  ),
 ];
 
 const attributes: AttributeDef[] = [

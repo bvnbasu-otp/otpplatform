@@ -113,5 +113,6 @@ describe('00260 migration chain', () => {
     expect(files[idx + 3]).toBe('00262_admin_run_diagnostic_query_allowlist_hardening.sql');
     expect(files[idx + 4]).toBe('00263_guard_profile_privileges_empty_role_bypass.sql');
     expect(files[idx + 5]).toBe('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
+    expect(files[idx + 6]).toBe('00265_remediate_buyer_taxonomy_and_rls_integrity.sql');
   });
 });

@@ -12,8 +12,8 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 | SHA inspected | `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` |
 | Release status | 🟢 **GREEN — CONTROLLED PILOT AUTHORIZED** (`OTP-CERT-20261011-GREEN`) |
 | Product Owner attestation | 11 October 2026: *"All claims are working correctly. All release gates may be declared GREEN."* |
-| Local migrations | `00001`–`00264` on disk. Formal migration ceiling is `00264`. |
-| Hosted database | Formal migration ceiling is `00264`. |
+| Local migrations | `00001`–`00265` on disk. Formal migration ceiling is `00265`. |
+| Hosted database | Formal migration ceiling is `00265`. |
 | Public URL named in repo | `https://otpplatform-theta.vercel.app` |
 | Deployed SHA | Release baseline `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` |
 | Node | `>=22` (`package.json` engines; CI `22`) |
@@ -67,7 +67,7 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 ## Controlled pilot disposition & gap reconciliation
 
 All historical release gaps have been reconciled and closed under Certificate `OTP-CERT-20261011-GREEN` (11 October 2026) for the controlled pilot:
-- **Hosted DB ceiling:** Formal migration ceiling `00264` established and reconciled.
+- **Hosted DB ceiling:** Formal migration ceiling `00265` established and reconciled.
 - **Edge functions:** `otp-dispatch` and `payment-webhook` deployed and verified (failing closed for unauthorized/invalid requests).
 - **Messaging:** WAHA certified as the approved pilot provider through protected gateway (`WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json`); Meta and Twilio are not pilot providers; SMS and ONDC are non-blocking / disabled.
 - **Financial policy:** 0.50% supplier fee waived in pilot; zero supplier cashback strictly enforced by DB triggers; buyer wallet credits are non-cash incentive credits separated from GMV.

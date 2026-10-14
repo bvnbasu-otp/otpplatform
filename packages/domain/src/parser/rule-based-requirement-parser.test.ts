@@ -347,4 +347,17 @@ describe('what the parser does when it is not sure', () => {
     expect(parsed.subcategoryCode).toBe('painting_contracting');
     expect(parsed.requirementMode).toBe(RequirementMode.SERVICE);
   });
+
+  it('correctly classifies HVAC air conditioning maintenance into amc_facility', async () => {
+    const parsed = await parse('Annual HVAC Air Conditioning Maintenance');
+
+    expect(parsed.categoryCode).toBe('property_facility_management');
+    expect(parsed.subcategoryCode).toBe('amc_facility');
+    expect(parsed.requirementMode).toBe(RequirementMode.AMC);
+    expect(parsed.title).toBe('Annual HVAC Air Conditioning Maintenance');
+    expect(parsed.matchedKeywords).toEqual(
+      expect.arrayContaining(['air conditioning', 'hvac']),
+    );
+  });
 });
+

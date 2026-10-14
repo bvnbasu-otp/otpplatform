@@ -43,6 +43,22 @@ function round2(value: number): number {
 }
 
 const SUBCATEGORY_KEYWORD_AUGMENTATIONS: Record<string, string[]> = {
+  amc_facility: [
+    'hvac',
+    'hvac maintenance',
+    'hvac servicing',
+    'air conditioning',
+    'ac maintenance',
+    'chiller',
+    'chiller amc',
+    'chiller maintenance',
+    'ahu',
+    'air handling unit',
+    'ventilation',
+    'central ac',
+    'air conditioner',
+    'hvac repair',
+  ],
   housekeeping_cleaning: [
     'sanitization',
     'sanitisation',
