@@ -9,8 +9,8 @@ const ROOT = resolve('.');
 const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
-// Repository ceiling. Later migrations (00249–00263) do not grant this function back to clients.
-const REPOSITORY_CEILING = '00263_guard_profile_privileges_empty_role_bypass.sql';
+// Repository ceiling. Later migrations (00249–00264) do not grant this function back to clients.
+const REPOSITORY_CEILING = '00264_remediate_privileged_lifecycle_and_audit_contracts.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';
@@ -116,10 +116,12 @@ describe('record_verified_payment execute boundary', () => {
       'supabase/migrations/00247_revoke_record_verified_payment_client_execute.sql',
       // Comment only: names the preserved function. Does not grant or call it.
       'supabase/migrations/00249_freeze_organization_subscription_entitlement_fields.sql',
+      'supabase/migrations/00264_remediate_privileged_lifecycle_and_audit_contracts.sql',
       // Cites the 00247 filename and asserts 00250 SQL does not name the function.
       'tests/security/financial-authority-00250.test.ts',
       'tests/security/invoice-work-order-linkage-and-client-inserts-00202-redteam.test.ts',
       'tests/security/payment-webhook-fail-closed.test.ts',
+      'tests/security/privileged-account-lifecycle-00264.test.ts',
       'tests/security/record-verified-payment-00247.test.ts',
       'tests/security/signup-buyer-type-00246.test.ts',
       // Proves authenticated EXECUTE is denied. Not a settlement caller.

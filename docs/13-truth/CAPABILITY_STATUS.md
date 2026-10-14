@@ -3,7 +3,7 @@
 **Release Certificate:** `OTP-CERT-20261011-GREEN`  
 **Release Decision:** 🟢 **GREEN — CONTROLLED PILOT AUTHORIZED** (11 October 2026)  
 **Release Baseline:** `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` (`main` tracking `origin/main`)  
-**Formal Migration Ceiling:** `00263` (hosted and local migrations `00001`–`00263`; CI `EXPECTED_CEILING = 00263`)  
+**Formal Migration Ceiling:** `00264` (hosted and local migrations `00001`–`00264`; CI `EXPECTED_CEILING = 00264`)  
 
 **Product Owner Attestation (11 October 2026):**
 > *"All claims are working correctly. All release gates may be declared GREEN."*
@@ -53,13 +53,13 @@ This is the canonical capability and status table for the controlled pilot. Shar
 | ONDC search / on_search foundation | DISABLED / NON-BLOCKING | `ONDC_ENABLED=false`. Not a live pilot network; non-blocking for controlled pilot. |
 | BNI and trade-association networks | PLANNED | Public channel copy is planned. `BniNetworkAdapter` is `stubAdapter` and returns a synthetic “BNI match” if `discover` runs. `createOtpServices` registers it with `isLive: false`. The web client does not import it. |
 | Razorpay and Stripe webhook verification | CONFIG-GATED | Function `payment-webhook` fails verification when the matching secret is absent. Compiled fallback literals are not in source. A valid signature is what reaches `record_verified_payment`. Pilot policy does not charge. Live gateway configuration: `UNKNOWN`. CI deploys `payment-webhook`, `otp-dispatch`, and `location-pin-coverage`. Reachability is certified only by the freeze smoke. No settlement is claimed from a deploy. |
-| `record_verified_payment` execute boundary | IMPLEMENTED | Local migration `00247` revokes EXECUTE from PUBLIC, `anon`, and `authenticated`, and grants `service_role`. The function remains SECURITY DEFINER with no caller-role check. The only application caller is `payment-webhook`, using the service-role key. Hosted history includes `00247` through `00263` (ceiling `00263`). |
+| `record_verified_payment` execute boundary | IMPLEMENTED | Local migration `00247` revokes EXECUTE from PUBLIC, `anon`, and `authenticated`, and grants `service_role`. The function remains SECURITY DEFINER with no caller-role check. The only application caller is `payment-webhook`, using the service-role key. Hosted history includes `00247` through `00264` (ceiling `00264`). |
 | Web application | IMPLEMENTED | `apps/web`, `vercel.json` build. |
 | Native mobile application | NOT-IMPLEMENTED | No app package besides `apps/web`. Contract: [MOBILE_PRODUCT_CONTRACT.md](../14-mobile-contract/MOBILE_PRODUCT_CONTRACT.md). |
 | Production web deploy inside GitHub Actions | NOT-IMPLEMENTED | The workflow step “Deploy Direct to Production” only prints text. |
 | Production `supabase db push` inside GitHub Actions | IMPLEMENTED in the workflow file | `.github/workflows/ci-cd.yml` production job. A successful run against the hosted project was not observed. |
 | Docker script `scripts/deploy-prod.ps1` | IMPLEMENTED | LOCAL DOCKER ONLY. Writes container `otp-prod-db`. Success text says local Docker only and does not claim a hosted production deploy. The default display URL remains `https://otpplatform-theta.vercel.app`. CI migrations target hosted project ref `qsuvtcezffomtwzwyrso`. Those are different databases. Release-blocking if the script is used as the hosted migration. |
-| Hosted database ceiling | IMPLEMENTED | Formal ceiling `00263`. Local and hosted migrations `00001`–`00263`. CI `EXPECTED_CEILING` is `00263`. |
+| Hosted database ceiling | IMPLEMENTED | Formal ceiling `00264`. Local and hosted migrations `00001`–`00264`. CI `EXPECTED_CEILING` is `00264`. |
 | Deployed site baseline matches `89bd8fbd` | IMPLEMENTED | Release baseline `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18`. |
 
 ## Findings

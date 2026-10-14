@@ -181,7 +181,7 @@ jobs:
         with:
           version: 2.118.0
 
-      - name: Start local Postgres and apply migrations (through 00263)
+      - name: Start local Postgres and apply migrations (through 00264)
         run: |
           set -euo pipefail
           supabase start -x edge-runtime,imgproxy,logflare,mailpit,realtime,storage-api,studio,vector,kong,gotrue,postgrest
@@ -348,7 +348,7 @@ jobs:
           set -euo pipefail
           # scripts/deploy-prod.ps1 is LOCAL DOCKER ONLY (otp-prod-db). It is not this hosted path.
           PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
-          EXPECTED_CEILING="00263"
+          EXPECTED_CEILING="00264"
 
           echo "================================================================="
           echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS (Supabase CLI)"

@@ -281,7 +281,8 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 12]).toBe('00261_admin_run_test_case_truthful_execution_and_auth.sql');
     expect(files[index + 13]).toBe('00262_admin_run_diagnostic_query_allowlist_hardening.sql');
     expect(files[index + 14]).toBe('00263_guard_profile_privileges_empty_role_bypass.sql');
-    expect(index).toBe(files.length - 15);
+    expect(files[index + 15]).toBe('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
+    expect(index).toBe(files.length - 16);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

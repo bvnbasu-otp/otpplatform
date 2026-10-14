@@ -97,7 +97,8 @@ describe('Migration 00257 static SQL contract', () => {
     expect(files[index + 4]).toBe('00261_admin_run_test_case_truthful_execution_and_auth.sql');
     expect(files[index + 5]).toBe('00262_admin_run_diagnostic_query_allowlist_hardening.sql');
     expect(files[index + 6]).toBe('00263_guard_profile_privileges_empty_role_bypass.sql');
-    expect(files.at(-1)).toBe('00263_guard_profile_privileges_empty_role_bypass.sql');
+    expect(files[index + 7]).toBe('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
+    expect(files.at(-1)).toBe('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {
