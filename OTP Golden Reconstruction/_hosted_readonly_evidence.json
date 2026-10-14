@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T01:26:43.438Z",
+  "generatedAt": "2026-10-14T08:17:44.483Z",
   "passwordPrinted": false,
   "credentialPersisted": false,
   "credentialSource": ".env.otp.production.local",
@@ -88,6 +88,7 @@
       "VITE_DEMO_MODE",
       "VITE_SUPABASE_ANON_KEY",
       "VITE_SUPABASE_URL",
+      "WAHA_API_KEY",
       "WAHA_BASE_URL",
       "WAHA_SESSION"
     ],
@@ -111,141 +112,7 @@
     ],
     "connectionStringSourceKey": "DATABASE_URL"
   },
-  "connectionError": "getaddrinfo ENOTFOUND db.qsuvtcezffomtwzwyrso.supabase.co",
+  "connectionError": "getaddrinfo ENOENT db.qsuvtcezffomtwzwyrso.supabase.co",
   "decision": "HOSTED VERIFICATION BLOCKED",
-  "readOnlyConfirmed": false,
-  "hostedMigrationCeiling": {
-    "repoLocalFiles": [
-      "00257",
-      "00258",
-      "00259",
-      "00260"
-    ],
-    "repoCiExpectedCeiling": "00260",
-    "hostedSchemaMigrations": "NOT READ — Postgres connection failed before query",
-    "supabaseCliMigrationList": "NOT ATTEMPTED — SUPABASE_ACCESS_TOKEN not loaded in shell (AccessTokenRequiredError)"
-  },
-  "dnsNote": {
-    "directDbHost": "db.qsuvtcezffomtwzwyrso.supabase.co resolves IPv6 only from operator network",
-    "poolerHostResolvable": "pooler.supabase.com ELB resolves; DATABASE_URL in credential file targets direct db host"
-  },
-  "edgeProbes2026_10_11": {
-    "observedAt": "2026-10-11T06:57:18+05:30",
-    "productionSpa": {
-      "url": "https://otpplatform-theta.vercel.app",
-      "method": "HEAD",
-      "httpStatus": 200
-    },
-    "otpDispatch": {
-      "url": "https://qsuvtcezffomtwzwyrso.supabase.co/functions/v1/otp-dispatch",
-      "postNoAuthStatus": 401
-    },
-    "mutations": false,
-    "realOtpSend": false,
-    "hostedWebBundleParity": "NOT VERIFIED — no deploy SHA / asset hash compared"
-  },
-  "phaseA_2026_10_11_session": "18b8b7bc-e9d4-4ccb-acaa-aa5ea69632ac",
-  "appendProbes": [
-    {
-      "sessionRef": "008e5c6c-b143-4175-a5e9-0a89e7b279ea",
-      "observedAt": "2026-10-11T01:29:27.542Z",
-      "credentialFileExists": true,
-      "postgresUrlInventory": [
-        {
-          "key": "DATABASE_URL",
-          "meta": {
-            "hostname": "db.qsuvtcezffomtwzwyrso.supabase.co",
-            "port": "5432",
-            "isPooler": false,
-            "isDirectDb": true
-          }
-        },
-        {
-          "key": "DIRECT_URL",
-          "meta": {
-            "hostname": "db.qsuvtcezffomtwzwyrso.supabase.co",
-            "port": "5432",
-            "isPooler": false,
-            "isDirectDb": true
-          }
-        },
-        {
-          "key": "DATABASE_DIRECT_URL",
-          "meta": {
-            "hostname": "db.qsuvtcezffomtwzwyrso.supabase.co",
-            "port": "5432",
-            "isPooler": false,
-            "isDirectDb": true
-          }
-        },
-        {
-          "key": "GOTRUE_DB_DATABASE_URL",
-          "meta": {
-            "hostname": "supabase_db_otp-local",
-            "port": "5432",
-            "isPooler": false,
-            "isDirectDb": false
-          }
-        }
-      ],
-      "attempts": [
-        {
-          "label": "CONSTRUCTED_POOLER_FROM_SUPABASE_DB_PASSWORD",
-          "connectionMeta": {
-            "hostname": "aws-0-ap-south-1.pooler.supabase.com",
-            "port": "6543",
-            "isPooler": true,
-            "isDirectDb": false
-          },
-          "observedAt": "2026-10-11T01:29:27.546Z",
-          "readOnlyConfirmed": false,
-          "schemaMigrations": null,
-          "error": "read ECONNRESET"
-        },
-        {
-          "label": "DATABASE_URL",
-          "connectionMeta": {
-            "hostname": "db.qsuvtcezffomtwzwyrso.supabase.co",
-            "port": "5432",
-            "isPooler": false,
-            "isDirectDb": true
-          },
-          "observedAt": "2026-10-11T01:30:49.408Z",
-          "readOnlyConfirmed": false,
-          "schemaMigrations": null,
-          "error": "getaddrinfo ENOTFOUND db.qsuvtcezffomtwzwyrso.supabase.co"
-        },
-        {
-          "label": "DIRECT_URL",
-          "connectionMeta": {
-            "hostname": "db.qsuvtcezffomtwzwyrso.supabase.co",
-            "port": "5432",
-            "isPooler": false,
-            "isDirectDb": true
-          },
-          "observedAt": "2026-10-11T01:30:49.457Z",
-          "readOnlyConfirmed": false,
-          "schemaMigrations": null,
-          "error": "getaddrinfo ENOTFOUND db.qsuvtcezffomtwzwyrso.supabase.co"
-        },
-        {
-          "label": "DATABASE_DIRECT_URL",
-          "connectionMeta": {
-            "hostname": "db.qsuvtcezffomtwzwyrso.supabase.co",
-            "port": "5432",
-            "isPooler": false,
-            "isDirectDb": true
-          },
-          "observedAt": "2026-10-11T01:30:49.460Z",
-          "readOnlyConfirmed": false,
-          "schemaMigrations": null,
-          "error": "getaddrinfo ENOTFOUND db.qsuvtcezffomtwzwyrso.supabase.co"
-        }
-      ],
-      "decision": "HOSTED VERIFICATION BLOCKED — ENOTFOUND",
-      "poolerConstructed": true,
-      "poolerRegionGuess": "ap-south-1"
-    }
-  ],
-  "lastAppendProbeAt": "2026-10-11T01:29:27.542Z"
+  "readOnlyConfirmed": false
 }

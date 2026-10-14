@@ -365,7 +365,7 @@ BEGIN
           AND lower(a.city) = lower(v_city)
       ) AS city_match,
       (lower(COALESCE(s.city, '')) = lower(COALESCE(v_city, '~'))) AS based_in_city,
-      (v_pincode IS NOT NULL AND s.pincode = v_pincode) AS supplier_pin_match
+      COALESCE(v_pincode IS NOT NULL AND s.pincode = v_pincode, false) AS supplier_pin_match
     FROM suppliers s
     WHERE s.status = 'ACTIVE'
       AND NOT (s.id = ANY(COALESCE(p_exclude, '{}')))

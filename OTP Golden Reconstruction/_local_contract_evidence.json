@@ -1,19 +1,22 @@
 {
   "baseline": {
     "head": "7b1afc12ac7761efc206c70db80486612a34d146",
-    "connectionTarget": "postgresql://127.0.0.1:54322/postgres",
+    "connectionTarget": "postgresql://postgres:***@127.0.0.1:54322/postgres",
     "apiTarget": "http://127.0.0.1:54321",
     "migrationsOnDiskCeiling": "00219",
     "anonAllowlist": [
       "complete_supplier_onboarding_atomic",
+      "discover_and_invite_for_rfq",
       "get_maintenance_status",
       "messaging_quote_context",
       "platform_heartbeat",
+      "protect_issued_document_snapshot_payload",
       "redeem_supplier_magic_link",
       "served_cities",
       "service_categories",
       "submit_messaging_quote",
       "submit_signup_request",
+      "trg_issue_tax_invoice_snapshots",
       "verify_profile_verification_otp",
       "verify_whatsapp_password_reset"
     ],
@@ -237,7 +240,48 @@
       "00216",
       "00217",
       "00218",
-      "00219"
+      "00219",
+      "00220",
+      "00221",
+      "00222",
+      "00223",
+      "00224",
+      "00225",
+      "00226",
+      "00227",
+      "00228",
+      "00229",
+      "00230",
+      "00231",
+      "00232",
+      "00233",
+      "00234",
+      "00235",
+      "00236",
+      "00237",
+      "00238",
+      "00239",
+      "00240",
+      "00241",
+      "00242",
+      "00243",
+      "00244",
+      "00245",
+      "00246",
+      "00247",
+      "00248",
+      "00249",
+      "00250",
+      "00251",
+      "00252",
+      "00253",
+      "00254",
+      "00255",
+      "00256",
+      "00257",
+      "00258",
+      "00259",
+      "00260"
     ],
     "rlsSensitive": [
       "awards:true",
@@ -257,8 +301,8 @@
       "call": "credit_buyer_settlement_reward_atomic(null fee)",
       "expected": "permission denied or error; balance unchanged",
       "actual": "permission denied for function credit_buyer_settlement_reward_atomic",
-      "before": "balance=1300.00 ledger=13",
-      "after": "balance=1300.00 ledger=13",
+      "before": "balance=0 ledger=0",
+      "after": "balance=0 ledger=0",
       "status": "PASS"
     },
     {
@@ -266,9 +310,9 @@
       "actor": "manager@greenview.test",
       "call": "credit_buyer_settlement_reward_atomic(null fee)",
       "expected": "error; no balance change",
-      "actual": "platform_fee_tx_id is required (WALLET-REWARD-FEE-REQUIRED)",
-      "before": "1300.00",
-      "after": "1300.00",
+      "actual": "permission denied for function credit_buyer_settlement_reward_atomic",
+      "before": "0",
+      "after": "0",
       "status": "PASS"
     },
     {
@@ -276,9 +320,9 @@
       "actor": "manager@greenview.test",
       "call": "credit_buyer_settlement_reward_atomic(fake fee id)",
       "expected": "not found / not belong; balance unchanged",
-      "actual": "Platform fee transaction 00000000-0000-4000-8000-000000000099 not found",
-      "before": "1300.00",
-      "after": "1300.00",
+      "actual": "permission denied for function credit_buyer_settlement_reward_atomic",
+      "before": "0",
+      "after": "0",
       "status": "PASS"
     },
     {
@@ -304,9 +348,9 @@
     {
       "id": "B2",
       "actor": "manager",
-      "call": "apply_wallet_credits(\u20b91 vs catalog)",
+      "call": "apply_wallet_credits(₹1 vs catalog)",
       "expected": "catalog amount rejection",
-      "actual": "Wallet redemption must equal catalog amount ???199.00 for INDIVIDUAL MONTHLY, received ???1",
+      "actual": "Wallet redemption must equal catalog amount ₹199.00 for INDIVIDUAL MONTHLY, received ₹1",
       "before": "-",
       "after": "-",
       "status": "PASS"
@@ -396,7 +440,7 @@
       "actor": "manager after 1 unconflicted vote",
       "call": "lock_and_reveal_award_atomic",
       "expected": "quorum not met (COI excluded from count)",
-      "actual": "Committee quorum not met: at least 2 unconflicted votes required for this award",
+      "actual": "Committee quorum not met: quorum_met is false for this RWA/COMMUNITY award",
       "before": "committee1 COI + committee2 1 vote",
       "after": "-",
       "status": "PASS"
@@ -425,8 +469,8 @@
       "id": "P-BUYER-OK",
       "actor": "manager@greenview.test",
       "call": "record_invoice_payment_atomic(100)",
-      "expected": "ok; balance_due 500\u2192400",
-      "actual": "{\"ok\":true,\"invoice\":{\"id\":\"e0000002-0000-4000-8000-000000000099\",\"status\":\"PARTIALLY_PAID\",\"balance_due\":400},\"payment_id\":\"a20f4ff9-491c-4bd5-ab86-0afc0babe76b\",\"allocation_id\":\"b54c4607-a353-48bf-8a89-159d343d1061\"}",
+      "expected": "ok; balance_due 500→400",
+      "actual": "{\"ok\":true,\"invoice\":{\"id\":\"e0000002-0000-4000-8000-000000000099\",\"status\":\"PARTIALLY_PAID\",\"balance_due\":400},\"payment_id\":\"b291bac9-a286-414a-bce4-d0e99fce6a91\",\"allocation_id\":\"22126ee8-55a9-44c3-be0e-3d39d0c45457\"}",
       "before": "500.00",
       "after": "400.00",
       "status": "PASS"
@@ -506,10 +550,10 @@
       "actor": "manager",
       "call": "UPDATE awards.quote_id",
       "expected": "denied or unchanged",
-      "actual": "updated",
-      "before": "a5000000-0000-4000-8000-000000000001",
-      "after": "a5000000-0000-4000-8000-000000000001",
-      "status": "NOT TESTED"
+      "actual": "permission denied for table awards",
+      "before": "a5000001-0000-4000-8000-000000000001",
+      "after": "a5000001-0000-4000-8000-000000000001",
+      "status": "PASS"
     },
     {
       "id": "SM-RFQ-DIRECT-UPDATE",
@@ -532,5 +576,5 @@
       "status": "PASS"
     }
   ],
-  "generatedAt": "2026-09-28T13:29:38.390Z"
+  "generatedAt": "2026-10-14T06:37:27.890Z"
 }

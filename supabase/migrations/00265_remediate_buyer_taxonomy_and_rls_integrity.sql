@@ -1272,6 +1272,28 @@ SET name = EXCLUDED.name,
     description = EXCLUDED.description,
     match_keywords = EXCLUDED.match_keywords;
 
+INSERT INTO subcategory_capabilities (subcategory_id, capability_id, is_primary)
+SELECT s.id, cp.id, v.is_primary
+FROM (VALUES
+  ('modular_furniture', 'modular_office_furniture', true),
+  ('workstations_desks', 'modular_office_furniture', true),
+  ('office_chairs_seating', 'modular_office_furniture', true),
+  ('exterior_painting_waterproofing', 'rwa_exterior_society_painting', true),
+  ('commercial_painting', 'commercial_painting_service', true),
+  ('swimming_pool_amc_chemicals', 'swimming_pool_amc', true),
+  ('commercial_gym_equipment_service', 'gym_equipment_amc', true),
+  ('fleet_vehicle_scheduled_service', 'vehicle_fleet_maintenance', true),
+  ('commercial_generator_amc_servicing', 'dg_maintenance', true),
+  ('domestic_ro_purifier_water_filter', 'domestic_ro_purifier', true),
+  ('commercial_wtp_stp_plant', 'sewage_treatment_plant', true),
+  ('domestic_cctv_supply_only', 'cctv_installation', true),
+  ('domestic_cctv_turnkey_install', 'cctv_installation', true),
+  ('domestic_plumber_service_visit', 'plumber_service', true)
+) AS v(subcode, capcode, is_primary)
+JOIN requirement_subcategories s ON s.code = v.subcode
+JOIN capabilities cp ON cp.code = v.capcode
+ON CONFLICT (subcategory_id, capability_id) DO NOTHING;
+
 -- ---------------------------------------------------------------------------
 -- 10. Augment keywords for HVAC & Facility Maintenance
 -- ---------------------------------------------------------------------------

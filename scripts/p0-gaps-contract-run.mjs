@@ -24,10 +24,6 @@ const PROFILE_BUYER = 'b0000000-0000-4000-8000-000000000004';
 const SUPPLIER_A = 'd0000000-0000-4000-8000-000000000001';
 const SUPPLIER_B = 'd0000000-0000-4000-8000-000000000002';
 const PO_FULFILL = 'c8000001-0000-4000-8000-000000000001';
-const SUBCATEGORY = '02d7b925-af14-4d71-92bd-85d6ef3855bd';
-
-const gaps = { gap1: [], gap2: [], gap3: [] };
-
 function psql(sql) {
   const r = spawnSync(
     'docker',
@@ -37,6 +33,14 @@ function psql(sql) {
   if (r.status !== 0) throw new Error(r.stderr || r.stdout);
   return (r.stdout || '').trim();
 }
+
+let SUBCATEGORY = '1ecf1332-3dcf-40c0-bbcb-65f09c011837';
+try {
+  const queriedSub = psql("SELECT id FROM requirement_subcategories LIMIT 1;");
+  if (queriedSub) SUBCATEGORY = queriedSub;
+} catch {}
+
+const gaps = { gap1: [], gap2: [], gap3: [] };
 
 function errText(e) {
   if (!e) return '';
@@ -89,11 +93,13 @@ INSERT INTO platform_fee_transactions (
   round((${gross}*${feeRate}/100)::numeric,2), round((${gross}*${feeRate}/100)::numeric,2), 'APPLIED'
 );`);
 
+  const service = createClient(URL, SERVICE, { auth: { persistSession: false } });
   const mgr = await signIn('manager@greenview.test');
   const anon = createClient(URL, ANON, { auth: { persistSession: false } });
   const before = walletMetrics(GREENVIEW);
 
-  const ok = await mgr.rpc('credit_buyer_settlement_reward_atomic', {
+  // Migration 00250: credit_buyer_settlement_reward_atomic is service_role only (financial authority boundary).
+  const ok = await service.rpc('credit_buyer_settlement_reward_atomic', {
     p_org_id: GREENVIEW,
     p_platform_fee_tx_id: feeId,
     p_base_amount: 999999,
@@ -102,7 +108,7 @@ INSERT INTO platform_fee_transactions (
   const alloc1 = psql(`SELECT count(*)::text FROM buyer_reward_allocations WHERE platform_fee_tx_id='${feeId}' AND status='CREDITED';`);
   const reward1 = ok.data?.reward_amount ?? ok.data?.rewardAmount;
   record('gap1', 'GAP1-AUTH-OK', {
-    actor: 'manager@greenview.test',
+    actor: 'service_role (00250 boundary)',
     operation: 'credit_buyer_settlement_reward_atomic',
     input: { feeId, p_base_amount: 999999 },
     expected: `reward=${expReward} from fee row`,
@@ -116,14 +122,14 @@ INSERT INTO platform_fee_transactions (
     fixtureIds: { feeId, orgId: GREENVIEW, policyId },
   });
 
-  const badAmt = await mgr.rpc('credit_buyer_settlement_reward_atomic', {
+  const badAmt = await service.rpc('credit_buyer_settlement_reward_atomic', {
     p_org_id: GREENVIEW,
     p_platform_fee_tx_id: feeId,
     p_base_amount: 1,
   });
   const afterBad = walletMetrics(GREENVIEW);
   record('gap1', 'GAP1-REPLAY-SAME-FEE', {
-    actor: 'manager',
+    actor: 'service_role',
     operation: 'replay same platform_fee_tx_id',
     expected: 'idempotent / no second ledger credit',
     actual: errText(badAmt.error) || JSON.stringify(badAmt.data),
@@ -138,12 +144,12 @@ INSERT INTO platform_fee_transactions (
   });
 
   const fakeFee = '00000000-0000-4000-8000-000000000099';
-  const fake = await mgr.rpc('credit_buyer_settlement_reward_atomic', {
+  const fake = await service.rpc('credit_buyer_settlement_reward_atomic', {
     p_org_id: GREENVIEW,
     p_platform_fee_tx_id: fakeFee,
   });
   record('gap1', 'GAP1-FAKE-FEE', {
-    actor: 'manager',
+    actor: 'service_role',
     operation: 'nonexistent fee id',
     expected: 'error, no mutation',
     actual: errText(fake.error),
@@ -152,12 +158,12 @@ INSERT INTO platform_fee_transactions (
     status: fake.error && walletMetrics(GREENVIEW).balance === afterBad.balance ? 'PASS' : 'FAIL',
   });
 
-  const nullFee = await mgr.rpc('credit_buyer_settlement_reward_atomic', {
+  const nullFee = await service.rpc('credit_buyer_settlement_reward_atomic', {
     p_org_id: GREENVIEW,
     p_platform_fee_tx_id: null,
   });
   record('gap1', 'GAP1-NULL-FEE', {
-    actor: 'manager',
+    actor: 'service_role',
     operation: 'null fee id',
     expected: 'WALLET-REWARD-FEE-REQUIRED',
     actual: errText(nullFee.error),
@@ -172,16 +178,29 @@ INSERT INTO platform_fee_transactions (
 ) SELECT '${otherOrgFee}', 'a0000000-0000-4000-8000-000000000099', '${SUPPLIER_B}', '${PO_FULFILL}', '${policyId}', 1,
   5000, 0.5, 25, 25, 'APPLIED'
 WHERE EXISTS (SELECT 1 FROM organizations WHERE id='a0000000-0000-4000-8000-000000000099');`);
-  const wrongOrg = await mgr.rpc('credit_buyer_settlement_reward_atomic', {
+  const wrongOrg = await service.rpc('credit_buyer_settlement_reward_atomic', {
     p_org_id: GREENVIEW,
     p_platform_fee_tx_id: otherOrgFee,
   });
   record('gap1', 'GAP1-WRONG-ORG-FEE', {
-    actor: 'manager + greenview org',
+    actor: 'service_role + greenview org',
     operation: 'fee row for other org',
     expected: 'does not belong',
     actual: errText(wrongOrg.error),
     status: /belong|not found/i.test(errText(wrongOrg.error)) ? 'PASS' : 'NOT TESTED',
+  });
+
+  // Client manager must be denied (00250 boundary)
+  const mgrCall = await mgr.rpc('credit_buyer_settlement_reward_atomic', {
+    p_org_id: GREENVIEW,
+    p_platform_fee_tx_id: feeId,
+  });
+  record('gap1', 'GAP1-CLIENT-MGR-DENIED', {
+    actor: 'manager@greenview.test',
+    operation: 'credit_buyer_settlement_reward_atomic',
+    expected: 'permission denied (00250)',
+    actual: errText(mgrCall.error),
+    status: /permission denied/i.test(errText(mgrCall.error)) ? 'PASS' : 'FAIL',
   });
 
   const anonCall = await anon.rpc('credit_buyer_settlement_reward_atomic', {
@@ -263,8 +282,9 @@ VALUES ('${rfqId}', '${reqId}', '${GREENVIEW}', 'DRAFT', 'BLIND', 'P0 GAP2 RFQ',
     return;
   }
   const winSupplier = psql(`SELECT supplier_id::text FROM quotes WHERE id='${winQuote}';`);
-  const token = 'gap2-onboard-token-local-only';
-  // Column is misnamed: RPC matches trim(p_token) to onboarding_claim_token_hash verbatim (00196).
+  const token = 'gap2-onboard-' + randomUUID();
+  // Clear any existing onboarding tokens and assign unique token to winning supplier
+  psql(`UPDATE suppliers SET onboarding_claim_token_hash=NULL WHERE onboarding_claim_token_hash LIKE 'gap2-onboard%';`);
   psql(`UPDATE suppliers SET onboarding_claim_token_hash='${token}' WHERE id='${winSupplier}';`);
   const onboard = await service.rpc('complete_supplier_onboarding_atomic', {
     p_token: token,
