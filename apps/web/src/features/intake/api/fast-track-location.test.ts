@@ -38,17 +38,27 @@ const taxonomy: TaxonomySnapshot = {
 const createDraft = vi.fn();
 const publishDraft = vi.fn();
 const discoverAndInvite = vi.fn();
+const discoverForRequirement = vi.fn();
 
 vi.mock('./taxonomy', () => ({
   fetchTaxonomy: vi.fn(async () => ({ ok: true, taxonomy })),
 }));
-vi.mock('./draft', () => ({
-  createDraft: (...args: unknown[]) => createDraft(...args),
-  publishDraft: (...args: unknown[]) => publishDraft(...args),
-}));
-vi.mock('@/features/requirement/api/rfq-lifecycle', () => ({
-  discoverAndInvite: (...args: unknown[]) => discoverAndInvite(...args),
-}));
+vi.mock('./draft', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./draft')>();
+  return {
+    ...actual,
+    createDraft: (...args: unknown[]) => createDraft(...args),
+    publishDraft: (...args: unknown[]) => publishDraft(...args),
+  };
+});
+vi.mock('@/features/requirement/api/rfq-lifecycle', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/requirement/api/rfq-lifecycle')>();
+  return {
+    ...actual,
+    discoverAndInvite: (...args: unknown[]) => discoverAndInvite(...args),
+    discoverForRequirement: (...args: unknown[]) => discoverForRequirement(...args),
+  };
+});
 
 import { supabase } from '@/lib/supabase';
 import { FAST_TRACK_LOCATION_REQUIRED_ERROR, fastTrackExpressIntake } from './fast-track-intake';
@@ -62,9 +72,11 @@ beforeEach(() => {
   createDraft.mockReset();
   publishDraft.mockReset();
   discoverAndInvite.mockReset();
+  discoverForRequirement.mockReset();
   createDraft.mockResolvedValue({ ok: true, draft: { requirementId: 'req-1' } });
   publishDraft.mockResolvedValue({ ok: true, requirementId: 'req-1', rfqId: 'rfq-1', publicRef: 'R-1' });
   discoverAndInvite.mockResolvedValue({ ok: true });
+  discoverForRequirement.mockResolvedValue({ ok: true, outcome: 'GOOGLE_PLACES_DISCOVERY' });
 });
 
 describe('Issue 06: fast-track intake never invents a location', () => {
