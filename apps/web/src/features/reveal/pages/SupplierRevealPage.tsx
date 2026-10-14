@@ -461,12 +461,15 @@ export function SupplierRevealPage({ rfqId }: { rfqId: string }) {
                             <td className="px-3 py-2.5">
                               {isWinner ? (
                                 <span className="font-bold text-foreground">{q.businessName}</span>
+                              ) : q.businessName ? (
+                                <span className="text-foreground text-[11px] font-semibold">{q.businessName}</span>
                               ) : (
                                 <span className="text-muted-foreground text-[11px] italic">
                                   🔒 Sealed &amp; Identity-Protected
                                 </span>
                               )}
                             </td>
+
                             <td className="px-3 py-2.5 text-muted-foreground text-[11px]">
                               {isWinner ? (
                                 <span>{q.phone ?? '—'} {q.email ? `(${q.email})` : ''}</span>

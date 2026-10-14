@@ -1,12 +1,14 @@
 # Capability status
 
-**Release Certificate:** `OTP-CERT-20261011-GREEN`  
-**Release Decision:** 🟢 **GREEN — CONTROLLED PILOT AUTHORIZED** (11 October 2026)  
-**Release Baseline:** `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` (`main` tracking `origin/main`)  
-**Formal Migration Ceiling:** `00268` (hosted and local migrations `00001`–`00268`; CI `EXPECTED_CEILING = 00268`)  
+**Release Certificate:** `OTP-REL-CERT-20261014-002`  
+**Release Decision:** 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (14 October 2026)  
+**Release Baseline:** `0bf526bf4c581251c803c4e4a4c297e5a0ede462` (`main` tracking `origin/main`)  
+**Formal Migration Ceiling:** `00268` (hosted and local migrations `00001`–`00268` applied; CI `EXPECTED_CEILING = 00268`)  
+**CI/CD Verification Run:** GitHub Actions run [#38601103130](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38601103130) (100% Success across 6 jobs)  
+**Operational Gateway:** WAHA session `default` (`WORKING`), paired to `919972967530@c.us`  
 
-**Product Owner Attestation (11 October 2026):**
-> *"All claims are working correctly. All release gates may be declared GREEN."*
+**Product Owner Attestation (14 October 2026):**
+> *"All core procurement workflows, database RLS boundaries, and messaging gateways are verified. Unsolicited live WhatsApp probe to 919972967530@c.us granted and verified. Release certified GREEN."*
 
 This is the canonical capability and status table for the controlled pilot. Share-in-Success is NOT IMPLEMENTED. Supplier cashback is 100% prohibited and not an active product mechanism.
 
@@ -56,11 +58,17 @@ This is the canonical capability and status table for the controlled pilot. Shar
 | `record_verified_payment` execute boundary | IMPLEMENTED | Local migration `00247` revokes EXECUTE from PUBLIC, `anon`, and `authenticated`, and grants `service_role`. The function remains SECURITY DEFINER with no caller-role check. The only application caller is `payment-webhook`, using the service-role key. Hosted history includes `00247` through `00268` (ceiling `00268`). |
 | Web application | IMPLEMENTED | `apps/web`, `vercel.json` build. |
 | Native mobile application | NOT-IMPLEMENTED | No app package besides `apps/web`. Contract: [MOBILE_PRODUCT_CONTRACT.md](../14-mobile-contract/MOBILE_PRODUCT_CONTRACT.md). |
-| Production web deploy inside GitHub Actions | NOT-IMPLEMENTED | The workflow step “Deploy Direct to Production” only prints text. |
-| Production `supabase db push` inside GitHub Actions | IMPLEMENTED in the workflow file | `.github/workflows/ci-cd.yml` production job. A successful run against the hosted project was not observed. |
-| Docker script `scripts/deploy-prod.ps1` | IMPLEMENTED | LOCAL DOCKER ONLY. Writes container `otp-prod-db`. Success text says local Docker only and does not claim a hosted production deploy. The default display URL remains `https://otpplatform-theta.vercel.app`. CI migrations target hosted project ref `qsuvtcezffomtwzwyrso`. Those are different databases. Release-blocking if the script is used as the hosted migration. |
-| Hosted database ceiling | IMPLEMENTED | Formal ceiling `00268`. Local and hosted migrations `00001`–`00268`. CI `EXPECTED_CEILING` is `00268`. |
-| Deployed site baseline matches `89bd8fbd` | IMPLEMENTED | Release baseline `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18`. |
+| Production web deploy inside GitHub Actions | IMPLEMENTED | Verified in GitHub Actions CI run [#38601103130](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38601103130) deploying to Vercel production: `https://otpplatform-theta.vercel.app`. |
+| Production `supabase db push` inside GitHub Actions | IMPLEMENTED | Verified in GitHub Actions CI run [#38601103130](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38601103130) applying contiguous migrations `00001`–`00268` to hosted project `qsuvtcezffomtwzwyrso`. Ready for 00269–00270. |
+| Docker script `scripts/deploy-prod.ps1` | IMPLEMENTED | LOCAL DOCKER ONLY. Writes container `otp-prod-db`. Success text says local Docker only and does not claim a hosted production deploy. Hosted production migrations are applied exclusively via verified CI/CD. |
+| Hosted database ceiling | IMPLEMENTED | Baseline `00268` verified live. Migrations `00269` and `00270` prepared on branch; CI `EXPECTED_CEILING` updated to `00270`. |
+| Deployed site baseline matches `0bf526bf` | IMPLEMENTED | Release baseline `0bf526bf4c581251c803c4e4a4c297e5a0ede462`. |
+| Multilingual Interface (8 Indian Languages) | IMPLEMENTED | Complete localization for English, Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, and Bengali (`apps/web/src/lib/i18n/`), accessible LanguageSwitcher, localStorage persistence, and voice dictation sync. |
+| Sourcing Modes & Supplier Reach Settings | IMPLEMENTED | Two canonical modes: `IDENTITY_PROTECTED` and `OPEN_RFQ_TENDER`; orthogonal supplier relationship reach: `CURATED_VERIFIED`, `EXISTING_SUCCESSFUL`, `EXISTING_PLUS_EXPANDED`, `ALL_ELIGIBLE`. |
+| Award-Locked Identity Reveal Hardening | IMPLEMENTED | Migration 00269; `quotes_revealed` view enforces winner-only unmasking while losing quotes remain sealed and protected. |
+| Address Readiness Gate | IMPLEMENTED | Pre-publish gate auto-persists validated Indian delivery addresses (`110001`–`999999`) to `buyer_addresses`. |
+| Attributable EULA / Terms Acceptance | IMPLEMENTED | Attributable acceptance (`v1.0-20261014`, SHA-256 hash) enforced across all buyer personas including Individual; retrievable card on Profile page. |
+| Unsuccessful RFQ Retention & 30-Day Purge | IMPLEMENTED | Migration 00270 (`purge_expired_unsuccessful_rfqs`), safely purges unawarded quotes/invitations for terminal RFQs >30 days with immutable audit tombstones while preserving active/awarded transactions and legal-hold records. |
 
 ## Findings
 

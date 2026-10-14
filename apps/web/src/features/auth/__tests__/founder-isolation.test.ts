@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isFounderEmail, isSuperAdminEmail } from '../user-role';
+import { isFounderEmail, isSuperAdminEmail, resolvePortalRole } from '../user-role';
 import { evaluateRouteAccess } from '../ProtectedRoute';
 
 describe('Founder vs Operations Red-Team Security & Isolation', () => {
@@ -67,5 +67,23 @@ describe('Founder vs Operations Red-Team Security & Isolation', () => {
     });
 
     expect(spoofResult.action).toBe('REDIRECT');
+  });
+
+  it('SEC-P0-02: resolvePortalRole denies admin/founder roles without explicit database flags', async () => {
+    // 1. Privileged emails without database claims MUST NOT receive founder or admin role
+    const spoofAdmin = await resolvePortalRole('user-1', false, 'admin@otp.test', false);
+    expect(spoofAdmin).not.toBe('admin');
+    expect(spoofAdmin).not.toBe('founder');
+
+    const spoofFounder = await resolvePortalRole('user-2', false, 'bvnbasu@gmail.com', false);
+    expect(spoofFounder).not.toBe('founder');
+    expect(spoofFounder).not.toBe('admin');
+
+    // 2. Explicit claims grant appropriate role
+    const realFounder = await resolvePortalRole('user-3', true, 'any@example.com', true);
+    expect(realFounder).toBe('founder');
+
+    const realAdmin = await resolvePortalRole('user-4', true, 'any@example.com', false);
+    expect(realAdmin).toBe('admin');
   });
 });

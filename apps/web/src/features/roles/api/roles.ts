@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import { isSuperAdminEmail, isFounderEmail } from '@/features/auth/user-role';
 
 function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, fallbackValue: T): Promise<T> {
   return Promise.race([
@@ -383,7 +382,6 @@ export async function fetchRoleContext(): Promise<
     // Authenticated user but profile row not yet created / network error: synthesize graceful fallback
     if (!profile && user) {
       const email = user.email || '';
-      const isAdmin = isSuperAdminEmail(email) || isFounderEmail(email);
       return {
         ok: true,
         context: {
@@ -392,8 +390,8 @@ export async function fetchRoleContext(): Promise<
           profileId: user.id,
           email,
           fullName: (user.user_metadata?.full_name as string) || (email ? email.split('@')[0] : 'User'),
-          isPlatformAdmin: isAdmin,
-          needsOnboarding: !isAdmin,
+          isPlatformAdmin: false,
+          needsOnboarding: true,
           status: 'ACTIVE',
         },
       };

@@ -4,7 +4,9 @@ import { useRoleContext } from '@/features/roles';
 import { NotificationBell } from '@/features/notifications';
 import { SupportHelpButtonModal } from '@/features/support';
 import { OtpLogo } from '@/components/ui/OtpLogo';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { getHomeRoute, getRoleLabel } from '../navigation-config';
+
 import { WorkspaceHeaderMenu } from './WorkspaceHeaderMenu';
 
 export interface WorkspaceHeaderProps {
@@ -63,13 +65,17 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
             </Link>
           </div>
 
-          {/* RIGHT ACTION CLUSTER: [Help & Support] → [Notifications (🔔)] → [Menu (☰)] */}
+          {/* RIGHT ACTION CLUSTER: [Language (🌐)] → [Help & Support] → [Notifications (🔔)] → [Menu (☰)] */}
           <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Language Selector Universal Trigger */}
+            <LanguageSwitcher placement="header" />
+
             {/* Help & Support Universal Trigger */}
             <SupportHelpButtonModal
               isOpen={isSupportOpen}
               onOpenChange={setIsSupportOpen}
             />
+
 
             {/* Notifications Universal Trigger */}
             <NotificationBell />

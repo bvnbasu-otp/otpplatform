@@ -35,5 +35,22 @@ Milestone index only. Files `00001` through `00252` are on disk and contiguous. 
 | `00251_fresh_pin_coverage_otp_registered_fallback.sql` | Fresh pin coverage with no addressable supplier may invite OTP-registered suppliers. Non-fresh coverage does not. Present in the hosted history read on 2026-10-08. |
 | `00252_rwa_award_quorum_met.sql` | RWA/COMMUNITY award lock rejects when fewer than two unconflicted recommendations exist. Individual and MSME are not given that gate. Hosted proof is the function body, not a live award. |
 | `00253_cancelled_rfq_allowance_and_utgst.sql` | Cancelled RFQs do not consume the monthly allowance or the quarterly bonus. Intra-state Union Territory GST is CGST + UTGST. Inter-state stays IGST. |
+| `00254_individual_signup_property_owner_catalog_and_rpc.sql` | Individual signup property owner role catalog and provisioning RPC. |
+| `00255_restore_requirement_categories_canonical.sql` | Restores canonical requirement categories integrity. |
+| `00256_standardize_auth_otp_eight_digits.sql` | Standardizes email and SMS auth OTP codes to 8 digits with strict expiration. |
+| `00257_canonical_role_catalog_and_signup_provisioning.sql` | Canonical role catalog and signup provisioning RPC hardening. |
+| `00258_rwa_committee_vote_authority_trigger_order.sql` | RWA committee vote authority trigger ordering. |
+| `00259_document_reveal_integrity_digest_hmac_parity.sql` | Document reveal integrity digest HMAC parity. |
+| `00260_otp_deterministic_hmac_utf16_code_units.sql` | OTP deterministic HMAC UTF-16 code units parity with TypeScript. |
+| `00261_admin_run_test_case_truthful_execution_and_auth.sql` | Authoritative test case runner execution RPC with strict admin checks. |
+| `00262_admin_run_diagnostic_query_allowlist_hardening.sql` | Read-only diagnostic query allowlist hardening. |
+| `00263_guard_profile_privileges_empty_role_bypass.sql` | Blocks profile privilege escalations across empty role codes. |
+| `00264_remediate_privileged_lifecycle_and_audit_contracts.sql` | Hardens privileged account lifecycle and audit trail contracts. |
+| `00265_remediate_buyer_taxonomy_and_rls_integrity.sql` | Enforces buyer taxonomy integrity and RLS policy boundaries. |
+| `00266_remediate_supplier_coverage_and_dispatch.sql` | Remediates nationwide supplier coverage discovery and RFQ dispatch queries. |
+| `00267_authoritative_founder_and_admin_claims.sql` | Authoritative founder claim isolation (`private.is_founder()` requires `profiles.is_founder = true`) and admin security. |
+| `00268_complete_nationwide_pincode_resolution.sql` | Nationwide postal pincode directory resolution and geographical coverage mapping. |
+| `00269_harden_sourcing_mode_identity_reveal.sql` | Hardens sourcing modes (`OPEN_RFQ_TENDER`, `IDENTITY_PROTECTED`) and unmasking view (`quotes_revealed`) security barrier so only awarded winners disclose sensitive contacts, while non-winners remain identity-masked. |
+| `00270_unsuccessful_rfq_retention_purge.sql` | Unsuccessful RFQ retention lifecycle & 30-day purge RPC (`purge_expired_unsuccessful_rfqs`), strictly preserving drafts, active workflows, awarded contracts, and legal-hold records with permanent audit tombstones. |
 
-CI `EXPECTED_CEILING` in `.github/workflows/ci-cd.yml` is the string `00253`. Hosted `schema_migrations` read after applying `00253` is count 253, ceiling `00253`, with `00251` still present.
+CI `EXPECTED_CEILING` in `.github/workflows/ci-cd.yml` is being advanced to `00270`. Hosted `schema_migrations` ceiling on Supabase `qsuvtcezffomtwzwyrso` is ready for 00269–00270 application.

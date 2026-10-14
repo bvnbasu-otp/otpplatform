@@ -29,13 +29,12 @@ export function usePortalRole() {
       const p = await fetchCurrentProfile();
       if (cancelled) return;
       if (!p) {
-        const fallbackRole = user?.email && (user.email.toLowerCase() === 'bvnbasu@gmail.com' || user.email.toLowerCase() === 'admin@otp.test') ? 'admin' : 'unknown';
         setProfile(null);
-        setRole(fallbackRole);
+        setRole('unknown');
         setIsLoading(false);
         return;
       }
-      const r = await resolvePortalRole(p.profileId, p.isPlatformAdmin, p.email || user?.email);
+      const r = await resolvePortalRole(p.profileId, p.isPlatformAdmin, p.email || user?.email, p.isFounder);
       if (cancelled) return;
       setProfile(p);
       setRole(r);

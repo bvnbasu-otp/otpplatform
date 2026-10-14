@@ -200,3 +200,41 @@ describe('admin lifecycle surface has no hard delete', () => {
     expect(source).not.toMatch(/admin_bulk_delete|bulkDelete|openDeleteModal/);
   });
 });
+
+describe('admin user normalization authoritative claims', () => {
+  it('SEC-P0-02: requires explicit database claims and ignores email string alone', () => {
+    // Unverified profile with admin email
+    const spoofItem = adminOps.normalizeAdminUserItem({
+      id: 'unverified-1',
+      email: 'admin@otp.test',
+      is_platform_admin: false,
+      is_founder: false,
+    });
+    expect(spoofItem.isPlatformAdmin).toBe(false);
+
+    // Unverified profile with founder email
+    const spoofFounder = adminOps.normalizeAdminUserItem({
+      id: 'unverified-2',
+      email: 'bvnbasu@gmail.com',
+      is_platform_admin: false,
+      is_founder: false,
+    });
+    expect(spoofFounder.isPlatformAdmin).toBe(false);
+
+    // Profile with explicit is_platform_admin
+    const legitAdmin = adminOps.normalizeAdminUserItem({
+      id: 'admin-1',
+      email: 'custom-admin@example.com',
+      is_platform_admin: true,
+    });
+    expect(legitAdmin.isPlatformAdmin).toBe(true);
+
+    // Profile with explicit is_founder
+    const legitFounder = adminOps.normalizeAdminUserItem({
+      id: 'founder-1',
+      email: 'custom-founder@example.com',
+      is_founder: true,
+    });
+    expect(legitFounder.isPlatformAdmin).toBe(true);
+  });
+});

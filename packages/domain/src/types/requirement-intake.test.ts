@@ -152,5 +152,24 @@ describe('Stage R2-09: Multimodal Requirement Intake Domain Engine', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors.security).toBeTruthy();
     });
+
+    it('supports orthogonal supplierReach configuration on multimodal intake', () => {
+      const input: MultimodalIntakeSubmissionInput = {
+        persona: 'MSME',
+        profileId: 'usr-msme-01',
+        organizationId: 'org-msme-01',
+        rawPrompt: 'Procure 500 precision steel fasteners',
+        normalizedTitle: 'Precision Fasteners',
+        categoryId: 'industrial_supplies_hardware',
+        deliveryCity: 'Coimbatore',
+        deliveryPincode: '641001',
+        paymentStructure: 'SINGLE_PAYMENT',
+        supplierReach: 'EXISTING_PLUS_EXPANDED',
+      };
+
+      const result = validateMultimodalIntakeSubmission(input);
+      expect(result.isValid).toBe(true);
+      expect(input.supplierReach).toBe('EXISTING_PLUS_EXPANDED');
+    });
   });
 });

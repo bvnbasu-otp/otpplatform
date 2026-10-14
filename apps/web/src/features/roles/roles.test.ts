@@ -338,7 +338,7 @@ describe('highlighting the page someone is on', () => {
 });
 
 describe('fetchRoleContext resilience', () => {
-  it('gracefully recovers with synthesized admin context when RPC fails but superadmin user is signed in', async () => {
+  it('gracefully recovers with signedIn context when RPC fails and profile row is missing without synthesizing admin', async () => {
     vi.spyOn(supabase, 'rpc').mockResolvedValueOnce({
       data: null,
       error: { message: '504 Gateway Timeout' } as any,
@@ -371,9 +371,9 @@ describe('fetchRoleContext resilience', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.context.signedIn).toBe(true);
-      expect(result.context.isPlatformAdmin).toBe(true);
+      expect(result.context.isPlatformAdmin).toBe(false);
       expect(result.context.email).toBe('bvnbasu@gmail.com');
-      expect(result.context.needsOnboarding).toBe(false);
+      expect(result.context.needsOnboarding).toBe(true);
     }
   });
 
@@ -385,7 +385,7 @@ describe('fetchRoleContext resilience', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({
       data: null,
       error: { message: '504 Gateway Timeout' } as any,
-    });
+    } as any);
     vi.mocked(supabase.from).mockReturnValueOnce({
       select: () => ({
         or: () => ({

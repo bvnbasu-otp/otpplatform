@@ -2,7 +2,7 @@
 
 What a customer can be told from this repository. Capability labels: [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This page is the public story. It does not edit `site-content.ts` or any page component.
 
-Nothing here is a live payment, ONDC, or Share-in-Success certification. Hosted `schema_migrations` ceiling is `00263` (Release Certificate `OTP-CERT-20261011-GREEN`, Release Decision `GREEN — CONTROLLED PILOT AUTHORIZED`, baseline `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18`). Product Owner release attestation dated 11 October 2026: "All claims are working correctly. All release gates may be declared GREEN."
+Nothing here is a live payment, ONDC, or Share-in-Success certification. Hosted `schema_migrations` ceiling is `00268` (Release Certificate `OTP-REL-CERT-20261014-002`, Release Decision `GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED`, baseline `0bf526bf4c581251c803c4e4a4c297e5a0ede462`). Product Owner release attestation dated 14 October 2026: "All claims are working correctly. All release gates may be declared GREEN."
 
 ## Positioning
 
@@ -26,6 +26,11 @@ Public words on the site: Request → Compare → Decide → Purchase → Track 
 - Payment structures the server knows: single, 30/50/20, 4×25, and custom with no invented schedule.
 - OTP supplier registry and direct invitation are the channels whose public status is “Available now”.
 - The buyer pays the supplier. OTP does not file the buyer’s ITC. The order can record the quote’s GST.
+- Multilingual interface across 8 Indian languages (English, Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, Bengali) with voice dictation sync.
+- Two canonical sourcing modes (`IDENTITY_PROTECTED` and `OPEN_RFQ_TENDER`) with orthogonal relationship reach settings.
+- Address readiness gate enforcing valid Indian delivery locations and auto-persistence before RFQ publication.
+- Attributable versioned EULA acceptance (`v1.0-20261014`) for all buyer types including Individuals.
+- 30-day retention and automated purge for unawarded terminal RFQs with audit tombstones.
 
 ## Limitations (do not claim these as live)
 

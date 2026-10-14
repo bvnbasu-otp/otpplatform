@@ -11,12 +11,16 @@ import {
   mapLegacyTemplateProcurementMode,
   type RequirementMode,
   type SourcingMode,
+  type SupplierReach,
   type TaxonomySnapshot,
 } from '@otp/domain';
+
 import { Badge, Button } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { fetchPrimaryDeliveryLocation } from '../api/primary-address';
+import { saveBuyerAddress } from '@/features/profile/api/buyer-addresses';
 import { useRoleContext } from '@/features/roles';
+
 import type { DraftPatch } from '../api/draft';
 import type { IntakeDraft } from '../types/intake-draft';
 import {
@@ -133,7 +137,11 @@ export function UnifiedThreeTierIntake({
   const [geographicReach, setGeographicReach] = useState<'PAN_INDIA' | 'LOCAL' | 'STATE'>(
     draft?.sourcing.geographicReach ?? 'LOCAL',
   );
+  const [supplierReach, setSupplierReach] = useState<SupplierReach>(
+    (draft?.sourcing as any)?.supplierReach ?? 'CURATED_VERIFIED',
+  );
   const [evaluationWeights, setEvaluationWeights] = useState<Record<string, number>>(
+
     draft?.sourcing.evaluationWeights ?? {},
   );
   const [weightsSource, setWeightsSource] = useState<'SUGGESTED' | 'CUSTOM'>(
@@ -433,10 +441,13 @@ export function UnifiedThreeTierIntake({
     if (!city.trim()) {
       nextErrors.deliveryCity = 'Delivery / service city is required.';
     }
-    if (!pincode.trim() || !/^[0-9]{6}$/.test(pincode.trim())) {
-      nextErrors.deliveryPincode = 'Postal PIN code must be a valid 6-digit number.';
+    const cleanPin = pincode.trim();
+    const pinNum = parseInt(cleanPin, 10);
+    if (!cleanPin || !/^[0-9]{6}$/.test(cleanPin) || isNaN(pinNum) || pinNum < 110001 || pinNum > 999999) {
+      nextErrors.deliveryPincode = 'Postal PIN code must be a valid 6-digit number (110001–999999).';
     }
     if (timing === 'WITHIN_DAYS' && (!days || days < 1)) {
+
       nextErrors.requiredByDays = 'Please specify target turnaround days.';
     }
     if (timing === 'SPECIFIC_DATE' && !date) {
@@ -534,7 +545,9 @@ export function UnifiedThreeTierIntake({
         evaluationWeights,
         evaluationWeightsSource: weightsSource,
         geographicReach,
+        supplierReach,
       },
+
       requiredByMode: (timing as RequiredByMode) || null,
       requiredByDays: timing === 'WITHIN_DAYS' ? days : null,
       requiredByDate: timing === 'SPECIFIC_DATE' ? date : null,
@@ -560,6 +573,34 @@ export function UnifiedThreeTierIntake({
       return;
     }
 
+    // Address Readiness Gate: persist validated address to address book if none exists or location was modified
+    if (user && context.profileId) {
+      try {
+        const cleanPin = pincode.trim();
+        const primaryLoc = await fetchPrimaryDeliveryLocation(context.organizationId);
+        if (
+          !primaryLoc ||
+          primaryLoc.city !== city.trim() ||
+          primaryLoc.pincode !== cleanPin ||
+          (line1.trim() && primaryLoc.line1 !== line1.trim())
+        ) {
+          await saveBuyerAddress({
+            persona: ((context as unknown as Record<string, unknown>).persona as any) || (context.organizationId ? 'RWA' : 'INDIVIDUAL'),
+            organizationId: context.organizationId || null,
+            label: 'Delivery Site',
+            line1: line1.trim() || `${city.trim()} Delivery Point`,
+            city: city.trim(),
+            state: 'India',
+            pincode: cleanPin,
+            addressType: 'DELIVERY',
+            isPrimary: true,
+          });
+        }
+      } catch {
+        // Fallback gracefully so transient address book write issues don't crash client flow
+      }
+    }
+
     if (!draft) {
       const created = await onStart({
         title: title.trim(),
@@ -583,8 +624,11 @@ export function UnifiedThreeTierIntake({
     mode &&
     city.trim() &&
     pincode.trim() &&
-    /^[0-9]{6}$/.test(pincode.trim()),
+    /^[0-9]{6}$/.test(pincode.trim()) &&
+    parseInt(pincode.trim(), 10) >= 110001 &&
+    parseInt(pincode.trim(), 10) <= 999999,
   );
+
 
   const isTier2Complete = Boolean(
     requiredAttributes.every((a) => attributes[a.code] !== undefined && attributes[a.code] !== ''),
@@ -695,6 +739,7 @@ export function UnifiedThreeTierIntake({
         minQuotes={minQuotes}
         deadlineDays={deadlineDays}
         geographicReach={geographicReach}
+        supplierReach={supplierReach}
         evaluationWeights={evaluationWeights}
         evaluationWeightsSource={weightsSource}
         criteria={taxonomy.criteria}
@@ -711,7 +756,9 @@ export function UnifiedThreeTierIntake({
         onMinQuotesChange={setMinQuotes}
         onDeadlineDaysChange={setDeadlineDays}
         onGeographicReachChange={setGeographicReach}
+        onSupplierReachChange={setSupplierReach}
         onWeightsChange={setEvaluationWeights}
+
         onWeightsSourceChange={setWeightsSource}
         onSiteNotesChange={setSiteNotes}
         onLine1Change={setLine1}

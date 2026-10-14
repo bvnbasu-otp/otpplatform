@@ -12,7 +12,7 @@ import {
 } from '@otp/domain';
 import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
 import { useAuth } from '../AuthProvider';
-import { isSuperAdminEmail } from '../user-role';
+import { fetchCurrentProfile } from '../user-role';
 import { fetchDemoStatus } from '../../demo/api/demo';
 import { isDemoMode } from '../../demo/demo-config';
 
@@ -370,14 +370,11 @@ export function SignInForm({
       (normalizedEmail.startsWith('contact') && normalizedEmail.endsWith('@otpdemo.test')) ||
       (normalizedEmail.endsWith('@otpdemo.test') && !normalizedEmail.includes('buyer') && !normalizedEmail.includes('secretary') && !normalizedEmail.includes('owner') && !normalizedEmail.includes('procurement') && !normalizedEmail.includes('bharathi'));
 
+    const profile = await fetchCurrentProfile().catch(() => null);
+
     if (validRedirect) {
       navigate(validRedirect, { replace: true });
-    } else if (
-      isSuperAdminEmail(normalizedEmail) ||
-      normalizedEmail === 'bvnbasu@gmail.com' ||
-      normalizedEmail === 'admin@otp.test' ||
-      normalizedEmail === 'ops@otp.test'
-    ) {
+    } else if (profile?.isFounder || profile?.isPlatformAdmin) {
       navigate('/admin', { replace: true });
     } else if (isSupplierEmail) {
       navigate('/supplier/purchase-orders', { replace: true });

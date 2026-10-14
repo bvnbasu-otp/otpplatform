@@ -92,8 +92,8 @@ export async function resolvePortalRole(
   email?: string | null,
   isFounder?: boolean,
 ): Promise<PortalRole> {
-  if (isFounder || isFounderEmail(email)) return 'founder';
-  if (isPlatformAdmin || isSuperAdminEmail(email)) return 'admin';
+  if (isFounder) return 'founder';
+  if (isPlatformAdmin) return 'admin';
 
   // 0. Check explicit active_portal_side if user switched persona
   try {

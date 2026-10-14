@@ -2,7 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { useRoleContext } from '@/features/roles';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { getHomeRoute, getOrdersRoute, getRoleLabel } from '../navigation-config';
+
 
 export interface WorkspaceHeaderMenuProps {
   isOpen: boolean;
@@ -310,11 +312,17 @@ export function WorkspaceHeaderMenu({
             </ul>
           </div>
 
-          {/* SECTION 4: ACCOUNT */}
+          {/* SECTION 4: LANGUAGE SELECTION */}
+          <div className="border-t border-border pt-3">
+            <LanguageSwitcher variant="full" placement="menu" />
+          </div>
+
+          {/* SECTION 5: ACCOUNT */}
           <div className="border-t border-border pt-3 space-y-3">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground block">
               Account
             </span>
+
 
             {/* User Identity Card */}
             <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border">

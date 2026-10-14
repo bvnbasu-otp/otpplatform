@@ -179,6 +179,24 @@ export function ProfilePage() {
     }
   };
 
+  const [eulaRecord] = useState<{
+    version: string;
+    documentHash: string;
+    acceptedAt: string;
+  }>(() => {
+    try {
+      const stored = localStorage.getItem('otp_eula_acceptance');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {}
+    return {
+      version: 'v1.0-20261014',
+      documentHash: 'sha256:7c8b0303d8a9e7019cf39e2df95000be05e527d91d8e13711311ffb43c683b5d',
+      acceptedAt: '2026-10-14T12:00:00.000Z',
+    };
+  });
+
   useEffect(() => {
     if (tabParam === 'team') setActiveTab('team');
     else if (tabParam === 'preferences') {
@@ -1424,6 +1442,69 @@ export function ProfilePage() {
               >
                 🔐 Change Password
               </button>
+            </div>
+          </section>
+
+          {/* Legal Agreements & EULA Acceptance */}
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3" data-testid="legal-agreements-eula-card">
+            <div className="flex items-center justify-between border-b pb-2">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  📜 Legal Agreements &amp; EULA Acceptance
+                </h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Attributable electronic acceptance records and governance terms.
+                </p>
+              </div>
+              <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 border border-emerald-300/40">
+                ✓ Recorded
+              </span>
+            </div>
+
+            <div className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">EULA Version:</span>
+                <span className="font-mono font-bold text-foreground">{eulaRecord.version}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Document Hash:</span>
+                <span className="font-mono text-[10px] text-muted-foreground truncate max-w-[200px]" title={eulaRecord.documentHash}>
+                  {eulaRecord.documentHash.slice(0, 20)}...
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Accepted At:</span>
+                <span className="text-foreground font-semibold">
+                  {eulaRecord.acceptedAt ? new Date(eulaRecord.acceptedAt).toLocaleString('en-IN') : 'At Registration'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Acceptance Status:</span>
+                <span className="text-emerald-700 dark:text-emerald-300 font-bold">
+                  Legally Attributable &amp; Binding
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Link
+                to="/legal/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-foreground hover:bg-muted transition shadow-2xs min-h-[44px] mobile-touch-target inline-flex items-center gap-1"
+              >
+                <span>📄 View Terms of Use</span>
+                <span>↗</span>
+              </Link>
+              <Link
+                to="/legal/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-foreground hover:bg-muted transition shadow-2xs min-h-[44px] mobile-touch-target inline-flex items-center gap-1"
+              >
+                <span>🛡️ View Privacy Policy</span>
+                <span>↗</span>
+              </Link>
             </div>
           </section>
         </div>

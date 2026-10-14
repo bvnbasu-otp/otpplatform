@@ -20,4 +20,13 @@ describe('Tier3 sourcing controls customer copy', () => {
     expect(cardSource).toContain('Identity-Protected Sourcing (Recommended & Default)');
     expect(cardSource).toContain('Open RFQ Tender');
   });
+
+  it('exposes orthogonal supplier relationship reach controls independently from geographic scope', () => {
+    expect(cardSource).toContain('Supplier Relationship Reach');
+    expect(cardSource).toContain('Curated & Verified Suppliers Only');
+    expect(cardSource).toContain('Past Successful Suppliers');
+    expect(cardSource).toContain('All Eligible Network Suppliers');
+    expect(cardSource).toContain('Geographic Sourcing Reach');
+  });
 });
+

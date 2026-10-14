@@ -130,7 +130,7 @@ export function BuyerRegisterForm({
     if (pincode.trim().length !== 6) errors.pincode = 'Pincode must be 6 digits.';
     if (!email.trim()) errors.email = 'Work email is required.';
     if (!phone.trim()) errors.phone = 'Phone number is required.';
-    if ((isRwa || isMsme) && !agreementAccepted) {
+    if (buyerType && !agreementAccepted) {
       errors.agreement = 'Review and accept the agreement above to continue.';
     }
     return errors;
@@ -166,6 +166,9 @@ export function BuyerRegisterForm({
       referralCode: referral.trim() || undefined,
       coverageCity: city.trim(),
       coveragePincode: pincode.trim(),
+      eulaVersion: 'v1.0-20261014',
+      documentHash: 'sha256:7c8b0303d8a9e7019cf39e2df95000be05e527d91d8e13711311ffb43c683b5d',
+      acceptedAt: new Date().toISOString(),
     });
 
     if (!result.ok) {
@@ -418,6 +421,45 @@ export function BuyerRegisterForm({
               />
             )}
           </PortalField>
+        )}
+
+        {isIndividual && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2 text-xs" data-testid="individual-agreement-prompt">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-foreground flex items-center gap-1.5">
+                <span>📜</span> Individual Buyer EULA &amp; Terms
+              </span>
+              {agreementAccepted ? (
+                <span className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-extrabold border border-emerald-300">
+                  ✓ Accepted
+                </span>
+              ) : (
+                <span className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 text-[10px] font-extrabold border border-amber-300">
+                  Mandatory for Personal Buyers
+                </span>
+              )}
+            </div>
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
+              Review and electronically accept the OTP Individual Buyer Terms and EULA (v1.0-20261014). Commitments create direct bilateral obligations with suppliers without platform middleman custody.
+            </p>
+            <label className="flex items-start gap-2 cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={agreementAccepted}
+                onChange={(e) => setAgreementAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                data-testid="individual-agreement-checkbox"
+              />
+              <span className="text-[11px] text-foreground font-medium">
+                I agree to the <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Use</a>, <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</a>, and EULA (v1.0-20261014).
+              </span>
+            </label>
+            {fieldErrors.agreement && (
+              <p className="text-red-600 text-[11px] font-semibold" role="alert">
+                {fieldErrors.agreement}
+              </p>
+            )}
+          </div>
         )}
 
         {isRwa && (

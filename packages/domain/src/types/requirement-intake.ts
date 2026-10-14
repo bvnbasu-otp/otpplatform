@@ -26,7 +26,7 @@
 import type { BuyerPersona } from './buyer-persona';
 import type { AddressSnapshot, BuyerAddress } from './buyer-address';
 import { createAddressSnapshot } from './buyer-address';
-import type { FulfilmentMode, RequirementMode, SourcingMode } from '../enums/requirement-mode';
+import type { FulfilmentMode, RequirementMode, SourcingMode, SupplierReach } from '../enums/requirement-mode';
 import { assertIdentityProtectedPayloadSafe } from './blind-quote';
 
 export type DeclaredPaymentStructure =
@@ -151,7 +151,9 @@ export interface MultimodalIntakeSubmissionInput {
   evaluationWeights?: Record<string, number>;
   evaluationWeightsSource?: 'SUGGESTED' | 'CUSTOM';
   geographicReach?: 'PAN_INDIA' | 'LOCAL' | 'STATE';
+  supplierReach?: SupplierReach;
   attachments?: Array<{
+
     id: string;
     fileName: string;
     fileUrl: string;

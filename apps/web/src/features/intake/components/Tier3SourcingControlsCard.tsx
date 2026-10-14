@@ -4,6 +4,7 @@ import {
   getCategoryEvaluationProfile,
   type EvaluationCriterionDef,
   type SourcingMode,
+  type SupplierReach,
 } from '@otp/domain';
 import { Badge, Button, Card, Field, Input, NumberInput, RadioCardGroup, Textarea } from '@/components/ui';
 import { EvaluationCriteriaEditor } from '@/features/evaluation/components/EvaluationCriteriaEditor';
@@ -13,6 +14,8 @@ export interface Tier3SourcingControlsCardProps {
   minQuotes: number | null;
   deadlineDays: number | null;
   geographicReach: 'PAN_INDIA' | 'LOCAL' | 'STATE';
+  supplierReach?: SupplierReach | string;
+
   evaluationWeights: Record<string, number>;
   evaluationWeightsSource: 'SUGGESTED' | 'CUSTOM';
   criteria: EvaluationCriterionDef[];
@@ -29,7 +32,9 @@ export interface Tier3SourcingControlsCardProps {
   onMinQuotesChange: (min: number | null) => void;
   onDeadlineDaysChange: (days: number | null) => void;
   onGeographicReachChange: (reach: 'PAN_INDIA' | 'LOCAL' | 'STATE') => void;
+  onSupplierReachChange?: (reach: SupplierReach) => void;
   onWeightsChange: (weights: Record<string, number>) => void;
+
   onWeightsSourceChange: (source: 'SUGGESTED' | 'CUSTOM') => void;
   onSiteNotesChange: (notes: string) => void;
   onLine1Change: (line1: string) => void;
@@ -68,11 +73,30 @@ const GEOGRAPHIC_REACH_OPTIONS = [
   },
 ];
 
+const SUPPLIER_REACH_OPTIONS = [
+  {
+    value: 'CURATED_VERIFIED',
+    label: '✨ Curated & Verified Suppliers Only (Recommended)',
+    description: 'Strictly limit invitations to verified suppliers vetted by OTP verification team.',
+  },
+  {
+    value: 'EXISTING_SUCCESSFUL',
+    label: '🤝 Past Successful Suppliers',
+    description: 'Limit invitations to verified suppliers with previous successful order completion for your organization.',
+  },
+  {
+    value: 'ALL_ELIGIBLE',
+    label: '🌐 All Eligible Network Suppliers',
+    description: 'Broadcast to all eligible discovered suppliers in the Supplier Network matching category and location.',
+  },
+];
+
 export function Tier3SourcingControlsCard({
   sourcingMode,
   minQuotes,
   deadlineDays,
   geographicReach,
+  supplierReach = 'CURATED_VERIFIED',
   evaluationWeights,
   evaluationWeightsSource,
   criteria,
@@ -89,11 +113,13 @@ export function Tier3SourcingControlsCard({
   onMinQuotesChange,
   onDeadlineDaysChange,
   onGeographicReachChange,
+  onSupplierReachChange,
   onWeightsChange,
   onWeightsSourceChange,
   onSiteNotesChange,
   onLine1Change,
 }: Tier3SourcingControlsCardProps) {
+
   const [showWeightSliders, setShowWeightSliders] = useState(false);
 
   const categoryProfile = useMemo(
@@ -182,6 +208,8 @@ export function Tier3SourcingControlsCard({
               <span className="text-foreground">{deadlineDays ?? 7} Days Window</span>
               <span>·</span>
               <span className="text-foreground">{geographicReach === 'LOCAL' ? '📍 Local' : geographicReach === 'STATE' ? '🗺️ State' : '🌐 PAN-India'}</span>
+              <span>·</span>
+              <span className="text-foreground">{supplierReach === 'EXISTING_SUCCESSFUL' ? '🤝 Past Suppliers' : supplierReach === 'ALL_ELIGIBLE' ? '🌐 All Network' : '✨ Curated'}</span>
               <span className="text-primary font-bold ml-1">Tap to Customize →</span>
             </div>
           </div>
@@ -246,7 +274,20 @@ export function Tier3SourcingControlsCard({
               </Field>
             </div>
 
-            {/* 3. Geographic Sourcing Reach */}
+            {/* 3. Supplier Relationship Reach (Orthogonal to Geographic Scope) */}
+            <div className="space-y-2 pt-2 border-t border-border/60">
+              <label className="text-xs font-bold text-foreground block">
+                Supplier Relationship Reach
+              </label>
+              <RadioCardGroup
+                legend="Supplier Reach"
+                options={SUPPLIER_REACH_OPTIONS}
+                value={supplierReach}
+                onValueChange={(val) => onSupplierReachChange?.(val as SupplierReach)}
+              />
+            </div>
+
+            {/* 4. Geographic Sourcing Reach */}
             <div className="space-y-2 pt-2 border-t border-border/60">
               <label className="text-xs font-bold text-foreground block">
                 Geographic Sourcing Reach
@@ -258,6 +299,7 @@ export function Tier3SourcingControlsCard({
                 onValueChange={(val) => onGeographicReachChange(val as 'PAN_INDIA' | 'LOCAL' | 'STATE')}
               />
             </div>
+
 
             {/* 4. Full Governance Notice if Applicable */}
             {isFullGovernance && (

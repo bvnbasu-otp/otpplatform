@@ -1531,11 +1531,9 @@ export async function fetchEntityAuditTrail(
 // ----------------------------------------------------
 
 export function normalizeAdminUserItem(p: any): AdminUserItem {
-  const isPlatformAdmin =
-    Boolean(p.is_platform_admin ?? p.isPlatformAdmin) ||
-    ['admin@otp.test', 'bvnbasu@gmail.com', 'ops@otp.test', 'superadmin@otp.test', 'admin@otp.ai', 'ops@otp.ai', 'admin@procureos.test'].includes(
-      (p.email || '').toLowerCase()
-    );
+  const isPlatformAdmin = Boolean(
+    p.is_founder ?? p.isFounder ?? p.is_platform_admin ?? p.isPlatformAdmin,
+  );
   const rawStatus = (p.status as string) || (p.blocked_at || p.blockedAt ? 'BLOCKED' : 'ACTIVE');
   const orgMember = Array.isArray(p.organization_members) ? p.organization_members[0] : p.organization_members;
   const suppUser = Array.isArray(p.supplier_users) ? p.supplier_users[0] : p.supplier_users;

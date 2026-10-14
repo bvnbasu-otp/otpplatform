@@ -69,6 +69,7 @@ export function requirementTypeForMode(
 /** How the buyer wants suppliers found for this RFQ. */
 export const SourcingMode = {
   OPEN_RFQ: 'OPEN_RFQ',
+  OPEN_RFQ_TENDER: 'OPEN_RFQ_TENDER',
   IDENTITY_PROTECTED: 'IDENTITY_PROTECTED',
   INVITE_SELECTED: 'INVITE_SELECTED',
   NETWORK_DISCOVERY: 'NETWORK_DISCOVERY',
@@ -76,6 +77,19 @@ export const SourcingMode = {
 } as const;
 
 export type SourcingMode = (typeof SourcingMode)[keyof typeof SourcingMode];
+
+/**
+ * Independent supplier relationship reach settings (orthogonal to geographic scope).
+ */
+export const SupplierReach = {
+  CURATED_VERIFIED: 'CURATED_VERIFIED',
+  EXISTING_SUCCESSFUL: 'EXISTING_SUCCESSFUL',
+  EXISTING_PLUS_EXPANDED: 'EXISTING_PLUS_EXPANDED',
+  ALL_ELIGIBLE: 'ALL_ELIGIBLE',
+} as const;
+
+export type SupplierReach = (typeof SupplierReach)[keyof typeof SupplierReach];
+
 
 export const RequiredByMode = {
   IMMEDIATE: 'IMMEDIATE',

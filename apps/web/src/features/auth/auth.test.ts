@@ -50,12 +50,12 @@ describe('Auth Feature & Portal Role Resolution', () => {
     expect(isSuperAdminEmail('')).toBe(false);
   });
 
-  it('resolves portal role as admin when isPlatformAdmin is true or superadmin email', async () => {
+  it('resolves portal role as admin only when isPlatformAdmin claim is true', async () => {
     const role1 = await resolvePortalRole('prof-1', true, 'regular@corp.com');
     expect(role1).toBe('admin');
 
     const role2 = await resolvePortalRole('prof-2', false, 'admin@otp.test');
-    expect(role2).toBe('admin');
+    expect(role2).not.toBe('admin');
   });
 
   it('resolves portal role as supplier when linked to supplier_users', async () => {

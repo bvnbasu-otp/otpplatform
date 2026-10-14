@@ -18,6 +18,7 @@ import {
   RestoredSessionBanner,
 } from '@/features/maintenance';
 import { ThemeProvider, ThemePersonaSync } from '@/features/theme';
+import { LanguageProvider } from '@/lib/i18n';
 
 // ============================================================================
 // ROUTE-LEVEL LAZY LOADING & SUSPENSE CHUNKING (R2-22 RELEASE HARDENING)
@@ -283,8 +284,10 @@ function PerformanceRoute() {
 export function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <AuthProvider>
+      <LanguageProvider>
+        <BrowserRouter>
+          <AuthProvider>
+
           <RoleProvider>
             <ThemePersonaSync />
             <DemoModeProvider>
@@ -605,6 +608,7 @@ export function App() {
         </RoleProvider>
       </AuthProvider>
     </BrowserRouter>
+    </LanguageProvider>
     </ThemeProvider>
   );
 }

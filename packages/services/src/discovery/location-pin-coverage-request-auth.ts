@@ -65,19 +65,12 @@ export interface SuperAdminProfileClaims {
 }
 
 /**
- * Coverage SuperAdmin check. Profile flags and an exact allowlist email only.
- * Callers must pass the authenticated profile and JWT email, never a request body.
+ * Coverage SuperAdmin check. Strictly checks authoritative profile claims.
+ * Email strings alone MUST NOT confer superadmin authority.
  */
 export function isSuperAdminProfile(
   profile: SuperAdminProfileClaims | Record<string, unknown> | null | undefined,
-  email?: string | null,
+  _email?: string | null,
 ): boolean {
-  if (profile?.is_founder === true || profile?.is_platform_admin === true) {
-    return true;
-  }
-  const profileEmail = typeof profile?.email === 'string' ? profile.email : undefined;
-  const candidate = profileEmail ?? (typeof email === 'string' ? email : undefined);
-  const normalized = candidate?.trim().toLowerCase() ?? '';
-  if (!normalized) return false;
-  return EXACT_SUPERADMIN_EMAILS.has(normalized);
+  return profile?.is_founder === true || profile?.is_platform_admin === true;
 }

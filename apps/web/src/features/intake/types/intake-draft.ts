@@ -4,6 +4,7 @@ import type {
   RequiredByMode,
   RequirementMode,
   SourcingMode,
+  SupplierReach,
 } from '@otp/domain';
 
 /**
@@ -78,6 +79,7 @@ export interface SourcingChoices {
   evaluationWeights: Record<string, number>;
   evaluationWeightsSource: 'SUGGESTED' | 'CUSTOM';
   geographicReach?: 'PAN_INDIA' | 'LOCAL' | 'STATE';
+  supplierReach?: SupplierReach;
 }
 
 export const DEFAULT_SOURCING: SourcingChoices = {
@@ -87,4 +89,5 @@ export const DEFAULT_SOURCING: SourcingChoices = {
   evaluationWeights: {},
   evaluationWeightsSource: 'SUGGESTED',
   geographicReach: 'LOCAL',
+  supplierReach: 'CURATED_VERIFIED',
 };

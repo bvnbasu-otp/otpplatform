@@ -49,3 +49,6 @@ export type {
   BlockedStateProps,
   ModalProps,
 } from './StateViews';
+export { LanguageSwitcher } from './LanguageSwitcher';
+export type { LanguageSwitcherProps } from './LanguageSwitcher';
+

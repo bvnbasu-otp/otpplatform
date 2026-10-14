@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLanguage } from '@/lib/i18n';
 
 export interface VoiceRequirementDictationProps {
   onTranscript: (text: string) => void;
@@ -137,12 +138,21 @@ export function VoiceRequirementDictation({
   compact = false,
   onPermissionError,
 }: VoiceRequirementDictationProps) {
+  const { language, setLanguage } = useLanguage();
   const [recordingState, setRecordingState] = useState<RecordingState>('IDLE');
-  const [selectedLanguage, setSelectedLanguage] = useState<SupportedSpeechLanguage>('en-IN');
+  const [selectedLanguage, setSelectedLanguage] = useState<SupportedSpeechLanguage>(language);
   const [interimTranscript, setInterimTranscript] = useState('');
   const [finalTranscript, setFinalTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(true);
+
+  // Sync internal speech recognition language when global UI language changes
+  useEffect(() => {
+    if (language && language !== selectedLanguage) {
+      setSelectedLanguage(language);
+    }
+  }, [language]);
+
 
   const recognitionRef = useRef<any>(null);
   const processingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -379,7 +389,9 @@ export function VoiceRequirementDictation({
                     }
                   }
                   setSelectedLanguage(lang.code);
+                  setLanguage(lang.code);
                 }}
+
                 className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition flex items-center gap-1 border min-h-[36px] xs:min-h-[40px] mobile-touch-target ${
                   active
                     ? 'bg-primary text-primary-foreground border-primary shadow-2xs'

@@ -222,7 +222,7 @@ describe('operational phone visibility predicate', () => {
     email: 'buyer@example.com',
   };
 
-  it('keeps phone for a platform-admin flag and for an exact allowlist email', () => {
+  it('keeps phone for a platform-admin flag and denies unverified accounts regardless of email', () => {
     const byFlag = isSuperAdminProfile({
       is_founder: false,
       is_platform_admin: true,
@@ -241,20 +241,20 @@ describe('operational phone visibility predicate', () => {
         { is_founder: false, is_platform_admin: false, email: email.toUpperCase() },
         'buyer@example.com',
       );
-      expect(byEmail, email).toBe(true);
-      expect(coveragePhoneVisibleToViewer({ isSuperAdmin: byEmail })).toBe(true);
+      expect(byEmail, email).toBe(false);
+      expect(coveragePhoneVisibleToViewer({ isSuperAdmin: byEmail })).toBe(false);
     }
 
     const byJwtEmail = isSuperAdminProfile(
       { is_founder: false, is_platform_admin: false },
       '  ops@otp.test  ',
     );
-    expect(byJwtEmail).toBe(true);
-    const allowed = coveragePayloadForViewer(
+    expect(byJwtEmail).toBe(false);
+    const denied = coveragePayloadForViewer(
       { isSuperAdmin: byJwtEmail },
       { businessName: 'Hoodi Waterproofing', contactPhone: PHONE },
     );
-    expect(allowed.contactPhone).toBe(PHONE);
+    expect(denied).not.toHaveProperty('contactPhone');
   });
 
   it('keeps phone for is_founder and still authorizes forceRefresh for that flag', () => {
@@ -316,7 +316,7 @@ describe('operational phone visibility predicate', () => {
     expect(isSuperAdminProfile(null, 'thefounder@otp.test')).toBe(false);
     expect(isSuperAdminProfile(null, 'founder@otp.test.evil')).toBe(false);
     expect(isSuperAdminProfile(null, 'cofounder@example.com')).toBe(false);
-    expect(isSuperAdminProfile({ is_founder: false, is_platform_admin: false }, 'founder@otp.test')).toBe(true);
+    expect(isSuperAdminProfile({ is_founder: false, is_platform_admin: false }, 'founder@otp.test')).toBe(false);
     const hidden = coveragePayloadForViewer(
       { isSuperAdmin: spoofed },
       { contactPhone: PHONE, supplier_phone: PHONE },
