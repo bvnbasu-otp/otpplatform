@@ -446,9 +446,8 @@ describe('the role a person picked while registering', () => {
     }
   });
 
-  it('drops a role belonging to the other side rather than losing the registration', async () => {
+  it('rejects a role belonging to the other side with SIGNUP_ROLE_SIDE_MISMATCH', async () => {
     const anon = createAnonClient();
-    const service = createServiceClient();
     const email = `role.mismatch.${Date.now()}@example.test`;
 
     const { error } = await anon.rpc('submit_signup_request', {
@@ -464,16 +463,7 @@ describe('the role a person picked while registering', () => {
       },
     });
 
-    expect(error).toBeNull();
-
-    const { data: row } = await service
-      .from('signup_requests')
-      .select('role_code')
-      .eq('email', email)
-      .single();
-
-    expect(row!.role_code).toBeNull();
-
-    await service.from('signup_requests').delete().eq('email', email);
+    // 00257: cross-side role requests are strictly rejected with SIGNUP_ROLE_SIDE_MISMATCH
+    expect(error?.message).toMatch(/SIGNUP_ROLE_SIDE_MISMATCH/);
   });
 });

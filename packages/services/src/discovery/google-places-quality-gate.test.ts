@@ -10,6 +10,7 @@ import {
   extractSupplierPostalPin,
   isOperationalBusinessStatus,
   observeRfqInvitationDispatch,
+  type GooglePlacesQualityInput,
 } from './google-places-quality-gate';
 
 const COMPLETE_GOOGLE = {
@@ -86,7 +87,7 @@ describe('Google Places quality gate', () => {
   });
 
   it('rejects each missing mandatory Google field from SNE and allows absent website, rating, and email', () => {
-    const cases: Array<[string, Partial<typeof COMPLETE_GOOGLE>]> = [
+    const cases: Array<[string, Partial<GooglePlacesQualityInput>]> = [
       ['missing_display_name', { displayName: '' }],
       ['missing_formatted_address', { formattedAddress: '' }],
       ['missing_phone', { phone: null }],

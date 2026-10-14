@@ -84,7 +84,6 @@ export async function handleOndcOnSearchRequest(input: {
     ledger: input.ledger,
     authHeader: input.authorization,
     body: input.rawBody,
-    receiver,
     ...(input.resolvePublicKey ? { resolvePublicKey: input.resolvePublicKey } : {}),
     processingEnvironment: input.processingEnvironment,
     processingSource: input.processingSource,

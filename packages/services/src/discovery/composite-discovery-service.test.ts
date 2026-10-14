@@ -22,9 +22,10 @@ describe('CompositeDiscoveryService — mock network truth boundary', () => {
     ]);
     const results = await composite.discover({ category: 'Electrical' });
     expect(results).toHaveLength(1);
-    expect(results[0].source).toBe('OTHER');
-    expect(results[0].supplierId).toMatch(/^mock-network-/);
-    expect(results[0].matchReasons.some((r) => r.includes('ONDC'))).toBe(false);
+    const first = results[0]!;
+    expect(first.source).toBe('OTHER');
+    expect(first.supplierId).toMatch(/^mock-network-/);
+    expect(first.matchReasons.some((r) => r.includes('ONDC'))).toBe(false);
   });
 
   it('returns only registry suppliers when mock is omitted (pre-prod factory shape)', async () => {

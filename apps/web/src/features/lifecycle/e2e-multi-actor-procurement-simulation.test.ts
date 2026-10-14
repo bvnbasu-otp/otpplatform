@@ -439,10 +439,13 @@ describe('OTP Platform — Full Multi-Actor Linear Procurement E2E Simulation', 
       // Lowest price = 106200 (Supplier B gets max commercial score)
       // Fastest speed = 3 days (Supplier C gets max speed score)
       // Highest warranty = 24 months (Supplier A gets max SLA score)
+      const commercialWeight = normalized.weights.commercial ?? 40;
+      const speedWeight = normalized.weights.speed ?? 35;
+      const slaWeight = normalized.weights.sla ?? 25;
       const scores = quotes.map((q) => {
-        const priceScore = (106200 / q.totalPrice) * normalized.weights.commercial;
-        const speedScore = (3 / q.leadTimeDays) * normalized.weights.speed;
-        const slaScore = (q.warrantyMonths / 24) * normalized.weights.sla;
+        const priceScore = (106200 / q.totalPrice) * commercialWeight;
+        const speedScore = (3 / q.leadTimeDays) * speedWeight;
+        const slaScore = (q.warrantyMonths / 24) * slaWeight;
         const totalScore = Math.round((priceScore + speedScore + slaScore) * 10) / 10;
         return { alias: q.anonymousAlias, id: q.id, totalScore, priceScore, speedScore, slaScore };
       });

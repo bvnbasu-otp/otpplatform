@@ -6,7 +6,7 @@ import {
   createOndcDispatchLedger,
   isProductionOndcHost,
   resolveOndcEnvironmentGate,
-} from './ondc-on-search-domain.ts';
+} from './ondc-on-search-domain';
 
 describe('ondc-on-search edge entry', () => {
   it('exposes the callback symbols without the domain barrel', () => {

@@ -39,6 +39,7 @@ import {
 } from '@otp/domain';
 import { OndcGatewayClient } from './client/ondc-gateway-client';
 import { acceptOndcDispatchOnSearch, type OndcDispatchCallbackResult } from './ondc-callback-ingress';
+export type { OndcDispatchCallbackResult };
 import { readOndcEnvironmentConfig } from './ondc-environment-config';
 import { lookupOndcSigningPublicKey } from './ondc-registry-lookup';
 import { OndcBapReceiver } from './receiver/ondc-bap-receiver';
@@ -129,15 +130,18 @@ export async function executeOndcDiscoveryDispatch(input: {
   let correlationId = existing?.correlationId ?? input.ids?.correlationId ?? randomUUID();
   const subscriberId = admission.realDispatch ? decision.client?.subscriberId ?? '' : MOCK_SUBSCRIBER_ID;
   const callbackUrl = admission.realDispatch ? decision.client?.callbackUrl ?? '' : MOCK_CALLBACK_URL;
+  const admissionDomain = admission.domain;
+  const admissionCity = admission.city;
+  const admissionBuyerRequestedPin = admission.buyerRequestedPin;
   const buildPrepared = (ids: { transactionId: string; messageId: string }) => buildOndcCanonicalSearch({
-    domain: admission.domain,
+    domain: admissionDomain,
     subscriberId,
     callbackUrl,
     transactionId: ids.transactionId,
     messageId: ids.messageId,
     timestamp: now.toISOString(),
-    city: admission.city,
-    buyerRequestedPin: admission.buyerRequestedPin,
+    city: admissionCity,
+    buyerRequestedPin: admissionBuyerRequestedPin,
     itemName: input.request.itemName,
     categoryLabel: input.categoryLabel,
   });

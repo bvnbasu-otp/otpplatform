@@ -41,7 +41,7 @@ function poRow(overrides: Record<string, unknown> = {}) {
 describe('purchase order client payment mapping and cancel errors', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
   });
 
   it('maps payment structure and passes a schedule array through', async () => {
@@ -83,7 +83,7 @@ describe('purchase order client payment mapping and cancel errors', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({
       data: null,
       error: { message: 'PO-CANCEL-STATE: supplier already accepted' },
-    });
+    } as any);
 
     const stateResult = await cancelPurchaseOrder('po-1', 'scope was revised');
     expect(stateResult).toEqual({
@@ -98,7 +98,7 @@ describe('purchase order client payment mapping and cancel errors', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({
       data: null,
       error: { message: 'PO-CANCEL-UNAUTHORIZED' },
-    });
+    } as any);
     const unauthorized = await cancelPurchaseOrder('po-1', 'scope was revised');
     expect(unauthorized).toEqual({
       ok: false,
@@ -108,7 +108,7 @@ describe('purchase order client payment mapping and cancel errors', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({
       data: null,
       error: { message: 'PO-CANCEL-OTHER' },
-    });
+    } as any);
     const passthrough = await cancelPurchaseOrder('po-1', 'scope was revised');
     expect(passthrough).toEqual({ ok: false, error: 'PO-CANCEL-OTHER' });
   });

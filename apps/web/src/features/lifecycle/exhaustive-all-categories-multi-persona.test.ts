@@ -643,9 +643,9 @@ describe('OTP Platform — Comprehensive 16-Category & 3-Persona Procurement Lif
       });
 
       expect(thread).toHaveLength(2);
-      expect(thread[0].handle).toBe('Supplier #1 (Anonymous)');
-      expect(thread[1].handle).toBe('Buyer (RWA Representative)');
-      expect(thread[0].message).not.toContain('phone');
+      expect(thread[0]!.handle).toBe('Supplier #1 (Anonymous)');
+      expect(thread[1]!.handle).toBe('Buyer (RWA Representative)');
+      expect(thread[0]!.message).not.toContain('phone');
     });
 
     it('Flow 4D: Itemized sealed quote submission across all requirement modes', () => {
@@ -684,10 +684,13 @@ describe('OTP Platform — Comprehensive 16-Category & 3-Persona Procurement Lif
         sla: 25,
       });
 
-      expect(norm.weights.commercial).toBe(40);
-      expect(norm.weights.speed).toBe(35);
-      expect(norm.weights.sla).toBe(25);
-      expect(norm.weights.commercial + norm.weights.speed + norm.weights.sla).toBe(100);
+      const commercial = norm.weights.commercial ?? 0;
+      const speed = norm.weights.speed ?? 0;
+      const sla = norm.weights.sla ?? 0;
+      expect(commercial).toBe(40);
+      expect(speed).toBe(35);
+      expect(sla).toBe(25);
+      expect(commercial + speed + sla).toBe(100);
 
       // Scoring 3 anonymous quotes
       const quoteScores = [
@@ -697,7 +700,7 @@ describe('OTP Platform — Comprehensive 16-Category & 3-Persona Procurement Lif
       ];
 
       // Supplier A wins on balanced speed + warranty merits
-      const winner = quoteScores.sort((a, b) => b.score - a.score)[0];
+      const winner = quoteScores.sort((a, b) => b.score - a.score)[0]!;
       expect(winner.supplierLabel).toBe('Supplier A');
       expect(winner.score).toBe(88.5);
     });
@@ -753,7 +756,7 @@ describe('OTP Platform — Comprehensive 16-Category & 3-Persona Procurement Lif
       expect(executedPo.poNumber).toContain('PO-2026');
       expect(executedPo.supplier.tradeName).toBe('Apex Premium Surface Finishers LLP');
       expect(executedPo.milestones).toHaveLength(3);
-      expect(executedPo.milestones[0].amount + executedPo.milestones[1].amount + executedPo.milestones[2].amount).toBe(171100);
+      expect(executedPo.milestones[0]!.amount + executedPo.milestones[1]!.amount + executedPo.milestones[2]!.amount).toBe(171100);
     });
   });
 });

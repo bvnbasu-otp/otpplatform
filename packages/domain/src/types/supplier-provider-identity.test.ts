@@ -8,7 +8,7 @@ import {
   normalizeOndcOnSearchRecord,
   providerIdentityKey,
   type NormalizedProviderSupplierCandidate,
-} from '../index.ts';
+} from '../index';
 
 describe('supplier provider identity', () => {
   it('exports Google Places and ONDC as provider ids', () => {

@@ -22,7 +22,7 @@ export {
   toOndcDispatchBuyerView,
   toOndcDispatchUserMessage,
   validateOndcSearchPayload,
-} from '../ondc/ondc-dispatch.ts';
+} from '../ondc/ondc-dispatch';
 
 export {
   OndcObservationSource,
@@ -30,15 +30,15 @@ export {
   parseOndcRuntimeEnvironment,
   resolveOndcEnvironmentGate,
   toPublicOndcEnvironmentDecision,
-} from '../ondc/ondc-environment.ts';
+} from '../ondc/ondc-environment';
 
-export { admitOndcOnSearchCallback } from '../ondc/ondc-callback-guard.ts';
+export { admitOndcOnSearchCallback } from '../ondc/ondc-callback-guard';
 
 export {
   createOndcDiscoveryStore,
   ondcDiscoveryIdentityKey,
   ondcDiscoveryProcurementCounts,
   retainOndcDiscoveryObservation,
-} from '../ondc/ondc-discovery-persistence.ts';
+} from '../ondc/ondc-discovery-persistence';
 
-export { normalizeOndcOnSearchRecord } from '../ondc/ondc-provider-foundation.ts';
+export { normalizeOndcOnSearchRecord } from '../ondc/ondc-provider-foundation';

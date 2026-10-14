@@ -87,12 +87,13 @@ describe('reference data the public forms need', () => {
     expect((data ?? []).length).toBeGreaterThan(0);
   });
 
-  it('still keeps the underlying category table shut to anon', async () => {
+  it('allows anon to read public requirement categories', async () => {
     const anon = createAnonClient();
-    const { data } = await anon.from('requirement_categories').select('id, code');
+    const { data, error } = await anon.from('requirement_categories').select('id, code');
 
-    // RLS grants SELECT to authenticated only, so anon sees nothing.
-    expect(data ?? []).toHaveLength(0);
+    // 00265: requirement_categories opened to public so unauthenticated intake & registration can display categories
+    expect(error).toBeNull();
+    expect(data?.length).toBeGreaterThanOrEqual(16);
   });
 });
 

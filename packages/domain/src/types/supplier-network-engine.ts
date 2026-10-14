@@ -1,14 +1,14 @@
-import { SupplierNetwork } from '../enums/supplier-network.ts';
+import { SupplierNetwork } from '../enums/supplier-network';
 import {
   ProviderExecutionStatus,
   TruthfulProviderStatus,
-} from '../enums/provider-execution.ts';
-import { IdentityProtectedViolationError } from '../errors/blind-violation.ts';
+} from '../enums/provider-execution';
+import { IdentityProtectedViolationError } from '../errors/blind-violation';
 import type {
   DistanceCalculationResult,
   LocationDescriptor,
-} from '../gis/location-intelligence-port.ts';
-import type { PerformanceTier } from './vendor-intelligence.ts';
+} from '../gis/location-intelligence-port';
+import type { PerformanceTier } from './vendor-intelligence';
 
 /** Crockford Base32 alphabet (no I, L, O, U to avoid human transcription confusion) */
 export const CROCKFORD_BASE32_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';

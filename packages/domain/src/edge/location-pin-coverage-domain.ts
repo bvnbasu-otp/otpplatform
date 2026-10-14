@@ -3,8 +3,8 @@
  * Re-exports only symbols imported by that function's dependency graph, with explicit .ts paths for Deno.
  */
 
-export { SupplierNetwork } from '../enums/supplier-network.ts';
-export { TruthfulProviderStatus } from '../enums/provider-execution.ts';
+export { SupplierNetwork } from '../enums/supplier-network';
+export { TruthfulProviderStatus } from '../enums/provider-execution';
 
 export {
   GisExecutionMode,
@@ -14,20 +14,20 @@ export {
   type DistanceCalculationResult,
   type CoverageValidationResult,
   type ExternalGisProviderConfig,
-} from '../gis/location-intelligence-port.ts';
+} from '../gis/location-intelligence-port';
 
-export { getUtcDayKey, getUtcMonthKey } from '../gis/google-places-quota-window.ts';
+export { getUtcDayKey, getUtcMonthKey } from '../gis/google-places-quota-window';
 
 export {
   buildGooglePlacesCategorySearchTerms,
   buildGooglePlacesTextQuery,
-} from '../gis/google-places-category-search-terms.ts';
+} from '../gis/google-places-category-search-terms';
 
-export { generateCrockfordAlias, CapabilityEvidenceTier } from '../types/supplier-network-engine.ts';
+export { generateCrockfordAlias, CapabilityEvidenceTier } from '../types/supplier-network-engine';
 
 export {
   SupplierTruthfulVerificationStage,
   type DiscoveryScopeDescriptor,
   type ScopeCoverageReport,
   type ScopeFreshnessStatus,
-} from '../types/supplier-network-refresh.ts';
+} from '../types/supplier-network-refresh';

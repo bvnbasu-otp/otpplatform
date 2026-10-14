@@ -333,7 +333,20 @@ describe('AwardPage approval-route effect', () => {
     vi.mocked(fetchIdentityProtectedQuotesForVote).mockResolvedValue({ ok: true, quotes: [quote()] });
     vi.mocked(fetchVotes).mockResolvedValue({ ok: true, votes: [] });
     vi.mocked(fetchVoteTally).mockResolvedValue({ ok: true, tally: [] });
-    vi.mocked(fetchVotingSummary).mockResolvedValue({ ok: true, summary: null });
+    vi.mocked(fetchVotingSummary).mockResolvedValue({
+      ok: true,
+      summary: {
+        assignedMembers: 0,
+        membersVoted: 0,
+        pendingMembers: 0,
+        weightCast: 0,
+        abstained: 0,
+        opposed: 0,
+        votesLockedAt: null,
+        votingOpen: false,
+        leader: null,
+      },
+    });
     vi.mocked(fetchUserActiveDelegations).mockResolvedValue({ ok: true, delegations: [] });
     vi.mocked(fetchRfqApprovalStages).mockImplementation(async () => {
       stageCount += 1;
@@ -396,17 +409,17 @@ describe('AwardPage approval-route effect', () => {
     expect(findByTestId(container, 'award-page')).toBeTruthy();
     expect(evaluateApprovalRoute).toHaveBeenCalledTimes(1);
     expect(evaluateApprovalRoute).toHaveBeenCalledWith(RFQ_ID, 125000);
-    expect(fetchRfqApprovalStages.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(vi.mocked(fetchRfqApprovalStages).mock.calls.length).toBeGreaterThanOrEqual(2);
 
     const stagesBeforeRefresh = findByTestId(container, 'approval-stages')?.textContent;
-    const stageCallsBeforeRefresh = fetchRfqApprovalStages.mock.calls.length;
+    const stageCallsBeforeRefresh = vi.mocked(fetchRfqApprovalStages).mock.calls.length;
     expect(stagesBeforeRefresh).toBe(`stage-${stageCallsBeforeRefresh}`);
 
     releaseEvaluation({ ok: true, result: { stamped: true } });
     await flush(4);
 
     expect(evaluateApprovalRoute).toHaveBeenCalledTimes(1);
-    expect(fetchRfqApprovalStages.mock.calls.length).toBe(stageCallsBeforeRefresh + 1);
+    expect(vi.mocked(fetchRfqApprovalStages).mock.calls.length).toBe(stageCallsBeforeRefresh + 1);
     expect(findByTestId(container, 'approval-stages')?.textContent).toBe(`stage-${stageCallsBeforeRefresh + 1}`);
 
     await act(async () => {
@@ -423,13 +436,13 @@ describe('AwardPage approval-route effect', () => {
     await settleLoaded();
     await flush(6);
 
-    const stageCallsAfterFailure = fetchRfqApprovalStages.mock.calls.length;
+    const stageCallsAfterFailure = vi.mocked(fetchRfqApprovalStages).mock.calls.length;
     expect(evaluateApprovalRoute).toHaveBeenCalledTimes(1);
     expect(evaluateApprovalRoute).toHaveBeenCalledWith(RFQ_ID, 125000);
     expect(findByTestId(container, 'approval-stages')?.textContent).toBe(`stage-${stageCallsAfterFailure}`);
 
     await flush(4);
-    expect(fetchRfqApprovalStages.mock.calls.length).toBe(stageCallsAfterFailure);
+    expect(vi.mocked(fetchRfqApprovalStages).mock.calls.length).toBe(stageCallsAfterFailure);
     expect(findByTestId(container, 'approval-stages')?.textContent).toBe(`stage-${stageCallsAfterFailure}`);
   });
 

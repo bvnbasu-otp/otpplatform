@@ -10,11 +10,11 @@ import {
 import {
   ProviderNeutralLocationIntelligence,
   calculateHaversineDistanceKm,
-} from './provider-neutral-location-intelligence.ts';
+} from './provider-neutral-location-intelligence';
 import {
   GoogleGisSafetyQuotaGuard,
   type GoogleGisQuotaLimits,
-} from './google-gis-safety-quota.ts';
+} from './google-gis-safety-quota';
 
 /**
  * Validates that GPS coordinates fall within valid geographic bounds (-90..90 lat, -180..180 lng).

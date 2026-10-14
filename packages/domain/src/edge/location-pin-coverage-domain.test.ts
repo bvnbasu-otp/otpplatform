@@ -8,7 +8,7 @@ import {
   buildGooglePlacesTextQuery,
   generateCrockfordAlias,
   SupplierTruthfulVerificationStage,
-} from './location-pin-coverage-domain.ts';
+} from './location-pin-coverage-domain';
 
 describe('location-pin-coverage-domain edge entry', () => {
   it('re-exports symbols required by the location-pin-coverage Edge bundle', () => {
