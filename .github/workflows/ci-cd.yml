@@ -181,7 +181,7 @@ jobs:
         with:
           version: 2.118.0
 
-      - name: Start local Postgres and apply migrations (through 00264)
+      - name: Start local Postgres and apply migrations (through 00265)
         run: |
           set -euo pipefail
           supabase start -x edge-runtime,imgproxy,logflare,mailpit,realtime,storage-api,studio,vector,kong,gotrue,postgrest

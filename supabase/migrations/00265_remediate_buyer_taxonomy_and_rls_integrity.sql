@@ -234,7 +234,7 @@ INSERT INTO capabilities (code, name, capacity_unit, sort_order) VALUES
   -- General
   ('general_product_supply', 'General product supply', NULL, 190),
   ('general_service', 'General service', NULL, 191),
-  ('custom_fulfilment', 'Custom requirement fulfilment', NULL, 192);
+  ('custom_fulfilment', 'Custom requirement fulfilment', NULL, 192) ON CONFLICT (code) DO NOTHING;
 
 -- ---------------------------------------------------------------------------
 -- 3. Subcategories
