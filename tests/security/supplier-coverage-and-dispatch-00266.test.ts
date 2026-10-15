@@ -8,11 +8,13 @@ const FILE = '00266_remediate_supplier_coverage_and_dispatch.sql';
 const SQL = readFileSync(resolve(MIGRATIONS_DIR, FILE), 'utf8');
 
 describe('00266 supplier coverage, dispatch & quorum remediation (static security & schema contract)', () => {
-  it('exists as the contiguous migration after 00265 followed by 00267 and 00268', () => {
+  it('exists as the contiguous migration after 00265 followed by 00267 through 00270', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
-    expect(files.at(-3)).toBe(FILE);
-    expect(files.at(-2)).toBe('00267_authoritative_founder_and_admin_claims.sql');
-    expect(files.at(-1)).toBe('00268_complete_nationwide_pincode_resolution.sql');
+    expect(files.at(-5)).toBe(FILE);
+    expect(files.at(-4)).toBe('00267_authoritative_founder_and_admin_claims.sql');
+    expect(files.at(-3)).toBe('00268_complete_nationwide_pincode_resolution.sql');
+    expect(files.at(-2)).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
+    expect(files.at(-1)).toBe('00270_unsuccessful_rfq_retention_purge.sql');
     const idx265 = files.indexOf('00265_remediate_buyer_taxonomy_and_rls_integrity.sql');
     expect(idx265).toBeGreaterThan(0);
     expect(files[idx265 + 1]).toBe(FILE);

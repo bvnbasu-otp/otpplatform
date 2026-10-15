@@ -13,6 +13,8 @@ ALTER TABLE public.rfqs
   ADD COLUMN IF NOT EXISTS purged_at timestamptz DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS purge_audit_tombstone jsonb DEFAULT NULL;
 
+GRANT SELECT (legal_hold, is_purged, purged_at, purge_audit_tombstone) ON public.rfqs TO authenticated;
+
 CREATE INDEX IF NOT EXISTS idx_rfqs_purge_lifecycle
   ON public.rfqs (status, is_purged, legal_hold, updated_at);
 

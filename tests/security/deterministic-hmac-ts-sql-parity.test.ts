@@ -117,5 +117,7 @@ describe('00260 migration chain', () => {
     expect(files[idx + 7]).toBe('00266_remediate_supplier_coverage_and_dispatch.sql');
     expect(files[idx + 8]).toBe('00267_authoritative_founder_and_admin_claims.sql');
     expect(files[idx + 9]).toBe('00268_complete_nationwide_pincode_resolution.sql');
+    expect(files[idx + 10]).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
+    expect(files[idx + 11]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
   });
 });

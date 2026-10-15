@@ -3,7 +3,7 @@
 **Release Certificate:** `OTP-REL-CERT-20261014-002`  
 **Release Decision:** 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (14 October 2026)  
 **Release Baseline:** `0bf526bf4c581251c803c4e4a4c297e5a0ede462` (`main` tracking `origin/main`)  
-**Formal Migration Ceiling:** `00268` (hosted and local migrations `00001`–`00268` applied; CI `EXPECTED_CEILING = 00268`)  
+**Formal Migration Ceiling:** `00270` (hosted and local migrations `00001`–`00270` applied; CI `EXPECTED_CEILING = 00270`)  
 **CI/CD Verification Run:** GitHub Actions run [#38601103130](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38601103130) (100% Success across 6 jobs)  
 **Operational Gateway:** WAHA session `default` (`WORKING`), paired to `919972967530@c.us`  
 
@@ -55,7 +55,7 @@ This is the canonical capability and status table for the controlled pilot. Shar
 | ONDC search / on_search foundation | DISABLED / NON-BLOCKING | `ONDC_ENABLED=false`. Not a live pilot network; non-blocking for controlled pilot. |
 | BNI and trade-association networks | PLANNED | Public channel copy is planned. `BniNetworkAdapter` is `stubAdapter` and returns a synthetic “BNI match” if `discover` runs. `createOtpServices` registers it with `isLive: false`. The web client does not import it. |
 | Razorpay and Stripe webhook verification | CONFIG-GATED | Function `payment-webhook` fails verification when the matching secret is absent. Compiled fallback literals are not in source. A valid signature is what reaches `record_verified_payment`. Pilot policy does not charge. Live gateway configuration: `UNKNOWN`. CI deploys `payment-webhook`, `otp-dispatch`, and `location-pin-coverage`. Reachability is certified only by the freeze smoke. No settlement is claimed from a deploy. |
-| `record_verified_payment` execute boundary | IMPLEMENTED | Local migration `00247` revokes EXECUTE from PUBLIC, `anon`, and `authenticated`, and grants `service_role`. The function remains SECURITY DEFINER with no caller-role check. The only application caller is `payment-webhook`, using the service-role key. Hosted history includes `00247` through `00268` (ceiling `00268`). |
+| `record_verified_payment` execute boundary | IMPLEMENTED | Local migration `00247` revokes EXECUTE from PUBLIC, `anon`, and `authenticated`, and grants `service_role`. The function remains SECURITY DEFINER with no caller-role check. The only application caller is `payment-webhook`, using the service-role key. Hosted history includes `00247` through `00270` (ceiling `00270`). |
 | Web application | IMPLEMENTED | `apps/web`, `vercel.json` build. |
 | Native mobile application | NOT-IMPLEMENTED | No app package besides `apps/web`. Contract: [MOBILE_PRODUCT_CONTRACT.md](../14-mobile-contract/MOBILE_PRODUCT_CONTRACT.md). |
 | Production web deploy inside GitHub Actions | IMPLEMENTED | Verified in GitHub Actions CI run [#38601103130](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38601103130) deploying to Vercel production: `https://otpplatform-theta.vercel.app`. |

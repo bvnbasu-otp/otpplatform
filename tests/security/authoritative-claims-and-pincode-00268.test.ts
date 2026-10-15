@@ -10,14 +10,18 @@ const SQL_267 = readFileSync(resolve(MIGRATIONS_DIR, FILE_267), 'utf8');
 const SQL_268 = readFileSync(resolve(MIGRATIONS_DIR, FILE_268), 'utf8');
 
 describe('00267 & 00268 authoritative claims and nationwide pincode resolution (static contract)', () => {
-  it('exists as the repository migration ceiling immediately following 00266', () => {
+  it('exists as contiguous migrations immediately following 00266 and followed by 00269 and 00270', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
-    expect(files.at(-2)).toBe(FILE_267);
-    expect(files.at(-1)).toBe(FILE_268);
+    expect(files.at(-4)).toBe(FILE_267);
+    expect(files.at(-3)).toBe(FILE_268);
+    expect(files.at(-2)).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
+    expect(files.at(-1)).toBe('00270_unsuccessful_rfq_retention_purge.sql');
     const idx266 = files.indexOf('00266_remediate_supplier_coverage_and_dispatch.sql');
     expect(idx266).toBeGreaterThan(0);
     expect(files[idx266 + 1]).toBe(FILE_267);
     expect(files[idx266 + 2]).toBe(FILE_268);
+    expect(files[idx266 + 3]).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
+    expect(files[idx266 + 4]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
   });
 
   it('proves 00267 adds authoritative claims to profiles and functions', () => {
