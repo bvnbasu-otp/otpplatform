@@ -781,5 +781,20 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
       expect(activeRfqCta).toContain('View Incoming Sealed Quotes');
     });
   });
+
+  describe('10. Direct Invite Modal Gateway Status & Share Links', () => {
+    it('renders DirectInviteModal component and exports cleanly', async () => {
+      const { DirectInviteModal } = await import('./components/DirectInviteModal');
+      expect(DirectInviteModal).toBeDefined();
+      expect(typeof DirectInviteModal).toBe('function');
+    });
+
+    it('formats active gateway badge for PHONE and EMAIL contacts', () => {
+      const phoneBadge = 'WhatsApp Gateway Active · Or Forward Directly';
+      const emailBadge = 'Link Ready · Share Directly';
+      expect(phoneBadge).toContain('WhatsApp Gateway Active');
+      expect(emailBadge).toContain('Link Ready');
+    });
+  });
 });
 

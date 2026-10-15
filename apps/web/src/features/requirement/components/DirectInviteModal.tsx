@@ -254,7 +254,7 @@ export function DirectInviteModal({
               </span>
               <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-snug">
                 {createdInvite.reused
-                  ? 'This vendor was previously invited to this RFQ under an identity-protected alias.'
+                  ? 'This vendor was previously invited to this RFQ under an identity-protected alias. Direct quotation link is available below to copy or forward.'
                   : createdInvite.quickQuoteUrl
                     ? 'Invitation registered in database. Direct single-use quotation link is generated below.'
                     : 'Invitation registered in database.'}
@@ -266,8 +266,9 @@ export function DirectInviteModal({
             <div className="rounded-xl border bg-muted/20 p-3 space-y-2 text-xs">
               <div className="flex items-center justify-between text-[11px] text-muted-foreground font-semibold">
                 <span>Direct Quotation Link:</span>
-                <span className="text-[10px] text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-300">
-                  Gateway offline · Share directly
+                <span className="text-[10px] text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-300 font-medium flex items-center gap-1">
+                  <span>✓</span>
+                  <span>{kind === 'PHONE' ? 'WhatsApp Gateway Active · Or Forward Directly' : 'Link Ready · Share Directly'}</span>
                 </span>
               </div>
 
