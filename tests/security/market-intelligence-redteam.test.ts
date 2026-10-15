@@ -131,7 +131,7 @@ describe('Market Intelligence & Fallback Ladder Red Team Security Battery (16 At
   // RT-03: Cached response presented as LIVE
   // -------------------------------------------------------------------------
   it('RT-03: Ensures cached responses retain DATABASE_CACHE provenance and original age', async () => {
-    const fakeObservedDate = '2026-09-15T12:00:00Z'; // 10 days ago
+    const fakeObservedDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(); // 10 days ago (AGING)
     const dbCacheProvider = new DatabaseCacheMarketIntelligenceProvider(async () => ({
       fairPriceMin: 88000,
       fairPriceMax: 115000,
