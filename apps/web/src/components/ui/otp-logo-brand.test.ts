@@ -6,11 +6,14 @@ import { describe, it, expect } from 'vitest';
 import { OtpLogo } from './OtpLogo';
 
 describe('Canonical OTP Brand Logo — Asset Integrity, Synchronization & Safety Backup Invariants', () => {
-  const rootDir = process.cwd();
-  const primaryLogoPath = path.join(rootDir, 'apps/web/public/brand/otp-logo.jpg');
-  const rootMirrorLogoPath = path.join(rootDir, 'apps/web/public/logo.jpg');
-  const backupLogoPath = path.join(rootDir, 'apps/web/public/brand/otp-logo.original-backup.jpg');
-  const webSrcDir = path.join(rootDir, 'apps/web/src');
+  const cwd = process.cwd();
+  const repoRoot = cwd.endsWith('apps/web') || cwd.endsWith('apps\\web')
+    ? path.resolve(cwd, '../..')
+    : cwd;
+  const primaryLogoPath = path.join(repoRoot, 'apps/web/public/brand/otp-logo.jpg');
+  const rootMirrorLogoPath = path.join(repoRoot, 'apps/web/public/logo.jpg');
+  const backupLogoPath = path.join(repoRoot, 'apps/web/public/brand/otp-logo.original-backup.jpg');
+  const webSrcDir = path.join(repoRoot, 'apps/web/src');
 
   function getFileSha256(filePath: string): string {
     const fileBuffer = fs.readFileSync(filePath);

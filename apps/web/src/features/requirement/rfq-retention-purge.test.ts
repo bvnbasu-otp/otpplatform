@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '../../../../..');
 const readMigration = (filename: string) =>
-  readFileSync(join(rootDir, 'supabase/migrations', filename), 'utf8');
+  readFileSync(join(rootDir, 'supabase/migrations', filename), 'utf8').replace(/\r\n/g, '\n');
 
 describe('Unsuccessful RFQ Retention & 30-Day Purge Lifecycle (Migration 00270)', () => {
   it('confirms migration file exists and adds legal_hold and tombstone columns', () => {
