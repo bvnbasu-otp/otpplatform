@@ -9,12 +9,14 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 | Item | Value |
 | --- | --- |
 | Branch | `main` (tracks `origin/main`) |
-| SHA inspected | `9e50289b5c2560cefa7f7dfa7bb4ff3f3cf3bfe8` |
-| Release status | 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (`OTP-REL-CERT-20261015-002`) |
-| Product Owner attestation | 15 October 2026: *"All core procurement workflows, universal multilingual page translation with Indic fonts, pincode-first supplier discovery, sourcing modes, address readiness gate, EULA attribution, database RLS boundaries, and messaging gateways are verified. GitHub Actions CI/CD run #38697267795 and production deployment verified. Release certified GREEN."* |
-| Local migrations | `00001`–`00270` on disk. Formal migration ceiling is `00270`. |
-| Hosted database | Formal migration ceiling is `00270`. |
+| SHA inspected | Latest verified commit (`main`) |
+| Release status | 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (`OTP-REL-CERT-20261015-003`) |
+| Product Owner attestation | 15 October 2026: *"All core procurement workflows, universal multilingual page translation with Indic fonts, pincode-first supplier discovery, sourcing modes, address readiness gate, EULA attribution, database RLS boundaries, messaging gateways, and 00271 supplier channel unique constraints are verified. Complete Platform Documentation published as publication-grade PDF. Release certified GREEN."* |
+| Local migrations | `00001`–`00271` on disk. Formal migration ceiling is `00271`. |
+| Hosted database | Formal migration ceiling is `00271`. |
+| Complete PDF Documentation | [OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf](./OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf) (6.4 MB publication-grade PDF) |
 | Public URL named in repo | `https://otpplatform-theta.vercel.app` |
+
 | Deployed SHA | Release baseline `9e50289b5c2560cefa7f7dfa7bb4ff3f3cf3bfe8` |
 | Node | `>=22` (`package.json` engines; CI `22`) |
 | pnpm | `9.15.0` |

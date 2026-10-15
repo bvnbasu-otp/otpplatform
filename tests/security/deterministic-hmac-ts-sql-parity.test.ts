@@ -119,5 +119,6 @@ describe('00260 migration chain', () => {
     expect(files[idx + 9]).toBe('00268_complete_nationwide_pincode_resolution.sql');
     expect(files[idx + 10]).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
     expect(files[idx + 11]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
+    expect(files[idx + 12]).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
   });
 });

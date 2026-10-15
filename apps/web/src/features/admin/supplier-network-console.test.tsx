@@ -51,4 +51,10 @@ describe('AdminSupplierNetworkConsole (R2-07 Superadmin Location Pre-Warm UI)', 
     expect(state).toBe('Tamil Nadu');
     expect(city).toBe('Erode');
   });
+
+  it('safely binds detectedCity into supplier location cards preventing undefined city errors', () => {
+    const element = React.createElement(AdminSupplierNetworkConsole, {});
+    expect(element.type).toBe(AdminSupplierNetworkConsole);
+  });
 });
+

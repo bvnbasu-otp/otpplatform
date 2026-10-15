@@ -10,12 +10,13 @@ const SQL = readFileSync(resolve(MIGRATIONS_DIR, FILE), 'utf8');
 describe('00265 buyer taxonomy and RLS integrity (static security & schema contract)', () => {
   it('exists as the contiguous migration after 00264 followed by 00266', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
-    expect(files.at(-6)).toBe(FILE);
-    expect(files.at(-5)).toBe('00266_remediate_supplier_coverage_and_dispatch.sql');
-    expect(files.at(-4)).toBe('00267_authoritative_founder_and_admin_claims.sql');
-    expect(files.at(-3)).toBe('00268_complete_nationwide_pincode_resolution.sql');
-    expect(files.at(-2)).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
-    expect(files.at(-1)).toBe('00270_unsuccessful_rfq_retention_purge.sql');
+    expect(files.at(-7)).toBe(FILE);
+    expect(files.at(-6)).toBe('00266_remediate_supplier_coverage_and_dispatch.sql');
+    expect(files.at(-5)).toBe('00267_authoritative_founder_and_admin_claims.sql');
+    expect(files.at(-4)).toBe('00268_complete_nationwide_pincode_resolution.sql');
+    expect(files.at(-3)).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
+    expect(files.at(-2)).toBe('00270_unsuccessful_rfq_retention_purge.sql');
+    expect(files.at(-1)).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
     const idx264 = files.indexOf('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
     expect(idx264).toBeGreaterThan(0);
     expect(files[idx264 + 1]).toBe(FILE);

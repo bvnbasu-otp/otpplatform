@@ -426,7 +426,7 @@ export function AdminSupplierNetworkConsole({
                           </span>
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-2">
-                          <span>📍 {s.locations[0]?.city || city} ({s.locations[0]?.pincode || pincode})</span>
+                          <span>📍 {s.locations[0]?.city || detectedCity || 'Regional'} ({s.locations[0]?.pincode || pincode})</span>
                           <span>·</span>
                           <span>📞 {s.contactPhone || 'Phone on File'}</span>
                           <span>·</span>

@@ -46,11 +46,27 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore storage write errors
     }
-    // Set document language attribute for accessibility
+    // Set document language attribute for accessibility and trigger translation
     if (typeof document !== 'undefined') {
       document.documentElement.lang = newLang.split('-')[0] || 'en';
+      applyDomPageTranslation(newLang);
+      triggerPageTranslation(newLang);
+
+      // Automated real-time reload for full application translation without manual refresh
+      try {
+        if (
+          typeof window !== 'undefined' &&
+          typeof window.location?.reload === 'function' &&
+          !import.meta.env?.VITEST
+        ) {
+          window.location.reload();
+        }
+      } catch {
+        // Fallback gracefully
+      }
     }
   }, []);
+
 
   // Update HTML lang attribute and trigger full-page translations on mount or language change
   useEffect(() => {

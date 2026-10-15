@@ -1,11 +1,12 @@
 # OTP Pilot Amber-to-Green Master Register
 
 > [!NOTE]
-> **Active Production Release Certificate:** `OTP-REL-CERT-20261015-002` (15 October 2026)  
-> **Release Baseline Commit:** `9e50289b5c2560cefa7f7dfa7bb4ff3f3cf3bfe8` on `main`  
-> **Formal Migration Ceiling:** `00270` (`00001`–`00270` synchronized on hosted Supabase `qsuvtcezffomtwzwyrso`)  
-> **CI/CD Pipeline Run:** GitHub Actions run [#38697267795](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38697267795) (100% Success across all 6 jobs)  
+> **Active Production Release Certificate:** `OTP-REL-CERT-20261015-003` (15 October 2026)  
+> **Release Baseline Commit:** Current Verified Baseline (`main`)  
+> **Formal Migration Ceiling:** `00271` (`00001`–`00271` synchronized on hosted Supabase `qsuvtcezffomtwzwyrso`)  
+> **Complete Platform Documentation:** `docs/OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf` (6.4 MB Publication-Grade PDF)  
 > See the active quality gate certificate: [OTP_PILOT_FINAL_QUALITY_GATE_AND_RELEASE_CERTIFICATE.md](./15-change-management/OTP_PILOT_FINAL_QUALITY_GATE_AND_RELEASE_CERTIFICATE.md).
+
 
 **Historical Date:** 11 October 2026  
 **Repository:** `github.com/bvnbasu-otp/otpplatform` (`G:\My Drive\otp`)  

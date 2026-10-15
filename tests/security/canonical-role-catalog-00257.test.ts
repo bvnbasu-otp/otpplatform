@@ -104,7 +104,8 @@ describe('Migration 00257 static SQL contract', () => {
     expect(files[index + 11]).toBe('00268_complete_nationwide_pincode_resolution.sql');
     expect(files[index + 12]).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
     expect(files[index + 13]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
-    expect(files.at(-1)).toBe('00270_unsuccessful_rfq_retention_purge.sql');
+    expect(files[index + 14]).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
+    expect(files.at(-1)).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {

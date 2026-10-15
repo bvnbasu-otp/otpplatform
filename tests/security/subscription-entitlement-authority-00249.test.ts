@@ -288,7 +288,8 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 19]).toBe('00268_complete_nationwide_pincode_resolution.sql');
     expect(files[index + 20]).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
     expect(files[index + 21]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
-    expect(index).toBe(files.length - 22);
+    expect(files[index + 22]).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
+    expect(index).toBe(files.length - 23);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);
