@@ -9,13 +9,13 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 | Item | Value |
 | --- | --- |
 | Branch | `main` (tracks `origin/main`) |
-| SHA inspected | `a497c403323a63ecad90731f87aa9ec244eb63cf` |
-| Release status | 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (`OTP-REL-CERT-20261015-001`) |
-| Product Owner attestation | 15 October 2026: *"All core procurement workflows, multilingual experience, sourcing modes, address readiness gate, EULA attribution, database RLS boundaries, and messaging gateways are verified. GitHub Actions CI/CD run #38664831857 and production deployment verified. Release certified GREEN."* |
+| SHA inspected | `9e50289b5c2560cefa7f7dfa7bb4ff3f3cf3bfe8` |
+| Release status | 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (`OTP-REL-CERT-20261015-002`) |
+| Product Owner attestation | 15 October 2026: *"All core procurement workflows, universal multilingual page translation with Indic fonts, pincode-first supplier discovery, sourcing modes, address readiness gate, EULA attribution, database RLS boundaries, and messaging gateways are verified. GitHub Actions CI/CD run #38697267795 and production deployment verified. Release certified GREEN."* |
 | Local migrations | `00001`–`00270` on disk. Formal migration ceiling is `00270`. |
 | Hosted database | Formal migration ceiling is `00270`. |
 | Public URL named in repo | `https://otpplatform-theta.vercel.app` |
-| Deployed SHA | Release baseline `a497c403323a63ecad90731f87aa9ec244eb63cf` |
+| Deployed SHA | Release baseline `9e50289b5c2560cefa7f7dfa7bb4ff3f3cf3bfe8` |
 | Node | `>=22` (`package.json` engines; CI `22`) |
 | pnpm | `9.15.0` |
 | TypeScript | `5.6.3` |

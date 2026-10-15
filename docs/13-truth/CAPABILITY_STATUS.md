@@ -1,14 +1,14 @@
 # Capability status
 
-**Release Certificate:** `OTP-REL-CERT-20261015-001`  
+**Release Certificate:** `OTP-REL-CERT-20261015-002`  
 **Release Decision:** 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (15 October 2026)  
-**Release Baseline:** `a497c403323a63ecad90731f87aa9ec244eb63cf` (`main` tracking `origin/main`)  
+**Release Baseline:** `9e50289b5c2560cefa7f7dfa7bb4ff3f3cf3bfe8` (`main` tracking `origin/main`)  
 **Formal Migration Ceiling:** `00270` (hosted and local migrations `00001`–`00270` applied; CI `EXPECTED_CEILING = 00270`)  
-**CI/CD Verification Run:** GitHub Actions run [#38664831857](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38664831857) (100% Success across 6 jobs)  
+**CI/CD Verification Run:** GitHub Actions run [#38697267795](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38697267795) (100% Success across 6 jobs)  
 **Operational Gateway:** WAHA session `default` (`WORKING`), paired to `919972967530@c.us`  
 
 **Product Owner Attestation (15 October 2026):**
-> *"All core procurement workflows, multilingual experience, sourcing modes, address readiness gate, EULA attribution, database RLS boundaries, and messaging gateways are verified. GitHub Actions CI/CD run #38664831857 and production deployment verified. Release certified GREEN."*
+> *"All core procurement workflows, universal multilingual page translation with Indic fonts, pincode-first supplier discovery, sourcing modes, address readiness gate, EULA attribution, database RLS boundaries, and messaging gateways are verified. GitHub Actions CI/CD run #38697267795 and production deployment verified. Release certified GREEN."*
 
 This is the canonical capability and status table for the controlled pilot. Share-in-Success is NOT IMPLEMENTED. Supplier cashback is 100% prohibited and not an active product mechanism.
 
@@ -58,12 +58,14 @@ This is the canonical capability and status table for the controlled pilot. Shar
 | `record_verified_payment` execute boundary | IMPLEMENTED | Local migration `00247` revokes EXECUTE from PUBLIC, `anon`, and `authenticated`, and grants `service_role`. The function remains SECURITY DEFINER with no caller-role check. The only application caller is `payment-webhook`, using the service-role key. Hosted history includes `00247` through `00270` (ceiling `00270`). |
 | Web application | IMPLEMENTED | `apps/web`, `vercel.json` build. |
 | Native mobile application | NOT-IMPLEMENTED | No app package besides `apps/web`. Contract: [MOBILE_PRODUCT_CONTRACT.md](../14-mobile-contract/MOBILE_PRODUCT_CONTRACT.md). |
-| Production web deploy inside GitHub Actions | IMPLEMENTED | Verified in GitHub Actions CI run [#38664831857](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38664831857) deploying to Vercel production: `https://otpplatform-theta.vercel.app`. |
-| Production `supabase db push` inside GitHub Actions | IMPLEMENTED | Verified in GitHub Actions CI run [#38664831857](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38664831857) applying contiguous migrations `00001`–`00270` to hosted project `qsuvtcezffomtwzwyrso`. |
+| Production web deploy inside GitHub Actions | IMPLEMENTED | Verified in GitHub Actions CI run [#38697267795](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38697267795) deploying to Vercel production: `https://otpplatform-theta.vercel.app`. |
+| Production `supabase db push` inside GitHub Actions | IMPLEMENTED | Verified in GitHub Actions CI run [#38697267795](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38697267795) applying contiguous migrations `00001`–`00270` to hosted project `qsuvtcezffomtwzwyrso`. |
 | Docker script `scripts/deploy-prod.ps1` | IMPLEMENTED | LOCAL DOCKER ONLY. Writes container `otp-prod-db`. Success text says local Docker only and does not claim a hosted production deploy. Hosted production migrations are applied exclusively via verified CI/CD. |
 | Hosted database ceiling | IMPLEMENTED | Baseline `00270` verified live. Migrations `00001`–`00270` synchronized in production; CI `EXPECTED_CEILING = 00270`. |
-| Deployed site baseline matches `a497c40` | IMPLEMENTED | Release baseline `a497c403323a63ecad90731f87aa9ec244eb63cf`. |
+| Deployed site baseline matches `9e50289` | IMPLEMENTED | Release baseline `9e50289b5c2560cefa7f7dfa7bb4ff3f3cf3bfe8`. |
 | Multilingual Interface (8 Indian Languages) | IMPLEMENTED | Complete localization for English, Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, and Bengali (`apps/web/src/lib/i18n/`), accessible LanguageSwitcher, localStorage persistence, and voice dictation sync. |
+| Universal Indic Page Translator & Noto Web Fonts | IMPLEMENTED | Full application page-level translation for dynamic and static content via DOM Text Engine (`dom-page-translator.ts`) & Google Translator Bridge (`google-translate-service.ts`) with Google Noto Sans Indic web fonts loaded via CDN (zero client font installation needed). |
+| Superadmin Pincode-First Supplier Network Pre-Warming | IMPLEMENTED | Superadmin Location Pre-Population under 30-Day Policy operates strictly on 6-digit PIN with auto-derived state and city geography badge, eliminating manual dropdown conflicts and geography mismatch errors (`AdminSupplierNetworkConsole.tsx`). |
 | Sourcing Modes & Supplier Reach Settings | IMPLEMENTED | Two canonical modes: `IDENTITY_PROTECTED` and `OPEN_RFQ_TENDER`; orthogonal supplier relationship reach: `CURATED_VERIFIED`, `EXISTING_SUCCESSFUL`, `EXISTING_PLUS_EXPANDED`, `ALL_ELIGIBLE`. |
 | Award-Locked Identity Reveal Hardening | IMPLEMENTED | Migration 00269; `quotes_revealed` view enforces winner-only unmasking while losing quotes remain sealed and protected. |
 | Address Readiness Gate | IMPLEMENTED | Pre-publish gate auto-persists validated Indian delivery addresses (`110001`–`999999`) to `buyer_addresses`. |
