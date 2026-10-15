@@ -1,10 +1,12 @@
 import type { CompactRequirementContext } from '../types/discovery';
+import { useLanguage } from '@/lib/i18n';
 
 interface CompactRequirementContextCardProps {
   context: CompactRequirementContext;
 }
 
 export function CompactRequirementContextCard({ context }: CompactRequirementContextCardProps) {
+  const { t } = useLanguage();
   const {
     requirementTitle,
     categoryName,
@@ -17,7 +19,7 @@ export function CompactRequirementContextCard({ context }: CompactRequirementCon
     minQuotesRequired,
   } = context;
 
-  const locationDisplay = [deliveryCity, deliveryPincode].filter(Boolean).join(' • ') || 'Location flexible';
+  const locationDisplay = [deliveryCity, deliveryPincode].filter(Boolean).join(' • ') || t('Location flexible', 'Location flexible');
 
   return (
     <section
@@ -28,7 +30,7 @@ export function CompactRequirementContextCard({ context }: CompactRequirementCon
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5 mb-1">
             <span className="rounded-md bg-purple-100 dark:bg-purple-950/60 px-2 py-0.5 text-[10px] font-bold text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-              Procurement Context
+              {t('Procurement Context', 'Procurement Context')}
             </span>
             {categoryName && (
               <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground border">
@@ -36,7 +38,7 @@ export function CompactRequirementContextCard({ context }: CompactRequirementCon
               </span>
             )}
             <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-              Target: {minQuotesRequired} Quotes
+              {t('Target', 'Target')}: {minQuotesRequired} {t('Quotes', 'Quotes')}
             </span>
           </div>
           <h1 className="text-sm sm:text-base font-bold text-foreground leading-snug break-words">
@@ -55,7 +57,7 @@ export function CompactRequirementContextCard({ context }: CompactRequirementCon
         {requiredByText && (
           <div className="inline-flex items-center gap-1 rounded-md bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground border">
             <span>📅</span>
-            <span>{requiredByText}</span>
+            <span>{t(requiredByText, requiredByText)}</span>
           </div>
         )}
 
@@ -76,10 +78,11 @@ export function CompactRequirementContextCard({ context }: CompactRequirementCon
         {geographicReach && (
           <div className="inline-flex items-center gap-1 rounded-md bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground border">
             <span>🌐</span>
-            <span>{geographicReach.replace(/_/g, ' ')} Reach</span>
+            <span>{t(`${geographicReach.replace(/_/g, ' ')} Reach`, `${geographicReach.replace(/_/g, ' ')} Reach`)}</span>
           </div>
         )}
       </div>
     </section>
   );
 }
+

@@ -3,6 +3,7 @@ import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { useRoleContext } from '@/features/roles';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useLanguage } from '@/lib/i18n';
 import { getHomeRoute, getOrdersRoute, getRoleLabel } from '../navigation-config';
 
 
@@ -35,9 +36,11 @@ export function WorkspaceHeaderMenu({
   const { user, signOut } = useAuth();
   const { context } = useRoleContext();
   const { pathname } = useLocation();
+  const { t } = useLanguage();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const roleLabel = getRoleLabel(context);
+  const displayRole = t(roleLabel);
   const homeRoute = getHomeRoute(context);
   const ordersRoute = getOrdersRoute(context);
   const userInitials = initials(context.fullName || user?.email);
@@ -97,10 +100,10 @@ export function WorkspaceHeaderMenu({
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                Workspace ({roleLabel})
+                {t('Workspace', 'Workspace')} ({displayRole})
               </span>
               <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">
-                {roleLabel} Active
+                {displayRole} {t('Active', 'Active')}
               </span>
             </div>
 
@@ -118,7 +121,7 @@ export function WorkspaceHeaderMenu({
                   }
                 >
                   <span className="flex items-center gap-2">
-                    <span>🏠</span> Home
+                    <span>🏠</span> {t('Home', 'Home')}
                   </span>
                   <span>→</span>
                 </NavLink>
@@ -137,7 +140,7 @@ export function WorkspaceHeaderMenu({
                   }
                 >
                   <span className="flex items-center gap-2">
-                    <span>📋</span> Orders &amp; Reports
+                    <span>📋</span> {t('Orders & Reports', 'Orders & Reports')}
                   </span>
                   <span>→</span>
                 </NavLink>
@@ -156,7 +159,7 @@ export function WorkspaceHeaderMenu({
                   }
                 >
                   <span className="flex items-center gap-2">
-                    <span>🛡️</span> Audit History &amp; Proofs
+                    <span>🛡️</span> {t('Audit History & Proofs', 'Audit History & Proofs')}
                   </span>
                   <span>→</span>
                 </NavLink>
@@ -175,7 +178,7 @@ export function WorkspaceHeaderMenu({
                   }
                 >
                   <span className="flex items-center gap-2">
-                    <span>👤</span> Profile &amp; Settings
+                    <span>👤</span> {t('Profile & Settings', 'Profile & Settings')}
                   </span>
                   <span>→</span>
                 </NavLink>
@@ -190,7 +193,7 @@ export function WorkspaceHeaderMenu({
                     className="flex items-center justify-between rounded-xl bg-purple-600 px-3.5 py-2.5 font-bold text-white shadow-2xs hover:bg-purple-700 transition min-h-[44px] mobile-touch-target"
                   >
                     <span className="flex items-center gap-2">
-                      <span>⚡</span> Super Admin Operations
+                      <span>⚡</span> {t('Super Admin Operations', 'Super Admin Operations')}
                     </span>
                     <span>→</span>
                   </Link>
@@ -207,7 +210,7 @@ export function WorkspaceHeaderMenu({
                     className="w-full flex items-center justify-between rounded-xl bg-emerald-600 px-3.5 py-2.5 font-bold text-white shadow-2xs hover:bg-emerald-700 transition cursor-pointer min-h-[44px] mobile-touch-target"
                   >
                     <span className="flex items-center gap-2">
-                      <span>📡</span> + Expand Catalog &amp; Capabilities
+                      <span>📡</span> {t('+ Expand Catalog & Capabilities', '+ Expand Catalog & Capabilities')}
                     </span>
                     <span>⚡</span>
                   </button>
@@ -221,7 +224,7 @@ export function WorkspaceHeaderMenu({
                     className="flex items-center justify-between rounded-xl bg-primary px-3.5 py-2.5 font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition min-h-[44px] mobile-touch-target"
                   >
                     <span className="flex items-center gap-2">
-                      <span>⚡</span> + Create New Requirement
+                      <span>⚡</span> + {t('Create Requirement', 'Create New Requirement')}
                     </span>
                     <span>→</span>
                   </Link>
@@ -233,7 +236,7 @@ export function WorkspaceHeaderMenu({
           {/* SECTION 2: SUPPORT */}
           <div className="border-t border-border pt-3">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground block mb-2">
-              Support
+              {t('Support', 'Support')}
             </span>
             <ul className="space-y-1">
               <li>
@@ -247,9 +250,9 @@ export function WorkspaceHeaderMenu({
                   className="w-full flex items-center justify-between gap-2 rounded-xl px-3.5 py-2 font-medium text-foreground bg-muted/30 hover:bg-muted transition min-h-[44px] mobile-touch-target text-left cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
-                    <span>🛠️</span> Help &amp; Support Center
+                    <span>🛠️</span> {t('Help & Support Center', 'Help & Support Center')}
                   </span>
-                  <span className="text-[11px] text-muted-foreground shrink-0">Open →</span>
+                  <span className="text-[11px] text-muted-foreground shrink-0">{t('Open →', 'Open →')}</span>
                 </button>
               </li>
               <li>
@@ -259,7 +262,7 @@ export function WorkspaceHeaderMenu({
                   className="flex items-center justify-between rounded-xl px-3.5 py-2 font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition min-h-[44px] mobile-touch-target"
                 >
                   <span className="flex items-center gap-2">
-                    <span>📖</span> FAQs &amp; Help Guides
+                    <span>📖</span> {t('FAQs & Help Guides', 'FAQs & Help Guides')}
                   </span>
                   <span>→</span>
                 </NavLink>
@@ -270,7 +273,7 @@ export function WorkspaceHeaderMenu({
           {/* SECTION 3: WEBSITE */}
           <div className="border-t border-border pt-3">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground block mb-2">
-              Website
+              {t('Website', 'Website')}
             </span>
             <ul className="grid grid-cols-2 gap-1">
               <li>
@@ -279,7 +282,7 @@ export function WorkspaceHeaderMenu({
                   onClick={onClose}
                   className="block rounded-lg px-3 py-2 font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px] mobile-touch-target flex items-center"
                 >
-                  Public Home
+                  {t('Public Home', 'Public Home')}
                 </NavLink>
               </li>
               <li>
@@ -288,7 +291,7 @@ export function WorkspaceHeaderMenu({
                   onClick={onClose}
                   className="block rounded-lg px-3 py-2 font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px] mobile-touch-target flex items-center"
                 >
-                  How OTP Works
+                  {t('How OTP Works', 'How OTP Works')}
                 </NavLink>
               </li>
               <li>
@@ -297,7 +300,7 @@ export function WorkspaceHeaderMenu({
                   onClick={onClose}
                   className="block rounded-lg px-3 py-2 font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px] mobile-touch-target flex items-center"
                 >
-                  Pricing
+                  {t('Pricing', 'Pricing')}
                 </NavLink>
               </li>
               <li>
@@ -306,7 +309,7 @@ export function WorkspaceHeaderMenu({
                   onClick={onClose}
                   className="block rounded-lg px-3 py-2 font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition min-h-[44px] mobile-touch-target flex items-center"
                 >
-                  About OTP
+                  {t('About OTP', 'About OTP')}
                 </NavLink>
               </li>
             </ul>
@@ -320,7 +323,7 @@ export function WorkspaceHeaderMenu({
           {/* SECTION 5: ACCOUNT */}
           <div className="border-t border-border pt-3 space-y-3">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground block">
-              Account
+              {t('Account', 'Account')}
             </span>
 
 
@@ -339,7 +342,7 @@ export function WorkspaceHeaderMenu({
                     {context.fullName || user?.email}
                   </span>
                   <span className="rounded-full bg-primary/10 text-primary px-1.5 py-0.2 text-[9px] font-extrabold">
-                    {roleLabel}
+                    {displayRole}
                   </span>
                 </div>
                 <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
@@ -358,7 +361,7 @@ export function WorkspaceHeaderMenu({
                 onClick={onClose}
                 className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition active:scale-95 min-h-[44px] mobile-touch-target"
               >
-                <span>⚙️</span> Preferences
+                <span>⚙️</span> {t('Preferences', 'Preferences')}
               </Link>
 
               <button
@@ -370,7 +373,7 @@ export function WorkspaceHeaderMenu({
                 data-testid="header-menu-sign-out"
                 className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-950/70 transition active:scale-95 min-h-[44px] mobile-touch-target"
               >
-                <span>🚪</span> Sign Out
+                <span>🚪</span> {t('Sign Out', 'Sign Out')}
               </button>
             </div>
           </div>

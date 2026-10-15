@@ -83,4 +83,15 @@ describe('Phase 7.1 UX Telemetry Abstraction Regressions', () => {
     const perfPage = fs.readFileSync(path.join(webRoot, 'src/features/performance/pages/SupplierPerformancePage.tsx'), 'utf-8');
     expect(perfPage).toContain('Performance Scorecard &amp; Rating');
   });
+
+  it('verifies ProcurementStageNavigator wires useLanguage for regional i18n support', () => {
+    const navigatorPath = path.join(webRoot, 'src/features/lifecycle/components/ProcurementStageNavigator.tsx');
+    const content = fs.readFileSync(navigatorPath, 'utf-8');
+
+    expect(content).toContain("import { useLanguage } from '@/lib/i18n'");
+    expect(content).toContain('const { t } = useLanguage()');
+    expect(content).toContain("t('Stage', 'Stage')");
+    expect(content).toContain("t('Back', 'Back')");
+  });
 });
+

@@ -42,6 +42,8 @@ export function classifyCoverageResponse(input: CoverageResponseShape): Discover
   return 'COVERAGE_NOT_FRESH';
 }
 
+import { inferIndianCity, inferIndianState } from '@/features/intake/api/draft';
+
 export function discoveryRequirementIssues(input: {
   pincode: string | null | undefined;
   city: string | null | undefined;
@@ -50,7 +52,9 @@ export function discoveryRequirementIssues(input: {
 }): string | null {
   const pin = (input.pincode ?? '').trim();
   if (!/^\d{6}$/.test(pin)) return 'Discovery needs the requirement delivery PIN. This is not a zero-supplier result.';
-  if (!(input.city ?? '').trim() || !(input.state ?? '').trim()) {
+  const state = (input.state ?? '').trim() || inferIndianState(pin, input.city) || '';
+  const city = (input.city ?? '').trim() || inferIndianCity(pin, state) || '';
+  if (!city || !state) {
     return 'Discovery needs the requirement city and state. This is not a zero-supplier result.';
   }
   if (!(input.category ?? '').trim()) {

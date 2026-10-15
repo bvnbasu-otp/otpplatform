@@ -69,12 +69,127 @@ function readCommercial(
   return rest as CommercialDetails;
 }
 
+export function extractPinFromText(text?: string | null): string | null {
+  if (!text) return null;
+  const match = text.match(/\b([1-9][0-9]{5})\b/);
+  return match && match[1] ? match[1] : null;
+}
+
+
+export function inferIndianCity(
+  pincode?: string | null,
+  state?: string | null,
+): string | null {
+  if (pincode && /^[0-9]{6}$/.test(pincode.trim())) {
+    const pin = pincode.trim();
+    const p3 = pin.slice(0, 3);
+    const p2 = pin.slice(0, 2);
+
+    // Karnataka
+    if (['560', '561', '562'].includes(p3)) return 'Bengaluru';
+    if (p3 === '570') return 'Mysuru';
+    if (p3 === '575') return 'Mangaluru';
+    if (p3 === '580') return 'Hubballi';
+    if (p3 === '590') return 'Belagavi';
+
+    // Tamil Nadu
+    if (p3 === '600') return 'Chennai';
+    if (p3 === '641') return 'Coimbatore';
+    if (p3 === '625') return 'Madurai';
+    if (p3 === '620') return 'Tiruchirappalli';
+    if (p3 === '636') return 'Salem';
+
+    // Maharashtra
+    if (p3 === '400') return 'Mumbai';
+    if (p3 === '411') return 'Pune';
+    if (p3 === '440') return 'Nagpur';
+    if (p3 === '422') return 'Nashik';
+    if (['401', '402'].includes(p3)) return 'Thane';
+
+    // Delhi NCR
+    if (p2 === '11') return 'New Delhi';
+    if (p3 === '122') return 'Gurugram';
+    if (p3 === '201') return 'Noida';
+
+    // Telangana / AP
+    if (p3 === '500') return 'Hyderabad';
+    if (p3 === '530') return 'Visakhapatnam';
+    if (p3 === '520') return 'Vijayawada';
+
+    // Gujarat
+    if (p3 === '380') return 'Ahmedabad';
+    if (p3 === '395') return 'Surat';
+    if (p3 === '390') return 'Vadodara';
+
+    // West Bengal
+    if (p3 === '700') return 'Kolkata';
+    if (p3 === '711') return 'Howrah';
+
+    // Kerala
+    if (p3 === '682') return 'Kochi';
+    if (p3 === '695') return 'Thiruvananthapuram';
+
+    // Rajasthan
+    if (p3 === '302') return 'Jaipur';
+
+    // Madhya Pradesh
+    if (p3 === '452') return 'Indore';
+    if (p3 === '462') return 'Bhopal';
+
+    // Punjab / Haryana
+    if (p2 === '16') return 'Chandigarh';
+    if (p3 === '141') return 'Ludhiana';
+
+    // Uttar Pradesh
+    if (p3 === '208') return 'Kanpur';
+    if (p3 === '226') return 'Lucknow';
+    if (p3 === '221') return 'Varanasi';
+
+    // Bihar / Jharkhand / Odisha / Assam / Goa / NE
+    if (p3 === '800') return 'Patna';
+    if (p3 === '834') return 'Ranchi';
+    if (p3 === '751') return 'Bhubaneswar';
+    if (p3 === '781') return 'Guwahati';
+    if (p3 === '403') return 'Panaji';
+    if (p3 === '795') return 'Imphal';
+  }
+
+  if (state) {
+    const s = state.trim().toLowerCase();
+    if (s === 'karnataka') return 'Bengaluru';
+    if (s === 'tamil nadu') return 'Chennai';
+    if (s === 'maharashtra') return 'Mumbai';
+    if (s === 'delhi') return 'Delhi';
+    if (s === 'telangana') return 'Hyderabad';
+    if (s === 'andhra pradesh') return 'Visakhapatnam';
+    if (s === 'gujarat') return 'Ahmedabad';
+    if (s === 'west bengal') return 'Kolkata';
+    if (s === 'kerala') return 'Kochi';
+    if (s === 'rajasthan') return 'Jaipur';
+    if (s === 'madhya pradesh') return 'Indore';
+    if (s === 'uttar pradesh') return 'Lucknow';
+    if (s === 'haryana' || s === 'punjab') return 'Chandigarh';
+    if (s === 'odisha') return 'Bhubaneswar';
+    if (s === 'assam') return 'Guwahati';
+    if (s === 'bihar') return 'Patna';
+    if (s === 'jharkhand') return 'Ranchi';
+    if (s === 'goa') return 'Panaji';
+    if (s === 'chhattisgarh') return 'Raipur';
+    if (s === 'uttarakhand') return 'Dehradun';
+    if (s === 'jammu and kashmir') return 'Srinagar';
+    if (s === 'manipur') return 'Imphal';
+  }
+
+  return null;
+}
+
 export function inferIndianState(
   pincode?: string | null,
   city?: string | null,
 ): string | null {
   if (pincode && /^[0-9]{6}$/.test(pincode.trim())) {
     const p2 = pincode.trim().slice(0, 2);
+    const p3 = pincode.trim().slice(0, 3);
     if (p2 === '11') return 'Delhi';
     if (p2 === '12' || p2 === '13') return 'Haryana';
     if (p2 === '14' || p2 === '15') return 'Punjab';
@@ -93,10 +208,20 @@ export function inferIndianState(
     if (['51', '52', '53'].includes(p2)) return 'Andhra Pradesh';
     if (['56', '57', '58', '59'].includes(p2)) return 'Karnataka';
     if (['60', '61', '62', '63', '64'].includes(p2)) return 'Tamil Nadu';
+    if (p3 === '605') return 'Puducherry';
     if (['67', '68', '69'].includes(p2)) return 'Kerala';
     if (['70', '71', '72', '73', '74'].includes(p2)) return 'West Bengal';
     if (['75', '76', '77'].includes(p2)) return 'Odisha';
     if (p2 === '78') return 'Assam';
+    if (p3 === '795') return 'Manipur';
+    if (p3 === '796') return 'Mizoram';
+    if (p3 === '797') return 'Nagaland';
+    if (p3 === '798') return 'Nagaland';
+    if (p3 === '799') return 'Tripura';
+    if (p3 === '793') return 'Meghalaya';
+    if (p3 === '794') return 'Meghalaya';
+    if (p3 === '790' || p3 === '791' || p3 === '792') return 'Arunachal Pradesh';
+    if (p3 === '737') return 'Sikkim';
     if (['80', '84', '85'].includes(p2)) return 'Bihar';
     if (['81', '82', '83'].includes(p2)) return 'Jharkhand';
   }
@@ -114,10 +239,12 @@ export function inferIndianState(
 }
 
 function toDraft(row: RequirementRow): IntakeDraft {
+  const pin = row.delivery_pincode || extractPinFromText(row.title) || extractPinFromText(row.description);
+  const city = row.delivery_city || inferIndianCity(pin, row.delivery_state);
   const state =
     row.delivery_state ??
     (row.attributes?.delivery_state as string | undefined) ??
-    inferIndianState(row.delivery_pincode, row.delivery_city);
+    inferIndianState(pin, city);
 
   return {
     requirementId: row.id,
@@ -137,7 +264,7 @@ function toDraft(row: RequirementRow): IntakeDraft {
     requiredByDays: row.required_by_days,
     requiredByDate: row.required_by_date,
     fulfilmentMode: row.fulfilment_mode as IntakeDraft['fulfilmentMode'],
-    deliveryCity: row.delivery_city,
+    deliveryCity: city,
     deliveryState: state,
     deliveryPincode: row.delivery_pincode,
     deliveryLine1: row.delivery_line1,
@@ -244,16 +371,18 @@ function columnsFor(
   if (patch.fulfilmentMode !== undefined) {
     columns.fulfilment_mode = patch.fulfilmentMode;
   }
+  const pin = patch.deliveryPincode || extractPinFromText(patch.title) || extractPinFromText(patch.originalText);
+  const derivedCity = patch.deliveryCity || (pin ? inferIndianCity(pin) : undefined);
   const derivedState =
     patch.deliveryState ??
-    inferIndianState(patch.deliveryPincode, patch.deliveryCity);
+    inferIndianState(pin ?? patch.deliveryPincode, derivedCity ?? patch.deliveryCity);
 
-  if (patch.deliveryCity !== undefined) columns.delivery_city = patch.deliveryCity;
+  if (derivedCity !== undefined) columns.delivery_city = derivedCity;
   if (derivedState !== undefined && derivedState !== null) {
     columns.delivery_state = derivedState;
   }
-  if (patch.deliveryPincode !== undefined) {
-    columns.delivery_pincode = patch.deliveryPincode;
+  if (pin !== undefined && pin !== null) {
+    columns.delivery_pincode = pin;
   }
   if (patch.deliveryLine1 !== undefined) columns.delivery_line1 = patch.deliveryLine1;
   if (patch.siteNotes !== undefined) columns.site_notes = patch.siteNotes;

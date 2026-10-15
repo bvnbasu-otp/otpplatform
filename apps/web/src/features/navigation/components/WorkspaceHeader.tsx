@@ -5,6 +5,7 @@ import { NotificationBell } from '@/features/notifications';
 import { SupportHelpButtonModal } from '@/features/support';
 import { OtpLogo } from '@/components/ui/OtpLogo';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useLanguage } from '@/lib/i18n';
 import { getHomeRoute, getRoleLabel } from '../navigation-config';
 
 import { WorkspaceHeaderMenu } from './WorkspaceHeaderMenu';
@@ -15,11 +16,13 @@ export interface WorkspaceHeaderProps {
 
 export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderProps) {
   const { context } = useRoleContext();
+  const { t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
 
   const homeRoute = getHomeRoute(context);
   const roleLabel = getRoleLabel(context);
+  const displayRole = t(roleLabel);
 
   return (
     <>
@@ -60,7 +63,7 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
                     : 'bg-primary/10 text-primary border border-primary/20'
                 }`}
               >
-                {roleLabel}
+                {displayRole}
               </span>
             </Link>
           </div>
@@ -83,11 +86,11 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
             {/* Secondary Navigation Menu Trigger */}
             <button
               type="button"
-              aria-label="Toggle Workspace Menu"
+              aria-label={t('Menu', 'Toggle Workspace Menu')}
               aria-expanded={isMenuOpen}
               aria-controls="workspace-header-menu"
               data-testid="header-menu-trigger"
-              title="Menu"
+              title={t('Menu', 'Menu')}
               onClick={() => {
                 setIsMenuOpen((prev) => !prev);
                 if (!isMenuOpen) {

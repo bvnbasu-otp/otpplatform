@@ -20,6 +20,8 @@ import { SupplierCard } from '../components/SupplierCard';
 import { DirectInviteModal } from '../components/DirectInviteModal';
 import { classifyDiscoveryEmpty, discoveryFailureCopy, displayedSupplierCount } from '../lib/discovery-empty-state';
 import { sourceSummary } from '../lib/discovery-source';
+import { useLanguage } from '@/lib/i18n';
+
 
 interface DiscoverSuppliersPageProps {
   requirementId: string;
@@ -27,6 +29,7 @@ interface DiscoverSuppliersPageProps {
 
 export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPageProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [rfqId, setRfqId] = useState<string | null>(null);
   const [rfqStatus, setRfqStatus] = useState<string | null>(null);
   const [context, setContext] = useState<RequirementRfqContext | null>(null);
@@ -40,6 +43,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+
 
   const loadNetworksAndSuppliers = useCallback(async (id: string): Promise<string | null> => {
     let discoveryError: string | null = null;
@@ -294,7 +298,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
             onClick={() => void load()}
             className="min-h-[48px] px-3 py-1.5 rounded-lg bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-200 font-bold hover:bg-red-200 transition mobile-touch-target"
           >
-            Retry Discovery
+            {t('Retry Discovery', 'Retry Discovery')}
           </button>
         </div>
       )}
@@ -311,7 +315,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
               <span aria-hidden="true">👥</span>
-              <span>Matched Supplier Pool ({displayedSupplierCount(suppliers.length)})</span>
+              <span>{t('Matched Supplier Pool', 'Matched Supplier Pool')} ({displayedSupplierCount(suppliers.length)})</span>
             </h2>
             <p className="text-[11px] text-muted-foreground" data-testid="discovery-source-summary">
               {sources.label}
@@ -326,7 +330,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
               data-testid="invite-supplier-button"
             >
               <span>+</span>
-              <span>Invite Supplier</span>
+              <span>{t('Invite Supplier', 'Invite Supplier')}</span>
             </button>
           </div>
         </div>
@@ -344,7 +348,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
             }`}
           >
-            All Matched ({suppliers.length})
+            {t('All', 'All Matched')} ({suppliers.length})
           </button>
           <button
             type="button"
@@ -357,7 +361,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
             }`}
           >
-            ★ High Match (85%+)
+            ★ {t('High Match', 'High Match (85%+)')}
           </button>
           <button
             type="button"
@@ -370,7 +374,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
             }`}
           >
-            ✓ GST verified
+            ✓ {t('GST Verified', 'GST verified')}
           </button>
           <button
             type="button"
@@ -383,7 +387,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground border'
             }`}
             >
-            📍 Local
+            📍 {t('Local', 'Local')}
           </button>
         </div>
 
@@ -413,7 +417,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
               onClick={handleSelectAll}
               className="min-h-[48px] px-2.5 py-1 text-xs font-semibold text-primary hover:underline mobile-touch-target"
             >
-              Select All
+              {t('Select All', 'Select All')}
             </button>
             <span>•</span>
             <button
@@ -421,7 +425,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
               onClick={handleClearAll}
               className="min-h-[48px] px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground mobile-touch-target"
             >
-              Clear
+              {t('Clear', 'Clear')}
             </button>
           </div>
         </div>

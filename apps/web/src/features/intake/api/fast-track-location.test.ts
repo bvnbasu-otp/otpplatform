@@ -63,6 +63,9 @@ vi.mock('@/features/requirement/api/rfq-lifecycle', async (importOriginal) => {
 import { supabase } from '@/lib/supabase';
 import { FAST_TRACK_LOCATION_REQUIRED_ERROR, fastTrackExpressIntake } from './fast-track-intake';
 import { pickPrimaryAddress, resolveLocationPrefill } from './primary-address';
+import { extractPinFromText, inferIndianCity, inferIndianState } from './draft';
+
+
 
 const mock = supabase as unknown as { rpc: ReturnType<typeof vi.fn>; from: ReturnType<typeof vi.fn> };
 
@@ -149,3 +152,25 @@ describe('Issue 06: primary-address prefill helpers', () => {
     expect(resolveLocationPrefill({ city: '', pincode: '' }, null)).toEqual({});
   });
 });
+
+describe('Indian PIN, City, and State auto-derivation', () => {
+  it('extracts 6-digit Indian PIN from freeform title and description', () => {
+    expect(extractPinFromText('Need 50 ceiling fans in Bangalore 560048')).toBe('560048');
+    expect(extractPinFromText('No PIN here')).toBeNull();
+  });
+
+  it('infers Indian city and state from valid 6-digit PIN code', () => {
+    expect(inferIndianCity('560048')).toBe('Bengaluru');
+    expect(inferIndianState('560048')).toBe('Karnataka');
+
+    expect(inferIndianCity('600040')).toBe('Chennai');
+    expect(inferIndianState('600040')).toBe('Tamil Nadu');
+
+    expect(inferIndianCity('400001')).toBe('Mumbai');
+    expect(inferIndianState('400001')).toBe('Maharashtra');
+
+    expect(inferIndianCity('110001')).toBe('New Delhi');
+    expect(inferIndianState('110001')).toBe('Delhi');
+  });
+});
+

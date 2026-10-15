@@ -15,6 +15,7 @@ import {
   type DiscoveryNetwork,
   type DiscoverySourceOutcome,
 } from '../lib/discovery-source';
+import { extractPinFromText, inferIndianCity, inferIndianState } from '@/features/intake/api/draft';
 
 export type RequirementRfqContext = CompactRequirementContext;
 
@@ -61,6 +62,9 @@ export async function fetchRequirementRfqContext(requirementId: string): Promise
   const sourcing = (comm.__sourcing ?? {}) as Record<string, any>;
   const geographicReach = sourcing.reach ?? 'LOCAL';
 
+  const pin = req.delivery_pincode || extractPinFromText(req.title) || extractPinFromText(req.description) || null;
+  const city = req.delivery_city || (pin ? inferIndianCity(pin) : null);
+
   return {
     ok: true,
     context: {
@@ -69,8 +73,8 @@ export async function fetchRequirementRfqContext(requirementId: string): Promise
       requirementStatus: req.status,
       requirementMode: req.requirement_type ?? null,
       categoryName: req.category_id ?? null,
-      deliveryCity: req.delivery_city ?? null,
-      deliveryPincode: req.delivery_pincode ?? null,
+      deliveryCity: city,
+      deliveryPincode: pin,
       requiredByText,
       budgetFormatted,
       quantityText,
@@ -278,21 +282,60 @@ export async function discoverAndInvite(
   return payload;
 }
 
+function deriveCategoryFromText(text?: string | null): string | null {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  if (/fan|electrical|light|wiring|cable|motor|switch|panel|power/i.test(t)) {
+    return 'Electrical & Power';
+  }
+  if (/steel|cement|pipe|construction|concrete|building|brick/i.test(t)) {
+    return 'Construction & Infrastructure';
+  }
+  if (/safety|helmet|gloves|harness|jacket|fire/i.test(t)) {
+    return 'Safety & Security';
+  }
+  if (/packaging|box|corrugated|tape|pallet/i.test(t)) {
+    return 'Packaging & Printing';
+  }
+  if (/laptop|computer|server|software|digital|cctv/i.test(t)) {
+    return 'IT, Electronics & Digital';
+  }
+  if (/pump|valve|bearing|tool|hardware/i.test(t)) {
+    return 'Industrial Supplies & Hardware';
+  }
+  return null;
+}
+
 function coverageState(row: {
   delivery_city?: string | null;
   delivery_pincode?: string | null;
   delivery_state?: string | null;
   attributes?: unknown;
   structured_specs?: unknown;
+  title?: string | null;
+  description?: string | null;
 }): { city: string; state: string; pincode: string } {
   const specs = (row.structured_specs ?? {}) as { deliveryLocation?: Record<string, string> };
   const location = specs.deliveryLocation ?? {};
-  const attributes = (row.attributes ?? {}) as { delivery_state?: string };
-  return {
-    pincode: (row.delivery_pincode || location.pincode || location.postalCode || '').trim(),
-    city: (row.delivery_city || location.city || '').trim(),
-    state: (row.delivery_state || location.state || attributes.delivery_state || '').trim(),
-  };
+  const attributes = (row.attributes ?? {}) as { delivery_state?: string; delivery_city?: string };
+
+  let pincode = (row.delivery_pincode || location.pincode || location.postalCode || '').trim();
+  if (!pincode || !/^\d{6}$/.test(pincode)) {
+    const fromText = extractPinFromText(row.title) || extractPinFromText(row.description);
+    if (fromText) pincode = fromText;
+  }
+
+  let city = (row.delivery_city || location.city || attributes.delivery_city || '').trim();
+  let state = (row.delivery_state || location.state || attributes.delivery_state || '').trim();
+
+  if (!state && (pincode || city)) {
+    state = inferIndianState(pincode, city) || '';
+  }
+  if (!city && pincode) {
+    city = inferIndianCity(pincode, state) || '';
+  }
+
+  return { pincode, city, state };
 }
 
 /**
@@ -314,7 +357,7 @@ export async function prepareGooglePlacesCoverage(rfqId: string): Promise<
 
   const { data: req, error: reqErr } = await supabase
     .from('requirements')
-    .select('delivery_city, delivery_pincode, delivery_state, category_id, subcategory_id, attributes, structured_specs')
+    .select('id, title, description, delivery_city, delivery_pincode, delivery_state, category_id, subcategory_id, attributes, structured_specs')
     .eq('id', rfq.requirement_id)
     .maybeSingle();
   if (reqErr || !req) {
@@ -338,9 +381,34 @@ export async function prepareGooglePlacesCoverage(rfqId: string): Promise<
       .maybeSingle();
     category = (subcategoryRow?.name as string | undefined)?.trim() ?? '';
   }
+  if (!category && req.category_id) {
+    const { data: byCode } = await supabase
+      .from('requirement_categories')
+      .select('name')
+      .eq('code', req.category_id)
+      .maybeSingle();
+    category = (byCode?.name as string | undefined)?.trim() || req.category_id.replace(/_/g, ' ');
+  }
+  if (!category && (req.title || req.description)) {
+    category = deriveCategoryFromText(req.title || req.description) || '';
+  }
 
   const geo = coverageState(req);
-  const invalid = discoveryRequirementIssues({ ...geo, category });
+
+  // If the requirements table row lacked delivery_state or delivery_city, persist it
+  if (req.id && geo.state && (!req.delivery_state || !req.delivery_city || !req.delivery_pincode)) {
+    void supabase
+      .from('requirements')
+      .update({
+        delivery_state: req.delivery_state || geo.state,
+        delivery_city: req.delivery_city || geo.city,
+        delivery_pincode: req.delivery_pincode || geo.pincode,
+      })
+      .eq('id', req.id);
+  }
+
+  const effectiveCategory = category || 'General Commercial Supplies';
+  const invalid = discoveryRequirementIssues({ ...geo, category: effectiveCategory });
   if (invalid) {
     return { ok: false, outcome: 'INVALID_REQUIREMENT', error: invalid };
   }
@@ -350,7 +418,7 @@ export async function prepareGooglePlacesCoverage(rfqId: string): Promise<
       state: geo.state,
       city: geo.city,
       pincode: geo.pincode,
-      category,
+      category: effectiveCategory,
       forceRefresh: false,
       executeDiscovery: true,
       asyncMode: false,

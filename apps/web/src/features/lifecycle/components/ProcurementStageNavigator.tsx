@@ -15,6 +15,8 @@ import {
   type CoreProcurementState,
   type ProcurementStepNumber,
 } from '../types/procurement-state';
+import { useLanguage } from '@/lib/i18n';
+
 
 export interface ProcurementStageNavigatorProps {
   currentStage?: CoreProcurementState;
@@ -55,6 +57,7 @@ export function ProcurementStageNavigator({
 }: ProcurementStageNavigatorProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const [showStalledDrawer, setShowStalledDrawer] = useState(isStalled);
   const [showSubTabs, setShowSubTabs] = useState(false);
   const [isBottomBarExpanded, setIsBottomBarExpanded] = useState(false);
@@ -104,8 +107,8 @@ export function ProcurementStageNavigator({
               className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted px-2.5 py-1.5 text-xs font-bold text-foreground hover:text-primary transition shrink-0 min-h-[44px] mobile-touch-target shadow-2xs"
             >
               <span className="text-sm">←</span>
-              <span>Back</span>
-              <span className="hidden md:inline font-normal text-muted-foreground">({backToLabel})</span>
+              <span>{t('Back', 'Back')}</span>
+              <span className="hidden md:inline font-normal text-muted-foreground">({t(backToLabel, backToLabel)})</span>
             </Link>
             <span className="text-muted-foreground/40 shrink-0">/</span>
             <span className="font-bold text-foreground truncate max-w-[100px] xs:max-w-[150px] sm:max-w-xs text-xs">
@@ -117,7 +120,7 @@ export function ProcurementStageNavigator({
               className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold shadow-2xs border shrink-0 ${activeStageDesc.badgeClass}`}
             >
               <span>{activeStageDesc.icon} </span>
-              <span>Stage {activeStageDesc.stepNumber || 0}/6: {activeStageDesc.shortLabel}</span>
+              <span>{t('Stage', 'Stage')} {activeStageDesc.stepNumber || 0}/6: {t(activeStageDesc.shortLabel, activeStageDesc.shortLabel)}</span>
             </span>
           </div>
 
@@ -187,7 +190,7 @@ export function ProcurementStageNavigator({
                       isCurrent ? 'inline' : 'hidden sm:inline'
                     }`}
                   >
-                    {stageDesc.shortLabel}
+                    {t(stageDesc.shortLabel, stageDesc.shortLabel)}
                   </span>
                 </div>
               );

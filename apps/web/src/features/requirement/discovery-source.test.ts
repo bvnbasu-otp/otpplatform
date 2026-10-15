@@ -71,4 +71,26 @@ describe('discovery source separation', () => {
   it('validates discovery requirements with full nationwide state support', () => {
     expect(discoveryRequirementIssues({ pincode: '795001', city: 'Imphal', state: 'Manipur', category: 'Packaging' })).toBeNull();
   });
+
+  it('infers state and city from PIN 560048 so Bangalore RFQ never fails with missing city/state', () => {
+    // Missing state: auto-inferred as Karnataka
+    expect(
+      discoveryRequirementIssues({
+        pincode: '560048',
+        city: 'Bengaluru',
+        state: '',
+        category: 'Electrical & Power',
+      }),
+    ).toBeNull();
+
+    // Missing city and state: auto-inferred as Bengaluru, Karnataka
+    expect(
+      discoveryRequirementIssues({
+        pincode: '560048',
+        city: '',
+        state: '',
+        category: 'Electrical & Power',
+      }),
+    ).toBeNull();
+  });
 });

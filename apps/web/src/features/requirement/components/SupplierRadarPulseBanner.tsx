@@ -1,4 +1,6 @@
 import type { SupplierNetworkSummary } from '@otp/domain';
+import { useLanguage } from '@/lib/i18n';
+
 
 export type RadarBannerState =
   | 'DISCOVERING'
@@ -34,6 +36,7 @@ export function SupplierRadarPulseBanner({
   errorMessage,
   onRetry,
 }: SupplierRadarPulseBannerProps) {
+  const { t } = useLanguage();
   const effectiveState: RadarBannerState =
     state ??
     (errorMessage
@@ -135,12 +138,12 @@ export function SupplierRadarPulseBanner({
           </span>
           <h2 className="text-xs sm:text-sm font-bold text-white tracking-wide">
             {effectiveState === 'EMPTY'
-              ? 'No suppliers matched'
+              ? t('No suppliers matched', 'No suppliers matched')
               : effectiveState === 'ERROR'
-                ? 'Discovery unavailable'
+                ? t('Discovery unavailable', 'Discovery unavailable')
                 : effectiveState === 'FILTERED_EMPTY'
                   ? 'No suppliers in this filter'
-                  : 'Suppliers found'}
+                  : t('Suppliers found', 'Suppliers found')}
           </h2>
         </div>
 
@@ -155,7 +158,7 @@ export function SupplierRadarPulseBanner({
             }`}
             data-testid="radar-status-badge"
           >
-            {statusBadge}
+            {t(statusBadge, statusBadge)}
           </span>
           {effectiveState === 'ERROR' && onRetry && (
             <button
@@ -163,7 +166,7 @@ export function SupplierRadarPulseBanner({
               onClick={onRetry}
               className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-2 py-0.5 rounded transition"
             >
-              Retry
+              {t('Retry', 'Retry')}
             </button>
           )}
         </div>
@@ -173,15 +176,15 @@ export function SupplierRadarPulseBanner({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 relative z-10" data-testid="supplier-discovery-counts">
         <div className="rounded-lg border border-slate-800 bg-slate-800/60 p-2 flex items-center justify-between text-xs">
-          <span className="text-[11px] font-bold text-slate-100">OTP suppliers</span>
+          <span className="text-[11px] font-bold text-slate-100">{t('OTP suppliers', 'OTP suppliers')}</span>
           <span className="text-[10px] font-bold text-emerald-400">{otpCount}</span>
         </div>
         <div className="rounded-lg border border-slate-800 bg-slate-800/60 p-2 flex items-center justify-between text-xs">
-          <span className="text-[11px] font-bold text-slate-100">Network suppliers</span>
+          <span className="text-[11px] font-bold text-slate-100">{t('Network suppliers', 'Network suppliers')}</span>
           <span className="text-[10px] font-bold text-blue-400">{networkCount}</span>
         </div>
         <div className="rounded-lg border border-slate-800 bg-slate-800/60 p-2 flex items-center justify-between text-xs">
-          <span className="text-[11px] font-bold text-slate-100">Local businesses</span>
+          <span className="text-[11px] font-bold text-slate-100">{t('Local businesses', 'Local businesses')}</span>
           <span className="text-[10px] font-bold text-purple-400">{localCount}</span>
         </div>
       </div>

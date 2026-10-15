@@ -19,4 +19,15 @@ describe('WorkspaceHeader Language Switcher Integration', () => {
     expect(menuCode).toContain('<LanguageSwitcher variant="full" placement="menu" />');
     expect(menuCode).toContain('SECTION 4: LANGUAGE SELECTION');
   });
+
+  it('wires useLanguage hook into WorkspaceHeader and WorkspaceHeaderMenu', () => {
+    const headerCode = readFile('components/WorkspaceHeader.tsx');
+    expect(headerCode).toContain("import { useLanguage } from '@/lib/i18n'");
+    expect(headerCode).toContain('const { t } = useLanguage()');
+
+    const menuCode = readFile('components/WorkspaceHeaderMenu.tsx');
+    expect(menuCode).toContain("import { useLanguage } from '@/lib/i18n'");
+    expect(menuCode).toContain('const { t } = useLanguage()');
+  });
 });
+

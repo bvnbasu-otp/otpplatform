@@ -21,7 +21,7 @@ import { fetchPrimaryDeliveryLocation } from '../api/primary-address';
 import { saveBuyerAddress } from '@/features/profile/api/buyer-addresses';
 import { useRoleContext } from '@/features/roles';
 
-import type { DraftPatch } from '../api/draft';
+import { inferIndianState, inferIndianCity, type DraftPatch } from '../api/draft';
 import type { IntakeDraft } from '../types/intake-draft';
 import {
   TemplatesAndExamplesModal,
@@ -552,8 +552,9 @@ export function UnifiedThreeTierIntake({
       requiredByDays: timing === 'WITHIN_DAYS' ? days : null,
       requiredByDate: timing === 'SPECIFIC_DATE' ? date : null,
       fulfilmentMode: (fulfilment as FulfilmentMode) || null,
-      deliveryCity: city.trim() || null,
+      deliveryCity: city.trim() || inferIndianCity(pincode.trim()) || null,
       deliveryPincode: pincode.trim() || null,
+      deliveryState: inferIndianState(pincode.trim(), city.trim()) || null,
       deliveryLine1: line1.trim() || null,
       siteNotes: siteNotes.trim() || null,
     };

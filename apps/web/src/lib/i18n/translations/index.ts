@@ -7,8 +7,10 @@ import { kn } from './kn';
 import { ml } from './ml';
 import { mr } from './mr';
 import { bn } from './bn';
+import { COMMON_PHRASES } from './common-phrases';
 
 export { type TranslationSchema } from './en';
+export { COMMON_PHRASES } from './common-phrases';
 
 export const TRANSLATIONS: Record<SupportedLanguage, TranslationSchema> = {
   'en-IN': en,
@@ -22,29 +24,59 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationSchema> = {
 };
 
 /**
- * Nested key lookup helper: t('nav.home') -> 'Home'
+ * Universal key & phrase lookup helper.
+ * Supports both nested paths (e.g. 'nav.home') and direct UI phrases (e.g. 'Home', 'Back', 'Retry Discovery').
  */
 export function getTranslation(lang: SupportedLanguage, path: string, fallback?: string): string {
+  // 1. Direct phrase lookup in common phrases dictionary
+  const trimmed = path.trim();
+  const directMatch = COMMON_PHRASES[trimmed]?.[lang];
+  if (directMatch) {
+    return directMatch;
+  }
+  if (fallback) {
+    const fallbackMatch = COMMON_PHRASES[fallback.trim()]?.[lang];
+    if (fallbackMatch) {
+      return fallbackMatch;
+    }
+  }
+
+
+  // 2. Nested key path lookup (e.g. 'nav.home')
   const dictionary = TRANSLATIONS[lang] || TRANSLATIONS['en-IN'];
   const keys = path.split('.');
-  
+
   let current: unknown = dictionary;
+  let resolved = true;
   for (const key of keys) {
     if (current && typeof current === 'object' && key in current) {
       current = (current as Record<string, unknown>)[key];
     } else {
-      // Fallback to English
-      let fallbackCurrent: unknown = TRANSLATIONS['en-IN'];
-      for (const fallbackKey of keys) {
-        if (fallbackCurrent && typeof fallbackCurrent === 'object' && fallbackKey in fallbackCurrent) {
-          fallbackCurrent = (fallbackCurrent as Record<string, unknown>)[fallbackKey];
-        } else {
-          return fallback ?? path;
-        }
-      }
-      return typeof fallbackCurrent === 'string' ? fallbackCurrent : (fallback ?? path);
+      resolved = false;
+      break;
     }
   }
 
-  return typeof current === 'string' ? current : (fallback ?? path);
+  if (resolved && typeof current === 'string') {
+    return current;
+  }
+
+  // 3. Fallback to English dictionary
+  let fallbackCurrent: unknown = TRANSLATIONS['en-IN'];
+  let fallbackResolved = true;
+  for (const fallbackKey of keys) {
+    if (fallbackCurrent && typeof fallbackCurrent === 'object' && fallbackKey in fallbackCurrent) {
+      fallbackCurrent = (fallbackCurrent as Record<string, unknown>)[fallbackKey];
+    } else {
+      fallbackResolved = false;
+      break;
+    }
+  }
+
+  if (fallbackResolved && typeof fallbackCurrent === 'string') {
+    return fallbackCurrent;
+  }
+
+  return fallback ?? path;
 }
+

@@ -10,6 +10,7 @@ import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
 import { AdminQuickActionsSheet, shouldShowGlobalBottomNav } from '@/features/navigation';
+import { useLanguage } from '@/lib/i18n';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -28,6 +29,7 @@ export function MobileBottomNav() {
   const { user, signOut } = useAuth();
   const { context, switchTo, switchOrg } = useRoleContext();
   const { pathname } = useLocation();
+  const { t } = useLanguage();
 
   const [isAccountSheetOpen, setIsAccountSheetOpen] = useState(false);
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
@@ -107,7 +109,7 @@ export function MobileBottomNav() {
               }
             >
               <span className="text-lg leading-none">🏠</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Home</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Home', 'Home')}</span>
             </NavLink>
 
             {/* TAB 2: ORDERS */}
@@ -122,7 +124,7 @@ export function MobileBottomNav() {
               }
             >
               <span className="text-lg leading-none">📋</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Orders</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Orders', 'Orders')}</span>
             </NavLink>
 
             {/* TAB 3: CENTER ACTION '+' (Context-Aware for Buyer vs Supplier vs Admin) */}
@@ -179,7 +181,7 @@ export function MobileBottomNav() {
             >
               <span className="text-lg leading-none">🛡️</span>
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">
-                {isSupplier ? 'Quotes' : 'Audit'}
+                {isSupplier ? t('Quotes', 'Quotes') : t('Audit', 'Audit')}
               </span>
             </NavLink>
 
@@ -203,7 +205,7 @@ export function MobileBottomNav() {
                 )}
               </span>
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold truncate max-w-[48px]">
-                Profile
+                {t('Profile', 'Profile')}
               </span>
             </NavLink>
           </div>
@@ -223,7 +225,7 @@ export function MobileBottomNav() {
               }
             >
               <span className="text-lg leading-none">🏠</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Home</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Home', 'Home')}</span>
             </NavLink>
 
             {/* Tab 2: Pricing (/pricing) */}
@@ -238,7 +240,7 @@ export function MobileBottomNav() {
               }
             >
               <span className="text-lg leading-none">💳</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">Pricing</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Pricing', 'Pricing')}</span>
             </NavLink>
 
             {/* Tab 3: + Elevated Center Button (Role & State Aware) */}
@@ -294,7 +296,7 @@ export function MobileBottomNav() {
               }
             >
               <span className="text-lg leading-none">🏢</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">About Us</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('About Us', 'About Us')}</span>
             </NavLink>
 
             {/* Tab 5: FAQs (/faqs) */}
@@ -309,7 +311,7 @@ export function MobileBottomNav() {
               }
             >
               <span className="text-lg leading-none">📖</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">FAQs</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('FAQs', 'FAQs')}</span>
             </NavLink>
           </div>
         )}
@@ -319,7 +321,7 @@ export function MobileBottomNav() {
       <BottomSheet
         isOpen={isAccountSheetOpen}
         onClose={() => setIsAccountSheetOpen(false)}
-        title="My Profile & Workspace"
+        title={t('Profile & Settings', 'My Profile & Workspace')}
       >
         <div className="space-y-4 text-xs">
           {/* User Identity Card */}
@@ -337,7 +339,7 @@ export function MobileBottomNav() {
                   {context.fullName || user?.email}
                 </span>
                 <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-extrabold">
-                  {context.isPlatformAdmin ? 'Admin' : context.side === 'SUPPLIER' ? 'Supplier' : 'Buyer'}
+                  {context.isPlatformAdmin ? t('Admin', 'Admin') : context.side === 'SUPPLIER' ? t('Supplier', 'Supplier') : t('Buyer', 'Buyer')}
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
