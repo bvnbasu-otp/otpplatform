@@ -8,6 +8,8 @@ import {
   CANONICAL_INDIAN_PROCUREMENT_STANDARDS,
 } from '@otp/domain';
 import { Button, Card, Badge } from '@/components/ui';
+import { useLanguage } from '@/lib/i18n';
+import { inferIndianState, inferIndianCity } from '@/features/intake/api/draft';
 
 export interface AdminSupplierNetworkConsoleProps {
   onPrepareLocation?: (params: {
@@ -20,30 +22,6 @@ export interface AdminSupplierNetworkConsoleProps {
   }) => Promise<any>;
   onRefreshTelemetry?: () => void;
 }
-
-const INDIAN_STATES = [
-  'Karnataka',
-  'Maharashtra',
-  'Delhi NCR',
-  'Tamil Nadu',
-  'Telangana',
-  'Gujarat',
-  'Haryana',
-  'Uttar Pradesh',
-  'West Bengal',
-];
-
-const POPULAR_CITIES: Record<string, string[]> = {
-  Karnataka: ['Bengaluru', 'Mysuru', 'Hubballi', 'Mangaluru', 'Belagavi'],
-  Maharashtra: ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Thane'],
-  'Delhi NCR': ['New Delhi', 'Gurugram', 'Noida', 'Faridabad', 'Ghaziabad'],
-  'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli'],
-  Telangana: ['Hyderabad', 'Secunderabad', 'Warangal'],
-  Gujarat: ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot'],
-  Haryana: ['Gurugram', 'Faridabad', 'Panipat', 'Ambala'],
-  'Uttar Pradesh': ['Noida', 'Greater Noida', 'Lucknow', 'Kanpur'],
-  'West Bengal': ['Kolkata', 'Howrah', 'Siliguri'],
-};
 
 const CANONICAL_CATEGORIES = [
   'Electrical & Power',
@@ -74,8 +52,7 @@ export function AdminSupplierNetworkConsole({
   onPrepareLocation,
   onRefreshTelemetry,
 }: AdminSupplierNetworkConsoleProps) {
-  const [state, setState] = useState('Karnataka');
-  const [city, setCity] = useState('Bengaluru');
+  const { t } = useLanguage();
   const [pincode, setPincode] = useState('560048');
   const [category, setCategory] = useState('Electrical & Power');
   const [customCategory, setCustomCategory] = useState('');
@@ -87,11 +64,8 @@ export function AdminSupplierNetworkConsole({
 
   const activeCategory = category === 'OTHER' ? customCategory.trim() : category;
 
-  const handleStateChange = (newState: string) => {
-    setState(newState);
-    const cities = POPULAR_CITIES[newState] || ['Primary City'];
-    setCity(cities[0] || 'City');
-  };
+  const detectedState = inferIndianState(pincode.trim()) || '';
+  const detectedCity = inferIndianCity(pincode.trim(), detectedState) || '';
 
   const handleCheckCoverage = async (executeDiscovery: boolean = false) => {
     if (!pincode.trim() || !activeCategory) {
@@ -102,11 +76,14 @@ export function AdminSupplierNetworkConsole({
     setIsLoading(true);
     setMessage(null);
 
+    const targetState = inferIndianState(pincode.trim()) || '';
+    const targetCity = inferIndianCity(pincode.trim(), targetState) || '';
+
     try {
       if (onPrepareLocation) {
         const res = await onPrepareLocation({
-          state,
-          city,
+          state: targetState,
+          city: targetCity,
           pincode: pincode.trim(),
           category: activeCategory,
           forceRefresh,
@@ -128,6 +105,8 @@ export function AdminSupplierNetworkConsole({
         }
       } else if (import.meta.env.MODE === 'test') {
         // Vitest-only fallback (production admin must wire onPrepareLocation).
+        const state = targetState || 'India';
+        const city = targetCity || 'India';
         const mockSuppliers = [
           {
             id: 'sup-demo-01',
@@ -233,64 +212,54 @@ export function AdminSupplierNetworkConsole({
       </div>
 
       {/* Input Configuration Grid */}
+      {/* Input Configuration Grid - PINCODE ONLY */}
       <Card className="p-4 sm:p-5 space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-          <span>📍</span> Location &amp; Category Scope Specification
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <span>📍</span> {t('Location & Category Scope Specification', 'Location & Category Scope Specification')}
+          </h3>
+          <span className="text-[11px] text-muted-foreground font-medium">
+            {t('Pincode-driven (zero state/city dropdown conflict)', 'Pincode-driven (zero state/city dropdown conflict)')}
+          </span>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* State */}
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">State</label>
-            <select
-              value={state}
-              onChange={(e) => handleStateChange(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:ring-2 focus:ring-primary"
-            >
-              {INDIAN_STATES.map((st) => (
-                <option key={st} value={st}>
-                  {st}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* City */}
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">City / Town</label>
-            <select
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:ring-2 focus:ring-primary"
-            >
-              {(POPULAR_CITIES[state] || [city]).map((ct) => (
-                <option key={ct} value={ct}>
-                  {ct}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Pincode */}
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">Pincode (6 Digits)</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Pincode & Auto-Detected Geography */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-foreground">
+                {t('Pincode (6 Digits)', 'Pincode (6 Digits)')}
+              </label>
+              {pincode.trim().length === 6 && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                  <span>✓</span> {detectedCity ? `${detectedCity}, ` : ''}{detectedState || 'India'}
+                </span>
+              )}
+            </div>
             <input
               type="text"
               maxLength={6}
               value={pincode}
               onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
-              placeholder="e.g. 560048"
-              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:ring-2 focus:ring-primary"
+              placeholder="e.g. 560048 or 638301"
+              data-testid="admin-coverage-pincode-input"
+              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground font-mono focus:ring-2 focus:ring-primary shadow-2xs"
             />
+            <p className="text-[11px] text-muted-foreground">
+              {t('Geography and administrative boundary are derived directly from the PIN without manual dropdown conflicts.', 'Geography and administrative boundary are derived directly from the PIN without manual dropdown conflicts.')}
+            </p>
           </div>
 
           {/* Category */}
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">Procurement Category</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">
+              {t('Procurement Category', 'Procurement Category')}
+            </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:ring-2 focus:ring-primary"
+              data-testid="admin-coverage-category-select"
+              className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground focus:ring-2 focus:ring-primary shadow-2xs"
             >
               {CANONICAL_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
@@ -299,6 +268,9 @@ export function AdminSupplierNetworkConsole({
               ))}
               <option value="OTHER">Not Listed (Custom Vertical)...</option>
             </select>
+            <p className="text-[11px] text-muted-foreground">
+              {t('Maps directly to Indian procurement taxonomy standards (BIS/CPWD/HSN).', 'Maps directly to Indian procurement taxonomy standards (BIS/CPWD/HSN).')}
+            </p>
           </div>
         </div>
 

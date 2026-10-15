@@ -22,6 +22,21 @@ export default {
       '2xl': '1536px',
     },
     extend: {
+      fontFamily: {
+        sans: [
+          'Inter',
+          'Noto Sans Devanagari',
+          'Noto Sans Tamil',
+          'Noto Sans Telugu',
+          'Noto Sans Kannada',
+          'Noto Sans Malayalam',
+          'Noto Sans Bengali',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'sans-serif',
+        ],
+      },
       colors: {
         border: 'hsl(var(--border) / <alpha-value>)',
         input: 'hsl(var(--input, var(--border)) / <alpha-value>)',

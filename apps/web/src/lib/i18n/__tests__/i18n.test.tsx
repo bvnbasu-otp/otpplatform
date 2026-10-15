@@ -24,14 +24,57 @@ describe('OTP Multilingual (i18n) Engine', () => {
     clear: () => store.clear(),
   };
 
+  let cookieStore = '';
+
   beforeEach(() => {
     store.clear();
+    cookieStore = '';
     (globalThis as any).localStorage = mockLocalStorage;
-    (globalThis as any).window = { localStorage: mockLocalStorage };
+    (globalThis as any).window = {
+      localStorage: mockLocalStorage,
+      location: { hostname: 'localhost' },
+    };
     (globalThis as any).document = {
       documentElement: { lang: 'en' },
+      body: {
+        nodeType: 1,
+        tagName: 'BODY',
+        firstChild: null,
+        appendChild: vi.fn(),
+        removeChild: vi.fn(),
+        getAttribute: vi.fn(),
+        setAttribute: vi.fn(),
+      },
+      head: {
+        appendChild: vi.fn(),
+      },
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
+      getElementById: vi.fn().mockReturnValue(null),
+      querySelector: vi.fn().mockReturnValue(null),
+      createElement: (tag: string) => ({
+        tagName: tag.toUpperCase(),
+        nodeType: 1,
+        setAttribute: vi.fn(),
+        getAttribute: vi.fn(),
+        appendChild: vi.fn(),
+        removeChild: vi.fn(),
+        firstChild: null,
+      }),
+      createTextNode: (text: string) => ({
+        nodeType: 3,
+        nodeValue: text,
+      }),
+      get cookie() {
+        return cookieStore;
+      },
+      set cookie(val: string) {
+        if (val.includes('expires=Thu, 01 Jan 1970')) {
+          cookieStore = '';
+        } else {
+          cookieStore = val;
+        }
+      },
     };
   });
 
@@ -173,6 +216,41 @@ describe('OTP Multilingual (i18n) Engine', () => {
         expect(html).toContain(`data-testid="lang-btn-${lang.code}"`);
         expect(html).toContain(lang.nativeName);
       }
+    });
+  });
+
+  describe('5. Full-Page Translation Engines', () => {
+    it('translates DOM text nodes directly matching procurement phrases', async () => {
+      const { applyDomPageTranslation } = await import('../dom-page-translator');
+
+      const container = document.createElement('div') as any;
+      const textNode = document.createTextNode('Requirement Specification') as any;
+      container.firstChild = textNode;
+      (document.body as any).firstChild = container;
+
+      // Translate to Tamil
+      applyDomPageTranslation('ta-IN');
+      expect(textNode.nodeValue?.trim()).toBe('தேவை விவரக்குறிப்பு');
+
+      // Translate to Hindi
+      applyDomPageTranslation('hi-IN');
+      expect(textNode.nodeValue?.trim()).toBe('आवश्यकता विवरण');
+
+      // Restore to English
+      applyDomPageTranslation('en-IN');
+      expect(textNode.nodeValue?.trim()).toBe('Requirement Specification');
+    });
+
+    it('sets googtrans cookie on regional language selection and clears on English', async () => {
+      const { triggerPageTranslation } = await import('../google-translate-service');
+
+      // Select Tamil
+      triggerPageTranslation('ta-IN');
+      expect(document.cookie).toContain('googtrans=/en/ta');
+
+      // Select English
+      triggerPageTranslation('en-IN');
+      expect(document.cookie).not.toContain('googtrans=/en/ta');
     });
   });
 });

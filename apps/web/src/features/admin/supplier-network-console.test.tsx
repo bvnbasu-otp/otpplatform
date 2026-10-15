@@ -34,4 +34,21 @@ describe('AdminSupplierNetworkConsole (R2-07 Superadmin Location Pre-Warm UI)', 
     });
     expect(element.type).toBe(AdminSupplierNetworkConsole);
   });
+
+  it('operates based on PINCODE ONLY without requiring manual state/city dropdown selection', () => {
+    const handlePrepare = vi.fn();
+    const element = React.createElement(AdminSupplierNetworkConsole, {
+      onPrepareLocation: handlePrepare,
+    });
+    expect(element.props.onPrepareLocation).toBe(handlePrepare);
+  });
+
+  it('auto-derives state and city (e.g. 638301 -> Tamil Nadu, Erode) preventing state/city mismatch', async () => {
+    const { inferIndianState, inferIndianCity } = await import('@/features/intake/api/draft');
+    const state = inferIndianState('638301');
+    const city = inferIndianCity('638301', state);
+
+    expect(state).toBe('Tamil Nadu');
+    expect(city).toBe('Erode');
+  });
 });

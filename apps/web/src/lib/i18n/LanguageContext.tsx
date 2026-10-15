@@ -9,6 +9,8 @@ import {
   type SupportedLanguage,
 } from './languages';
 import { getTranslation, type TranslationSchema } from './translations';
+import { applyDomPageTranslation } from './dom-page-translator';
+import { triggerPageTranslation } from './google-translate-service';
 
 export interface LanguageContextValue {
   language: SupportedLanguage;
@@ -50,10 +52,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Update HTML lang attribute on mount or change
+  // Update HTML lang attribute and trigger full-page translations on mount or language change
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.documentElement.lang = language.split('-')[0] || 'en';
+      applyDomPageTranslation(language);
+      triggerPageTranslation(language);
     }
   }, [language]);
 

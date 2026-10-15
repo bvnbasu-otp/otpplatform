@@ -91,6 +91,10 @@ export function inferIndianCity(
     if (p3 === '575') return 'Mangaluru';
     if (p3 === '580') return 'Hubballi';
     if (p3 === '590') return 'Belagavi';
+    if (p3 === '583') return 'Ballari';
+    if (p3 === '577') return 'Davanagere';
+    if (p3 === '572') return 'Tumakuru';
+    if (p3 === '573') return 'Hassan';
 
     // Tamil Nadu
     if (p3 === '600') return 'Chennai';
@@ -98,6 +102,15 @@ export function inferIndianCity(
     if (p3 === '625') return 'Madurai';
     if (p3 === '620') return 'Tiruchirappalli';
     if (p3 === '636') return 'Salem';
+    if (p3 === '638') return 'Erode';
+    if (p3 === '632') return 'Vellore';
+    if (p3 === '627') return 'Tirunelveli';
+    if (p3 === '635') return 'Hosur';
+    if (p3 === '639') return 'Karur';
+    if (p3 === '637') return 'Namakkal';
+    if (p3 === '642') return 'Pollachi';
+    if (p3 === '624') return 'Dindigul';
+    if (p3 === '613') return 'Thanjavur';
 
     // Maharashtra
     if (p3 === '400') return 'Mumbai';
@@ -105,6 +118,9 @@ export function inferIndianCity(
     if (p3 === '440') return 'Nagpur';
     if (p3 === '422') return 'Nashik';
     if (['401', '402'].includes(p3)) return 'Thane';
+    if (p3 === '431') return 'Chhatrapati Sambhajinagar';
+    if (p3 === '416') return 'Kolhapur';
+    if (p3 === '413') return 'Solapur';
 
     // Delhi NCR
     if (p2 === '11') return 'New Delhi';
@@ -113,37 +129,59 @@ export function inferIndianCity(
 
     // Telangana / AP
     if (p3 === '500') return 'Hyderabad';
+    if (p3 === '506') return 'Warangal';
     if (p3 === '530') return 'Visakhapatnam';
     if (p3 === '520') return 'Vijayawada';
+    if (p3 === '522') return 'Guntur';
+    if (p3 === '517') return 'Tirupati';
 
     // Gujarat
     if (p3 === '380') return 'Ahmedabad';
     if (p3 === '395') return 'Surat';
     if (p3 === '390') return 'Vadodara';
+    if (p3 === '360') return 'Rajkot';
+    if (p3 === '396') return 'Vapi';
+    if (p3 === '382') return 'Gandhinagar';
 
     // West Bengal
     if (p3 === '700') return 'Kolkata';
     if (p3 === '711') return 'Howrah';
+    if (p3 === '734') return 'Siliguri';
+    if (p3 === '713') return 'Durgapur';
 
     // Kerala
     if (p3 === '682') return 'Kochi';
     if (p3 === '695') return 'Thiruvananthapuram';
+    if (p3 === '673') return 'Kozhikode';
+    if (p3 === '680') return 'Thrissur';
 
     // Rajasthan
     if (p3 === '302') return 'Jaipur';
+    if (p3 === '342') return 'Jodhpur';
+    if (p3 === '313') return 'Udaipur';
+    if (p3 === '324') return 'Kota';
+    if (p3 === '301') return 'Bhiwadi';
 
     // Madhya Pradesh
     if (p3 === '452') return 'Indore';
     if (p3 === '462') return 'Bhopal';
+    if (p3 === '482') return 'Jabalpur';
+    if (p3 === '474') return 'Gwalior';
 
     // Punjab / Haryana
     if (p2 === '16') return 'Chandigarh';
     if (p3 === '141') return 'Ludhiana';
+    if (p3 === '143') return 'Amritsar';
+    if (p3 === '144') return 'Jalandhar';
+    if (p3 === '121') return 'Faridabad';
+    if (p3 === '132') return 'Panipat';
 
     // Uttar Pradesh
     if (p3 === '208') return 'Kanpur';
     if (p3 === '226') return 'Lucknow';
     if (p3 === '221') return 'Varanasi';
+    if (p3 === '282') return 'Agra';
+    if (p3 === '250') return 'Meerut';
 
     // Bihar / Jharkhand / Odisha / Assam / Goa / NE
     if (p3 === '800') return 'Patna';
