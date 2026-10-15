@@ -49,7 +49,7 @@ flowchart TD
 - **Prohibited Vocabulary Audit:** 0 violations across 483 source files (strictly 0 occurrences of prohibited reverse-auction or obfuscation terminology).
 - **Test Coverage Expansion Policy:** 477 active test files (100% strict append rule compliance; zero unbacked modifications).
 - **Domain Fast Unit Battery:** 87 test files passed, 929 of 929 unit tests passed cleanly (0 failures).
-- **Security Contract Suite:** 12 security test suites harmonized to ceiling `00271` (100% pass, 96/96 tests).
+- **Security Contract Suite:** 69 security test suites harmonized to ceiling `00272` (100% pass, 863/863 tests).
 - **Services Test Suite:** 56 test files passed, 674 of 674 tests passed cleanly (0 failures).
 - **Web App Test Suite:** All UI, Admin, and i18n tests passed cleanly.
 - **Publication-Grade PDF Compilation:** Complete 6.4 MB official platform documentation compiled to `docs/OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf`.
@@ -71,8 +71,9 @@ flowchart TD
 | **9. Award-Locked Identity Reveal** | Pre-award identity protection in both modes; post-award: Identity-Protected unmasks winner only; Open RFQ discloses names post-lock; sensitive contact info winner-only; suppliers never see competitors | **VERIFIED GREEN** | Migration `00269_harden_sourcing_mode_identity_reveal.sql` redefines `quotes_revealed` view (`security_barrier = true`) with buyer-only access gate (`can_access_rfq_as_buyer`); `SupplierRevealPage.tsx` matrix table enforces `🔒 Sealed & Identity-Protected` on non-winners; verified in `reveal-sourcing-modes.test.ts` (3/3 pass). |
 | **10. Subscription & Continuity** | Inactive subscription blocks new RFQs; drafts editable without subscription; active transactions continue to completion | **VERIFIED GREEN** | `UnifiedThreeTierIntake.tsx` checks `subscription?.isExpired && freeRfqCredits <= 0` at publish time only, allowing draft creation and editing without payment; existing RFQs, evaluations, and PO execution continue unblocked. |
 | **11. RFQ Retention & 30-Day Purge** | Terminal unawarded RFQs safely purged after 30 days; drafts, active workflows, awarded contracts, and legal-hold records strictly immune; permanent audit tombstones | **VERIFIED GREEN** | Migration `00270_unsuccessful_rfq_retention_purge.sql` adds `legal_hold`, `is_purged`, and `purge_audit_tombstone` to `rfqs` with column-level grant to `authenticated`; RPC `purge_expired_unsuccessful_rfqs` cascades unawarded quotes/invitations and stamps audit tombstone in `audit_events`; verified in `rfq-retention-purge.test.ts` (3/3 pass). |
-| **12. Supplier Channels & Resilient Invitation Dispatch** | Unique constraint on `supplier_messaging_channels(supplier_id, channel)` preventing Postgres 42P10 errors; exception-resilient notification dispatch ensuring core RFQ invitations never roll back | **VERIFIED GREEN** | Migration `00271_fix_supplier_messaging_channels_unique_constraint.sql` establishes `idx_supplier_messaging_channels_supp_channel` and wraps `private.dispatch_supplier_invitation_notification` in `EXCEPTION WHEN OTHERS THEN` block; verified in security suite (12/12 pass) and service suite (56/56 pass). |
-| **13. Final Quality Gate & CI/CD** | Clean git working tree; pre-commit verification pass; ceiling advanced in CI/CD pipeline | **VERIFIED GREEN** | `scripts/pre-commit.ps1` passed cleanly; CI `EXPECTED_CEILING = 00271` in `.github/workflows/ci-cd.yml`; all 12 security test suites harmonized to 00271. |
+| **12. Supplier Channels & Resilient Invitation Dispatch** | Unique constraint on `supplier_messaging_channels(supplier_id, channel)` preventing Postgres 42P10 errors; exception-resilient notification dispatch ensuring core RFQ invitations never roll back | **VERIFIED GREEN** | Migration `00271_fix_supplier_messaging_channels_unique_constraint.sql` establishes `idx_supplier_messaging_channels_supp_channel` and wraps `private.dispatch_supplier_invitation_notification` in `EXCEPTION WHEN OTHERS THEN` block; verified in security suite (69/69 files, 863/863 tests pass). |
+| **13. WAHA Provider Enum & Operator Phone Isolation** | Adds 'WAHA' to `messaging_provider` enum; isolates gateway operator handset (`+919972967530`) from automated RFQ invitations; defensive guards in edge function and database trigger | **VERIFIED GREEN** | Migration `00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql` applied on hosted Supabase; edge function `messaging-outbound` hardened with operator and buyer phone guards. |
+| **14. Final Quality Gate & CI/CD** | Clean git working tree; pre-commit verification pass; ceiling advanced in CI/CD pipeline | **VERIFIED GREEN** | All security test suites harmonized to 00272; CI `EXPECTED_CEILING = 00272` in `.github/workflows/ci-cd.yml`. |
 
 ---
 
@@ -85,9 +86,10 @@ The hosted database migration ledger on Supabase project `qsuvtcezffomtwzwyrso` 
 | `00268_complete_nationwide_pincode_resolution.sql` | 00268 | Nationwide postal pincode directory resolution and geographical coverage mapping. | **APPLIED (HOSTED)** |
 | `00269_harden_sourcing_mode_identity_reveal.sql` | 00269 | Redefines `public.quotes_revealed` view with `security_barrier = true`, buyer authentication enforcement, and mode-specific unmasking restrictions. | **APPLIED (HOSTED)** |
 | `00270_unsuccessful_rfq_retention_purge.sql` | 00270 | Adds `legal_hold`, `is_purged`, and audit tombstone fields to `public.rfqs` with column-level `GRANT SELECT` to `authenticated`; establishes `public.purge_expired_unsuccessful_rfqs` RPC. | **APPLIED (HOSTED)** |
-| `00271_fix_supplier_messaging_channels_unique_constraint.sql` | 00271 | Establishes authoritative UNIQUE INDEX on `supplier_messaging_channels(supplier_id, channel)` resolving Postgres 42P10 `ON CONFLICT` errors, with resilient notification dispatch protecting RFQ invitations. | **READY FOR HOSTED SYNC** |
+| `00271_fix_supplier_messaging_channels_unique_constraint.sql` | 00271 | Establishes authoritative UNIQUE INDEX on `supplier_messaging_channels(supplier_id, channel)` resolving Postgres 42P10 `ON CONFLICT` errors, with resilient notification dispatch protecting RFQ invitations. | **APPLIED (HOSTED)** |
+| `00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql` | 00272 | Adds 'WAHA' to `messaging_provider` enum; reassigns legacy QA suppliers away from operator handset (`+919972967530`); hardens `dispatch_supplier_invitation_notification` to abort if target phone matches gateway operator handset or buyer phone. | **APPLIED (HOSTED)** |
 
-*CI/CD pipeline `.github/workflows/ci-cd.yml` line 351 synchronized with `EXPECTED_CEILING="00271"`.*
+*CI/CD pipeline `.github/workflows/ci-cd.yml` line 351 synchronized with `EXPECTED_CEILING="00272"`.*
 
 ---
 

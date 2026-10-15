@@ -105,7 +105,8 @@ describe('Migration 00257 static SQL contract', () => {
     expect(files[index + 12]).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
     expect(files[index + 13]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
     expect(files[index + 14]).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
-    expect(files.at(-1)).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
+    expect(files[index + 15]).toBe('00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql');
+    expect(files.at(-1)).toBe('00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {

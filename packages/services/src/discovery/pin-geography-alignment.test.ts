@@ -120,5 +120,34 @@ describe('assessPinGeographyAlignment', () => {
     });
     expect(r3.status).toBe('MATCH');
   });
+
+  it('matches live Google geocode components for PIN 638301 where only Bhavani locality is present without district', () => {
+    // Live Google Geocoding for 638301 returns only postal_code, Bhavani locality, Tamil Nadu, India
+    const liveGoogleComponents = [
+      { long_name: '638301', types: ['postal_code'] },
+      { long_name: 'Bhavani', types: ['locality', 'political'] },
+      { long_name: 'Tamil Nadu', types: ['administrative_area_level_1', 'political'] },
+      { long_name: 'India', types: ['country', 'political'] },
+    ];
+
+    // Inferred / selected: Erode (district)
+    const r1 = assessPinGeographyAlignment({
+      pincode: '638301',
+      selectedState: 'Tamil Nadu',
+      selectedCity: 'Erode',
+      geocodeComponents: liveGoogleComponents,
+    });
+    expect(r1.status).toBe('MATCH');
+
+    // Inferred / selected: Bhavani, Erode (locality + district)
+    const r2 = assessPinGeographyAlignment({
+      pincode: '638301',
+      selectedState: 'Tamil Nadu',
+      selectedCity: 'Bhavani, Erode',
+      geocodeComponents: liveGoogleComponents,
+    });
+    expect(r2.status).toBe('MATCH');
+  });
 });
+
 

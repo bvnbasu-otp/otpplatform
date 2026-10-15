@@ -28,6 +28,7 @@ describe('00256 auth OTP eight-digit standardization', () => {
     expect(files[index + 13]).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
     expect(files[index + 14]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
     expect(files[index + 15]).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
+    expect(files[index + 16]).toBe('00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql');
   });
 
   it('issues eight-digit codes and rejects non-eight-digit verify input before hash compare', () => {

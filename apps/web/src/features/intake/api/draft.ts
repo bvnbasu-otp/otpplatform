@@ -102,7 +102,10 @@ export function inferIndianCity(
     if (p3 === '625') return 'Madurai';
     if (p3 === '620') return 'Tiruchirappalli';
     if (p3 === '636') return 'Salem';
-    if (p3 === '638') return 'Erode';
+    if (p3 === '638') {
+      if (pin === '638301') return 'Bhavani, Erode';
+      return 'Erode';
+    }
     if (p3 === '632') return 'Vellore';
     if (p3 === '627') return 'Tirunelveli';
     if (p3 === '635') return 'Hosur';

@@ -9,8 +9,8 @@ const ROOT = resolve('.');
 const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
-// Repository ceiling. Later migrations (00249–00271) do not grant this function back to clients.
-const REPOSITORY_CEILING = '00271_fix_supplier_messaging_channels_unique_constraint.sql';
+// Repository ceiling. Later migrations (00249–00272) do not grant this function back to clients.
+const REPOSITORY_CEILING = '00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';

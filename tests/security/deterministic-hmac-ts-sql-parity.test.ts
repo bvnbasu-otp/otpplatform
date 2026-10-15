@@ -120,5 +120,6 @@ describe('00260 migration chain', () => {
     expect(files[idx + 10]).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
     expect(files[idx + 11]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
     expect(files[idx + 12]).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
+    expect(files[idx + 13]).toBe('00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql');
   });
 });

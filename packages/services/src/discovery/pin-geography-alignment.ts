@@ -53,6 +53,23 @@ const INDIAN_CITY_SYNONYMS: Record<string, string[]> = {
   hubballi: ['hubli'],
   gulbarga: ['kalaburagi'],
   kalaburagi: ['gulbarga'],
+  // Erode & Bhavani regional cluster (PIN 638xxx postal delivery division)
+  erode: ['bhavani', 'gobichettipalayam', 'perundurai', 'anthiyur', 'bhavani erode'],
+  bhavani: ['erode', 'bhavani erode', 'suriyampalayam', 'urachikottai', 'kalingarayanpalayam'],
+  'bhavani erode': ['erode', 'bhavani'],
+  // Coimbatore & surrounding
+  coimbatore: ['pollachi'],
+  pollachi: ['coimbatore'],
+  // Delhi NCR
+  delhi: ['new delhi', 'noida', 'gurugram', 'gurgaon', 'ghaziabad', 'faridabad'],
+  newdelhi: ['delhi', 'noida', 'gurugram', 'gurgaon'],
+  gurgaon: ['gurugram'],
+  gurugram: ['gurgaon'],
+  // Hyderabad
+  hyderabad: ['secunderabad'],
+  secunderabad: ['hyderabad'],
+  // Pune
+  pune: ['pimprichinchwad', 'pimpri', 'chinchwad'],
 };
 
 function normalizeGeoLabel(value: string | undefined | null): string {
@@ -65,7 +82,7 @@ function normalizeGeoLabel(value: string | undefined | null): string {
     .trim();
 }
 
-function labelsAlign(selected: string, resolved: string): boolean {
+export function labelsAlign(selected: string, resolved: string): boolean {
   const a = normalizeGeoLabel(selected);
   const b = normalizeGeoLabel(resolved);
   if (!a || !b) return false;
@@ -83,8 +100,9 @@ function labelsAlign(selected: string, resolved: string): boolean {
 
 export function extractStateCityFromGeocodeComponents(
   components?: Array<{ long_name?: string; short_name?: string; types?: string[] }>,
+  pincode?: string,
 ): ExtractedPinGeography {
-  if (!components?.length) {
+  if (!components?.length && !pincode) {
     return { allCityCandidates: [] };
   }
 

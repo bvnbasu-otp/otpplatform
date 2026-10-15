@@ -6,6 +6,7 @@ import {
 import {
   assessPinGeographyAlignment,
   extractStateCityFromGeocodeComponents,
+  labelsAlign,
 } from './pin-geography-alignment.ts';
 import type { QuotaRequestPriority } from '../gis/google-gis-safety-quota.ts';
 import {
@@ -318,7 +319,6 @@ export async function runManagedGooglePlacesDiscovery(
     };
   }
   const geocoded = geocodeOutcome.result;
-  const city = scope.city.trim();
 
   const alignment = assessPinGeographyAlignment({
     pincode: pinCode,
@@ -326,16 +326,25 @@ export async function runManagedGooglePlacesDiscovery(
     selectedCity: scope.city?.trim() || undefined,
     geocodeComponents: geocoded.geocodeComponents,
   });
-  if (alignment.status === 'MISMATCH' || alignment.status === 'UNRESOLVED') {
+
+  const stateMatches =
+    !scope.state?.trim() ||
+    !alignment.resolvedState ||
+    labelsAlign(scope.state, alignment.resolvedState);
+
+  if (!stateMatches) {
     return {
       rawCandidates: [],
       externalCallsUsed,
       quotaExhausted: false,
       authFailure: false,
       errorCode: 'GEOCODE_FAILED',
-      explanation: `PIN geography ${alignment.status}: ${alignment.explanation} Google Places discovery was not performed.`,
+      explanation: `PIN geography MISMATCH: Selected state (${scope.state}) conflicts with PIN geocode resolution (${alignment.resolvedState}). Google Places discovery was not performed.`,
     };
   }
+
+  // Authoritative city: use resolved city from Google Geocoding, or fallback to candidate/scope
+  const city = (alignment.resolvedCity || scope.city || 'India').trim();
 
   const seenPlaceIds = new Set<string>();
   const aggregated: GooglePlacesRawCandidate[] = [];

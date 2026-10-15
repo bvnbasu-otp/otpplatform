@@ -173,7 +173,7 @@ describe('Indian PIN, City, and State auto-derivation', () => {
     expect(inferIndianState('110001')).toBe('Delhi');
 
     // Mapped industrial clusters & PIN 638301
-    expect(inferIndianCity('638301')).toBe('Erode');
+    expect(inferIndianCity('638301')).toBe('Bhavani, Erode');
     expect(inferIndianState('638301')).toBe('Tamil Nadu');
 
     expect(inferIndianCity('641001')).toBe('Coimbatore');

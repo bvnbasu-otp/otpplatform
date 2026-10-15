@@ -53,6 +53,7 @@ Milestone index only. Files `00001` through `00252` are on disk and contiguous. 
 | `00269_harden_sourcing_mode_identity_reveal.sql` | Hardens sourcing modes (`OPEN_RFQ_TENDER`, `IDENTITY_PROTECTED`) and unmasking view (`quotes_revealed`) security barrier so only awarded winners disclose sensitive contacts, while non-winners remain identity-masked. |
 | `00270_unsuccessful_rfq_retention_purge.sql` | Unsuccessful RFQ retention lifecycle & 30-day purge RPC (`purge_expired_unsuccessful_rfqs`), strictly preserving drafts, active workflows, awarded contracts, and legal-hold records with permanent audit tombstones. |
 | `00271_fix_supplier_messaging_channels_unique_constraint.sql` | Establishes authoritative UNIQUE INDEX on `supplier_messaging_channels(supplier_id, channel)` to resolve Postgres 42P10 errors on `ON CONFLICT` during RFQ supplier invitations; wraps invitation notification dispatch in exception-resilient block to ensure zero rollback of discovery invitations. |
+| `00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql` | Adds 'WAHA' to `messaging_provider` enum; reassigns legacy QA suppliers away from operator handset (`+919972967530`); hardens `dispatch_supplier_invitation_notification` to abort if target phone matches gateway operator handset or buyer phone. |
 
-CI `EXPECTED_CEILING` in `.github/workflows/ci-cd.yml` is being advanced to `00271`. Hosted `schema_migrations` ceiling on Supabase `qsuvtcezffomtwzwyrso` is ready for 00271 application.
+CI `EXPECTED_CEILING` in `.github/workflows/ci-cd.yml` is being advanced to `00272`. Hosted `schema_migrations` ceiling on Supabase `qsuvtcezffomtwzwyrso` is at 00272.
 

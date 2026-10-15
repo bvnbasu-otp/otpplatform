@@ -135,6 +135,24 @@ Deno.serve(async (req) => {
     return jsonResponse({ skipped: true, reason: 'No verified messaging channel or contact phone for this supplier' });
   }
 
+  // Guard 1: Never dispatch RFQ quotation invites to the platform gateway operator phone
+  if (chosen.phone_e164.includes('9972967530')) {
+    return jsonResponse({ skipped: true, reason: 'Recipient is platform gateway operator handset' });
+  }
+
+  // Guard 2: Never dispatch RFQ quotation invites to the buyer who created the RFQ
+  const { data: rfqRow } = await db.from('rfqs').select('created_by').eq('id', rfqId).maybeSingle();
+  if (rfqRow?.created_by) {
+    const { data: buyerProfile } = await db.from('profiles').select('phone').eq('id', rfqRow.created_by).maybeSingle();
+    if (buyerProfile?.phone) {
+      const bDigits = buyerProfile.phone.replace(/[^0-9]/g, '');
+      const cDigits = chosen.phone_e164.replace(/[^0-9]/g, '');
+      if (bDigits && cDigits.endsWith(bDigits)) {
+        return jsonResponse({ skipped: true, reason: 'Cannot dispatch RFQ quote invitation to buyer own phone' });
+      }
+    }
+  }
+
   const { data: rawPayload, error: payloadError } = await db.rpc('supplier_rfq_message_payload', {
     p_rfq_id: rfqId,
     p_supplier_id: supplierId,
