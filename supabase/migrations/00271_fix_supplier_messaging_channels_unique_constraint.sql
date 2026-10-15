@@ -6,12 +6,17 @@
 --    that downstream notification dispatch failures never roll back core rfq_invitations transactions.
 
 -- 1. Cleanly deduplicate any legacy multiple entries per supplier per channel
-DELETE FROM public.supplier_messaging_channels a
-WHERE a.id < (
-  SELECT max(b.id)
-  FROM public.supplier_messaging_channels b
-  WHERE b.supplier_id = a.supplier_id
-    AND b.channel = a.channel
+DELETE FROM public.supplier_messaging_channels
+WHERE id IN (
+  SELECT id
+  FROM (
+    SELECT id, ROW_NUMBER() OVER (
+      PARTITION BY supplier_id, channel
+      ORDER BY (status = 'VERIFIED') DESC, verified_at DESC NULLS LAST, created_at DESC
+    ) AS rnum
+    FROM public.supplier_messaging_channels
+  ) t
+  WHERE t.rnum > 1
 );
 
 -- 2. Create authoritative unique index on (supplier_id, channel)
