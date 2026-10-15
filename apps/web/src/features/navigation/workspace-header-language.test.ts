@@ -16,7 +16,7 @@ describe('WorkspaceHeader Language Switcher Integration', () => {
   it('integrates LanguageSwitcher into WorkspaceHeaderMenu with full menu placement', () => {
     const menuCode = readFile('components/WorkspaceHeaderMenu.tsx');
     expect(menuCode).toContain("import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'");
-    expect(menuCode).toContain('<LanguageSwitcher placement="menu"');
-    expect(menuCode).toContain('Language Preference');
+    expect(menuCode).toContain('<LanguageSwitcher variant="full" placement="menu" />');
+    expect(menuCode).toContain('SECTION 4: LANGUAGE SELECTION');
   });
 });

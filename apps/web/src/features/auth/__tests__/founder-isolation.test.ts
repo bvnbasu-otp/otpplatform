@@ -1,8 +1,24 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { supabase } from '@/lib/supabase';
+import { createSupabaseQueryMock } from '@/lib/supabase-query-mock';
 import { isFounderEmail, isSuperAdminEmail, resolvePortalRole } from '../user-role';
 import { evaluateRouteAccess } from '../ProtectedRoute';
 
+vi.mock('@/lib/supabase', () => {
+  const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: { getUser: vi.fn() },
+  };
+  (globalThis as any).__SHARED_SUPABASE_MOCK__ = globalMock;
+  return { supabase: globalMock };
+});
+
 describe('Founder vs Operations Red-Team Security & Isolation', () => {
+  beforeEach(() => {
+    vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock([]));
+  });
+
   it('distinguishes Founder accounts from Operations SuperAdmin accounts', () => {
     // Founder accounts
     expect(isFounderEmail('bvnbasu@gmail.com')).toBe(true);
