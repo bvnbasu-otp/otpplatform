@@ -2,7 +2,7 @@
 
 What a customer can be told from this repository. Capability labels: [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This page is the public story. It does not edit `site-content.ts` or any page component.
 
-Nothing here is a live payment, ONDC, or Share-in-Success certification. Hosted `schema_migrations` ceiling is `00268` (Release Certificate `OTP-REL-CERT-20261014-002`, Release Decision `GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED`, baseline `0bf526bf4c581251c803c4e4a4c297e5a0ede462`). Product Owner release attestation dated 14 October 2026: "All claims are working correctly. All release gates may be declared GREEN."
+Nothing here is a live payment, ONDC, or Share-in-Success certification. Hosted `schema_migrations` ceiling is `00270` (Release Certificate `OTP-REL-CERT-20261015-001`, Release Decision `GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED`, baseline `a497c403323a63ecad90731f87aa9ec244eb63cf`). Product Owner release attestation dated 15 October 2026: "All claims are working correctly. All release gates may be declared GREEN."
 
 ## Positioning
 

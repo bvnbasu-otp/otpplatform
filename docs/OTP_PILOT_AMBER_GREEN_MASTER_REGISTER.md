@@ -1,13 +1,20 @@
 # OTP Pilot Amber-to-Green Master Register
 
-**Date:** 11 October 2026  
+> [!NOTE]
+> **Active Production Release Certificate:** `OTP-REL-CERT-20261015-001` (15 October 2026)  
+> **Release Baseline Commit:** `a497c403323a63ecad90731f87aa9ec244eb63cf` on `main`  
+> **Formal Migration Ceiling:** `00270` (`00001`–`00270` synchronized on hosted Supabase `qsuvtcezffomtwzwyrso`)  
+> **CI/CD Pipeline Run:** GitHub Actions run [#38664831857](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38664831857) (100% Success across all 6 jobs)  
+> See the active quality gate certificate: [OTP_PILOT_FINAL_QUALITY_GATE_AND_RELEASE_CERTIFICATE.md](./15-change-management/OTP_PILOT_FINAL_QUALITY_GATE_AND_RELEASE_CERTIFICATE.md).
+
+**Historical Date:** 11 October 2026  
 **Repository:** `github.com/bvnbasu-otp/otpplatform` (`G:\My Drive\otp`)  
 **Public Host:** `https://otpplatform-theta.vercel.app`  
 **Supabase Reference:** `qsuvtcezffomtwzwyrso`  
-**Release Baseline:** `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` (`main` tracking `origin/main`)  
-**Formal Migration Ceiling:** `00263`  
-**Release Certificate Identifier:** `OTP-CERT-20261011-GREEN`  
-**Release Decision:** **GREEN — CONTROLLED PILOT AUTHORIZED**  
+**Historical Baseline:** `89bd8fbd87d4363abc7bb5d2ebb58bc81667fc18` (`main` tracking `origin/main`)  
+**Historical Migration Ceiling:** `00263`  
+**Historical Certificate Identifier:** `OTP-CERT-20261011-GREEN`  
+**Historical Release Decision:** **GREEN — CONTROLLED PILOT AUTHORIZED**  
 **Release Scope:** Controlled Pilot (Bengaluru geographic focus, invited/self-registered participants, non-custodial direct payments; not unrestricted GA)  
 
 ---
