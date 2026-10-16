@@ -1,3 +1,5 @@
+> Current working tree, 16 October 2026: do not tell a customer that the pilot is fully green, that EULA enforcement is on, or that a payment was collected. Buyer and Supplier agreements are pending legal approval. The allowance is consumed by the first qualifying supplier quote. Hosted application of the latest local migrations was not queried. See [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md).
+
 # Public pilot truth
 
 What a customer can be told from this repository. Capability labels: [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This page is the public story. It does not edit `site-content.ts` or any page component.

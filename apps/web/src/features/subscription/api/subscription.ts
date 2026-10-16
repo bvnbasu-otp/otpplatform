@@ -114,6 +114,70 @@ export async function fetchCanonicalSubscriptionPrice(
   }
 }
 
+export type PilotPurchaseProduct = 'EXTRA_RFQ' | 'MONTHLY_SUBSCRIPTION';
+
+export interface ProcessPilotPurchaseParams {
+  organizationId: string | null;
+  productType: PilotPurchaseProduct;
+  idempotencyKey: string;
+}
+
+export interface PilotPurchaseResult {
+  attemptId: string;
+  status: string;
+  duplicate: boolean;
+  productType?: PilotPurchaseProduct;
+  entitlementExpiresAt?: string;
+  taxableAmount?: number;
+  taxAmount?: number;
+  grossAmount?: number;
+  currency?: string;
+}
+
+/**
+ * Invokes the server-owned, no-money pilot simulator. The client deliberately
+ * cannot provide an amount, tax, persona, tier, payment provider, or outcome.
+ */
+export async function processPilotSimulatedPurchase(
+  params: ProcessPilotPurchaseParams,
+): Promise<{ ok: true; purchase: PilotPurchaseResult } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('process_pilot_simulated_purchase', {
+      p_organization_id: params.organizationId,
+      p_product_type: params.productType,
+      p_idempotency_key: params.idempotencyKey,
+    });
+    if (error) return { ok: false, error: error.message };
+
+    const result = data as Record<string, unknown> | null;
+    if (!result?.ok || result.entitlementGranted !== true || result.simulated !== true) {
+      return {
+        ok: false,
+        error: String(result?.status || 'Pilot simulation did not grant an entitlement'),
+      };
+    }
+
+    return {
+      ok: true,
+      purchase: {
+        attemptId: String(result.attemptId),
+        status: String(result.status),
+        duplicate: result.duplicate === true,
+        productType: result.productType as PilotPurchaseProduct | undefined,
+        entitlementExpiresAt: result.expiresAt
+          ? String(result.expiresAt)
+          : undefined,
+        taxableAmount: Number(result.taxableAmount),
+        taxAmount: Number(result.taxAmount),
+        grossAmount: Number(result.grossAmount),
+        currency: result.currency ? String(result.currency) : undefined,
+      },
+    };
+  } catch (err: unknown) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Pilot simulation RPC error' };
+  }
+}
+
 export async function processSubscriptionPayment(
   params: ProcessPaymentParams,
 ): Promise<{ ok: true; newExpiresAt: string; message: string } | { ok: false; error: string }> {

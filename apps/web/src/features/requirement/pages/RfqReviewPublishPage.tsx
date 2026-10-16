@@ -287,7 +287,8 @@ export function RfqReviewPublishPage({
 
       {/* Broadcast Confirmation Modal */}
       <RfqPublishConfirmationModal
-        pilotAllowance={pilotAllowance}
+        pilotAllowance={pilotAllowance.allowance}
+        allowanceStatus={pilotAllowance.status}
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}
         onConfirm={handleConfirmPublish}

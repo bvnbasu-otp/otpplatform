@@ -588,6 +588,7 @@ export function EvaluationDecisionCockpit({
               fastestTat={fastestDeliveryQuote?.deliveryDays}
               longestWarranty={longestWarrantyQuote?.warrantyMonths}
               highestScore={topRatedQuote?.evaluationScore}
+              comparisonLevel={quotes[0]?.comparisonLevel ?? null}
             />
 
             {/* 4-Pillar Offers Header & Fast Actions */}

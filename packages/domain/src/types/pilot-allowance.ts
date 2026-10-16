@@ -12,9 +12,9 @@ import {
 /**
  * Pilot-mode monthly RFQ allowance.
  *
- * Display and the publish gate both read this evaluation, so the number a buyer
- * sees is the number that decides whether they can publish. A stored YEARLY
- * plan adds the quarterly bonus. There is no client-plan argument.
+ * Included monthly RFQs, the yearly quarterly bonus, and purchased extra-RFQ
+ * credits stay distinct. The live gate uses the database result; this evaluation
+ * only formats counts the database has already separated. There is no client-plan argument.
  */
 export const PILOT_MONTHLY_RFQ_ALLOWANCE = STANDARD_MONTHLY_RFQ_ALLOWANCE;
 
@@ -47,6 +47,7 @@ export interface PilotRfqAllowance {
   readonly quarterlyBonusAllowance: number;
   readonly quarterlyBonusUsed: number;
   readonly quarterlyBonusRemaining: number;
+  readonly purchasedCredits: number;
 }
 
 export interface SerializedRfqPublicationResult {
@@ -154,6 +155,7 @@ export function evaluatePilotRfqAllowance(params: {
   subscriptionStatus?: string | null;
   subscriptionExpiresAt?: string | null;
   orgType?: string | null;
+  additionalPurchasedCredits?: number;
 }): PilotRfqAllowance {
   const now = params.now ?? new Date();
   const yearly = authoritativeYearlyBonusApplies(
@@ -181,7 +183,7 @@ export function evaluatePilotRfqAllowance(params: {
     subscriptionStatus: 'ACTIVE',
     rfqsUsedInCurrentMonth: monthlyUsed,
     quarterlyBonusUsedInCurrentQuarter: bonusUsed,
-    additionalPurchasedCredits: 0,
+    additionalPurchasedCredits: params.additionalPurchasedCredits,
     now,
   });
 
@@ -189,16 +191,21 @@ export function evaluatePilotRfqAllowance(params: {
   const remaining = entitlement.monthlyRemaining;
   const quarterlyBonusAllowance = entitlement.quarterlyBonusAllowance;
   const quarterlyBonusRemaining = entitlement.quarterlyBonusRemaining;
-  const label =
+  const purchasedCredits = entitlement.additionalPurchasedCredits;
+  let label =
     quarterlyBonusAllowance > 0
       ? `Pilot Allowance: ${remaining} of ${allowance} RFQs remaining this month; quarterly bonus ${quarterlyBonusRemaining} of ${quarterlyBonusAllowance} remaining this quarter (₹${PILOT_MODE_CHARGE_INR} charged in Pilot Mode)`
       : formatPilotAllowanceLabel(remaining, allowance);
+  if (purchasedCredits > 0 && remaining === 0 && quarterlyBonusRemaining === 0) {
+    label = `Pilot Allowance: 0 of ${allowance} included RFQs remaining this month; ${purchasedCredits} purchased extra RFQ ${purchasedCredits === 1 ? 'credit' : 'credits'} available (₹${PILOT_MODE_CHARGE_INR} charged in Pilot Mode)`;
+  }
 
   return {
     allowance,
     used: entitlement.rfqsUsedInCurrentMonth,
     remaining,
-    canPublish: remaining > 0 || quarterlyBonusRemaining > 0,
+    canPublish: remaining > 0 || quarterlyBonusRemaining > 0 || purchasedCredits > 0,
+    purchasedCredits,
     chargedInr: PILOT_MODE_CHARGE_INR,
     realPaymentCharged: PILOT_COMMERCIAL_MODE_POLICY.realPaymentCharged,
     calendarMonth: entitlement.calendarMonth,

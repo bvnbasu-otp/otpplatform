@@ -63,12 +63,10 @@ export function UnifiedThreeTierIntake({
   isSaving,
   isPublishing,
   publishError,
-  subscription,
   restoredNotice,
   onSave,
   onStart,
   onPublish,
-  onOpenPaymentModal,
   onClearDraft,
 }: UnifiedThreeTierIntakeProps) {
   const navigate = useNavigate();
@@ -564,13 +562,6 @@ export function UnifiedThreeTierIntake({
       await onSave(payloadPatch);
       const redirectUrl = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
       navigate(redirectUrl);
-      return;
-    }
-
-    // Subscription check
-    if (subscription?.isExpired && (!subscription.freeRfqCredits || subscription.freeRfqCredits <= 0)) {
-      onOpenPaymentModal();
-      setValidationError('Your prepaid subscription has expired and you have 0 free RFQ credits remaining. Please recharge via UPI to publish requirements.');
       return;
     }
 

@@ -4,7 +4,11 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { evaluatePilotRfqAllowance } from '@otp/domain';
-import { PilotAllowanceText, PILOT_ALLOWANCE_PENDING_TEXT } from './components/PilotAllowanceText';
+import {
+  PILOT_ALLOWANCE_PENDING_TEXT,
+  PILOT_ALLOWANCE_UNAVAILABLE_TEXT,
+  PilotAllowanceText,
+} from './components/PilotAllowanceText';
 import { RfqPublishConfirmationModal } from './components/RfqPublishConfirmationModal';
 
 describe('Pilot allowance display uses the enforcement source of truth', () => {
@@ -18,6 +22,26 @@ describe('Pilot allowance display uses the enforcement source of truth', () => {
     const html = renderToStaticMarkup(<PilotAllowanceText allowance={null} />);
     expect(html).toContain(PILOT_ALLOWANCE_PENDING_TEXT);
     expect(html).not.toMatch(/\d of 3/);
+  });
+
+  it('fails closed when the authoritative allowance cannot be loaded', () => {
+    const html = renderToStaticMarkup(<PilotAllowanceText allowance={null} status="unavailable" />);
+    expect(html).toContain(PILOT_ALLOWANCE_UNAVAILABLE_TEXT);
+    expect(html).not.toMatch(/\d of 3/);
+    const modal = renderToStaticMarkup(
+      <RfqPublishConfirmationModal
+        pilotAllowance={null}
+        allowanceStatus="unavailable"
+        isOpen
+        onClose={() => {}}
+        onConfirm={async () => {}}
+        supplierCount={0}
+        deadlineDisplay="30 Sep 2026, 18:00 IST"
+        requirementTitle="Cement"
+        isBusy={false}
+      />,
+    );
+    expect(modal).toContain(PILOT_ALLOWANCE_UNAVAILABLE_TEXT);
   });
 
   it('publish confirmation shows the live count, not a hard-coded "1 of 3"', () => {

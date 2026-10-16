@@ -5,11 +5,11 @@ import { useAuth } from '@/features/auth';
 import {
   SubscriptionPaymentModal,
   SubscriptionExpiryBanner,
-  validateOrganizationSourcingAccess,
   useWalletEntitlement,
 } from '@/features/subscription';
 import { ReferAndEarnCard } from '@/features/referral';
 import { usePilotAllowance } from '@/features/intake/hooks/use-pilot-allowance';
+import { checkPilotAllowanceBeforePublish } from '@/features/intake/api/pilot-allowance';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { formatDateIST } from '@/lib/date-utils';
 import type { OrganizationRequirementSummary } from '@/features/requirement/api/requirements';
@@ -75,19 +75,11 @@ export function DashboardPage() {
     setIsSubmittingExpress(true);
     setExpressError(null);
 
-    // DEF-001: Validate credits via atomic backend RPC calls without relying on loose client-side fallbacks
     const targetOrgId = org?.organizationId || context.organizationId;
-    if (targetOrgId) {
-      const accessCheck = await validateOrganizationSourcingAccess(targetOrgId);
-      if (!accessCheck.hasAccess) {
-        setIsSubmittingExpress(false);
-        setExpressError(accessCheck.reason || 'Sourcing credits exhausted. Please renew subscription to create RFQs.');
-        setIsPaymentModalOpen(true);
-        return;
-      }
-    } else if (subscription?.isExpired && (!subscription.freeRfqCredits || subscription.freeRfqCredits <= 0)) {
+    const allowanceCheck = await checkPilotAllowanceBeforePublish(targetOrgId ?? null);
+    if (!allowanceCheck.ok) {
       setIsSubmittingExpress(false);
-      setIsPaymentModalOpen(true);
+      setExpressError(allowanceCheck.error);
       return;
     }
 
@@ -134,7 +126,11 @@ export function DashboardPage() {
         <div className="flex items-center gap-2">
           <span className="text-base">🎁</span>
           <div data-testid="pilot-allowance-label" className="font-medium text-emerald-800 dark:text-emerald-300">
-            {pilotAllowance ? pilotAllowance.label : 'Pilot Allowance: checking this month’s RFQs… (₹0 charged in Pilot Mode)'}
+            {pilotAllowance.status === 'unavailable'
+              ? 'Pilot allowance could not be verified. Publishing stays closed until the check succeeds.'
+              : pilotAllowance.allowance
+                ? pilotAllowance.allowance.label
+                : 'Pilot Allowance: checking this month’s RFQs… (₹0 charged in Pilot Mode)'}
           </div>
         </div>
         <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">

@@ -293,34 +293,26 @@ describe('publishing a requirement', () => {
 });
 
 describe('the pilot RFQ allowance', () => {
-  it('publishes three RFQs in a month and refuses the fourth, leaving it a draft', async () => {
+  it('publishes four RFQs without consuming an allowance before a qualifying quote', async () => {
     const client = await buyerSession();
 
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < 4; i += 1) {
       const draft = await createDraft(client);
       const { error } = await client.rpc('publish_requirement', { p_requirement_id: draft.id });
       expect(error).toBeNull();
     }
 
-    const fourth = await createDraft(client);
-    const { error } = await client.rpc('publish_requirement', { p_requirement_id: fourth.id });
-
-    expect(error?.code).toBe('P0001');
-    expect(error?.hint).toBe('PILOT_ALLOWANCE_EXHAUSTED');
-
     const service = createServiceClient();
-    const { data: requirement } = await service
-      .from('requirements')
-      .select('status, published_at')
-      .eq('id', fourth.id)
-      .single();
-    expect(requirement).toEqual({ status: 'DRAFT', published_at: null });
-
     const { count } = await service
       .from('rfqs')
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', ORG);
-    expect(count).toBe(3);
+    expect(count).toBe(4);
+    const { count: consumed } = await service
+      .from('rfq_allowance_consumptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', ORG);
+    expect(consumed).toBe(0);
   });
 });
 

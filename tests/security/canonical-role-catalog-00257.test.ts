@@ -110,7 +110,7 @@ describe('Migration 00257 static SQL contract', () => {
     expect(files[index + 16]).toBe('00273_persist_pin_coverage_in_canonical_suppliers.sql');
     expect(files[index + 17]).toBe('00274_location_pin_coverage_durable_recovery.sql');
     expect(files[index + 18]).toBe('00275_isolate_rfq_subcategory_recipients.sql');
-    expect(files.at(-1)).toBe('00285_personal_evaluation_and_canonical_checkout.sql');
+    expect(files.at(-1)).toBe('00290_legal_enforcement_requires_approval.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {

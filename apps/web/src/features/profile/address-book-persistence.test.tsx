@@ -194,14 +194,18 @@ describe('Issue 05: address persistence goes through the authoritative RPC only'
     expect(mock.from).not.toHaveBeenCalled();
   });
 
-  it('deactivate: treats an RLS-filtered update (0 rows) as refused', async () => {
-    const chain = createSupabaseQueryMock({ data: [], error: null });
-    chain.update = vi.fn(() => chain);
-    mock.from.mockReturnValue(chain);
-    const res = await deactivateBuyerAddress('someone-elses-address');
+  it('deactivate: uses the atomic RPC and surfaces a refused business result', async () => {
+    mock.rpc.mockResolvedValue({
+      data: { ok: false, error: 'Address record not found' },
+      error: null,
+    });
+    const res = await deactivateBuyerAddress('someone-elses-address', 'replacement-address');
     expect(res.ok).toBe(false);
-    expect(chain.update).toHaveBeenCalledWith({ is_active: false });
-    expect(chain.eq).toHaveBeenCalledWith('id', 'someone-elses-address');
+    expect(mock.rpc).toHaveBeenCalledWith('deactivate_buyer_address_atomic', {
+      p_address_id: 'someone-elses-address',
+      p_replacement_address_id: 'replacement-address',
+    });
+    expect(mock.from).not.toHaveBeenCalled();
   });
 
   it('AddressBookManager has no direct buyer_addresses insert or write fallback', () => {

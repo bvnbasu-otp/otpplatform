@@ -11,7 +11,7 @@ const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
 // Repository ceiling. Later migrations do not grant this function back to clients.
-const REPOSITORY_CEILING = '00285_personal_evaluation_and_canonical_checkout.sql';
+const REPOSITORY_CEILING = '00290_legal_enforcement_requires_approval.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';

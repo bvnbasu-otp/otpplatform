@@ -21,10 +21,20 @@ describe('mapIdentityProtectedQuoteRow', () => {
       total_cost: 7800,
       delivery_days: 4,
       warranty_months: 6,
+      comparable_rank: 1,
+      comparison_level: 'L3',
+      eligible_quote_count: 3,
+      tax_structure: 'CGST_SGST',
     });
 
     expect(quote.anonymousLabel).toBe('Supplier A');
     expect(quote.totalCost).toBe(7800);
+    expect(quote).toMatchObject({
+      comparableRank: 1,
+      comparisonLevel: 'L3',
+      eligibleQuoteCount: 3,
+      taxStructure: 'CGST_SGST',
+    });
     assertIdentityProtectedPayloadSafe(identityProtectedQuoteToDisplayRecord(quote));
   });
 

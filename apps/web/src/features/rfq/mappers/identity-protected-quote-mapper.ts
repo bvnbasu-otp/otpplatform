@@ -31,6 +31,10 @@ export function mapIdentityProtectedQuoteRow(row: IdentityProtectedQuoteRow): Id
     isGstVerified: Boolean(row.is_gst_verified),
     paymentTermsDays: row.payment_terms_days ?? null,
     submittedAt: row.submitted_at ?? null,
+    comparableRank: row.comparable_rank ?? undefined,
+    comparisonLevel: row.comparison_level ?? undefined,
+    eligibleQuoteCount: row.eligible_quote_count ?? undefined,
+    taxStructure: row.tax_structure ?? undefined,
   };
 
   assertIdentityProtectedPayloadSafe(quote as unknown as Record<string, unknown>);
@@ -60,6 +64,10 @@ export function identityProtectedQuoteToDisplayRecord(quote: IdentityProtectedQu
     verificationStatus: quote.verificationStatus,
     isGstVerified: quote.isGstVerified,
     submittedAt: quote.submittedAt,
+    comparableRank: quote.comparableRank,
+    comparisonLevel: quote.comparisonLevel,
+    eligibleQuoteCount: quote.eligibleQuoteCount,
+    taxStructure: quote.taxStructure,
   };
 }
 

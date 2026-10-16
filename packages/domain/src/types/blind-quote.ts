@@ -34,6 +34,12 @@ export interface IdentityProtectedQuote {
   isGstVerified?: boolean;
   paymentTermsDays?: number | null;
   submittedAt: string | null;
+  /** Stable server-side landed-cost rank within the eligible RFQ quote set. */
+  comparableRank?: number;
+  /** L1/L2/L3 reflects one/two/three-or-more eligible comparable quotes. */
+  comparisonLevel?: 'L1' | 'L2' | 'L3';
+  eligibleQuoteCount?: number;
+  taxStructure?: 'ZERO_GST' | 'AGGREGATE_GST' | 'CGST_SGST' | 'CGST_UTGST' | 'IGST';
 }
 
 /**

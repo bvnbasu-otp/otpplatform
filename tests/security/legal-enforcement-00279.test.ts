@@ -45,6 +45,15 @@ describe('00279 static contract', () => {
     expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.activate_legal_enforcement\(timestamptz\) FROM PUBLIC, anon, authenticated/);
     expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.activate_legal_enforcement\(timestamptz\) TO service_role/);
   });
+
+  it('refuses activation in 00290 until both current agreements are approved', () => {
+    const guard = readFileSync(resolve('supabase/migrations/00290_legal_enforcement_requires_approval.sql'), 'utf8');
+    expect(guard).toContain('LEGAL_APPROVAL_REQUIRED');
+    expect(guard).toContain("'CUSTOMER_EULA'");
+    expect(guard).toContain("'SUPPLIER_EULA'");
+    expect(guard).not.toMatch(/SET\s+legal_approval_status/i);
+    expect(guard).toMatch(/REVOKE ALL ON FUNCTION public\.activate_legal_enforcement\(timestamptz\) FROM PUBLIC, anon, authenticated/);
+  });
 });
 
 async function connect(): Promise<Client | null> {
@@ -62,6 +71,14 @@ async function connect(): Promise<Client | null> {
     return null;
   }
   return client;
+}
+
+async function markCurrentAgreementsApprovedForTest(client: Client) {
+  await client.query(
+    `UPDATE public.legal_document_versions
+     SET legal_approval_status = 'APPROVED'
+     WHERE retired_at IS NULL AND agreement_type IN ('CUSTOMER_EULA', 'SUPPLIER_EULA')`,
+  );
 }
 
 async function expectError(client: Client, text: string, params: unknown[], code: string) {
@@ -181,7 +198,14 @@ describe('00279 database outcomes (rolled back)', () => {
         client, `UPDATE public.legal_enforcement_config SET enforcement_enabled = true WHERE singleton`, [],
         'LEGAL_ENFORCEMENT_MISCONFIGURED',
       );
+      await expectError(
+        client,
+        `SELECT public.activate_legal_enforcement(now() - interval '10 days')`,
+        [],
+        'LEGAL_APPROVAL_REQUIRED',
+      );
 
+      await markCurrentAgreementsApprovedForTest(client);
       await client.query(`SELECT public.activate_legal_enforcement(now() - interval '10 days')`);
       await expectError(client, `SELECT public.activate_legal_enforcement(now())`, [], 'LEGAL_CONFIG_IMMUTABLE');
       await expectError(
@@ -191,6 +215,16 @@ describe('00279 database outcomes (rolled back)', () => {
       await expectError(client, `SELECT public.activate_legal_enforcement(now())`, [], 'permission denied');
     } finally {
       await client.query('ROLLBACK');
+      const persisted = await client.query<{ pending: boolean; enforced: boolean; rollout: string | null }>(
+        `SELECT bool_and(legal_approval_status = 'PENDING_LEGAL_APPROVAL') AS pending,
+                (SELECT enforcement_enabled FROM public.legal_enforcement_config) AS enforced,
+                (SELECT rollout_at FROM public.legal_enforcement_config) AS rollout
+         FROM public.legal_document_versions
+         WHERE retired_at IS NULL AND agreement_type IN ('CUSTOMER_EULA', 'SUPPLIER_EULA')`,
+      );
+      expect(persisted.rows[0]?.pending).toBe(true);
+      expect(persisted.rows[0]?.enforced).toBe(false);
+      expect(persisted.rows[0]?.rollout).toBeNull();
       await client.end();
     }
   });
@@ -205,6 +239,7 @@ describe('00279 database outcomes (rolled back)', () => {
       // Existing capability: granted well before the rollout.
       await client.query(`UPDATE public.profile_roles SET assigned_at = now() - interval '90 days' WHERE profile_id = $1`, [acct.profileId]);
       await client.query(`UPDATE public.organization_members SET joined_at = now() - interval '90 days' WHERE profile_id = $1`, [acct.profileId]);
+      await markCurrentAgreementsApprovedForTest(client);
       await client.query(`SELECT public.activate_legal_enforcement('2026-11-01T00:00:00Z')`);
 
       const deadline = Date.parse('2026-12-01T00:00:00Z'); // rollout + 30 days
@@ -227,6 +262,7 @@ describe('00279 database outcomes (rolled back)', () => {
       await noAcceptance(client, acct, 'CUSTOMER_EULA');
       await client.query(`UPDATE public.profile_roles SET assigned_at = now() - interval '40 days' WHERE profile_id = $1`, [acct.profileId]);
       await client.query(`UPDATE public.organization_members SET joined_at = now() - interval '40 days' WHERE profile_id = $1`, [acct.profileId]);
+      await markCurrentAgreementsApprovedForTest(client);
       await client.query(`SELECT public.activate_legal_enforcement(now() - interval '10 days')`);
       expect(await statusOf(client, acct, 'CUSTOMER_EULA')).toBe('GRACE');
       await asUser(client, acct);
@@ -246,6 +282,7 @@ describe('00279 database outcomes (rolled back)', () => {
       await noAcceptance(client, acct, 'CUSTOMER_EULA');
       await client.query(`UPDATE public.profile_roles SET assigned_at = now() - interval '120 days' WHERE profile_id = $1`, [acct.profileId]);
       await client.query(`UPDATE public.organization_members SET joined_at = now() - interval '120 days' WHERE profile_id = $1`, [acct.profileId]);
+      await markCurrentAgreementsApprovedForTest(client);
       await client.query(`SELECT public.activate_legal_enforcement(now() - interval '45 days')`);
       expect(await statusOf(client, acct, 'CUSTOMER_EULA')).toBe('REQUIRED');
 
@@ -278,6 +315,7 @@ describe('00279 database outcomes (rolled back)', () => {
     try {
       await client.query('BEGIN');
       const acct = await buyer(client);
+      await markCurrentAgreementsApprovedForTest(client);
       await client.query(`SELECT public.activate_legal_enforcement(now() - interval '5 days')`);
 
       // New account (capability created after rollout): no grace without acceptance.
@@ -328,6 +366,7 @@ describe('00279 database outcomes (rolled back)', () => {
       await client.query('BEGIN');
       const acct = await buyer(client);
       const other = await buyer(client);
+      await markCurrentAgreementsApprovedForTest(client);
       await client.query(`SELECT public.activate_legal_enforcement(now() - interval '45 days')`);
       await noAcceptance(client, acct, 'CUSTOMER_EULA');
 

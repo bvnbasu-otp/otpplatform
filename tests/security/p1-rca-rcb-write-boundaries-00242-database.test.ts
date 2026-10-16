@@ -538,12 +538,12 @@ describe('F-03 quotes: supplier flow intact, score / SELECTED / identity / versi
     const supplier = await sessionFor(LOGIN.supplier);
 
     const missing = await supplier.from('quotes').update({ current_version: 9 }).eq('id', quoteId).select('id');
-    expect(missing.error?.message).toMatch(/QUOTE-VERSION-BOUND/);
+    expect(missing.error?.message).toMatch(/QUOTE-ATOMIC-WRITE-REQUIRED/);
 
     // Window closes: RFQ moves to EVALUATING; even the genuine latest version cannot be selected now.
     await service.from('rfqs').update({ status: 'EVALUATING' }).eq('id', round.rfqId);
     const late = await supplier.from('quotes').update({ current_version: 2 }).eq('id', quoteId).select('id');
-    expect(late.error?.message).toMatch(/QUOTE-WINDOW-CLOSED/);
+    expect(late.error?.message).toMatch(/QUOTE-ATOMIC-WRITE-REQUIRED/);
     expect((await stateOf(quoteId)).current_version).toBe(1);
   });
 
@@ -582,39 +582,37 @@ describe('F-03 quotes: supplier flow intact, score / SELECTED / identity / versi
       current_version: 1,
       submitted_at: new Date().toISOString(),
     };
-    const bad: Array<[Record<string, unknown>, RegExp]> = [
-      [{ ...base, evaluation_score: 100 }, /QUOTE-SCORE-DIRECT-WRITE/],
-      [{ ...base, status: 'SELECTED' }, /QUOTE-CLIENT-STATUS/],
-      [{ ...base, status: 'FINAL' }, /QUOTE-CLIENT-STATUS/],
-      [{ ...base, current_version: 7 }, /QUOTE-VERSION-BOUND/],
-      [{ ...base, invitation_id: rivalInv!.id }, /QUOTE-INVITATION-MISMATCH/],
+    const bad: Record<string, unknown>[] = [
+      { ...base, evaluation_score: 100 },
+      { ...base, status: 'SELECTED' },
+      { ...base, status: 'FINAL' },
+      { ...base, current_version: 7 },
+      { ...base, invitation_id: rivalInv!.id },
     ];
-    for (const [row, message] of bad) {
+    for (const row of bad) {
       const res = await supplier.from('quotes').insert(row).select('id');
-      expect(res.error?.message, JSON.stringify(row)).toMatch(message);
+      expect(res.error?.message, JSON.stringify(row)).toMatch(/QUOTE-ATOMIC-WRITE-REQUIRED/);
     }
     const { count } = await service.from('quotes').select('id', { count: 'exact', head: true }).eq('rfq_id', round.rfqId);
     expect(count).toBe(0);
 
     // Legitimate: submit -> revise (new version, score cleared) -> finalize.
-    const profile = await profileIdFor(LOGIN.supplier);
-    const submit = await supplier.from('quotes').insert(base).select('id').single();
+    const submit = await supplier.rpc('submit_supplier_quote_atomic', {
+      p_rfq_id: round.rfqId,
+      p_invitation_id: mine!.id,
+      p_supplier_id: DEMO.suppliers.aquaPrime,
+      p_snapshot: STD_SNAPSHOT,
+      p_notes: null,
+    });
     expect(submit.error).toBeNull();
-    const quoteId = submit.data!.id as string;
-    const v1 = await supplier.from('quote_versions').insert({ quote_id: quoteId, version: 1, snapshot: STD_SNAPSHOT, created_by: profile });
-    expect(v1.error).toBeNull();
-
-    const v2 = await supplier
-      .from('quote_versions')
-      .insert({ quote_id: quoteId, version: 2, snapshot: { ...STD_SNAPSHOT, totalCost: 11000 }, created_by: profile });
-    expect(v2.error).toBeNull();
-    const revise = await supplier
-      .from('quotes')
-      .update({ status: 'REVISED', current_version: 2, submitted_at: new Date().toISOString(), evaluation_score: null })
-      .eq('id', quoteId)
-      .select('status, current_version');
+    const quoteId = (submit.data as { quoteId: string }).quoteId;
+    const revise = await supplier.rpc('revise_supplier_quote_atomic', {
+      p_quote_id: quoteId,
+      p_snapshot: { ...STD_SNAPSHOT, totalCost: 11000 },
+      p_notes: null,
+    });
     expect(revise.error).toBeNull();
-    expect(revise.data![0]).toEqual({ status: 'REVISED', current_version: 2 });
+    expect((revise.data as { version: number }).version).toBe(2);
 
     const fin = await supplier.from('quotes').update({ status: 'FINAL' }).eq('id', quoteId).select('status');
     expect(fin.error).toBeNull();

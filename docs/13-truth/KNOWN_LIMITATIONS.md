@@ -2,9 +2,17 @@
 
 Statuses are defined in [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This page is the limit, not a second verdict.
 
+## Current working tree (16 October 2026)
+
+- Local migration files run through `00290`. The CI workflow in this tree expects that file ceiling. Hosted `schema_migrations` was not queried. A local file and a workflow string are not hosted proof.
+- Allowance consumption on the isolated database is the first comparison-eligible quote (`00286`, `00288`, `00289`). Publishing does not consume. Purchased credits expire with the subscription. Cross-month quotes fail closed. Hosted runtime of that rule is not verified.
+- Buyer and Supplier EULA rows are version `v1.0-20261014` and share `sha256:7c8b0303d8a9e7019cf39e2df95000be05e527d91d8e13711311ffb43c683b5d`. That shared hash is not proof of two distinct approved documents. Both rows are `PENDING_LEGAL_APPROVAL`. `/legal/terms` says it is not final legal text. Legal review and GST review are pending.
+- Enforcement is off and `rollout_at` is null. The 30-calendar-day grace period does not start until a rollout timestamp is recorded. `00290` refuses activation while either current agreement is unapproved. This tree does not approve the agreements or record that timestamp.
+- The purchase simulator and checkout stay disabled. Passing local tests does not make the pilot green.
+
 ## Not observed
 
-- The hosted Supabase project was not queried. HOSTED DATABASE CEILING NOT RE-VERIFIED. Prior manual verification was `00245`. Local files `00001`–`00250` do not prove those migrations are applied. `00246`, `00247`, `00248`, `00249`, and `00250` were not applied to hosted. The production workflow `EXPECTED_CEILING` is `00250`.
+- Historical reconstruction note: the hosted Supabase project was not queried in that pass. Prior manual verification recorded there was `00245`. See the current working-tree section above for the file ceiling in this tree. That section does not convert the old note into hosted proof.
 - DEPLOYED REVISION NOT RE-VERIFIED. `https://otpplatform-theta.vercel.app` was not read from a Vercel deployment record.
 - Phase 2 executed no tests. Phase 1 ran 5 files / 78 tests (pricing entitlement, ONDC foundation, ONDC environment, Google GIS quota, Google Places pilot activation). That does not certify the hosted project.
 - Google Cloud billing usage is not instrumented in this repository. The Postgres counter `google_places_daily_budget` is a daily reservation counter. 1500 is the application daily limit, not usage. An OTP monthly Google limit is NOT AUTHORITATIVELY CONFIGURED.

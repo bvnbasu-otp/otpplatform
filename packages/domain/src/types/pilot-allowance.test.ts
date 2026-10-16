@@ -46,7 +46,33 @@ describe('Pilot RFQ allowance (issue 22)', () => {
   it('blocks publishing once the allowance is used up', () => {
     const exhausted = evaluatePilotRfqAllowance({ rfqsPublishedThisMonth: 3 });
     expect(exhausted.remaining).toBe(0);
+    expect(exhausted.purchasedCredits).toBe(0);
     expect(exhausted.canPublish).toBe(false);
+  });
+
+  it('keeps a purchased extra credit available after the included allowance and quarterly bonus are exhausted', () => {
+    const credited = evaluatePilotRfqAllowance({
+      rfqsPublishedThisMonth: 3,
+      additionalPurchasedCredits: 1,
+      now: '2026-09-26T10:00:00Z',
+    });
+    expect(credited.remaining).toBe(0);
+    expect(credited.purchasedCredits).toBe(1);
+    expect(credited.canPublish).toBe(true);
+    expect(credited.label).toContain('1 purchased extra RFQ credit available');
+
+    const yearly = evaluatePilotRfqAllowance({
+      rfqsPublishedThisMonth: 4,
+      quarterlyBonusUsedInCurrentQuarter: 1,
+      additionalPurchasedCredits: 1,
+      storedSubscriptionPlan: 'YEARLY',
+      subscriptionStatus: 'ACTIVE',
+      orgType: 'COMMUNITY',
+      now: '2026-01-15T12:00:00.000Z',
+    });
+    expect(yearly.quarterlyBonusRemaining).toBe(0);
+    expect(yearly.purchasedCredits).toBe(1);
+    expect(yearly.canPublish).toBe(true);
   });
 
   it('keeps the pilot financial freeze: ₹0 charged, no real payment', () => {

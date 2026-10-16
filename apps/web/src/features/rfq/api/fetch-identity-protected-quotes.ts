@@ -26,7 +26,11 @@ export async function fetchIdentityProtectedQuotes(rfqId: string): Promise<Fetch
 
   try {
     const quotes = (data as IdentityProtectedQuoteRow[]).map(mapIdentityProtectedQuoteRow);
-    quotes.sort((a, b) => a.totalCost - b.totalCost);
+    quotes.sort(
+      (a, b) =>
+        (a.comparableRank ?? Number.MAX_SAFE_INTEGER)
+        - (b.comparableRank ?? Number.MAX_SAFE_INTEGER),
+    );
     return { ok: true, quotes };
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Failed to map identity-protected quotes';

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import type { PilotRfqAllowance } from '@otp/domain';
+import type { PilotAllowanceLoadStatus } from '@/features/intake/hooks/use-pilot-allowance';
 import { PilotAllowanceText } from './PilotAllowanceText';
 
 interface RfqPublishConfirmationModalProps {
   pilotAllowance: PilotRfqAllowance | null;
+  allowanceStatus?: PilotAllowanceLoadStatus;
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
@@ -15,6 +17,7 @@ interface RfqPublishConfirmationModalProps {
 
 export function RfqPublishConfirmationModal({
   pilotAllowance,
+  allowanceStatus = 'loading',
   isOpen,
   onClose,
   onConfirm,
@@ -85,7 +88,7 @@ export function RfqPublishConfirmationModal({
             {/* Pilot Allowance & Countdown Badge */}
             <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2 flex items-center justify-between text-emerald-900 dark:text-emerald-200">
               <span className="font-bold flex items-center gap-1">
-                <span>🎁</span> <PilotAllowanceText allowance={pilotAllowance} />
+                <span>🎁</span> <PilotAllowanceText allowance={pilotAllowance} status={allowanceStatus} />
               </span>
             </div>
 

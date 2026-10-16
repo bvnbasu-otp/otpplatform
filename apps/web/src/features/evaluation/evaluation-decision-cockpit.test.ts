@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   IDENTITY_PROTECTED_FORBIDDEN_FIELDS,
   assertIdentityProtectedPayloadSafe,
@@ -81,6 +83,13 @@ const mockQuotes: IdentityProtectedQuote[] = [
     submittedAt: '2026-09-10T14:00:00Z',
   },
 ];
+
+describe('authenticated comparison level propagation', () => {
+  it('passes the server-derived level to the summary instead of recounting in the client', () => {
+    const source = readFileSync(resolve(__dirname, 'components/EvaluationDecisionCockpit.tsx'), 'utf8');
+    expect(source).toContain('comparisonLevel={quotes[0]?.comparisonLevel ?? null}');
+  });
+});
 
 describe('OTP — Unified Evaluation & Decision Cockpit Engine (Phase B)', () => {
   describe('1. B1 — Cockpit Canonicalisation & Exports', () => {

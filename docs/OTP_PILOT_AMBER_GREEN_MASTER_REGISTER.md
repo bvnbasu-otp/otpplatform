@@ -1,3 +1,5 @@
+> Current working tree, 16 October 2026: the green decisions below are historical records. They do not certify this uncommitted tree. Local migration files run through `00290`. Hosted application of the uncommitted allowance, comparison, address, purchase-simulation, and legal-activation migrations was not queried. EULA legal approval, GST review, and enforcement remain open. Payment collection is not activated.
+
 # OTP Pilot Amber-to-Green Master Register
 
 > [!NOTE]

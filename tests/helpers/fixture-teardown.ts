@@ -34,6 +34,11 @@ export async function deleteFixtureRequirements(requirementIds: string[]): Promi
       [requirementIds],
     );
     await client.query(
+      `DELETE FROM rfq_allowance_consumptions
+       WHERE rfq_id IN (SELECT id FROM rfqs WHERE requirement_id = ANY($1::uuid[]))`,
+      [requirementIds],
+    );
+    await client.query(
       `DELETE FROM quote_versions
        WHERE quote_id IN (
          SELECT q.id FROM quotes q

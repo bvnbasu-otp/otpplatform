@@ -9,6 +9,7 @@ export interface QuoteComparisonSummaryHeaderProps {
   fastestTat?: number | null;
   longestWarranty?: number | null;
   highestScore?: number | null;
+  comparisonLevel?: 'L1' | 'L2' | 'L3' | null;
 }
 
 function formatInr(amount: number | null | undefined): string {
@@ -35,6 +36,7 @@ export function QuoteComparisonSummaryHeader({
   fastestTat,
   longestWarranty,
   highestScore,
+  comparisonLevel = null,
 }: QuoteComparisonSummaryHeaderProps) {
   const quorumMet = quotesCount >= minQuotesRequired;
   const isAwarded = rfqStatus === 'AWARDED';
@@ -85,6 +87,14 @@ export function QuoteComparisonSummaryHeader({
                 <span className="font-extrabold text-emerald-950 dark:text-emerald-200 truncate">
                   {quotesCount} Competitive {quotesCount === 1 ? 'Quote' : 'Quotes'} Received
                 </span>
+                {comparisonLevel && (
+                  <span
+                    className="rounded-full bg-teal-200/70 text-teal-950 px-1.5 py-0.5 text-[9px] font-black shrink-0"
+                    data-testid="comparison-level"
+                  >
+                    {comparisonLevel}
+                  </span>
+                )}
                 <span className="rounded-full bg-emerald-200/70 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-200 px-1.5 py-0.2 text-[9px] font-black shrink-0">
                   {quorumMet ? `Quorum Met (${quotesCount}/${minQuotesRequired})` : `Quorum: ${quotesCount}/${minQuotesRequired}`}
                 </span>

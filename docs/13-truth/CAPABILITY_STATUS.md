@@ -1,3 +1,5 @@
+> Current working tree, 16 October 2026: the green decision below is the 15 October 2026 record. It does not certify uncommitted migrations through `00290`, hosted runtime of those migrations, or EULA legal approval. Enforcement is off. Payment collection is not activated. See [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md).
+
 # Capability status
 
 **Release Certificate:** `OTP-REL-CERT-20261015-002`  

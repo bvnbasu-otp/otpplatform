@@ -206,6 +206,7 @@ describe('R9 ops metadata', () => {
     expect(readers.map(([k]) => k).sort()).toEqual([
       'private.is_production_environment',
       'public.assert_production_data_integrity',
+      'public.process_pilot_simulated_purchase',
     ]);
     for (const [k, f] of readers) expect(f.definer, k).toBe(true);
   });

@@ -123,10 +123,18 @@ export function AddressBookManager({
   };
 
   const handleDelete = async (addressId: string) => {
-    if (!confirm('Are you sure you want to deactivate this address? (Historical procurement records will remain 100% intact.)')) {
+    const target = addresses.find((address) => address.id === addressId);
+    if (!target) return;
+    const replacement = target.isPrimary
+      ? addresses.find((address) => address.id !== addressId)
+      : null;
+    const replacementCopy = replacement
+      ? ` ${replacement.label} will become the default.`
+      : '';
+    if (!confirm(`Are you sure you want to deactivate this address?${replacementCopy} Historical procurement records will remain intact.`)) {
       return;
     }
-    const res = await deactivateBuyerAddress(addressId);
+    const res = await deactivateBuyerAddress(addressId, replacement?.id ?? null);
     if (!res.ok) {
       setError(res.error);
       return;
@@ -199,13 +207,14 @@ export function AddressBookManager({
         </div>
         <button
           type="button"
+          disabled={addresses.length >= 3}
           onClick={() => {
             resetForm();
             setShowAddModal(true);
           }}
-          className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm active:scale-95 touch-manipulation"
+          className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm active:scale-95 touch-manipulation disabled:cursor-not-allowed disabled:opacity-50"
         >
-          + Add Location
+          {addresses.length >= 3 ? '3 Locations Saved' : '+ Add Location'}
         </button>
       </div>
 

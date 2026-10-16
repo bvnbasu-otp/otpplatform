@@ -135,56 +135,37 @@ describe('Issue 06: manual intake edits survive to publish', () => {
   });
 });
 
-const MONTHLY_ORG = {
-  subscription_plan: 'MONTHLY',
-  subscription_status: 'ACTIVE',
-  subscription_expires_at: '2027-01-01T00:00:00.000Z',
-  org_type: 'INDIVIDUAL',
-};
-
-function rfqChain(rows: { created_at: string }[] | null, error: unknown = null) {
-  const chain: any = createSupabaseQueryMock({ data: rows, error });
-  chain.gte = vi.fn(() => chain);
-  chain.lte = vi.fn(() => chain);
-  return chain;
+function allowancePayload(overrides: Record<string, unknown> = {}) {
+  return {
+    ok: true,
+    includedAndBonusUsedThisMonth: 0,
+    quarterlyBonusUsed: 0,
+    purchasedCredits: 0,
+    subscriptionPlan: 'MONTHLY',
+    subscriptionStatus: 'ACTIVE',
+    subscriptionExpiresAt: '2027-01-01T00:00:00.000Z',
+    orgType: 'INDIVIDUAL',
+    canAcceptNextQuote: true,
+    ...overrides,
+  };
 }
 
-function orgChain(row: Record<string, unknown> | null, error: unknown = null) {
-  return createSupabaseQueryMock({ data: row, error });
-}
-
-function mockAllowanceTables(options: {
-  rfqs?: { created_at: string }[] | null;
-  rfqError?: unknown;
-  org?: Record<string, unknown> | null;
-  orgError?: unknown;
-}) {
-  const rfqs = rfqChain(options.rfqs ?? [], options.rfqError ?? null);
-  const org = orgChain(options.org === undefined ? MONTHLY_ORG : options.org, options.orgError ?? null);
-  mock.from.mockImplementation((table: string) => {
-    if (table === 'rfqs') return rfqs;
-    if (table === 'organizations') return org;
-    throw new Error(`unexpected table ${table}`);
+function mockAllowance(payload: Record<string, unknown> | null, error: unknown = null) {
+  mock.rpc.mockImplementation(async (fn: string) => {
+    if (fn !== 'get_buyer_pilot_allowance') {
+      return { data: null, error: { message: `unexpected rpc ${fn}` } };
+    }
+    return { data: payload, error };
   });
-  return { rfqs, org };
 }
 
 describe('Issue 22: pilot allowance display and publish gate share one source', () => {
-  it('counts this UTC month\'s RFQs for the org and returns the exact label', async () => {
-    const { rfqs, org } = mockAllowanceTables({
-      rfqs: [{ created_at: '2026-09-10T00:00:00.000Z' }],
-    });
+  it('formats the authoritative included-allowance count without recounting consumption rows', async () => {
+    mockAllowance(allowancePayload({ includedAndBonusUsedThisMonth: 1 }));
     const res = await fetchPilotAllowance('org-1', new Date('2026-09-26T10:00:00Z'));
 
-    expect(mock.from).toHaveBeenCalledWith('rfqs');
-    expect(mock.from).toHaveBeenCalledWith('organizations');
-    expect(rfqs.select).toHaveBeenCalledWith('created_at');
-    expect(rfqs.eq).toHaveBeenCalledWith('organization_id', 'org-1');
-    expect(rfqs.gte).toHaveBeenCalledWith('created_at', '2026-07-01T00:00:00.000Z');
-    expect(rfqs.lte).toHaveBeenCalledWith('created_at', '2026-09-30T23:59:59.999Z');
-    expect(org.select).toHaveBeenCalledWith(
-      'subscription_plan, subscription_status, subscription_expires_at, org_type',
-    );
+    expect(mock.rpc).toHaveBeenCalledWith('get_buyer_pilot_allowance', { p_organization_id: 'org-1' });
+    expect(mock.from).not.toHaveBeenCalled();
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.allowance.label).toBe(
@@ -192,68 +173,146 @@ describe('Issue 22: pilot allowance display and publish gate share one source', 
       );
       expect(res.allowance.chargedInr).toBe(0);
       expect(res.allowance.effectivePlan).toBe('MONTHLY');
+      expect(res.allowance.purchasedCredits).toBe(0);
     }
   });
 
-  it('gate blocks publishing when the allowance is used up, using the same label', async () => {
-    const now = new Date('2026-09-26T10:00:00Z');
-    mockAllowanceTables({
-      rfqs: [1, 2, 3].map((day) => ({ created_at: `2026-09-${10 + day}T00:00:00.000Z` })),
-    });
-    const res = await checkPilotAllowanceBeforePublish('org-1', now);
+  it('allows the gate when the included allowance is exhausted and a purchased credit is confirmed', async () => {
+    mockAllowance(allowancePayload({
+      includedAndBonusUsedThisMonth: 3,
+      purchasedCredits: 1,
+      canAcceptNextQuote: true,
+    }));
+    const res = await checkPilotAllowanceBeforePublish('org-1', new Date('2026-09-26T10:00:00Z'));
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.allowance.remaining).toBe(0);
+      expect(res.allowance.purchasedCredits).toBe(1);
+      expect(res.allowance.canPublish).toBe(true);
+      expect(res.allowance.label).toContain('1 purchased extra RFQ credit available');
+    }
+  });
+
+  it('blocks the gate when the included allowance is exhausted and no purchased credit is available', async () => {
+    mockAllowance(allowancePayload({
+      includedAndBonusUsedThisMonth: 3,
+      purchasedCredits: 0,
+      canAcceptNextQuote: false,
+    }));
+    const res = await checkPilotAllowanceBeforePublish('org-1', new Date('2026-09-26T10:00:00Z'));
     expect(res.ok).toBe(false);
     if (!res.ok) {
       expect(res.error).toContain('Pilot Allowance: 0 of 3 RFQs remaining this month (₹0 charged in Pilot Mode)');
     }
   });
 
-  it('gate fails closed when the count cannot be read', async () => {
-    mockAllowanceTables({ rfqs: null, rfqError: { message: 'rls' } });
-    const res = await checkPilotAllowanceBeforePublish('org-1');
-    expect(res).toEqual({ ok: false, error: PILOT_ALLOWANCE_UNVERIFIED_ERROR });
+  it('does not reopen the gate for a consumed or expired purchased credit', async () => {
+    mockAllowance(allowancePayload({
+      includedAndBonusUsedThisMonth: 3,
+      purchasedCredits: 0,
+      canAcceptNextQuote: false,
+    }));
+    const consumed = await checkPilotAllowanceBeforePublish('org-1');
+    expect(consumed.ok).toBe(false);
+
+    mockAllowance(allowancePayload({
+      includedAndBonusUsedThisMonth: 3,
+      purchasedCredits: 1,
+      canAcceptNextQuote: false,
+    }));
+    const expired = await checkPilotAllowanceBeforePublish('org-1');
+    expect(expired.ok).toBe(false);
   });
 
-  it('gate fails closed when the stored plan cannot be read', async () => {
-    mockAllowanceTables({ org: null, orgError: { message: 'rls' } });
-    const res = await checkPilotAllowanceBeforePublish('org-1', new Date('2026-09-26T10:00:00Z'));
-    expect(res).toEqual({ ok: false, error: PILOT_ALLOWANCE_UNVERIFIED_ERROR });
-  });
-
-  it('gate allows publishing with remaining allowance', async () => {
-    const now = new Date('2026-09-26T10:00:00Z');
-    mockAllowanceTables({
-      rfqs: [
-        { created_at: '2026-09-02T00:00:00.000Z' },
-        { created_at: '2026-09-03T00:00:00.000Z' },
-      ],
-    });
-    const res = await checkPilotAllowanceBeforePublish('org-1', now);
-    expect(res.ok).toBe(true);
-    if (res.ok) expect(res.allowance?.remaining).toBe(1);
-  });
-
-  it('reads the stored YEARLY plan and allows the one quarterly bonus', async () => {
+  it('keeps the quarterly bonus distinct from included allowance and purchased credit', async () => {
     const now = new Date('2026-01-15T12:00:00.000Z');
-    mockAllowanceTables({
-      org: { ...MONTHLY_ORG, subscription_plan: 'YEARLY', org_type: 'COMMUNITY' },
-      rfqs: [5, 6, 7].map((day) => ({ created_at: `2026-01-0${day}T00:00:00.000Z` })),
-    });
-    const res = await checkPilotAllowanceBeforePublish('org-1', now);
-    expect(checkPilotAllowanceBeforePublish.length).toBe(1);
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.allowance?.effectivePlan).toBe('YEARLY');
-      expect(res.allowance?.quarterlyBonusRemaining).toBe(1);
+    mockAllowance(allowancePayload({
+      includedAndBonusUsedThisMonth: 3,
+      quarterlyBonusUsed: 0,
+      purchasedCredits: 0,
+      subscriptionPlan: 'YEARLY',
+      orgType: 'COMMUNITY',
+      canAcceptNextQuote: true,
+    }));
+    const bonus = await checkPilotAllowanceBeforePublish('org-1', now);
+    expect(bonus.ok).toBe(true);
+    if (bonus.ok) {
+      expect(bonus.allowance.effectivePlan).toBe('YEARLY');
+      expect(bonus.allowance.remaining).toBe(0);
+      expect(bonus.allowance.quarterlyBonusRemaining).toBe(1);
+      expect(bonus.allowance.purchasedCredits).toBe(0);
     }
+
+    mockAllowance(allowancePayload({
+      includedAndBonusUsedThisMonth: 4,
+      quarterlyBonusUsed: 1,
+      purchasedCredits: 0,
+      subscriptionPlan: 'YEARLY',
+      orgType: 'COMMUNITY',
+      canAcceptNextQuote: false,
+    }));
+    expect((await checkPilotAllowanceBeforePublish('org-1', now)).ok).toBe(false);
+
+    mockAllowance(allowancePayload({
+      includedAndBonusUsedThisMonth: 4,
+      quarterlyBonusUsed: 1,
+      purchasedCredits: 1,
+      subscriptionPlan: 'YEARLY',
+      orgType: 'MSME',
+      canAcceptNextQuote: true,
+    }));
+    const creditAfterBonus = await checkPilotAllowanceBeforePublish('org-1', now);
+    expect(creditAfterBonus.ok).toBe(true);
+    if (creditAfterBonus.ok) expect(creditAfterBonus.allowance.purchasedCredits).toBe(1);
+  });
+
+  it('asks for the caller Individual scope when organization id is null and for the organization otherwise', async () => {
+    mockAllowance(allowancePayload({ orgType: 'INDIVIDUAL', canAcceptNextQuote: true }));
+    const individual = await checkPilotAllowanceBeforePublish(null);
+    expect(mock.rpc).toHaveBeenCalledWith('get_buyer_pilot_allowance', { p_organization_id: null });
+    expect(individual.ok).toBe(true);
+
+    mockAllowance(allowancePayload({ orgType: 'MSME' }));
+    const organization = await fetchPilotAllowance('org-msme');
+    expect(mock.rpc).toHaveBeenCalledWith('get_buyer_pilot_allowance', { p_organization_id: 'org-msme' });
+    expect(organization.ok).toBe(true);
+    expect(checkPilotAllowanceBeforePublish.length).toBe(1);
+  });
+
+  it('fails closed when the entitlement lookup fails or the payload is incomplete', async () => {
+    mockAllowance(null, { message: 'function unavailable' });
+    expect(await checkPilotAllowanceBeforePublish('org-1')).toEqual({
+      ok: false,
+      error: PILOT_ALLOWANCE_UNVERIFIED_ERROR,
+    });
+
+    mockAllowance(null, null);
+    expect(await checkPilotAllowanceBeforePublish(null)).toEqual({
+      ok: false,
+      error: PILOT_ALLOWANCE_UNVERIFIED_ERROR,
+    });
+
+    mockAllowance(allowancePayload({ canAcceptNextQuote: undefined, purchasedCredits: 1 }));
+    expect(await checkPilotAllowanceBeforePublish('org-1')).toEqual({
+      ok: false,
+      error: PILOT_ALLOWANCE_UNVERIFIED_ERROR,
+    });
+
+    mockAllowance({ ok: false, error: 'Access denied' });
+    expect(await checkPilotAllowanceBeforePublish('org-1')).toEqual({
+      ok: false,
+      error: PILOT_ALLOWANCE_UNVERIFIED_ERROR,
+    });
   });
 
   it('does not treat a caller wish as YEARLY when the stored plan is monthly', async () => {
     const clientSuppliedPlan = 'YEARLY';
-    const now = new Date('2026-01-15T12:00:00.000Z');
-    mockAllowanceTables({
-      rfqs: [5, 6, 7].map((day) => ({ created_at: `2026-01-0${day}T00:00:00.000Z` })),
-    });
-    const res = await checkPilotAllowanceBeforePublish('org-1', now);
+    mockAllowance(allowancePayload({
+      includedAndBonusUsedThisMonth: 3,
+      subscriptionPlan: 'MONTHLY',
+      canAcceptNextQuote: false,
+    }));
+    const res = await checkPilotAllowanceBeforePublish('org-1', new Date('2026-01-15T12:00:00.000Z'));
     expect(clientSuppliedPlan).toBe('YEARLY');
     expect(res.ok).toBe(false);
   });

@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   computeTotalCost,
   toSnapshotPayload,
@@ -48,6 +50,14 @@ function createMockDetail(overrides: Partial<SupplierRfqDetail> = {}): SupplierR
 }
 
 describe('Phase 3.3: Supplier Quote Submission Workflow & Security Invariants', () => {
+  it('routes submitted quotes and revisions through the atomic database RPCs', () => {
+    const source = readFileSync(resolve(__dirname, 'api/quote-mutations.ts'), 'utf8');
+    expect(source).toContain("supabase.rpc('submit_supplier_quote_atomic'");
+    expect(source).toContain("supabase.rpc('revise_supplier_quote_atomic'");
+    expect(source).not.toMatch(/\.from\(['"]supplier_quotes['"]\)\s*\.insert/);
+    expect(source).not.toMatch(/\.from\(['"]supplier_quote_versions['"]\)\s*\.insert/);
+  });
+
   describe('1. Commercial Pricing Calculations & Tax Slabs', () => {
     it('calculates total cost accurately across all 5 Indian GST slabs', () => {
       const basePrice = 50000;

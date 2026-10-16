@@ -178,20 +178,17 @@ export async function setPrimaryBuyerAddress(
   });
 }
 
-/**
- * Soft-deactivates an address. There is no RPC for this; the update is scoped
- * by id only and the buyer_addresses UPDATE policy decides whether the caller
- * owns the row. RLS filters silently, so zero returned rows means refused.
- */
-export async function deactivateBuyerAddress(addressId: string): Promise<Result<object>> {
-  const { data, error } = await supabase
-    .from('buyer_addresses')
-    .update({ is_active: false })
-    .eq('id', addressId)
-    .select('id');
+/** Soft-deactivates through the atomic invariant-enforcing RPC. */
+export async function deactivateBuyerAddress(
+  addressId: string,
+  replacementAddressId?: string | null,
+): Promise<Result<object>> {
+  const { data, error } = await supabase.rpc('deactivate_buyer_address_atomic', {
+    p_address_id: addressId,
+    p_replacement_address_id: replacementAddressId ?? null,
+  });
   if (error) return { ok: false, error: error.message || 'Error deleting address' };
-  if (!Array.isArray(data) || data.length === 0) {
-    return { ok: false, error: 'Address not found or you do not have access to it.' };
-  }
+  const res = (data ?? {}) as { ok?: boolean; error?: string };
+  if (!res.ok) return { ok: false, error: res.error || 'Failed to delete address' };
   return { ok: true };
 }

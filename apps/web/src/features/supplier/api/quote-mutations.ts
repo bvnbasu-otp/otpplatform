@@ -23,39 +23,23 @@ export async function submitSupplierQuote(
   }
 
   const snapshot = toSnapshotPayload(input);
-  const now = new Date().toISOString();
-
-  const { data: quote, error: quoteErr } = await supabase
-    .from('quotes')
-    .insert({
-      rfq_id: rfqId,
-      supplier_id: supplierId,
-      invitation_id: invitationId,
-      status: 'SUBMITTED',
-      current_version: 1,
-      submitted_at: now,
-    })
-    .select('id')
-    .single();
-
-  if (quoteErr) return { ok: false, error: quoteErr.message };
-
-  const { error: versionErr } = await supabase.from('quote_versions').insert({
-    quote_id: quote.id,
-    version: 1,
-    snapshot,
-    notes: input.notes ?? null,
-    created_by: profileId,
+  const { data, error } = await supabase.rpc('submit_supplier_quote_atomic', {
+    p_rfq_id: rfqId,
+    p_invitation_id: invitationId,
+    p_supplier_id: supplierId,
+    p_snapshot: snapshot,
+    p_notes: input.notes ?? null,
   });
 
-  if (versionErr) return { ok: false, error: versionErr.message };
+  if (error) return { ok: false, error: error.message };
+  const result = data as { ok?: boolean; quoteId?: string } | null;
+  if (!result?.ok || !result.quoteId) {
+    return { ok: false, error: 'Quote submission did not complete atomically' };
+  }
 
-  await supabase
-    .from('rfq_invitations')
-    .update({ status: 'QUOTED' })
-    .eq('id', invitationId);
-
-  return { ok: true, quoteId: quote.id };
+  // The profile id is deliberately not sent: the RPC derives it from auth.uid().
+  void profileId;
+  return { ok: true, quoteId: result.quoteId };
 }
 
 export async function reviseSupplierQuote(
@@ -86,32 +70,17 @@ export async function reviseSupplierQuote(
     return { ok: false, error: 'Quote cannot be revised in current status' };
   }
 
-  const nextVersion = quote.current_version + 1;
   const snapshot = toSnapshotPayload(input);
-  const now = new Date().toISOString();
-
-  const { error: versionErr } = await supabase.from('quote_versions').insert({
-    quote_id: quoteId,
-    version: nextVersion,
-    snapshot,
-    notes: input.notes ?? null,
-    created_by: profileId,
+  const { data, error } = await supabase.rpc('revise_supplier_quote_atomic', {
+    p_quote_id: quoteId,
+    p_snapshot: snapshot,
+    p_notes: input.notes ?? null,
   });
 
-  if (versionErr) return { ok: false, error: versionErr.message };
-
-  const { error: updateErr } = await supabase
-    .from('quotes')
-    .update({
-      status: 'REVISED',
-      current_version: nextVersion,
-      submitted_at: now,
-      evaluation_score: null,
-    })
-    .eq('id', quoteId);
-
-  if (updateErr) return { ok: false, error: updateErr.message };
-
+  if (error) return { ok: false, error: error.message };
+  const result = data as { ok?: boolean } | null;
+  if (!result?.ok) return { ok: false, error: 'Quote revision did not complete atomically' };
+  void profileId;
   return { ok: true };
 }
 

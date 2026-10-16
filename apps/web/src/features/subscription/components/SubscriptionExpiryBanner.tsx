@@ -47,10 +47,10 @@ export function SubscriptionExpiryBanner({
           <span className="text-xl">🔒</span>
           <div>
             <h4 className="font-bold text-sm text-rose-900 dark:text-rose-200">
-              Prepaid Subscription Expired · Read-Only Mode Active
+              Prepaid subscription date has passed
             </h4>
             <p className="text-rose-800 dark:text-rose-300 mt-0.5">
-              Your 30-day validity has expired and you have 0 free RFQ credits remaining. You can still inspect historical RFQs, quotes, and audit records, but creating new requirements is locked until recharged.
+              Publishing depends on the allowance check, including any unexpired purchased extra-RFQ credit. No payment is collected from this screen.
             </p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export function SubscriptionExpiryBanner({
           onClick={onRenewClick}
           className="shrink-0 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 text-xs shadow-md transition flex items-center gap-1.5"
         >
-          <span>⚡</span> Renew Plan with UPI / QR
+          <span>⚡</span> Review pilot entitlement
         </button>
       </div>
     );
@@ -86,7 +86,7 @@ export function SubscriptionExpiryBanner({
           onClick={onRenewClick}
           className="shrink-0 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 text-xs shadow-md transition flex items-center gap-1.5"
         >
-          <span>⚡</span> Quick UPI Recharge
+          <span>⚡</span> Review pilot entitlement
         </button>
       </div>
     );
@@ -113,7 +113,7 @@ export function SubscriptionExpiryBanner({
           onClick={onRenewClick}
           className="shrink-0 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 text-xs shadow-md transition flex items-center gap-1.5"
         >
-          <span>⚡</span> Renew Plan (UPI)
+          <span>⚡</span> Review pilot entitlement
         </button>
       </div>
     );

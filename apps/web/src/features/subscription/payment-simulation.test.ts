@@ -7,7 +7,11 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 import { supabase } from '@/lib/supabase';
-import { fetchCanonicalSubscriptionPrice, processSubscriptionPayment } from './api/subscription';
+import {
+  fetchCanonicalSubscriptionPrice,
+  processPilotSimulatedPurchase,
+  processSubscriptionPayment,
+} from './api/subscription';
 
 const rpc = supabase.rpc as unknown as ReturnType<typeof vi.fn>;
 const from = supabase.from as unknown as ReturnType<typeof vi.fn>;
@@ -42,18 +46,81 @@ function extractPaymentFunction(source: string): string {
   return extractBalanced(source, start, brace + 2);
 }
 
-function extractSimulateHandler(source: string): string {
-  const marker = 'const handleSimulatePayment = async () =>';
-  const start = source.indexOf(marker);
-  if (start < 0) throw new Error('missing handleSimulatePayment');
-  const brace = source.indexOf('{', start + marker.length);
-  return extractBalanced(source, start, brace);
-}
 
 describe('subscription payment simulation', () => {
   beforeEach(() => {
     rpc.mockReset();
     from.mockReset();
+  });
+
+  it('sends only owner, approved product, and idempotency key to the pilot simulator', async () => {
+    rpc.mockResolvedValue({
+      data: {
+        ok: true,
+        attemptId: 'attempt-1',
+        status: 'SUCCEEDED',
+        simulated: true,
+        moneyCollected: false,
+        entitlementGranted: true,
+        productType: 'EXTRA_RFQ',
+        taxableAmount: 149,
+        taxAmount: 26.82,
+        grossAmount: 175.82,
+        currency: 'INR',
+        expiresAt: '2026-11-16T00:00:00Z',
+      },
+      error: null,
+    });
+
+    await expect(processPilotSimulatedPurchase({
+      organizationId: null,
+      productType: 'EXTRA_RFQ',
+      idempotencyKey: 'pilot-once',
+    })).resolves.toEqual({
+      ok: true,
+      purchase: {
+        attemptId: 'attempt-1',
+        status: 'SUCCEEDED',
+        duplicate: false,
+        productType: 'EXTRA_RFQ',
+        entitlementExpiresAt: '2026-11-16T00:00:00Z',
+        taxableAmount: 149,
+        taxAmount: 26.82,
+        grossAmount: 175.82,
+        currency: 'INR',
+      },
+    });
+    expect(rpc).toHaveBeenCalledWith('process_pilot_simulated_purchase', {
+      p_organization_id: null,
+      p_product_type: 'EXTRA_RFQ',
+      p_idempotency_key: 'pilot-once',
+    });
+    expect(JSON.stringify(rpc.mock.calls[0])).not.toMatch(/amount|outcome|provider|success/i);
+  });
+
+  it('fails closed when the server does not confirm a simulated entitlement grant', async () => {
+    rpc.mockResolvedValue({
+      data: { ok: false, status: 'FAILED', simulated: true, entitlementGranted: false },
+      error: null,
+    });
+    await expect(processPilotSimulatedPurchase({
+      organizationId: '11111111-2222-3333-4444-555555555555',
+      productType: 'MONTHLY_SUBSCRIPTION',
+      idempotencyKey: 'failed-once',
+    })).resolves.toEqual({ ok: false, error: 'FAILED' });
+  });
+
+  it('keeps the active pilot surface no-money and excludes annual purchase', () => {
+    const modal = readFileSync(resolve(__dirname, 'components/SubscriptionPaymentModal.tsx'), 'utf8');
+    expect(modal).toContain('Pilot simulation — no money will be collected.');
+    expect(modal).toContain("'EXTRA_RFQ'");
+    expect(modal).toContain("'MONTHLY_SUBSCRIPTION'");
+    expect(modal).toContain('processPilotSimulatedPurchase');
+    expect(modal).not.toContain('function LegacySubscriptionPaymentModal');
+    expect(modal).not.toContain('handleSimulatePayment');
+    expect(modal).not.toContain('processSubscriptionPayment');
+    expect(modal).not.toContain("'YEARLY'");
+    expect(modal).not.toMatch(/upi|qr code|wallet/i);
   });
 
   it('delegates activation to process_subscription_payment and maps expiry from that RPC', async () => {
@@ -174,7 +241,6 @@ describe('subscription payment simulation', () => {
     const api = readFileSync(resolve(__dirname, 'api/subscription.ts'), 'utf8');
     const modal = readFileSync(resolve(__dirname, 'components/SubscriptionPaymentModal.tsx'), 'utf8');
     const paymentFn = extractPaymentFunction(api);
-    const simulate = extractSimulateHandler(modal);
 
     const rpcCall = paymentFn.indexOf('supabase.rpc(\'process_subscription_payment\'');
     const refused = paymentFn.indexOf('if (!res || !res.ok)');
@@ -189,22 +255,9 @@ describe('subscription payment simulation', () => {
     expect(paymentFn).not.toMatch(/subscription_expires_at/);
     expect(paymentFn).not.toMatch(/\.from\s*\(/);
     expect(paymentFn).not.toMatch(/entitlementGranted\s*:\s*true/);
-
-    const rpcAt = simulate.indexOf('processSubscriptionPayment');
-    const paymentRefused = simulate.indexOf('if (!paymentResult.ok)');
-    const mapped = simulate.indexOf('finalExpiresAt = paymentResult.newExpiresAt');
-    const success = simulate.indexOf('setIsSuccess(true)');
-    expect(rpcAt).toBeGreaterThan(-1);
-    expect(paymentRefused).toBeGreaterThan(rpcAt);
-    expect(mapped).toBeGreaterThan(paymentRefused);
-    expect(success).toBeGreaterThan(mapped);
-    expect(simulate).toContain('amount: canonicalAmount');
-    expect(simulate).toContain('if (canonicalAmount == null)');
     expect(modal).not.toContain('calculateGst');
-    expect(simulate).toContain('if (onSuccess && finalExpiresAt) onSuccess(finalExpiresAt)');
-    expect(simulate).not.toMatch(/finalExpiresAt\s*=\s*paymentRef\b/);
-    expect(simulate).not.toMatch(/onSuccess\s*\(\s*paymentRef\b/);
-    expect(simulate).not.toMatch(/durationDays/);
-    expect(simulate).not.toMatch(/subscription_expires_at/);
+    expect(modal).not.toContain('processSubscriptionPayment');
+    expect(modal).not.toContain('handleSimulatePayment');
+    expect(modal).not.toMatch(/upi|wallet/i);
   });
 });

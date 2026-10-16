@@ -23,6 +23,10 @@ export interface IdentityProtectedQuoteRow {
   experience_band?: string | null;
   verification_status?: string | null;
   is_gst_verified?: boolean | null;
+  comparable_rank?: number | null;
+  comparison_level?: 'L1' | 'L2' | 'L3' | null;
+  eligible_quote_count?: number | null;
+  tax_structure?: 'ZERO_GST' | 'AGGREGATE_GST' | 'CGST_SGST' | 'CGST_UTGST' | 'IGST' | null;
 }
 
 /** Backward-compatible type alias */

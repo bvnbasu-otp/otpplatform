@@ -1,3 +1,5 @@
+> Current working tree, 16 October 2026: this certificate is a historical 15 October 2026 record. It is not the status of the uncommitted tree. Local files now run through `00290`. Hosted application of `00286`–`00290` was not queried. Buyer and Supplier EULAs remain `PENDING_LEGAL_APPROVAL`. Enforcement is off, no rollout timestamp is set, and payment collection is not activated. Do not read the green verdict below as certification of this tree.
+
 # OTP PLATFORM — FINAL OPERATIONAL EVIDENCE & PRE-PILOT GREEN RELEASE CERTIFICATE
 
 **Certificate ID:** `OTP-REL-CERT-20261015-003`  

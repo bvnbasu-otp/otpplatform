@@ -231,6 +231,11 @@ describe('00284 database outcomes (rolled back)', () => {
       await client.query('BEGIN');
       const buyer = await msme(client);
       const sup = await supplier(client);
+      await client.query(
+        `UPDATE public.legal_document_versions
+         SET legal_approval_status = 'APPROVED'
+         WHERE retired_at IS NULL AND agreement_type IN ('CUSTOMER_EULA', 'SUPPLIER_EULA')`,
+      );
       await client.query(`SELECT public.activate_legal_enforcement(now() - interval '45 days')`);
       const bareBuyer = await bareAccount(client);
       const bareSupplier = await bareAccount(client);

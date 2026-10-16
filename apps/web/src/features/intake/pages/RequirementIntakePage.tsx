@@ -138,12 +138,6 @@ export function RequirementIntakePage() {
       return;
     }
 
-    if (subscription?.isExpired && (!subscription.freeRfqCredits || subscription.freeRfqCredits <= 0)) {
-      setIsPaymentModalOpen(true);
-      setPublishError('Your prepaid subscription has expired and you have 0 free RFQ credits remaining. Please recharge via UPI to publish requirements.');
-      return;
-    }
-
     setIsPublishing(true);
     setPublishError(null);
 
@@ -297,18 +291,9 @@ export function RequirementIntakePage() {
           </div>
         </div>
       ) : (
-        <div className="mt-2 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 p-2.5 text-xs text-rose-900 dark:text-rose-200 shadow-2xs flex items-center justify-between gap-2 shrink-0">
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-xs">🔒 Read-Only: Subscription Expired.</span>
-            <span className="text-[11px] text-rose-800 dark:text-rose-300">Recharge via UPI to publish.</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsPaymentModalOpen(true)}
-            className="shrink-0 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 text-xs shadow-2xs transition"
-          >
-            ⚡ Recharge Plan
-          </button>
+        <div className="mt-2 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 p-2.5 text-xs text-amber-950 dark:text-amber-200 shadow-2xs shrink-0">
+          <span className="font-bold text-xs">Subscription date has passed.</span>{' '}
+          <span className="text-[11px]">Publishing still depends on the allowance check, including any unexpired purchased extra-RFQ credit. No payment is collected here.</span>
         </div>
       ))}
 
@@ -347,9 +332,11 @@ export function RequirementIntakePage() {
           initialTierId={subscription?.tierId}
           initialCycle={subscription?.plan || 'MONTHLY'}
           onSuccess={() => {
-            void fetchOrganizationSubscription(context.organizationId!).then((res) => {
-              if (res.ok) setSubscription(res.subscription);
-            });
+            if (context.organizationId) {
+              void fetchOrganizationSubscription(context.organizationId).then((res) => {
+                if (res.ok) setSubscription(res.subscription);
+              });
+            }
           }}
         />
       )}

@@ -1,13 +1,10 @@
 /**
  * An organization of a suite's own for tests that publish RFQs.
  *
- * The pilot allowance (00199, private.enforce_pilot_rfq_allowance) is 3 RFQs
- * per organization per calendar month and counts every rfqs row, including the
- * seeded demo RFQs and fixtures other files cannot delete (quote_versions are
- * append-only). A suite that publishes into a shared demo organization
- * therefore passes or fails depending on what ran before it. Publishing into
- * an organization nobody else writes to keeps the real publish path and the
- * real allowance, without depending on file order.
+ * The pilot allowance is consumed by the first qualifying quote, not by the
+ * RFQ insert. Suites still publish into an organization nobody else writes to,
+ * because quote versions are append-only and a shared demo organization would
+ * mix fixtures.
  *
  * The id is fixed rather than random: audit_events references the
  * organization, so it can never be deleted once something was published, and

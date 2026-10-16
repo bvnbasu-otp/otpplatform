@@ -108,7 +108,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
         <div className="flex items-center gap-1.5">
           <span>🎁</span>
           <strong>
-            <PilotAllowanceText allowance={pilotAllowance} />
+            <PilotAllowanceText allowance={pilotAllowance.allowance} status={pilotAllowance.status} />
           </strong>
         </div>
         <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">

@@ -242,17 +242,15 @@ describe('00282 Individual journey (database, rolled back)', () => {
       await actAs(client, supplier);
       const invitation = await client.query(`SELECT id FROM public.rfq_invitations WHERE rfq_id = $1 AND supplier_id = $2`, [rfqId, supplierId]);
       expect(invitation.rowCount, JSON.stringify(discovery.rows[0].d)).toBe(1);
-      const quoteId = randomUUID();
-      await client.query(
-        `INSERT INTO public.quotes (id, rfq_id, supplier_id, invitation_id, status, current_version)
-         VALUES ($1, $2, $3, $4, 'SUBMITTED', 1)`,
-        [quoteId, rfqId, supplierId, invitation.rows[0].id],
+      const quoteSubmitted = await client.query(
+        `SELECT public.submit_supplier_quote_atomic(
+           $1, $2, $3,
+           '{"basePrice":1000,"gstAmount":180,"transportCost":0,"totalCost":1180,"deliveryDays":7,"warrantyMonths":0,"currency":"INR"}'::jsonb,
+           NULL
+         ) AS result`,
+        [rfqId, invitation.rows[0].id, supplierId],
       );
-      await client.query(
-        `INSERT INTO public.quote_versions (quote_id, version, snapshot, created_by)
-         VALUES ($1, 1, '{"basePrice":1000,"gstAmount":180,"totalCost":1180,"currency":"INR"}'::jsonb, $2)`,
-        [quoteId, supplier.profileId],
-      );
+      const quoteId = quoteSubmitted.rows[0].result.quoteId as string;
 
       await actAs(client, alice);
       await client.query(`SELECT public.close_clarification_for_evaluation($1::uuid)`, [rfqId]);
@@ -429,7 +427,7 @@ describe('00282 Individual journey (database, rolled back)', () => {
     }
   });
 
-  it('counts personal RFQs against the 3-per-month entitlement, per owner', async () => {
+  it('does not consume a personal allowance when an RFQ is published', async () => {
     const client = await connect();
     if (!client) return;
     try {
@@ -439,14 +437,16 @@ describe('00282 Individual journey (database, rolled back)', () => {
       const tax = await taxonomy(client);
 
       await actAs(client, alice);
-      for (let i = 0; i < 3; i += 1) {
+      for (let i = 0; i < 4; i += 1) {
         const requirementId = await newRequirement(client, null, tax, alice.profileId);
-        await client.query(PUBLISH, [requirementId]);
+        expect((await client.query(PUBLISH, [requirementId])).rows[0].r.rfqId).toBeTruthy();
       }
-      const fourth = await newRequirement(client, null, tax, alice.profileId);
-      await expectError(client, PUBLISH, [fourth], 'Pilot Allowance');
+      await asService(client);
+      expect((await client.query(
+        `SELECT count(*)::int AS n FROM public.rfq_allowance_consumptions WHERE owner_profile_id = $1`,
+        [alice.profileId],
+      )).rows[0].n).toBe(0);
 
-      // Another Individual has an independent allowance.
       await actAs(client, bob);
       const bobReq = await newRequirement(client, null, tax, bob.profileId);
       expect((await client.query(PUBLISH, [bobReq])).rows[0].r.rfqId).toBeTruthy();

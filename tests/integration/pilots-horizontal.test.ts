@@ -20,10 +20,10 @@ import {
 const MANAGER_PROFILE = 'b0000000-0000-4000-8000-000000000001';
 
 const PILOT_RFQS = [
-  { id: 'pilot-1', rfqId: 'f1000000-0000-4000-8000-000000000001', orgId: 'a0000000-0000-4000-8000-000000000001' },
-  { id: 'pilot-2', rfqId: 'd2000021-0000-4000-8000-000000000001', orgId: 'd2000000-0000-4000-8000-000000000001' },
-  { id: 'pilot-3', rfqId: 'd3000021-0000-4000-8000-000000000001', orgId: 'd3000000-0000-4000-8000-000000000001' },
-  { id: 'pilot-4', rfqId: 'd4000021-0000-4000-8000-000000000001', orgId: 'd4000000-0000-4000-8000-000000000001' },
+  { id: 'pilot-1', rfqId: 'f1000000-0000-4000-8000-000000000001', orgId: 'a0000000-0000-4000-8000-000000000001', eligibleQuotes: 3 },
+  { id: 'pilot-2', rfqId: 'd2000021-0000-4000-8000-000000000001', orgId: 'd2000000-0000-4000-8000-000000000001', eligibleQuotes: 0 },
+  { id: 'pilot-3', rfqId: 'd3000021-0000-4000-8000-000000000001', orgId: 'd3000000-0000-4000-8000-000000000001', eligibleQuotes: 0 },
+  { id: 'pilot-4', rfqId: 'd4000021-0000-4000-8000-000000000001', orgId: 'd4000000-0000-4000-8000-000000000001', eligibleQuotes: 0 },
 ] as const;
 
 let supabaseUp = false;
@@ -60,7 +60,7 @@ describe('horizontal procurement pilots', () => {
     }
   });
 
-  it('manager can blind-compare quotes on every pilot RFQ', async () => {
+  it('manager sees only eligible registered-supplier quotes, never manufactured demo evidence', async () => {
     const authClient = createAnonClient();
     await signInAs(authClient, 'manager@greenview.test');
     const { data: session } = await authClient.auth.getSession();
@@ -100,7 +100,7 @@ describe('horizontal procurement pilots', () => {
 
       expect(result.ok, pilot.id).toBe(true);
       if (!result.ok) continue;
-      expect(result.value.length, pilot.id).toBe(3);
+      expect(result.value.length, pilot.id).toBe(pilot.eligibleQuotes);
       for (const quote of result.value) {
         assertNoBlindIdentityLeak(quote as unknown as Record<string, unknown>);
       }
