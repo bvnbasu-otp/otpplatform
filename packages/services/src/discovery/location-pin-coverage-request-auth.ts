@@ -1,4 +1,4 @@
-import { PIN_ONLY_WARMING_CATEGORY } from '@otp/domain';
+import { PIN_ONLY_WARMING_CATEGORY } from '../../../domain/src/gis/google-places-category-search-terms.ts';
 
 export function isExactServiceRoleBearer(authorization: string | null, serviceRoleKey: string): boolean {
   return Boolean(serviceRoleKey) && authorization === `Bearer ${serviceRoleKey}`;
