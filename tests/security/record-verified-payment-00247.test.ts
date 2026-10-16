@@ -1,7 +1,8 @@
 /**
  * Static grant chain for record_verified_payment. Does not connect to Postgres.
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -10,7 +11,7 @@ const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
 // Repository ceiling. Later migrations do not grant this function back to clients.
-const REPOSITORY_CEILING = '00275_isolate_rfq_subcategory_recipients.sql';
+const REPOSITORY_CEILING = '00285_personal_evaluation_and_canonical_checkout.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';
@@ -35,6 +36,28 @@ function walk(dir: string, acc: string[]): void {
     const stat = statSync(path);
     if (stat.isDirectory()) walk(path, acc);
     else if (/\.(ts|tsx|sql|js|mjs)$/.test(name)) acc.push(path);
+  }
+}
+
+// Source files only: tracked plus untracked-but-not-ignored. A raw directory walk
+// also visited build output (dist_prev, releases) on a network-backed drive and
+// exceeded the test timeout; the assertion itself is unchanged.
+function listSourceFiles(): string[] {
+  try {
+    const listed = execFileSync(
+      'git',
+      ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'apps', 'packages', 'supabase', 'tests'],
+      { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+    );
+    return listed
+      .split('\n')
+      .filter((file) => /\.(ts|tsx|sql|js|mjs)$/.test(file))
+      .map((file) => resolve(ROOT, file))
+      .filter((file) => existsSync(file));
+  } catch {
+    const paths: string[] = [];
+    for (const dir of ['apps', 'packages', 'supabase', 'tests']) walk(resolve(ROOT, dir), paths);
+    return paths;
   }
 }
 
@@ -105,8 +128,7 @@ describe('record_verified_payment execute boundary', () => {
   });
 
   it('is called only by the service-role webhook handler', () => {
-    const paths: string[] = [];
-    for (const dir of ['apps', 'packages', 'supabase', 'tests']) walk(resolve(ROOT, dir), paths);
+    const paths = listSourceFiles();
     const hits = paths.filter((path) => readFileSync(path, 'utf8').includes('record_verified_payment'));
     const rel = hits.map((path) => path.slice(ROOT.length + 1).replace(/\\/g, '/')).sort();
     expect(rel).toEqual([
@@ -117,6 +139,12 @@ describe('record_verified_payment execute boundary', () => {
       // Comment only: names the preserved function. Does not grant or call it.
       'supabase/migrations/00249_freeze_organization_subscription_entitlement_fields.sql',
       'supabase/migrations/00264_remediate_privileged_lifecycle_and_audit_contracts.sql',
+      // Replaces the function with amount, currency and invoice/organization binding; grants stay service_role only.
+      'supabase/migrations/00278_bind_verified_payments_to_authoritative_records.sql',
+      // Wraps the 00278 implementation with the canonical subscription_plans price check; grants stay service_role only.
+      'supabase/migrations/00280_canonical_subscription_pricing.sql',
+      // Settles subscription events against the canonical plan price (00280).
+      'tests/security/canonical-subscription-pricing-00280.test.ts',
       // Cites the 00247 filename and asserts 00250 SQL does not name the function.
       'tests/security/financial-authority-00250.test.ts',
       'tests/security/invoice-work-order-linkage-and-client-inserts-00202-redteam.test.ts',
@@ -126,6 +154,8 @@ describe('record_verified_payment execute boundary', () => {
       'tests/security/signup-buyer-type-00246.test.ts',
       // Proves authenticated EXECUTE is denied. Not a settlement caller.
       'tests/security/subscription-persona-authority.test.ts',
+      // Simulated gateway events against the 00278 function.
+      'tests/security/verified-payment-binding-00278.test.ts',
     ]);
     const rpcCallers = rel.filter((path) =>
       /rpc\(\s*['"]record_verified_payment['"]/.test(readFileSync(resolve(ROOT, path), 'utf8')),

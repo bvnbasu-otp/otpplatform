@@ -7,14 +7,17 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 const readFile = (file: string) => readFileSync(join(currentDir, file), 'utf8');
 
 describe('ProfilePage EULA Acceptance Attribution', () => {
-  it('renders attributable Legal Agreements & EULA Acceptance section', () => {
+  it('renders server-sourced Legal Agreements & EULA Acceptance records', () => {
     const profileCode = readFile('pages/ProfilePage.tsx');
     expect(profileCode).toContain('data-testid="legal-agreements-eula-card"');
     expect(profileCode).toContain('Legal Agreements &amp; EULA Acceptance');
-    expect(profileCode).toContain('EULA Version:');
+    expect(profileCode).toContain('Current Version:');
     expect(profileCode).toContain('Document Hash:');
     expect(profileCode).toContain('Accepted At:');
-    expect(profileCode).toContain('Legally Attributable &amp; Binding');
+    expect(profileCode).toContain('fetchLegalAcceptanceStatus');
+    // The record is never implied: no static "Recorded"/"Binding" claim.
+    expect(profileCode).not.toContain('Legally Attributable &amp; Binding');
+    expect(profileCode).not.toContain('otp_eula_acceptance');
   });
 
   it('provides navigation links to official Terms and Privacy documents', () => {

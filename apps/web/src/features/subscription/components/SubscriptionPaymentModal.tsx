@@ -4,12 +4,12 @@ import {
   computeSubscriptionFee,
   generateSubscriptionPaymentRef,
   resolveTierForOrgType,
-  calculateGst,
   type BillingCycle,
   type SubscriptionTierId,
 } from '../types';
 import {
   applyWalletCreditsToSubscription,
+  fetchCanonicalSubscriptionPrice,
   fetchOrganizationWallet,
   processSubscriptionPayment,
 } from '../api/subscription';
@@ -25,10 +25,10 @@ interface SubscriptionPaymentModalProps {
   onSuccess?: (newExpiresAt: string) => void;
 }
 
-const AVAILABLE_TIERS: { id: SubscriptionTierId; label: string; priceMonthly: number }[] = [
-  { id: 'INDIVIDUAL', label: 'Individual (₹199)', priceMonthly: 199 },
-  { id: 'RWA', label: 'RWA / Society (₹1,499)', priceMonthly: 1499 },
-  { id: 'MSME', label: 'MSME (₹1,999)', priceMonthly: 1999 },
+const AVAILABLE_TIERS: { id: SubscriptionTierId; label: string }[] = [
+  { id: 'INDIVIDUAL', label: 'Individual' },
+  { id: 'RWA', label: 'RWA / Society' },
+  { id: 'MSME', label: 'MSME' },
 ];
 
 export function SubscriptionPaymentModal({
@@ -49,6 +49,11 @@ export function SubscriptionPaymentModal({
   const [isSuccess, setIsSuccess] = useState(false);
   const [successExpiresAt, setSuccessExpiresAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [canonicalPrices, setCanonicalPrices] = useState<{ monthly: number | null; yearly: number | null; error: string | null }>({
+    monthly: null,
+    yearly: null,
+    error: null,
+  });
 
   // Wallet credits state
   const [walletBalance, setWalletBalance] = useState<number>(0);
@@ -78,19 +83,41 @@ export function SubscriptionPaymentModal({
     };
   }, [isOpen, organizationId]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    let live = true;
+    setCanonicalPrices({ monthly: null, yearly: null, error: null });
+    Promise.all([
+      fetchCanonicalSubscriptionPrice(selectedTier, 'MONTHLY'),
+      fetchCanonicalSubscriptionPrice(selectedTier, 'YEARLY'),
+    ]).then(([monthly, yearly]) => {
+      if (!live) return;
+      const failure = (!monthly.ok && monthly.error) || (!yearly.ok && yearly.error) || null;
+      setCanonicalPrices({
+        monthly: monthly.ok ? monthly.amount : null,
+        yearly: yearly.ok ? yearly.amount : null,
+        error: failure,
+      });
+    });
+    return () => {
+      live = false;
+    };
+  }, [isOpen, selectedTier]);
+
   if (!isOpen) return null;
 
   const plan = SUBSCRIPTION_TIERS[selectedTier] || SUBSCRIPTION_TIERS.INDIVIDUAL;
   const fee = computeSubscriptionFee(selectedTier, selectedCycle);
-  const gstBreakdown = calculateGst(fee.amount);
-  const totalPayableWithGst = gstBreakdown.totalAmount;
+  const canonicalAmount = selectedCycle === 'YEARLY' ? canonicalPrices.yearly : canonicalPrices.monthly;
   const dummyUpiId = 'pay@otp';
   const paymentRef = useMemo(() => generateSubscriptionPaymentRef(), [isOpen]);
 
-  // Wallet discount calculations applied against total payable with GST
-  const creditsToApply = applyCredits ? Math.min(totalPayableWithGst, walletBalance) : 0;
-  const cashPayable = Math.max(0, Math.round((totalPayableWithGst - creditsToApply) * 100) / 100);
-  const isFullyCoveredByWallet = creditsToApply >= totalPayableWithGst;
+  // Wallet redemption and cash checkout both pay the canonical catalogue amount.
+  // A partial credit balance does not reduce the payable price.
+  const priceReady = canonicalAmount != null && canonicalAmount > 0;
+  const creditsToApply = applyCredits && priceReady && walletBalance >= canonicalAmount ? canonicalAmount : 0;
+  const cashPayable = priceReady && creditsToApply === 0 ? canonicalAmount : 0;
+  const isFullyCoveredByWallet = priceReady && creditsToApply === canonicalAmount;
 
   const handleCopyUpi = () => {
     navigator.clipboard.writeText(dummyUpiId);
@@ -99,6 +126,10 @@ export function SubscriptionPaymentModal({
   };
 
   const handleSimulatePayment = async () => {
+    if (canonicalAmount == null) {
+      setError(canonicalPrices.error || 'Canonical subscription price is not configured');
+      return;
+    }
     setIsVerifying(true);
     setError(null);
 
@@ -132,7 +163,7 @@ export function SubscriptionPaymentModal({
           organizationId,
           tierId: selectedTier,
           cycle: selectedCycle,
-          amount: cashPayable,
+          amount: canonicalAmount,
           paymentRef,
           upiId: dummyUpiId,
         });
@@ -223,8 +254,8 @@ export function SubscriptionPaymentModal({
                 <span className="font-bold text-foreground">{fee.monthlyRfqQuota} RFQs / month</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Base + 18% GST:</span>
-                <span className="font-mono text-foreground">₹{gstBreakdown.basePrice} + ₹{gstBreakdown.gstAmount} = ₹{totalPayableWithGst}</span>
+                <span className="text-muted-foreground">Catalogue price:</span>
+                <span className="font-mono text-foreground">{canonicalAmount == null ? 'Not configured' : `₹${canonicalAmount.toLocaleString('en-IN')}`}</span>
               </div>
               {creditsToApply > 0 && (
                 <div className="flex justify-between text-amber-700 dark:text-amber-400">
@@ -278,10 +309,7 @@ export function SubscriptionPaymentModal({
                         : 'border-muted bg-card text-muted-foreground hover:bg-muted/40'
                     }`}
                   >
-                    <div>{t.label.split(' (')[0]}</div>
-                    <div className="text-[10px] font-normal text-muted-foreground mt-0.5">
-                      ₹{selectedCycle === 'MONTHLY' ? SUBSCRIPTION_TIERS[t.id]?.monthlyPrice : SUBSCRIPTION_TIERS[t.id]?.yearlyPrice}
-                    </div>
+                    <div>{t.label}</div>
                   </button>
                 ))}
               </div>
@@ -300,8 +328,7 @@ export function SubscriptionPaymentModal({
                   <div className="font-bold text-sm text-foreground">Monthly Plan</div>
                   <div className="text-xs text-muted-foreground mt-0.5">3 RFQs / Calendar Month</div>
                   <div className="text-base font-black text-foreground mt-2">
-                    ₹{SUBSCRIPTION_TIERS[selectedTier]?.monthlyPrice.toLocaleString('en-IN')}
-                    <span className="text-[11px] font-normal text-muted-foreground"> + 18% GST</span>
+                    {canonicalPrices.monthly == null ? 'Not configured' : `₹${canonicalPrices.monthly.toLocaleString('en-IN')}`}
                   </div>
                 </button>
 
@@ -318,10 +345,13 @@ export function SubscriptionPaymentModal({
                     +1 Quarterly Bonus
                   </span>
                   <div className="font-bold text-sm text-foreground">Yearly Plan</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">Save ₹{SUBSCRIPTION_TIERS[selectedTier]?.yearlySavings.toLocaleString('en-IN')}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {canonicalPrices.monthly != null && canonicalPrices.yearly != null
+                      ? `Save ₹${Math.max(0, canonicalPrices.monthly * 12 - canonicalPrices.yearly).toLocaleString('en-IN')}`
+                      : 'Yearly price comes from the subscription catalogue'}
+                  </div>
                   <div className="text-base font-black text-foreground mt-2">
-                    ₹{SUBSCRIPTION_TIERS[selectedTier]?.yearlyPrice.toLocaleString('en-IN')}
-                    <span className="text-[11px] font-normal text-muted-foreground"> + 18% GST</span>
+                    {canonicalPrices.yearly == null ? 'Not configured' : `₹${canonicalPrices.yearly.toLocaleString('en-IN')}`}
                   </div>
                 </button>
               </div>
@@ -360,22 +390,26 @@ export function SubscriptionPaymentModal({
                 </div>
                 {applyCredits && (
                   <div className="flex justify-between items-center pt-1 border-t border-amber-500/20 text-muted-foreground">
-                    <span>Discount applied: <strong className="text-foreground">₹{creditsToApply.toLocaleString('en-IN')}</strong></span>
-                    <span>Remaining cash payable: <strong className="text-foreground">₹{cashPayable.toLocaleString('en-IN')}</strong></span>
+                    <span>Catalogue amount: <strong className="text-foreground">₹{(canonicalAmount ?? 0).toLocaleString('en-IN')}</strong></span>
+                    <span>{isFullyCoveredByWallet ? 'Covered by wallet' : 'Wallet does not reduce the catalogue price'}</span>
                   </div>
                 )}
               </div>
             )}
 
             {/* Step 2: Payment Display (UPI QR or Full Wallet Coverage) */}
-            {isFullyCoveredByWallet ? (
+            {!priceReady ? (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-amber-900 dark:text-amber-200">
+                {canonicalPrices.error || 'This plan has no canonical price. Checkout stays closed until subscription_plans maps the tier.'}
+              </div>
+            ) : isFullyCoveredByWallet ? (
               <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/10 p-5 text-center space-y-2">
                 <span className="text-3xl">🎉</span>
                 <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
                   100% Covered by OTP Wallet Credits!
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Your available wallet balance (₹{walletBalance.toLocaleString('en-IN')}) completely covers the total fee of ₹{totalPayableWithGst.toLocaleString('en-IN')} (Base ₹{gstBreakdown.basePrice} + GST ₹{gstBreakdown.gstAmount}). No external UPI payment required.
+                  Your available wallet balance (₹{walletBalance.toLocaleString('en-IN')}) covers the catalogue price of ₹{(canonicalAmount ?? 0).toLocaleString('en-IN')}. No separate cash amount is charged.
                 </p>
               </div>
             ) : (
@@ -434,7 +468,7 @@ export function SubscriptionPaymentModal({
                         ₹{cashPayable.toLocaleString('en-IN')}
                       </strong>
                       <span className="text-[10px] font-mono text-muted-foreground">
-                        (Base ₹{gstBreakdown.basePrice} + 18% GST ₹{gstBreakdown.gstAmount})
+                        Catalogue price
                       </span>
                     </div>
                     {creditsToApply > 0 && (
@@ -460,7 +494,7 @@ export function SubscriptionPaymentModal({
             {/* Step 3: Simulation & Action Trigger */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
               <div className="text-xs text-muted-foreground text-center sm:text-left">
-                {isFullyCoveredByWallet ? 'Use subscription credits' : 'Pilot: ₹0 charged'}
+                {isFullyCoveredByWallet ? 'Use subscription credits' : 'Amount is the canonical catalogue price'}
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -476,7 +510,7 @@ export function SubscriptionPaymentModal({
                 <button
                   type="button"
                   onClick={handleSimulatePayment}
-                  disabled={isVerifying}
+                  disabled={isVerifying || !priceReady}
                   className="w-1/2 sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isVerifying ? (
@@ -492,7 +526,7 @@ export function SubscriptionPaymentModal({
                   ) : (
                     <>
                       <span>⚡</span>
-                      <span>Activate Plan in Pilot Mode (₹0 Charged)</span>
+                      <span>Submit canonical amount ₹{cashPayable.toLocaleString('en-IN')}</span>
                     </>
                   )}
                 </button>

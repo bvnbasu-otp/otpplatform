@@ -20,6 +20,13 @@ function generateJwt(role: 'anon' | 'service_role', secret: string): string {
 const SECRET_PROD = 'your-long-production-jwt-secret-min-32-chars!';
 const SECRET_CLI = 'super-secret-jwt-token-with-at-least-32-characters-long';
 
+/**
+ * Explicit acceptance of the seeded current agreement (migration 00276). Signup
+ * tests that are not about legal acceptance spread this into the request; the
+ * server validates the version against its catalogue.
+ */
+export const LEGAL_ACCEPTANCE = { eula_accepted: true, eula_version: 'v1.0-20261014' } as const;
+
 export const KEY_PAIRS = [
   {
     name: 'prod_compose',

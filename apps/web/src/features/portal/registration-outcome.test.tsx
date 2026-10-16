@@ -18,8 +18,17 @@ import { supabase } from '@/lib/supabase';
 import { resolveNotificationStatus } from '@otp/domain';
 import { SignupSuccess } from './components/SignupSuccess';
 import { deriveRegistrationOutcome, REFERRAL_ATTRIBUTION_NOTE } from './lib/registration-outcome';
-import { sendVerificationCode, submitSignupRequest, type SignupResult } from './api/signup';
+import {
+  sendVerificationCode,
+  submitSignupRequest as submitSignupRequestWithEula,
+  type SignupResult,
+  type SignupSubmission,
+} from './api/signup';
 import { BUYER_COPY, SUPPLIER_COPY } from './types/portal';
+
+// Every signup carries explicit acceptance of the displayed catalogue version.
+const submitSignupRequest = (input: Omit<SignupSubmission, 'eulaAccepted' | 'eulaVersion'>) =>
+  submitSignupRequestWithEula({ ...input, eulaAccepted: true, eulaVersion: 'test-version' });
 
 const mockSupabase = supabase as any;
 

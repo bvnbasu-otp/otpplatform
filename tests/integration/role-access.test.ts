@@ -14,6 +14,7 @@
  */
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
+  LEGAL_ACCEPTANCE,
   createAnonClient,
   createServiceClient,
   isLocalSupabaseReachable,
@@ -375,6 +376,7 @@ describe('the role a person picked while registering', () => {
     const { data, error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
+        ...LEGAL_ACCEPTANCE,
         business_name: 'Role Capture Test Society',
         contact_first_name: 'Asha',
         contact_last_name: 'Rao',
@@ -453,6 +455,7 @@ describe('the role a person picked while registering', () => {
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
+        ...LEGAL_ACCEPTANCE,
         business_name: 'Mismatched Role Society',
         contact_first_name: 'Ravi',
         contact_last_name: 'Kumar',

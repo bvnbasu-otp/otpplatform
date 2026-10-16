@@ -5,6 +5,7 @@ import { useRoleContext } from '@/features/roles/hooks/use-role-context';
 import { isSuperAdminEmail, isFounderEmail } from './user-role';
 import { RoleOnboardingPage } from '@/features/roles/pages/RoleOnboardingPage';
 import { supabase } from '@/lib/supabase';
+import { LegalAcceptanceGate } from '@/features/legal/components/LegalAcceptanceGate';
 
 import type { RoleContext, HeldRole } from '@/features/roles/api/roles';
 import { reconcilePortalSide } from '@/features/roles/api/roles';
@@ -285,5 +286,9 @@ export function ProtectedRoute({
     return <RoleOnboardingPage />;
   }
 
-  return children ? <>{children}</> : <Outlet />;
+  const content = children ? <>{children}</> : <Outlet />;
+  // Platform operators hold no customer or supplier agreement; everyone else
+  // must have accepted the current server-side version.
+  if (context?.isFounder || context?.isPlatformAdmin) return content;
+  return <LegalAcceptanceGate>{content}</LegalAcceptanceGate>;
 }

@@ -6,47 +6,56 @@ import { describe, expect, it } from 'vitest';
 const srcDir = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const readFile = (rel: string) => readFileSync(join(srcDir, rel), 'utf8');
 
-describe('EULA & Terms Acceptance Attribution', () => {
-  it('enforces terms acceptance across all buyer personas including Individual buyers', () => {
-    const formCode = readFile('features/portal/components/BuyerRegisterForm.tsx');
+/**
+ * Acceptance is authoritative only on the server (migration 00276). These
+ * checks pin the client contract; database outcomes are asserted in
+ * tests/security/legal-acceptance-00276.test.ts.
+ */
+describe('EULA acceptance - client contract (server is authoritative)', () => {
+  it('requires acceptance for every buyer persona and for suppliers before submitting', () => {
+    const buyer = readFile('features/portal/components/BuyerRegisterForm.tsx');
+    const supplier = readFile('features/portal/components/SupplierRegisterForm.tsx');
 
-    // Validation must enforce agreement acceptance if buyerType is selected
-    expect(formCode).toContain('if (buyerType && !agreementAccepted)');
-    expect(formCode).toContain("errors.agreement = 'Review and accept the agreement above to continue.'");
-
-    // UI prompt for Individual buyer must exist
-    expect(formCode).toContain('data-testid="individual-agreement-prompt"');
-    expect(formCode).toContain('data-testid="individual-agreement-checkbox"');
-    expect(formCode).toContain('Individual Buyer EULA &amp; Terms');
-    expect(formCode).toContain('v1.0-20261014');
+    expect(buyer).toContain('if (buyerType && !agreementAccepted)');
+    expect(buyer).toContain('data-testid="individual-agreement-checkbox"');
+    expect(supplier).toContain('data-testid="supplier-agreement-checkbox"');
+    expect(supplier).toContain('if (!agreementAccepted)');
   });
 
-  it('submits cryptographic document hash, eula version, and timestamp in signup submission', () => {
-    const formCode = readFile('features/portal/components/BuyerRegisterForm.tsx');
+  it('sends the displayed catalogue version, never a hard-coded version, hash or timestamp', () => {
+    const buyer = readFile('features/portal/components/BuyerRegisterForm.tsx');
+    const supplier = readFile('features/portal/components/SupplierRegisterForm.tsx');
     const signupApi = readFile('features/portal/api/signup.ts');
 
-    // Form passes attributable EULA parameters
-    expect(formCode).toContain("eulaVersion: 'v1.0-20261014'");
-    expect(formCode).toContain("documentHash: 'sha256:7c8b0303d8a9e7019cf39e2df95000be05e527d91d8e13711311ffb43c683b5d'");
-    expect(formCode).toContain('acceptedAt: new Date().toISOString()');
-
-    // Signup API accepts and passes them to RPC and stores in localStorage
-    expect(signupApi).toContain('eula_version: eulaVersion');
-    expect(signupApi).toContain('document_hash: documentHash');
-    expect(signupApi).toContain('accepted_at: acceptedAt');
-    expect(signupApi).toContain("'otp_eula_acceptance'");
+    for (const source of [buyer, supplier, signupApi]) {
+      expect(source).not.toContain('v1.0-20261014');
+      expect(source).not.toMatch(/sha256:[0-9a-f]{64}/);
+      expect(source).not.toMatch(/acceptedAt/);
+    }
+    expect(signupApi).toContain('eula_accepted: true');
+    expect(signupApi).toContain('eula_version: input.eulaVersion');
+    expect(signupApi).not.toContain('accepted_at');
   });
 
-  it('displays attributable Legal Agreements & EULA Acceptance card on Profile Page', () => {
-    const profileCode = readFile('features/profile/pages/ProfilePage.tsx');
+  it('does not keep acceptance evidence in browser storage', () => {
+    const signupApi = readFile('features/portal/api/signup.ts');
+    const profile = readFile('features/profile/pages/ProfilePage.tsx');
+    expect(signupApi).not.toContain('otp_eula_acceptance');
+    expect(profile).not.toContain('otp_eula_acceptance');
+  });
 
-    expect(profileCode).toContain('data-testid="legal-agreements-eula-card"');
-    expect(profileCode).toContain('Legal Agreements &amp; EULA Acceptance');
-    expect(profileCode).toContain('EULA Version:');
-    expect(profileCode).toContain('Document Hash:');
-    expect(profileCode).toContain('Accepted At:');
-    expect(profileCode).toContain('Legally Attributable &amp; Binding');
-    expect(profileCode).toContain('/legal/terms');
-    expect(profileCode).toContain('/legal/privacy');
+  it('shows acceptance records from the server on the Profile page', () => {
+    const profile = readFile('features/profile/pages/ProfilePage.tsx');
+    expect(profile).toContain('data-testid="legal-agreements-eula-card"');
+    expect(profile).toContain('fetchLegalAcceptanceStatus');
+    expect(profile).not.toContain('Legally Attributable &amp; Binding');
+  });
+
+  it('gates protected routes on the server-side acceptance status', () => {
+    const route = readFile('features/auth/ProtectedRoute.tsx');
+    const gate = readFile('features/legal/components/LegalAcceptanceGate.tsx');
+    expect(route).toContain('<LegalAcceptanceGate>');
+    expect(gate).toContain('fetchLegalAcceptanceStatus');
+    expect(gate).toContain('acceptLegalAgreement');
   });
 });

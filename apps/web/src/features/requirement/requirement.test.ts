@@ -117,6 +117,21 @@ describe('Requirement Feature Module Tests', () => {
       }
     });
 
+    it('does not invent an organization for a personal buyer', async () => {
+      vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValueOnce({
+        profileId: 'prof-individual-1',
+        email: 'ada@example.test',
+        fullName: 'Ada',
+        activeOrganizationId: undefined,
+      });
+      vi.mocked(supabase.from).mockImplementation(() => createSupabaseQueryMock({ data: null, error: null }));
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: null } as never);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: { ok: true, personal: true }, error: null } as never);
+
+      const res = await fetchUserOrganization();
+      expect(res).toEqual({ ok: false, error: 'PERSONAL_BUYER' });
+    });
+
     it('returns error when user is not authenticated', async () => {
       vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValueOnce(null as any);
 

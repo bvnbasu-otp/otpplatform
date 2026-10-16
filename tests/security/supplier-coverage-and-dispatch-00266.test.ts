@@ -10,16 +10,19 @@ const SQL = readFileSync(resolve(MIGRATIONS_DIR, FILE), 'utf8');
 describe('00266 supplier coverage, dispatch & quorum remediation (static security & schema contract)', () => {
   it('exists as the contiguous migration after 00265 followed by 00267 through 00270', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
-    expect(files.at(-10)).toBe(FILE);
-    expect(files.at(-9)).toBe('00267_authoritative_founder_and_admin_claims.sql');
-    expect(files.at(-8)).toBe('00268_complete_nationwide_pincode_resolution.sql');
-    expect(files.at(-7)).toBe('00269_harden_sourcing_mode_identity_reveal.sql');
-    expect(files.at(-6)).toBe('00270_unsuccessful_rfq_retention_purge.sql');
-    expect(files.at(-5)).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
-    expect(files.at(-4)).toBe('00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql');
-    expect(files.at(-3)).toBe('00273_persist_pin_coverage_in_canonical_suppliers.sql');
-    expect(files.at(-2)).toBe('00274_location_pin_coverage_durable_recovery.sql');
-    expect(files.at(-1)).toBe('00275_isolate_rfq_subcategory_recipients.sql');
+    const idx = files.indexOf(FILE);
+    expect(files.slice(idx, idx + 9)).toEqual([
+      FILE,
+      '00267_authoritative_founder_and_admin_claims.sql',
+      '00268_complete_nationwide_pincode_resolution.sql',
+      '00269_harden_sourcing_mode_identity_reveal.sql',
+      '00270_unsuccessful_rfq_retention_purge.sql',
+      '00271_fix_supplier_messaging_channels_unique_constraint.sql',
+      '00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql',
+      '00273_persist_pin_coverage_in_canonical_suppliers.sql',
+      '00274_location_pin_coverage_durable_recovery.sql',
+    ]);
+    expect(files.at(-1)).toBe('00285_personal_evaluation_and_canonical_checkout.sql');
     const idx265 = files.indexOf('00265_remediate_buyer_taxonomy_and_rls_integrity.sql');
     expect(idx265).toBeGreaterThan(0);
     expect(files[idx265 + 1]).toBe(FILE);

@@ -1,6 +1,7 @@
 import { corsHeaders, errorResponse, jsonResponse } from '../_shared/cors.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import {
+  settlementDisposition,
   verifyAndExtractWebhook as verifyWebhook,
   type WebhookSecrets,
   type WebhookVerificationResult,
@@ -53,6 +54,18 @@ if (import.meta.main) {
 
       const payload = verification.extractedPayload;
 
+      const disposition = settlementDisposition(verification.provider, payload.raw);
+      if (!disposition.settle) {
+        // Acknowledge so the provider does not retry; nothing is recorded as paid.
+        return jsonResponse({
+          ok: true,
+          verified: true,
+          provider: verification.provider,
+          eventId: verification.eventId,
+          recorded: false,
+          message: disposition.reason,
+        });
+      }
       // Create Supabase Service Role client to execute database settlement
       const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -73,6 +86,35 @@ if (import.meta.main) {
         auth: { persistSession: false },
       });
 
+      // The plan and cycle must come from the verified event: there is no default tier or price.
+      if (payload.paymentType === 'SUBSCRIPTION' && (!payload.tier || !payload.billingCycle)) {
+        return errorResponse('Subscription events must name a tier and billing cycle', 422);
+      }
+      if (payload.paymentType === 'SUBSCRIPTION' && payload.profileId && payload.organizationId) {
+        return errorResponse('Subscription event is ambiguous: both organization and profile were supplied', 422);
+      }
+
+      if (payload.paymentType === 'SUBSCRIPTION' && payload.profileId) {
+        const { data: personal, error: personalError } = await supabase.rpc(
+          'record_verified_personal_subscription_payment',
+          {
+            p_profile_id: payload.profileId,
+            p_amount: payload.amount,
+            p_currency: payload.currency,
+            p_gateway: verification.provider,
+            p_gateway_event_id: verification.eventId,
+            p_payment_reference: payload.paymentReference,
+            p_tier: payload.tier,
+            p_billing_cycle: payload.billingCycle,
+            p_gateway_payload: payload.raw,
+          },
+        );
+        if (personalError) {
+          return errorResponse(`Database transaction failed: ${personalError.message}`, 500);
+        }
+        return jsonResponse({ ok: true, verified: true, provider: verification.provider, result: personal });
+      }
+
       // Execute atomic RPC transaction
       const { data, error } = await supabase.rpc('record_verified_payment', {
         p_payment_type: payload.paymentType,
@@ -83,8 +125,8 @@ if (import.meta.main) {
         p_gateway: verification.provider,
         p_gateway_event_id: verification.eventId,
         p_payment_reference: payload.paymentReference,
-        p_tier: payload.tier ?? 'TIER_1_MSME',
-        p_billing_cycle: payload.billingCycle ?? 'MONTHLY',
+        p_tier: payload.tier ?? null,
+        p_billing_cycle: payload.billingCycle ?? null,
         p_gateway_payload: payload.raw,
       });
 

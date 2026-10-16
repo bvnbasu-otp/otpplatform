@@ -17,6 +17,7 @@ import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { RoleChoiceField } from './RoleChoiceField';
 import { SUPPLIER_COPY } from '../types/portal';
 import { VerificationChoice } from './VerificationChoice';
+import { useCurrentAgreement } from '@/features/legal/hooks/use-current-agreement';
 
 /**
  * Registering a business or individual service contractor.
@@ -59,6 +60,9 @@ export function SupplierRegisterForm({
   const [channel, setChannel] = useState<VerificationChannel>('EMAIL');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
+  const currentAgreement = useCurrentAgreement('SUPPLIER');
+  const agreementVersion = currentAgreement.phase === 'ready' ? currentAgreement.agreement.version : '';
   // F-RUN2-VAL-01: field-level messages shown next to the field that needs
   // attention, populated on a submit attempt — see validateSupplierForm below.
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -112,6 +116,11 @@ export function SupplierRegisterForm({
     if (!email.trim()) errors.email = 'Work email is required.';
     if (!phone.trim()) errors.phone = 'Phone number is required.';
     if (!city.trim() && !pincode.trim()) errors.city = 'Tell us the city or pin code you work in.';
+    if (!agreementAccepted) {
+      errors.agreement = 'Review and accept the agreement above to continue.';
+    } else if (currentAgreement.phase !== 'ready') {
+      errors.agreement = 'The agreement could not be loaded. Reload the page and try again.';
+    }
     return errors;
   }
 
@@ -149,6 +158,9 @@ export function SupplierRegisterForm({
       taxRegistrationId: finalTaxId || undefined,
       coverageCity: city.trim() || undefined,
       coveragePincode: pincode.trim() || undefined,
+      eulaAccepted: agreementAccepted,
+      eulaVersion: agreementVersion,
+      documentHash: currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : undefined,
     });
 
     if (!result.ok) {
@@ -463,6 +475,33 @@ export function SupplierRegisterForm({
             </div>
           )}
         </PortalField>
+
+        <div
+          className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2 text-xs"
+          data-testid="supplier-agreement-prompt"
+        >
+          <span className="font-bold text-foreground">Supplier Terms &amp; EULA</span>
+          <label className="flex items-start gap-2 cursor-pointer pt-1">
+            <input
+              type="checkbox"
+              checked={agreementAccepted}
+              onChange={(e) => setAgreementAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+              data-testid="supplier-agreement-checkbox"
+            />
+            <span className="text-[11px] text-foreground font-medium">
+              I agree to the{' '}
+              <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Use</a>,{' '}
+              <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</a>{' '}
+              and Supplier EULA ({agreementVersion || 'loading'}).
+            </span>
+          </label>
+          {fieldErrors.agreement && (
+            <p className="text-red-600 text-[11px] font-semibold" role="alert">
+              {fieldErrors.agreement}
+            </p>
+          )}
+        </div>
 
         {error && (
           <p className={`text-red-600 ${text.body}`} role="alert" data-testid="register-error">

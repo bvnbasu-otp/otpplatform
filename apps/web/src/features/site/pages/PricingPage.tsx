@@ -1,18 +1,50 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PRODUCT_NAME } from '@/lib/brand';
+import { supabase } from '@/lib/supabase';
 import { SiteLayout } from '../components/SiteLayout';
 import {
-  SUBSCRIPTION_TIERS,
   type BillingCycle,
+  type SubscriptionTierId,
 } from '@/features/subscription';
 
 export function PricingPage() {
   const [cycle, setCycle] = useState<BillingCycle>('MONTHLY');
+  const [catalogue, setCatalogue] = useState<Partial<Record<SubscriptionTierId, { monthly: number | null; yearly: number | null }>>>({});
 
-  const indTier = SUBSCRIPTION_TIERS.INDIVIDUAL;
-  const rwaTier = SUBSCRIPTION_TIERS.RWA;
-  const msmeTier = SUBSCRIPTION_TIERS.MSME;
+  useEffect(() => {
+    let live = true;
+    const tiers: SubscriptionTierId[] = ['INDIVIDUAL', 'RWA', 'MSME'];
+    Promise.all(tiers.map(async (tier) => {
+      const [monthly, yearly] = await Promise.all([
+        supabase.rpc('get_canonical_subscription_price', { p_tier: tier, p_cycle: 'MONTHLY', p_currency: 'INR' }),
+        supabase.rpc('get_canonical_subscription_price', { p_tier: tier, p_cycle: 'YEARLY', p_currency: 'INR' }),
+      ]);
+      const amount = (result: { data: unknown; error: { message: string } | null }) => {
+        if (result.error) return null;
+        const value = Number((result.data as { amount?: unknown } | null)?.amount);
+        return Number.isFinite(value) && value > 0 ? value : null;
+      };
+      return [tier, { monthly: amount(monthly), yearly: amount(yearly) }] as const;
+    })).then((rows) => {
+      if (!live) return;
+      setCatalogue(Object.fromEntries(rows));
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const priceText = (tier: SubscriptionTierId) => {
+    const row = catalogue[tier];
+    const amount = cycle === 'MONTHLY' ? row?.monthly : row?.yearly;
+    return amount == null ? 'Not configured' : `₹${amount.toLocaleString('en-IN')}`;
+  };
+  const savingsText = (tier: SubscriptionTierId) => {
+    const row = catalogue[tier];
+    if (row?.monthly == null || row.yearly == null) return null;
+    return Math.max(0, row.monthly * 12 - row.yearly);
+  };
 
   return (
     <SiteLayout>
@@ -60,7 +92,7 @@ export function PricingPage() {
             >
               <span>Yearly (365 Days)</span>
               <span className="rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.2 border border-emerald-400/40">
-                Save ~17%
+                Catalogue price
               </span>
             </button>
           </div>
@@ -87,9 +119,7 @@ export function PricingPage() {
               <div className="mt-4 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
-                    ₹{cycle === 'MONTHLY'
-                      ? indTier.monthlyPrice.toLocaleString('en-IN')
-                      : indTier.yearlyPrice.toLocaleString('en-IN')}
+                    {priceText('INDIVIDUAL')}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
@@ -97,7 +127,7 @@ export function PricingPage() {
                 </div>
                 {cycle === 'YEARLY' && (
                   <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                    ✓ Saves ₹{indTier.yearlySavings.toLocaleString('en-IN')} vs Monthly
+                    {savingsText('INDIVIDUAL') == null ? 'Yearly saving is not configured' : `✓ Saves ₹${savingsText('INDIVIDUAL')?.toLocaleString('en-IN')} vs Monthly`}
                   </span>
                 )}
               </div>
@@ -123,7 +153,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Top-Ups:</strong> ₹{indTier.additionalRfqPrice} per additional RFQ (+ GST)</span>
+                  <span><strong>Top-Ups:</strong> Additional RFQ price is taken from the subscription catalogue, not a page constant.</span>
                 </li>
               </ul>
             </div>
@@ -160,9 +190,7 @@ export function PricingPage() {
               <div className="mt-4 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
-                    ₹{cycle === 'MONTHLY'
-                      ? rwaTier.monthlyPrice.toLocaleString('en-IN')
-                      : rwaTier.yearlyPrice.toLocaleString('en-IN')}
+                    {priceText('RWA')}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
@@ -170,7 +198,7 @@ export function PricingPage() {
                 </div>
                 {cycle === 'YEARLY' && (
                   <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                    ✓ Saves ₹{rwaTier.yearlySavings.toLocaleString('en-IN')} vs Monthly
+                    {savingsText('RWA') == null ? 'Yearly saving is not configured' : `✓ Saves ₹${savingsText('RWA')?.toLocaleString('en-IN')} vs Monthly`}
                   </span>
                 )}
               </div>
@@ -200,7 +228,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Top-Ups:</strong> ₹{rwaTier.additionalRfqPrice.toLocaleString('en-IN')} per additional RFQ (+ GST)</span>
+                  <span><strong>Top-Ups:</strong> Additional RFQ price is taken from the subscription catalogue, not a page constant.</span>
                 </li>
               </ul>
             </div>
@@ -234,9 +262,7 @@ export function PricingPage() {
               <div className="mt-4 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
-                    ₹{cycle === 'MONTHLY'
-                      ? msmeTier.monthlyPrice.toLocaleString('en-IN')
-                      : msmeTier.yearlyPrice.toLocaleString('en-IN')}
+                    {priceText('MSME')}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
@@ -244,7 +270,7 @@ export function PricingPage() {
                 </div>
                 {cycle === 'YEARLY' && (
                   <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                    ✓ Saves ₹{msmeTier.yearlySavings.toLocaleString('en-IN')} vs Monthly
+                    {savingsText('MSME') == null ? 'Yearly saving is not configured' : `✓ Saves ₹${savingsText('MSME')?.toLocaleString('en-IN')} vs Monthly`}
                   </span>
                 )}
               </div>
@@ -274,7 +300,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Top-Ups:</strong> ₹{msmeTier.additionalRfqPrice.toLocaleString('en-IN')} per additional RFQ (+ GST)</span>
+                  <span><strong>Top-Ups:</strong> Additional RFQ price is taken from the subscription catalogue, not a page constant.</span>
                 </li>
               </ul>
             </div>

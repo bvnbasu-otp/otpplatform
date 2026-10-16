@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { fetchLegalAcceptanceStatus, type AgreementStatus } from '@/features/legal/api/legal-acceptance';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import {
@@ -179,23 +180,24 @@ export function ProfilePage() {
     }
   };
 
-  const [eulaRecord] = useState<{
-    version: string;
-    documentHash: string;
-    acceptedAt: string;
-  }>(() => {
-    try {
-      const stored = localStorage.getItem('otp_eula_acceptance');
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch {}
-    return {
-      version: 'v1.0-20261014',
-      documentHash: 'sha256:7c8b0303d8a9e7019cf39e2df95000be05e527d91d8e13711311ffb43c683b5d',
-      acceptedAt: '2026-10-14T12:00:00.000Z',
+  const [legalStatus, setLegalStatus] = useState<
+    { phase: 'loading' } | { phase: 'error'; message: string } | { phase: 'ready'; agreements: AgreementStatus[] }
+  >({ phase: 'loading' });
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchLegalAcceptanceStatus().then((result) => {
+      if (cancelled) return;
+      setLegalStatus(
+        result.ok
+          ? { phase: 'ready', agreements: result.value.agreements }
+          : { phase: 'error', message: result.error },
+      );
+    });
+    return () => {
+      cancelled = true;
     };
-  });
+  }, []);
 
   useEffect(() => {
     if (tabParam === 'team') setActiveTab('team');
@@ -1453,38 +1455,56 @@ export function ProfilePage() {
                   📜 Legal Agreements &amp; EULA Acceptance
                 </h2>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Attributable electronic acceptance records and governance terms.
+                  Electronic acceptance records held by OTP.
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 border border-emerald-300/40">
-                ✓ Recorded
-              </span>
             </div>
 
-            <div className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">EULA Version:</span>
-                <span className="font-mono font-bold text-foreground">{eulaRecord.version}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Document Hash:</span>
-                <span className="font-mono text-[10px] text-muted-foreground truncate max-w-[200px]" title={eulaRecord.documentHash}>
-                  {eulaRecord.documentHash.slice(0, 20)}...
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Accepted At:</span>
-                <span className="text-foreground font-semibold">
-                  {eulaRecord.acceptedAt ? new Date(eulaRecord.acceptedAt).toLocaleString('en-IN') : 'At Registration'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Acceptance Status:</span>
-                <span className="text-emerald-700 dark:text-emerald-300 font-bold">
-                  Legally Attributable &amp; Binding
-                </span>
-              </div>
-            </div>
+            {legalStatus.phase === 'loading' && (
+              <p className="text-xs text-muted-foreground">Loading agreement records…</p>
+            )}
+            {legalStatus.phase === 'error' && (
+              <p className="text-xs text-red-600" role="alert">
+                Agreement records could not be loaded: {legalStatus.message}
+              </p>
+            )}
+            {legalStatus.phase === 'ready' && legalStatus.agreements.length === 0 && (
+              <p className="text-xs text-muted-foreground">No agreement applies to this account.</p>
+            )}
+            {legalStatus.phase === 'ready' &&
+              legalStatus.agreements.map((agreement) => (
+                <div
+                  key={agreement.agreementType}
+                  className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-2 text-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Agreement:</span>
+                    <span className="font-semibold text-foreground">{agreement.title}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Current Version:</span>
+                    <span className="font-mono font-bold text-foreground">{agreement.currentVersion}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Document Hash:</span>
+                    <span className="font-mono text-[10px] text-muted-foreground truncate max-w-[200px]" title={agreement.documentHash}>
+                      {agreement.documentHash.slice(0, 20)}...
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Accepted At:</span>
+                    <span className="text-foreground font-semibold">
+                      {agreement.acceptedAt ? new Date(agreement.acceptedAt).toLocaleString('en-IN') : 'Not accepted'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Acceptance Status:</span>
+                    <span className={agreement.accepted ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-amber-700 font-bold'}>
+                      {agreement.accepted ? 'Recorded for the current version' : 'Acceptance required'}
+                    </span>
+                  </div>
+                </div>
+              ))}
 
             <div className="flex flex-wrap gap-2 pt-1">
               <Link

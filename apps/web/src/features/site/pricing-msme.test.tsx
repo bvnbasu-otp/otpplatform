@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -97,6 +99,15 @@ describe('PricingPage (Canonical 3 Tiers: Individual, RWA, MSME)', () => {
     const pilotNotice = 'Pilot Mode — No real payment will be charged during this pilot.';
     expect(pilotNotice).toContain('Pilot Mode');
     expect(pilotNotice).toContain('No real payment');
+  });
+
+  it('shows the catalogue price and stays closed when that price is not configured', () => {
+    const source = readFileSync(resolve(__dirname, 'pages/PricingPage.tsx'), 'utf8');
+    expect(source).toContain("supabase.rpc('get_canonical_subscription_price'");
+    expect(source).not.toContain('SUBSCRIPTION_TIERS');
+    const text = pageText(renderPricingPage());
+    expect(text).toContain('Not configured');
+    expect(text).not.toMatch(/₹1,999|₹1999/);
   });
 
   it('publishes persona referral amounts and omits legacy supplier wallet claims', () => {

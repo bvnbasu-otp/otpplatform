@@ -11,6 +11,7 @@
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
+  LEGAL_ACCEPTANCE,
   createAnonClient,
   createServiceClient,
   isLocalSupabaseReachable,
@@ -51,6 +52,7 @@ const BUYER = (email: string) => ({
   verification_channel: 'WHATSAPP',
   buyer_type: 'COMMUNITY',
   referral_code: 'BNI-BLR-014',
+  ...LEGAL_ACCEPTANCE,
 });
 
 const SUPPLIER = (email: string, overrides: Record<string, unknown> = {}) => ({
@@ -65,6 +67,7 @@ const SUPPLIER = (email: string, overrides: Record<string, unknown> = {}) => ({
   tax_registration_id: '29ABCDE1234F1Z5',
   coverage_city: 'Bengaluru',
   coverage_pincode: '560001',
+  ...LEGAL_ACCEPTANCE,
   ...overrides,
 });
 

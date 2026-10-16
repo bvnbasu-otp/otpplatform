@@ -5,6 +5,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
+  LEGAL_ACCEPTANCE,
   createAnonClient,
   createServiceClient,
   isLocalSupabaseReachable,
@@ -106,9 +107,10 @@ describe('Migration 00257 static SQL contract', () => {
     expect(files[index + 13]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
     expect(files[index + 14]).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
     expect(files[index + 15]).toBe('00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql');
-    expect(files.at(-1)).toBe('00275_isolate_rfq_subcategory_recipients.sql');
-    expect(files.at(-2)).toBe('00274_location_pin_coverage_durable_recovery.sql');
-    expect(files.at(-3)).toBe('00273_persist_pin_coverage_in_canonical_suppliers.sql');
+    expect(files[index + 16]).toBe('00273_persist_pin_coverage_in_canonical_suppliers.sql');
+    expect(files[index + 17]).toBe('00274_location_pin_coverage_durable_recovery.sql');
+    expect(files[index + 18]).toBe('00275_isolate_rfq_subcategory_recipients.sql');
+    expect(files.at(-1)).toBe('00285_personal_evaluation_and_canonical_checkout.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {
@@ -219,6 +221,7 @@ describe('Migration 00257 local database behaviour', () => {
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
+        ...LEGAL_ACCEPTANCE,
         business_name: 'Unknown Role MSME',
         contact_first_name: 'A',
         contact_last_name: 'B',
@@ -236,6 +239,7 @@ describe('Migration 00257 local database behaviour', () => {
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
+        ...LEGAL_ACCEPTANCE,
         business_name: 'Side Mismatch MSME',
         contact_first_name: 'Ravi',
         contact_last_name: 'Kumar',
@@ -255,6 +259,7 @@ describe('Migration 00257 local database behaviour', () => {
     const { data, error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
+        ...LEGAL_ACCEPTANCE,
         business_name: 'Greenview RWA',
         contact_first_name: 'Asha',
         contact_last_name: 'Rao',
@@ -276,6 +281,7 @@ describe('Migration 00257 local database behaviour', () => {
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
+        ...LEGAL_ACCEPTANCE,
         business_name: 'Acme Tools Pvt Ltd',
         contact_first_name: 'Neha',
         contact_last_name: 'Shah',

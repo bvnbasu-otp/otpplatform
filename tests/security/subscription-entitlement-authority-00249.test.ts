@@ -293,7 +293,17 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 24]).toBe('00273_persist_pin_coverage_in_canonical_suppliers.sql');
     expect(files[index + 25]).toBe('00274_location_pin_coverage_durable_recovery.sql');
     expect(files[index + 26]).toBe('00275_isolate_rfq_subcategory_recipients.sql');
-    expect(index).toBe(files.length - 27);
+    expect(files[index + 27]).toBe('00276_server_authoritative_legal_acceptance.sql');
+    expect(files[index + 28]).toBe('00277_rwa_facility_manager_operational_only.sql');
+    expect(files[index + 29]).toBe('00278_bind_verified_payments_to_authoritative_records.sql');
+    expect(files[index + 30]).toBe('00279_legal_agreement_grace_and_database_enforcement.sql');
+    expect(files[index + 31]).toBe('00280_canonical_subscription_pricing.sql');
+    expect(files[index + 32]).toBe('00281_individual_personal_ownership_foundation.sql');
+    expect(files[index + 33]).toBe('00282_individual_personal_procurement_lifecycle.sql');
+    expect(files[index + 34]).toBe('00283_personal_document_issuance.sql');
+    expect(files[index + 35]).toBe('00284_legal_gate_paths_and_personal_subscription_settlement.sql');
+    expect(files[index + 36]).toBe('00285_personal_evaluation_and_canonical_checkout.sql');
+    expect(index).toBe(files.length - 37);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);
@@ -328,8 +338,9 @@ describe('subscription entitlement authority 00249', () => {
     const paymentFiles = files.filter((file) =>
       /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.process_subscription_payment\s*\(/.test(readMigration(file)),
     );
-    expect(paymentFiles.at(-2)).toBe(PAYMENT_00233);
-    expect(paymentFiles.at(-1)).toBe('00250_financial_authority_client_grant_boundary.sql');
+    expect(paymentFiles.at(-3)).toBe(PAYMENT_00233);
+    expect(paymentFiles.at(-2)).toBe('00250_financial_authority_client_grant_boundary.sql');
+    expect(paymentFiles.at(-1)).toBe('00285_personal_evaluation_and_canonical_checkout.sql');
     const previousBody = functionBody(stripComments(readMigration(PAYMENT_00233)), 'public.process_subscription_payment');
     expect(previousBody).toContain('subscription_plan = v_cycle_upper');
     const paymentBody = functionBody(
@@ -340,6 +351,13 @@ describe('subscription entitlement authority 00249', () => {
     expect(paymentBody).not.toContain('subscription_expires_at = v_new_expires');
     expect(paymentBody).toContain("'entitlement_granted', false");
     expect(paymentBody).toContain('PLATFORM_WALLET_DENIED');
+    const canonicalBody = functionBody(
+      stripComments(readMigration('00285_personal_evaluation_and_canonical_checkout.sql')),
+      'public.process_subscription_payment',
+    );
+    expect(canonicalBody).toContain("'entitlement_granted', false");
+    expect(canonicalBody).toContain('PAY-V-PRICE-MISMATCH');
+    expect(canonicalBody).not.toContain('subscription_plan = v_cycle_upper');
     const later = files.slice(files.indexOf(PAYMENT_00233) + 1);
     const revokedFromAuthenticated = later.some((file) =>
       /REVOKE\s+(?:ALL|EXECUTE)\s+ON\s+FUNCTION\s+public\.process_subscription_payment\b[^;]*\bauthenticated\b/i.test(
@@ -522,6 +540,10 @@ describe('subscription entitlement authority 00249', () => {
       });
       expect(written.subscription_plan).toBe('YEARLY');
 
+      await c.query(
+        `INSERT INTO public.subscription_plans (code, name, tier_code, price_monthly, price_yearly, currency, is_active)
+         VALUES ('SYN-IND-' || gen_random_uuid()::text, 'Synthetic Individual', 'INDIVIDUAL', 199, 4242, 'INR', true)`,
+      );
       const price = await c.query(
         `SELECT private.subscription_wallet_credit_inr('INDIVIDUAL', 'YEARLY') AS amount`,
       );
@@ -569,6 +591,10 @@ describe('subscription entitlement authority 00249', () => {
           ),
         ),
       ).rejects.toThrow(/row-level security|PLATFORM_WALLET_DENIED|permission denied/i);
+      await c.query(
+        `INSERT INTO public.subscription_plans (code, name, tier_code, price_monthly, price_yearly, currency, is_active)
+         VALUES ('SYN-IND-' || gen_random_uuid()::text, 'Synthetic Individual', 'INDIVIDUAL', 199, 4242, 'INR', true)`,
+      );
       const price = await c.query(
         `SELECT private.subscription_wallet_credit_inr('INDIVIDUAL', 'YEARLY') AS amount`,
       );
@@ -594,6 +620,10 @@ describe('subscription entitlement authority 00249', () => {
   it('observes that a client payment reference does not grant entitlement', async () => {
     await withGuard(async (c) => {
       const id = owner!.orgId;
+      await c.query(
+        `INSERT INTO public.subscription_plans (code, name, tier_code, price_monthly, price_yearly, currency, is_active)
+         VALUES ('SYN-IND-' || gen_random_uuid()::text, 'Synthetic Individual', 'INDIVIDUAL', 199, 4242, 'INR', true)`,
+      );
       const price = await c.query(
         `SELECT private.subscription_wallet_credit_inr('INDIVIDUAL', 'YEARLY') AS amount`,
       );
@@ -608,11 +638,19 @@ describe('subscription entitlement authority 00249', () => {
         subscription_status: string;
         subscription_expires_at: string | null;
       };
-      const observed = await asRole(c, 'authenticated', owner!.authUserId, async (q) => {
-        const offCatalog = await q(
-          `SELECT public.process_subscription_payment($1, 'INDIVIDUAL', 'YEARLY', 1, 'UPI-TXN-FAKE-WRONG', 'pay@otp') AS result`,
-          [id],
+      let offCatalogMessage = '';
+      try {
+        await asRole(c, 'authenticated', owner!.authUserId, (q) =>
+          q(
+            `SELECT public.process_subscription_payment($1, 'INDIVIDUAL', 'YEARLY', 1, 'UPI-TXN-FAKE-WRONG', 'pay@otp') AS result`,
+            [id],
+          ),
         );
+      } catch (error) {
+        offCatalogMessage = error instanceof Error ? error.message : String(error);
+      }
+      expect(offCatalogMessage).toContain('PAY-V-PRICE-MISMATCH');
+      const observed = await asRole(c, 'authenticated', owner!.authUserId, async (q) => {
         const first = await q(
           `SELECT public.process_subscription_payment($1, 'INDIVIDUAL', 'YEARLY', $2, 'UPI-TXN-FAKE-ENTAUTH', 'pay@otp') AS result`,
           [id, amount],
@@ -632,12 +670,6 @@ describe('subscription entitlement authority 00249', () => {
           [id],
         );
         return {
-          offCatalog: offCatalog.rows[0].result as {
-            ok?: boolean;
-            simulated?: boolean;
-            entitlement_granted?: boolean;
-            message?: string;
-          },
           first: first.rows[0].result as {
             ok?: boolean;
             simulated?: boolean;
@@ -656,10 +688,6 @@ describe('subscription entitlement authority 00249', () => {
           },
         };
       });
-      expect(observed.offCatalog.ok).toBe(true);
-      expect(observed.offCatalog.simulated).toBe(true);
-      expect(observed.offCatalog.entitlement_granted).toBe(false);
-      expect(String(observed.offCatalog.message ?? '')).not.toMatch(/catalog price/i);
       expect(observed.first.ok).toBe(true);
       expect(observed.first.simulated).toBe(true);
       expect(observed.first.entitlement_granted).toBe(false);

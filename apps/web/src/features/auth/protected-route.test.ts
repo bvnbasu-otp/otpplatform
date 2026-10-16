@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   evaluateRouteAccess,
@@ -27,6 +29,12 @@ function createMockStorage() {
 }
 
 describe('Security & Route Guard Audit — ProtectedRoute & RBAC Enforcement', () => {
+  it('wraps customer and supplier workspaces in the legal gate and leaves operators outside it', () => {
+    const source = readFileSync(resolve(__dirname, 'ProtectedRoute.tsx'), 'utf8');
+    expect(source).toContain('if (context?.isFounder || context?.isPlatformAdmin) return content;');
+    expect(source).toContain('return <LegalAcceptanceGate>{content}</LegalAcceptanceGate>');
+  });
+
   beforeEach(() => {
     const mockSession = createMockStorage();
     const mockLocal = createMockStorage();

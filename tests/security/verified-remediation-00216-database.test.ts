@@ -150,7 +150,7 @@ describe('00216/00217 — live database security (REAL DATABASE)', () => {
       p_credits_to_apply: 1,
     });
     expect(error).toBeTruthy();
-    expect(error?.message ?? '').toMatch(/catalog amount|Wallet redemption must equal/i);
+    expect(error?.message ?? '').toMatch(/catalog amount|Wallet redemption must equal|PRICE-/i);
   });
 
   it('authenticated non-member cannot credit wallet for another org (wrong org fee)', async () => {

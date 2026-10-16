@@ -248,7 +248,8 @@ describe('R10 invoices_update / work_orders_update', () => {
       'public.admin_retry_invoice_payment_webhook',
       'public.admin_simulate_po_acceptance',
       'public.apply_tds_withholding_atomic',
-      'public.record_verified_payment',
+      // record_verified_payment no longer updates invoices directly (00278): the
+      // allocation insert drives paid_amount, balance_due and status through sync_invoice_payment_state.
       'public.reverse_payment_allocation_atomic',
       'public.sync_invoice_payment_state',
     ]);

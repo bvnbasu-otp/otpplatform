@@ -2,8 +2,17 @@
 
 BEGIN;
 
-ALTER FUNCTION private.rank_discovery_candidates(uuid, uuid[])
-  RENAME TO rank_discovery_candidates_pre_subcategory_isolation;
+-- Re-applying this file on a database that already ran it must not rename the
+-- current wrapper onto the preserved predecessor. The predecessor is created
+-- only on the first apply.
+DO $rename_rank_discovery_candidates$
+BEGIN
+  IF to_regprocedure('private.rank_discovery_candidates_pre_subcategory_isolation(uuid, uuid[])') IS NULL THEN
+    ALTER FUNCTION private.rank_discovery_candidates(uuid, uuid[])
+      RENAME TO rank_discovery_candidates_pre_subcategory_isolation;
+  END IF;
+END
+$rename_rank_discovery_candidates$;
 
 CREATE OR REPLACE FUNCTION private.rank_discovery_candidates(
   p_rfq_id uuid,

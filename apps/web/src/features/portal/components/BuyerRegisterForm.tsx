@@ -19,6 +19,7 @@ import { buyerApprovalHelp, BUYER_COPY } from '../types/portal';
 import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { VerificationChoice } from './VerificationChoice';
 import { queueBuyerPinDiscovery } from '../api/location-discovery';
+import { useCurrentAgreement } from '@/features/legal/hooks/use-current-agreement';
 
 /**
  * Registering an organisation.
@@ -71,6 +72,8 @@ export function BuyerRegisterForm({
 
   const [pan, setPan] = useState('');
   const [agreementAccepted, setAgreementAccepted] = useState(false);
+  const currentAgreement = useCurrentAgreement('BUYER');
+  const agreementVersion = currentAgreement.phase === 'ready' ? currentAgreement.agreement.version : '';
   const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
 
   // R2-07: Location Pre-Warm & Coverage State
@@ -133,6 +136,9 @@ export function BuyerRegisterForm({
     if (buyerType && !agreementAccepted) {
       errors.agreement = 'Review and accept the agreement above to continue.';
     }
+    if (buyerType && agreementAccepted && currentAgreement.phase !== 'ready') {
+      errors.agreement = 'The agreement could not be loaded. Reload the page and try again.';
+    }
     return errors;
   }
 
@@ -166,9 +172,9 @@ export function BuyerRegisterForm({
       referralCode: referral.trim() || undefined,
       coverageCity: city.trim(),
       coveragePincode: pincode.trim(),
-      eulaVersion: 'v1.0-20261014',
-      documentHash: 'sha256:7c8b0303d8a9e7019cf39e2df95000be05e527d91d8e13711311ffb43c683b5d',
-      acceptedAt: new Date().toISOString(),
+      eulaAccepted: agreementAccepted,
+      eulaVersion: agreementVersion,
+      documentHash: currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : undefined,
     });
 
     if (!result.ok) {
@@ -441,7 +447,7 @@ export function BuyerRegisterForm({
               )}
             </div>
             <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Review and electronically accept the OTP Individual Buyer Terms and EULA (v1.0-20261014). Commitments create direct bilateral obligations with suppliers without platform middleman custody.
+              Review and electronically accept the OTP Individual Buyer Terms and EULA ({agreementVersion || 'loading'}). Commitments create direct bilateral obligations with suppliers without platform middleman custody.
             </p>
             <label className="flex items-start gap-2 cursor-pointer pt-1">
               <input
@@ -452,7 +458,7 @@ export function BuyerRegisterForm({
                 data-testid="individual-agreement-checkbox"
               />
               <span className="text-[11px] text-foreground font-medium">
-                I agree to the <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Use</a>, <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</a>, and EULA (v1.0-20261014).
+                I agree to the <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Use</a>, <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</a>, and EULA ({agreementVersion || 'loading'}).
               </span>
             </label>
             {fieldErrors.agreement && (

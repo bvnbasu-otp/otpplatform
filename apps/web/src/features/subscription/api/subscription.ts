@@ -92,6 +92,28 @@ export interface ProcessPaymentParams {
   upiId?: string;
 }
 
+export async function fetchCanonicalSubscriptionPrice(
+  tierId: string,
+  cycle: string,
+): Promise<{ ok: true; amount: number; currency: string } | { ok: false; error: string }> {
+  try {
+    const { data, error } = await supabase.rpc('get_canonical_subscription_price', {
+      p_tier: tierId,
+      p_cycle: cycle,
+      p_currency: 'INR',
+    });
+    if (error) return { ok: false, error: error.message };
+    const amount = Number((data as { amount?: unknown } | null)?.amount);
+    const currency = String((data as { currency?: unknown } | null)?.currency ?? '');
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { ok: false, error: 'Canonical subscription price is not configured' };
+    }
+    return { ok: true, amount, currency };
+  } catch (err: unknown) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Could not load the canonical price' };
+  }
+}
+
 export async function processSubscriptionPayment(
   params: ProcessPaymentParams,
 ): Promise<{ ok: true; newExpiresAt: string; message: string } | { ok: false; error: string }> {
@@ -117,7 +139,10 @@ export async function processSubscriptionPayment(
     return {
       ok: true,
       newExpiresAt: res.new_expires_at,
-      message: res.message || 'Payment verified and plan activated!',
+      message: res.message
+        || (res.entitlement_granted
+          ? 'Payment verified and plan activated!'
+          : 'Payment matched the canonical price and did not activate a subscription.'),
     };
   } catch (err: any) {
     return { ok: false, error: err?.message || 'Payment RPC error' };

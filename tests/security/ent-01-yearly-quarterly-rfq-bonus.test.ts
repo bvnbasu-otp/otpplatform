@@ -48,7 +48,15 @@ describe('ENT-01 migration 00248 yearly quarterly RFQ bonus', () => {
     const definers = files.filter((f) =>
       /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+private\.enforce_pilot_rfq_allowance\s*\(/.test(readMigration(f)),
     );
-    expect(definers).toEqual([PRIOR, FILE, '00253_cancelled_rfq_allowance_and_utgst.sql']);
+    expect(definers).toEqual([PRIOR, FILE, '00253_cancelled_rfq_allowance_and_utgst.sql', '00282_individual_personal_procurement_lifecycle.sql']);
+    // 00282 keeps the 3-per-month rule and the cancelled-RFQ exclusion, and scopes counting to the owner.
+    const personal = functionBody(
+      stripComments(readMigration('00282_individual_personal_procurement_lifecycle.sql')),
+      'private.enforce_pilot_rfq_allowance',
+    );
+    expect(personal).toContain('v_allowance CONSTANT integer := 3');
+    expect(personal).toContain("status IS DISTINCT FROM 'CANCELLED'::public.rfq_status");
+    expect(personal).toContain('owner_profile_id IS NOT DISTINCT FROM NEW.owner_profile_id');
     const later = functionBody(
       stripComments(readMigration('00253_cancelled_rfq_allowance_and_utgst.sql')),
       'private.enforce_pilot_rfq_allowance',

@@ -46,10 +46,12 @@ export interface SignupSubmission {
   taxRegistrationId?: string;
   coverageCity?: string;
   coveragePincode?: string;
-  /** Legal and EULA acceptance attribution. */
-  eulaVersion?: string;
+  /** True only when the applicant ticked the agreement; the server re-validates it. */
+  eulaAccepted: boolean;
+  /** The catalogue version that was displayed to the applicant. */
+  eulaVersion: string;
+  /** Catalogue hash that was displayed; optional assertion checked server-side. */
   documentHash?: string;
-  acceptedAt?: string;
 }
 
 export interface SignupResult {
@@ -190,11 +192,11 @@ export async function fetchServedCities(): Promise<string[]> {
 export async function submitSignupRequest(
   input: SignupSubmission,
 ): Promise<{ ok: true; result: SignupResult } | { ok: false; error: string }> {
-  const eulaVersion = input.eulaVersion || 'v1.0-20261014';
-  const documentHash =
-    input.documentHash ||
-    'sha256:7c8b0303d8a9e7019cf39e2df95000be05e527d91d8e13711311ffb43c683b5d';
-  const acceptedAt = input.acceptedAt || new Date().toISOString();
+  // The server validates the accepted version against its legal catalogue and
+  // records the acceptance with its own timestamp. Nothing here is evidence.
+  if (!input.eulaAccepted || !input.eulaVersion) {
+    return { ok: false, error: humanizeSignupError('EULA_NOT_ACCEPTED') };
+  }
 
   const { data, error } = await supabase.rpc('submit_signup_request', {
     p_request: {
@@ -213,28 +215,13 @@ export async function submitSignupRequest(
       tax_registration_id: input.taxRegistrationId ?? null,
       coverage_city: input.coverageCity ?? null,
       coverage_pincode: input.coveragePincode ?? null,
-      eula_version: eulaVersion,
-      document_hash: documentHash,
-      accepted_at: acceptedAt,
+      eula_accepted: true,
+      eula_version: input.eulaVersion,
+      document_hash: input.documentHash ?? null,
     },
   });
 
   if (error) return { ok: false, error: humanizeSignupError(error.message) };
-
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(
-        'otp_eula_acceptance',
-        JSON.stringify({
-          version: eulaVersion,
-          documentHash,
-          acceptedAt,
-          side: input.side,
-          buyerType: input.buyerType,
-        }),
-      );
-    } catch {}
-  }
 
   const row = (data ?? {}) as Record<string, unknown>;
   const requestId = typeof row.requestId === 'string' ? row.requestId : undefined;
@@ -311,6 +298,15 @@ export async function submitSignupRequest(
  * to know which box to go back to.
  */
 export function humanizeSignupError(message: string): string {
+  if (/EULA_NOT_ACCEPTED/.test(message)) {
+    return 'Please review and accept the agreement to continue.';
+  }
+  if (/EULA_VERSION_STALE/.test(message)) {
+    return 'The agreement was updated. Reload the page, review the new version and accept it to continue.';
+  }
+  if (/EULA_CATALOGUE_UNAVAILABLE/.test(message)) {
+    return 'The agreement is temporarily unavailable. Please try again shortly.';
+  }
   if (/signup_requests_phone_shape/.test(message)) {
     return 'That phone number does not look complete. Include the full number, with country code if it is outside India.';
   }

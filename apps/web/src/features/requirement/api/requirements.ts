@@ -122,6 +122,10 @@ export async function fetchUserOrganization(): Promise<
     const { data: ensureData, error: ensureErr } = await supabase.rpc('ensure_buyer_organization');
     if (!ensureErr && ensureData && (ensureData as any).ok) {
       const res = ensureData as any;
+      // An Individual owns records personally; there is no organization to return.
+      if (res.personal) {
+        return { ok: false, error: 'PERSONAL_BUYER' };
+      }
       return {
         ok: true,
         org: {

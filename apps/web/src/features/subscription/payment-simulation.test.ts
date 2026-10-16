@@ -7,7 +7,7 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 import { supabase } from '@/lib/supabase';
-import { processSubscriptionPayment } from './api/subscription';
+import { fetchCanonicalSubscriptionPrice, processSubscriptionPayment } from './api/subscription';
 
 const rpc = supabase.rpc as unknown as ReturnType<typeof vi.fn>;
 const from = supabase.from as unknown as ReturnType<typeof vi.fn>;
@@ -136,6 +136,40 @@ describe('subscription payment simulation', () => {
     expect(from).not.toHaveBeenCalled();
   });
 
+  it('loads the payable amount from the canonical price and fails closed otherwise', async () => {
+    rpc.mockResolvedValueOnce({ data: { amount: 400, currency: 'INR' }, error: null });
+    await expect(fetchCanonicalSubscriptionPrice('INDIVIDUAL', 'YEARLY')).resolves.toEqual({
+      ok: true,
+      amount: 400,
+      currency: 'INR',
+    });
+
+    rpc.mockResolvedValueOnce({ data: null, error: { message: 'permission denied' } });
+    await expect(fetchCanonicalSubscriptionPrice('INDIVIDUAL', 'YEARLY')).resolves.toEqual({
+      ok: false,
+      error: 'permission denied',
+    });
+
+    rpc.mockResolvedValueOnce({ data: { amount: 0, currency: 'INR' }, error: null });
+    await expect(fetchCanonicalSubscriptionPrice('MSME', 'MONTHLY')).resolves.toEqual({
+      ok: false,
+      error: 'Canonical subscription price is not configured',
+    });
+  });
+
+  it('does not treat a matched canonical payment as local activation', async () => {
+    rpc.mockResolvedValue({
+      data: { ok: true, new_expires_at: null, entitlement_granted: false },
+      error: null,
+    });
+
+    await expect(processSubscriptionPayment(paymentParams)).resolves.toEqual({
+      ok: true,
+      newExpiresAt: null,
+      message: 'Payment matched the canonical price and did not activate a subscription.',
+    });
+  });
+
   it('keeps expiry authority on the payment RPC rather than the client reference', () => {
     const api = readFileSync(resolve(__dirname, 'api/subscription.ts'), 'utf8');
     const modal = readFileSync(resolve(__dirname, 'components/SubscriptionPaymentModal.tsx'), 'utf8');
@@ -164,6 +198,9 @@ describe('subscription payment simulation', () => {
     expect(paymentRefused).toBeGreaterThan(rpcAt);
     expect(mapped).toBeGreaterThan(paymentRefused);
     expect(success).toBeGreaterThan(mapped);
+    expect(simulate).toContain('amount: canonicalAmount');
+    expect(simulate).toContain('if (canonicalAmount == null)');
+    expect(modal).not.toContain('calculateGst');
     expect(simulate).toContain('if (onSuccess && finalExpiresAt) onSuccess(finalExpiresAt)');
     expect(simulate).not.toMatch(/finalExpiresAt\s*=\s*paymentRef\b/);
     expect(simulate).not.toMatch(/onSuccess\s*\(\s*paymentRef\b/);

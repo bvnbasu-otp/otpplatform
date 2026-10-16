@@ -258,6 +258,8 @@ describe('remaining always-true policies after 00203', () => {
       'buyer_type_config',
       'demo_price_anchors',
       'demo_settings',
+      // 00276: published agreement versions are public reference data (no PII); acceptances are not.
+      'legal_document_versions',
       'market_intelligence_baselines',
       'platform_fee_policies',
       'subcategory_capabilities',
