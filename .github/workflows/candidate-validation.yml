@@ -1,0 +1,144 @@
+name: OTP Candidate Validation (Non-Deploying)
+
+on:
+  push:
+    branches:
+      - 'candidate-validation/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: otp-candidate-validation-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate exact candidate without deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Validate candidate SHA input
+        id: candidate
+        env:
+          VALIDATION_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          CANDIDATE_SHA="${VALIDATION_BRANCH#candidate-validation/}"
+          if [[ ! "${CANDIDATE_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Validation branch must be candidate-validation/<full-lowercase-commit-sha>"
+            exit 1
+          fi
+          echo "sha=${CANDIDATE_SHA}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check out validation commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Confirm candidate is unchanged by the validation commit
+        env:
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+          VALIDATION_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          parent="$(git rev-parse HEAD^)"
+          if [ "${actual}" != "${VALIDATION_SHA}" ] || [ "${parent}" != "${CANDIDATE_SHA}" ]; then
+            echo "::error::Validation commit must directly follow the candidate SHA"
+            exit 1
+          fi
+          changed="$(git diff --name-only "${CANDIDATE_SHA}" "${actual}" | sort)"
+          expected="$(printf '%s\n' '.github/workflows/candidate-validation.yml' 'scripts/verify-migration-ceiling.mjs' | sort)"
+          if [ "${changed}" != "${expected}" ]; then
+            echo "::error::Validation commit changed paths outside the gate workflow and migration checker"
+            printf '%s\n' "${changed}"
+            exit 1
+          fi
+          echo "Validating candidate ${CANDIDATE_SHA}; application, tests, and migrations are unchanged."
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.15.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      - name: Check migration continuity and exact ceiling
+        run: |
+          set -euo pipefail
+          pnpm db:migrate:check
+          node scripts/verify-migration-ceiling.mjs 00290
+
+      - name: Enforce canonical vocabulary
+        run: pnpm test:vocab
+
+      - name: Enforce test coverage policy
+        env:
+          GITHUB_BASE_REF: main
+          STRICT_APPEND_RULE: 'true'
+        run: pnpm test:policy --strict
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build web bundle with validation-only environment
+        env:
+          VITE_SUPABASE_URL: https://ci-validation.invalid
+          VITE_SUPABASE_ANON_KEY: ci-validation-public-anon-placeholder
+          VITE_DEMO_MODE: 'false'
+        run: pnpm --filter @otp/web build
+
+      - name: Start isolated local Supabase database
+        id: local_supabase
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/otp-clean"
+          git archive HEAD supabase | tar -x -C "${RUNNER_TEMP}/otp-clean"
+          sed -i 's/^project_id = "otp-local"$/project_id = "otp-clean"/' \
+            "${RUNNER_TEMP}/otp-clean/supabase/config.toml"
+          grep -q '^project_id = "otp-clean"$' \
+            "${RUNNER_TEMP}/otp-clean/supabase/config.toml"
+          if ! supabase --workdir "${RUNNER_TEMP}/otp-clean" start \
+            -x edge-runtime,imgproxy,logflare,mailpit,realtime,storage-api,studio,vector,kong,gotrue,postgrest,postgres-meta,supavisor \
+            > "${RUNNER_TEMP}/otp-clean/supabase-start.log" 2>&1; then
+            echo "::error::Isolated Supabase startup failed; startup output is withheld because it can include generated credentials."
+            exit 1
+          fi
+          container="$(docker inspect --format '{{.Name}}' supabase_db_otp-clean)"
+          if [ "${container}" != "/supabase_db_otp-clean" ]; then
+            echo "::error::Expected the isolated supabase_db_otp-clean container"
+            exit 1
+          fi
+          supabase --workdir "${RUNNER_TEMP}/otp-clean" db reset --local
+
+      - name: Run unit tests
+        run: pnpm test:unit
+
+      - name: Run web module tests
+        run: pnpm test:module
+
+      - name: Run candidate PostgreSQL security regressions
+        run: >-
+          pnpm exec vitest run
+          tests/security/first-qualifying-quote-allowance-00286.test.ts
+          tests/security/buyer-address-book-invariants-00287.test.ts
+          tests/security/legal-enforcement-00279.test.ts
+
+      - name: Stop isolated local Supabase
+        if: always() && steps.local_supabase.outcome != 'skipped'
+        run: supabase --workdir "${RUNNER_TEMP}/otp-clean" stop --no-backup
