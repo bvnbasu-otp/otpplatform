@@ -20,6 +20,10 @@ import { corsHeaders, errorResponse, jsonResponse } from '../_shared/cors.ts';
 import { resolveProvider, MessagingConfigError } from '../_shared/messaging/providers/resolve.ts';
 import { renderRfqNotification } from '../_shared/messaging/templates.ts';
 import type { MessagingChannel, MessagingProvider } from '../_shared/messaging/types.ts';
+import {
+  isExactServiceRoleBearer,
+} from '../../../packages/services/src/discovery/location-pin-coverage-request-auth.ts';
+import { isInvitationRecipientMatch } from '../../../packages/services/src/discovery/invitation-recipient-guard.ts';
 
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://otpplatform-theta.vercel.app';
 
@@ -62,6 +66,12 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return errorResponse('Method not allowed', 405);
   }
+  if (!isExactServiceRoleBearer(
+    req.headers.get('Authorization'),
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  )) {
+    return errorResponse('Service-role authorization required', 401);
+  }
 
   let payload: DispatchRequest;
   try {
@@ -76,6 +86,17 @@ Deno.serve(async (req) => {
   }
 
   const db = serviceClient();
+
+  const { data: invitation, error: invitationError } = await db
+    .from('rfq_invitations')
+    .select('id, rfq_id, supplier_id')
+    .eq('id', invitationId)
+    .maybeSingle();
+
+  if (invitationError) return errorResponse(invitationError.message, 400);
+  if (!isInvitationRecipientMatch(invitation, { rfqId, supplierId })) {
+    return jsonResponse({ skipped: true, reason: 'Invitation does not match RFQ recipient' }, 409);
+  }
 
   // Idempotent: a retried trigger delivery or a manual re-dispatch must not
   // double-text a supplier.

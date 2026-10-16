@@ -106,7 +106,9 @@ describe('Migration 00257 static SQL contract', () => {
     expect(files[index + 13]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
     expect(files[index + 14]).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
     expect(files[index + 15]).toBe('00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql');
-    expect(files.at(-1)).toBe('00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql');
+    expect(files.at(-1)).toBe('00275_isolate_rfq_subcategory_recipients.sql');
+    expect(files.at(-2)).toBe('00274_location_pin_coverage_durable_recovery.sql');
+    expect(files.at(-3)).toBe('00273_persist_pin_coverage_in_canonical_suppliers.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {

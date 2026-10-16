@@ -3,6 +3,7 @@
  */
 
 const CATEGORY_QUERY_MAP: Record<string, readonly string[]> = {
+  '__pin_only_warming__': ['commercial businesses', 'local wholesale suppliers', 'businesses near me'],
   // 15 Canonical Database Categories
   'electrical & power': [
     'electrical suppliers',
@@ -96,6 +97,8 @@ const CATEGORY_QUERY_MAP: Record<string, readonly string[]> = {
 
 const DEFAULT_MAX_QUERIES_PER_SCOPE = 3;
 
+export const PIN_ONLY_WARMING_CATEGORY = '__PIN_ONLY_WARMING__';
+
 export function normalizeCategoryKey(category: string): string {
   return category.trim().toLowerCase().replace(/\s+/g, ' ');
 }
@@ -107,7 +110,8 @@ export function buildGooglePlacesCategorySearchTerms(
   category: string,
   maxQueries: number = DEFAULT_MAX_QUERIES_PER_SCOPE,
 ): string[] {
-  const key = normalizeCategoryKey(category);
+  const queryCategory = category.split('>').map((part) => part.trim()).filter(Boolean).at(-1) ?? category;
+  const key = normalizeCategoryKey(queryCategory);
   const mapped = CATEGORY_QUERY_MAP[key];
   if (mapped && mapped.length > 0) {
     return [...mapped].slice(0, Math.max(1, maxQueries));

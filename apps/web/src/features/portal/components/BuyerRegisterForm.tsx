@@ -179,6 +179,7 @@ export function BuyerRegisterForm({
 
     if (pincode.trim().length === 6) {
       queueBuyerPinDiscovery({
+        requestId: result.result.requestId,
         state: state.trim(),
         city: city.trim(),
         pincode: pincode.trim(),

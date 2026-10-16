@@ -1,3 +1,18 @@
+import { PIN_ONLY_WARMING_CATEGORY } from '@otp/domain';
+
+export function isExactServiceRoleBearer(authorization: string | null, serviceRoleKey: string): boolean {
+  return Boolean(serviceRoleKey) && authorization === `Bearer ${serviceRoleKey}`;
+}
+
+export function resolveRecoveryAdminAuthorization(input: {
+  isAuthenticated: boolean;
+  isSuperAdmin: boolean;
+}): { ok: true } | { ok: false; status: number; error: string } {
+  if (!input.isAuthenticated) return { ok: false, status: 401, error: 'Authentication required' };
+  if (!input.isSuperAdmin) return { ok: false, status: 403, error: 'SuperAdmin authorization required' };
+  return { ok: true };
+}
+
 export interface ForceRefreshAuthInput {
   requestedForceRefresh: boolean;
   isAuthenticated: boolean;
@@ -34,6 +49,61 @@ export function resolveForceRefreshAuthorization(input: ForceRefreshAuthInput): 
   return {
     ok: true,
     effectiveForceRefresh: Boolean(input.isSuperAdmin && input.requestedForceRefresh),
+  };
+}
+
+export type BuyerOnboardingSignup = {
+  side?: unknown;
+  status?: unknown;
+  coverage_city?: unknown;
+  coverage_pincode?: unknown;
+} | null;
+
+export function resolveBuyerOnboardingWarmingScope(input: {
+  forceRefresh?: boolean;
+  category?: string;
+  signupRequestId?: string;
+  city?: string;
+  pincode?: string;
+  signup: BuyerOnboardingSignup;
+}):
+  | {
+      ok: true;
+      scope: { state: string; city: string; pincode: string; category: string; discoveryContext: 'BUYER_ONBOARDING' };
+    }
+  | { ok: false; status: number; error: string } {
+  if (input.forceRefresh || input.category !== PIN_ONLY_WARMING_CATEGORY) {
+    return { ok: false, status: 403, error: 'Buyer onboarding may request PIN-only warming without force refresh' };
+  }
+  const requestId = input.signupRequestId?.trim() ?? '';
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
+    return { ok: false, status: 401, error: 'A valid buyer signup request is required' };
+  }
+
+  const signup = input.signup;
+  const storedCity = typeof signup?.coverage_city === 'string' ? signup.coverage_city.trim() : '';
+  const storedPincode = typeof signup?.coverage_pincode === 'string' ? signup.coverage_pincode.trim() : '';
+  const normalizeCity = (value: string) => value.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (
+    signup?.side !== 'BUYER' ||
+    signup.status === 'REJECTED' ||
+    !/^\d{6}$/.test(storedPincode) ||
+    storedPincode !== input.pincode?.trim() ||
+    !storedCity ||
+    normalizeCity(storedCity) !== normalizeCity(input.city ?? '')
+  ) {
+    return { ok: false, status: 403, error: 'Buyer signup location does not match the warming request' };
+  }
+
+  return {
+    ok: true,
+    scope: {
+      state: '',
+      city: storedCity,
+      pincode: storedPincode,
+      category: PIN_ONLY_WARMING_CATEGORY,
+      discoveryContext: 'BUYER_ONBOARDING',
+    },
   };
 }
 

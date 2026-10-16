@@ -16,6 +16,7 @@ vi.mock('@/lib/supabase', () => {
   const globalMock = (globalThis as any).__SHARED_SUPABASE_MOCK__ || {
     from: vi.fn(),
     rpc: vi.fn(),
+    functions: { invoke: vi.fn().mockResolvedValue({ data: { ok: true, status: 'FRESH', knownSuppliersCount: 1 }, error: null }) },
     auth: {
       getUser: vi.fn(),
     },
@@ -30,6 +31,10 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
   beforeEach(() => {
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.functions.invoke).mockReset().mockResolvedValue({
+      data: { ok: true, status: 'FRESH', knownSuppliersCount: 1 },
+      error: null,
+    } as never);
     profileSpy = vi.spyOn(userRole, 'fetchCurrentProfile').mockResolvedValue({
       profileId: 'prof-buyer-1',
       email: 'procurement@apex.test',
@@ -42,6 +47,7 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
     profileSpy?.mockRestore();
     vi.mocked(supabase.from).mockReset();
     vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.functions.invoke).mockReset();
   });
 
   describe('1. Broadcast Readiness Checkpoint Model & Pre-Flight Checklist', () => {
@@ -530,6 +536,26 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
       vi.mocked(supabase.rpc).mockResolvedValue({ data: { success: true, invited: 3, total: 3 }, error: null } as any);
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'requirements') {
+          return createSupabaseQueryMock({
+            data: {
+              id: 'req-5',
+              title: 'Office furniture',
+              delivery_city: 'Bengaluru',
+              delivery_pincode: '560048',
+              delivery_state: 'Karnataka',
+              category_id: 'office-furniture',
+              subcategory_id: 'office-chairs',
+            },
+            error: null,
+          });
+        }
+        if (table === 'requirement_categories') {
+          return createSupabaseQueryMock({ data: { name: 'Office Furniture & Fixtures' }, error: null });
+        }
+        if (table === 'requirement_subcategories') {
+          return createSupabaseQueryMock({ data: { name: 'Office Chairs' }, error: null });
+        }
         if (table === 'rfqs') {
           rfqReads++;
           return createSupabaseQueryMock({ data: { id: 'rfq-5', status: 'OPEN', requirement_id: 'req-5' }, error: null });
@@ -549,6 +575,23 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
       }) as any);
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'requirements') {
+          return createSupabaseQueryMock({
+            data: {
+              id: 'req-7',
+              title: 'Office furniture',
+              delivery_city: 'Bengaluru',
+              delivery_pincode: '560048',
+              delivery_state: 'Karnataka',
+              category_id: 'office-furniture',
+              subcategory_id: 'office-chairs',
+            },
+            error: null,
+          });
+        }
+        if (table === 'requirement_categories') {
+          return createSupabaseQueryMock({ data: { name: 'Office Furniture & Fixtures' }, error: null });
+        }
         if (table === 'rfqs') return createSupabaseQueryMock({ data: { id: 'rfq-7', status: 'OPEN', requirement_id: 'req-7' }, error: null });
         return createSupabaseQueryMock({ data: { commercial: {} }, error: null });
       });
@@ -569,11 +612,25 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
       }) as any);
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'requirements') {
-          const chain = createSupabaseQueryMock({ data: { commercial: {} }, error: null });
+          const chain = createSupabaseQueryMock({
+            data: {
+              id: 'req-8',
+              commercial: {},
+              title: 'Office furniture',
+              delivery_city: 'Bengaluru',
+              delivery_pincode: '560048',
+              delivery_state: 'Karnataka',
+              category_id: 'office-furniture',
+            },
+            error: null,
+          });
           chain.update = vi.fn(() =>
             createSupabaseQueryMock({ data: null, error: failSave ? { message: 'network down' } : null }),
           );
           return chain;
+        }
+        if (table === 'requirement_categories') {
+          return createSupabaseQueryMock({ data: { name: 'Office Furniture & Fixtures' }, error: null });
         }
         if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
         return createSupabaseQueryMock({ data: { id: 'rfq-8', status: 'OPEN', requirement_id: 'req-8' }, error: null });
@@ -596,10 +653,39 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
       }) as any);
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'requirements') {
+          return createSupabaseQueryMock({
+            data: {
+              id: 'req-6',
+              title: 'Office furniture',
+              delivery_city: 'Bengaluru',
+              delivery_pincode: '560048',
+              delivery_state: 'Karnataka',
+              category_id: 'office-furniture',
+              subcategory_id: 'office-chairs',
+            },
+            error: null,
+          });
+        }
+        if (table === 'requirement_categories') {
+          return createSupabaseQueryMock({ data: { name: 'Office Furniture & Fixtures' }, error: null });
+        }
+        if (table === 'requirement_subcategories') {
+          return createSupabaseQueryMock({ data: { name: 'Office Chairs' }, error: null });
+        }
         return createSupabaseQueryMock({ data: { id: 'rfq-6', status: 'OPEN', requirement_id: 'req-6' }, error: null });
       });
       await publishRfq({ rfqId: 'rfq-6', requirementId: 'req-6' });
       expect(rpcCalls).toEqual(['discover_and_invite_for_rfq']);
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('location-pin-coverage', {
+        body: expect.objectContaining({
+          city: 'Bengaluru',
+          pincode: '560048',
+          category: 'Office Furniture & Fixtures > Office Chairs',
+          executeDiscovery: true,
+          discoveryContext: 'BUYER_RFQ',
+        }),
+      });
     });
 
     it('success copy states only what happened (no delivery or response-time promise)', () => {

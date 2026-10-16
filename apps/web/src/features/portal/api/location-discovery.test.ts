@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { PIN_ONLY_WARMING_CATEGORY } from '@otp/domain';
 import { queueBuyerPinDiscovery } from './location-discovery';
 
 const { invoke } = vi.hoisted(() => ({
@@ -14,7 +15,7 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 describe('buyer location-discovery queue', () => {
-  it('does not queue discovery without an explicit category (avoids wrong scope key)', () => {
+  it('does not issue warming without a server-issued signup request ID', () => {
     invoke.mockClear();
     queueBuyerPinDiscovery({
       state: 'Karnataka',
@@ -24,13 +25,13 @@ describe('buyer location-discovery queue', () => {
     expect(invoke).not.toHaveBeenCalled();
   });
 
-  it('queues non-blocking PIN discovery when category is provided', () => {
+  it('queues PIN-only discovery without inventing a procurement category', () => {
     invoke.mockClear();
     queueBuyerPinDiscovery({
+      requestId: 'signup-request-id',
       state: 'Karnataka',
       city: 'Bengaluru',
       pincode: '560048',
-      category: 'Painting & Waterproofing',
     });
     expect(invoke).toHaveBeenCalledWith(
       'location-pin-coverage',
@@ -38,7 +39,9 @@ describe('buyer location-discovery queue', () => {
         body: expect.objectContaining({
           asyncMode: true,
           pincode: '560048',
-          category: 'Painting & Waterproofing',
+          signupRequestId: 'signup-request-id',
+          category: PIN_ONLY_WARMING_CATEGORY,
+          discoveryContext: 'BUYER_ONBOARDING',
         }),
       }),
     );

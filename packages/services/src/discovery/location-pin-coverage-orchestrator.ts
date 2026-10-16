@@ -2,6 +2,7 @@ import {
   type DiscoveryScopeDescriptor,
   type ScopeCoverageReport,
   type ScopeFreshnessStatus,
+  PIN_ONLY_WARMING_CATEGORY,
   SupplierTruthfulVerificationStage,
 } from '@otp/domain';
 import { GooglePlacesDiscoveryAdapter } from '../gis/google-places-discovery-adapter.ts';
@@ -20,6 +21,7 @@ export interface LocationPinCoverageRequest {
   category: string;
   forceRefresh?: boolean;
   executeDiscovery?: boolean;
+  discoveryContext?: DiscoveryScopeDescriptor['discoveryContext'];
 }
 
 export interface LocationPinCoverageResponse {
@@ -28,6 +30,9 @@ export interface LocationPinCoverageResponse {
   status: ScopeFreshnessStatus;
   externalCallsExecuted: number;
   knownSuppliersCount: number;
+  persistedSuppliersCount?: number;
+  rejectedSuppliersCount?: number;
+  discoveryOutcome?: 'COMPLETED' | 'PARTIAL' | 'EMPTY';
   message: string;
   error?: string;
   report: ScopeCoverageReport;
@@ -52,7 +57,7 @@ function toScope(input: LocationPinCoverageRequest): DiscoveryScopeDescriptor {
     city: (input.city ?? '').trim(),
     pincode: input.pincode.trim(),
     category: (input.category ?? DEFAULT_CATEGORY).trim(),
-    discoveryContext: 'SUPERADMIN_PREPARE',
+    discoveryContext: input.discoveryContext ?? 'SUPERADMIN_PREPARE',
   };
 }
 
@@ -167,7 +172,9 @@ function rawToPersisted(
         ...(raw.phone ? { phone: raw.phone } : {}),
       },
     ],
-    categories: [{ categoryName: scope.category, isPrimary: true, confidenceScore: 75 }],
+    categories: scope.category === PIN_ONLY_WARMING_CATEGORY
+      ? []
+      : [{ categoryName: scope.category, isPrimary: true, confidenceScore: 75 }],
     observationsCount: 1,
     isOtpRegistered: quality.otpRegistered,
     isGstVerified: Boolean(raw.isGstKnown),
@@ -278,6 +285,7 @@ export async function runAuthoritativeLocationPinCoverage(
 
   let externalCallsExecuted = 0;
   const discovered: PersistedCoverageSupplier[] = [];
+  let rejectedSupplierCount = 0;
 
   try {
     const apiKey = deps.googleApiKey?.trim();
@@ -361,6 +369,7 @@ export async function runAuthoritativeLocationPinCoverage(
         const persisted = rawToPersisted(scope, raw);
         if (!persisted) {
           droppedPlaceIds.push(raw.placeId);
+          rejectedSupplierCount += 1;
           continue;
         }
         discovered.push(persisted);
@@ -391,15 +400,61 @@ export async function runAuthoritativeLocationPinCoverage(
     }
 
     if (discovered.length > 0) {
-      await deps.store.upsertSuppliers(scope, discovered);
+      try {
+        await deps.store.upsertSuppliers(scope, discovered);
+        suppliers = await deps.store.listSuppliers(scopeKey);
+      } catch (error) {
+        await deps.store.completeGeneration(scopeKey, lockToken, 'failed', 'PERSISTENCE_FAILED');
+        return {
+          ok: priorCount > 0,
+          scopeKey,
+          status: assessed.status,
+          externalCallsExecuted,
+          knownSuppliersCount: priorCount,
+          message: error instanceof Error ? error.message : 'Supplier persistence failed.',
+          error: 'PERSISTENCE_FAILED',
+          report: toSuppliersReport(scope, assessed, suppliers),
+        };
+      }
+
+      const durablePlaceIds = new Set(suppliers.map((supplier) => supplier.placeId));
+      if (discovered.some((supplier) => !durablePlaceIds.has(supplier.placeId))) {
+        await deps.store.completeGeneration(scopeKey, lockToken, 'failed', 'PERSISTENCE_FAILED');
+        return {
+          ok: priorCount > 0,
+          scopeKey,
+          status: assessed.status,
+          externalCallsExecuted,
+          knownSuppliersCount: priorCount,
+          message: 'Discovery results were not all visible in persisted coverage; prior coverage was retained.',
+          error: 'PERSISTENCE_FAILED',
+          report: toSuppliersReport(scope, assessed, suppliers),
+        };
+      }
     }
 
-    await deps.store.completeGeneration(
+    const partial = rejectedSupplierCount > 0 && discovered.length > 0;
+    const generationCompleted = await deps.store.completeGeneration(
       scopeKey,
       lockToken,
-      discovered.length > 0 ? 'completed' : 'failed',
-      discovered.length > 0 ? undefined : 'ZERO_RESULTS',
+      partial ? 'partial' : 'completed',
+      partial ? 'PARTIAL_REJECTIONS' : discovered.length > 0 ? undefined : 'ZERO_RESULTS',
     );
+    if (!generationCompleted) {
+      return {
+        ok: false,
+        scopeKey,
+        status: assessed.status,
+        externalCallsExecuted,
+        knownSuppliersCount: priorCount,
+        persistedSuppliersCount: priorCount,
+        rejectedSuppliersCount: rejectedSupplierCount,
+        discoveryOutcome: partial ? 'PARTIAL' : discovered.length > 0 ? 'COMPLETED' : 'EMPTY',
+        message: 'Discovery results are persisted, but generation ownership was lost before completion.',
+        error: 'LOCK_LOST',
+        report: toSuppliersReport(scope, assessed, suppliers),
+      };
+    }
 
     assessed = await deps.store.assess(scopeKey, deps.freshnessWindowDays);
     suppliers = await deps.store.listSuppliers(scopeKey);
@@ -411,7 +466,12 @@ export async function runAuthoritativeLocationPinCoverage(
       status: assessed.status,
       externalCallsExecuted,
       knownSuppliersCount: kept,
-      message:
+      persistedSuppliersCount: discovered.length,
+      rejectedSuppliersCount: rejectedSupplierCount,
+      discoveryOutcome: partial ? 'PARTIAL' : discovered.length > 0 ? 'COMPLETED' : 'EMPTY',
+      message: partial
+        ? `Partially persisted ${discovered.length} suppliers; ${rejectedSupplierCount} candidates were rejected and a bounded retry was scheduled.`
+        :
         discovered.length > 0
           ? `Discovered ${discovered.length} Google Places suppliers for ${scope.pincode}.`
           : kept > 0

@@ -112,7 +112,7 @@ export function extractStateCityFromGeocodeComponents(
   let sublocality: string | undefined;
   const candidateSet = new Set<string>();
 
-  for (const c of components) {
+  for (const c of components ?? []) {
     const types = c.types ?? [];
     const name = c.long_name?.trim() || c.short_name?.trim();
     if (!name) continue;

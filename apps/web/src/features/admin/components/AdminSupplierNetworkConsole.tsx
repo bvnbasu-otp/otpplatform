@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   type DiscoveryScopeDescriptor,
   type ScopeCoverageReport,
@@ -10,6 +10,7 @@ import {
 import { Button, Card, Badge } from '@/components/ui';
 import { useLanguage } from '@/lib/i18n';
 import { inferIndianState, inferIndianCity } from '@/features/intake/api/draft';
+import type { SupplierNetworkRecoveryJob } from '../api/supplier-network-coverage';
 
 export interface AdminSupplierNetworkConsoleProps {
   onPrepareLocation?: (params: {
@@ -20,6 +21,12 @@ export interface AdminSupplierNetworkConsoleProps {
     forceRefresh: boolean;
     executeDiscovery: boolean;
   }) => Promise<any>;
+  onLoadRecoveryJobs?: () => Promise<
+    { ok: true; jobs: SupplierNetworkRecoveryJob[] } | { ok: false; error: string }
+  >;
+  onRetryRecovery?: (scopeKey: string) => Promise<
+    { ok: true; message: string } | { ok: false; error: string }
+  >;
   onRefreshTelemetry?: () => void;
 }
 
@@ -50,6 +57,8 @@ const CANONICAL_CATEGORIES = [
 
 export function AdminSupplierNetworkConsole({
   onPrepareLocation,
+  onLoadRecoveryJobs,
+  onRetryRecovery,
   onRefreshTelemetry,
 }: AdminSupplierNetworkConsoleProps) {
   const { t } = useLanguage();
@@ -61,11 +70,52 @@ export function AdminSupplierNetworkConsole({
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<ScopeCoverageReport | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'warn' | 'error' } | null>(null);
+  const [recoveryJobs, setRecoveryJobs] = useState<SupplierNetworkRecoveryJob[]>([]);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [retryingScope, setRetryingScope] = useState<string | null>(null);
 
   const activeCategory = category === 'OTHER' ? customCategory.trim() : category;
 
   const detectedState = inferIndianState(pincode.trim()) || '';
   const detectedCity = inferIndianCity(pincode.trim(), detectedState) || '';
+
+  async function refreshRecoveryJobs() {
+    if (!onLoadRecoveryJobs) return;
+    try {
+      const result = await onLoadRecoveryJobs();
+      if (result.ok) {
+        setRecoveryJobs(result.jobs);
+        setRecoveryError(null);
+      } else {
+        setRecoveryError(result.error);
+      }
+    } catch (error) {
+      setRecoveryError(error instanceof Error ? error.message : 'Recovery status unavailable.');
+    }
+  }
+
+  useEffect(() => {
+    void refreshRecoveryJobs();
+  }, [onLoadRecoveryJobs]);
+
+  async function handleRetryRecovery(scopeKey: string) {
+    if (!onRetryRecovery || retryingScope) return;
+    setRetryingScope(scopeKey);
+    try {
+      const result = await onRetryRecovery(scopeKey);
+      setMessage(result.ok
+        ? { text: result.message, type: 'success' }
+        : { text: result.error, type: 'error' });
+      await refreshRecoveryJobs();
+    } catch (error) {
+      setMessage({
+        text: error instanceof Error ? error.message : 'Coverage retry could not be queued.',
+        type: 'error',
+      });
+    } finally {
+      setRetryingScope(null);
+    }
+  }
 
   const handleCheckCoverage = async (executeDiscovery: boolean = false) => {
     if (!pincode.trim() || !activeCategory) {
@@ -97,6 +147,7 @@ export function AdminSupplierNetworkConsole({
             type: 'success',
           });
           onRefreshTelemetry?.();
+          void refreshRecoveryJobs();
         } else {
           setMessage({
             text: res?.message || res?.error || 'Failed to prepare supplier network.',
@@ -333,6 +384,53 @@ export function AdminSupplierNetworkConsole({
         >
           {message.text}
         </div>
+      )}
+
+      {onLoadRecoveryJobs && (
+        <Card className="p-4 sm:p-5 space-y-3" data-testid="supplier-network-recovery">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Discovery Recovery</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Durable retries use the same PIN/category scope and generation lock.</p>
+            </div>
+            <Button variant="secondary" size="sm" disabled={Boolean(retryingScope)} onClick={() => void refreshRecoveryJobs()}>
+              Refresh Status
+            </Button>
+          </div>
+          {recoveryError && <p className="text-xs text-rose-700">{recoveryError}</p>}
+          {!recoveryError && recoveryJobs.length === 0 && (
+            <p className="text-xs text-muted-foreground">No pending, exhausted, or recently recovered scopes.</p>
+          )}
+          <div className="divide-y">
+            {recoveryJobs.map((job) => (
+              <div key={job.scope_key} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-foreground">
+                    {job.city}, {job.pincode} · {job.category}
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                    <span>Status: {job.status.toUpperCase()}</span>
+                    <span>Attempts: {job.retry_count}/{job.max_retries}</span>
+                    <span>Saved: {job.supplier_count}</span>
+                    {job.next_attempt_at && <span>Next retry: {new Date(job.next_attempt_at).toLocaleString()}</span>}
+                    {job.error_code && <span>Stage: {job.error_code}</span>}
+                  </div>
+                  {job.last_error && <p className="mt-1 break-words text-[11px] text-rose-700">{job.last_error}</p>}
+                </div>
+                {job.status === 'exhausted' && onRetryRecovery && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={Boolean(retryingScope)}
+                    onClick={() => void handleRetryRecovery(job.scope_key)}
+                  >
+                    {retryingScope === job.scope_key ? 'Queueing...' : 'Retry Scope'}
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       {/* Scope Coverage & Freshness Report Card */}

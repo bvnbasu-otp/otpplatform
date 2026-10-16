@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { prepareLocationNetworkViaCoverageService } from './supplier-network-coverage';
+import {
+  fetchSupplierNetworkRecoveryJobs,
+  prepareLocationNetworkViaCoverageService,
+  retrySupplierNetworkRecovery,
+} from './supplier-network-coverage';
 
 const { invoke } = vi.hoisted(() => ({
   invoke: vi.fn(),
@@ -31,5 +35,23 @@ describe('supplier-network-coverage admin API', () => {
     expect(invoke).toHaveBeenCalledWith('location-pin-coverage', {
       body: expect.objectContaining({ executeDiscovery: false, pincode: '560048' }),
     });
+  });
+
+  it('reads durable recovery status through the Admin-authorized Edge endpoint', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, jobs: [{ scope_key: 'scope-1', status: 'queued' }] }, error: null });
+    const result = await fetchSupplierNetworkRecoveryJobs();
+    expect(invoke).toHaveBeenCalledWith('location-pin-coverage', {
+      body: { mode: 'list_recovery_jobs', limit: 50 },
+    });
+    expect(result).toMatchObject({ ok: true, jobs: [{ scope_key: 'scope-1', status: 'queued' }] });
+  });
+
+  it('requests a retry by stored scope key without accepting client supplier IDs', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, status: 'QUEUED', message: 'Coverage retry queued.' }, error: null });
+    const result = await retrySupplierNetworkRecovery('scope-1');
+    expect(invoke).toHaveBeenCalledWith('location-pin-coverage', {
+      body: { mode: 'retry_recovery_job', scopeKey: 'scope-1' },
+    });
+    expect(result).toEqual({ ok: true, message: 'Coverage retry queued.' });
   });
 });

@@ -5,6 +5,21 @@ import {
 } from './google-places-category-search-terms';
 
 describe('google-places-category-search-terms', () => {
+  it('uses bounded generic terms for PIN-only warming', () => {
+    expect(buildGooglePlacesCategorySearchTerms('__PIN_ONLY_WARMING__', 3)).toEqual([
+      'commercial businesses',
+      'local wholesale suppliers',
+      'businesses near me',
+    ]);
+  });
+
+  it('uses the most specific persisted subcategory for scoped discovery queries', () => {
+    expect(buildGooglePlacesCategorySearchTerms('Office Furniture & Fixtures > Office Chairs', 2)).toEqual([
+      'office chairs suppliers',
+      'office chairs dealers',
+    ]);
+  });
+
   it('maps canonical admin categories to bounded deterministic queries', () => {
     const terms = buildGooglePlacesCategorySearchTerms('Electrical & Automation', 3);
     expect(terms.length).toBeLessThanOrEqual(3);

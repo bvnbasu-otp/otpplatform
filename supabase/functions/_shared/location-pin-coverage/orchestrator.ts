@@ -12,6 +12,8 @@ export type CoverageRequest = {
   category?: string;
   forceRefresh?: boolean;
   executeDiscovery?: boolean;
+  discoveryContext?: 'BUYER_RFQ' | 'BUYER_ONBOARDING' | 'SUPERADMIN_PREPARE' | 'NETWORK_EXPANSION';
+  signupRequestId?: string;
 };
 
 export async function runEdgeAuthoritativeLocationPinCoverage(
@@ -30,6 +32,7 @@ export async function runEdgeAuthoritativeLocationPinCoverage(
       category: body.category ?? '',
       forceRefresh: body.forceRefresh,
       executeDiscovery: body.executeDiscovery,
+      discoveryContext: body.discoveryContext,
     },
     {
       store,

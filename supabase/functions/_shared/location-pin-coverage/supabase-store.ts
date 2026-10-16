@@ -88,7 +88,7 @@ export async function rpcCompleteGeneration(
   client: SupabaseClient,
   scopeKey: string,
   lockToken: string,
-  status: 'completed' | 'failed',
+  status: 'completed' | 'failed' | 'partial',
   errorCode?: string,
 ): Promise<boolean> {
   const { data, error } = await client.rpc('location_pin_coverage_complete_generation', {
@@ -174,7 +174,7 @@ export class SupabaseLocationPinCoverageStore implements LocationPinCoverageStor
   async completeGeneration(
     scopeKey: string,
     lockToken: string,
-    status: 'completed' | 'failed',
+    status: 'completed' | 'failed' | 'partial',
     errorCode?: string,
   ): Promise<boolean> {
     return rpcCompleteGeneration(this.client, scopeKey, lockToken, status, errorCode);

@@ -290,7 +290,10 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 21]).toBe('00270_unsuccessful_rfq_retention_purge.sql');
     expect(files[index + 22]).toBe('00271_fix_supplier_messaging_channels_unique_constraint.sql');
     expect(files[index + 23]).toBe('00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql');
-    expect(index).toBe(files.length - 24);
+    expect(files[index + 24]).toBe('00273_persist_pin_coverage_in_canonical_suppliers.sql');
+    expect(files[index + 25]).toBe('00274_location_pin_coverage_durable_recovery.sql');
+    expect(files[index + 26]).toBe('00275_isolate_rfq_subcategory_recipients.sql');
+    expect(index).toBe(files.length - 27);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

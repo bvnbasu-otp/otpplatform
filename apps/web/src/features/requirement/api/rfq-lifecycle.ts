@@ -365,6 +365,7 @@ export async function prepareGooglePlacesCoverage(rfqId: string): Promise<
   }
 
   let category = '';
+  let subcategory = '';
   if (req.category_id) {
     const { data: categoryRow } = await supabase
       .from('requirement_categories')
@@ -373,13 +374,13 @@ export async function prepareGooglePlacesCoverage(rfqId: string): Promise<
       .maybeSingle();
     category = (categoryRow?.name as string | undefined)?.trim() ?? '';
   }
-  if (!category && req.subcategory_id) {
+  if (req.subcategory_id) {
     const { data: subcategoryRow } = await supabase
       .from('requirement_subcategories')
       .select('name')
       .eq('id', req.subcategory_id)
       .maybeSingle();
-    category = (subcategoryRow?.name as string | undefined)?.trim() ?? '';
+    subcategory = (subcategoryRow?.name as string | undefined)?.trim() ?? '';
   }
   if (!category && req.category_id) {
     const { data: byCode } = await supabase
@@ -407,7 +408,9 @@ export async function prepareGooglePlacesCoverage(rfqId: string): Promise<
       .eq('id', req.id);
   }
 
-  const effectiveCategory = category || 'General Commercial Supplies';
+  const effectiveCategory = category && subcategory
+    ? `${category} > ${subcategory}`
+    : category || subcategory || 'General Commercial Supplies';
   const invalid = discoveryRequirementIssues({ ...geo, category: effectiveCategory });
   if (invalid) {
     return { ok: false, outcome: 'INVALID_REQUIREMENT', error: invalid };
@@ -419,6 +422,7 @@ export async function prepareGooglePlacesCoverage(rfqId: string): Promise<
       city: geo.city,
       pincode: geo.pincode,
       category: effectiveCategory,
+      discoveryContext: 'BUYER_RFQ',
       forceRefresh: false,
       executeDiscovery: true,
       asyncMode: false,
@@ -1012,7 +1016,7 @@ async function runPublishRfq(input: {
 
   let count = await fetchInvitationCount(rfqId);
   if (count === 0) {
-    const discRes = await discoverAndInvite(rfqId);
+    const discRes = await discoverForRequirement(rfqId, 'GOOGLE_PLACES');
     if (!discRes.ok) return discRes;
     count = discRes.total;
   }

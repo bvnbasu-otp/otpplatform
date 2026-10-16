@@ -50,7 +50,7 @@ export interface LocationPinCoverageStore {
   completeGeneration(
     scopeKey: string,
     lockToken: string,
-    status: 'completed' | 'failed',
+    status: 'completed' | 'failed' | 'partial',
     errorCode?: string,
   ): Promise<boolean>;
   upsertSuppliers(
@@ -134,7 +134,7 @@ export class InMemoryLocationPinCoverageStore implements LocationPinCoverageStor
   private readonly suppliersByScope = new Map<string, Map<string, PersistedCoverageSupplier>>();
   private readonly generations = new Map<
     string,
-    { lockToken: string; status: 'in_progress' | 'completed' | 'failed'; startedAt: number }
+    { lockToken: string; status: 'in_progress' | 'completed' | 'failed' | 'partial'; startedAt: number }
   >();
   private dailyUsage = 0;
 
@@ -190,13 +190,20 @@ export class InMemoryLocationPinCoverageStore implements LocationPinCoverageStor
   async completeGeneration(
     scopeKey: string,
     lockToken: string,
-    status: 'completed' | 'failed',
+    status: 'completed' | 'failed' | 'partial',
+    errorCode?: string,
   ): Promise<boolean> {
     const row = this.generations.get(scopeKey);
     if (!row || row.lockToken !== lockToken || row.status !== 'in_progress') {
       return false;
     }
     this.generations.set(scopeKey, { ...row, status });
+    if (status === 'completed' && !errorCode) {
+      const scope = this.scopes.get(scopeKey);
+      if (scope && scope.supplierCount > 0) {
+        scope.lastSuccessfulDiscoveryAt = Date.now();
+      }
+    }
     return true;
   }
 
@@ -212,9 +219,11 @@ export class InMemoryLocationPinCoverageStore implements LocationPinCoverageStor
     }
     this.suppliersByScope.set(scopeKey, byPlace);
     const count = byPlace.size;
-    if (count > 0) {
-      this.scopes.set(scopeKey, { lastSuccessfulDiscoveryAt: Date.now(), supplierCount: count });
-    }
+    const priorScope = this.scopes.get(scopeKey);
+    this.scopes.set(scopeKey, {
+      lastSuccessfulDiscoveryAt: priorScope?.lastSuccessfulDiscoveryAt ?? null,
+      supplierCount: count,
+    });
     return count;
   }
 

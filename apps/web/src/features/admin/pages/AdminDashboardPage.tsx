@@ -20,7 +20,11 @@ import { AdminBackupRestorePanel } from '../components/AdminBackupRestorePanel';
 import { AdminBuyerTroubleshooter } from '../components/AdminBuyerTroubleshooter';
 import { AdminSellerTroubleshooter } from '../components/AdminSellerTroubleshooter';
 import { AdminSupplierNetworkConsole } from '../components/AdminSupplierNetworkConsole';
-import { prepareLocationNetworkViaCoverageService } from '../api/supplier-network-coverage';
+import {
+  fetchSupplierNetworkRecoveryJobs,
+  prepareLocationNetworkViaCoverageService,
+  retrySupplierNetworkRecovery,
+} from '../api/supplier-network-coverage';
 import { AdminTaxonomyManager } from '../components/AdminTaxonomyManager';
 import { AdminQueryTerminal } from '../components/AdminQueryTerminal';
 import { AdminAnnouncementsPanel } from '../components/AdminAnnouncementsPanel';
@@ -755,6 +759,8 @@ export function AdminDashboardPage() {
             {activeTab === 'SUPPLIER_NETWORK' && (
               <AdminSupplierNetworkConsole
                 onPrepareLocation={prepareLocationNetworkViaCoverageService}
+                onLoadRecoveryJobs={fetchSupplierNetworkRecoveryJobs}
+                onRetryRecovery={retrySupplierNetworkRecovery}
                 onRefreshTelemetry={refreshAllData}
               />
             )}

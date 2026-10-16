@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { PIN_ONLY_WARMING_CATEGORY } from '@otp/domain';
 import { InMemoryRepositories } from '../repositories/in-memory';
 import { createOtpServices } from '../factory/create-otp-services';
 import { ManagedSupplierNetworkService } from '../services/managed-supplier-network-service';
@@ -242,6 +243,108 @@ describe('GAP-01 authoritative Google Places PIN location coverage', () => {
       expect(s.verificationStage).toBe('DISCOVERED_IN_AREA');
       expect(s.isOtpRegistered).toBe(false);
     }
+  });
+
+  it('PIN-only onboarding coverage has no procurement category relationship', async () => {
+    const result = await runAuthoritativeLocationPinCoverage({
+      ...scope,
+      category: PIN_ONLY_WARMING_CATEGORY,
+      discoveryContext: 'BUYER_ONBOARDING',
+      executeDiscovery: true,
+    }, {
+      store: new InMemoryLocationPinCoverageStore(),
+      freshnessWindowDays: 30,
+      dailyLimit: 1500,
+      googleApiKey: 'test-google-key',
+      serverFetchFn: mockGoogleSuccess('ChIJ_pin_only'),
+      googlePlacesAdapter: new GooglePlacesDiscoveryAdapter(),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.report.scope.discoveryContext).toBe('BUYER_ONBOARDING');
+    expect(result.report.suppliers[0]?.categories).toEqual([]);
+  });
+
+  it('does not mark generation complete when the store silently fails to persist discovered Place IDs', async () => {
+    const store = new class extends InMemoryLocationPinCoverageStore {
+      override async upsertSuppliers(): Promise<number> {
+        return 0;
+      }
+    }();
+    const result = await runAuthoritativeLocationPinCoverage(
+      { ...scope, executeDiscovery: true },
+      {
+        store,
+        freshnessWindowDays: 30,
+        dailyLimit: 1500,
+        googleApiKey: 'test-google-key',
+        serverFetchFn: mockGoogleSuccess('ChIJ_unpersisted'),
+        googlePlacesAdapter: new GooglePlacesDiscoveryAdapter(),
+      },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe('PERSISTENCE_FAILED');
+    expect(result.knownSuppliersCount).toBe(0);
+    expect(await store.listSuppliers(result.scopeKey)).toEqual([]);
+  });
+
+  it('reports partial persistence without advancing category freshness', async () => {
+    const store = new InMemoryLocationPinCoverageStore();
+    const result = await runAuthoritativeLocationPinCoverage(
+      { ...scope, executeDiscovery: true },
+      {
+        store,
+        freshnessWindowDays: 30,
+        dailyLimit: 1500,
+        googleApiKey: 'test-google-key',
+        serverFetchFn: async (url) => {
+          if (url.includes('geocode')) return mockGeocodeKarnataka560048;
+          return {
+            places: [
+              eligiblePlace('ChIJ_partial_saved'),
+              eligiblePlace('ChIJ_partial_rejected', { displayName: { text: '' } }),
+            ],
+          };
+        },
+        googlePlacesAdapter: new GooglePlacesDiscoveryAdapter(),
+      },
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.discoveryOutcome).toBe('PARTIAL');
+    expect(result.persistedSuppliersCount).toBe(1);
+    expect(result.rejectedSuppliersCount).toBe(1);
+    expect(result.status).toBe('NEVER_DISCOVERED');
+    expect((await store.listSuppliers(result.scopeKey)).map((supplier) => supplier.placeId)).toEqual([
+      'ChIJ_partial_saved',
+    ]);
+  });
+
+  it('fails closed if persistence succeeds but generation completion loses its lock', async () => {
+    const store = new class extends InMemoryLocationPinCoverageStore {
+      override async completeGeneration(): Promise<boolean> {
+        return false;
+      }
+    }();
+    const result = await runAuthoritativeLocationPinCoverage(
+      { ...scope, executeDiscovery: true },
+      {
+        store,
+        freshnessWindowDays: 30,
+        dailyLimit: 1500,
+        googleApiKey: 'test-google-key',
+        serverFetchFn: mockGoogleSuccess('ChIJ_lock_lost'),
+        googlePlacesAdapter: new GooglePlacesDiscoveryAdapter(),
+      },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe('LOCK_LOST');
+    expect(result.knownSuppliersCount).toBe(0);
+    expect((await store.listSuppliers(result.scopeKey)).map((supplier) => supplier.placeId)).toEqual([
+      'ChIJ_lock_lost',
+    ]);
   });
 
   it('J geocode failure records truthful failure without geographic text-only success', async () => {
