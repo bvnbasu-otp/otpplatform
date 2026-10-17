@@ -10,7 +10,6 @@ import {
 } from './languages';
 import { getTranslation, type TranslationSchema } from './translations';
 import { applyDomPageTranslation } from './dom-page-translator';
-import { triggerPageTranslation } from './google-translate-service';
 
 export interface LanguageContextValue {
   language: SupportedLanguage;
@@ -50,20 +49,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (typeof document !== 'undefined') {
       document.documentElement.lang = newLang.split('-')[0] || 'en';
       applyDomPageTranslation(newLang);
-      triggerPageTranslation(newLang);
-
-      // Automated real-time reload for full application translation without manual refresh
-      try {
-        if (
-          typeof window !== 'undefined' &&
-          typeof window.location?.reload === 'function' &&
-          !import.meta.env?.VITEST
-        ) {
-          window.location.reload();
-        }
-      } catch {
-        // Fallback gracefully
-      }
     }
   }, []);
 
@@ -73,7 +58,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (typeof document !== 'undefined') {
       document.documentElement.lang = language.split('-')[0] || 'en';
       applyDomPageTranslation(language);
-      triggerPageTranslation(language);
     }
   }, [language]);
 
