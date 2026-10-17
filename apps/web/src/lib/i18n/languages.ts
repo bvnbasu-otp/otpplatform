@@ -1,6 +1,7 @@
 /**
- * Supported Indian Languages for OTP Platform
- * Covers 8 major Indian languages: English, Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, Bengali.
+ * Language preferences for OTP.
+ * English is the only complete interface language. The other seven codes store a preference
+ * and a partial phrase catalogue. They are not fully translated product languages.
  */
 
 export type SupportedLanguage =

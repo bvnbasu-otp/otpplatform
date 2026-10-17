@@ -204,7 +204,7 @@ describe('00261–00263 formal migrations (REAL DATABASE)', () => {
         c!.query(
           `UPDATE profiles SET is_platform_admin = true WHERE email = 'buyer@greenview.test'`,
         ),
-      ).rejects.toThrow(/PROFILE-PRIVILEGE|platform admin/i);
+      ).rejects.toThrow(/PROFILE-PRIVILEGE|platform admin|PLATFORM_PRIVILEGE_IMMUTABLE/i);
     } finally {
       await c!.query('ROLLBACK').catch(() => undefined);
       await c!.end();

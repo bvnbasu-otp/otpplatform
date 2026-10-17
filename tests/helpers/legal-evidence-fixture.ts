@@ -14,20 +14,17 @@ async function clearReviewerSession(client: Client): Promise<void> {
 
 /**
  * The reviewer RPCs trust the JWT subject, not the profile id argument.
- * Settings are transaction-local. Callers that have not opened a transaction
- * get one for the duration of the action so the role and claims stay visible.
- * The claims are cleared before returning so a database-owner bypass is not
- * left looking like this reviewer.
+ * The caller owns the transaction. This helper never BEGIN, COMMIT, or
+ * ROLLBACK. A savepoint keeps SET LOCAL ROLE visible and undoes only this
+ * attempt when the action throws. A read-only BEGIN is already a transaction;
+ * committing it was the isolation bug.
  */
 export async function asLegalReviewer<T>(
   client: Client,
   profileId: string,
   action: () => Promise<T>,
 ): Promise<T> {
-  const opened = !(await client.query<{ in_tx: boolean }>(
-    `SELECT pg_current_xact_id_if_assigned() IS NOT NULL AS in_tx`,
-  )).rows[0].in_tx;
-  if (opened) await client.query('BEGIN');
+  await client.query('SAVEPOINT otp_legal_reviewer');
   try {
     await client.query('RESET ROLE');
     const authUserId = (await client.query<{ auth_user_id: string }>(
@@ -42,63 +39,101 @@ export async function asLegalReviewer<T>(
     await client.query('SET LOCAL ROLE authenticated');
     const result = await action();
     await clearReviewerSession(client);
-    if (opened) await client.query('COMMIT');
+    await client.query('RELEASE SAVEPOINT otp_legal_reviewer');
     return result;
   } catch (error) {
-    if (opened) {
-      try {
-        await client.query('ROLLBACK');
-      } catch {
-        /* the action already aborted this transaction */
-      }
+    try {
+      await client.query('ROLLBACK TO SAVEPOINT otp_legal_reviewer');
+      await client.query('RELEASE SAVEPOINT otp_legal_reviewer');
+    } catch {
+      /* the caller transaction is already aborted */
     }
     throw error;
   }
 }
 
+const SYNTHETIC_AGREEMENTS = [
+  { type: 'CUSTOMER_EULA', version: 'v-test-buyer', body: 'buyer-frozen-text' },
+  { type: 'SUPPLIER_EULA', version: 'v-test-supplier', body: 'supplier-frozen-text-distinct' },
+] as const;
+
+/** Makes an already-registered synthetic snapshot the current catalogue row. */
+async function restoreSyntheticSnapshot(client: Client, type: string, version: string, body: string): Promise<boolean> {
+  const found = await client.query<{ id: string }>(
+    `SELECT id FROM public.legal_document_snapshots
+     WHERE agreement_type = $1 AND version = $2 AND body = convert_to($3, 'UTF8')`,
+    [type, version, body],
+  );
+  if ((found.rowCount ?? 0) === 0) return false;
+  await client.query(`SELECT set_config('otp.legal_catalogue_write', 'on', true)`);
+  await client.query(
+    `UPDATE public.legal_document_versions
+     SET retired_at = now()
+     WHERE agreement_type = $1 AND retired_at IS NULL AND version IS DISTINCT FROM $2`,
+    [type, version],
+  );
+  await client.query(
+    `UPDATE public.legal_document_versions
+     SET retired_at = NULL
+     WHERE agreement_type = $1 AND version = $2`,
+    [type, version],
+  );
+  await client.query(`SELECT set_config('otp.legal_catalogue_write', 'off', true)`);
+  return true;
+}
+
 export async function ensureDistinctFrozenAgreements(client: Client): Promise<string> {
   await client.query('RESET ROLE');
+  const buyer = await currentLegal(client, 'CUSTOMER_EULA');
+  const supplier = await currentLegal(client, 'SUPPLIER_EULA');
+  const hashesDiffer = Boolean(
+    buyer?.document_hash && supplier?.document_hash && buyer.document_hash !== supplier.document_hash,
+  );
   const existing = await client.query<{ profile_id: string }>(
     `SELECT profile_id FROM public.legal_review_grants
      WHERE revoked_at IS NULL AND can_register AND can_decide AND can_activate
      LIMIT 1`,
   );
-  const snaps = await client.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.legal_document_snapshots`);
-  if ((existing.rowCount ?? 0) > 0 && snaps.rows[0].n >= 2) return existing.rows[0].profile_id;
+  if (hashesDiffer && (existing.rowCount ?? 0) > 0) return existing.rows[0].profile_id;
 
-  const id = randomUUID();
-  const email = `reviewer-${id}@example.test`;
-  await client.query(
-    `INSERT INTO auth.users (
-       instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-       confirmation_token, recovery_token, email_change_token_new, email_change,
-       email_change_token_current, phone_change, phone_change_token, reauthentication_token,
-       is_super_admin, is_sso_user, is_anonymous, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
-     ) VALUES (
-       '00000000-0000-0000-0000-000000000000', $1, 'authenticated', 'authenticated', $2,
-       extensions.crypt('not-a-login', extensions.gen_salt('bf')), now(),
-       '', '', '', '', '', '', '', '', false, false, false,
-       '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()
-     )`,
-    [id, email],
-  );
-  await client.query(
-    `INSERT INTO public.profiles (id, auth_user_id, email, full_name, is_platform_admin, is_demo)
-     VALUES ($1, $1, $2, 'Test Reviewer', false, false)`,
-    [id, email],
-  );
-  await client.query(
-    `SELECT public.grant_legal_reviewer(NULL, $1, true, true, true, true, $2)`,
-    [id, TEST_EXTERNAL_REF],
-  );
-  await asLegalReviewer(client, id, async () => {
+  let id = existing.rows[0]?.profile_id;
+  if (!id) {
+    id = randomUUID();
+    const email = `reviewer-${id}@example.test`;
     await client.query(
-      `SELECT public.register_legal_snapshot(NULL, 'CUSTOMER_EULA', 'v-test-buyer', convert_to('buyer-frozen-text', 'UTF8'))`,
+      `INSERT INTO auth.users (
+         instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+         confirmation_token, recovery_token, email_change_token_new, email_change,
+         email_change_token_current, phone_change, phone_change_token, reauthentication_token,
+         is_super_admin, is_sso_user, is_anonymous, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+       ) VALUES (
+         '00000000-0000-0000-0000-000000000000', $1, 'authenticated', 'authenticated', $2,
+         extensions.crypt('not-a-login', extensions.gen_salt('bf')), now(),
+         '', '', '', '', '', '', '', '', false, false, false,
+         '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()
+       )`,
+      [id, email],
     );
     await client.query(
-      `SELECT public.register_legal_snapshot(NULL, 'SUPPLIER_EULA', 'v-test-supplier', convert_to('supplier-frozen-text-distinct', 'UTF8'))`,
+      `INSERT INTO public.profiles (id, auth_user_id, email, full_name, is_platform_admin, is_demo)
+       VALUES ($1, $1, $2, 'Test Reviewer', false, false)`,
+      [id, email],
     );
-  });
+    await client.query(
+      `SELECT public.grant_legal_reviewer(NULL, $1, true, true, true, true, $2)`,
+      [id, TEST_EXTERNAL_REF],
+    );
+  }
+  if (hashesDiffer) return id;
+
+  for (const spec of SYNTHETIC_AGREEMENTS) {
+    const restored = await restoreSyntheticSnapshot(client, spec.type, spec.version, spec.body);
+    if (restored) continue;
+    await asLegalReviewer(client, id, () => client.query(
+      `SELECT public.register_legal_snapshot(NULL, $1, $2, convert_to($3, 'UTF8'))`,
+      [spec.type, spec.version, spec.body],
+    ));
+  }
   return id;
 }
 

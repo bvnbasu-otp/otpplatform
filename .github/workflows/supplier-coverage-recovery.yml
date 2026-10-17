@@ -13,7 +13,7 @@ name: Supplier Coverage Recovery Worker
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '0 */4 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -29,6 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Checkout recovery checker
+        uses: actions/checkout@v4
+
       - name: Invoke recovery worker
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
@@ -50,4 +53,4 @@ jobs:
             echo "::error::Recovery worker request failed with HTTP ${status}"
             exit 1
           fi
-          node -e "const r=require('./response.json'); console.log('processed:', r.processed); const failed=(r.results||[]).filter(x=>x.ok===false); if (failed.length) { console.log('failed scopes:', failed.length); }"
+          node scripts/coverage-recovery-response-check.mjs response.json

@@ -17,14 +17,15 @@ describe('EULA acceptance - client contract (server is authoritative)', () => {
     const supplier = readFile('features/portal/components/SupplierRegisterForm.tsx');
 
     expect(buyer).toContain('if (buyerType && !agreementAccepted)');
-    expect(buyer).toContain('data-testid="individual-agreement-checkbox"');
-    expect(buyer).toContain('data-testid="rwa-frozen-agreement-checkbox"');
-    expect(buyer).toContain('data-testid="msme-frozen-agreement-checkbox"');
+    expect(buyer).toContain('panelTestId="buyer-frozen-agreement-panel"');
+    expect(buyer).toContain("'individual-agreement-checkbox'");
+    expect(buyer).toContain("'rwa-frozen-agreement-checkbox'");
+    expect(buyer).toContain("'msme-frozen-agreement-checkbox'");
+    expect(buyer).toContain('RegistrationFrozenAgreementPanel');
     expect(buyer).toContain('viewOnly');
     expect(buyer).not.toContain('setAgreementAccepted(true)');
-    expect(buyer).toContain('<LegalSnapshotNotice');
-    expect(supplier).toContain('data-testid="supplier-agreement-checkbox"');
-    expect(supplier).toContain('<LegalSnapshotNotice');
+    expect(supplier).toContain('checkboxTestId="supplier-agreement-checkbox"');
+    expect(supplier).toContain('RegistrationFrozenAgreementPanel');
     expect(buyer).not.toContain('href="/legal/terms"');
     expect(supplier).not.toContain('href="/legal/terms"');
     expect(supplier).toContain('if (!agreementAccepted)');

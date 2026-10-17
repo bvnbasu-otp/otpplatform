@@ -255,15 +255,15 @@ describe('R5 (partial) privileged profile columns', () => {
     const upd = AFTER.get('profiles.profiles_update') as Policy;
     expect(upd.file.startsWith('00004')).toBe(true);
     expect(upd.body).toMatch(/USING \(auth_user_id = auth\.uid\(\) OR private\.is_platform_admin\(\)\)/);
-    const priorGuards = [...LATEST].filter(
-      ([k, f]) => k !== 'private.guard_profile_privileges' && /NEW\.is_platform_admin/.test(stripComments(f.body)),
-    );
-    expect(priorGuards.map(([k]) => k)).toEqual(['private_security.enforce_superadmin_immutability']);
-    const immut = flat(stripComments(priorGuards[0]![1].body));
-    expect(immut).toMatch(/IF v_is_whitelisted THEN .* IF NEW\.is_platform_admin IS DISTINCT FROM true THEN/);
+    const guardBody = stripComments(LATEST.get('private.guard_profile_privileges')?.body as string);
+    expect(guardBody).toContain("current_setting('otp.platform_privilege_write', true) IS DISTINCT FROM 'on'");
+    expect(guardBody).toContain('PLATFORM_PRIVILEGE_IMMUTABLE');
     const isAdmin = stripComments(LATEST.get('private.is_platform_admin')?.body as string);
     expect(isAdmin).toMatch(/FROM public\.profiles[\s\S]*?AND is_platform_admin = true/);
-    expect(isAdmin).toMatch(/FROM public\.profiles[\s\S]*?AND lower\(email\) IN/);
+    expect(isAdmin).not.toMatch(/lower\s*\(\s*email\s*\)/i);
+    const immut = stripComments(LATEST.get('private_security.enforce_superadmin_immutability')?.body as string);
+    expect(immut).toContain('assert_recovery_floor_after');
+    expect(immut).toMatch(/IF TG_OP = 'DELETE' THEN[\s\S]*RETURN OLD;\s*END IF;\s*RETURN NEW;/);
   });
 
   it('non-admin callers cannot set the admin flag, take a whitelisted email or change account status', () => {
@@ -283,8 +283,9 @@ describe('R5 (partial) privileged profile columns', () => {
     const list = (s: string) =>
       [...s.matchAll(/'([^']+@[^']+)'/g)].map((m) => m[1] as string).filter((v, i, a) => a.indexOf(v) === i).sort();
     const isAdmin = stripComments(LATEST.get('private.is_platform_admin')?.body as string);
-    expect(list(guard())).toEqual(list(isAdmin));
-    expect(list(guard())).toHaveLength(7);
+    const latestGuard = stripComments(LATEST.get('private.guard_profile_privileges')?.body as string);
+    expect(list(latestGuard)).toEqual(list(isAdmin));
+    expect(list(isAdmin)).toEqual([]);
   });
 
   it('the guard is SECURITY DEFINER, not callable by API roles, and covers INSERT and UPDATE', () => {
@@ -305,7 +306,13 @@ describe('R5 (partial) privileged profile columns', () => {
       }
     }
     expect(writers.length).toBeGreaterThan(0);
-    for (const w of writers) expect(w, w).toMatch(/^public\.admin_/);
+    const auditedWriter = (name: string) =>
+      name.startsWith('public.admin_')
+      || name === 'public.bootstrap_platform_operators'
+      || name === 'public.break_glass_platform_account'
+      || name === 'public.approve_platform_privilege'
+      || name === 'public.request_platform_privilege';
+    for (const w of writers) expect(auditedWriter(w), w).toBe(true);
   });
 
   it('client profile writes outside the admin feature never touch a guarded column', () => {

@@ -44,11 +44,10 @@ export interface JourneyStep {
 }
 
 const JOURNEY_STEP_BODY: Record<(typeof PUBLIC_JOURNEY_STEPS)[number], string> = {
-  Request: 'Describe what you need, in your own words.',
-  Compare: 'Suppliers send quotes. See price, delivery and warranty side by side.',
-  Decide: 'You choose the best offer. Supplier names are shown only after you decide.',
-  Purchase: 'Send the order to the supplier you chose and pay them directly.',
-  Track: 'Follow the work until it is delivered and signed off.',
+  Tell: 'Tell OTP what you need, in your own words. OTP prepares the request.',
+  Review: 'OTP gathers competing quotes. You review price, delivery, and warranty.',
+  Decide: 'You decide. OTP does not choose the supplier.',
+  Track: 'Follow the work until it is delivered and signed off. You pay the supplier directly.',
 };
 
 /**
@@ -388,7 +387,7 @@ export const GENERAL_FAQS: FaqEntry[] = [
   {
     question: `Who can use ${PRODUCT_NAME}?`,
     answer:
-      'Individuals, small and medium businesses, housing societies and RWAs, and institutions. '
+      'Individuals, MSMEs, and housing societies or RWAs. Suppliers register separately. '
       + 'Everyone follows the same simple process; what changes is how many people need to approve the decision.',
   },
   {
@@ -408,9 +407,9 @@ export const GENERAL_FAQS: FaqEntry[] = [
   {
     question: 'How are suppliers discovered for my request?',
     answer:
-      'From your request. OTP looks at the kind of work and where it needs to be done, and suggests suppliers '
-      + 'from the OTP supplier registry who have said they do that work in that area and have room to take it on. '
-      + 'Their record on past jobs counts too. You choose who to invite — no supplier can pay to be placed higher.',
+      'From your request. OTP looks at the kind of work and where it needs to be done. '
+      + 'A discovered supplier is a business found for that area. A registered supplier has an OTP account and has said what they do and where they work. '
+      + 'Discovery is not registration. You choose who to invite — no supplier can pay to be placed higher.',
   },
   {
     question: 'How are quotes compared?',

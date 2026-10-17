@@ -108,6 +108,18 @@ export function AboutPage() {
           </div>
         </div>
 
+        <div
+          className="mt-8 rounded-2xl border bg-card p-5 sm:p-6 space-y-2 shadow-xs"
+          data-testid="about-families-friends-acknowledgement"
+        >
+          <h2 className="text-xs font-bold uppercase tracking-wider text-action">With gratitude</h2>
+          <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground">
+            OTP exists because of the encouragement and support of our families and friends throughout its
+            development. They are not authors, approvers, certifiers, funders, or legal or security endorsers of the
+            platform — only people who stood with us while we built it.
+          </p>
+        </div>
+
         {canSeeProvenance && (
           <div
             className="mt-8 rounded-2xl border bg-card p-5 sm:p-6 space-y-4 shadow-xs"

@@ -20,7 +20,7 @@ import {
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
   port: 54322,
-  database: 'postgres',
+  database: process.env.OTP_PG_DATABASE ?? 'postgres',
   user: 'postgres',
   password: 'postgres',
 };
@@ -150,6 +150,46 @@ async function committedState(client: Client) {
 }
 
 describe('00291 database outcomes (rolled back)', () => {
+  it('does not commit a read-only transaction and binds distinct synthetic bytes', async () => {
+    const client = await connect();
+    if (!client) return;
+    try {
+      const seed = await client.query<{ document_hash: string; legal_approval_status: string }>(
+        `SELECT document_hash, legal_approval_status
+         FROM public.legal_document_versions
+         WHERE retired_at IS NULL AND version = 'v1.0-20261014'
+         ORDER BY agreement_type`,
+      );
+      expect(seed.rows).toHaveLength(2);
+      expect(seed.rows[0].document_hash).toBe(seed.rows[1].document_hash);
+      expect(seed.rows.every((row) => row.legal_approval_status === 'PENDING_LEGAL_APPROVAL')).toBe(true);
+
+      await client.query('BEGIN');
+      const profileId = (await client.query<{ id: string }>(`SELECT id FROM public.profiles LIMIT 1`)).rows[0].id;
+      await asLegalReviewer(client, profileId, () => client.query('SELECT 1'));
+      await client.query('SAVEPOINT after_reviewer');
+      await client.query('ROLLBACK TO SAVEPOINT after_reviewer');
+
+      await ensureDistinctFrozenAgreements(client);
+      const buyer = await currentLegal(client, 'CUSTOMER_EULA');
+      const supplier = await currentLegal(client, 'SUPPLIER_EULA');
+      const expected = await client.query<{ buyer: string; supplier: string }>(
+        `SELECT 'sha256:' || encode(extensions.digest(convert_to('buyer-frozen-text', 'UTF8'), 'sha256'), 'hex') AS buyer,
+                'sha256:' || encode(extensions.digest(convert_to('supplier-frozen-text-distinct', 'UTF8'), 'sha256'), 'hex') AS supplier`,
+      );
+      expect(buyer.document_hash).toBe(expected.rows[0].buyer);
+      expect(supplier.document_hash).toBe(expected.rows[0].supplier);
+      expect(buyer.document_hash).not.toBe(supplier.document_hash);
+    } finally {
+      await client.query('ROLLBACK');
+      const state = await committedState(client);
+      expect(state.rows[0].enforced).toBe(false);
+      expect(state.rows[0].approvals).toBe(0);
+      expect(state.rows[0].snapshots).toBe(0);
+      await client.end();
+    }
+  });
+
   it('leaves the committed catalogue unapproved and enforcement off', async () => {
     const client = await connect();
     if (!client) return;

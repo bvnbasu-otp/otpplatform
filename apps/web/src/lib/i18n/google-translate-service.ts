@@ -1,10 +1,8 @@
 /**
  * OTP Platform: Integrated Page Translator Engine (Google Website Translation Bridge)
  *
- * Provides seamless full-page translation for MSMEs, suppliers, and enterprise buyers
- * across all 8 supported Indian languages:
- * English (en), Hindi (hi), Tamil (ta), Telugu (te), Kannada (kn),
- * Malayalam (ml), Marathi (mr), Bengali (bn).
+ * Optional browser widget. It is not an approved translation and must not be
+ * used for binding agreement text. English remains the only complete interface.
  */
 
 import type { SupportedLanguage } from './languages';

@@ -24,7 +24,7 @@ describe('supplier coverage recovery scheduler (static)', () => {
   const workflow = readFileSync(resolve('.github/workflows/supplier-coverage-recovery.yml'), 'utf8');
 
   it('is scheduled and invokes the worker mode of the coverage function', () => {
-    expect(workflow).toMatch(/cron:\s*'\*\/15 \* \* \* \*'/);
+    expect(workflow).toMatch(/cron:\s*'0 \*\/4 \* \* \*'/);
     expect(workflow).toContain('/functions/v1/location-pin-coverage');
     expect(workflow).toContain('"mode":"run_due_retries"');
   });

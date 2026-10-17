@@ -7,9 +7,10 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client } from 'pg';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { deleteFixtureRequirements } from '../helpers/fixture-teardown';
 import { catalogAcceptance } from '../helpers/legal-evidence-fixture';
+import { removeDisposableLegalEvidence } from '../helpers/supabase-local';
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
@@ -18,6 +19,10 @@ const LOCAL_POSTGRES = {
   user: 'postgres',
   password: 'postgres',
 };
+
+afterAll(async () => {
+  await removeDisposableLegalEvidence();
+});
 
 describe('00286 static contract', () => {
   const sql = readFileSync(

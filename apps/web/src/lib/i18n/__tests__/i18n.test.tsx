@@ -1,4 +1,5 @@
 import React from 'react';
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
@@ -8,6 +9,8 @@ import {
   isSupportedLanguage,
   getLanguageMeta,
   getTranslation,
+  missingTranslationKeys,
+  resetMissingTranslationKeys,
   TRANSLATIONS,
   LanguageProvider,
   useLanguage,
@@ -152,6 +155,14 @@ describe('OTP Multilingual (i18n) Engine', () => {
       // Non-existent key falls back to English or fallback argument
       expect(getTranslation('hi-IN', 'non.existent.key', 'Default')).toBe('Default');
     });
+
+    it('detects a missing key without presenting that key as translated legal text', () => {
+      resetMissingTranslationKeys();
+      const shown = getTranslation('hi-IN', 'legal.customerEula.body');
+      expect(shown).toBe('');
+      expect(shown).not.toBe('legal.customerEula.body');
+      expect(missingTranslationKeys()).toContain('legal.customerEula.body');
+    });
   });
 
   describe('3. LanguageProvider & Context Hook', () => {
@@ -176,6 +187,12 @@ describe('OTP Multilingual (i18n) Engine', () => {
       expect(html).toContain('en-IN');
       expect(html).toContain('English');
       expect(html).toContain('Home');
+    });
+
+    it('stores the anonymous preference without reloading the page', () => {
+      const source = readFileSync(new URL('../LanguageContext.tsx', import.meta.url), 'utf8');
+      expect(source).toContain('localStorage.setItem(LANGUAGE_STORAGE_KEY, newLang)');
+      expect(source).not.toContain('location.reload');
     });
 
     it('reads initial preference from localStorage', () => {

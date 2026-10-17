@@ -7,6 +7,12 @@ import {
   type BillingCycle,
   type SubscriptionTierId,
 } from '@/features/subscription';
+import {
+  disclosureAdditionalRfqAmount,
+  disclosureYearlySavings,
+  PUBLIC_PRICING_TIER_IDS,
+  resolvePublicPriceAmount,
+} from '../lib/pricing-disclosure';
 
 export function PricingPage() {
   const [cycle, setCycle] = useState<BillingCycle>('MONTHLY');
@@ -14,7 +20,7 @@ export function PricingPage() {
 
   useEffect(() => {
     let live = true;
-    const tiers: SubscriptionTierId[] = ['INDIVIDUAL', 'RWA', 'MSME'];
+    const tiers = PUBLIC_PRICING_TIER_IDS;
     Promise.all(tiers.map(async (tier) => {
       const [monthly, yearly] = await Promise.all([
         supabase.rpc('get_canonical_subscription_price', { p_tier: tier, p_cycle: 'MONTHLY', p_currency: 'INR' }),
@@ -35,15 +41,27 @@ export function PricingPage() {
     };
   }, []);
 
-  const priceText = (tier: SubscriptionTierId) => {
+  const priceDisplay = (tier: SubscriptionTierId) => {
     const row = catalogue[tier];
-    const amount = cycle === 'MONTHLY' ? row?.monthly : row?.yearly;
-    return amount == null ? 'Not configured' : `₹${amount.toLocaleString('en-IN')}`;
+    const rpcAmount = cycle === 'MONTHLY' ? row?.monthly : row?.yearly;
+    const { amount, source } = resolvePublicPriceAmount(tier, cycle, rpcAmount);
+    return {
+      label: `₹${amount.toLocaleString('en-IN')}`,
+      source,
+    };
   };
-  const savingsText = (tier: SubscriptionTierId) => {
+
+  const savingsAmount = (tier: SubscriptionTierId) => {
     const row = catalogue[tier];
-    if (row?.monthly == null || row.yearly == null) return null;
-    return Math.max(0, row.monthly * 12 - row.yearly);
+    if (row?.monthly != null && row?.yearly != null) {
+      return Math.max(0, row.monthly * 12 - row.yearly);
+    }
+    return disclosureYearlySavings(tier);
+  };
+
+  const additionalRfqLabel = (tier: SubscriptionTierId) => {
+    const amount = disclosureAdditionalRfqAmount(tier);
+    return `₹${amount.toLocaleString('en-IN')} per additional RFQ purchase (+ GST when billing is live)`;
   };
 
   return (
@@ -59,12 +77,18 @@ export function PricingPage() {
             30-day or 365-day prepaid access for buyers. Suppliers have no listing fee. A 0.50% platform fee is defined, and this pilot does not charge it.
           </p>
 
-          <div className="mt-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-3.5 text-xs text-blue-900 dark:text-blue-200 text-left shadow-2xs space-y-1">
+          <div
+            className="mt-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-3.5 text-xs text-blue-900 dark:text-blue-200 text-left shadow-2xs space-y-1"
+            data-testid="pricing-pilot-notice"
+          >
             <div className="flex items-center gap-2 font-bold">
-              <span>Pilot pricing</span>
+              <span>Pilot — no charges until the pilot ends</span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Published prices are shown for transparency. During the pilot, activating a plan is not charged. The allowance is 3 requests a month, with 1 extra request each quarter on a yearly plan. Suppliers are not charged a platform fee during the pilot.
+              You will not be charged until the pilot is over. Amounts on this page are transparency disclosures only —
+              billing is not active and checkout is not production-authorized. During the pilot, plan activation is not
+              charged. The allowance is 3 requests a month, with 1 extra request each quarter on a yearly plan.
+              Suppliers are not charged a platform fee during the pilot.
             </p>
           </div>
 
@@ -119,15 +143,18 @@ export function PricingPage() {
               <div className="mt-4 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
-                    {priceText('INDIVIDUAL')}
+                    {priceDisplay('INDIVIDUAL').label}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
                   </span>
                 </div>
+                <span className="text-[10px] text-muted-foreground block mt-0.5" data-testid="pricing-source-individual">
+                  {priceDisplay('INDIVIDUAL').source === 'rpc' ? 'From subscription catalogue' : 'Reference disclosure (domain catalogue)'}
+                </span>
                 {cycle === 'YEARLY' && (
                   <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                    {savingsText('INDIVIDUAL') == null ? 'Yearly saving is not configured' : `✓ Saves ₹${savingsText('INDIVIDUAL')?.toLocaleString('en-IN')} vs Monthly`}
+                    ✓ Saves ₹{savingsAmount('INDIVIDUAL').toLocaleString('en-IN')} vs Monthly
                   </span>
                 )}
               </div>
@@ -153,7 +180,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Top-Ups:</strong> Additional RFQ price is taken from the subscription catalogue, not a page constant.</span>
+                  <span><strong>Top-Ups:</strong> {additionalRfqLabel('INDIVIDUAL')}</span>
                 </li>
               </ul>
             </div>
@@ -190,15 +217,18 @@ export function PricingPage() {
               <div className="mt-4 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
-                    {priceText('RWA')}
+                    {priceDisplay('RWA').label}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
                   </span>
                 </div>
+                <span className="text-[10px] text-muted-foreground block mt-0.5" data-testid="pricing-source-rwa">
+                  {priceDisplay('RWA').source === 'rpc' ? 'From subscription catalogue' : 'Reference disclosure (domain catalogue)'}
+                </span>
                 {cycle === 'YEARLY' && (
                   <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                    {savingsText('RWA') == null ? 'Yearly saving is not configured' : `✓ Saves ₹${savingsText('RWA')?.toLocaleString('en-IN')} vs Monthly`}
+                    ✓ Saves ₹{savingsAmount('RWA').toLocaleString('en-IN')} vs Monthly
                   </span>
                 )}
               </div>
@@ -228,7 +258,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Top-Ups:</strong> Additional RFQ price is taken from the subscription catalogue, not a page constant.</span>
+                  <span><strong>Top-Ups:</strong> {additionalRfqLabel('RWA')}</span>
                 </li>
               </ul>
             </div>
@@ -262,15 +292,18 @@ export function PricingPage() {
               <div className="mt-4 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-foreground">
-                    {priceText('MSME')}
+                    {priceDisplay('MSME').label}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     / {cycle === 'MONTHLY' ? '30 days' : '365 days'}
                   </span>
                 </div>
+                <span className="text-[10px] text-muted-foreground block mt-0.5" data-testid="pricing-source-msme">
+                  {priceDisplay('MSME').source === 'rpc' ? 'From subscription catalogue' : 'Reference disclosure (domain catalogue)'}
+                </span>
                 {cycle === 'YEARLY' && (
                   <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                    {savingsText('MSME') == null ? 'Yearly saving is not configured' : `✓ Saves ₹${savingsText('MSME')?.toLocaleString('en-IN')} vs Monthly`}
+                    ✓ Saves ₹{savingsAmount('MSME').toLocaleString('en-IN')} vs Monthly
                   </span>
                 )}
               </div>
@@ -292,7 +325,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Controls:</strong> Strict Anti-Self-Approval (PA-09) &amp; spend caps</span>
+                  <span><strong>Controls:</strong> Strict Anti-Self-Approval &amp; spend caps</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
@@ -300,7 +333,7 @@ export function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                  <span><strong>Top-Ups:</strong> Additional RFQ price is taken from the subscription catalogue, not a page constant.</span>
+                  <span><strong>Top-Ups:</strong> {additionalRfqLabel('MSME')}</span>
                 </li>
               </ul>
             </div>

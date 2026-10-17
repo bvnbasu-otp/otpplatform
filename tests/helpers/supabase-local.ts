@@ -36,7 +36,17 @@ export async function loadCommittedLegalAcceptance(side: 'BUYER' | 'SUPPLIER' = 
   });
   await client.connect();
   try {
-    return await catalogAcceptance(client, side);
+    await client.query('BEGIN');
+    const acceptance = await catalogAcceptance(client, side);
+    await client.query('COMMIT');
+    return acceptance;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      /* connection already closed the transaction */
+    }
+    throw error;
   } finally {
     await client.end();
   }

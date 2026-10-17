@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = resolve(__dirname, '../..');
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
 const FILE = '00216_verified_remediation_p0_p1_security_integrity.sql';
-const CEILING = '00293_legal_reviewer_must_be_the_session.sql';
+const CEILING = '00296_platform_admin_operator_context_alignment.sql';
 const SUPPLIER_WALLET_FILE = '00220_supplier_wallet_ledger_events.sql';
 const SQL = readFileSync(resolve(MIGRATIONS_DIR, FILE), 'utf8');
 const DEPLOY = readFileSync(resolve(ROOT, 'scripts/deploy-migrations.ts'), 'utf8');

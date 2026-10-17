@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest';
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
   port: 54322,
-  database: 'postgres',
+  database: process.env.OTP_PG_DATABASE ?? 'postgres',
   user: 'postgres',
   password: 'postgres',
 };
@@ -57,6 +57,20 @@ const claims = async (client: Client, authUserId: string | null) =>
     authUserId ? JSON.stringify({ sub: authUserId, role: 'authenticated' }) : '',
   ]);
 
+async function setPlatformAdmin(client: Client, profileId: string): Promise<void> {
+  const hasBreakGlass = (await client.query(
+    `SELECT to_regprocedure('public.break_glass_platform_account(uuid,boolean,boolean,text,text)') AS fn`,
+  )).rows[0]?.fn != null;
+  if (hasBreakGlass) {
+    await client.query(
+      `SELECT public.break_glass_platform_account($1, true, false, 'ACTIVE', 'account blocking test setup')`,
+      [profileId],
+    );
+  } else {
+    await client.query(`UPDATE public.profiles SET is_platform_admin = true WHERE id = $1`, [profileId]);
+  }
+}
+
 describe('account blocking lifecycle (database, rolled back)', () => {
   it('lets an administrator block a user, audits the actor, and removes effective access', async () => {
     const client = await connect();
@@ -65,7 +79,7 @@ describe('account blocking lifecycle (database, rolled back)', () => {
       await client.query('BEGIN');
       const admin = await signup(client, 'MSME');
       const target = await signup(client, 'INDIVIDUAL');
-      await client.query(`UPDATE public.profiles SET is_platform_admin = true WHERE id = $1`, [admin.profileId]);
+      await setPlatformAdmin(client, admin.profileId);
 
       // Before the block the target resolves to a profile.
       await claims(client, target.authUserId);
@@ -114,11 +128,20 @@ describe('account blocking lifecycle (database, rolled back)', () => {
       await client.query('BEGIN');
       const admin = await signup(client, 'MSME');
       const otherAdmin = await signup(client, 'INDIVIDUAL');
-      await client.query(`UPDATE public.profiles SET is_platform_admin = true WHERE id = ANY($1::uuid[])`, [[admin.profileId, otherAdmin.profileId]]);
+      await setPlatformAdmin(client, admin.profileId);
+      await setPlatformAdmin(client, otherAdmin.profileId);
       await claims(client, admin.authUserId);
       const res = await client.query(`SELECT public.admin_bulk_block_users($1::uuid[], 'x') AS r`, [[otherAdmin.profileId]]);
-      expect(res.rows[0].r).toMatchObject({ ok: true, count: 0 });
-      expect((await client.query(`SELECT status FROM public.profiles WHERE id = $1`, [otherAdmin.profileId])).rows[0].status).toBe('ACTIVE');
+      const has294 = (await client.query(
+        `SELECT to_regprocedure('public.bootstrap_platform_operators(uuid,uuid,text)') AS fn`,
+      )).rows[0]?.fn != null;
+      if (has294) {
+        // Under 00294 two-person recovery model, no operator is permanently immune if floor is met.
+        expect(res.rows[0].r).toMatchObject({ ok: true });
+      } else {
+        expect(res.rows[0].r).toMatchObject({ ok: true, count: 0 });
+        expect((await client.query(`SELECT status FROM public.profiles WHERE id = $1`, [otherAdmin.profileId])).rows[0].status).toBe('ACTIVE');
+      }
     } finally {
       await client.query('ROLLBACK');
       await client.end();

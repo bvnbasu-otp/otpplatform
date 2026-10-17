@@ -12,6 +12,17 @@ import { COMMON_PHRASES } from './common-phrases';
 export { type TranslationSchema } from './en';
 export { COMMON_PHRASES } from './common-phrases';
 
+const missingKeys = new Set<string>();
+
+/** Keys requested in this process that had no catalogue entry. Used by tests and dev checks. */
+export function missingTranslationKeys(): readonly string[] {
+  return [...missingKeys];
+}
+
+export function resetMissingTranslationKeys(): void {
+  missingKeys.clear();
+}
+
 export const TRANSLATIONS: Record<SupportedLanguage, TranslationSchema> = {
   'en-IN': en,
   'hi-IN': hi,
@@ -77,6 +88,7 @@ export function getTranslation(lang: SupportedLanguage, path: string, fallback?:
     return fallbackCurrent;
   }
 
-  return fallback ?? path;
+  missingKeys.add(path);
+  return typeof fallback === 'string' ? fallback : '';
 }
 

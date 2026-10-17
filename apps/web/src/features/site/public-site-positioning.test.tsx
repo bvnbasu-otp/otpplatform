@@ -140,14 +140,14 @@ describe('canonical positioning on public pages', () => {
 });
 
 describe('one public journey, trust presented separately', () => {
-  it('homepage renders exactly one journey with the five canonical steps in order', () => {
+  it('homepage renders exactly one journey with the four canonical steps in order', () => {
     const html = pageBody(render(<LandingPage />));
     expect(html.match(/data-testid="public-journey"/g)).toHaveLength(1);
 
     const steps = [...html.matchAll(/data-testid="public-journey-step"[^>]*>[\s\S]*?<h3[^>]*>([^<]+)<\/h3>/g)].map(
       (m) => m[1],
     );
-    expect(steps).toEqual(['Request', 'Compare', 'Decide', 'Purchase', 'Track']);
+    expect(steps).toEqual(['Tell', 'Review', 'Decide', 'Track']);
   });
 
   it('homepage has no competing multi-stage lifecycle or trust ribbon in its content', () => {
@@ -214,6 +214,7 @@ describe('Product Leadership and Provenance are not in public navigation', () =>
       expect(href).not.toMatch(/provenance|leadership/i);
     }
     expect(toText(html)).not.toMatch(/Provenance|Product Leadership/i);
+    expect(html).toContain('data-testid="language-switcher-trigger"');
   });
 
   it.each(PAGES)('%s shows no Provenance or Product Leadership to an anonymous visitor', (_name, renderPage) => {
