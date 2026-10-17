@@ -188,6 +188,7 @@ function toContext(payload: Record<string, unknown>): RoleContext {
     profileId: (payload.profileId as string) ?? null,
     side,
     isPlatformAdmin: Boolean(payload.isPlatformAdmin),
+    isFounder: Boolean(payload.isFounder),
     needsOnboarding: Boolean(payload.needsOnboarding),
     activeRole,
     roles,
@@ -249,14 +250,14 @@ export async function fetchRoleContext(): Promise<
 
     let { data: profile } = await supabase
       .from('profiles')
-      .select('id, email, full_name, is_platform_admin, status, blocked_at, blocked_reason, active_role_code, active_portal_side')
+      .select('id, email, full_name, is_founder, is_platform_admin, status, blocked_at, blocked_reason, active_role_code, active_portal_side')
       .or(`auth_user_id.eq.${user.id},id.eq.${user.id}`)
       .maybeSingle();
 
     if (!profile && user.email) {
       const { data: fallbackProfile } = await supabase
         .from('profiles')
-        .select('id, email, full_name, is_platform_admin, status, blocked_at, blocked_reason, active_role_code, active_portal_side')
+        .select('id, email, full_name, is_founder, is_platform_admin, status, blocked_at, blocked_reason, active_role_code, active_portal_side')
         .eq('email', user.email)
         .maybeSingle();
       if (fallbackProfile) profile = fallbackProfile;
@@ -349,6 +350,7 @@ export async function fetchRoleContext(): Promise<
           profileId: profile.id,
           side,
           isPlatformAdmin: Boolean(profile.is_platform_admin),
+          isFounder: Boolean(profile.is_founder),
           needsOnboarding: false,
           activeRole: side === 'SUPPLIER'
             ? {
