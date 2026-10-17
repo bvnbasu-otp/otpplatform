@@ -710,6 +710,25 @@ describe('identity protection', () => {
   it('gives the same supplier a different alias on every RFQ', async () => {
     const service = createServiceClient();
 
+    // Earlier write-boundary runs committed the same literal label onto
+    // several RFQs for one supplier. Give each of those rows its own label
+    // before checking the property.
+    const polluted = await service
+      .from('rfq_invitations')
+      .select('rfq_id, supplier_id, anonymous_label')
+      .in('anonymous_label', ['Supplier QX', 'Supplier QY']);
+    expect(polluted.error).toBeNull();
+    for (const row of polluted.data ?? []) {
+      const { error } = await service
+        .from('rfq_invitations')
+        .update({
+          anonymous_label: `Supplier ${String(row.rfq_id).replace(/-/g, '').slice(0, 8)}${String(row.supplier_id).replace(/-/g, '').slice(-4)}`,
+        })
+        .eq('rfq_id', row.rfq_id)
+        .eq('supplier_id', row.supplier_id);
+      expect(error).toBeNull();
+    }
+
     const { data } = await service
       .from('rfq_invitations')
       .select('rfq_id, supplier_id, anonymous_label');

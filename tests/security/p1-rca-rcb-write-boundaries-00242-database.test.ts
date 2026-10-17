@@ -563,12 +563,12 @@ describe('F-03 quotes: supplier flow intact, score / SELECTED / identity / versi
     const creator = await profileIdFor(LOGIN.president);
     const { data: mine } = await service
       .from('rfq_invitations')
-      .insert({ rfq_id: round.rfqId, supplier_id: DEMO.suppliers.aquaPrime, anonymous_label: 'Supplier QX', status: 'INVITED' })
+      .insert({ rfq_id: round.rfqId, supplier_id: DEMO.suppliers.aquaPrime, anonymous_label: `Supplier QX ${round.rfqId.slice(0, 8)}`, status: 'INVITED' })
       .select('id')
       .single();
     const { data: rivalInv } = await service
       .from('rfq_invitations')
-      .insert({ rfq_id: round.rfqId, supplier_id: DEMO.suppliers.nandi, anonymous_label: 'Supplier QY', status: 'INVITED' })
+      .insert({ rfq_id: round.rfqId, supplier_id: DEMO.suppliers.nandi, anonymous_label: `Supplier QY ${round.rfqId.slice(0, 8)}`, status: 'INVITED' })
       .select('id')
       .single();
     expect(creator).toBeTruthy();
