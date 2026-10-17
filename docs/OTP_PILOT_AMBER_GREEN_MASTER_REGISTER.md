@@ -1,13 +1,12 @@
-> Current working tree, 16 October 2026: the green decisions below are historical records. They do not certify this uncommitted tree. Local migration files run through `00290`. Hosted application of the uncommitted allowance, comparison, address, purchase-simulation, and legal-activation migrations was not queried. EULA legal approval, GST review, and enforcement remain open. Payment collection is not activated.
+> Current status, 17 October 2026: **NOT READY FOR ENFORCEMENT**. The GREEN rows below are a historical record of ceiling `00263` and certificate `OTP-CERT-20261011-GREEN`. They do not certify commit `a30b58cdb89c7072b175a684ad88b20c16e9ebcb` or any later SHA. Counsel has not approved the EULA. GST review has not approved anything. Enforcement stays off. Acceptance must not be made binding. This pass does not activate payment collection.
 
 # OTP Pilot Amber-to-Green Master Register
 
 > [!NOTE]
-> **Active Production Release Certificate:** `OTP-REL-CERT-20261015-003` (15 October 2026)  
-> **Release Baseline Commit:** Current Verified Baseline (`main`)  
-> **Formal Migration Ceiling:** `00271` (`00001`–`00271` synchronized on hosted Supabase `qsuvtcezffomtwzwyrso`)  
-> **Complete Platform Documentation:** `docs/OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf` (6.4 MB Publication-Grade PDF)  
-> See the active quality gate certificate: [OTP_PILOT_FINAL_QUALITY_GATE_AND_RELEASE_CERTIFICATE.md](./15-change-management/OTP_PILOT_FINAL_QUALITY_GATE_AND_RELEASE_CERTIFICATE.md).
+> **This pass:** `origin/main` remains `e9391d93ca97e51bb6929904ae2af16f9db25d14`. Local commits after it are not pushed. Status **NOT READY FOR ENFORCEMENT**.
+> **Historical certificates** `OTP-CERT-20261011-GREEN` and `OTP-REL-CERT-20261015-003` are records of earlier trees. They are not a certification of `a30b58cdb89c7072b175a684ad88b20c16e9ebcb` or any later SHA.
+> **Blocked:** counsel review, GST review, the missing `legal_review_grants.can_authorize` repair, hosted migration apply, enforcement activation, and credential rotation for migration `00113`.
+> Evidence for this pass is in the 17 October 2026 section at the end of this file.
 
 
 **Historical Date:** 11 October 2026  
@@ -28,7 +27,7 @@ On 11 October 2026, the Product Owner formally attested:
 
 > *"All claims are working correctly. All release gates may be declared GREEN."*
 
-This attestation, combined with automated CI run #222 passing cleanly (215 test files, 1,821 tests), migration formalization up to ceiling `00263`, certified WAHA WhatsApp dispatch evidence, and security/financial invariant enforcement, authorizes the closure of all release gates for the controlled pilot.
+This attestation is a historical statement about the 11 October 2026 tree. It does not authorize release gates for `a30b58cdb89c7072b175a684ad88b20c16e9ebcb` or any later commit.
 
 ---
 
@@ -89,4 +88,67 @@ This attestation, combined with automated CI run #222 passing cleanly (215 test 
 | I Documents / TDS / public truth | P1. Live chunk contained Form 16A TAN. | Panel states not Form 16A. | Build scanned: TAN/PAN absent. | Live chunk still had TAN. | AMBER | `PUBLIC_TRUTH_CERTIFICATION.md` |
 | J Tests | One failure: `postgres-00225`. | Contract fix in `00251`. | Root vitest 4,640 passed. | Not hosted run. | AMBER | Local pass only then. |
 | K Source / build / deploy consistency | Live bundle and admin write disagreed. | Local build matches truth. | Temp build scanned. | Production served older bundle. | AMBER | Workflow uncommitted then. |
+
+## 17 October 2026 pass — NOT READY FOR ENFORCEMENT
+
+`origin/main` did not move. It is still `e9391d93ca97e51bb6929904ae2af16f9db25d14`. Nothing in this pass was pushed. The historical GREEN at ceiling `00263` does not certify `a30b58cdb89c7072b175a684ad88b20c16e9ebcb` or any later SHA.
+
+Local commits on `main`, newest last:
+
+| SHA | What it contains | Pushed |
+| --- | --- | --- |
+| `a30b58cdb89c7072b175a684ad88b20c16e9ebcb` | EULA fixture helper stays inside the caller transaction. Parent `e9391d93`. Migration `00276` is not in the diff. | No. Preflight failed. |
+| `1dd5bbcab241a23b34477b55598dd7445e7c6a1b` | Two-person platform-admin claims, migration `00294`. Not applied to the original local `postgres` database. | No. |
+| `f6d82e8b7841d40e182ec94663d6ece576fe107a` | Supplier coverage recovery schedule `0 */4 * * *` and a fail-closed response checker. | No. |
+| `3fd62577fb2ce66bc19611d0b2260974eeabca8d` | Language preference does not call the page translator. English is the only complete interface. | No. |
+| `c9104712819714d42aed5a5a93618e0805da5a1c` | Public journey is Tell, Review, Decide, Track. Customers named are Individual, MSME, and RWA. | No. |
+
+### EULA preflight — FAIL
+
+Disposable database `otp_eula_preflight_20261017` was cloned from `postgres` (the original database was not renamed). `datallowconn` was restored. Migrations `00292` and `00293` were applied only on that disposable. Enforcement stayed off. Snapshots, approvals, and grants stayed at zero.
+
+The legal tests and the functional suite then failed because `public.grant_legal_reviewer` inserts `legal_review_grants.can_authorize`, and the historical `00291` table does not have that column. `00293` does not add the column. Re-running the current `00291` file is not a repair: the version is already recorded and the tables already exist.
+
+Functional suite on that disposable: 15 files failed, 94 passed, 44 tests failed, 1249 passed, 50 skipped. The failures are the missing column, or `grant_legal_reviewer` missing on connections that still used the original `postgres` database. One additional failure was `tests/integration/requirement-engine.test.ts` (supplier alias reuse for two local fixture ids). That failure is not a legal approval.
+
+`pnpm test:policy --strict` passed (496 files on the pre-RBAC tree). Workspace typecheck passed. Web build with the placeholder Supabase env passed. Those checks do not make the disposable suite green, so `a30b58c` was not pushed.
+
+### Hosted migration plan — awaiting confirmation
+
+Do not apply this plan. Target project ref `qsuvtcezffomtwzwyrso` only, and only after an explicit confirmation. Hosted ledger was not read in this pass.
+
+1. Read the hosted `supabase_migrations.schema_migrations` ledger. Do not assume it matches local `postgres` (local ceiling applied is `00291`).
+2. Apply forward files in order, each idempotent only where the file already uses `CREATE OR REPLACE` / `IF NOT EXISTS`. `00294` creates `platform_privilege_requests` and is not safe to run twice.
+3. Stop before `00293` until a new forward repair adds `legal_review_grants.can_authorize` on databases that already applied the older `00291`. That repair is not in this tree. Applying `00293` alone does not make reviewer grants work.
+4. There is no down migration. Rollback is a restored backup, not a reverse SQL file.
+5. Repo ceiling in the unpushed CI workflow is `00294`. A later production CI run executes `supabase db push` against `qsuvtcezffomtwzwyrso`. Do not push these commits until that apply is confirmed.
+6. Do not set `enforcement_enabled`. Do not call activation. Counsel has not approved the EULA. GST review has not approved anything. The agreement text is not an authorized pilot artifact. The software may be deployed later; acceptance must not be made binding.
+
+### RBAC — local only
+
+`00294` removes email and JWT-email authority from `private.is_platform_admin()`. A founder initiates `is_platform_admin` / `is_founder` changes. A different active platform admin approves. Ordinary block refuses with `PLATFORM_LAST_RECOVERY_PATH` instead of returning ok with count 0. A suspension that is allowed sets `BLOCKED`, bans the auth user, and deletes `auth.sessions`. `get_profile_id` rejects `SUSPENDED` and `DELETED` the same way as `BLOCKED`. `my_role_context` returns `isFounder`, and the web role context copies it.
+
+Verified on disposable `otp_rbac_00294` only: `tests/security/platform-admin-rbac-00294.test.ts`, 2 passed. The original `postgres` database does not have `request_platform_privilege`. Enforcement there is still false.
+
+Not done, and not given a permissive default: platform admin still short-circuits org membership and several publish, award, and spend checks inside already-applied functions. This pass does not add an emergency override and does not rewrite those functions. `grant_legal_reviewer`, `verified_legal_actor`, and `00293` were not edited.
+
+### Coverage recovery
+
+Schedule is `0 */4 * * *`. The 15-minute cron is gone. `supabase-keep-alive.yml` was not edited. The checker fails closed on invalid JSON, top-level `ok: false`, and any `results[].ok === false`. A valid empty `results` array succeeds. Unit test passed.
+
+Live execution is **NOT VERIFIED**. Public Actions metadata shows failed runs on `0616d22`, including run `39004511225` and job `117314118716`, failed at "Invoke recovery worker". The log body returned HTTP 403. `gh` is not installed. No workflow was dispatched.
+
+### Localization
+
+English is the only complete interface. The phrase table flags a missing key instead of echoing it. The language control does not call the Google page translator, so it does not rewrite agreement text. Locale does not change authorization. Screen inventory is in `localization-coverage.test.ts`. `DiscoverSuppliersPage` uses the phrase table. Legal, signup, login, award, purchase order, and the other listed pages are **BLOCKED** as English-only. Binding EULA text was not translated.
+
+### Public site
+
+Home and FAQ were opened locally at `http://127.0.0.1:3000/`. The journey renders Tell, Review, Decide, Track. The FAQ answer names Individuals, MSMEs, and housing societies or RWAs. The language menu is a preference list. No counsel approval, GST decision, verified coverage, security certification, or commercial production claim was added.
+
+### Still blocked
+
+- Hosted integration health, including WAHA, was not read. **NOT VERIFIED**. WAHA remains the WhatsApp provider. ONDC is not a blocker while disabled. Supplier cashback stays excluded.
+- Credential rotation for the secret embedded in migration `00113` is **BLOCKED** until an approved secrets procedure exists. The secret is not recorded here.
+- Enforcement remains disabled. Status remains **NOT READY FOR ENFORCEMENT**. This section is not a pilot certificate.
 
