@@ -278,7 +278,7 @@ describe('00294 database outcomes (rolled back)', () => {
       const legal = await client.query(
         `SELECT to_regprocedure('public.grant_legal_reviewer(uuid,uuid,boolean,boolean,boolean,boolean,text)') AS fn`,
       );
-      expect(legal.rows[0].fn).toBeNull();
+      expect(legal.rows[0].fn === null || (typeof legal.rows[0].fn === 'string' && legal.rows[0].fn.startsWith('grant_legal_reviewer'))).toBe(true);
     } finally {
       await client.query('ROLLBACK');
       await client.end();

@@ -157,12 +157,24 @@ GRANT EXECUTE ON FUNCTION private.is_founder() TO authenticated, service_role, a
 
 CREATE OR REPLACE FUNCTION private.is_platform_admin()
 RETURNS boolean
-LANGUAGE sql
+LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public, private, auth
 AS $$
-  SELECT COALESCE(
+BEGIN
+  IF COALESCE(auth.role(), '') = 'service_role'
+     OR nullif(current_setting('request.jwt.claim.role', true), '') = 'service_role' THEN
+    RETURN true;
+  END IF;
+
+  IF auth.uid() IS NULL
+     AND nullif(current_setting('request.jwt.claim.role', true), '') IS NULL
+     AND session_user IN ('postgres', 'supabase_admin') THEN
+    RETURN true;
+  END IF;
+
+  RETURN COALESCE(
     (
       SELECT true
       FROM public.profiles
@@ -173,6 +185,7 @@ AS $$
     ),
     false
   );
+END;
 $$;
 
 COMMENT ON FUNCTION private.is_platform_admin() IS
@@ -294,6 +307,18 @@ SET search_path = public, private, private_security, auth
 AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    IF EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'private_security' AND table_name = 'admin_whitelist'
+    ) THEN
+      IF EXISTS (
+        SELECT 1 FROM private_security.admin_whitelist
+        WHERE lower(email) = lower(OLD.email)
+      ) THEN
+        RAISE EXCEPTION 'SECURITY VIOLATION: Cannot delete protected root SuperAdmin account %', OLD.email;
+      END IF;
+    END IF;
+
     PERFORM private.assert_recovery_floor_after(OLD.id, false, false, false);
     CREATE TEMP TABLE IF NOT EXISTS otp_profile_delete_ids (
       profile_id uuid PRIMARY KEY
@@ -916,7 +941,13 @@ BEGIN
     ORDER BY (o.org_type::text = 'INDIVIDUAL') DESC, o.name
     LIMIT 1;
 
-    IF v_org_id IS NULL THEN
+    IF v_org_id IS NULL AND (
+      to_regprocedure('private.is_personal_buyer_profile(uuid)') IS NOT NULL
+      AND private.is_personal_buyer_profile(v_profile)
+    ) THEN
+      v_org_role := 'OWNER';
+      v_org_type := 'INDIVIDUAL';
+    ELSIF v_org_id IS NULL THEN
       INSERT INTO public.organizations (name, org_type, status, free_rfq_credits, rfq_credits_used)
       VALUES (COALESCE(NULLIF(btrim(v_full_name), ''), 'Self'), 'INDIVIDUAL', 'ACTIVE', 1, 0)
       RETURNING id, name, org_type::text INTO v_org_id, v_org_name, v_org_type;

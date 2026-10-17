@@ -17,7 +17,7 @@ import { catalogAcceptance } from '../helpers/legal-evidence-fixture';
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
   port: 54322,
-  database: 'postgres',
+  database: process.env.OTP_PG_DATABASE ?? 'postgres',
   user: 'postgres',
   password: 'postgres',
 };
