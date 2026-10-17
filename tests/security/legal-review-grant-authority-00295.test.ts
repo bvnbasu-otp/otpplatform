@@ -7,7 +7,7 @@
  * enable enforcement.
  */
 import { randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client } from 'pg';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -330,9 +330,17 @@ beforeAll(async () => {
     await base.connect();
     let baseSetupError: unknown;
     try {
-      await applyFile(base, '00292_profile_delete_keeps_acceptance_archive.sql');
-      await applyFile(base, '00293_legal_reviewer_must_be_the_session.sql');
-      await applyFile(base, '00294_platform_admin_two_person_recovery.sql');
+      const migrationsDir = resolve('supabase/migrations');
+      const files = readdirSync(migrationsDir).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
+      const startIdx = files.findIndex((f) => f.startsWith('00267_'));
+      const endIdx = files.findIndex((f) => f.startsWith('00294_'));
+      for (const file of files.slice(startIdx, endIdx + 1)) {
+        await applyFile(base, file);
+      }
+      await base.query(`
+        ALTER TABLE public.legal_review_grants DROP COLUMN IF EXISTS can_authorize CASCADE;
+        ALTER TABLE public.legal_review_grants DROP COLUMN IF EXISTS external_record_ref CASCADE;
+      `);
     } catch (error) {
       baseSetupError = error;
     } finally {

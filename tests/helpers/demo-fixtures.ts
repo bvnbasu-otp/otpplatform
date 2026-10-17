@@ -31,6 +31,8 @@ export const DEMO = {
   },
   logins: {
     admin: 'admin@otp.test',
+    /** Dedicated demo founder. Platform claims come from bootstrap, not this label. */
+    founder: 'founder@otp.test',
     sunriseManager: 'secretary@sunrise.test',
     sunriseCommittee: 'treasurer@sunrise.test',
     sunriseCommittee2: 'member1@sunrise.test',

@@ -29,31 +29,31 @@ CREATE TEMP TABLE demo_people (
   auth_id    uuid PRIMARY KEY,
   profile_id uuid NOT NULL,
   email      text NOT NULL,
-  full_name  text NOT NULL,
-  is_admin   boolean NOT NULL DEFAULT false
+  full_name  text NOT NULL
 ) ON COMMIT DROP;
 
-INSERT INTO demo_people (auth_id, profile_id, email, full_name, is_admin) VALUES
-  -- Platform
-  ('0dc00000-0000-4000-8000-000000000001', '0db00000-0000-4000-8000-000000000001', 'admin@otp.test',                'OTP Platform Admin',   true),
+INSERT INTO demo_people (auth_id, profile_id, email, full_name) VALUES
+  -- Dedicated local operators. Claims are applied later, only by bootstrap.
+  ('0dc00000-0000-4000-8000-0000000000f1', '0db00000-0000-4000-8000-0000000000f1', 'founder@otp.test',              'OTP Platform Founder'),
+  ('0dc00000-0000-4000-8000-000000000001', '0db00000-0000-4000-8000-000000000001', 'admin@otp.test',                'OTP Platform Admin'),
 
   -- Sunrise Residency Owners Association (COMMUNITY, 96 flats)
-  ('0dc00000-0000-4000-8000-000000000011', '0db00000-0000-4000-8000-000000000011', 'secretary@sunrise.test',        'Ramesh Iyer',          false),
-  ('0dc00000-0000-4000-8000-000000000012', '0db00000-0000-4000-8000-000000000012', 'treasurer@sunrise.test',        'Kavitha Nair',         false),
-  ('0dc00000-0000-4000-8000-000000000013', '0db00000-0000-4000-8000-000000000013', 'member1@sunrise.test',          'Suresh Babu',          false),
-  ('0dc00000-0000-4000-8000-000000000014', '0db00000-0000-4000-8000-000000000014', 'member2@sunrise.test',          'Fathima Rahman',       false),
+  ('0dc00000-0000-4000-8000-000000000011', '0db00000-0000-4000-8000-000000000011', 'secretary@sunrise.test',        'Ramesh Iyer'),
+  ('0dc00000-0000-4000-8000-000000000012', '0db00000-0000-4000-8000-000000000012', 'treasurer@sunrise.test',        'Kavitha Nair'),
+  ('0dc00000-0000-4000-8000-000000000013', '0db00000-0000-4000-8000-000000000013', 'member1@sunrise.test',          'Suresh Babu'),
+  ('0dc00000-0000-4000-8000-000000000014', '0db00000-0000-4000-8000-000000000014', 'member2@sunrise.test',          'Fathima Rahman'),
 
   -- Kovai Precision Components (MSME, owner-run machine shop)
-  ('0dc00000-0000-4000-8000-000000000021', '0db00000-0000-4000-8000-000000000021', 'owner@kovaiprecision.test',     'Murugesan K',          false),
-  ('0dc00000-0000-4000-8000-000000000022', '0db00000-0000-4000-8000-000000000022', 'partner@kovaiprecision.test',   'Selvi Murugesan',      false),
+  ('0dc00000-0000-4000-8000-000000000021', '0db00000-0000-4000-8000-000000000021', 'owner@kovaiprecision.test',     'Murugesan K'),
+  ('0dc00000-0000-4000-8000-000000000022', '0db00000-0000-4000-8000-000000000022', 'partner@kovaiprecision.test',   'Selvi Murugesan'),
 
   -- Sri Lakshmi Knitwear Exports (ENTERPRISE, formal procurement committee)
-  ('0dc00000-0000-4000-8000-000000000031', '0db00000-0000-4000-8000-000000000031', 'procurement@srilakshmi.test',   'Anand Subramanian',    false),
-  ('0dc00000-0000-4000-8000-000000000032', '0db00000-0000-4000-8000-000000000032', 'quality@srilakshmi.test',       'Deepa Venkat',         false),
-  ('0dc00000-0000-4000-8000-000000000033', '0db00000-0000-4000-8000-000000000033', 'finance@srilakshmi.test',       'Prakash Raman',        false),
+  ('0dc00000-0000-4000-8000-000000000031', '0db00000-0000-4000-8000-000000000031', 'procurement@srilakshmi.test',   'Anand Subramanian'),
+  ('0dc00000-0000-4000-8000-000000000032', '0db00000-0000-4000-8000-000000000032', 'quality@srilakshmi.test',       'Deepa Venkat'),
+  ('0dc00000-0000-4000-8000-000000000033', '0db00000-0000-4000-8000-000000000033', 'finance@srilakshmi.test',       'Prakash Raman'),
 
   -- Bharathi Agro (INDIVIDUAL, sole trader)
-  ('0dc00000-0000-4000-8000-000000000041', '0db00000-0000-4000-8000-000000000041', 'bharathi@agrotrade.test',       'Bharathi Selvam',      false);
+  ('0dc00000-0000-4000-8000-000000000041', '0db00000-0000-4000-8000-000000000041', 'bharathi@agrotrade.test',       'Bharathi Selvam');
 
 -- Supplier logins, one owner each.
 INSERT INTO demo_people (auth_id, profile_id, email, full_name)
@@ -106,16 +106,83 @@ ON CONFLICT (provider_id, provider) DO UPDATE
 SET identity_data = EXCLUDED.identity_data,
     updated_at = now();
 
-INSERT INTO profiles (id, auth_user_id, email, full_name, is_platform_admin, is_demo)
-SELECT p.profile_id, p.auth_id, p.email, p.full_name, p.is_admin, true
+-- Defaults leave is_platform_admin and is_founder false. The conflict update
+-- must not write either column: a rerun has to keep claims the audited
+-- functions already recorded.
+INSERT INTO profiles (id, auth_user_id, email, full_name, is_demo)
+SELECT p.profile_id, p.auth_id, p.email, p.full_name, true
 FROM demo_people p
 ON CONFLICT (id) DO UPDATE
 SET auth_user_id = EXCLUDED.auth_user_id,
     email = EXCLUDED.email,
     full_name = EXCLUDED.full_name,
-    is_platform_admin = EXCLUDED.is_platform_admin,
     is_demo = true,
     updated_at = now();
+
+-- founder@otp.test is the founder. admin@otp.test is the other operator.
+-- Neither is a buyer or supplier. Bootstrap refuses once a founder and two
+-- active platform admins already exist; that refusal is the rerun path, and
+-- this block does not clear claims or set the privilege-write flag itself.
+DO $demo_operators$
+DECLARE
+  v_founder uuid;
+  v_admin uuid;
+  v_founders int;
+  v_admins int;
+  v_ready boolean;
+BEGIN
+  IF to_regprocedure('public.bootstrap_platform_operators(uuid,uuid,text)') IS NULL THEN
+    RAISE NOTICE 'Demo operator bootstrap skipped: public.bootstrap_platform_operators is not installed';
+    RETURN;
+  END IF;
+
+  SELECT profile_id INTO v_founder FROM demo_people WHERE email = 'founder@otp.test';
+  SELECT profile_id INTO v_admin FROM demo_people WHERE email = 'admin@otp.test';
+  IF v_founder IS NULL OR v_admin IS NULL OR v_founder = v_admin THEN
+    RAISE EXCEPTION 'Demo seed is missing its two dedicated operator profiles';
+  END IF;
+
+  SELECT
+    count(*) FILTER (WHERE is_founder)::int,
+    count(*) FILTER (WHERE is_platform_admin)::int
+  INTO v_founders, v_admins
+  FROM public.profiles
+  WHERE COALESCE(status, 'ACTIVE') NOT IN ('BLOCKED', 'SUSPENDED', 'DELETED')
+    AND deleted_at IS NULL;
+
+  IF v_founders >= 1 AND v_admins >= 2 THEN
+    RAISE NOTICE 'Demo operator bootstrap skipped: recovery set is already complete';
+    RETURN;
+  END IF;
+
+  SELECT count(*) = 2
+     AND bool_and(COALESCE(p.status, 'ACTIVE') NOT IN ('BLOCKED', 'SUSPENDED', 'DELETED') AND p.deleted_at IS NULL)
+     AND bool_and(NOT (p.id = v_admin AND COALESCE(p.is_founder, false)))
+  INTO v_ready
+  FROM public.profiles p
+  WHERE p.id IN (v_founder, v_admin);
+
+  IF NOT COALESCE(v_ready, false) THEN
+    RAISE NOTICE 'Demo operator bootstrap skipped: subjects are not both active, or the second operator already holds founder';
+    RETURN;
+  END IF;
+
+  BEGIN
+    PERFORM public.bootstrap_platform_operators(
+      v_founder,
+      v_admin,
+      'Local demo seed provisions the dedicated founder and the second platform operator so walkthrough login matches audited platform claims.'
+    );
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      IF SQLERRM LIKE '%PLATFORM_BOOTSTRAP_CLOSED%' THEN
+        RAISE NOTICE 'Demo operator bootstrap skipped: recovery set is already complete';
+        RETURN;
+      END IF;
+      RAISE;
+  END;
+END
+$demo_operators$;
 
 -- ---------------------------------------------------------------------------
 -- Buying organizations
@@ -975,8 +1042,14 @@ INSERT INTO rfqs (
 ON CONFLICT (id) DO UPDATE
 SET requirement_id = EXCLUDED.requirement_id,
     organization_id = EXCLUDED.organization_id,
-    status = EXCLUDED.status,
-    reveal_status = EXCLUDED.reveal_status,
+    status = CASE
+      WHEN rfqs.reveal_status = 'REVEALED' THEN rfqs.status
+      ELSE EXCLUDED.status
+    END,
+    reveal_status = CASE
+      WHEN rfqs.reveal_status = 'REVEALED' THEN rfqs.reveal_status
+      ELSE EXCLUDED.reveal_status
+    END,
     sourcing_mode = EXCLUDED.sourcing_mode,
     title = EXCLUDED.title,
     quote_deadline = EXCLUDED.quote_deadline,
@@ -1116,11 +1189,11 @@ SET title = EXCLUDED.title,
     invite_limit = EXCLUDED.invite_limit,
     sort_order = EXCLUDED.sort_order;
 
--- Every account row must name either an organization or a supplier. The admin
--- is nominally attached to Sunrise; the ADMIN persona is what actually grants
--- the platform-wide view.
+-- Every account row must name either an organization or a supplier. Operator
+-- rows below use Sunrise only to satisfy that registry check. They are not
+-- organization members, and the persona is published only when the profile
+-- actually holds an active platform-admin claim.
 INSERT INTO demo_accounts (email, label, persona, description, organization_id, profile_id, scenario_code, sort_order) VALUES
-  ('admin@otp.test',              'Platform admin',                 'ADMIN',         'Sees everything. Use this to inspect the audit trail or reset the demo.', '0da00000-0000-4000-8000-000000000001', '0db00000-0000-4000-8000-000000000001', NULL,                 1),
   ('secretary@sunrise.test',      'Sunrise — Secretary (manager)',  'BUYER_MANAGER', 'Raises requirements, sets evaluation weights, locks and reveals awards.', '0da00000-0000-4000-8000-000000000001', '0db00000-0000-4000-8000-000000000011', 'sunrise_motor',     10),
   ('treasurer@sunrise.test',      'Sunrise — Treasurer',            'COMMITTEE',     'Votes on blind quotes. Community voting power.',                          '0da00000-0000-4000-8000-000000000001', '0db00000-0000-4000-8000-000000000012', 'sunrise_motor',     11),
   ('member1@sunrise.test',        'Sunrise — Committee member',     'COMMITTEE',     'Votes on blind quotes.',                                                 '0da00000-0000-4000-8000-000000000001', '0db00000-0000-4000-8000-000000000013', 'sunrise_motor',     12),
@@ -1140,6 +1213,53 @@ SET label = EXCLUDED.label,
     profile_id = EXCLUDED.profile_id,
     scenario_code = EXCLUDED.scenario_code,
     sort_order = EXCLUDED.sort_order;
+
+-- Publish an operator login only when that profile is an active platform admin.
+-- A completed bootstrap that left these people ordinary must not advertise them
+-- as administrators. Sunrise is the registry parent, not a membership.
+INSERT INTO demo_accounts (email, label, persona, description, organization_id, profile_id, scenario_code, sort_order)
+SELECT
+  p.email,
+  CASE WHEN p.is_founder THEN 'Platform founder' ELSE 'Platform admin' END,
+  'ADMIN',
+  CASE
+    WHEN p.is_founder THEN 'Founder and platform operator. Initiates privilege changes. Not a buyer or supplier membership.'
+    ELSE 'Platform operator. Approves privilege changes initiated by the founder. Not a buyer or supplier membership.'
+  END,
+  '0da00000-0000-4000-8000-000000000001',
+  p.id,
+  NULL,
+  CASE WHEN p.is_founder THEN 0 ELSE 1 END
+FROM profiles p
+JOIN demo_people d ON d.profile_id = p.id
+WHERE d.email IN ('founder@otp.test', 'admin@otp.test')
+  AND p.is_platform_admin
+  AND COALESCE(p.status, 'ACTIVE') NOT IN ('BLOCKED', 'SUSPENDED', 'DELETED')
+  AND p.deleted_at IS NULL
+ON CONFLICT (email) DO UPDATE
+SET label = EXCLUDED.label,
+    persona = EXCLUDED.persona,
+    description = EXCLUDED.description,
+    organization_id = EXCLUDED.organization_id,
+    supplier_id = NULL,
+    profile_id = EXCLUDED.profile_id,
+    scenario_code = EXCLUDED.scenario_code,
+    sort_order = EXCLUDED.sort_order,
+    is_active = true;
+
+UPDATE demo_accounts a
+SET is_active = false,
+    description = 'This login is not a platform operator. The demo seed did not grant platform claims.'
+WHERE a.email IN ('founder@otp.test', 'admin@otp.test')
+  AND NOT EXISTS (
+    SELECT 1
+    FROM profiles p
+    JOIN demo_people d ON d.profile_id = p.id
+    WHERE d.email = a.email
+      AND p.is_platform_admin
+      AND COALESCE(p.status, 'ACTIVE') NOT IN ('BLOCKED', 'SUSPENDED', 'DELETED')
+      AND p.deleted_at IS NULL
+  );
 
 -- Supplier logins, labelled by what they can do so a presenter can pick the
 -- right one to show the bidder's side of a given scenario.
