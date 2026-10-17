@@ -17,7 +17,7 @@ import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { RoleChoiceField } from './RoleChoiceField';
 import { SUPPLIER_COPY } from '../types/portal';
 import { VerificationChoice } from './VerificationChoice';
-import { LegalSnapshotNotice } from '@/features/legal/components/LegalSnapshotNotice';
+import { RegistrationFrozenAgreementPanel } from '@/features/legal/components/RegistrationFrozenAgreementPanel';
 import { useCurrentAgreement } from '@/features/legal/hooks/use-current-agreement';
 
 /**
@@ -479,36 +479,16 @@ export function SupplierRegisterForm({
           )}
         </PortalField>
 
-        <div
-          className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2 text-xs"
-          data-testid="supplier-agreement-prompt"
-        >
-          <span className="font-bold text-foreground">Supplier Terms &amp; EULA</span>
-          <LegalSnapshotNotice
-            version={agreementVersion}
-            documentHash={currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : ''}
-            bodyText={currentAgreement.phase === 'ready' ? currentAgreement.agreement.bodyText : null}
-            published={currentAgreement.phase === 'ready' && currentAgreement.agreement.snapshotPublished}
-          />
-          <label className="flex items-start gap-2 cursor-pointer pt-1">
-            <input
-              type="checkbox"
-              checked={agreementAccepted}
-              onChange={(e) => setAgreementAccepted(e.target.checked)}
-              disabled={currentAgreement.phase !== 'ready' || !currentAgreement.agreement.snapshotPublished}
-              className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-              data-testid="supplier-agreement-checkbox"
-            />
-            <span className="text-[11px] text-foreground font-medium">
-              I agree to the frozen supplier agreement shown above ({agreementVersion || 'loading'}).
-            </span>
-          </label>
-          {fieldErrors.agreement && (
-            <p className="text-red-600 text-[11px] font-semibold" role="alert">
-              {fieldErrors.agreement}
-            </p>
-          )}
-        </div>
+        <RegistrationFrozenAgreementPanel
+          side="SUPPLIER"
+          state={currentAgreement}
+          agreementVersion={agreementVersion}
+          agreementAccepted={agreementAccepted}
+          onAgreementAcceptedChange={setAgreementAccepted}
+          agreementError={fieldErrors.agreement}
+          checkboxTestId="supplier-agreement-checkbox"
+          panelTestId="supplier-agreement-prompt"
+        />
 
         {error && (
           <p className={`text-red-600 ${text.body}`} role="alert" data-testid="register-error">

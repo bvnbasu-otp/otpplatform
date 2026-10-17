@@ -95,19 +95,24 @@ describe('PricingPage (Canonical 3 Tiers: Individual, RWA, MSME)', () => {
     expect(SUBSCRIPTION_TIERS.MSME.additionalRfqPrice).toBe(1499);
   });
 
-  it('validates controlled pilot commercial mode disclosure copy and referral incentives', () => {
-    const pilotNotice = 'Pilot Mode — No real payment will be charged during this pilot.';
-    expect(pilotNotice).toContain('Pilot Mode');
-    expect(pilotNotice).toContain('No real payment');
-  });
-
-  it('shows the catalogue price and stays closed when that price is not configured', () => {
+  it('discloses monthly, yearly, and additional RFQ amounts with pilot no-charge copy when RPC is unavailable', () => {
     const source = readFileSync(resolve(__dirname, 'pages/PricingPage.tsx'), 'utf8');
     expect(source).toContain("supabase.rpc('get_canonical_subscription_price'");
-    expect(source).not.toContain('SUBSCRIPTION_TIERS');
+    expect(source).toContain('pricing-disclosure');
     const text = pageText(renderPricingPage());
-    expect(text).toContain('Not configured');
-    expect(text).not.toMatch(/₹1,999|₹1999/);
+    expect(text).toContain('You will not be charged until the pilot is over');
+    expect(text).toContain('billing is not active');
+    expect(text).toContain('₹199');
+    expect(text).toContain('₹1,999');
+    expect(text).toContain('₹1,499');
+    expect(text).toContain('₹149 per additional RFQ purchase');
+    expect(text).toContain('₹999 per additional RFQ purchase');
+    expect(text).toContain('₹1,499 per additional RFQ purchase');
+    expect(text).toContain('Reference disclosure (domain catalogue)');
+    expect(text).not.toContain('Not configured');
+    expect(text).not.toMatch(/Enterprise/i);
+    expect(text).not.toMatch(/PA-09/);
+    expect(text).toContain('Strict Anti-Self-Approval & spend caps');
   });
 
   it('publishes persona referral amounts and omits legacy supplier wallet claims', () => {

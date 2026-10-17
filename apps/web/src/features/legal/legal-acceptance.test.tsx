@@ -188,6 +188,7 @@ describe('legal acceptance', () => {
     );
     expect(unpublished).toContain('data-testid="legal-snapshot-unpublished"');
     expect(unpublished).toContain('not this agreement');
+    expect(unpublished).toContain('Registration cannot record acceptance');
     expect(unpublished).not.toContain('data-testid="legal-snapshot-text"');
   });
 

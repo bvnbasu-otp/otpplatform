@@ -19,7 +19,7 @@ import { buyerApprovalHelp, BUYER_COPY } from '../types/portal';
 import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { VerificationChoice } from './VerificationChoice';
 import { queueBuyerPinDiscovery } from '../api/location-discovery';
-import { LegalSnapshotNotice } from '@/features/legal/components/LegalSnapshotNotice';
+import { RegistrationFrozenAgreementPanel } from '@/features/legal/components/RegistrationFrozenAgreementPanel';
 import { useCurrentAgreement } from '@/features/legal/hooks/use-current-agreement';
 
 /**
@@ -86,6 +86,13 @@ export function BuyerRegisterForm({
   const isRwa = buyerType === 'COMMUNITY';
   const isMsme = buyerType === 'MSME';
   const isIndividual = buyerType === 'INDIVIDUAL';
+  const buyerPersonaLabel = isIndividual
+    ? 'Individual'
+    : isRwa
+      ? 'RWA / Society'
+      : isMsme
+        ? 'MSME'
+        : null;
   const [msmeBusinessType, setMsmeBusinessType] = useState<MsmeBusinessType>('PROPRIETORSHIP');
 
   const handlePincodeChange = (rawPin: string) => {
@@ -220,6 +227,27 @@ export function BuyerRegisterForm({
         noValidate
         className={`${showHeading ? 'mt-4' : ''} ${text.stack}`}
       >
+        <RegistrationFrozenAgreementPanel
+          side="BUYER"
+          state={currentAgreement}
+          agreementVersion={agreementVersion}
+          agreementAccepted={agreementAccepted}
+          onAgreementAcceptedChange={setAgreementAccepted}
+          agreementError={fieldErrors.agreement}
+          buyerPersonaLabel={buyerPersonaLabel}
+          onOpenWorksheet={isRwa || isMsme ? () => setIsAgreementModalOpen(true) : undefined}
+          checkboxTestId={
+            isIndividual
+              ? 'individual-agreement-checkbox'
+              : isRwa
+                ? 'rwa-frozen-agreement-checkbox'
+                : isMsme
+                  ? 'msme-frozen-agreement-checkbox'
+                  : 'buyer-frozen-agreement-checkbox'
+          }
+          panelTestId="buyer-frozen-agreement-panel"
+        />
+
         <PortalField
           label="Who are you buying for?"
           help={buyerApprovalHelp(buyerType)}
@@ -432,160 +460,6 @@ export function BuyerRegisterForm({
               />
             )}
           </PortalField>
-        )}
-
-        {isIndividual && (
-          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2 text-xs" data-testid="individual-agreement-prompt">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-foreground flex items-center gap-1.5">
-                <span>📜</span> Individual Buyer EULA &amp; Terms
-              </span>
-              {agreementAccepted ? (
-                <span className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-extrabold border border-emerald-300">
-                  ✓ Accepted
-                </span>
-              ) : (
-                <span className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 text-[10px] font-extrabold border border-amber-300">
-                  Mandatory for Personal Buyers
-                </span>
-              )}
-            </div>
-            <LegalSnapshotNotice
-              version={agreementVersion}
-              documentHash={currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : ''}
-              bodyText={currentAgreement.phase === 'ready' ? currentAgreement.agreement.bodyText : null}
-              published={currentAgreement.phase === 'ready' && currentAgreement.agreement.snapshotPublished}
-            />
-            <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Signup records acceptance of the frozen agreement above ({agreementVersion || 'loading'}). The public terms page is not that agreement.
-            </p>
-            <label className="flex items-start gap-2 cursor-pointer pt-1">
-              <input
-                type="checkbox"
-                checked={agreementAccepted}
-                onChange={(e) => setAgreementAccepted(e.target.checked)}
-                disabled={currentAgreement.phase !== 'ready' || !currentAgreement.agreement.snapshotPublished}
-                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                data-testid="individual-agreement-checkbox"
-              />
-              <span className="text-[11px] text-foreground font-medium">
-                I agree to the frozen buyer agreement shown above ({agreementVersion || 'loading'}).
-              </span>
-            </label>
-            {fieldErrors.agreement && (
-              <p className="text-red-600 text-[11px] font-semibold" role="alert">
-                {fieldErrors.agreement}
-              </p>
-            )}
-          </div>
-        )}
-
-        {isRwa && (
-          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2 text-xs" data-testid="rwa-agreement-prompt">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-foreground flex items-center gap-1.5">
-                <span>📜</span> RWA Organization Agreement
-              </span>
-              {agreementAccepted ? (
-                <span className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-extrabold border border-emerald-300">
-                  ✓ Accepted
-                </span>
-              ) : (
-                <span className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 text-[10px] font-extrabold border border-amber-300">
-                  Mandatory for Society
-                </span>
-              )}
-            </div>
-            <LegalSnapshotNotice
-              version={agreementVersion}
-              documentHash={currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : ''}
-              bodyText={currentAgreement.phase === 'ready' ? currentAgreement.agreement.bodyText : null}
-              published={currentAgreement.phase === 'ready' && currentAgreement.agreement.snapshotPublished}
-            />
-            <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Signup records the frozen buyer agreement above. The registration worksheet is not that agreement.
-            </p>
-            <label className="flex items-start gap-2 cursor-pointer pt-1">
-              <input
-                type="checkbox"
-                checked={agreementAccepted}
-                onChange={(e) => setAgreementAccepted(e.target.checked)}
-                disabled={currentAgreement.phase !== 'ready' || !currentAgreement.agreement.snapshotPublished}
-                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                data-testid="rwa-frozen-agreement-checkbox"
-              />
-              <span className="text-[11px] text-foreground font-medium">
-                I agree to the frozen buyer agreement shown above ({agreementVersion || 'loading'}).
-              </span>
-            </label>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full text-xs font-bold"
-              onClick={() => setIsAgreementModalOpen(true)}
-            >
-              View registration worksheet
-            </Button>
-            {fieldErrors.agreement && (
-              <p className="text-red-600 text-[11px] font-semibold" role="alert">
-                {fieldErrors.agreement}
-              </p>
-            )}
-          </div>
-        )}
-
-        {isMsme && (
-          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2 text-xs" data-testid="msme-agreement-prompt">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-foreground flex items-center gap-1.5">
-                <span>📜</span> MSME Institutional Agreement
-              </span>
-              {agreementAccepted ? (
-                <span className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-extrabold border border-emerald-300">
-                  ✓ Accepted
-                </span>
-              ) : (
-                <span className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 text-[10px] font-extrabold border border-amber-300">
-                  Mandatory for Business
-                </span>
-              )}
-            </div>
-            <LegalSnapshotNotice
-              version={agreementVersion}
-              documentHash={currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : ''}
-              bodyText={currentAgreement.phase === 'ready' ? currentAgreement.agreement.bodyText : null}
-              published={currentAgreement.phase === 'ready' && currentAgreement.agreement.snapshotPublished}
-            />
-            <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Signup records the frozen buyer agreement above. The registration worksheet is not that agreement.
-            </p>
-            <label className="flex items-start gap-2 cursor-pointer pt-1">
-              <input
-                type="checkbox"
-                checked={agreementAccepted}
-                onChange={(e) => setAgreementAccepted(e.target.checked)}
-                disabled={currentAgreement.phase !== 'ready' || !currentAgreement.agreement.snapshotPublished}
-                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                data-testid="msme-frozen-agreement-checkbox"
-              />
-              <span className="text-[11px] text-foreground font-medium">
-                I agree to the frozen buyer agreement shown above ({agreementVersion || 'loading'}).
-              </span>
-            </label>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full text-xs font-bold"
-              onClick={() => setIsAgreementModalOpen(true)}
-            >
-              View registration worksheet
-            </Button>
-            {fieldErrors.agreement && (
-              <p className="text-red-600 text-[11px] font-semibold" role="alert">
-                {fieldErrors.agreement}
-              </p>
-            )}
-          </div>
         )}
 
         <PortalField label="Work email" error={fieldErrors.email} required>

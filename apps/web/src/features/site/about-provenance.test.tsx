@@ -60,6 +60,13 @@ describe('AboutPage Product Leadership & Provenance — hidden from the public',
     expect(html).not.toContain('Product Creator &amp; Author');
   });
 
+  it('shows the public families and friends acknowledgement without naming individuals', () => {
+    const html = renderAbout();
+    expect(html).toContain('data-testid="about-families-friends-acknowledgement"');
+    expect(html).toContain('our families and friends');
+    expect(html).not.toContain('Baskar Loganathan');
+  });
+
   it('renders Product Creator, Product Manager and CEO / Founder attribution for the founder', () => {
     roleState.isFounder = true;
     const html = renderAbout();
