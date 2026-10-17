@@ -11,7 +11,7 @@ export const PRODUCT_PLATFORM_SUBTITLE =
 export const PRODUCT_TITLE = `${PRODUCT_NAME} — ${PRODUCT_TAGLINE}`;
 
 /** The one customer journey shown publicly. Internal workflow states stay inside the app. */
-export const PUBLIC_JOURNEY_STEPS = ['Request', 'Compare', 'Decide', 'Purchase', 'Track'] as const;
+export const PUBLIC_JOURNEY_STEPS = ['Tell', 'Review', 'Decide', 'Track'] as const;
 export const PRODUCT_JOURNEY_STATEMENT = `${PUBLIC_JOURNEY_STEPS.join('. ')}.`;
 
 /**
@@ -19,7 +19,7 @@ export const PRODUCT_JOURNEY_STATEMENT = `${PUBLIC_JOURNEY_STEPS.join('. ')}.`;
  * reviewed again; pages that show a "last updated" line read it from here
  * rather than each carrying their own literal that goes stale separately.
  */
-export const PUBLIC_CONTENT_LAST_REVIEWED = '26 September 2026';
+export const PUBLIC_CONTENT_LAST_REVIEWED = '17 October 2026';
 
 export const PRODUCT_CONCEPT =
   'A local procurement network and procurement operating system — one engine, any buyer, any locality, any supplier network.';

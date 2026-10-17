@@ -13,9 +13,9 @@ describe('canonical product positioning', () => {
     );
   });
 
-  it('defines exactly one public journey of five steps, in order', () => {
-    expect(brand.PUBLIC_JOURNEY_STEPS).toEqual(['Request', 'Compare', 'Decide', 'Purchase', 'Track']);
-    expect(brand.PRODUCT_JOURNEY_STATEMENT).toBe('Request. Compare. Decide. Purchase. Track.');
+  it('defines exactly one public journey of four steps, in order', () => {
+    expect(brand.PUBLIC_JOURNEY_STEPS).toEqual(['Tell', 'Review', 'Decide', 'Track']);
+    expect(brand.PRODUCT_JOURNEY_STATEMENT).toBe('Tell. Review. Decide. Track.');
   });
 
   it('exports no retired positioning phrase in any string constant', () => {

@@ -95,10 +95,10 @@ describe('what the home page says the product is', () => {
     expect(HERO.body).toBe('Compare competing supplier quotes and make better procurement decisions.');
   });
 
-  it('verifies distinct primary tagline and the single five-step public journey statement', () => {
+  it('verifies distinct primary tagline and the single four-step public journey statement', () => {
     expect(PRODUCT_TAGLINE).toBe('Identity-Protected Competitive Sourcing');
-    expect(PRODUCT_JOURNEY_STATEMENT).toBe('Request. Compare. Decide. Purchase. Track.');
-    expect(PUBLIC_JOURNEY.map((s) => s.title)).toEqual(['Request', 'Compare', 'Decide', 'Purchase', 'Track']);
+    expect(PRODUCT_JOURNEY_STATEMENT).toBe('Tell. Review. Decide. Track.');
+    expect(PUBLIC_JOURNEY.map((s) => s.title)).toEqual(['Tell', 'Review', 'Decide', 'Track']);
   });
 
   it('keeps trust principles separate from the journey steps', () => {

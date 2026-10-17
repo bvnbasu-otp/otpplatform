@@ -1,6 +1,6 @@
 import { PUBLIC_JOURNEY, TRUST_PRINCIPLES } from '../content/site-content';
 
-/** The one customer journey: Request → Compare → Decide → Purchase → Track. */
+/** The one customer journey: Tell → Review → Decide → Track. */
 export function PublicJourney({ id = 'how-it-works' }: { id?: string }) {
   return (
     <section id={id} className="scroll-mt-16 px-4 sm:px-6" data-testid="public-journey">
@@ -8,7 +8,7 @@ export function PublicJourney({ id = 'how-it-works' }: { id?: string }) {
         <h2 className="text-center text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
           How it works
         </h2>
-        <ol className="mt-6 grid grid-cols-1 sm:grid-cols-5 gap-3">
+        <ol className="mt-6 grid grid-cols-1 sm:grid-cols-4 gap-3">
           {PUBLIC_JOURNEY.map((step, index) => (
             <li
               key={step.title}
