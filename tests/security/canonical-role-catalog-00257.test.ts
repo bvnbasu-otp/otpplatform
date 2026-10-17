@@ -5,10 +5,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
-  LEGAL_ACCEPTANCE,
   createAnonClient,
   createServiceClient,
   isLocalSupabaseReachable,
+  loadCommittedLegalAcceptance,
+  removeDisposableLegalEvidence,
 } from '../helpers/supabase-local';
 
 const ROOT = resolve(__dirname, '../..');
@@ -110,7 +111,7 @@ describe('Migration 00257 static SQL contract', () => {
     expect(files[index + 16]).toBe('00273_persist_pin_coverage_in_canonical_suppliers.sql');
     expect(files[index + 17]).toBe('00274_location_pin_coverage_durable_recovery.sql');
     expect(files[index + 18]).toBe('00275_isolate_rfq_subcategory_recipients.sql');
-    expect(files.at(-1)).toBe('00290_legal_enforcement_requires_approval.sql');
+    expect(files.at(-1)).toBe('00293_legal_reviewer_must_be_the_session.sql');
   });
 
   it('matches 00039 for all twelve canonical roles (permissions, sort, side, labels)', () => {
@@ -195,9 +196,12 @@ describe('Migration 00257 static SQL contract', () => {
 describe('Migration 00257 local database behaviour', () => {
   let up = false;
   const created: string[] = [];
+  let legalAcceptance = { eula_accepted: true, eula_version: '', document_hash: '' };
 
   beforeAll(async () => {
     up = await isLocalSupabaseReachable();
+    if (!up) return;
+    legalAcceptance = await loadCommittedLegalAcceptance('BUYER');
   });
 
   beforeEach((ctx) => {
@@ -205,6 +209,7 @@ describe('Migration 00257 local database behaviour', () => {
   });
 
   afterAll(async () => {
+    if (up) await removeDisposableLegalEvidence();
     if (!up || created.length === 0) return;
     const service = createServiceClient();
     await service.from('signup_requests').delete().in('email', created);
@@ -221,7 +226,7 @@ describe('Migration 00257 local database behaviour', () => {
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
-        ...LEGAL_ACCEPTANCE,
+        ...legalAcceptance,
         business_name: 'Unknown Role MSME',
         contact_first_name: 'A',
         contact_last_name: 'B',
@@ -239,7 +244,7 @@ describe('Migration 00257 local database behaviour', () => {
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
-        ...LEGAL_ACCEPTANCE,
+        ...legalAcceptance,
         business_name: 'Side Mismatch MSME',
         contact_first_name: 'Ravi',
         contact_last_name: 'Kumar',
@@ -259,7 +264,7 @@ describe('Migration 00257 local database behaviour', () => {
     const { data, error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
-        ...LEGAL_ACCEPTANCE,
+        ...legalAcceptance,
         business_name: 'Greenview RWA',
         contact_first_name: 'Asha',
         contact_last_name: 'Rao',
@@ -281,7 +286,7 @@ describe('Migration 00257 local database behaviour', () => {
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
-        ...LEGAL_ACCEPTANCE,
+        ...legalAcceptance,
         business_name: 'Acme Tools Pvt Ltd',
         contact_first_name: 'Neha',
         contact_last_name: 'Shah',

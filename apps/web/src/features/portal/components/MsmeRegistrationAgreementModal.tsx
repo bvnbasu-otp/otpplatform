@@ -9,6 +9,8 @@ export interface MsmeRegistrationAgreementModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAccept: () => void;
+  /** Worksheet preview. Does not record legal acceptance. */
+  viewOnly?: boolean;
   businessName: string;
   businessType?: MsmeBusinessType;
   primaryOfficerName: string;
@@ -23,6 +25,7 @@ export function MsmeRegistrationAgreementModal({
   isOpen,
   onClose,
   onAccept,
+  viewOnly = false,
   businessName,
   businessType = 'PROPRIETORSHIP',
   primaryOfficerName,
@@ -180,6 +183,7 @@ export function MsmeRegistrationAgreementModal({
           </button>
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            {!viewOnly && (
             <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] text-muted-foreground">
               <input
                 type="checkbox"
@@ -189,7 +193,9 @@ export function MsmeRegistrationAgreementModal({
               />
               <span>I accept on behalf of the MSME</span>
             </label>
+            )}
 
+            {!viewOnly && (
             <button
               type="button"
               disabled={!hasAgreed}
@@ -201,6 +207,16 @@ export function MsmeRegistrationAgreementModal({
             >
               Confirm &amp; Accept
             </button>
+            )}
+            {viewOnly && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-border bg-card"
+              >
+                Close
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -10,6 +10,7 @@
  * product decision (see the remediation report).
  */
 import { randomUUID } from 'node:crypto';
+import { catalogAcceptance } from '../helpers/legal-evidence-fixture';
 import { Client } from 'pg';
 import { describe, expect, it } from 'vitest';
 
@@ -36,12 +37,14 @@ type Account = { profileId: string; authUserId: string };
 
 async function signup(client: Client, buyerType: string): Promise<Account> {
   const email = `blk-${randomUUID()}@example.test`;
+  await client.query('RESET ROLE');
+  const legal = await catalogAcceptance(client, 'BUYER');
   await client.query('SET LOCAL ROLE anon');
   await client.query('SELECT public.submit_signup_request($1::jsonb)', [
     JSON.stringify({
       side: 'BUYER', buyer_type: buyerType, business_name: buyerType === 'INDIVIDUAL' ? 'Self' : `Blk ${randomUUID().slice(0, 6)}`,
       contact_first_name: 'Bl', contact_last_name: 'Ock', phone: '9876543210', verification_channel: 'EMAIL',
-      coverage_city: 'Bengaluru', coverage_pincode: '560001', eula_accepted: true, eula_version: 'v1.0-20261014', email,
+      coverage_city: 'Bengaluru', coverage_pincode: '560001', ...legal, email,
     }),
   ]);
   await client.query('RESET ROLE');

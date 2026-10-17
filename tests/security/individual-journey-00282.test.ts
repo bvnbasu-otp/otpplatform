@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client } from 'pg';
 import { describe, expect, it } from 'vitest';
+import { catalogAcceptance } from '../helpers/legal-evidence-fixture';
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
@@ -79,6 +80,8 @@ type Account = { profileId: string; authUserId: string; email: string };
 
 async function signup(client: Client, buyerType: 'INDIVIDUAL' | 'MSME' | 'COMMUNITY'): Promise<Account> {
   const email = `j82-${randomUUID()}@example.test`;
+  await client.query('RESET ROLE');
+  const legal = await catalogAcceptance(client, 'BUYER');
   await client.query('SET LOCAL ROLE anon');
   const res = await client.query('SELECT public.submit_signup_request($1::jsonb) AS r', [
     JSON.stringify({
@@ -91,8 +94,7 @@ async function signup(client: Client, buyerType: 'INDIVIDUAL' | 'MSME' | 'COMMUN
       verification_channel: 'EMAIL',
       coverage_city: 'Bengaluru',
       coverage_pincode: '560001',
-      eula_accepted: true,
-      eula_version: 'v1.0-20261014',
+      ...legal,
       email,
     }),
   ]);
@@ -208,11 +210,13 @@ describe('00282 Individual journey (database, rolled back)', () => {
       // Supplier signup stores the subcategory on the supplier. The supplier then
       // declares a service area. Neither step is a superuser status rewrite.
       const supplierEmail = `j82s-${randomUUID()}@example.test`;
+      await client.query('RESET ROLE');
+      const supplierLegal = await catalogAcceptance(client, 'SUPPLIER');
       await client.query('SET LOCAL ROLE anon');
       await client.query(`SELECT public.submit_signup_request($1::jsonb)`, [JSON.stringify({
         side: 'SUPPLIER', business_name: 'Journey Supplier', contact_first_name: 'Su', contact_last_name: 'Pplier',
         phone: '9876543211', verification_channel: 'EMAIL', coverage_city: 'Bengaluru', coverage_pincode: '560048',
-        category_codes: [tax.category_code], eula_accepted: true, eula_version: 'v1.0-20261014', email: supplierEmail,
+        category_codes: [tax.category_code], ...supplierLegal, email: supplierEmail,
       })]);
       await client.query('RESET ROLE');
       const supplierRow = await client.query(

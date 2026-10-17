@@ -311,7 +311,12 @@ jobs:
     name: Deploy to Environment
     runs-on: ubuntu-latest
     needs: [resolve-env, quality-gate]
+    # Pull requests never reach this job. GitHub Environment required reviewers
+    # must be configured in repository settings; this workflow does not create
+    # that protection. Verify the environment rules before allowing deployment.
     if: github.event_name != 'pull_request'
+    environment:
+      name: ${{ needs.resolve-env.outputs.target_env == 'PRODUCTION' && 'Production' || 'Staging' }}
     env:
       TARGET_ENV: ${{ needs.resolve-env.outputs.target_env }}
       BUILD_HASH: ${{ needs.resolve-env.outputs.build_hash }}
@@ -348,7 +353,7 @@ jobs:
           set -euo pipefail
           # scripts/deploy-prod.ps1 is LOCAL DOCKER ONLY (otp-prod-db). It is not this hosted path.
           PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
-          EXPECTED_CEILING="00290"
+          EXPECTED_CEILING="00293"
 
           echo "================================================================="
           echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS (Supabase CLI)"

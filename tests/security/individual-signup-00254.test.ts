@@ -6,10 +6,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
-  LEGAL_ACCEPTANCE,
   createAnonClient,
   createServiceClient,
   isLocalSupabaseReachable,
+  loadCommittedLegalAcceptance,
+  removeDisposableLegalEvidence,
 } from '../helpers/supabase-local';
 
 const MIGRATIONS_DIR = resolve('supabase/migrations');
@@ -52,9 +53,12 @@ describe('Migration 00254 static SQL contract', () => {
 describe('Migration 00254 local database behaviour', () => {
   let up = false;
   const created: string[] = [];
+  let legalAcceptance = { eula_accepted: true, eula_version: '', document_hash: '' };
 
   beforeAll(async () => {
     up = await isLocalSupabaseReachable();
+    if (!up) return;
+    legalAcceptance = await loadCommittedLegalAcceptance('BUYER');
   });
 
   beforeEach((ctx) => {
@@ -62,6 +66,7 @@ describe('Migration 00254 local database behaviour', () => {
   });
 
   afterAll(async () => {
+    if (up) await removeDisposableLegalEvidence();
     if (!up || created.length === 0) return;
     const service = createServiceClient();
     await service.from('signup_requests').delete().in('email', created);
@@ -81,7 +86,7 @@ describe('Migration 00254 local database behaviour', () => {
     phone: '9876500099',
     buyer_type: 'INDIVIDUAL',
     verification_channel: 'EMAIL',
-    ...LEGAL_ACCEPTANCE,
+    ...legalAcceptance,
     ...overrides,
   });
 
@@ -123,7 +128,7 @@ describe('Migration 00254 local database behaviour', () => {
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
-        ...LEGAL_ACCEPTANCE,
+        ...legalAcceptance,
         business_name: 'Side Mismatch MSME',
         contact_first_name: 'Ravi',
         contact_last_name: 'Kumar',
@@ -165,7 +170,7 @@ describe('Migration 00254 local database behaviour', () => {
     const { data, error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
-        ...LEGAL_ACCEPTANCE,
+        ...legalAcceptance,
         business_name: 'Greenview RWA',
         contact_first_name: 'Asha',
         contact_last_name: 'Rao',
@@ -184,7 +189,7 @@ describe('Migration 00254 local database behaviour', () => {
     const { data, error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
-        ...LEGAL_ACCEPTANCE,
+        ...legalAcceptance,
         business_name: 'Acme Tools Pvt Ltd',
         contact_first_name: 'Neha',
         contact_last_name: 'Shah',

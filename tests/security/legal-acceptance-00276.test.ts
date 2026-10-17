@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client } from 'pg';
 import { describe, expect, it } from 'vitest';
+import { asLegalReviewer, catalogAcceptance, currentLegal } from '../helpers/legal-evidence-fixture';
 
 const MIGRATION = resolve('supabase/migrations/00276_server_authoritative_legal_acceptance.sql');
 const CLIENT_HASH = 'sha256:7c8b0303d8a9e7019cf39e2df95000be05e527d91d8e13711311ffb43c683b5d';
@@ -94,11 +95,17 @@ function signupPayload(overrides: Record<string, unknown> = {}) {
     role_code: 'PROPERTY_OWNER',
     coverage_city: 'Bengaluru',
     coverage_pincode: '560001',
-    eula_accepted: true,
-    eula_version: 'v1.0-20261014',
-    document_hash: CLIENT_HASH,
+    ...buyerAcceptance,
     ...overrides,
   };
+}
+
+let buyerAcceptance = { eula_accepted: true, eula_version: '', document_hash: '' };
+let supplierAcceptance = { eula_accepted: true, eula_version: '', document_hash: '' };
+
+async function freeze(client: Client) {
+  buyerAcceptance = await catalogAcceptance(client, 'BUYER');
+  supplierAcceptance = await catalogAcceptance(client, 'SUPPLIER');
 }
 
 const SUBMIT = 'SELECT public.submit_signup_request($1::jsonb) AS result';
@@ -109,6 +116,7 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
     if (!client) return;
     try {
       await client.query('BEGIN');
+      await freeze(client);
       await client.query('SET LOCAL ROLE anon');
 
       const base = signupPayload();
@@ -126,6 +134,8 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
       await expectRpcError(
         client, SUBMIT, [JSON.stringify({ ...base, document_hash: `sha256:${'0'.repeat(64)}` })], 'EULA_VERSION_STALE',
       );
+      const { document_hash: _hash, ...missingHash } = base;
+      await expectRpcError(client, SUBMIT, [JSON.stringify(missingHash)], 'EULA_VERSION_STALE');
 
       await client.query('RESET ROLE');
       const rows = await client.query('SELECT 1 FROM public.signup_requests WHERE lower(email) = lower($1)', [base.email]);
@@ -141,6 +151,7 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
     if (!client) return;
     try {
       await client.query('BEGIN');
+      await freeze(client);
       await client.query('SET LOCAL ROLE anon');
       const payload = signupPayload({ accepted_at: '2001-01-01T00:00:00.000Z' });
       const submitted = await client.query(SUBMIT, [JSON.stringify(payload)]);
@@ -154,7 +165,7 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
         [payload.email],
       );
       expect(request.rows[0].eula_agreement_type).toBe('CUSTOMER_EULA');
-      expect(request.rows[0].eula_version).toBe('v1.0-20261014');
+      expect(request.rows[0].eula_version).toBe(buyerAcceptance.eula_version);
       expect(Number(request.rows[0].age_seconds)).toBeLessThan(60);
 
       const acceptance = await client.query(
@@ -167,8 +178,8 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
       expect(acceptance.rowCount).toBe(1);
       expect(acceptance.rows[0]).toMatchObject({
         agreement_type: 'CUSTOMER_EULA',
-        version: 'v1.0-20261014',
-        document_hash: CLIENT_HASH,
+        version: buyerAcceptance.eula_version,
+        document_hash: buyerAcceptance.document_hash,
         acceptance_source: 'SIGNUP',
       });
 
@@ -194,6 +205,7 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
     if (!client) return;
     try {
       await client.query('BEGIN');
+      await freeze(client);
       const category = await client.query('SELECT code FROM public.requirement_categories WHERE is_active LIMIT 1');
       expect(category.rowCount).toBe(1);
       await client.query('SET LOCAL ROLE anon');
@@ -203,6 +215,8 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
         role_code: undefined,
         business_name: 'Legal Gate Supplier',
         category_codes: [category.rows[0].code],
+        eula_version: supplierAcceptance.eula_version,
+        document_hash: supplierAcceptance.document_hash,
       });
       const submitted = await client.query(SUBMIT, [JSON.stringify(payload)]);
       expect(submitted.rows[0].result.status).toBe('ONBOARDED');
@@ -224,6 +238,7 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
     if (!client) return;
     try {
       await client.query('BEGIN');
+      await freeze(client);
       await client.query('SET LOCAL ROLE anon');
       const payload = signupPayload();
       await client.query(SUBMIT, [JSON.stringify(payload)]);
@@ -256,20 +271,21 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
       );
       // An agreement that does not apply to this persona is refused.
       await expectRpcError(
-        client, `SELECT public.accept_legal_agreement('SUPPLIER_EULA', 'v1.0-20261014')`, [], 'EULA_NOT_APPLICABLE',
+        client,
+        `SELECT public.accept_legal_agreement('SUPPLIER_EULA', $1, $2)`,
+        [supplierAcceptance.eula_version, supplierAcceptance.document_hash],
+        'EULA_NOT_APPLICABLE',
       );
 
       // Publishing a new version makes the existing acceptance stale.
       await client.query('RESET ROLE');
-      await client.query(
-        `UPDATE public.legal_document_versions SET retired_at = now()
-         WHERE agreement_type = 'CUSTOMER_EULA' AND retired_at IS NULL`,
-      );
-      await client.query(
-        `INSERT INTO public.legal_document_versions (agreement_type, version, document_hash, title)
-         VALUES ('CUSTOMER_EULA', 'v2.0-test', $1, 'OTP Customer Terms of Use and EULA')`,
-        [`sha256:${'a'.repeat(64)}`],
-      );
+      const reviewer = (await client.query<{ profile_id: string }>(
+        `SELECT profile_id FROM public.legal_review_grants WHERE can_register AND revoked_at IS NULL LIMIT 1`,
+      )).rows[0].profile_id;
+      await asLegalReviewer(client, reviewer, () => client.query(
+        `SELECT public.register_legal_snapshot(NULL, 'CUSTOMER_EULA', 'v2.0-test', convert_to('buyer-frozen-text-00276-revision', 'UTF8'))`,
+      ));
+      const next = await currentLegal(client, 'CUSTOMER_EULA');
 
       await asUser();
       const stale = await client.query('SELECT public.my_legal_acceptance_status() AS s');
@@ -277,10 +293,14 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
       expect(stale.rows[0].s.agreements[0]).toMatchObject({ currentVersion: 'v2.0-test', accepted: false });
 
       await expectRpcError(
-        client, `SELECT public.accept_legal_agreement('CUSTOMER_EULA', 'v1.0-20261014')`, [], 'EULA_VERSION_STALE',
+        client,
+        `SELECT public.accept_legal_agreement('CUSTOMER_EULA', $1, $2)`,
+        [buyerAcceptance.eula_version, buyerAcceptance.document_hash],
+        'EULA_VERSION_STALE',
       );
       const fresh = await client.query(
-        `SELECT public.accept_legal_agreement('CUSTOMER_EULA', 'v2.0-test', $1) AS s`, [`sha256:${'a'.repeat(64)}`],
+        `SELECT public.accept_legal_agreement('CUSTOMER_EULA', $1, $2) AS s`,
+        [next.version, next.document_hash],
       );
       expect(fresh.rows[0].s.requiresAcceptance).toBe(false);
 
@@ -289,7 +309,7 @@ describe('00276 legal acceptance - database outcomes (rolled back)', () => {
         `SELECT version, acceptance_source FROM public.legal_acceptances
          WHERE profile_id = $1 ORDER BY accepted_at, version`, [profile.rows[0].id],
       );
-      expect(history.rows.map((r) => r.version).sort()).toEqual(['v1.0-20261014', 'v2.0-test']);
+      expect(history.rows.map((r) => r.version).sort()).toEqual([buyerAcceptance.eula_version, 'v2.0-test']);
 
       // Published versions and recorded acceptances are immutable evidence.
       await expectRpcError(

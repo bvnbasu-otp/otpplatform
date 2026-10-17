@@ -12,12 +12,13 @@
  *
  * Requires a local Supabase seeded with `pnpm db:reset`. Skips otherwise.
  */
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
-  LEGAL_ACCEPTANCE,
   createAnonClient,
   createServiceClient,
   isLocalSupabaseReachable,
+  loadCommittedLegalAcceptance,
+  removeDisposableLegalEvidence,
   signInAs,
 } from '../helpers/supabase-local';
 import { DEMO } from '../helpers/demo-fixtures';
@@ -25,9 +26,16 @@ import { DEMO } from '../helpers/demo-fixtures';
 type Client = ReturnType<typeof createAnonClient>;
 
 let up = false;
+let buyerAcceptance = { eula_accepted: true, eula_version: '', document_hash: '' };
 
 beforeAll(async () => {
   up = await isLocalSupabaseReachable();
+  if (!up) return;
+  buyerAcceptance = await loadCommittedLegalAcceptance('BUYER');
+});
+
+afterAll(async () => {
+  if (up) await removeDisposableLegalEvidence();
 });
 
 beforeEach((ctx) => {
@@ -376,7 +384,7 @@ describe('the role a person picked while registering', () => {
     const { data, error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
-        ...LEGAL_ACCEPTANCE,
+        ...buyerAcceptance,
         business_name: 'Role Capture Test Society',
         contact_first_name: 'Asha',
         contact_last_name: 'Rao',
@@ -455,7 +463,7 @@ describe('the role a person picked while registering', () => {
     const { error } = await anon.rpc('submit_signup_request', {
       p_request: {
         side: 'BUYER',
-        ...LEGAL_ACCEPTANCE,
+        ...buyerAcceptance,
         business_name: 'Mismatched Role Society',
         contact_first_name: 'Ravi',
         contact_last_name: 'Kumar',

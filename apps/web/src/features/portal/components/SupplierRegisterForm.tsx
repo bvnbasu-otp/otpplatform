@@ -17,6 +17,7 @@ import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { RoleChoiceField } from './RoleChoiceField';
 import { SUPPLIER_COPY } from '../types/portal';
 import { VerificationChoice } from './VerificationChoice';
+import { LegalSnapshotNotice } from '@/features/legal/components/LegalSnapshotNotice';
 import { useCurrentAgreement } from '@/features/legal/hooks/use-current-agreement';
 
 /**
@@ -120,6 +121,8 @@ export function SupplierRegisterForm({
       errors.agreement = 'Review and accept the agreement above to continue.';
     } else if (currentAgreement.phase !== 'ready') {
       errors.agreement = 'The agreement could not be loaded. Reload the page and try again.';
+    } else if (!currentAgreement.agreement.snapshotPublished) {
+      errors.agreement = 'The frozen agreement text is not published. Registration cannot record acceptance.';
     }
     return errors;
   }
@@ -160,7 +163,7 @@ export function SupplierRegisterForm({
       coveragePincode: pincode.trim() || undefined,
       eulaAccepted: agreementAccepted,
       eulaVersion: agreementVersion,
-      documentHash: currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : undefined,
+      documentHash: currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : '',
     });
 
     if (!result.ok) {
@@ -481,19 +484,23 @@ export function SupplierRegisterForm({
           data-testid="supplier-agreement-prompt"
         >
           <span className="font-bold text-foreground">Supplier Terms &amp; EULA</span>
+          <LegalSnapshotNotice
+            version={agreementVersion}
+            documentHash={currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : ''}
+            bodyText={currentAgreement.phase === 'ready' ? currentAgreement.agreement.bodyText : null}
+            published={currentAgreement.phase === 'ready' && currentAgreement.agreement.snapshotPublished}
+          />
           <label className="flex items-start gap-2 cursor-pointer pt-1">
             <input
               type="checkbox"
               checked={agreementAccepted}
               onChange={(e) => setAgreementAccepted(e.target.checked)}
+              disabled={currentAgreement.phase !== 'ready' || !currentAgreement.agreement.snapshotPublished}
               className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
               data-testid="supplier-agreement-checkbox"
             />
             <span className="text-[11px] text-foreground font-medium">
-              I agree to the{' '}
-              <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Use</a>,{' '}
-              <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</a>{' '}
-              and Supplier EULA ({agreementVersion || 'loading'}).
+              I agree to the frozen supplier agreement shown above ({agreementVersion || 'loading'}).
             </span>
           </label>
           {fieldErrors.agreement && (

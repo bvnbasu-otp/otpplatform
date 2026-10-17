@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client } from 'pg';
 import { describe, expect, it } from 'vitest';
+import { activateAsReviewer, asLegalReviewer, approveCurrentSnapshots, currentLegal, ensureDistinctFrozenAgreements } from '../helpers/legal-evidence-fixture';
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
@@ -93,12 +94,14 @@ type Account = { profileId: string; authUserId: string; email: string };
 
 async function signup(client: Client, payload: Record<string, unknown>): Promise<Account> {
   const email = `p84-${randomUUID()}@example.test`;
+  await ensureDistinctFrozenAgreements(client);
+  const agreement = await currentLegal(client, payload.side === 'SUPPLIER' ? 'SUPPLIER_EULA' : 'CUSTOMER_EULA');
   await client.query('SET LOCAL ROLE anon');
   const res = await client.query('SELECT public.submit_signup_request($1::jsonb) AS r', [
     JSON.stringify({
       contact_first_name: 'Pay', contact_last_name: 'Path', phone: '9876543210', verification_channel: 'EMAIL',
-      coverage_city: 'Bengaluru', coverage_pincode: '560001', eula_accepted: true, eula_version: 'v1.0-20261014',
-      email, ...payload,
+      coverage_city: 'Bengaluru', coverage_pincode: '560001', email, ...payload,
+      eula_accepted: true, eula_version: agreement.version, document_hash: agreement.document_hash,
     }),
   ]);
   await client.query('RESET ROLE');
@@ -231,12 +234,8 @@ describe('00284 database outcomes (rolled back)', () => {
       await client.query('BEGIN');
       const buyer = await msme(client);
       const sup = await supplier(client);
-      await client.query(
-        `UPDATE public.legal_document_versions
-         SET legal_approval_status = 'APPROVED'
-         WHERE retired_at IS NULL AND agreement_type IN ('CUSTOMER_EULA', 'SUPPLIER_EULA')`,
-      );
-      await client.query(`SELECT public.activate_legal_enforcement(now() - interval '45 days')`);
+      await approveCurrentSnapshots(client);
+      await activateAsReviewer(client, `now() - interval '45 days'`);
       const bareBuyer = await bareAccount(client);
       const bareSupplier = await bareAccount(client);
       await client.query(
@@ -274,9 +273,12 @@ describe('00284 database outcomes (rolled back)', () => {
 
       await actAs(client, buyerActor);
       const version = await client.query(
-        `SELECT version FROM public.legal_document_versions WHERE agreement_type = 'CUSTOMER_EULA' AND retired_at IS NULL`,
+        `SELECT version, document_hash FROM public.legal_document_versions WHERE agreement_type = 'CUSTOMER_EULA' AND retired_at IS NULL`,
       );
-      await client.query(`SELECT public.accept_legal_agreement('CUSTOMER_EULA', $1)`, [version.rows[0].version]);
+      await client.query(
+        `SELECT public.accept_legal_agreement('CUSTOMER_EULA', $1, $2)`,
+        [version.rows[0].version, version.rows[0].document_hash],
+      );
       expect(await errorOf(client, PAY, [buyerActor.profileId])).not.toContain('LEGAL_ACCEPTANCE_REQUIRED');
       await claimsOnly(supplierActor);
       expect(await errorOf(client, INV, [randomUUID(), supplierId])).toContain('LEGAL_ACCEPTANCE_REQUIRED');
@@ -301,25 +303,26 @@ describe('00284 database outcomes (rolled back)', () => {
          VALUES ($1, $2, 'BUYER', now() - interval '40 days')`,
         [orgId, existing.profileId],
       );
-      await client.query(`UPDATE public.legal_enforcement_config SET enforcement_enabled = true, rollout_at = ${rolloutSql}`);
+      await approveCurrentSnapshots(client);
+      await activateAsReviewer(client, rolloutSql);
       return existing;
     }
 
     try {
       await client.query('BEGIN');
-      const before = await existingBuyer(`now() - interval '30 days' + interval '1 minute'`);
+      const before = await existingBuyer(`now() - make_interval(days => (SELECT grace_days FROM public.legal_enforcement_config)) + interval '1 minute'`);
       await actAs(client, before);
       expect(await errorOf(client, pay, [before.profileId]), 'inside grace').not.toContain('LEGAL_ACCEPTANCE_REQUIRED');
       await client.query('ROLLBACK');
 
       await client.query('BEGIN');
-      const atDeadline = await existingBuyer(`now() - interval '30 days'`);
+      const atDeadline = await existingBuyer(`now() - make_interval(days => (SELECT grace_days FROM public.legal_enforcement_config))`);
       await actAs(client, atDeadline);
       expect(await errorOf(client, pay, [atDeadline.profileId]), 'at the grace deadline').toContain('LEGAL_ACCEPTANCE_REQUIRED');
       await client.query('ROLLBACK');
 
       await client.query('BEGIN');
-      const after = await existingBuyer(`now() - interval '30 days' - interval '1 second'`);
+      const after = await existingBuyer(`now() - make_interval(days => (SELECT grace_days FROM public.legal_enforcement_config)) - interval '1 second'`);
       await actAs(client, after);
       expect(await errorOf(client, pay, [after.profileId]), 'after grace').toContain('LEGAL_ACCEPTANCE_REQUIRED');
       await client.query('ROLLBACK');
@@ -339,7 +342,8 @@ describe('00284 database outcomes (rolled back)', () => {
         `INSERT INTO public.organization_members (organization_id, profile_id, role, joined_at) VALUES ($1, $2, 'BUYER', now())`,
         [orgId, added.profileId],
       );
-      await client.query(`UPDATE public.legal_enforcement_config SET enforcement_enabled = true, rollout_at = now() - interval '10 days'`);
+      await approveCurrentSnapshots(client);
+      await activateAsReviewer(client, `now() - interval '10 days'`);
       await actAs(client, held);
       expect(await errorOf(client, pay, [held.profileId]), 'role held before rollout').not.toContain('LEGAL_ACCEPTANCE_REQUIRED');
       await actAs(client, added);
@@ -379,25 +383,25 @@ describe('00284 database outcomes (rolled back)', () => {
       await client.query(`SELECT public.accept_legal_agreement('CUSTOMER_EULA', $1, $2)`, [version.version, version.document_hash]);
       expect(await errorOf(client, pay, [accepting.profileId]), 'current acceptance').not.toContain('LEGAL_ACCEPTANCE_REQUIRED');
       await client.query('RESET ROLE');
-      await client.query(`UPDATE public.legal_document_versions SET retired_at = now() WHERE agreement_type = 'CUSTOMER_EULA' AND retired_at IS NULL`);
-      await client.query(
-        `INSERT INTO public.legal_document_versions (agreement_type, version, document_hash, title)
-         VALUES ('CUSTOMER_EULA', 'v-test-next', 'sha256:' || repeat('ab', 32), 'Customer EULA test revision')`,
-      );
+      const reviewer = (await client.query<{ profile_id: string }>(
+        `SELECT profile_id FROM public.legal_review_grants WHERE can_register AND revoked_at IS NULL LIMIT 1`,
+      )).rows[0].profile_id;
+      await asLegalReviewer(client, reviewer, () => client.query(
+        `SELECT public.register_legal_snapshot(NULL, 'CUSTOMER_EULA', 'v-test-next', convert_to('buyer-frozen-text-revision', 'UTF8'))`,
+      ));
+      const next = await currentLegal(client, 'CUSTOMER_EULA');
       await actAs(client, accepting);
       expect(await errorOf(client, pay, [accepting.profileId]), 'stale version').toContain('LEGAL_ACCEPTANCE_REQUIRED');
-      await client.query(`SELECT public.accept_legal_agreement('CUSTOMER_EULA', 'v-test-next', 'sha256:' || repeat('ab', 32))`);
+      await client.query(`SELECT public.accept_legal_agreement('CUSTOMER_EULA', $1, $2)`, [next.version, next.document_hash]);
       expect(await errorOf(client, pay, [accepting.profileId]), 're-accepted').not.toContain('LEGAL_ACCEPTANCE_REQUIRED');
 
-      const supplierVersion = (await client.query(
-        `SELECT version FROM public.legal_document_versions WHERE agreement_type = 'SUPPLIER_EULA' AND retired_at IS NULL`,
-      )).rows[0].version as string;
+      const supplierVersion = await currentLegal(client, 'SUPPLIER_EULA');
       await actAs(client, dual);
-      await client.query(`SELECT public.accept_legal_agreement('CUSTOMER_EULA', 'v-test-next')`);
+      await client.query(`SELECT public.accept_legal_agreement('CUSTOMER_EULA', $1, $2)`, [next.version, next.document_hash]);
       expect(await errorOf(client, pay, [dual.profileId]), 'buyer acceptance only').not.toContain('LEGAL_ACCEPTANCE_REQUIRED');
       const invoice = `INSERT INTO public.invoices (work_order_id, supplier_id, invoice_number, amount) VALUES ($1, $2, 'INV-DUAL', 1)`;
       expect(await errorOf(client, invoice, [randomUUID(), supplierId]), 'supplier write still gated').toContain('LEGAL_ACCEPTANCE_REQUIRED');
-      await client.query(`SELECT public.accept_legal_agreement('SUPPLIER_EULA', $1)`, [supplierVersion]);
+      await client.query(`SELECT public.accept_legal_agreement('SUPPLIER_EULA', $1, $2)`, [supplierVersion.version, supplierVersion.document_hash]);
       expect(await errorOf(client, invoice, [randomUUID(), supplierId]), 'both acceptances').not.toContain('LEGAL_ACCEPTANCE_REQUIRED');
     } finally {
       await client.query('ROLLBACK');

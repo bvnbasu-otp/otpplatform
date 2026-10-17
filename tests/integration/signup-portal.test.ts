@@ -11,18 +11,24 @@
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
-  LEGAL_ACCEPTANCE,
   createAnonClient,
   createServiceClient,
   isLocalSupabaseReachable,
+  loadCommittedLegalAcceptance,
+  removeDisposableLegalEvidence,
   signInAs,
 } from '../helpers/supabase-local';
 
 let up = false;
 const created: string[] = [];
+let buyerAcceptance = { eula_accepted: true, eula_version: '', document_hash: '' };
+let supplierAcceptance = { eula_accepted: true, eula_version: '', document_hash: '' };
 
 beforeAll(async () => {
   up = await isLocalSupabaseReachable();
+  if (!up) return;
+  buyerAcceptance = await loadCommittedLegalAcceptance('BUYER');
+  supplierAcceptance = await loadCommittedLegalAcceptance('SUPPLIER');
 });
 
 beforeEach((ctx) => {
@@ -30,6 +36,7 @@ beforeEach((ctx) => {
 });
 
 afterAll(async () => {
+  if (up) await removeDisposableLegalEvidence();
   if (!up || created.length === 0) return;
   const service = createServiceClient();
   await service.from('signup_requests').delete().in('email', created);
@@ -52,7 +59,7 @@ const BUYER = (email: string) => ({
   verification_channel: 'WHATSAPP',
   buyer_type: 'COMMUNITY',
   referral_code: 'BNI-BLR-014',
-  ...LEGAL_ACCEPTANCE,
+  ...buyerAcceptance,
 });
 
 const SUPPLIER = (email: string, overrides: Record<string, unknown> = {}) => ({
@@ -67,7 +74,7 @@ const SUPPLIER = (email: string, overrides: Record<string, unknown> = {}) => ({
   tax_registration_id: '29ABCDE1234F1Z5',
   coverage_city: 'Bengaluru',
   coverage_pincode: '560001',
-  ...LEGAL_ACCEPTANCE,
+  ...supplierAcceptance,
   ...overrides,
 });
 

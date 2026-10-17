@@ -9,6 +9,8 @@ export interface RwaRegistrationAgreementModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAccept: () => void;
+  /** Worksheet preview. Does not record legal acceptance. */
+  viewOnly?: boolean;
   organizationName: string;
   authorizedOfficerName: string;
   authorizedOfficerRole?: string;
@@ -19,6 +21,7 @@ export function RwaRegistrationAgreementModal({
   isOpen,
   onClose,
   onAccept,
+  viewOnly = false,
   organizationName,
   authorizedOfficerName,
   authorizedOfficerRole = 'SECRETARY',
@@ -155,6 +158,7 @@ export function RwaRegistrationAgreementModal({
 
         {/* Footer & Acceptance */}
         <div className="border-t border-border/80 p-4 sm:px-6 bg-muted/20 space-y-3">
+          {!viewOnly && (
           <label className="flex items-start gap-2.5 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -167,6 +171,7 @@ export function RwaRegistrationAgreementModal({
               I certify that I am authorized to register <strong>{organizationName || 'this RWA'}</strong> and agree to the OTP Organization Agreement on behalf of the association.
             </span>
           </label>
+          )}
 
           <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 pt-1">
             <button
@@ -186,6 +191,7 @@ export function RwaRegistrationAgreementModal({
               >
                 Cancel
               </button>
+              {!viewOnly && (
               <button
                 type="button"
                 disabled={!hasAgreed}
@@ -198,6 +204,7 @@ export function RwaRegistrationAgreementModal({
               >
                 Accept &amp; Continue →
               </button>
+              )}
             </div>
           </div>
         </div>

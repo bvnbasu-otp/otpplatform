@@ -1,5 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'node:crypto';
+import { Client } from 'pg';
+import { catalogAcceptance } from './legal-evidence-fixture';
 
 function generateJwt(role: 'anon' | 'service_role', secret: string): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
@@ -21,11 +23,58 @@ const SECRET_PROD = 'your-long-production-jwt-secret-min-32-chars!';
 const SECRET_CLI = 'super-secret-jwt-token-with-at-least-32-characters-long';
 
 /**
- * Explicit acceptance of the seeded current agreement (migration 00276). Signup
- * tests that are not about legal acceptance spread this into the request; the
- * server validates the version against its catalogue.
+ * Current frozen agreement for signup calls. The version and hash come from
+ * the database catalogue, never from a hard-coded draft.
  */
-export const LEGAL_ACCEPTANCE = { eula_accepted: true, eula_version: 'v1.0-20261014' } as const;
+export async function loadCommittedLegalAcceptance(side: 'BUYER' | 'SUPPLIER' = 'BUYER') {
+  const client = new Client({
+    host: '127.0.0.1',
+    port: 54322,
+    database: process.env.OTP_PG_DATABASE ?? 'postgres',
+    user: 'postgres',
+    password: 'postgres',
+  });
+  await client.connect();
+  try {
+    return await catalogAcceptance(client, side);
+  } finally {
+    await client.end();
+  }
+}
+
+/** Removes disposable reviewer evidence. Does not publish or approve legal text. */
+export async function removeDisposableLegalEvidence(): Promise<void> {
+  const client = new Client({
+    host: '127.0.0.1',
+    port: 54322,
+    database: process.env.OTP_PG_DATABASE ?? 'postgres',
+    user: 'postgres',
+    password: 'postgres',
+  });
+  await client.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`SET LOCAL session_replication_role = replica`);
+    await client.query(`DELETE FROM public.legal_agreement_approvals`);
+    await client.query(`DELETE FROM public.legal_review_grants`);
+    await client.query(`DELETE FROM public.legal_acceptance_archives`);
+    await client.query(`DELETE FROM public.legal_document_versions WHERE version <> 'v1.0-20261014'`);
+    await client.query(`DELETE FROM public.legal_document_snapshots`);
+    await client.query(
+      `UPDATE public.legal_document_versions
+       SET retired_at = NULL, snapshot_id = NULL, legal_approval_status = 'PENDING_LEGAL_APPROVAL'
+       WHERE version = 'v1.0-20261014'`,
+    );
+    await client.query(
+      `UPDATE public.legal_enforcement_config
+       SET enforcement_enabled = false, rollout_at = NULL,
+           grace_customer_snapshot_id = NULL, grace_supplier_snapshot_id = NULL`,
+    );
+    await client.query('COMMIT');
+  } finally {
+    await client.end();
+  }
+}
 
 export const KEY_PAIRS = [
   {

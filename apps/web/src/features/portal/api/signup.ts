@@ -50,8 +50,8 @@ export interface SignupSubmission {
   eulaAccepted: boolean;
   /** The catalogue version that was displayed to the applicant. */
   eulaVersion: string;
-  /** Catalogue hash that was displayed; optional assertion checked server-side. */
-  documentHash?: string;
+  /** Catalogue hash of the frozen agreement that was displayed. */
+  documentHash: string;
 }
 
 export interface SignupResult {
@@ -194,8 +194,8 @@ export async function submitSignupRequest(
 ): Promise<{ ok: true; result: SignupResult } | { ok: false; error: string }> {
   // The server validates the accepted version against its legal catalogue and
   // records the acceptance with its own timestamp. Nothing here is evidence.
-  if (!input.eulaAccepted || !input.eulaVersion) {
-    return { ok: false, error: humanizeSignupError('EULA_NOT_ACCEPTED') };
+  if (!input.eulaAccepted || !input.eulaVersion || !input.documentHash) {
+    return { ok: false, error: humanizeSignupError('EULA_VERSION_STALE') };
   }
 
   const { data, error } = await supabase.rpc('submit_signup_request', {
@@ -217,7 +217,7 @@ export async function submitSignupRequest(
       coverage_pincode: input.coveragePincode ?? null,
       eula_accepted: true,
       eula_version: input.eulaVersion,
-      document_hash: input.documentHash ?? null,
+      document_hash: input.documentHash,
     },
   });
 

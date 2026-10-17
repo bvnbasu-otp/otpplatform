@@ -27,8 +27,8 @@ import {
 import { BUYER_COPY, SUPPLIER_COPY } from './types/portal';
 
 // Every signup carries explicit acceptance of the displayed catalogue version.
-const submitSignupRequest = (input: Omit<SignupSubmission, 'eulaAccepted' | 'eulaVersion'>) =>
-  submitSignupRequestWithEula({ ...input, eulaAccepted: true, eulaVersion: 'test-version' });
+const submitSignupRequest = (input: Omit<SignupSubmission, 'eulaAccepted' | 'eulaVersion' | 'documentHash'>) =>
+  submitSignupRequestWithEula({ ...input, eulaAccepted: true, eulaVersion: 'test-version', documentHash: 'displayed-hash' });
 
 const mockSupabase = supabase as any;
 

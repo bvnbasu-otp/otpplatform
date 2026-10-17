@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 import { Client } from 'pg';
 import { describe, expect, it } from 'vitest';
 import { deleteFixtureRequirements } from '../helpers/fixture-teardown';
+import { catalogAcceptance } from '../helpers/legal-evidence-fixture';
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
@@ -92,6 +93,7 @@ async function expectError(client: Client, text: string, params: unknown[], code
 async function signup(client: Client, side: 'BUYER' | 'SUPPLIER', buyerType?: 'INDIVIDUAL' | 'MSME' | 'COMMUNITY'): Promise<Account> {
   const email = `a286-${randomUUID()}@example.test`;
   await client.query('RESET ROLE');
+  const legal = await catalogAcceptance(client, side);
   await client.query('SET LOCAL ROLE anon');
   const body: Record<string, unknown> = {
     side,
@@ -102,8 +104,7 @@ async function signup(client: Client, side: 'BUYER' | 'SUPPLIER', buyerType?: 'I
     verification_channel: 'EMAIL',
     coverage_city: 'Bengaluru',
     coverage_pincode: '560048',
-    eula_accepted: true,
-    eula_version: 'v1.0-20261014',
+    ...legal,
     email,
   };
   if (side === 'BUYER') body.buyer_type = buyerType;

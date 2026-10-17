@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client } from 'pg';
 import { describe, expect, it } from 'vitest';
+import { catalogAcceptance } from '../helpers/legal-evidence-fixture';
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
@@ -73,6 +74,8 @@ type Account = { profileId: string; authUserId: string; orgId: string | null };
 
 async function signup(client: Client, buyerType: 'MSME' | 'INDIVIDUAL'): Promise<Account> {
   const email = `own81-${randomUUID()}@example.test`;
+  await client.query('RESET ROLE');
+  const legal = await catalogAcceptance(client, 'BUYER');
   await client.query('SET LOCAL ROLE anon');
   const res = await client.query('SELECT public.submit_signup_request($1::jsonb) AS r', [
     JSON.stringify({
@@ -85,8 +88,7 @@ async function signup(client: Client, buyerType: 'MSME' | 'INDIVIDUAL'): Promise
       verification_channel: 'EMAIL',
       coverage_city: 'Bengaluru',
       coverage_pincode: '560001',
-      eula_accepted: true,
-      eula_version: 'v1.0-20261014',
+      ...legal,
       email,
     }),
   ]);

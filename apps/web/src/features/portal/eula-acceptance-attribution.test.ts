@@ -18,7 +18,15 @@ describe('EULA acceptance - client contract (server is authoritative)', () => {
 
     expect(buyer).toContain('if (buyerType && !agreementAccepted)');
     expect(buyer).toContain('data-testid="individual-agreement-checkbox"');
+    expect(buyer).toContain('data-testid="rwa-frozen-agreement-checkbox"');
+    expect(buyer).toContain('data-testid="msme-frozen-agreement-checkbox"');
+    expect(buyer).toContain('viewOnly');
+    expect(buyer).not.toContain('setAgreementAccepted(true)');
+    expect(buyer).toContain('<LegalSnapshotNotice');
     expect(supplier).toContain('data-testid="supplier-agreement-checkbox"');
+    expect(supplier).toContain('<LegalSnapshotNotice');
+    expect(buyer).not.toContain('href="/legal/terms"');
+    expect(supplier).not.toContain('href="/legal/terms"');
     expect(supplier).toContain('if (!agreementAccepted)');
   });
 
@@ -34,6 +42,8 @@ describe('EULA acceptance - client contract (server is authoritative)', () => {
     }
     expect(signupApi).toContain('eula_accepted: true');
     expect(signupApi).toContain('eula_version: input.eulaVersion');
+    expect(signupApi).toContain('document_hash: input.documentHash');
+    expect(signupApi).not.toContain('documentHash ?? null');
     expect(signupApi).not.toContain('accepted_at');
   });
 

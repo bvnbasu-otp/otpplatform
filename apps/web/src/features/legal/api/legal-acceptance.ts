@@ -58,6 +58,41 @@ export async function fetchCurrentAgreement(
   };
 }
 
+export interface LegalSnapshotText {
+  published: boolean;
+  agreementType: AgreementType;
+  version: string | null;
+  documentHash: string | null;
+  bodyText: string | null;
+}
+
+/** Exact frozen text for the current agreement. Unpublished means no snapshot is linked. */
+export async function fetchLegalSnapshotText(
+  agreementType: AgreementType,
+): Promise<LegalResult<LegalSnapshotText>> {
+  const { data, error } = await supabase.rpc('current_legal_snapshot_text', {
+    p_agreement_type: agreementType,
+  });
+  if (error) return { ok: false, error: error.message };
+  const row = data as {
+    published?: boolean;
+    agreementType?: AgreementType;
+    version?: string | null;
+    documentHash?: string | null;
+    bodyText?: string | null;
+  };
+  return {
+    ok: true,
+    value: {
+      published: row.published === true && typeof row.bodyText === 'string' && row.bodyText.length > 0,
+      agreementType: row.agreementType ?? agreementType,
+      version: row.version ?? null,
+      documentHash: row.documentHash ?? null,
+      bodyText: typeof row.bodyText === 'string' ? row.bodyText : null,
+    },
+  };
+}
+
 export async function fetchLegalAcceptanceStatus(): Promise<LegalResult<LegalAcceptanceStatus>> {
   const { data, error } = await supabase.rpc('my_legal_acceptance_status');
   if (error) return { ok: false, error: error.message };

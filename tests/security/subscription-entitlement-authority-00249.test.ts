@@ -305,7 +305,10 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 36]).toBe('00285_personal_evaluation_and_canonical_checkout.sql');
     expect(files[index + 40]).toBe('00289_pilot_simulated_purchase_entitlements.sql');
     expect(files[index + 41]).toBe('00290_legal_enforcement_requires_approval.sql');
-    expect(index).toBe(files.length - 42);
+    expect(files[index + 42]).toBe('00291_legal_approval_evidence.sql');
+    expect(files[index + 43]).toBe('00292_profile_delete_keeps_acceptance_archive.sql');
+    expect(files[index + 44]).toBe('00293_legal_reviewer_must_be_the_session.sql');
+    expect(index).toBe(files.length - 45);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

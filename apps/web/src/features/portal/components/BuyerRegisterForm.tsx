@@ -19,6 +19,7 @@ import { buyerApprovalHelp, BUYER_COPY } from '../types/portal';
 import { REFERRAL_ATTRIBUTION_NOTE } from '../lib/registration-outcome';
 import { VerificationChoice } from './VerificationChoice';
 import { queueBuyerPinDiscovery } from '../api/location-discovery';
+import { LegalSnapshotNotice } from '@/features/legal/components/LegalSnapshotNotice';
 import { useCurrentAgreement } from '@/features/legal/hooks/use-current-agreement';
 
 /**
@@ -139,6 +140,9 @@ export function BuyerRegisterForm({
     if (buyerType && agreementAccepted && currentAgreement.phase !== 'ready') {
       errors.agreement = 'The agreement could not be loaded. Reload the page and try again.';
     }
+    if (buyerType && currentAgreement.phase === 'ready' && !currentAgreement.agreement.snapshotPublished) {
+      errors.agreement = 'The frozen agreement text is not published. Registration cannot record acceptance.';
+    }
     return errors;
   }
 
@@ -174,7 +178,7 @@ export function BuyerRegisterForm({
       coveragePincode: pincode.trim(),
       eulaAccepted: agreementAccepted,
       eulaVersion: agreementVersion,
-      documentHash: currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : undefined,
+      documentHash: currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : '',
     });
 
     if (!result.ok) {
@@ -446,19 +450,26 @@ export function BuyerRegisterForm({
                 </span>
               )}
             </div>
+            <LegalSnapshotNotice
+              version={agreementVersion}
+              documentHash={currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : ''}
+              bodyText={currentAgreement.phase === 'ready' ? currentAgreement.agreement.bodyText : null}
+              published={currentAgreement.phase === 'ready' && currentAgreement.agreement.snapshotPublished}
+            />
             <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Review and electronically accept the OTP Individual Buyer Terms and EULA ({agreementVersion || 'loading'}). Commitments create direct bilateral obligations with suppliers without platform middleman custody.
+              Signup records acceptance of the frozen agreement above ({agreementVersion || 'loading'}). The public terms page is not that agreement.
             </p>
             <label className="flex items-start gap-2 cursor-pointer pt-1">
               <input
                 type="checkbox"
                 checked={agreementAccepted}
                 onChange={(e) => setAgreementAccepted(e.target.checked)}
+                disabled={currentAgreement.phase !== 'ready' || !currentAgreement.agreement.snapshotPublished}
                 className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
                 data-testid="individual-agreement-checkbox"
               />
               <span className="text-[11px] text-foreground font-medium">
-                I agree to the <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Use</a>, <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</a>, and EULA ({agreementVersion || 'loading'}).
+                I agree to the frozen buyer agreement shown above ({agreementVersion || 'loading'}).
               </span>
             </label>
             {fieldErrors.agreement && (
@@ -485,16 +496,35 @@ export function BuyerRegisterForm({
                 </span>
               )}
             </div>
+            <LegalSnapshotNotice
+              version={agreementVersion}
+              documentHash={currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : ''}
+              bodyText={currentAgreement.phase === 'ready' ? currentAgreement.agreement.bodyText : null}
+              published={currentAgreement.phase === 'ready' && currentAgreement.agreement.snapshotPublished}
+            />
             <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Review and electronically accept the OTP RWA Institutional Agreement detailing non-personal liability, committee voting rules, and annual officer term limits.
+              Signup records the frozen buyer agreement above. The registration worksheet is not that agreement.
             </p>
+            <label className="flex items-start gap-2 cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={agreementAccepted}
+                onChange={(e) => setAgreementAccepted(e.target.checked)}
+                disabled={currentAgreement.phase !== 'ready' || !currentAgreement.agreement.snapshotPublished}
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                data-testid="rwa-frozen-agreement-checkbox"
+              />
+              <span className="text-[11px] text-foreground font-medium">
+                I agree to the frozen buyer agreement shown above ({agreementVersion || 'loading'}).
+              </span>
+            </label>
             <Button
               type="button"
               variant="secondary"
               className="w-full text-xs font-bold"
               onClick={() => setIsAgreementModalOpen(true)}
             >
-              {agreementAccepted ? 'View / Download Accepted Agreement' : 'Review & Accept RWA Agreement →'}
+              View registration worksheet
             </Button>
             {fieldErrors.agreement && (
               <p className="text-red-600 text-[11px] font-semibold" role="alert">
@@ -520,16 +550,35 @@ export function BuyerRegisterForm({
                 </span>
               )}
             </div>
+            <LegalSnapshotNotice
+              version={agreementVersion}
+              documentHash={currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : ''}
+              bodyText={currentAgreement.phase === 'ready' ? currentAgreement.agreement.bodyText : null}
+              published={currentAgreement.phase === 'ready' && currentAgreement.agreement.snapshotPublished}
+            />
             <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Review and electronically accept the OTP MSME Procurement OS Agreement detailing Primary authority, spend delegations, anti-self-approval, and 0.50% supplier fee disclosure.
+              Signup records the frozen buyer agreement above. The registration worksheet is not that agreement.
             </p>
+            <label className="flex items-start gap-2 cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={agreementAccepted}
+                onChange={(e) => setAgreementAccepted(e.target.checked)}
+                disabled={currentAgreement.phase !== 'ready' || !currentAgreement.agreement.snapshotPublished}
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                data-testid="msme-frozen-agreement-checkbox"
+              />
+              <span className="text-[11px] text-foreground font-medium">
+                I agree to the frozen buyer agreement shown above ({agreementVersion || 'loading'}).
+              </span>
+            </label>
             <Button
               type="button"
               variant="secondary"
               className="w-full text-xs font-bold"
               onClick={() => setIsAgreementModalOpen(true)}
             >
-              {agreementAccepted ? 'View / Download Accepted Agreement' : 'Review & Accept MSME Agreement →'}
+              View registration worksheet
             </Button>
             {fieldErrors.agreement && (
               <p className="text-red-600 text-[11px] font-semibold" role="alert">
@@ -629,7 +678,8 @@ export function BuyerRegisterForm({
         <RwaRegistrationAgreementModal
           isOpen={isAgreementModalOpen}
           onClose={() => setIsAgreementModalOpen(false)}
-          onAccept={() => setAgreementAccepted(true)}
+          onAccept={() => undefined}
+          viewOnly
           organizationName={organisation || 'Residential Welfare Association'}
           authorizedOfficerName={`${firstName} ${lastName}`.trim() || 'Authorized Officer'}
           authorizedOfficerRole={roleCode || 'SECRETARY'}
@@ -641,7 +691,8 @@ export function BuyerRegisterForm({
         <MsmeRegistrationAgreementModal
           isOpen={isAgreementModalOpen}
           onClose={() => setIsAgreementModalOpen(false)}
-          onAccept={() => setAgreementAccepted(true)}
+          onAccept={() => undefined}
+          viewOnly
           businessName={organisation || 'Your business'}
           businessType={msmeBusinessType}
           primaryOfficerName={`${firstName} ${lastName}`.trim() || 'Primary Administrator'}
