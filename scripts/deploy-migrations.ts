@@ -106,9 +106,44 @@ export function loadMigrationFiles(): { files: MigrationFile[]; isContiguous: bo
 }
 
 /**
+ * Loads environment variables from local .env files if not already present in process.env
+ */
+export function loadEnvFileIfPresent(): void {
+  if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+    return;
+  }
+  const envFiles = ['.env.otp.production.local', '.env.local', '.env'];
+  for (const envFile of envFiles) {
+    const fullPath = path.join(WORKSPACE_ROOT, envFile);
+    if (fs.existsSync(fullPath)) {
+      try {
+        const text = fs.readFileSync(fullPath, 'utf8');
+        for (const line of text.split(/\r?\n/)) {
+          const t = line.trim();
+          if (!t || t.startsWith('#')) continue;
+          const eq = t.indexOf('=');
+          if (eq <= 0) continue;
+          const key = t.slice(0, eq).trim();
+          let val = t.slice(eq + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (!process.env[key]) {
+            process.env[key] = val;
+          }
+        }
+        break;
+      } catch {}
+    }
+  }
+}
+
+/**
  * Resolves database connection string from environment variables
  */
 export function resolveDatabaseUrl(): { connectionString: string | null; source: string } {
+  loadEnvFileIfPresent();
+
   // 1. Direct explicit database URLs
   const directUrls = [
     { key: 'DIRECT_URL', val: process.env.DIRECT_URL },
@@ -256,7 +291,16 @@ export async function runMigrations() {
       const applied = await getAppliedMigrations(client);
       const appliedSet = new Set(applied);
 
-      const pending = files.filter((f) => !appliedSet.has(f.filename) && !appliedSet.has(f.filename.replace('.sql', '')));
+      const isFileApplied = (f: MigrationFile) => {
+        const seq5 = String(f.sequenceNumber).padStart(5, '0');
+        return (
+          appliedSet.has(f.filename) ||
+          appliedSet.has(f.filename.replace('.sql', '')) ||
+          appliedSet.has(seq5)
+        );
+      };
+
+      const pending = files.filter((f) => !isFileApplied(f));
 
       console.log(`Applied Count   : ${files.length - pending.length} migrations`);
       console.log(`Pending Count   : ${pending.length} migrations`);
@@ -264,7 +308,7 @@ export async function runMigrations() {
       if (isStatus) {
         console.log('\n--- MIGRATION STATUS BREAKDOWN ---');
         for (const file of files) {
-          const isApp = appliedSet.has(file.filename) || appliedSet.has(file.filename.replace('.sql', ''));
+          const isApp = isFileApplied(file);
           console.log(`  ${isApp ? '\x1b[32m[APPLIED]\x1b[0m' : '\x1b[33m[PENDING]\x1b[0m'} ${file.filename}`);
         }
         console.log('----------------------------------\n');
@@ -294,11 +338,30 @@ export async function runMigrations() {
         const sql = fs.readFileSync(item.filepath, 'utf8');
 
         try {
+          let execSql = sql;
+          const alterTypeMatches = sql.match(/ALTER\s+TYPE\s+[^;]+ADD\s+VALUE\s+(?:IF\s+NOT\s+EXISTS\s+)?'[^;]+';/gi);
+          if (alterTypeMatches) {
+            for (const alterStmt of alterTypeMatches) {
+              try {
+                await client.query(alterStmt);
+              } catch (alterErr: any) {
+                if (!alterErr.message.includes('already exists')) {
+                  throw alterErr;
+                }
+              }
+              execSql = execSql.replace(alterStmt, `-- [Pre-committed] ${alterStmt}`);
+            }
+          }
+
           await client.query('BEGIN');
-          await client.query(sql);
+          await client.query(execSql);
           await client.query(
             `INSERT INTO public.otp_schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO UPDATE SET applied_at = now()`,
             [item.filename]
+          );
+          await client.query(
+            `INSERT INTO supabase_migrations.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING`,
+            [String(item.sequenceNumber).padStart(5, '0')]
           );
           await client.query(
             `INSERT INTO supabase_migrations.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING`,

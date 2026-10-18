@@ -16,7 +16,10 @@ export type AdminTab =
   | 'ORGS_SUPPLIERS'
   | 'SUPPLIER_NETWORK'
   | 'TAXONOMY'
-  | 'APPROVALS';
+  | 'APPROVALS'
+  | 'INTERNAL_USERS'
+  | 'INTERNAL_RBAC'
+  | 'STAFF_REFERRALS';
 
 export type AdminCategoryKey =
   | 'ORDERS_RADAR'
@@ -294,6 +297,33 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
         description: 'Pending buyer & supplier onboarding registrations awaiting superadmin review',
         categoryKey: 'USERS_ORGS',
         badge: () => 'Queue',
+      },
+      {
+        key: 'INTERNAL_USERS',
+        title: 'Internal Staff & Invitations',
+        shortTitle: 'Internal Staff',
+        icon: '🛡️',
+        description: 'Manage internal operator accounts and 48-hour single-use staff invitations',
+        categoryKey: 'USERS_ORGS',
+        badge: () => '48h Token',
+      },
+      {
+        key: 'INTERNAL_RBAC',
+        title: 'Internal RBAC Permission Matrix',
+        shortTitle: 'Internal RBAC',
+        icon: '🔐',
+        description: 'Role-based permission groups and explicit grants governing internal boundaries',
+        categoryKey: 'USERS_ORGS',
+        badge: () => 'RBAC',
+      },
+      {
+        key: 'STAFF_REFERRALS',
+        title: 'Staff Referral Incentive Ledger',
+        shortTitle: 'Staff Referrals',
+        icon: '💼',
+        description: 'Fixed referral bonus ledger with anti-self-approval and UTR settlement evidence',
+        categoryKey: 'USERS_ORGS',
+        badge: () => 'UTR Payout',
       },
     ],
   },

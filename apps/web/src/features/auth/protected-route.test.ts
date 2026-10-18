@@ -31,7 +31,7 @@ function createMockStorage() {
 describe('Security & Route Guard Audit — ProtectedRoute & RBAC Enforcement', () => {
   it('wraps customer and supplier workspaces in the legal gate and leaves operators outside it', () => {
     const source = readFileSync(resolve(__dirname, 'ProtectedRoute.tsx'), 'utf8');
-    expect(source).toContain('if (context?.isFounder || context?.isPlatformAdmin) return content;');
+    expect(source).toContain("if (context?.isFounder || context?.isPlatformAdmin || context?.side === 'CONSOLE') return content;");
     expect(source).toContain('return <LegalAcceptanceGate>{content}</LegalAcceptanceGate>');
   });
 

@@ -28,6 +28,9 @@ import {
 import { AdminTaxonomyManager } from '../components/AdminTaxonomyManager';
 import { AdminQueryTerminal } from '../components/AdminQueryTerminal';
 import { AdminAnnouncementsPanel } from '../components/AdminAnnouncementsPanel';
+import { InternalUsersPanel } from '../components/InternalUsersPanel';
+import { InternalRbacMatrixPanel } from '../components/InternalRbacMatrixPanel';
+import { StaffReferralLedgerPanel } from '../components/StaffReferralLedgerPanel';
 import { NotificationsPage } from '@/features/notifications';
 import type {
   SystemHealthResponse,
@@ -178,6 +181,15 @@ export function AdminDashboardPage() {
     }
     if (rawTab === 'LOGS' || rawTab === 'AUDIT' || rawTab === 'AUDIT_LOGS' || rawTab === 'AUDIT-LOGS' || rawTab === 'ANALYTICS') {
       return 'LOGS';
+    }
+    if (rawTab === 'INTERNAL_USERS' || rawTab === 'INTERNAL-USERS' || rawTab === 'STAFF_USERS' || rawTab === 'INVITATIONS') {
+      return 'INTERNAL_USERS';
+    }
+    if (rawTab === 'INTERNAL_RBAC' || rawTab === 'INTERNAL-RBAC' || rawTab === 'RBAC_MATRIX' || rawTab === 'PERMISSIONS') {
+      return 'INTERNAL_RBAC';
+    }
+    if (rawTab === 'STAFF_REFERRALS' || rawTab === 'STAFF-REFERRALS' || rawTab === 'REFERRALS' || rawTab === 'STAFF_INCENTIVES') {
+      return 'STAFF_REFERRALS';
     }
 
     return (rawTab as AdminTab) || 'TRANSACTIONS';
@@ -789,6 +801,10 @@ export function AdminDashboardPage() {
             {activeTab === 'ANNOUNCEMENTS' && (
               <AdminAnnouncementsPanel />
             )}
+
+            {activeTab === 'INTERNAL_USERS' && <InternalUsersPanel />}
+            {activeTab === 'INTERNAL_RBAC' && <InternalRbacMatrixPanel />}
+            {activeTab === 'STAFF_REFERRALS' && <StaffReferralLedgerPanel />}
           </main>
         </div>
       )}

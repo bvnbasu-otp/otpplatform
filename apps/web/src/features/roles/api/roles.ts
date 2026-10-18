@@ -42,7 +42,7 @@ export async function retryOnClockSkew<T>(
 
 export type RolePermission = 'READ' | 'WRITE' | 'PROPOSE' | 'VOTE' | 'APPROVE' | 'AWARD';
 
-export type PortalSide = 'BUYER' | 'SUPPLIER';
+export type PortalSide = 'BUYER' | 'SUPPLIER' | 'CONSOLE';
 
 export interface RoleDefinition {
   code: string;
@@ -307,6 +307,59 @@ export async function fetchRoleContext(): Promise<
         profile.status === 'SUSPENDED' ||
         Boolean(profile.blocked_at) ||
         Boolean(profile.blocked_reason);
+
+      if (profile.is_founder || profile.is_platform_admin || profile.active_portal_side === 'CONSOLE') {
+        const activeCode = profile.active_role_code || (profile.is_founder ? 'SUPER_ADMIN' : 'INTERNAL_OPERATOR');
+        const roleLabels: Record<string, string> = {
+          SUPER_ADMIN: 'Platform Super Administrator',
+          INTERNAL_OPERATOR: 'Internal Operations Lead',
+          FINANCE_OPERATOR: 'Finance & Settlement Operator',
+          CATALOG_MANAGER: 'Catalog & Taxonomy Manager',
+          SUPPORT_OPERATOR: 'Customer Support Operator',
+          LEGAL_AUDITOR: 'Legal & Compliance Auditor',
+        };
+        return {
+          ok: true,
+          context: {
+            signedIn: true,
+            profileId: profile.id,
+            side: 'CONSOLE',
+            isPlatformAdmin: Boolean(profile.is_platform_admin || profile.is_founder),
+            isFounder: Boolean(profile.is_founder),
+            needsOnboarding: false,
+            activeRole: {
+              code: activeCode,
+              side: 'CONSOLE',
+              label: roleLabels[activeCode] || String(activeCode).replace(/_/g, ' '),
+              description: 'Privileged internal platform operations and diagnostic authority.',
+              permissions: ['READ', 'WRITE', 'PROPOSE', 'APPROVE', 'AWARD'],
+            },
+            roles: [
+              { code: 'SUPER_ADMIN', side: 'CONSOLE', label: 'Platform Super Administrator', description: 'Full root platform operator and security authority.', assignedByAdmin: true, permissions: ['READ', 'WRITE', 'PROPOSE', 'APPROVE', 'AWARD'] },
+              { code: 'INTERNAL_OPERATOR', side: 'CONSOLE', label: 'Internal Operations Lead', description: 'Day-to-day operations and workflow diagnostics.', assignedByAdmin: true, permissions: ['READ', 'WRITE', 'PROPOSE', 'APPROVE', 'AWARD'] },
+              { code: 'FINANCE_OPERATOR', side: 'CONSOLE', label: 'Finance & Settlement Operator', description: 'Settlement reconciliation and ledger disbursements.', assignedByAdmin: true, permissions: ['READ', 'WRITE', 'APPROVE'] },
+              { code: 'CATALOG_MANAGER', side: 'CONSOLE', label: 'Catalog & Taxonomy Manager', description: 'Catalog taxonomy and pricing governance.', assignedByAdmin: true, permissions: ['READ', 'WRITE', 'APPROVE'] },
+              { code: 'SUPPORT_OPERATOR', side: 'CONSOLE', label: 'Customer Support Operator', description: 'Buyer and supplier diagnostic assistance.', assignedByAdmin: true, permissions: ['READ', 'WRITE'] },
+              { code: 'LEGAL_AUDITOR', side: 'CONSOLE', label: 'Legal & Compliance Auditor', description: 'Immutable audit logs and legal agreement oversight.', assignedByAdmin: true, permissions: ['READ'] },
+            ],
+            organizations: [],
+            orgRole: null,
+            organizationId: null,
+            organizationName: null,
+            buyerType: null,
+            committeeRfqCount: 0,
+            supplierId: null,
+            fullName: profile.full_name || (profile.is_founder ? 'Basu (Founder & CEO)' : 'Internal Platform Operator'),
+            title: profile.is_founder ? 'Founder & CEO' : 'Internal Platform Operator',
+            avatarUrl: null,
+            email: profile.email,
+            phone: null,
+            isBlocked,
+            blockedReason: profile.blocked_reason || null,
+            status: isBlocked ? 'BLOCKED' : profile.status || 'ACTIVE',
+          },
+        };
+      }
 
       let side: PortalSide = profile.active_portal_side ? (profile.active_portal_side as PortalSide) : 'BUYER';
       let supplierId: string | null = null;

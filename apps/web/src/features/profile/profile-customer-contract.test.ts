@@ -58,4 +58,9 @@ describe('ProfilePage customer contract', () => {
       'Receive 1-tap OTP logins, RFQ quotation invites, and purchase order status alerts directly on WhatsApp.',
     );
   });
+
+  it('shields internal console users from customer address book and customer EULA', () => {
+    expect(profilePage).toContain('const isInternalUser =');
+    expect(profilePage).toContain('!isInternalUser && (');
+  });
 });

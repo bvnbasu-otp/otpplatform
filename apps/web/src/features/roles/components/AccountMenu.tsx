@@ -90,6 +90,7 @@ export function AccountMenu() {
 
   const multiRole = hasMultipleRoles(context);
   const multiOrg = hasMultipleOrganizations(context);
+  const isInternal = Boolean(context.isPlatformAdmin || context.isFounder || context.side === 'CONSOLE');
   const displayName = context.fullName || user?.email;
   const userInitials = initials(context.fullName || user?.email);
 
@@ -169,14 +170,20 @@ export function AccountMenu() {
           </div>
 
           <p className="mt-2 text-[0.7rem] text-muted-foreground">
-            {context.isPlatformAdmin
+            {context.isFounder
+              ? 'Founder & CEO'
+              : context.isPlatformAdmin
               ? 'Platform Super Admin'
               : (context.organizationName ??
-                (context.side === 'SUPPLIER' ? 'Supplier account' : 'Buyer account'))}
+                (context.side === 'CONSOLE'
+                  ? 'Internal Operations Console'
+                  : context.side === 'SUPPLIER'
+                  ? 'Supplier account'
+                  : 'Buyer account'))}
             {context.orgRole ? ` · ${context.orgRole.toLowerCase()}` : ''}
           </p>
 
-          {context.isPlatformAdmin && (
+          {isInternal && (
             <div className="mt-2">
               <Link
                 to="/admin"
@@ -191,12 +198,17 @@ export function AccountMenu() {
 
           {context.activeRole && (
             <div className="mt-3 rounded-md border bg-muted/30 p-2.5">
-              <p className="text-[0.7rem] font-medium">{context.activeRole.label}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-[0.7rem] font-medium">{context.activeRole.label}</p>
+                <span className="text-[9px] rounded-full bg-primary/10 text-primary font-mono font-bold px-1.5 py-0.2">
+                  {context.activeRole.code}
+                </span>
+              </div>
               <PermissionChips permissions={context.activeRole.permissions} className="mt-1.5" />
             </div>
           )}
 
-          {multiOrg && !context.isPlatformAdmin && (
+          {multiOrg && !isInternal && (
             <div className="mt-3">
               <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
                 Switch Organization Context
@@ -240,10 +252,10 @@ export function AccountMenu() {
             </div>
           )}
 
-          {multiRole && !context.isPlatformAdmin && (
+          {multiRole && (
             <div className="mt-3">
               <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                Switch view
+                {isInternal ? 'Switch Internal Operator Role' : 'Switch view'}
               </p>
               <ul className="mt-1.5 space-y-1" data-testid="role-switcher">
                 {context.roles.map((role) => {

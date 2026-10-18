@@ -374,7 +374,7 @@ export function SignInForm({
 
     if (validRedirect) {
       navigate(validRedirect, { replace: true });
-    } else if (profile?.isFounder || profile?.isPlatformAdmin) {
+    } else if (profile?.isFounder || profile?.isPlatformAdmin || profile?.activePortalSide === 'CONSOLE') {
       navigate('/admin', { replace: true });
     } else if (isSupplierEmail) {
       navigate('/supplier/purchase-orders', { replace: true });

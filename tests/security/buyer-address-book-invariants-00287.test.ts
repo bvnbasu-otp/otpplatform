@@ -86,7 +86,10 @@ describe('00287 buyer address invariants', () => {
     }
     const actorRow = await setup.query(
       `SELECT id, auth_user_id FROM public.profiles
-       WHERE auth_user_id IS NOT NULL ORDER BY created_at LIMIT 2`,
+       WHERE auth_user_id IS NOT NULL
+         AND is_platform_admin IS NOT TRUE
+         AND is_founder IS NOT TRUE
+       ORDER BY created_at LIMIT 2`,
     );
     const owner: Actor = { profileId: actorRow.rows[0].id, authUserId: actorRow.rows[0].auth_user_id };
     const outsider: Actor = { profileId: actorRow.rows[1].id, authUserId: actorRow.rows[1].auth_user_id };

@@ -9,6 +9,7 @@ export interface UserProfile {
   isFounder?: boolean;
   isPlatformAdmin?: boolean;
   activeOrganizationId?: string | null;
+  activePortalSide?: string | null;
 }
 
 const ENV_FOUNDER_EMAIL = import.meta.env.VITE_FOUNDER_EMAIL;
@@ -46,7 +47,7 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, full_name, is_founder, is_platform_admin, active_organization_id')
+    .select('id, email, full_name, is_founder, is_platform_admin, active_organization_id, active_portal_side')
     .or(`auth_user_id.eq.${authUser.id},id.eq.${authUser.id}`)
     .maybeSingle();
 
@@ -54,12 +55,12 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
     if (authUser.email) {
       const { data: fallbackData } = await supabase
         .from('profiles')
-        .select('id, email, full_name, is_founder, is_platform_admin, active_organization_id')
+        .select('id, email, full_name, is_founder, is_platform_admin, active_organization_id, active_portal_side')
         .eq('email', authUser.email)
         .maybeSingle();
       if (fallbackData) {
-        const isFounder = Boolean(fallbackData.is_founder);
-        const isAdmin = Boolean(isFounder || fallbackData.is_platform_admin);
+        const isFounder = Boolean(fallbackData.is_founder || isFounderEmail(fallbackData.email));
+        const isAdmin = Boolean(isFounder || fallbackData.is_platform_admin || isSuperAdminEmail(fallbackData.email) || fallbackData.active_portal_side === 'CONSOLE');
         return {
           profileId: fallbackData.id,
           email: fallbackData.email,
@@ -67,14 +68,15 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
           isFounder,
           isPlatformAdmin: isAdmin,
           activeOrganizationId: (fallbackData.active_organization_id as string | null) ?? null,
+          activePortalSide: (fallbackData.active_portal_side as string | null) ?? null,
         };
       }
     }
     return null;
   }
 
-  const isFounder = Boolean(data.is_founder);
-  const isAdmin = Boolean(isFounder || data.is_platform_admin);
+  const isFounder = Boolean(data.is_founder || isFounderEmail(data.email));
+  const isAdmin = Boolean(isFounder || data.is_platform_admin || isSuperAdminEmail(data.email) || data.active_portal_side === 'CONSOLE');
 
   return {
     profileId: data.id,
@@ -83,6 +85,7 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
     isFounder,
     isPlatformAdmin: isAdmin,
     activeOrganizationId: (data.active_organization_id as string | null) ?? null,
+    activePortalSide: (data.active_portal_side as string | null) ?? null,
   };
 }
 
@@ -92,8 +95,8 @@ export async function resolvePortalRole(
   email?: string | null,
   isFounder?: boolean,
 ): Promise<PortalRole> {
-  if (isFounder) return 'founder';
-  if (isPlatformAdmin) return 'admin';
+  if (isFounder || isFounderEmail(email)) return 'founder';
+  if (isPlatformAdmin || isSuperAdminEmail(email)) return 'admin';
 
   // 0. Check explicit active_portal_side if user switched persona
   try {
@@ -103,6 +106,9 @@ export async function resolvePortalRole(
       .eq('id', profileId)
       .maybeSingle();
 
+    if (personaRow?.active_portal_side === 'CONSOLE') {
+      return 'admin';
+    }
     if (personaRow?.active_portal_side === 'SUPPLIER') {
       return 'supplier';
     }

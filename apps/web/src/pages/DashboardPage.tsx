@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import {
@@ -88,6 +88,15 @@ export function DashboardPage() {
     // Route to intake wizard so buyer can inspect, validate, and customize specifications before publishing
     navigate(`/intake?q=${encodeURIComponent(textToSubmit)}`);
   };
+
+  const isInternal =
+    Boolean(context.isPlatformAdmin) ||
+    Boolean(context.isFounder) ||
+    context.side === 'CONSOLE';
+
+  if (isInternal) {
+    return <Navigate to="/admin" replace />;
+  }
 
   return (
     <div

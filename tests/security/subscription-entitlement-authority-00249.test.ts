@@ -312,7 +312,11 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 46]).toBe('00295_legal_review_grant_authority_columns.sql');
     expect(files[index + 47]).toBe('00296_platform_admin_operator_context_alignment.sql');
     expect(files[index + 48]).toBe('00297_revoke_anon_my_role_context.sql');
-    expect(index).toBe(files.length - 49);
+    expect(files[index + 49]).toBe('00298_internal_rbac_and_portal_console_alignment.sql');
+    expect(files[index + 50]).toBe('00299_internal_procurement_hard_deny.sql');
+    expect(files[index + 51]).toBe('00300_internal_staff_referral_ledger.sql');
+    expect(files[index + 52]).toBe('00301_internal_console_role_switching_and_isolation.sql');
+    expect(index).toBe(files.length - 53);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

@@ -69,7 +69,7 @@ export function resolveWalletOrganizationId(input: WalletEntitlementInput): stri
 }
 
 export function walletPersonaFromPortalSide(
-  side: WalletPersona | 'BUYER' | 'SUPPLIER' | null | undefined,
+  side: WalletPersona | 'BUYER' | 'SUPPLIER' | 'CONSOLE' | null | undefined,
 ): WalletPersona {
   return side === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER';
 }

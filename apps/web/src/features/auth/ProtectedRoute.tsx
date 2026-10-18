@@ -10,7 +10,7 @@ import { LegalAcceptanceGate } from '@/features/legal/components/LegalAcceptance
 import type { RoleContext, HeldRole } from '@/features/roles/api/roles';
 import { reconcilePortalSide } from '@/features/roles/api/roles';
 
-export type AllowedRole = 'FOUNDER' | 'ADMIN' | 'BUYER' | 'SUPPLIER';
+export type AllowedRole = 'FOUNDER' | 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'CONSOLE';
 
 export interface ProtectedRouteProps {
   children?: ReactNode;
@@ -60,6 +60,9 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
 
   const isFounder = Boolean(input.context?.isFounder);
   const isPlatformAdmin = Boolean(isFounder || input.context?.isPlatformAdmin);
+  const isInternalUser = Boolean(
+    isPlatformAdmin || input.context?.side === 'CONSOLE',
+  );
 
   // 2. Blocked account hold check
   if (input.context?.isBlocked && !isPlatformAdmin) {
@@ -79,7 +82,7 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
   }
 
   // 4. Admin RBAC check
-  if (input.requireAdmin && !isPlatformAdmin) {
+  if (input.requireAdmin && !isInternalUser) {
     const target = input.unauthorizedRedirect || '/dashboard';
     return {
       action: 'REDIRECT',
@@ -95,15 +98,16 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
       input.context?.activeRole ?? null,
       (input.context?.roles as HeldRole[]) ?? [],
       input.context?.supplierId,
-    )?.toUpperCase() as 'BUYER' | 'SUPPLIER' | undefined;
+    )?.toUpperCase() as 'BUYER' | 'SUPPLIER' | 'CONSOLE' | undefined;
 
     const allowsFounder = input.allowedRoles.includes('FOUNDER');
     const allowsAdmin = input.allowedRoles.includes('ADMIN');
+    const allowsConsole = input.allowedRoles.includes('CONSOLE');
     const allowsBuyer = input.allowedRoles.includes('BUYER');
     const allowsSupplier = input.allowedRoles.includes('SUPPLIER');
 
     // Founder isolation: if route only allows FOUNDER, operations admin is NOT permitted
-    if (allowsFounder && !allowsAdmin && !allowsBuyer && !allowsSupplier) {
+    if (allowsFounder && !allowsAdmin && !allowsBuyer && !allowsSupplier && !allowsConsole) {
       if (!isFounder) {
         return {
           action: 'REDIRECT',
@@ -114,13 +118,23 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
       return { action: 'ALLOW' };
     }
 
+    // Customer procurement isolation:
+    // If route is strictly customer-facing (does not permit ADMIN, FOUNDER, or CONSOLE),
+    // internal operators / CONSOLE personas are hard denied and redirected to /admin.
+    if (isInternalUser && !allowsAdmin && !allowsFounder && !allowsConsole) {
+      return {
+        action: 'REDIRECT',
+        target: input.unauthorizedRedirect || '/admin',
+        clearState: true,
+      };
+    }
+
     // Dual-role config (allowedRoles lists BOTH BUYER and SUPPLIER, e.g. the
     // buyer/supplier PO & quote route pairs). "Any role in the list" is NOT
     // sufficient here — the user's resolved side must match the SPECIFIC side
     // this exact route path is for. This app's convention is: paths under
     // "/supplier/" are the supplier-side route, everything else in a dual-role
-    // pair is the buyer-side route. Without this, a buyer could reach
-    // supplier-only content (e.g. /supplier/quotes) and vice versa.
+    // pair is the buyer-side route.
     const isDualSideRoute = allowsBuyer && allowsSupplier;
     const requiredSideForDualRoute: 'BUYER' | 'SUPPLIER' | undefined = isDualSideRoute
       ? (input.pathname.startsWith('/supplier/') ? 'SUPPLIER' : 'BUYER')
@@ -128,18 +142,18 @@ export function evaluateRouteAccess(input: RouteAccessEvaluationInput): RouteAcc
 
     const hasAllowedRole =
       (allowsFounder && isFounder) ||
-      (allowsAdmin && isPlatformAdmin) ||
+      ((allowsAdmin || allowsConsole) && isInternalUser) ||
       (isDualSideRoute
         ? userSide === requiredSideForDualRoute || isPlatformAdmin
         : (allowsBuyer && (userSide === 'BUYER' || isPlatformAdmin)) ||
           (allowsSupplier && (userSide === 'SUPPLIER' || isPlatformAdmin))) ||
       // If side is not explicitly set yet but user is authenticated and route is not admin-only
-      (!userSide && (allowsBuyer || allowsSupplier));
+      (!userSide && !isInternalUser && (allowsBuyer || allowsSupplier));
 
     if (!hasAllowedRole) {
       const target =
         input.unauthorizedRedirect ||
-        (userSide === 'SUPPLIER' ? '/supplier/purchase-orders' : '/dashboard');
+        (isInternalUser ? '/admin' : userSide === 'SUPPLIER' ? '/supplier/purchase-orders' : '/dashboard');
       return {
         action: 'REDIRECT',
         target,
@@ -289,6 +303,6 @@ export function ProtectedRoute({
   const content = children ? <>{children}</> : <Outlet />;
   // Platform operators hold no customer or supplier agreement; everyone else
   // must have accepted the current server-side version.
-  if (context?.isFounder || context?.isPlatformAdmin) return content;
+  if (context?.isFounder || context?.isPlatformAdmin || context?.side === 'CONSOLE') return content;
   return <LegalAcceptanceGate>{content}</LegalAcceptanceGate>;
 }

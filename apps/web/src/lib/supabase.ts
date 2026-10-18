@@ -85,8 +85,28 @@ export function setRememberDevice(remember: boolean): void {
   }
 }
 
+async function clockSkewAwareFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const res = await fetch(input, init);
+  // PostgREST returns 401 when the JWT iat claim is in the future
+  if (res.status === 401) {
+    try {
+      const cloned = res.clone();
+      const text = await cloned.text();
+      if (/jwt.*future|issued at future|pgrst303|iat.*future/i.test(text)) {
+        console.warn('[OTP Auth] Clock skew detected (JWT issued at future). Retrying request in 1200ms...');
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        return await fetch(input, init);
+      }
+    } catch {
+      // If cloning/reading fails, return the original response
+    }
+  }
+  return res;
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: { storage: sessionStore(), persistSession: true, autoRefreshToken: true },
+  global: { fetch: clockSkewAwareFetch },
 });
 
 export {

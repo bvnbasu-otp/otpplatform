@@ -12,7 +12,11 @@ export function HomePage() {
   const { isMaintenanceMode } = useMaintenance();
 
   const isSupplier = role === 'supplier' || context.side === 'SUPPLIER';
-  const isAdmin = role === 'admin' || context.isPlatformAdmin;
+  const isInternal =
+    role === 'admin' ||
+    Boolean(context.isPlatformAdmin) ||
+    Boolean(context.isFounder) ||
+    context.side === 'CONSOLE';
 
   if (portalLoading || contextLoading) {
     return (
@@ -22,8 +26,8 @@ export function HomePage() {
     );
   }
 
-  // Super Admins are always directed to the SuperAdmin Console
-  if (isAdmin) {
+  // Internal employees, Founder, and Super Admins are always directed to the Platform Console
+  if (isInternal) {
     return <Navigate to="/admin" replace />;
   }
 

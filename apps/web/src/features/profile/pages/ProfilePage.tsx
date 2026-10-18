@@ -180,11 +180,19 @@ export function ProfilePage() {
     }
   };
 
+  const isInternalUser = Boolean(
+    context.isPlatformAdmin || context.isFounder || context.side === 'CONSOLE',
+  );
+
   const [legalStatus, setLegalStatus] = useState<
     { phase: 'loading' } | { phase: 'error'; message: string } | { phase: 'ready'; agreements: AgreementStatus[] }
-  >({ phase: 'loading' });
+  >(isInternalUser ? { phase: 'ready', agreements: [] } : { phase: 'loading' });
 
   useEffect(() => {
+    if (isInternalUser) {
+      setLegalStatus({ phase: 'ready', agreements: [] });
+      return;
+    }
     let cancelled = false;
     void fetchLegalAcceptanceStatus().then((result) => {
       if (cancelled) return;
@@ -197,7 +205,7 @@ export function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isInternalUser]);
 
   useEffect(() => {
     if (tabParam === 'team') setActiveTab('team');
@@ -210,6 +218,7 @@ export function ProfilePage() {
   }, [tabParam, searchParams]);
 
   const handleTabSwitch = (tab: 'profile' | 'addresses' | 'team' | 'preferences') => {
+    if (isInternalUser && tab === 'addresses') return;
     setActiveTab(tab);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -513,9 +522,11 @@ export function ProfilePage() {
     }
   }
 
-  const showCustomerWallet = !context.isPlatformAdmin && !context.isFounder;
-  const roleSuggestions = context.isPlatformAdmin
-    ? ['Platform Super Administrator', 'Lead Operations Engineer', 'DevOps & Security Lead']
+  const showCustomerWallet = !isInternalUser;
+  const roleSuggestions = context.isFounder
+    ? ['Founder & CEO', 'Executive Chairman', 'Platform Super Administrator']
+    : context.isPlatformAdmin || context.side === 'CONSOLE'
+    ? ['Platform Super Administrator', 'Internal Operations Lead', 'Finance & Settlement Lead', 'Catalog & Taxonomy Lead', 'Customer Support Lead', 'Legal & Compliance Lead']
     : context.side === 'SUPPLIER'
     ? ['Authorized Supplier Representative', 'Managing Director', 'Sales Director', 'Lead Contractor']
     : ['Procurement Committee Member', 'Facility Secretary', 'RWA President', 'Estate Manager', 'Treasurer'];
@@ -535,9 +546,9 @@ export function ProfilePage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <Link
-              to="/dashboard"
+              to={isInternalUser ? "/admin" : "/dashboard"}
               className="flex items-center justify-center h-8 w-8 rounded-xl border border-border/70 bg-muted/40 hover:bg-muted text-foreground transition text-xs shrink-0"
-              title="Return to Dashboard"
+              title={isInternalUser ? "Return to Admin Console" : "Return to Dashboard"}
             >
               ←
             </Link>
@@ -547,7 +558,7 @@ export function ProfilePage() {
                 <span>User Profile &amp; Organization Settings</span>
               </h1>
               <p className="text-[11px] text-muted-foreground truncate">
-                {context.organizationName || 'Personal Workspace'} · {context.activeRole?.label || 'Account Member'}
+                {context.organizationName || (isInternalUser ? 'Internal Platform Operations' : 'Personal Workspace')} · {context.activeRole?.label || (context.isFounder ? 'Founder & CEO' : 'Account Member')}
               </p>
             </div>
           </div>
@@ -555,14 +566,26 @@ export function ProfilePage() {
           <div className="flex items-center gap-1.5 shrink-0">
             <span
               className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                context.isPlatformAdmin
+                context.isFounder
                   ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                  : context.isPlatformAdmin
+                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                  : context.side === 'CONSOLE'
+                  ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
                   : context.side === 'SUPPLIER'
                   ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                   : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
               }`}
             >
-              {context.isPlatformAdmin ? 'Super Admin' : context.side === 'SUPPLIER' ? 'Supplier Rep' : 'Buyer Lead'}
+              {context.isFounder
+                ? 'Founder & CEO'
+                : context.isPlatformAdmin
+                ? 'Super Admin'
+                : context.side === 'CONSOLE'
+                ? 'Internal Operator'
+                : context.side === 'SUPPLIER'
+                ? 'Supplier Rep'
+                : 'Buyer Lead'}
             </span>
           </div>
         </div>
@@ -588,22 +611,24 @@ export function ProfilePage() {
             <span>Profile</span>
           </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'addresses'}
-            onClick={() => handleTabSwitch('addresses')}
-            className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
-              activeTab === 'addresses'
-                ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <span>📍</span>
-            <span>Address Book</span>
-          </button>
+          {!isInternalUser && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'addresses'}
+              onClick={() => handleTabSwitch('addresses')}
+              className={`flex-1 shrink-0 whitespace-nowrap min-w-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all mobile-touch-target ${
+                activeTab === 'addresses'
+                  ? 'bg-card text-foreground shadow-xs ring-1 ring-border'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>📍</span>
+              <span>Address Book</span>
+            </button>
+          )}
 
-          {!isIndividual && (
+          {!isIndividual && !isInternalUser && (
             <button
               type="button"
               role="tab"
@@ -658,7 +683,7 @@ export function ProfilePage() {
               subscription={subscription}
               onRenewClick={() => setIsPaymentModalOpen(true)}
             />
-          ) : isIndividual && !isSupplierPersona ? (
+          ) : isIndividual && !isSupplierPersona && !isInternalUser ? (
             <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-2xs space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -690,11 +715,13 @@ export function ProfilePage() {
           />
           )}
 
-          <ReferAndEarnCard
-            identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}
-            orgName={orgName || entitledReferOrgName}
-            side={referSide}
-          />
+          {!isInternalUser && (
+            <ReferAndEarnCard
+              identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}
+              orgName={orgName || entitledReferOrgName}
+              side={referSide}
+            />
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
           {/* Identity & Avatar Card (4 cols) */}
@@ -1447,86 +1474,88 @@ export function ProfilePage() {
             </div>
           </section>
 
-          {/* Legal Agreements & EULA Acceptance */}
-          <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3" data-testid="legal-agreements-eula-card">
-            <div className="flex items-center justify-between border-b pb-2">
-              <div>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  📜 Legal Agreements &amp; EULA Acceptance
-                </h2>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Electronic acceptance records held by OTP.
-                </p>
-              </div>
-            </div>
-
-            {legalStatus.phase === 'loading' && (
-              <p className="text-xs text-muted-foreground">Loading agreement records…</p>
-            )}
-            {legalStatus.phase === 'error' && (
-              <p className="text-xs text-red-600" role="alert">
-                Agreement records could not be loaded: {legalStatus.message}
-              </p>
-            )}
-            {legalStatus.phase === 'ready' && legalStatus.agreements.length === 0 && (
-              <p className="text-xs text-muted-foreground">No agreement applies to this account.</p>
-            )}
-            {legalStatus.phase === 'ready' &&
-              legalStatus.agreements.map((agreement) => (
-                <div
-                  key={agreement.agreementType}
-                  className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-2 text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Agreement:</span>
-                    <span className="font-semibold text-foreground">{agreement.title}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Current Version:</span>
-                    <span className="font-mono font-bold text-foreground">{agreement.currentVersion}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Document Hash:</span>
-                    <span className="font-mono text-[10px] text-muted-foreground truncate max-w-[200px]" title={agreement.documentHash}>
-                      {agreement.documentHash.slice(0, 20)}...
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Accepted At:</span>
-                    <span className="text-foreground font-semibold">
-                      {agreement.acceptedAt ? new Date(agreement.acceptedAt).toLocaleString('en-IN') : 'Not accepted'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Acceptance Status:</span>
-                    <span className={agreement.accepted ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-amber-700 font-bold'}>
-                      {agreement.accepted ? 'Recorded for the current version' : 'Acceptance required'}
-                    </span>
-                  </div>
+          {/* Legal Agreements & EULA Acceptance: Customer buyer/supplier accounts only */}
+          {!isInternalUser && (
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3" data-testid="legal-agreements-eula-card">
+              <div className="flex items-center justify-between border-b pb-2">
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    📜 Legal Agreements &amp; EULA Acceptance
+                  </h2>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Electronic acceptance records held by OTP.
+                  </p>
                 </div>
-              ))}
+              </div>
 
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Link
-                to="/legal/terms"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-foreground hover:bg-muted transition shadow-2xs min-h-[44px] mobile-touch-target inline-flex items-center gap-1"
-              >
-                <span>📄 View Terms of Use</span>
-                <span>↗</span>
-              </Link>
-              <Link
-                to="/legal/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-foreground hover:bg-muted transition shadow-2xs min-h-[44px] mobile-touch-target inline-flex items-center gap-1"
-              >
-                <span>🛡️ View Privacy Policy</span>
-                <span>↗</span>
-              </Link>
-            </div>
-          </section>
+              {legalStatus.phase === 'loading' && (
+                <p className="text-xs text-muted-foreground">Loading agreement records…</p>
+              )}
+              {legalStatus.phase === 'error' && (
+                <p className="text-xs text-red-600" role="alert">
+                  Agreement records could not be loaded: {legalStatus.message}
+                </p>
+              )}
+              {legalStatus.phase === 'ready' && legalStatus.agreements.length === 0 && (
+                <p className="text-xs text-muted-foreground">No agreement applies to this account.</p>
+              )}
+              {legalStatus.phase === 'ready' &&
+                legalStatus.agreements.map((agreement) => (
+                  <div
+                    key={agreement.agreementType}
+                    className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Agreement:</span>
+                      <span className="font-semibold text-foreground">{agreement.title}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Current Version:</span>
+                      <span className="font-mono font-bold text-foreground">{agreement.currentVersion}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Document Hash:</span>
+                      <span className="font-mono text-[10px] text-muted-foreground truncate max-w-[200px]" title={agreement.documentHash}>
+                        {agreement.documentHash.slice(0, 20)}...
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Accepted At:</span>
+                      <span className="text-foreground font-semibold">
+                        {agreement.acceptedAt ? new Date(agreement.acceptedAt).toLocaleString('en-IN') : 'Not accepted'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Acceptance Status:</span>
+                      <span className={agreement.accepted ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-amber-700 font-bold'}>
+                        {agreement.accepted ? 'Recorded for the current version' : 'Acceptance required'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Link
+                  to="/legal/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-foreground hover:bg-muted transition shadow-2xs min-h-[44px] mobile-touch-target inline-flex items-center gap-1"
+                >
+                  <span>📄 View Terms of Use</span>
+                  <span>↗</span>
+                </Link>
+                <Link
+                  to="/legal/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-foreground hover:bg-muted transition shadow-2xs min-h-[44px] mobile-touch-target inline-flex items-center gap-1"
+                >
+                  <span>🛡️ View Privacy Policy</span>
+                  <span>↗</span>
+                </Link>
+              </div>
+            </section>
+          )}
         </div>
       )}
 

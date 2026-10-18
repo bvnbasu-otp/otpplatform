@@ -18,6 +18,7 @@ describe('persona wallet entitlement', () => {
   it('binds wallet persona to reconciled portal side', () => {
     expect(walletPersonaFromPortalSide('SUPPLIER')).toBe('SUPPLIER');
     expect(walletPersonaFromPortalSide('BUYER')).toBe('BUYER');
+    expect(walletPersonaFromPortalSide('CONSOLE')).toBe('BUYER');
     expect(walletPersonaFromPortalSide(null)).toBe('BUYER');
   });
 

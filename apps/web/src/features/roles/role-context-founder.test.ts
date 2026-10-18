@@ -10,4 +10,11 @@ describe('role context founder claim', () => {
     expect(source).toContain('isFounder: Boolean(profile.is_founder)');
     expect(source).toContain('is_founder, is_platform_admin');
   });
+
+  it('supports CONSOLE active portal side and internal roles in fallback', () => {
+    expect(source).toContain("active_portal_side === 'CONSOLE'");
+    expect(source).toContain("code: 'SUPER_ADMIN'");
+    expect(source).toContain("code: 'INTERNAL_OPERATOR'");
+    expect(source).toContain("code: 'FINANCE_OPERATOR'");
+  });
 });

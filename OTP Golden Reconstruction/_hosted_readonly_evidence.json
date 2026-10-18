@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T08:17:44.483Z",
+  "generatedAt": "2026-10-18T12:29:38.363Z",
   "passwordPrinted": false,
   "credentialPersisted": false,
   "credentialSource": ".env.otp.production.local",
@@ -112,7 +112,5727 @@
     ],
     "connectionStringSourceKey": "DATABASE_URL"
   },
-  "connectionError": "getaddrinfo ENOENT db.qsuvtcezffomtwzwyrso.supabase.co",
-  "decision": "HOSTED VERIFICATION BLOCKED",
-  "readOnlyConfirmed": false
+  "readOnly": {
+    "show": "on",
+    "setting": "on"
+  },
+  "readOnlyConfirmed": true,
+  "identity": {
+    "db": "postgres",
+    "usr": "postgres"
+  },
+  "version": "PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+  "serverAddr": "2406:da14:311:1502:4365:2cac:946d:d1ab/128",
+  "migrationTables": [
+    {
+      "table_schema": "supabase_migrations",
+      "table_name": "schema_migrations"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "otp_schema_migrations"
+    }
+  ],
+  "schemaMigrations": [
+    {
+      "version": "00001",
+      "name": "enums"
+    },
+    {
+      "version": "00002",
+      "name": "core_tables"
+    },
+    {
+      "version": "00003",
+      "name": "auth_helpers"
+    },
+    {
+      "version": "00004",
+      "name": "rls_policies"
+    },
+    {
+      "version": "00005",
+      "name": "blind_views"
+    },
+    {
+      "version": "00006",
+      "name": "work_orders_insert_policy"
+    },
+    {
+      "version": "00007",
+      "name": "governance_quote_policies"
+    },
+    {
+      "version": "00008",
+      "name": "procurement_os"
+    },
+    {
+      "version": "00009",
+      "name": "supplier_network_summary"
+    },
+    {
+      "version": "00010",
+      "name": "quotes_revealed_rating"
+    },
+    {
+      "version": "00011",
+      "name": "buyer_flow_functions"
+    },
+    {
+      "version": "00012",
+      "name": "clarification_negotiation"
+    },
+    {
+      "version": "00013",
+      "name": "requirement_taxonomy"
+    },
+    {
+      "version": "00014",
+      "name": "requirement_intake_columns"
+    },
+    {
+      "version": "00015",
+      "name": "supplier_capabilities"
+    },
+    {
+      "version": "00016",
+      "name": "capability_discovery"
+    },
+    {
+      "version": "00017",
+      "name": "evaluation_weights_scoring"
+    },
+    {
+      "version": "00018",
+      "name": "attachments"
+    },
+    {
+      "version": "00019",
+      "name": "taxonomy_data"
+    },
+    {
+      "version": "00020",
+      "name": "taxonomy_backfill"
+    },
+    {
+      "version": "00021",
+      "name": "demo_foundation"
+    },
+    {
+      "version": "00022",
+      "name": "identity_protection"
+    },
+    {
+      "version": "00023",
+      "name": "award_lock_reveal"
+    },
+    {
+      "version": "00024",
+      "name": "weighted_voting"
+    },
+    {
+      "version": "00025",
+      "name": "demo_simulation"
+    },
+    {
+      "version": "00026",
+      "name": "demo_reset"
+    },
+    {
+      "version": "00027",
+      "name": "capability_capacity_source"
+    },
+    {
+      "version": "00028",
+      "name": "capacity_undeclared"
+    },
+    {
+      "version": "00029",
+      "name": "served_cities"
+    },
+    {
+      "version": "00030",
+      "name": "publish_requirement"
+    },
+    {
+      "version": "00031",
+      "name": "blind_breakdown_bands"
+    },
+    {
+      "version": "00032",
+      "name": "attachment_rfq_link"
+    },
+    {
+      "version": "00033",
+      "name": "demo_board"
+    },
+    {
+      "version": "00034",
+      "name": "demo_staging_window"
+    },
+    {
+      "version": "00035",
+      "name": "signup_requests"
+    },
+    {
+      "version": "00036",
+      "name": "messaging_channel_schema"
+    },
+    {
+      "version": "00037",
+      "name": "messaging_gateway"
+    },
+    {
+      "version": "00038",
+      "name": "messaging_demo"
+    },
+    {
+      "version": "00039",
+      "name": "role_based_access"
+    },
+    {
+      "version": "00040",
+      "name": "signup_role_choice"
+    },
+    {
+      "version": "00041",
+      "name": "phase_engine"
+    },
+    {
+      "version": "00042",
+      "name": "clarification_redaction"
+    },
+    {
+      "version": "00043",
+      "name": "clarification_grants"
+    },
+    {
+      "version": "00044",
+      "name": "manager_check_null_fix"
+    },
+    {
+      "version": "00045",
+      "name": "award_closeout_mutual_reveal"
+    },
+    {
+      "version": "00046",
+      "name": "messaging_body_redaction"
+    },
+    {
+      "version": "00047",
+      "name": "direct_supplier_invitations"
+    },
+    {
+      "version": "00048",
+      "name": "market_intel_on_requirement"
+    },
+    {
+      "version": "00049",
+      "name": "committee_access"
+    },
+    {
+      "version": "00050",
+      "name": "close_clarification_evaluation"
+    },
+    {
+      "version": "00051",
+      "name": "rfq_voting_summary"
+    },
+    {
+      "version": "00052",
+      "name": "lock_award_auto_evaluation"
+    },
+    {
+      "version": "00053",
+      "name": "auto_work_order_and_progress_flow"
+    },
+    {
+      "version": "00054",
+      "name": "work_orders_rls_and_init_rpc"
+    },
+    {
+      "version": "00055",
+      "name": "fix_discover_and_invite_overload"
+    },
+    {
+      "version": "00056",
+      "name": "grant_all_permissions_to_buyer_leads"
+    },
+    {
+      "version": "00057",
+      "name": "auto_complete_po_and_requirement_on_inspection"
+    },
+    {
+      "version": "00058",
+      "name": "furniture_and_painting_taxonomy_and_suppliers"
+    },
+    {
+      "version": "00059",
+      "name": "amenities_sports_pools_vehicle_repair"
+    },
+    {
+      "version": "00060",
+      "name": "comprehensive_notifications_engine"
+    },
+    {
+      "version": "00061",
+      "name": "water_filters_and_purification_suppliers"
+    },
+    {
+      "version": "00062",
+      "name": "cement_and_construction_suppliers"
+    },
+    {
+      "version": "00063",
+      "name": "create_purchase_order_from_award_rpc"
+    },
+    {
+      "version": "00064",
+      "name": "smart_supplier_discovery_auto_open"
+    },
+    {
+      "version": "00065",
+      "name": "supplier_gst_verification"
+    },
+    {
+      "version": "00066",
+      "name": "governance_p1_commitment_and_work_orders"
+    },
+    {
+      "version": "00067",
+      "name": "governance_p2_exit_reasons_and_buyer_scoring"
+    },
+    {
+      "version": "00068",
+      "name": "governance_p3_audit_pings"
+    },
+    {
+      "version": "00069",
+      "name": "governance_no_fault_exits_and_runner_up_award"
+    },
+    {
+      "version": "00070",
+      "name": "super_admin_ops_console"
+    },
+    {
+      "version": "00071",
+      "name": "seed_super_admin_ops_user"
+    },
+    {
+      "version": "00072",
+      "name": "super_admin_backup_restore_and_troubleshooter"
+    },
+    {
+      "version": "00073",
+      "name": "proactive_maintenance_notifications"
+    },
+    {
+      "version": "00074",
+      "name": "robust_sql_terminal_execution"
+    },
+    {
+      "version": "00075",
+      "name": "maintenance_mode"
+    },
+    {
+      "version": "00076",
+      "name": "support_tickets_and_ops_routing"
+    },
+    {
+      "version": "00077",
+      "name": "clear_all_transactional_data_keep_logins"
+    },
+    {
+      "version": "00078",
+      "name": "seed_solar_cctv_furniture_water_filter_suppliers"
+    },
+    {
+      "version": "00079",
+      "name": "fix_discover_and_invite_uniqueness"
+    },
+    {
+      "version": "00080",
+      "name": "fix_invoice_notification_triggers"
+    },
+    {
+      "version": "00081",
+      "name": "fix_po_title_invoice_trigger"
+    },
+    {
+      "version": "00082",
+      "name": "seed_gas_pipeline_suppliers"
+    },
+    {
+      "version": "00083",
+      "name": "link_furniture_rental_rfq"
+    },
+    {
+      "version": "00084",
+      "name": "auto_generate_pilot_supplier_quotes"
+    },
+    {
+      "version": "00085",
+      "name": "admin_phase_wise_buyer_pipeline"
+    },
+    {
+      "version": "00086",
+      "name": "reset_admin_password"
+    },
+    {
+      "version": "00087",
+      "name": "notify_unawarded_and_unresponsive_suppliers_on_po_creation"
+    },
+    {
+      "version": "00088",
+      "name": "fix_quote_total_cost_references"
+    },
+    {
+      "version": "00089",
+      "name": "buyer_rfq_quote_counts"
+    },
+    {
+      "version": "00090",
+      "name": "rename_phase1_label"
+    },
+    {
+      "version": "00091",
+      "name": "fix_runner_up_award_fk_violation"
+    },
+    {
+      "version": "00092",
+      "name": "fix_rfq_cancellation_enum_bug"
+    },
+    {
+      "version": "00093",
+      "name": "swap_supplier_role_order"
+    },
+    {
+      "version": "00094",
+      "name": "seed_royal_teak_and_specialized_furniture_supplier_users"
+    },
+    {
+      "version": "00095",
+      "name": "update_societycomfort_business_name"
+    },
+    {
+      "version": "00096",
+      "name": "admin_test_suite_runner_rpc"
+    },
+    {
+      "version": "00097",
+      "name": "fix_buyer_seller_diagnostics_rpcs"
+    },
+    {
+      "version": "00098",
+      "name": "robust_buyer_seller_diagnostics"
+    },
+    {
+      "version": "00099",
+      "name": "fix_rfq_status_evaluating_enum"
+    },
+    {
+      "version": "00100",
+      "name": "fix_record_unassigned_in_diagnostics"
+    },
+    {
+      "version": "00101",
+      "name": "fix_service_action_and_delivery_inspection_overloads"
+    },
+    {
+      "version": "00102",
+      "name": "create_admin_fix_seller_issue"
+    },
+    {
+      "version": "00103",
+      "name": "create_admin_seller_orders_rpc"
+    },
+    {
+      "version": "00104",
+      "name": "fix_proactive_maintenance_scan_rpc"
+    },
+    {
+      "version": "00105",
+      "name": "create_admin_search_entities_rpc"
+    },
+    {
+      "version": "00106",
+      "name": "fix_notifications_rls_and_admin_view"
+    },
+    {
+      "version": "00107",
+      "name": "admin_signup_approval_workflow"
+    },
+    {
+      "version": "00108",
+      "name": "production_go_live_enhancements"
+    },
+    {
+      "version": "00109",
+      "name": "real_outbound_supplier_notifications"
+    },
+    {
+      "version": "00110",
+      "name": "supplier_network_stub_toggle"
+    },
+    {
+      "version": "00111",
+      "name": "standardize_verified_domain_suppliers_and_logins"
+    },
+    {
+      "version": "00112",
+      "name": "attachment_metadata_protection"
+    },
+    {
+      "version": "00113",
+      "name": "seed_real_super_admin_bvnbasu"
+    },
+    {
+      "version": "00114",
+      "name": "purge_prohibited_terms_and_update_supplier_aliases"
+    },
+    {
+      "version": "00115",
+      "name": "seed_benchmark_org_and_fix_test_runner"
+    },
+    {
+      "version": "00116",
+      "name": "admin_mark_notifications_read"
+    },
+    {
+      "version": "00117",
+      "name": "canonical_identity_protected_views_and_enums"
+    },
+    {
+      "version": "00118",
+      "name": "whatsapp_password_reset"
+    },
+    {
+      "version": "00119",
+      "name": "demo_staging_discover_and_invite_overload"
+    },
+    {
+      "version": "00120",
+      "name": "restore_canonical_discovery_engine"
+    },
+    {
+      "version": "00121",
+      "name": "multi_user_org_hierarchy_and_context_switching"
+    },
+    {
+      "version": "00122",
+      "name": "signup_org_and_active_org_sync"
+    },
+    {
+      "version": "00123",
+      "name": "superadmin_pure_role_isolation"
+    },
+    {
+      "version": "00124",
+      "name": "clean_production_reset_and_purge"
+    },
+    {
+      "version": "00125",
+      "name": "production_preservation_and_staging_gate"
+    },
+    {
+      "version": "00126",
+      "name": "fix_admin_orders_join_duplication"
+    },
+    {
+      "version": "00127",
+      "name": "invite_org_member_rpc"
+    },
+    {
+      "version": "00128",
+      "name": "admin_mode_data_isolation"
+    },
+    {
+      "version": "00129",
+      "name": "fix_admin_purge_all_transactional_records"
+    },
+    {
+      "version": "00130",
+      "name": "clear_audit_logs_notifications_and_fix_toggle"
+    },
+    {
+      "version": "00131",
+      "name": "mode_aware_clear_audit_logs_and_notifications"
+    },
+    {
+      "version": "00132",
+      "name": "bulletproof_notifications_purge_and_mode_counts"
+    },
+    {
+      "version": "00133",
+      "name": "fix_admin_snapshots_schema_and_purge_rpc"
+    },
+    {
+      "version": "00134",
+      "name": "fix_audit_trail_and_notifications_mode_logging"
+    },
+    {
+      "version": "00135",
+      "name": "clean_ascii_notifications_and_rpc_templates"
+    },
+    {
+      "version": "00136",
+      "name": "fix_quotes_identity_protected_and_award_po_flow"
+    },
+    {
+      "version": "00137",
+      "name": "fix_discover_and_invite_anti_leak_policy"
+    },
+    {
+      "version": "00138",
+      "name": "seed_contact_supplier_logins"
+    },
+    {
+      "version": "00139",
+      "name": "admin_operations_and_troubleshooting_suite"
+    },
+    {
+      "version": "00140",
+      "name": "route_support_tickets_to_primary_admin"
+    },
+    {
+      "version": "00141",
+      "name": "user_profile_customization"
+    },
+    {
+      "version": "00142",
+      "name": "signup_gst_verification_sync"
+    },
+    {
+      "version": "00143",
+      "name": "set_admin_password"
+    },
+    {
+      "version": "00144",
+      "name": "prepaid_subscription_model"
+    },
+    {
+      "version": "00145",
+      "name": "enable_1month_subscription_from_registration"
+    },
+    {
+      "version": "00146",
+      "name": "update_nokia_to_basu_and_org_name_edit"
+    },
+    {
+      "version": "00147",
+      "name": "profile_credential_verification_otp"
+    },
+    {
+      "version": "00148",
+      "name": "strict_linear_15_step_procurement_pipeline"
+    },
+    {
+      "version": "00149",
+      "name": "admin_user_and_organization_bulk_management"
+    },
+    {
+      "version": "00150",
+      "name": "payment_webhook_verification"
+    },
+    {
+      "version": "00151",
+      "name": "atomic_award_and_po_transaction"
+    },
+    {
+      "version": "00152",
+      "name": "immutable_platform_admin_role"
+    },
+    {
+      "version": "00153",
+      "name": "api_rate_limiting"
+    },
+    {
+      "version": "00154",
+      "name": "analytics_indexes_and_materialized_views"
+    },
+    {
+      "version": "00155",
+      "name": "notification_retry_queue"
+    },
+    {
+      "version": "00156",
+      "name": "buyer_identity_reveal_on_po_issuance"
+    },
+    {
+      "version": "00157",
+      "name": "fix_auth_users_gotrue_null_tokens"
+    },
+    {
+      "version": "00158",
+      "name": "seed_buyer_account_bvnbasu_yahoo"
+    },
+    {
+      "version": "00159",
+      "name": "fix_admin_review_signup_request"
+    },
+    {
+      "version": "00160",
+      "name": "fix_lock_and_reveal_award_atomic_rfq_status_enum"
+    },
+    {
+      "version": "00161",
+      "name": "fix_admin_review_signup_request_robustness"
+    },
+    {
+      "version": "00162",
+      "name": "user_online_presence_and_heartbeat"
+    },
+    {
+      "version": "00163",
+      "name": "optimize_audit_events_rls_and_profile_lookup"
+    },
+    {
+      "version": "00164",
+      "name": "fix_supplier_profile_side_and_context"
+    },
+    {
+      "version": "00165",
+      "name": "fix_super_admin_presence_visibility_and_all_tabs"
+    },
+    {
+      "version": "00166",
+      "name": "buyer_auto_approval_and_free_rfq_credits"
+    },
+    {
+      "version": "00167",
+      "name": "phase5a_progressive_invoicing_and_line_items"
+    },
+    {
+      "version": "00168",
+      "name": "phase5b_statutory_gst_and_tax_splitting"
+    },
+    {
+      "version": "00169",
+      "name": "phase5c1_payment_allocations_and_partial_settlement"
+    },
+    {
+      "version": "00170",
+      "name": "phase5c1_h2_idempotency_and_atomic_rpc"
+    },
+    {
+      "version": "00171",
+      "name": "phase5c2_cumulative_reconciliation_and_po_settlement"
+    },
+    {
+      "version": "00172",
+      "name": "phase5c3_payment_vouchers_and_adjustments"
+    },
+    {
+      "version": "00173",
+      "name": "phase5c4_tds_change_orders_and_reconciliation"
+    },
+    {
+      "version": "00174",
+      "name": "phase5c5_settlement_execution_fees_and_reconciliation"
+    },
+    {
+      "version": "00175",
+      "name": "phase5c6_settlement_lifecycle_and_erp_manifests"
+    },
+    {
+      "version": "00176",
+      "name": "phase5d_double_entry_financial_ledger"
+    },
+    {
+      "version": "00177",
+      "name": "phase6_group1_database_hardening"
+    },
+    {
+      "version": "00178",
+      "name": "phase6_group2_edge_and_adapters"
+    },
+    {
+      "version": "00179",
+      "name": "phase6_group3_cross_cutting_remediation"
+    },
+    {
+      "version": "00180",
+      "name": "fix_signup_and_publish_audit"
+    },
+    {
+      "version": "00181",
+      "name": "phase6_group4_wallet_and_rewards"
+    },
+    {
+      "version": "00182",
+      "name": "phase6_group5_communications_milestones_disputes"
+    },
+    {
+      "version": "00183",
+      "name": "phase6_group6_vendor_intelligence_governance_contracts"
+    },
+    {
+      "version": "00184",
+      "name": "production_clean_state_reset_and_demo_isolation"
+    },
+    {
+      "version": "00185",
+      "name": "fix_list_org_members_joined_at"
+    },
+    {
+      "version": "00186",
+      "name": "fix_admin_user_deletion_and_purge"
+    },
+    {
+      "version": "00187",
+      "name": "dual_persona_portal_switching"
+    },
+    {
+      "version": "00188",
+      "name": "automatic_and_on_demand_simulated_quotes_generation"
+    },
+    {
+      "version": "00189",
+      "name": "clarification_workbench_enhancements"
+    },
+    {
+      "version": "00190",
+      "name": "buyer_org_governance_and_delegation"
+    },
+    {
+      "version": "00191",
+      "name": "dynamic_approval_routing_and_market_intelligence"
+    },
+    {
+      "version": "00192",
+      "name": "approval_execution_orchestration_and_award_gate"
+    },
+    {
+      "version": "00193",
+      "name": "fix_accept_delivery_inspection_po_completion"
+    },
+    {
+      "version": "00194",
+      "name": "supabase_data_api_table_grants_and_default_privileges"
+    },
+    {
+      "version": "00195",
+      "name": "fix_delivery_inspection_buyer_role_and_lifecycle"
+    },
+    {
+      "version": "00196",
+      "name": "buyer_identity_address_rwa_msme_and_supplier_award_onboarding"
+    },
+    {
+      "version": "00197",
+      "name": "universal_org_role_lifecycle_succession_and_audit"
+    },
+    {
+      "version": "00198",
+      "name": "harden_synthetic_quote_and_pilot_simulator_isolation"
+    },
+    {
+      "version": "00199",
+      "name": "harden_privileged_rpcs_supplier_masking_and_financial_enforcement"
+    },
+    {
+      "version": "00200",
+      "name": "scope_procurement_readers_and_recompute_invoice_on_tds_void"
+    },
+    {
+      "version": "00201",
+      "name": "scope_procurement_stage_events_audit_delete_and_support_tickets"
+    },
+    {
+      "version": "00202",
+      "name": "scope_invoice_work_order_updates_and_close_client_audit_notification_inserts"
+    },
+    {
+      "version": "00203",
+      "name": "restrict_ops_metadata_guard_profile_privileges_and_one_live_tds"
+    },
+    {
+      "version": "00204",
+      "name": "widen_synthetic_quote_scope_to_org_members"
+    },
+    {
+      "version": "00205",
+      "name": "force_default_profile_status_on_insert"
+    },
+    {
+      "version": "00206",
+      "name": "close_create_po_from_award_null_caller_gap"
+    },
+    {
+      "version": "00207",
+      "name": "prevent_signup_request_status_enumeration"
+    },
+    {
+      "version": "00208",
+      "name": "secure_otp_dispatch_and_hashing"
+    },
+    {
+      "version": "00209",
+      "name": "activation_token_and_guaranteed_notices"
+    },
+    {
+      "version": "00210",
+      "name": "fix_admin_review_signup_request_self_approval_bypass"
+    },
+    {
+      "version": "00211",
+      "name": "revoke_legacy_request_profile_credential_otp"
+    },
+    {
+      "version": "00212",
+      "name": "reconcile_supplier_verification_buyer_addresses_and_self_service_signup"
+    },
+    {
+      "version": "00213",
+      "name": "fix_invite_direct_supplier_email_channel"
+    },
+    {
+      "version": "00214",
+      "name": "demo_reset_reanchors_demo_rfq_deadlines"
+    },
+    {
+      "version": "00215",
+      "name": "withhold_direct_invite_link_for_existing_suppliers"
+    },
+    {
+      "version": "00216",
+      "name": "verified_remediation_p0_p1_security_integrity"
+    },
+    {
+      "version": "00217",
+      "name": "revoke_public_execute_default_privileges"
+    },
+    {
+      "version": "00218",
+      "name": "rfq_status_transition_whitelist"
+    },
+    {
+      "version": "00219",
+      "name": "guard_rfq_approval_stage_direct_write"
+    },
+    {
+      "version": "00220",
+      "name": "supplier_wallet_ledger_events"
+    },
+    {
+      "version": "00221",
+      "name": "otp_referral_bonus_profile_matrix"
+    },
+    {
+      "version": "00222",
+      "name": "otp_document_issuance_snapshots"
+    },
+    {
+      "version": "00223",
+      "name": "otp_taxonomy_03_buyer_taxonomy"
+    },
+    {
+      "version": "00224",
+      "name": "location_pin_coverage_authority"
+    },
+    {
+      "version": "00225",
+      "name": "rfq_pin_coverage_supplier_bridge"
+    },
+    {
+      "version": "00226",
+      "name": "supplier_provider_identities"
+    },
+    {
+      "version": "00227",
+      "name": "supplier_provider_identities_upsert_fix"
+    },
+    {
+      "version": "00228",
+      "name": "google_places_rfq_quality_gate"
+    },
+    {
+      "version": "00229",
+      "name": "google_places_drop_unreachable_sne"
+    },
+    {
+      "version": "00230",
+      "name": "ondc_discovery_observations"
+    },
+    {
+      "version": "00231",
+      "name": "ondc_discovery_dispatches"
+    },
+    {
+      "version": "00232",
+      "name": "discovery_source_separation"
+    },
+    {
+      "version": "00233",
+      "name": "platform_role_wallet_denial"
+    },
+    {
+      "version": "00234",
+      "name": "domestic_ro_primary_capabilities"
+    },
+    {
+      "version": "00235",
+      "name": "demo_staging_uses_otp_discovery"
+    },
+    {
+      "version": "00236",
+      "name": "supplier_discovery_trust_tier"
+    },
+    {
+      "version": "00237",
+      "name": "p1_msme_approval_stage_materialization"
+    },
+    {
+      "version": "00238",
+      "name": "p1_rwa_vote_authority_write_boundary"
+    },
+    {
+      "version": "00239",
+      "name": "p1_buyer_po_cancellation_authoritative_rpc"
+    },
+    {
+      "version": "00240",
+      "name": "p1_payment_plan_persisted_on_po"
+    },
+    {
+      "version": "00241",
+      "name": "p1_decision_receipt_truthfulness"
+    },
+    {
+      "version": "00242",
+      "name": "p1_authoritative_write_boundaries_and_msme_route_derivation"
+    },
+    {
+      "version": "00243",
+      "name": "p1_freeze_organization_classification_fields"
+    },
+    {
+      "version": "00244",
+      "name": "f07_reveal_award_verified_atomic_and_f08_founder_truth"
+    },
+    {
+      "version": "00245",
+      "name": "f13_po_gst_tax_accuracy"
+    },
+    {
+      "version": "00246",
+      "name": "buyer_signup_allowlist_and_reveal_po_guard"
+    },
+    {
+      "version": "00247",
+      "name": "revoke_record_verified_payment_client_execute"
+    },
+    {
+      "version": "00248",
+      "name": "yearly_plan_quarterly_rfq_bonus"
+    },
+    {
+      "version": "00249",
+      "name": "freeze_organization_subscription_entitlement_fields"
+    },
+    {
+      "version": "00250",
+      "name": "financial_authority_client_grant_boundary"
+    },
+    {
+      "version": "00251",
+      "name": "fresh_pin_coverage_otp_registered_fallback"
+    },
+    {
+      "version": "00252",
+      "name": "rwa_award_quorum_met"
+    },
+    {
+      "version": "00253",
+      "name": "cancelled_rfq_allowance_and_utgst"
+    },
+    {
+      "version": "00254",
+      "name": "00254_individual_signup_property_owner_catalog_and_rpc"
+    },
+    {
+      "version": "00255",
+      "name": "restore_requirement_categories_canonical"
+    },
+    {
+      "version": "00256",
+      "name": "standardize_auth_otp_eight_digits"
+    },
+    {
+      "version": "00257",
+      "name": "canonical_role_catalog_and_signup_provisioning"
+    },
+    {
+      "version": "00258",
+      "name": "rwa_committee_vote_authority_trigger_order"
+    },
+    {
+      "version": "00259",
+      "name": "document_reveal_integrity_digest_hmac_parity"
+    },
+    {
+      "version": "00260",
+      "name": "otp_deterministic_hmac_utf16_code_units"
+    },
+    {
+      "version": "00261",
+      "name": "admin_run_test_case_truthful_execution_and_auth"
+    },
+    {
+      "version": "00262",
+      "name": "admin_run_diagnostic_query_allowlist_hardening"
+    },
+    {
+      "version": "00263",
+      "name": "guard_profile_privileges_empty_role_bypass"
+    },
+    {
+      "version": "00264",
+      "name": "remediate_privileged_lifecycle_and_audit_contracts"
+    },
+    {
+      "version": "00265",
+      "name": "remediate_buyer_taxonomy_and_rls_integrity"
+    },
+    {
+      "version": "00266",
+      "name": null
+    },
+    {
+      "version": "00267",
+      "name": "authoritative_founder_and_admin_claims"
+    },
+    {
+      "version": "00268",
+      "name": "complete_nationwide_pincode_resolution"
+    },
+    {
+      "version": "00269",
+      "name": "harden_sourcing_mode_identity_reveal"
+    },
+    {
+      "version": "00270",
+      "name": "unsuccessful_rfq_retention_purge"
+    },
+    {
+      "version": "00271",
+      "name": "fix_supplier_messaging_channels_unique_constraint"
+    },
+    {
+      "version": "00272",
+      "name": "add_waha_to_messaging_provider_and_isolate_operator_phone"
+    },
+    {
+      "version": "00273",
+      "name": "persist_pin_coverage_in_canonical_suppliers"
+    },
+    {
+      "version": "00274",
+      "name": "location_pin_coverage_durable_recovery"
+    },
+    {
+      "version": "00275",
+      "name": "isolate_rfq_subcategory_recipients"
+    },
+    {
+      "version": "00276",
+      "name": "server_authoritative_legal_acceptance"
+    },
+    {
+      "version": "00277",
+      "name": "rwa_facility_manager_operational_only"
+    },
+    {
+      "version": "00278",
+      "name": "bind_verified_payments_to_authoritative_records"
+    },
+    {
+      "version": "00279",
+      "name": "legal_agreement_grace_and_database_enforcement"
+    },
+    {
+      "version": "00280",
+      "name": "canonical_subscription_pricing"
+    },
+    {
+      "version": "00281",
+      "name": "individual_personal_ownership_foundation"
+    },
+    {
+      "version": "00282",
+      "name": "individual_personal_procurement_lifecycle"
+    },
+    {
+      "version": "00283",
+      "name": "personal_document_issuance"
+    },
+    {
+      "version": "00284",
+      "name": "legal_gate_paths_and_personal_subscription_settlement"
+    },
+    {
+      "version": "00285",
+      "name": "personal_evaluation_and_canonical_checkout"
+    },
+    {
+      "version": "00286",
+      "name": "first_qualifying_quote_rfq_allowance"
+    },
+    {
+      "version": "00287",
+      "name": "buyer_address_book_invariants"
+    },
+    {
+      "version": "00288",
+      "name": "authenticated_quote_comparison_levels"
+    },
+    {
+      "version": "00289",
+      "name": "pilot_simulated_purchase_entitlements"
+    },
+    {
+      "version": "00290",
+      "name": "legal_enforcement_requires_approval"
+    },
+    {
+      "version": "00291",
+      "name": "legal_approval_evidence"
+    },
+    {
+      "version": "00292",
+      "name": "profile_delete_keeps_acceptance_archive"
+    },
+    {
+      "version": "00293",
+      "name": "legal_reviewer_must_be_the_session"
+    },
+    {
+      "version": "00294",
+      "name": "platform_admin_two_person_recovery"
+    },
+    {
+      "version": "00295",
+      "name": "legal_review_grant_authority_columns"
+    },
+    {
+      "version": "00296",
+      "name": "platform_admin_operator_context_alignment"
+    },
+    {
+      "version": "00297",
+      "name": "revoke_anon_my_role_context"
+    },
+    {
+      "version": "00298",
+      "name": null
+    },
+    {
+      "version": "00298_internal_rbac_and_portal_console_alignment",
+      "name": null
+    },
+    {
+      "version": "00299",
+      "name": null
+    },
+    {
+      "version": "00299_internal_procurement_hard_deny",
+      "name": null
+    },
+    {
+      "version": "00300",
+      "name": null
+    },
+    {
+      "version": "00300_internal_staff_referral_ledger",
+      "name": null
+    }
+  ],
+  "migration00212_219": {
+    "00212": "PRESENT",
+    "00213": "PRESENT",
+    "00214": "PRESENT",
+    "00215": "PRESENT",
+    "00216": "PRESENT",
+    "00217": "PRESENT",
+    "00218": "PRESENT",
+    "00219": "PRESENT"
+  },
+  "migrationVersionStyle": [
+    {
+      "version": "00001",
+      "name": "enums"
+    },
+    {
+      "version": "00002",
+      "name": "core_tables"
+    },
+    {
+      "version": "00003",
+      "name": "auth_helpers"
+    },
+    {
+      "version": "00004",
+      "name": "rls_policies"
+    },
+    {
+      "version": "00005",
+      "name": "blind_views"
+    }
+  ],
+  "otpSchemaMigrations": [
+    {
+      "version": "00298_internal_rbac_and_portal_console_alignment.sql",
+      "applied_at": "2026-10-18T12:15:39.966Z"
+    },
+    {
+      "version": "00299_internal_procurement_hard_deny.sql",
+      "applied_at": "2026-10-18T12:15:41.032Z"
+    },
+    {
+      "version": "00300_internal_staff_referral_ledger.sql",
+      "applied_at": "2026-10-18T12:15:41.809Z"
+    }
+  ],
+  "functionsPresent": [
+    "private.get_profile_id()",
+    "private.guard_rfq_approval_stage_direct_write()",
+    "private.guard_rfq_status_transition()",
+    "private.is_platform_admin()",
+    "private.rfq_status_transition_allowed(p_old rfq_status, p_new rfq_status)",
+    "private.subscription_wallet_credit_inr(p_tier text, p_cycle text)",
+    "public.apply_wallet_credits_to_subscription_atomic(p_org_id uuid, p_tier text, p_cycle text, p_credits_to_apply numeric, p_idempotency_key text)",
+    "public.appoint_org_role_atomic(p_organization_id uuid, p_person_id uuid, p_role_id text, p_role_name text, p_role_category text, p_responsibility_scope text, p_authority_scope jsonb, p_effective_from timestamp with time zone, p_effective_to timestamp with time zone, p_appointment_event text, p_term_duration_days integer)",
+    "public.approve_milestone_inspection_atomic(p_inspection_id uuid, p_approver_id uuid, p_digital_signoff_hash text, p_notes text)",
+    "public.cast_committee_vote(p_rfq_id uuid, p_recommended_quote_id uuid, p_choice vote_choice, p_comment text)",
+    "public.create_purchase_order_from_award(p_award_id uuid)",
+    "public.credit_buyer_settlement_reward_atomic(p_org_id uuid, p_platform_fee_tx_id uuid, p_settlement_id uuid, p_base_amount numeric, p_fee_rate numeric, p_reward_share_rate numeric, p_idempotency_key text)",
+    "public.lock_and_reveal_award_atomic(p_rfq_id uuid, p_quote_id uuid, p_justification text, p_auto_reveal boolean)",
+    "public.record_invoice_payment_atomic(p_invoice_id uuid, p_amount numeric, p_method payment_method, p_reference text, p_currency text, p_purchase_order_id uuid, p_notes text, p_idempotency_key text)",
+    "public.reject_milestone_inspection_atomic(p_inspection_id uuid, p_rejector_id uuid, p_rework_reason text, p_notes text)",
+    "public.reveal_award(p_rfq_id uuid)",
+    "public.submit_rfq_tier_approval_atomic(p_rfq_id uuid, p_stage_order integer, p_decision text, p_comments text, p_signature_hash text)",
+    "public.submit_rfq_tier_approval_atomic(p_rfq_id uuid, p_tier_level text, p_notes text, p_delegation_id uuid)"
+  ],
+  "functionMarkerHits": {
+    "private.get_profile_id": [
+      "get_profile_id"
+    ],
+    "private.guard_rfq_status_transition": [
+      "RFQ-STATUS-TRANSITION",
+      "RFQ-IMMUTABLE"
+    ],
+    "private.subscription_wallet_credit_inr": [
+      "subscription_wallet_credit"
+    ],
+    "public.apply_wallet_credits_to_subscription_atomic": [
+      "get_profile_id",
+      "subscription_wallet_credit"
+    ],
+    "public.appoint_org_role_atomic": [
+      "get_profile_id"
+    ],
+    "public.approve_milestone_inspection_atomic": [
+      "get_profile_id"
+    ],
+    "public.cast_committee_vote": [
+      "DECLARED_CONFLICT",
+      "get_profile_id"
+    ],
+    "public.credit_buyer_settlement_reward_atomic": [
+      "WALLET-REWARD-FEE-REQUIRED",
+      "get_profile_id"
+    ],
+    "public.lock_and_reveal_award_atomic": [
+      "DECLARED_CONFLICT",
+      "unconflicted",
+      "get_profile_id"
+    ],
+    "public.record_invoice_payment_atomic": [
+      "get_profile_id"
+    ],
+    "public.reveal_award": [
+      "get_profile_id"
+    ],
+    "public.submit_rfq_tier_approval_atomic": [
+      "get_profile_id"
+    ]
+  },
+  "functionSecuritySummary": {
+    "private.get_profile_id": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id"
+    ],
+    "private.guard_rfq_approval_stage_direct_write": [
+      "SECURITY_DEFINER",
+      "references_is_platform_admin"
+    ],
+    "private.guard_rfq_status_transition": [
+      "SECURITY_DEFINER",
+      "references_is_platform_admin"
+    ],
+    "private.is_platform_admin": [
+      "SECURITY_DEFINER",
+      "references_is_platform_admin"
+    ],
+    "private.subscription_wallet_credit_inr": [
+      "SECURITY_DEFINER"
+    ],
+    "public.apply_wallet_credits_to_subscription_atomic": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id",
+      "references_is_platform_admin"
+    ],
+    "public.appoint_org_role_atomic": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id",
+      "references_is_platform_admin"
+    ],
+    "public.approve_milestone_inspection_atomic": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id",
+      "references_is_platform_admin"
+    ],
+    "public.cast_committee_vote": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id"
+    ],
+    "public.create_purchase_order_from_award": [
+      "SECURITY_DEFINER",
+      "references_is_platform_admin"
+    ],
+    "public.credit_buyer_settlement_reward_atomic": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id",
+      "references_is_platform_admin"
+    ],
+    "public.lock_and_reveal_award_atomic": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id",
+      "references_is_platform_admin"
+    ],
+    "public.record_invoice_payment_atomic": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id",
+      "references_is_platform_admin"
+    ],
+    "public.reject_milestone_inspection_atomic": [
+      "SECURITY_DEFINER"
+    ],
+    "public.reveal_award": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id",
+      "references_is_platform_admin"
+    ],
+    "public.submit_rfq_tier_approval_atomic": [
+      "SECURITY_DEFINER",
+      "uses_get_profile_id",
+      "references_is_platform_admin"
+    ]
+  },
+  "privileges": [
+    {
+      "routine_schema": "public",
+      "routine_name": "authorize_staff_referral_achievement",
+      "grantee": "PUBLIC",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "cancel_staff_referral_payout",
+      "grantee": "PUBLIC",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "infer_indian_state_from_pincode",
+      "grantee": "PUBLIC",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "process_staff_referral_payout",
+      "grantee": "PUBLIC",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "protect_issued_document_snapshot_payload",
+      "grantee": "PUBLIC",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reject_staff_referral_achievement",
+      "grantee": "PUBLIC",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_issue_tax_invoice_snapshots",
+      "grantee": "PUBLIC",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "waive_rfq_quote_quorum",
+      "grantee": "PUBLIC",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "classify_requirement_text",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "complete_supplier_onboarding_atomic",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "current_legal_snapshot_text",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "discover_and_invite_for_rfq",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_maintenance_status",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "infer_indian_state_from_pincode",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "messaging_quote_context",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "platform_heartbeat",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "protect_issued_document_snapshot_payload",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "purge_expired_unsuccessful_rfqs",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "redeem_supplier_magic_link",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "request_whatsapp_password_reset",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "served_cities",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "service_categories",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_messaging_quote",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_signup_request",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_issue_tax_invoice_snapshots",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_profile_verification_otp",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_whatsapp_password_reset",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "waive_rfq_quote_quorum",
+      "grantee": "anon",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "accept_delivery_inspection",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "accept_legal_agreement",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "accept_organization_invitation_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "acknowledge_po_platform_fee_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "activate_legal_enforcement",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "add_settlement_exception_event_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_assign_profile_role",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_block_organizations",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_block_users",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_delete_organizations",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_delete_users",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_unblock_organizations",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_unblock_users",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bypass_approval_gate",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_clear_audit_logs_and_notifications",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_clear_audit_logs_and_notifications",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_clear_notifications",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_clear_notifications",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_create_db_backup",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_execute_service_action",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_fix_buyer_issue",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_fix_seller_issue",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_force_transition_order_state",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_generate_proactive_maintenance_alerts",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_all_notifications",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_all_notifications",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_audit_trail",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_db_backups",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_entity_audit_trail",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_live_transactions",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_seller_orders",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_signup_requests",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_support_tickets",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_system_alerts",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_system_health",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_system_mode",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_users_and_organizations",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_list_duplicate_live_tds",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_manage_announcement",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_mark_all_notifications_read",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_mark_notification_read",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_purge_all_transactional_records",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_purge_all_transactional_records",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_resolve_support_ticket",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_restore_db_backup",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_retry_invoice_payment_webhook",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_review_signup_request",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_run_buyer_diagnostics",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_run_diagnostic_query",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_run_seller_diagnostics",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_run_test_case",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_search_entities",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_search_entities",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_simulate_po_acceptance",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_toggle_demo_mode",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_toggle_entity_gst_compliance",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_toggle_maintenance_mode",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_toggle_supplier_network_stub",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_unblock_sealed_quote",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "advance_procurement_step",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "advance_rfq_phases",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "allocate_advance_payment_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "allocate_advance_payment_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "apply_platform_fee_deduction_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "apply_tds_withholding_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "apply_wallet_credits_to_subscription_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "appoint_org_role_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "approve_milestone_inspection_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "approve_platform_privilege",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "assert_production_data_integrity",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "assign_my_role",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "authorize_staff_referral_achievement",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "auto_submit_pilot_quotes",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "award_runner_up_quote",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "backfill_taxonomy",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "cancel_purchase_order_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "cancel_staff_referral_payout",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "cast_committee_vote",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "check_and_increment_rate_limit",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "check_supplier_award_eligibility_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "classify_requirement_text",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "clear_all_transactional_data",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "close_accounting_period_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "close_clarification_for_evaluation",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "close_initial_quoting",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "commit_po_change_order_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "complete_supplier_onboarding_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "compute_decision_receipt_digest_v1",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "compute_procurement_a4_digest_v1",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "compute_quote_evaluations",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "compute_supplier_scorecard_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "configure_approval_policy_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "confirm_attachment_upload",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "confirm_intent_to_award_and_unmask",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_attachment_slot",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_delegation_proxy_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_organization_invitation_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_purchase_order_from_award",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_support_ticket",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_system_notification",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "current_legal_snapshot_text",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "deactivate_buyer_address_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "declared_payment_splits",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_generate_quotes",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_generate_votes",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_may_simulate_messaging",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_messaging_outbox",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_messaging_recipients",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_messaging_sender",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_messaging_thread",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_record_reply",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_reset",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_send_notification",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_simulate_supplier_message",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_stage_scenario",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_status",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "discover_and_invite_for_rfq",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "dispatch_notification_event_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "ensure_buyer_organization",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "escalate_dispute_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "evaluate_and_stamp_approval_route_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "execute_settlement_reconciliation_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "freeze_invoice_tax_snapshot",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "generate_procurement_contract_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_active_announcements",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_active_org_role_holder",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_buyer_addresses",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_buyer_pilot_allowance",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_canonical_subscription_price",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_current_procurement_step",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_financial_observability_summary",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_founder_executive_metrics",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_founder_google_places_budget_today",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_ledger_balance_summary",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_maintenance_status",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_my_profile",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_org_role_history",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_organization_spend_analytics",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_organization_subscription",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_organization_wallet",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_po_settlement_summary",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_purchase_order_invoicing_summary",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_vendor_settlement_statement",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_wallet_transactions",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "grant_legal_reviewer",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "guard_platform_fee_tx_immutability",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "guard_settlement_exceptions_immutability",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "individual_ownership_migration_report",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "infer_indian_state_from_pincode",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "ingest_supplier_message",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "initialize_standard_chart_of_accounts_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "initialize_work_order",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "invalidate_bank_reconciliation_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "invite_direct_supplier",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "invite_org_member",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "issue_credit_debit_note_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "issue_document_snapshot_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "issue_supplier_magic_link",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "list_org_delegations",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "list_org_invitations",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "list_org_members",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "lock_and_reveal_award_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "lock_award",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "log_client_audit_event",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "lookup_market_intelligence",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "mark_my_notifications_read",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "messaging_quote_context",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "my_demo_context",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "my_legal_acceptance_status",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "my_role_context",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_committee_assignment",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_committee_voted",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_invoice_submitted",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_payment_recorded",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_po_accepted",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_po_issued",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_quote_submitted",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_rfq_invitation",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_unawarded_suppliers",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_unawarded_suppliers_on_award",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_unawarded_suppliers_on_po",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_work_order_progress",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "open_dispute_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "organization_rfq_quote_counts",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "platform_admin_set_organization_subscription_status",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "platform_heartbeat",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "post_broadcast_clarification_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "post_journal_entry_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "preview_discovery_reach",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "process_pilot_simulated_purchase",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "process_rfq_cancellation",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "process_staff_referral_payout",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "process_subscription_payment",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "protect_invoice_line_items_immutability",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "protect_issued_document_snapshot_payload",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "protect_payment_financial_fields",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "publish_requirement",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "purge_expired_unsuccessful_rfqs",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reconcile_bank_utr_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_audit_ping_response",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_buyer_performance_review",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_erp_export_manifest_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_invoice_payment_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_legal_decision",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_notification_delivery",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_notification_failure_with_backoff",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_org_action_audit_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_outbound_message",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_supplier_notification",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "redact_message_body",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "redeem_supplier_magic_link",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "refresh_supplier_performance",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "register_legal_snapshot",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reject_milestone_inspection_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reject_staff_referral_achievement",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "remove_org_member",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "renew_or_rotate_org_role_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reopen_accounting_period_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "request_platform_privilege",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "request_profile_credential_otp",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "request_whatsapp_password_reset",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "resolve_declared_payment_structure",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "resolve_dispute_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "resolve_settlement_exception_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reveal_award",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reverse_journal_entry_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reverse_payment_allocation_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "review_signup_request",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "revise_supplier_quote_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "revoke_delegation_proxy_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "revoke_legal_reviewer",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "revoke_org_role_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "revoke_organization_invitation_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "rfq_by_public_ref",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "rfq_phase",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "rfq_voting_summary",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "rls_auto_enable",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "role_catalog",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "run_proactive_maintenance_scan",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "seed_simulated_quotes_for_rfq",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "served_cities",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "service_categories",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "set_organization_credentials",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "set_rfq_evaluation_weights",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "set_rfq_schedule",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "set_updated_at",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sign_commercial_commitment_and_unmask",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sign_procurement_contract_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "subcategory_attribute_schema",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_messaging_quote",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_milestone_inspection_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_rfq_tier_approval_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_rfq_tier_approval_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_signup_request",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_supplier_quote_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "subscription_pricing_report",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "suggest_evaluation_weights",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "supplier_message_queue",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "supplier_rfq_message_payload",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "switch_active_organization",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "switch_active_role",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "switch_portal_side",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sync_invoice_payment_state",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sync_milestone_invoiced_state",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sync_po_settlement_reconciliations_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "transfer_org_role_succession_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_fn_enforce_accounting_period_status",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_fn_protect_posted_journal_immutability",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_fn_validate_journal_lines_account_active",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_issue_tax_invoice_snapshots",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trigger_process_attachment",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "unlock_award_decision",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_my_organization_name",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_my_profile",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_notification_preferences_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_team_member_role_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_user_heartbeat",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "upsert_buyer_address_atomic",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "validate_invoice_allocation_integrity",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "validate_payment_allocation_integrity",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "validate_po_status_transition",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_and_update_profile_credential",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_issued_document_digest",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_org_authority_at_time",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_profile_verification_otp",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_supplier_gstin",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_whatsapp_password_reset",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "waive_rfq_quote_quorum",
+      "grantee": "authenticated",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "accept_delivery_inspection",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "accept_ondc_discovery_on_search",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "accept_organization_invitation_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "acknowledge_po_platform_fee_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "add_settlement_exception_event_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_assign_profile_role",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_block_organizations",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_block_users",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_delete_organizations",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_delete_users",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_unblock_organizations",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bulk_unblock_users",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_bypass_approval_gate",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_clear_audit_logs_and_notifications",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_clear_audit_logs_and_notifications",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_clear_notifications",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_clear_notifications",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_create_db_backup",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_execute_service_action",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_fix_buyer_issue",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_fix_seller_issue",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_force_transition_order_state",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_generate_proactive_maintenance_alerts",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_all_notifications",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_all_notifications",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_audit_trail",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_db_backups",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_entity_audit_trail",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_live_transactions",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_seller_orders",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_signup_requests",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_support_tickets",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_system_alerts",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_system_health",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_system_mode",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_get_users_and_organizations",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_list_duplicate_live_tds",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_manage_announcement",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_mark_all_notifications_read",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_mark_notification_read",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_purge_all_transactional_records",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_purge_all_transactional_records",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_resolve_support_ticket",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_restore_db_backup",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_retry_invoice_payment_webhook",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_review_signup_request",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_run_buyer_diagnostics",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_run_diagnostic_query",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_run_seller_diagnostics",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_run_test_case",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_search_entities",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_search_entities",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_simulate_po_acceptance",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_toggle_demo_mode",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_toggle_entity_gst_compliance",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_toggle_maintenance_mode",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_toggle_supplier_network_stub",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "admin_unblock_sealed_quote",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "advance_ondc_discovery_dispatch",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "advance_procurement_step",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "advance_rfq_phases",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "allocate_advance_payment_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "allocate_advance_payment_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "apply_platform_fee_deduction_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "apply_tds_withholding_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "apply_wallet_credits_to_subscription_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "appoint_org_role_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "approve_milestone_inspection_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "assert_production_data_integrity",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "assign_my_role",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "authorize_staff_referral_achievement",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "auto_submit_pilot_quotes",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "award_runner_up_quote",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "backfill_taxonomy",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "cancel_purchase_order_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "cancel_staff_referral_payout",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "cast_committee_vote",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "check_and_increment_rate_limit",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "check_supplier_award_eligibility_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "classify_requirement_text",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "clear_all_transactional_data",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "close_accounting_period_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "close_clarification_for_evaluation",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "close_initial_quoting",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "commit_po_change_order_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "complete_supplier_onboarding_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "compute_decision_receipt_digest_v1",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "compute_procurement_a4_digest_v1",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "compute_quote_evaluations",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "compute_supplier_scorecard_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "configure_approval_policy_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "confirm_attachment_upload",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "confirm_intent_to_award_and_unmask",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_attachment_slot",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_delegation_proxy_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_organization_invitation_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_purchase_order_from_award",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_support_ticket",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "create_system_notification",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "credit_buyer_settlement_reward_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "credit_otp_referral_bonus_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "credit_supplier_wallet_event_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "current_legal_snapshot_text",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "deactivate_buyer_address_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "declared_payment_splits",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_generate_quotes",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_generate_votes",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_may_simulate_messaging",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_messaging_outbox",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_messaging_recipients",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_messaging_sender",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_messaging_thread",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_record_reply",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_reset",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_send_notification",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_simulate_supplier_message",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_stage_scenario",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "demo_status",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "discover_and_invite_for_rfq",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "dispatch_notification_event_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "ensure_buyer_organization",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "escalate_dispute_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "evaluate_and_stamp_approval_route_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "execute_settlement_reconciliation_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "find_ondc_discovery_dispatch",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "freeze_invoice_tax_snapshot",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "generate_procurement_contract_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_active_announcements",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_active_org_role_holder",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_buyer_addresses",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_buyer_pilot_allowance",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_canonical_subscription_price",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_current_procurement_step",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_financial_observability_summary",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_founder_executive_metrics",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_founder_google_places_budget_today",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_ledger_balance_summary",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_maintenance_status",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_my_profile",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_org_role_history",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_organization_spend_analytics",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_organization_subscription",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_organization_wallet",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_po_settlement_summary",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_purchase_order_invoicing_summary",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_vendor_settlement_statement",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "get_wallet_transactions",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "guard_platform_fee_tx_immutability",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "guard_settlement_exceptions_immutability",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "individual_ownership_migration_report",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "infer_indian_state_from_pincode",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "ingest_supplier_message",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "initialize_standard_chart_of_accounts_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "initialize_work_order",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "insert_ondc_discovery_dispatch",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "invalidate_bank_reconciliation_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "invite_direct_supplier",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "invite_org_member",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "issue_activation_credential_otp",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "issue_credit_debit_note_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "issue_document_snapshot_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "issue_profile_credential_otp",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "issue_supplier_magic_link",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "list_org_delegations",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "list_org_invitations",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "list_org_members",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_assert_generation_lock",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_assess",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_build_scope_key",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_complete_generation",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_drop_unreachable",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_ensure_scope_row",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_list_due_retries",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_list_recovery_jobs",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_list_suppliers",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_reserve_google_calls",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_retry_generation",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_try_acquire_generation",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "location_pin_coverage_upsert_suppliers",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "lock_and_reveal_award_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "lock_award",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "log_client_audit_event",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "lookup_market_intelligence",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "mark_my_notifications_read",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "messaging_quote_context",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "my_demo_context",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "my_role_context",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_committee_assignment",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_committee_voted",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_invoice_submitted",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_payment_recorded",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_po_accepted",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_po_issued",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_quote_submitted",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_rfq_invitation",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_unawarded_suppliers",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_unawarded_suppliers_on_award",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_unawarded_suppliers_on_po",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "notify_work_order_progress",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "open_dispute_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "organization_rfq_quote_counts",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "platform_admin_set_organization_subscription_status",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "platform_heartbeat",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "post_broadcast_clarification_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "post_journal_entry_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "preview_discovery_reach",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "process_pilot_simulated_purchase",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "process_rfq_cancellation",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "process_staff_referral_payout",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "process_subscription_payment",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "protect_invoice_line_items_immutability",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "protect_issued_document_snapshot_payload",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "protect_payment_financial_fields",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "publish_requirement",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "purge_expired_unsuccessful_rfqs",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reconcile_bank_utr_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_audit_ping_response",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_buyer_performance_review",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_erp_export_manifest_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_invoice_payment_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_notification_delivery",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_notification_failure_with_backoff",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_org_action_audit_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_outbound_message",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_supplier_notification",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_verified_payment",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "record_verified_personal_subscription_payment",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "redact_message_body",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "redeem_supplier_magic_link",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "refresh_supplier_performance",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reject_milestone_inspection_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reject_staff_referral_achievement",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "remove_org_member",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "renew_or_rotate_org_role_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reopen_accounting_period_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "request_profile_credential_otp",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "request_profile_verification_otp",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "request_whatsapp_password_reset",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "resolve_declared_payment_structure",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "resolve_dispute_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "resolve_settlement_exception_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reveal_award",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reverse_journal_entry_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "reverse_payment_allocation_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "review_signup_request",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "revise_supplier_quote_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "revoke_delegation_proxy_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "revoke_org_role_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "revoke_organization_invitation_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "rfq_by_public_ref",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "rfq_phase",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "rfq_voting_summary",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "rls_auto_enable",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "role_catalog",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "run_proactive_maintenance_scan",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "seed_simulated_quotes_for_rfq",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "served_cities",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "service_categories",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "set_organization_credentials",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "set_rfq_evaluation_weights",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "set_rfq_schedule",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "set_updated_at",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sign_commercial_commitment_and_unmask",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sign_procurement_contract_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "subcategory_attribute_schema",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_messaging_quote",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_milestone_inspection_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_rfq_tier_approval_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_rfq_tier_approval_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_signup_request",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "submit_supplier_quote_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "subscription_pricing_report",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "suggest_evaluation_weights",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "supplier_message_queue",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "supplier_rfq_message_payload",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "switch_active_organization",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "switch_active_role",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "switch_portal_side",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sync_invoice_payment_state",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sync_milestone_invoiced_state",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "sync_po_settlement_reconciliations_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "transfer_org_role_succession_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_fn_enforce_accounting_period_status",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_fn_protect_posted_journal_immutability",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_fn_validate_journal_lines_account_active",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trg_issue_tax_invoice_snapshots",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "trigger_process_attachment",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "unlock_award_decision",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_my_organization_name",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_my_profile",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_notification_preferences_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_team_member_role_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "update_user_heartbeat",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "upsert_buyer_address_atomic",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "validate_invoice_allocation_integrity",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "validate_payment_allocation_integrity",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "validate_po_status_transition",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_and_update_profile_credential",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_issued_document_digest",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_org_authority_at_time",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_profile_verification_otp",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_supplier_gstin",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "verify_whatsapp_password_reset",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "routine_schema": "public",
+      "routine_name": "waive_rfq_quote_quorum",
+      "grantee": "service_role",
+      "privilege_type": "EXECUTE"
+    }
+  ],
+  "publicExecuteCount": 8,
+  "anonExecuteCount": 20,
+  "anonOrPublicRoutines": [
+    "PUBLIC:authorize_staff_referral_achievement",
+    "PUBLIC:cancel_staff_referral_payout",
+    "PUBLIC:infer_indian_state_from_pincode",
+    "PUBLIC:process_staff_referral_payout",
+    "PUBLIC:protect_issued_document_snapshot_payload",
+    "PUBLIC:reject_staff_referral_achievement",
+    "PUBLIC:trg_issue_tax_invoice_snapshots",
+    "PUBLIC:waive_rfq_quote_quorum",
+    "anon:classify_requirement_text",
+    "anon:complete_supplier_onboarding_atomic",
+    "anon:current_legal_snapshot_text",
+    "anon:discover_and_invite_for_rfq",
+    "anon:get_maintenance_status",
+    "anon:infer_indian_state_from_pincode",
+    "anon:messaging_quote_context",
+    "anon:platform_heartbeat",
+    "anon:protect_issued_document_snapshot_payload",
+    "anon:purge_expired_unsuccessful_rfqs",
+    "anon:redeem_supplier_magic_link",
+    "anon:request_whatsapp_password_reset",
+    "anon:served_cities",
+    "anon:service_categories",
+    "anon:submit_messaging_quote",
+    "anon:submit_signup_request",
+    "anon:trg_issue_tax_invoice_snapshots",
+    "anon:verify_profile_verification_otp",
+    "anon:verify_whatsapp_password_reset",
+    "anon:waive_rfq_quote_quorum"
+  ],
+  "sensitiveAnonExecute": [],
+  "triggers": [
+    {
+      "name": "approval_policies_updated_at",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER approval_policies_updated_at BEFORE UPDATE ON approval_policies FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "invoice_line_items_updated_at",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER invoice_line_items_updated_at BEFORE UPDATE ON invoice_line_items FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "invoices_updated_at",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER invoices_updated_at BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "legal_agreement_approvals_guard",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER legal_agreement_approvals_guard BEFORE INSERT OR DELETE OR UPDATE ON legal_agreement_approvals FOR EACH ROW EXECUTE FUNCTION private.guard_legal_agreement_approvals()"
+    },
+    {
+      "name": "rfqs_link_attachments",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER rfqs_link_attachments AFTER INSERT ON rfqs FOR EACH ROW EXECUTE FUNCTION private.attachments_link_rfq()"
+    },
+    {
+      "name": "rfqs_no_rehide",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER rfqs_no_rehide BEFORE UPDATE ON rfqs FOR EACH ROW EXECUTE FUNCTION private.prevent_rehide()"
+    },
+    {
+      "name": "rfqs_phase_window",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER rfqs_phase_window BEFORE INSERT OR UPDATE ON rfqs FOR EACH ROW EXECUTE FUNCTION private.sync_rfq_phase_window()"
+    },
+    {
+      "name": "rfqs_public_ref",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER rfqs_public_ref BEFORE INSERT ON rfqs FOR EACH ROW EXECUTE FUNCTION private.assign_public_ref()"
+    },
+    {
+      "name": "rfqs_role_permission",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER rfqs_role_permission BEFORE INSERT ON rfqs FOR EACH ROW EXECUTE FUNCTION private.enforce_role_permission('PROPOSE')"
+    },
+    {
+      "name": "rfqs_updated_at",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER rfqs_updated_at BEFORE UPDATE ON rfqs FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "trg_00_deny_internal_invoices_write",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_00_deny_internal_invoices_write BEFORE INSERT OR UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION private.trg_deny_internal_invoices_write()"
+    },
+    {
+      "name": "trg_00_deny_internal_rfqs_write",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_00_deny_internal_rfqs_write BEFORE INSERT OR UPDATE ON rfqs FOR EACH ROW EXECUTE FUNCTION private.trg_deny_internal_rfqs_write()"
+    },
+    {
+      "name": "trg_a_apply_purchased_rfq_credit",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_a_apply_purchased_rfq_credit AFTER INSERT ON quote_versions FOR EACH ROW EXECUTE FUNCTION private.trg_apply_purchased_rfq_credit()"
+    },
+    {
+      "name": "trg_aa_guard_invoice_linkage",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_aa_guard_invoice_linkage BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION private.guard_invoice_linkage()"
+    },
+    {
+      "name": "trg_classify_rfq_allowance_consumption",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_classify_rfq_allowance_consumption BEFORE INSERT ON rfq_allowance_consumptions FOR EACH ROW EXECUTE FUNCTION private.classify_rfq_allowance_consumption()"
+    },
+    {
+      "name": "trg_enforce_invoice_tds_balance",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_enforce_invoice_tds_balance BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION private.enforce_invoice_tds_balance()"
+    },
+    {
+      "name": "trg_enforce_one_live_tds_per_invoice",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_enforce_one_live_tds_per_invoice BEFORE INSERT OR UPDATE OF status, invoice_id ON tds_deductions FOR EACH ROW EXECUTE FUNCTION private.enforce_one_live_tds_per_invoice()"
+    },
+    {
+      "name": "trg_enforce_pilot_rfq_allowance",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_enforce_pilot_rfq_allowance BEFORE INSERT ON rfqs FOR EACH ROW EXECUTE FUNCTION private.enforce_pilot_rfq_allowance()"
+    },
+    {
+      "name": "trg_freeze_invoice_tax_snapshot",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_freeze_invoice_tax_snapshot BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION freeze_invoice_tax_snapshot()"
+    },
+    {
+      "name": "trg_guard_award_covers_approval_route",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_guard_award_covers_approval_route BEFORE INSERT ON awards FOR EACH ROW EXECUTE FUNCTION private.guard_award_covers_approval_route()"
+    },
+    {
+      "name": "trg_guard_award_reassign_covers_approval_route",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_guard_award_reassign_covers_approval_route BEFORE UPDATE OF quote_id ON awards FOR EACH ROW WHEN (old.quote_id IS DISTINCT FROM new.quote_id) EXECUTE FUNCTION private.guard_award_covers_approval_route()"
+    },
+    {
+      "name": "trg_guard_invoice_supplier_status",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_guard_invoice_supplier_status BEFORE UPDATE OF status ON invoices FOR EACH ROW EXECUTE FUNCTION private.guard_invoice_supplier_status()"
+    },
+    {
+      "name": "trg_guard_purchased_rfq_entitlement",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_guard_purchased_rfq_entitlement BEFORE UPDATE OF purchased_rfq_credits, purchased_rfq_credits_expires_at ON personal_subscriptions FOR EACH ROW EXECUTE FUNCTION private.guard_purchased_rfq_entitlement_fields()"
+    },
+    {
+      "name": "trg_guard_purchased_rfq_entitlement",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_guard_purchased_rfq_entitlement BEFORE UPDATE OF purchased_rfq_credits, purchased_rfq_credits_expires_at ON organizations FOR EACH ROW EXECUTE FUNCTION private.guard_purchased_rfq_entitlement_fields()"
+    },
+    {
+      "name": "trg_guard_rfq_approval_stage_write",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": true,
+      "defSnippet": "CREATE TRIGGER trg_guard_rfq_approval_stage_write BEFORE INSERT OR DELETE OR UPDATE ON rfq_approval_stages FOR EACH ROW EXECUTE FUNCTION private.guard_rfq_approval_stage_direct_write()"
+    },
+    {
+      "name": "trg_guard_rfq_status",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_guard_rfq_status BEFORE UPDATE ON rfqs FOR EACH ROW EXECUTE FUNCTION private.guard_rfq_status_transition()"
+    },
+    {
+      "name": "trg_init_invoice_balance_due",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_init_invoice_balance_due BEFORE INSERT ON invoices FOR EACH ROW EXECUTE FUNCTION private.init_invoice_balance_due()"
+    },
+    {
+      "name": "trg_issue_tax_invoice_document_snapshots",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_issue_tax_invoice_document_snapshots AFTER UPDATE OF status ON invoices FOR EACH ROW EXECUTE FUNCTION trg_issue_tax_invoice_snapshots()"
+    },
+    {
+      "name": "trg_notify_invoice_submitted",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_notify_invoice_submitted AFTER INSERT OR UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION notify_invoice_submitted()"
+    },
+    {
+      "name": "trg_notify_rfq_invitation",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_notify_rfq_invitation AFTER INSERT OR UPDATE OF status ON rfq_invitations FOR EACH ROW EXECUTE FUNCTION notify_rfq_invitation()"
+    },
+    {
+      "name": "trg_protect_invoice_line_items",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_protect_invoice_line_items BEFORE INSERT OR DELETE OR UPDATE ON invoice_line_items FOR EACH ROW EXECUTE FUNCTION protect_invoice_line_items_immutability()"
+    },
+    {
+      "name": "trg_rfq_stages_updated_at",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": true,
+      "defSnippet": "CREATE TRIGGER trg_rfq_stages_updated_at BEFORE UPDATE ON rfq_approval_stages FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "trg_snapshot_primary_buyer_address_for_rfq",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_snapshot_primary_buyer_address_for_rfq BEFORE INSERT ON rfqs FOR EACH ROW EXECUTE FUNCTION private.snapshot_primary_buyer_address_for_rfq()"
+    },
+    {
+      "name": "trg_sync_invoice_payment_state",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_sync_invoice_payment_state AFTER INSERT OR DELETE OR UPDATE ON payment_allocations FOR EACH ROW EXECUTE FUNCTION sync_invoice_payment_state()"
+    },
+    {
+      "name": "trg_sync_milestone_invoiced_state",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_sync_milestone_invoiced_state AFTER INSERT OR DELETE OR UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION sync_milestone_invoiced_state()"
+    },
+    {
+      "name": "trg_touch_invoice_after_tds_change",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_touch_invoice_after_tds_change AFTER INSERT OR UPDATE OF status, tds_amount, invoice_id ON tds_deductions FOR EACH ROW EXECUTE FUNCTION private.touch_invoice_after_tds_change()"
+    },
+    {
+      "name": "trg_validate_invoice_allocation_integrity",
+      "hasEvaluatingOpen": false,
+      "hasAwardedEvaluating": false,
+      "hasImmutableOrg": false,
+      "hasImmutableReq": false,
+      "hasImmutableCreated": false,
+      "hasInvSupplier": false,
+      "hasApprovalDirectWrite": false,
+      "defSnippet": "CREATE TRIGGER trg_validate_invoice_allocation_integrity BEFORE INSERT OR UPDATE OF amount, purchase_order_id, milestone_id, status ON invoices FOR EACH ROW WHEN (new.status <> 'REJECTED'::invoice_status) EXECUTE FUNCTION validate_invoice_allocation_integrity()"
+    }
+  ],
+  "rfqGuardText": {
+    "rejectsEvaluatingToOpen": true,
+    "rejectsAwardedToEvaluating": false,
+    "immutables": {
+      "organization_id": true,
+      "requirement_id": true,
+      "created_by": true
+    }
+  },
+  "approvalStageGuard00219": "PRESENT",
+  "walletChecklist": {
+    "feeRequiredMarker": true,
+    "nullFeeRejected": true,
+    "orgMembershipGate": true,
+    "idempotencyKeyPath": true,
+    "feeRowLookup": true,
+    "feeOrgMatch": true,
+    "securityDefiner": true,
+    "anonDenied": true,
+    "authenticatedGranted": false
+  },
+  "subscriptionArbitraryRejected": true,
+  "appointOwnerGate": true,
+  "isPlatformAdmin": {
+    "present": true,
+    "hasEmailAllowlistPattern": false,
+    "hasMfaMention": false,
+    "bodyLength": 824
+  },
+  "quorumCoi": {
+    "declaredConflict": true,
+    "coiTable": true,
+    "unconflictedInLock": true
+  },
+  "invoiceSupplierGuard": false,
+  "recordInvoicePaymentOverloadCount": 1,
+  "readOnlyCounts": {
+    "rfqs": "6",
+    "awards": "0",
+    "purchase_orders": "0",
+    "invoices": "0",
+    "wallet_transactions": "0"
+  },
+  "samplePolicies": [
+    {
+      "schemaname": "public",
+      "tablename": "invoices",
+      "policyname": "invoices_admin_select",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "invoices",
+      "policyname": "invoices_insert",
+      "cmd": "INSERT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "invoices",
+      "policyname": "invoices_select",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "invoices",
+      "policyname": "invoices_update",
+      "cmd": "UPDATE"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "organization_wallets",
+      "policyname": "org_wallets_mutate",
+      "cmd": "ALL"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "organization_wallets",
+      "policyname": "org_wallets_select",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rfqs",
+      "policyname": "rfqs_admin_select",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rfqs",
+      "policyname": "rfqs_insert",
+      "cmd": "INSERT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rfqs",
+      "policyname": "rfqs_personal_insert",
+      "cmd": "INSERT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rfqs",
+      "policyname": "rfqs_personal_select",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rfqs",
+      "policyname": "rfqs_personal_update",
+      "cmd": "UPDATE"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rfqs",
+      "policyname": "rfqs_select_buyer",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rfqs",
+      "policyname": "rfqs_select_supplier",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rfqs",
+      "policyname": "rfqs_update",
+      "cmd": "UPDATE"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "wallet_transactions",
+      "policyname": "wallet_tx_mutate",
+      "cmd": "ALL"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "wallet_transactions",
+      "policyname": "wallet_tx_select",
+      "cmd": "SELECT"
+    }
+  ],
+  "decision": "PENDING_RECONCILIATION"
 }

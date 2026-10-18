@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useRoleContext } from '@/features/roles';
 import {
   acceptLegalAgreement,
   fetchLegalAcceptanceStatus,
@@ -37,6 +38,12 @@ function bannerText(agreement: AgreementStatus): string {
   return `Please review and accept the current ${label} (${agreement.currentVersion}).`;
 }
 
+const EMPTY_LEGAL_STATUS: LegalAcceptanceStatus = {
+  requiresAcceptance: false,
+  enforcementActive: false,
+  agreements: [],
+};
+
 /**
  * Blocks protected workspaces while the database reports an agreement as
  * REQUIRED, and shows a persistent prompt while acceptance is pending but not
@@ -45,8 +52,15 @@ function bannerText(agreement: AgreementStatus): string {
  */
 export function LegalAcceptanceGate({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { context } = useRoleContext();
+  const isInternal = Boolean(
+    context?.isFounder || context?.isPlatformAdmin || context?.side === 'CONSOLE',
+  );
+
   const userId = user?.id ?? '';
-  const [state, setState] = useState<GateState>({ phase: 'loading' });
+  const [state, setState] = useState<GateState>(
+    isInternal ? { phase: 'ready', status: EMPTY_LEGAL_STATUS } : { phase: 'loading' },
+  );
   const [reviewing, setReviewing] = useState(false);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -57,17 +71,25 @@ export function LegalAcceptanceGate({ children }: { children: ReactNode }) {
     : null;
 
   const load = useCallback(async () => {
+    if (isInternal) {
+      setState({ phase: 'ready', status: EMPTY_LEGAL_STATUS });
+      return;
+    }
     const result = await fetchLegalAcceptanceStatus();
     setState(
       result.ok
         ? { phase: 'ready', status: result.value }
         : { phase: 'error', message: result.error },
     );
-  }, []);
+  }, [isInternal]);
 
   useEffect(() => {
+    if (isInternal) {
+      setState({ phase: 'ready', status: EMPTY_LEGAL_STATUS });
+      return;
+    }
     void load();
-  }, [load, userId]);
+  }, [load, userId, isInternal]);
 
   useEffect(() => {
     const refresh = () => {
@@ -101,6 +123,10 @@ export function LegalAcceptanceGate({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [pendingType]);
+
+  if (isInternal) {
+    return <>{children}</>;
+  }
 
   if (state.phase === 'loading') {
     return (

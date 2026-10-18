@@ -208,4 +208,9 @@ describe('legal acceptance', () => {
     expect(html).toContain('Checking agreement status');
     expect(html).not.toContain('protected workspace');
   });
+
+  it('bypasses legal gate for internal operators', () => {
+    const gate = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'components/LegalAcceptanceGate.tsx'), 'utf8');
+    expect(gate).toContain('isInternal');
+  });
 });
