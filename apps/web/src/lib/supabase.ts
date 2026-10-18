@@ -109,8 +109,9 @@ function computeClockSkewWaitMs(res: Response, token: string | null, fallbackMs:
   if (!token) return fallbackMs;
   try {
     const parts = token.split('.');
-    if (parts.length >= 2) {
-      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payloadPart = parts[1];
+    if (parts.length >= 2 && payloadPart) {
+      const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
       const payload = JSON.parse(atob(base64));
       if (typeof payload.iat === 'number') {
         const serverDateHeader = res.headers.get('date');
