@@ -302,7 +302,7 @@ describe('demo seed platform operators (disposable databases)', () => {
         const migrationsDir = resolve('supabase/migrations');
         const files = readdirSync(migrationsDir).filter((f) => /^\d{5}_.*\.sql$/.test(f)).sort();
         const startIdx = files.findIndex((f) => f.startsWith('00267_'));
-        const endIdx = files.findIndex((f) => f.startsWith('00296_'));
+        const endIdx = files.findIndex((f) => f.startsWith('00297_'));
         for (const file of files.slice(startIdx, endIdx + 1)) {
           await applyFile(base, file);
         }
