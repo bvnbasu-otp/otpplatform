@@ -7,6 +7,29 @@ function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, fallbackValu
   ]);
 }
 
+export function isJwtFutureError(err: unknown): boolean {
+  if (!err) return false;
+  if (typeof err === 'object' && err !== null) {
+    const code = String((err as any).code || '');
+    if (/pgrst303/i.test(code)) return true;
+  }
+  const msg = typeof err === 'string' ? err : (err as any).message || String(err);
+  return /jwt.*future|issued at future|pgrst303|iat.*future/i.test(msg);
+}
+
+export async function retryOnClockSkew<T>(
+  fn: () => Promise<{ data: T | null; error: { message: string } | null }>,
+  delayMs = 1200,
+): Promise<{ data: T | null; error: { message: string } | null }> {
+  let result = await fn();
+  if (result.error && (isJwtFutureError(result.error) || isJwtFutureError(result.error.message))) {
+    console.warn(`[OTP Auth] Clock skew detected (${result.error.message}). Retrying in ${delayMs}ms...`);
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    result = await fn();
+  }
+  return result;
+}
+
 /**
  * A person's job role, and what it lets them do.
  *
@@ -219,12 +242,16 @@ function toContext(payload: Record<string, unknown>): RoleContext {
 export async function fetchRoleContext(): Promise<
   { ok: true; context: RoleContext } | { ok: false; error: string }
 > {
+  let rpcErrorMessage: string | null = null;
   try {
-    const { data, error } = (await withTimeout(
-      supabase.rpc('my_role_context') as unknown as PromiseLike<{ data: unknown; error: unknown }>,
-      5000,
-      { data: null, error: { message: 'my_role_context RPC timeout after 5000ms' } },
-    )) as { data: unknown; error: { message: string } | null };
+    const { data, error } = await retryOnClockSkew(async () => {
+      return (await withTimeout(
+        supabase.rpc('my_role_context') as unknown as PromiseLike<{ data: unknown; error: unknown }>,
+        5000,
+        { data: null, error: { message: 'my_role_context RPC timeout after 5000ms' } },
+      )) as { data: unknown; error: { message: string } | null };
+    });
+
     if (!error && data) {
       const parsed = toContext((data ?? {}) as Record<string, unknown>);
       if (parsed.signedIn) {
@@ -232,9 +259,11 @@ export async function fetchRoleContext(): Promise<
       }
     }
     if (error) {
+      rpcErrorMessage = error.message;
       console.warn('my_role_context RPC failed, using fallback query:', error.message);
     }
   } catch (rpcErr) {
+    rpcErrorMessage = rpcErr instanceof Error ? rpcErr.message : String(rpcErr);
     console.warn('my_role_context RPC exception:', rpcErr);
   }
 
@@ -248,18 +277,27 @@ export async function fetchRoleContext(): Promise<
     const user = authResult?.data?.user;
     if (!user) return { ok: true, context: SIGNED_OUT_CONTEXT };
 
-    let { data: profile } = await supabase
+    let { data: profile, error: profileErr } = await supabase
       .from('profiles')
       .select('id, email, full_name, is_founder, is_platform_admin, status, blocked_at, blocked_reason, active_role_code, active_portal_side')
       .or(`auth_user_id.eq.${user.id},id.eq.${user.id}`)
       .maybeSingle();
 
+    if (profileErr) {
+      console.warn('Direct profile query error:', profileErr.message);
+      return { ok: false, error: profileErr.message || rpcErrorMessage || 'Failed to read profile' };
+    }
+
     if (!profile && user.email) {
-      const { data: fallbackProfile } = await supabase
+      const { data: fallbackProfile, error: fallbackErr } = await supabase
         .from('profiles')
         .select('id, email, full_name, is_founder, is_platform_admin, status, blocked_at, blocked_reason, active_role_code, active_portal_side')
         .eq('email', user.email)
         .maybeSingle();
+      if (fallbackErr) {
+        console.warn('Fallback profile query error:', fallbackErr.message);
+        return { ok: false, error: fallbackErr.message || rpcErrorMessage || 'Failed to read profile' };
+      }
       if (fallbackProfile) profile = fallbackProfile;
     }
 
@@ -400,15 +438,24 @@ export async function fetchRoleContext(): Promise<
     }
   } catch (fallbackErr) {
     console.warn('fetchRoleContext direct fallback error:', fallbackErr);
+    return {
+      ok: false,
+      error: fallbackErr instanceof Error ? fallbackErr.message : (rpcErrorMessage || 'Failed to read role context'),
+    };
   }
 
-  return { ok: false, error: 'Failed to read role context' };
+  return { ok: false, error: rpcErrorMessage || 'Failed to read role context' };
 }
 
 export async function fetchRoleCatalog(
   side: PortalSide,
 ): Promise<{ ok: true; roles: RoleDefinition[] } | { ok: false; error: string }> {
-  const { data, error } = await supabase.rpc('role_catalog', { p_side: side });
+  const { data, error } = await retryOnClockSkew(async () => {
+    return (await supabase.rpc('role_catalog', { p_side: side })) as {
+      data: unknown;
+      error: { message: string } | null;
+    };
+  });
   if (error) return { ok: false, error: error.message };
 
   return {
@@ -421,7 +468,12 @@ export async function fetchRoleCatalog(
 export async function chooseMyRole(
   code: string,
 ): Promise<{ ok: true; context: RoleContext } | { ok: false; error: string }> {
-  const { data, error } = await supabase.rpc('assign_my_role', { p_code: code });
+  const { data, error } = await retryOnClockSkew(async () => {
+    return (await supabase.rpc('assign_my_role', { p_code: code })) as {
+      data: unknown;
+      error: { message: string } | null;
+    };
+  });
   if (error) return { ok: false, error: error.message };
   return { ok: true, context: toContext((data ?? {}) as Record<string, unknown>) };
 }

@@ -298,6 +298,14 @@ export function translateErrorDetails(error: unknown, fallbackMessage?: string):
     .trim();
 
   // Handle common standard web/database messages
+  if (/jwt.*future|issued at future|pgrst303/i.test(cleaned)) {
+    return {
+      message: 'Your device clock is slightly out of sync with the server. Synchronizing session…',
+      actionHint: 'Please wait a moment and try again.',
+      raw: rawText,
+    };
+  }
+
   if (/not authenticated|jwt expired|invalid token/i.test(cleaned)) {
     return {
       message: 'Your session has expired. Please sign in again to continue.',

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/features/auth';
 import { Button } from '@/components/ui';
 import { PRODUCT_NAME } from '@/lib/brand';
+import { translateError } from '@/lib/error-translator';
 import { chooseMyRole, fetchRoleCatalog, type RoleDefinition } from '../api/roles';
 import { useRoleContext } from '../hooks/use-role-context';
 import { PermissionChips } from '../components/PermissionChips';
@@ -27,19 +28,21 @@ export function RoleOnboardingPage() {
 
   const side = context.side ?? 'BUYER';
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const result = await fetchRoleCatalog(side);
-      if (cancelled) return;
-      if (result.ok) setRoles(result.roles);
-      else setError(result.error);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const loadRoles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const result = await fetchRoleCatalog(side);
+    if (result.ok) {
+      setRoles(result.roles);
+    } else {
+      setError(translateError(result.error));
+    }
+    setLoading(false);
   }, [side]);
+
+  useEffect(() => {
+    void loadRoles();
+  }, [loadRoles]);
 
   const selected = useMemo(
     () => roles.find((role) => role.code === chosen) ?? null,
@@ -161,10 +164,23 @@ export function RoleOnboardingPage() {
           </span>
         </div>
 
-        {!loading && roles.length === 0 && (
+        {!loading && roles.length === 0 && !error && (
           <p className="mt-4 text-sm text-muted-foreground">
             No roles are configured for this portal yet. Ask an administrator to set them up.
           </p>
+        )}
+        {!loading && roles.length === 0 && error && (
+          <div className="mt-4 flex flex-col items-start gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => { void loadRoles(); }}
+              data-testid="retry-load-roles"
+            >
+              ↻ Retry Loading Roles
+            </Button>
+          </div>
         )}
       </div>
     </div>
