@@ -69,6 +69,7 @@ function isValidEmail(val: string): boolean {
 }
 
 function isValidJwt(val: string): boolean {
+  if (val.startsWith('sb_publishable_') || val.startsWith('sb_secret_')) return true;
   const parts = val.split('.');
   return parts.length === 3 && parts[0].length > 10 && parts[1].length > 10;
 }
@@ -478,7 +479,7 @@ export const ENVIRONMENT_RULES: VariableRule[] = [
     description: 'ONDC environment target (STAGING | PREPROD | PROD | MOCK)',
     validate: (val) => {
       if (!val) return null;
-      const valid = ['STAGING', 'PREPROD', 'PROD', 'MOCK'];
+      const valid = ['STAGING', 'PREPROD', 'PROD', 'PRODUCTION', 'MOCK'];
       if (!valid.includes(val.toUpperCase())) return `Expected one of: ${valid.join(', ')}`;
       return null;
     },

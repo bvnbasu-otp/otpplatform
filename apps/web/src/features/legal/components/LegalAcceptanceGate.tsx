@@ -11,6 +11,7 @@ import {
   type LegalSnapshotText,
 } from '../api/legal-acceptance';
 import { LegalSnapshotNotice } from './LegalSnapshotNotice';
+import { translateErrorDetails } from '@/lib/error-translator';
 
 type GateState =
   | { phase: 'loading' }
@@ -143,7 +144,7 @@ export function LegalAcceptanceGate({ children }: { children: ReactNode }) {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 p-4 text-center" role="alert">
         <p className="text-sm text-foreground">We could not confirm your agreement status.</p>
-        <p className="text-xs text-muted-foreground">{state.message}</p>
+        <p className="text-xs text-muted-foreground">{translateErrorDetails(state.message).message}</p>
         <button
           type="button"
           onClick={() => void load()}

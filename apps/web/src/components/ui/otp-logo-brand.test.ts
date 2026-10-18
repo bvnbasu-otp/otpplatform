@@ -12,7 +12,8 @@ describe('Canonical OTP Brand Logo — Asset Integrity, Synchronization & Safety
     : cwd;
   const primaryLogoPath = path.join(repoRoot, 'apps/web/public/brand/otp-logo.jpg');
   const rootMirrorLogoPath = path.join(repoRoot, 'apps/web/public/logo.jpg');
-  const backupLogoPath = path.join(repoRoot, 'apps/web/public/brand/otp-logo.original-backup.jpg');
+  const backupLogoPath = path.join(repoRoot, 'archive/brand_concepts/otp-logo.original-backup.jpg');
+  const brandDir = path.join(repoRoot, 'apps/web/public/brand');
   const webSrcDir = path.join(repoRoot, 'apps/web/src');
 
   function getFileSha256(filePath: string): string {
@@ -33,33 +34,16 @@ describe('Canonical OTP Brand Logo — Asset Integrity, Synchronization & Safety
     expect(mirrorHash).toBe(primaryHash);
   });
 
-  it('verifies previous-version safety backup exists and is preserved', () => {
+  it('verifies previous-version safety backup exists and is preserved in archive', () => {
     expect(fs.existsSync(backupLogoPath)).toBe(true);
     const backupStats = fs.statSync(backupLogoPath);
     expect(backupStats.size).toBeGreaterThan(100000);
   });
 
-  it('strictly enforces safety backup isolation: production code MUST NOT reference otp-logo.original-backup.jpg', () => {
-    function scanDirectoryForForbiddenString(dir: string, forbidden: string): string[] {
-      const violations: string[] = [];
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          violations.push(...scanDirectoryForForbiddenString(fullPath, forbidden));
-        } else if (/\.(tsx?|jsx?|html|css|json)$/.test(entry.name) && !entry.name.includes('otp-logo-brand.test')) {
-          const content = fs.readFileSync(fullPath, 'utf8');
-          if (content.includes(forbidden)) {
-            violations.push(fullPath);
-          }
-        }
-      }
-      return violations;
-    }
-
-    const violations = scanDirectoryForForbiddenString(webSrcDir, 'otp-logo.original-backup.jpg');
-    expect(violations).toEqual([]);
+  it('strictly enforces brand folder hygiene: public/brand contains only canonical logo and festive directory', () => {
+    const entries = fs.readdirSync(brandDir);
+    const nonFestiveFiles = entries.filter((name) => name !== 'festive');
+    expect(nonFestiveFiles).toEqual(['otp-logo.jpg']);
   });
 
   it('instantiates OtpLogo component with canonical primary logo path', () => {

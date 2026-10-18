@@ -142,3 +142,84 @@ Follow this sequence when executing initial friendly trials with pilot instituti
    - Conduct 5-point milestone quality inspection with photo proof.
    - Progressive tax invoice uploaded (`INVOICED`).
    - Payment verified; `0.50%` platform fee assessed, `0.10%` sourcing reward credited to buyer wallet, and order transitions to `SETTLED`.
+
+---
+
+## 7. Mahadevapura Regional Pilot Execution Protocol
+
+The Mahadevapura sub-district (Bengaluru East / Outer Ring Road tech corridor) serves as OTP's inaugural live institutional operating zone.
+
+### 7.1 Key Geographic & Pincode Coverage
+- **Coverage Zone**: Mahadevapura, Whitefield, Marathahalli, Bellandur, Brookfield, Hoodi, KR Puram.
+- **Authoritative Pincodes Verified**: `560048`, `560066`, `560037`, `560103`, `560036`.
+- **Target Institutions**: Gated apartment societies, residential welfare associations (RWAs), tech park facilities, local commercial establishments, and MSMEs.
+
+### 7.2 Verified Pilot Workflows
+- **Society / Facility Manager Sourcing**: Facility managers and RWA secretaries submit requirements directly from mobile or desktop.
+- **Cluster Supplier Discovery**: Proximity-weighted discovery matches nearby pre-warmed suppliers and accepts known local vendor invitations.
+- **Identity-Protected Bid Comparison**: Society committees evaluate bids without brand or personal bias.
+
+---
+
+## 8. Supplier Quoting Flow & WhatsApp Magic Link Architecture
+
+OTP enables **zero-friction participation for non-registered vendors** while upholding strict enterprise security:
+
+```mermaid
+flowchart TD
+    BuyerInvite["Buyer Enters Vendor Mobile/Email in Direct Invite Modal"] --> CheckRegistered{"Is Vendor Already Registered on OTP?"}
+    CheckRegistered -- "No (Unregistered Vendor)" --> CreatePlaceholder["Create Unclaimed Placeholder (source = 'DIRECT')"]
+    CreatePlaceholder --> IssueToken["Generate Single-Use Quote Token (/q/:token)"]
+    IssueToken --> ShowWhatsApp["Show 1-Tap 'Forward Link via WhatsApp' (wa.me/?text=...)"]
+    ShowWhatsApp --> VendorPhone["Vendor Opens WhatsApp & Clicks Link"]
+    VendorPhone --> QuickQuotePage["Quick-Quote Web Screen (/q/:token) - No Login Required"]
+    QuickQuotePage --> SubmitBid["Vendor Submits Unit Rates, Delivery Days & Files"]
+    SubmitBid --> RlsShield["Quote Masked Under Cryptographic Pseudonym in RFQ"]
+    
+    CheckRegistered -- "Yes (Registered Vendor)" --> SecureDispatch["OTP Automated Messaging Gateway Dispatches Notice"]
+    SecureDispatch --> VendorPortal["Vendor Logs In Securely to Registered Portal"]
+```
+
+### 8.1 Non-Registered Supplier Flow
+1. **Invite Initiation**: In any DRAFT or OPEN RFQ, the buyer opens **Invite Known Supplier** (`DirectInviteModal.tsx`), selects **Phone**, and enters the vendor's 10-digit mobile number.
+2. **Deterministic Token Generation**: The database RPC `invite_direct_supplier` provisions an unclaimed placeholder supplier record (`source = 'DIRECT'`) and generates an ephemeral 7-day single-use quotation token.
+3. **1-Tap WhatsApp Forwarding**: The UI instantly displays:
+   - The direct URL: `https://otpplatform-theta.vercel.app/q/<token>`
+   - A 1-tap WhatsApp button: `https://wa.me/?text=Hello, you have been invited to submit a commercial quote on OTP...`
+4. **Frictionless Submission**: The recipient clicks the WhatsApp link and lands immediately on `QuickQuotePage` (`/q/:token`). **No password or account creation is required**. They review line items, specifications, and commercial terms, input prices and delivery schedules, attach proposal sheets, and click submit.
+5. **Security Isolation**: Once submitted, the quote is cryptographically salted (`Supplier X7B2`) and integrated into the RFQ comparison matrix.
+
+### 8.2 Security Withholding Rule for Registered Vendors (Migration 00215)
+- If a buyer enters the mobile or email of an **already registered vendor**, the database **withholds the plaintext token from the buyer**.
+- **Security Rationale**: Prevents buyers from generating magic links for competing registered businesses and forging quotes on their own RFQs.
+- **Automated Dispatch**: For registered vendors, the platform notifies them directly via verified WhatsApp (WAHA) or Email with an authenticated portal link.
+
+---
+
+## 9. Phase 2 Internal RBAC, Console Isolation & Role Switching Verification
+
+### 9.1 Superadmin & Founder Governance (`bvnbasu@gmail.com`)
+- **Authoritative Identity**: Account `bvnbasu@gmail.com` is permanently provisioned as **Founder, CEO & Super Administrator** (`is_founder = true`, `is_platform_admin = true`).
+- **Omni-Role Internal Switching**: May dynamically assume any of the 6 internal console roles:
+  1. `SUPER_ADMIN`: Full system governance and administrative oversight.
+  2. `CATALOG_MANAGER`: Category taxonomy, SAC codes, and directory management.
+  3. `FINANCE_OPERATOR`: Double-entry ledger reconciliations and staff referral ledger.
+  4. `INTERNAL_OPERATOR`: Day-to-day platform support, ticket resolution, and diagnostics.
+  5. `LEGAL_AUDITOR`: Legal document approval, terms versioning, and compliance reviews.
+  6. `SUPPORT_OPERATOR`: Buyer and seller issue resolution and diagnostic logging.
+- **Console Isolation Enforcement**: Internal operators are strictly barred from participating in commercial procurement (11 dual-vector triggers on `requirements`, `rfqs`, `quotes`, `awards`, `purchase_orders`, etc.).
+
+---
+
+## 10. Client-Side Infrastructure Clock Drift (`PGRST303`) & Precision Drift Mitigation
+
+### 10.1 Root Cause & Mechanism
+- **The Issue**: Cloudflare API gateway nodes and PostgREST database instances can experience slight sub-second timing drift. When an authentication JWT is issued, if `iat > now()`, PostgREST returns `HTTP 401: PGRST303 (JWT issued at future)`.
+- **Browser Fetch Interruption**: In standard fetch implementations, re-fetching an already-consumed `Request` object results in `TypeError: Cannot clone a disturbed Request`.
+
+### 10.2 Architectural Immunity Engine (`apps/web/src/lib/supabase.ts`)
+1. **Upfront Request Buffering**: Request bodies are buffered into reusable memory buffers before the initial network flight, allowing infinite idempotent retries without stream corruption.
+2. **Precision Server Time Delta**: On HTTP 401 `PGRST303`, the client parses the Cloudflare/Supabase `Date` response header and extracts the JWT `iat` timestamp:
+   $$\Delta t = (\text{iat} \times 1000) - \text{Date.parse}(\text{header})$$
+3. **Exact-Time Synchronization**: The client waits exactly $\Delta t + 800\text{ms}$ (capped at 5000ms), guaranteeing that the server clock has strictly advanced past the token's issuance timestamp before executing the retry.
+4. **Fail-Closed Fallback**: Translates any persistent clock-skew into clear business copy (`translateErrorDetails`), guiding users to check automatic device time settings rather than surfacing unhandled exceptions.

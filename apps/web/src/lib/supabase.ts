@@ -85,23 +85,110 @@ export function setRememberDevice(remember: boolean): void {
   }
 }
 
-async function clockSkewAwareFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const res = await fetch(input, init);
-  // PostgREST returns 401 when the JWT iat claim is in the future
-  if (res.status === 401) {
-    try {
-      const cloned = res.clone();
-      const text = await cloned.text();
-      if (/jwt.*future|issued at future|pgrst303|iat.*future/i.test(text)) {
-        console.warn('[OTP Auth] Clock skew detected (JWT issued at future). Retrying request in 1200ms...');
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-        return await fetch(input, init);
+function extractAuthToken(headers: HeadersInit | undefined): string | null {
+  if (!headers) return null;
+  let val: string | null = null;
+  if (typeof (headers as Headers).get === 'function') {
+    val = (headers as Headers).get('authorization') || (headers as Headers).get('Authorization');
+  } else if (Array.isArray(headers)) {
+    const pair = headers.find(([k]) => k.toLowerCase() === 'authorization');
+    val = pair ? pair[1] : null;
+  } else if (typeof headers === 'object') {
+    for (const [k, v] of Object.entries(headers)) {
+      if (k.toLowerCase() === 'authorization' && typeof v === 'string') {
+        val = v;
+        break;
       }
-    } catch {
-      // If cloning/reading fails, return the original response
     }
   }
-  return res;
+  if (!val) return null;
+  return val.replace(/^Bearer\s+/i, '').trim();
+}
+
+function computeClockSkewWaitMs(res: Response, token: string | null, fallbackMs: number): number {
+  if (!token) return fallbackMs;
+  try {
+    const parts = token.split('.');
+    if (parts.length >= 2) {
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(base64));
+      if (typeof payload.iat === 'number') {
+        const serverDateHeader = res.headers.get('date');
+        const serverTimeMs = serverDateHeader ? Date.parse(serverDateHeader) : Date.now();
+        const iatMs = payload.iat * 1000;
+        const skewMs = iatMs - serverTimeMs;
+        if (skewMs > 0) {
+          // Add 800ms safety margin to guarantee server clock has moved past iat
+          return Math.min(skewMs + 800, 5000);
+        }
+      }
+    }
+  } catch {
+    // If decoding or header reading fails, return fallback
+  }
+  return fallbackMs;
+}
+
+async function clockSkewAwareFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const maxRetries = 3;
+  let delayMs = 1200;
+
+  let requestUrl: string | URL;
+  let requestInit: RequestInit = { ...init };
+
+  if (input instanceof Request) {
+    requestUrl = input.url;
+    requestInit = {
+      method: input.method,
+      headers: input.headers,
+      mode: input.mode,
+      credentials: input.credentials,
+      cache: input.cache,
+      redirect: input.redirect,
+      referrer: input.referrer,
+      integrity: input.integrity,
+      ...init,
+    };
+    if (init?.body === undefined && input.body) {
+      try {
+        const cloned = input.clone();
+        requestInit.body = await cloned.arrayBuffer();
+      } catch {
+        // If body buffering fails, proceed with original
+      }
+    }
+  } else {
+    requestUrl = input;
+  }
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(requestUrl, requestInit);
+
+    // PostgREST returns 401 when the JWT iat claim is in the future
+    if (res.status === 401 && attempt < maxRetries) {
+      try {
+        const cloned = res.clone();
+        const text = await cloned.text();
+        const errorCode = res.headers.get('sb-error-code') || '';
+        const isClockSkew =
+          /jwt.*future|issued at future|pgrst303|iat.*future/i.test(text) ||
+          /jwt.*future|pgrst303/i.test(errorCode);
+
+        if (isClockSkew) {
+          const token = extractAuthToken(requestInit.headers);
+          const waitMs = computeClockSkewWaitMs(res, token, delayMs);
+          console.warn(`[OTP Auth] Clock skew detected (JWT issued at future, attempt ${attempt + 1}/${maxRetries}). Retrying in ${waitMs}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          delayMs = Math.min(delayMs * 1.5, 3000);
+          continue;
+        }
+      } catch {
+        // If reading/cloning fails, return the original response
+      }
+    }
+    return res;
+  }
+  return await fetch(requestUrl, requestInit);
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

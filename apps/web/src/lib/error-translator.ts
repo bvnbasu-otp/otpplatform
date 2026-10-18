@@ -213,6 +213,10 @@ const ERROR_CATALOG: Record<string, ErrorMapping> = {
     message: 'Access denied by security policies.',
     actionHint: 'Please ensure you are signed in with the correct organization account.',
   },
+  'PGRST303': {
+    message: 'Your device clock is slightly out of sync with the server.',
+    actionHint: 'Please wait a moment while your session synchronizes, or refresh the page.',
+  },
 };
 
 /**
@@ -236,7 +240,7 @@ export function extractErrorCode(error: unknown): string | null {
   }
 
   // 2. Check PostgreSQL numeric codes (e.g. '23505', '42501')
-  const pgMatch = text.match(/\b(23505|23503|42501|PGRST116|PGRST301)\b/);
+  const pgMatch = text.match(/\b(23505|23503|42501|PGRST116|PGRST301|PGRST303)\b/);
   if (pgMatch && ERROR_CATALOG[pgMatch[1]]) {
     return pgMatch[1];
   }

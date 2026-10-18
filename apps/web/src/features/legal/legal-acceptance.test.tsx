@@ -213,4 +213,10 @@ describe('legal acceptance', () => {
     const gate = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'components/LegalAcceptanceGate.tsx'), 'utf8');
     expect(gate).toContain('isInternal');
   });
+
+  it('translates agreement fetch errors into user-friendly copy and sanitizes error display', () => {
+    const gate = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'components/LegalAcceptanceGate.tsx'), 'utf8');
+    expect(gate).toContain('translateErrorDetails(state.message).message');
+    expect(gate).toContain('We could not confirm your agreement status.');
+  });
 });
