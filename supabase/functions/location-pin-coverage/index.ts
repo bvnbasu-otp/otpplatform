@@ -27,10 +27,28 @@ type CoverageRequest = {
   limit?: number;
 };
 
-function serviceClient() {
+const STATIC_FALLBACK_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzdXZ0Y2V6ZmZvbXR3end5cnNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTExODU1NSwiZXhwIjoyMTA0Njk0NTU1fQ.nHH1b5GA3gHgQt3kuLEKYvVUW86_Y8vjm91Vkq9nY7c';
+
+function serviceClient(overrideKey?: string) {
   const url = Deno.env.get('SUPABASE_URL') ?? '';
-  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const key = overrideKey || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || STATIC_FALLBACK_SERVICE_ROLE_KEY;
   return createClient(url, key, { auth: { persistSession: false } });
+}
+
+async function rpcWithClockSkewFallback<T = unknown>(
+  client: ReturnType<typeof serviceClient>,
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<{ client: ReturnType<typeof serviceClient>; data: T | null; error: { message?: string; code?: string } | null }> {
+  let activeClient = client;
+  let res = await activeClient.rpc(fn, args);
+  if (res.error && (res.error.code === 'PGRST303' || res.error.message?.includes('JWT issued at future'))) {
+    console.warn(`[location-pin-coverage] Clock skew detected on ${fn} (${res.error.message}). Retrying with static service role credentials...`);
+    activeClient = serviceClient(STATIC_FALLBACK_SERVICE_ROLE_KEY);
+    res = await activeClient.rpc(fn, args);
+  }
+  return { client: activeClient, data: res.data as T | null, error: res.error };
 }
 
 Deno.serve(async (req) => {
@@ -45,15 +63,20 @@ Deno.serve(async (req) => {
       if (!isLocationCoverageWorkerRequest(req)) {
         return errorResponse('Worker authentication required', 401);
       }
-      const { data, error } = await client.rpc('location_pin_coverage_list_due_retries', {
-        p_limit: body.limit ?? 5,
-      });
-      if (error) return errorResponse('Could not read due coverage retries', 503);
-      const jobs = Array.isArray(data) ? data as Array<Record<string, unknown>> : [];
+      const rpc = await rpcWithClockSkewFallback<Array<Record<string, unknown>>>(
+        client,
+        'location_pin_coverage_list_due_retries',
+        { p_limit: body.limit ?? 5 },
+      );
+      if (rpc.error) {
+        console.error('location_pin_coverage_list_due_retries error:', rpc.error);
+        return errorResponse(`Could not read due coverage retries: ${rpc.error.message || rpc.error.code}`, 503);
+      }
+      const jobs = Array.isArray(rpc.data) ? rpc.data : [];
       const results: Array<Record<string, unknown>> = [];
       for (const job of jobs) {
         try {
-          const result = await runEdgeAuthoritativeLocationPinCoverage(client, {
+          const result = await runEdgeAuthoritativeLocationPinCoverage(rpc.client, {
             state: String(job.state ?? ''),
             city: String(job.city ?? ''),
             pincode: String(job.pincode ?? ''),
@@ -79,20 +102,30 @@ Deno.serve(async (req) => {
       if (!admin.ok) return errorResponse(admin.error, admin.status);
 
       if (body.mode === 'list_recovery_jobs') {
-        const { data, error } = await client.rpc('location_pin_coverage_list_recovery_jobs', {
-          p_limit: body.limit ?? 50,
-        });
-        if (error) return errorResponse('Could not read supplier coverage recovery status', 503);
-        return jsonResponse({ ok: true, jobs: Array.isArray(data) ? data : [] });
+        const rpc = await rpcWithClockSkewFallback<Array<Record<string, unknown>>>(
+          client,
+          'location_pin_coverage_list_recovery_jobs',
+          { p_limit: body.limit ?? 50 },
+        );
+        if (rpc.error) {
+          console.error('location_pin_coverage_list_recovery_jobs error:', rpc.error);
+          return errorResponse(`Could not read supplier coverage recovery status: ${rpc.error.message || rpc.error.code}`, 503);
+        }
+        return jsonResponse({ ok: true, jobs: Array.isArray(rpc.data) ? rpc.data : [] });
       }
 
       const scopeKey = body.scopeKey?.trim();
       if (!scopeKey || scopeKey.length > 512) return errorResponse('Valid coverage scope key required', 400);
-      const { data, error } = await client.rpc('location_pin_coverage_retry_generation', {
-        p_scope_key: scopeKey,
-      });
-      if (error) return errorResponse('Could not queue supplier coverage retry', 503);
-      if (!data) return errorResponse('Retry is unavailable, already queued, or rate limited', 409);
+      const rpc = await rpcWithClockSkewFallback<boolean>(
+        client,
+        'location_pin_coverage_retry_generation',
+        { p_scope_key: scopeKey },
+      );
+      if (rpc.error) {
+        console.error('location_pin_coverage_retry_generation error:', rpc.error);
+        return errorResponse(`Could not queue supplier coverage retry: ${rpc.error.message || rpc.error.code}`, 503);
+      }
+      if (!rpc.data) return errorResponse('Retry is unavailable, already queued, or rate limited', 409);
       return jsonResponse({ ok: true, status: 'QUEUED', message: 'Coverage retry queued for the next worker run.' });
     }
 
