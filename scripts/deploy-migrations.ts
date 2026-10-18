@@ -363,10 +363,6 @@ export async function runMigrations() {
             `INSERT INTO supabase_migrations.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING`,
             [String(item.sequenceNumber).padStart(5, '0')]
           );
-          await client.query(
-            `INSERT INTO supabase_migrations.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING`,
-            [item.filename.replace('.sql', '')]
-          );
           await client.query('COMMIT');
           const elapsed = Date.now() - start;
           console.log(`\x1b[32mPASSED\x1b[0m (${elapsed}ms)`);
