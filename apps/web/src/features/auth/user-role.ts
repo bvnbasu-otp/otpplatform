@@ -59,8 +59,8 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
         .eq('email', authUser.email)
         .maybeSingle();
       if (fallbackData) {
-        const isFounder = Boolean(fallbackData.is_founder || isFounderEmail(fallbackData.email));
-        const isAdmin = Boolean(isFounder || fallbackData.is_platform_admin || isSuperAdminEmail(fallbackData.email) || fallbackData.active_portal_side === 'CONSOLE');
+        const isFounder = Boolean(fallbackData.is_founder);
+        const isAdmin = Boolean(isFounder || fallbackData.is_platform_admin || fallbackData.active_portal_side === 'CONSOLE');
         return {
           profileId: fallbackData.id,
           email: fallbackData.email,
@@ -75,8 +75,8 @@ export async function fetchCurrentProfile(): Promise<UserProfile | null> {
     return null;
   }
 
-  const isFounder = Boolean(data.is_founder || isFounderEmail(data.email));
-  const isAdmin = Boolean(isFounder || data.is_platform_admin || isSuperAdminEmail(data.email) || data.active_portal_side === 'CONSOLE');
+  const isFounder = Boolean(data.is_founder);
+  const isAdmin = Boolean(isFounder || data.is_platform_admin || data.active_portal_side === 'CONSOLE');
 
   return {
     profileId: data.id,
@@ -95,8 +95,8 @@ export async function resolvePortalRole(
   email?: string | null,
   isFounder?: boolean,
 ): Promise<PortalRole> {
-  if (isFounder || isFounderEmail(email)) return 'founder';
-  if (isPlatformAdmin || isSuperAdminEmail(email)) return 'admin';
+  if (isFounder) return 'founder';
+  if (isPlatformAdmin) return 'admin';
 
   // 0. Check explicit active_portal_side if user switched persona
   try {

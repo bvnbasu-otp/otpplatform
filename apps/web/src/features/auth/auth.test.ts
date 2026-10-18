@@ -58,6 +58,14 @@ describe('Auth Feature & Portal Role Resolution', () => {
     expect(role2).not.toBe('admin');
   });
 
+  it('resolves portal role as founder only when isFounder claim is true per SEC-P0-02', async () => {
+    const role1 = await resolvePortalRole('prof-founder-1', false, 'bvnbasu@gmail.com', true);
+    expect(role1).toBe('founder');
+
+    const role2 = await resolvePortalRole('prof-founder-2', false, 'bvnbasu@gmail.com', false);
+    expect(role2).not.toBe('founder');
+  });
+
   it('resolves portal role as supplier when linked to supplier_users', async () => {
     const mockFrom = vi.fn().mockImplementation((table: string) => {
       if (table === 'supplier_users') {
