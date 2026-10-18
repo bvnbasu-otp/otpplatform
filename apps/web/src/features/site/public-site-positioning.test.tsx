@@ -44,6 +44,7 @@ vi.mock('@/features/roles', () => ({
 }));
 
 const CANONICAL_TITLE = 'OTP — Identity-Protected Competitive Sourcing';
+const CANONICAL_PLATFORM_TITLE = 'OTP a Identity Protected Competitive Sourcing Platform';
 const CANONICAL_SUBTITLE = 'Compare competing supplier quotes and make better procurement decisions.';
 
 const FORBIDDEN_PHRASES = [
@@ -55,7 +56,7 @@ const FORBIDDEN_PHRASES = [
 const JARGON = [
   /\bRLS\b/,
   /row[- ]level/i,
-  /\bdatabase\b/i,
+  /database/i,
   /cryptograph/i,
   /\bSHA(-?256)?\b/,
   /\bhash(ed|es|ing)?\b/i,
@@ -101,8 +102,9 @@ const PAGES: [string, () => string][] = [
 describe('canonical positioning on public pages', () => {
   it('homepage hero shows the canonical title and subtitle', () => {
     const text = toText(render(<LandingPage />));
-    expect(text).toContain(CANONICAL_TITLE);
+    expect(text).toContain(CANONICAL_PLATFORM_TITLE);
     expect(text).toContain(CANONICAL_SUBTITLE);
+    expect(text).toContain("OTP .... Think beyond the Password, Procurement is Common, it is Everyone's Everyday Business !");
   });
 
   it('About page shows the canonical title and subtitle', () => {

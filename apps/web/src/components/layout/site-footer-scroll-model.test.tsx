@@ -3,7 +3,6 @@ import { join, resolve } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { PUBLIC_CONTENT_LAST_REVIEWED } from '@/lib/brand';
 import { SiteFooter } from './SiteFooter';
 import {
   BOTTOM_NAV_OVERHANG_CLEARANCE_CLASS,
@@ -69,10 +68,10 @@ describe('SiteFooter at 320–375px (static render/class assertions, not device 
     }
   });
 
-  it('shows the shared public review date, not a hard-coded one', () => {
+  it('does not publish a review date in the public footer', () => {
     const source = readFileSync(join(__dirname, 'SiteFooter.tsx'), 'utf8');
-    expect(source).not.toMatch(/Last updated:\s*\d/);
-    expect(renderFooter()).toContain(`Last updated: ${PUBLIC_CONTENT_LAST_REVIEWED}`);
+    expect(source).not.toContain('Last updated:');
+    expect(renderFooter()).not.toContain('Last updated:');
   });
 
   it('does not repeat the "+" primary CTA styling already owned by the header and bottom nav', () => {

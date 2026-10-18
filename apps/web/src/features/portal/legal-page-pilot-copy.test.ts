@@ -14,4 +14,10 @@ describe('legal page pilot copy', () => {
     expect(source).not.toContain('Meta');
     expect(source).toContain('provider configured for this deployment');
   });
+
+  it('does not display developer review warnings or internal legal disclaimer banners', () => {
+    expect(source).not.toContain('⚠️ Legal Review Required');
+    expect(source).not.toContain('NOT final legal text');
+    expect(source).not.toMatch(/Last updated:\s*\d/);
+  });
 });

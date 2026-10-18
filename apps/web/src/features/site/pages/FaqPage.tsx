@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { PRODUCT_NAME, PUBLIC_CONTENT_LAST_REVIEWED } from '@/lib/brand';
+import { PRODUCT_NAME } from '@/lib/brand';
 import { SiteLayout } from '../components/SiteLayout';
 import { PublicJourney } from '../components/PublicJourney';
 import {
@@ -42,9 +42,6 @@ export function FaqPage() {
     <SiteLayout>
       <div className="mx-auto max-w-4xl px-4 py-10 sm:py-14 space-y-10">
         <div className="text-center max-w-2xl mx-auto space-y-3">
-          <p className="text-[10px] text-muted-foreground font-medium">
-            Last updated: {PUBLIC_CONTENT_LAST_REVIEWED}
-          </p>
           <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
             Frequently asked questions
           </h1>

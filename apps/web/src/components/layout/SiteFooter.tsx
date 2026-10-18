@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PLATFORM_DISCLAIMER_LINES, PRODUCT_NAME, PRODUCT_FULL_NAME, PUBLIC_CONTENT_LAST_REVIEWED } from '@/lib/brand';
+import { PLATFORM_DISCLAIMER_LINES, PRODUCT_NAME, PRODUCT_FULL_NAME } from '@/lib/brand';
 
 export function SiteFooter() {
   const [isUtilityDrawerOpen, setIsUtilityDrawerOpen] = useState(false);
@@ -16,8 +16,6 @@ export function SiteFooter() {
               <span>·</span>
               <span>© {new Date().getFullYear()} All rights reserved.</span>
             </div>
-            <span className="hidden sm:inline">·</span>
-            <span className="text-[11px] text-muted-foreground/80">Last updated: {PUBLIC_CONTENT_LAST_REVIEWED}</span>
           </div>
 
           {/* Strict 5-Item Navigation Footer Links */}

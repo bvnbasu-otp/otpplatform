@@ -2,13 +2,18 @@
 
 export const PRODUCT_NAME = 'OTP';
 export const PRODUCT_FULL_NAME = 'Open Trade & Procurement';
+export const PRODUCT_PLATFORM_NAME = 'Open Trade & Procurement Platform';
 
 export const PRODUCT_TAGLINE = 'Identity-Protected Competitive Sourcing';
+export const PRODUCT_PLATFORM_TITLE = 'OTP a Identity Protected Competitive Sourcing Platform';
 export const PRODUCT_PLATFORM_SUBTITLE =
   'Compare competing supplier quotes and make better procurement decisions.';
 
 /** Browser title, share cards and the public hero all use this one string. */
 export const PRODUCT_TITLE = `${PRODUCT_NAME} — ${PRODUCT_TAGLINE}`;
+
+export const PRODUCT_PHILOSOPHY =
+  "OTP .... Think beyond the Password, Procurement is Common, it is Everyone's Everyday Business !";
 
 /** The one customer journey shown publicly. Internal workflow states stay inside the app. */
 export const PUBLIC_JOURNEY_STEPS = ['Tell', 'Review', 'Decide', 'Track'] as const;

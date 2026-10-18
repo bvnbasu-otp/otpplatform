@@ -1,6 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
-import { PRODUCT_FULL_NAME, PRODUCT_NAME, PRODUCT_PLATFORM_SUBTITLE, PRODUCT_TITLE } from '@/lib/brand';
+import {
+  PRODUCT_NAME,
+  PRODUCT_PHILOSOPHY,
+  PRODUCT_PLATFORM_NAME,
+  PRODUCT_PLATFORM_SUBTITLE,
+  PRODUCT_PLATFORM_TITLE,
+  PRODUCT_TITLE,
+} from '@/lib/brand';
 import { SiteLayout } from '../components/SiteLayout';
 import { PublicJourney, TrustPrinciples } from '../components/PublicJourney';
 import { DEMO_RFQ } from '../content/site-content';
@@ -28,12 +35,17 @@ function HeroSection() {
     <section className="relative pt-6 pb-4 sm:pt-10 sm:pb-8 border-b bg-gradient-to-b from-muted/40 via-background to-background">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="text-center max-w-3xl mx-auto">
-          <p className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-0.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-primary shadow-2xs">
-            {PRODUCT_NAME} — {PRODUCT_FULL_NAME}
-          </p>
+          <div className="flex flex-col items-center justify-center gap-2">
+            <p className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-primary shadow-2xs">
+              {PRODUCT_NAME} — {PRODUCT_PLATFORM_NAME}
+            </p>
+            <p className="text-xs sm:text-sm font-semibold tracking-wide text-foreground/80 max-w-2xl mx-auto">
+              {PRODUCT_PHILOSOPHY}
+            </p>
+          </div>
 
-          <h1 className="mt-3 text-2xl sm:text-4xl md:text-5xl font-extrabold leading-[1.15] tracking-tight text-foreground">
-            {PRODUCT_TITLE}
+          <h1 className="mt-4 text-2xl sm:text-4xl md:text-5xl font-extrabold leading-[1.15] tracking-tight text-foreground">
+            {PRODUCT_PLATFORM_TITLE}
           </h1>
 
           <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto">

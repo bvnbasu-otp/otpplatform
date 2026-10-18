@@ -151,15 +151,6 @@ export function LegalPage() {
                 taking effect. Continued use constitutes acceptance of updated terms.
               </p>
             </div>
-
-            <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-xs text-amber-900">
-                <strong>⚠️ Legal Review Required:</strong> This privacy policy is based on
-                GDPR and India's Digital Personal Data Protection Act (DPDP) 2023 requirements
-                but must be reviewed and approved by legal counsel before production deployment.
-                Last updated: 2026-09-01.
-              </p>
-            </div>
           </section>
         )}
 
@@ -310,28 +301,8 @@ export function LegalPage() {
                 Address: [Insert Registered Business Address]
               </p>
             </div>
-
-            <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-xs text-amber-900">
-                <strong>⚠️ Legal Review Required:</strong> These terms of use provide a framework
-                but must be reviewed and approved by legal counsel before production deployment.
-                Specific clauses should be tailored to your jurisdiction and business model.
-                Last updated: 2026-09-01.
-              </p>
-            </div>
           </section>
         )}
-
-        <div className="mt-10 rounded-lg border-l-4 border-amber-500 bg-amber-50 p-5">
-          <p className="text-xs leading-relaxed text-amber-900">
-            <strong>⚠️ Legal Notice:</strong> The content on this page has been drafted to comply
-            with GDPR, India's Digital Personal Data Protection Act (DPDP) 2023, and general best
-            practices for SaaS platforms. However, this is <strong>NOT final legal text</strong> and
-            must be reviewed and approved by qualified legal counsel before production deployment.
-            Counsel should verify compliance with all applicable laws in your jurisdiction and tailor
-            language to your specific business model and risk tolerance.
-          </p>
-        </div>
       </div>
     </SiteLayout>
   );

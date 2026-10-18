@@ -5,7 +5,6 @@ import {
   PRODUCT_NAME,
   PRODUCT_PLATFORM_SUBTITLE,
   PRODUCT_TITLE,
-  PUBLIC_CONTENT_LAST_REVIEWED,
 } from '@/lib/brand';
 import { SiteLayout } from '../components/SiteLayout';
 
@@ -19,10 +18,6 @@ export function AboutPage() {
         <div className="max-w-2xl space-y-2">
           <div className="flex items-center gap-2">
             <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.18em] text-action">About Us</p>
-            <span className="text-[10px] text-muted-foreground">·</span>
-            <span className="text-[10px] text-muted-foreground font-medium">
-              Last updated: {PUBLIC_CONTENT_LAST_REVIEWED}
-            </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground leading-tight tracking-tight">
             {PRODUCT_TITLE}
