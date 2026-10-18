@@ -316,7 +316,8 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 50]).toBe('00299_internal_procurement_hard_deny.sql');
     expect(files[index + 51]).toBe('00300_internal_staff_referral_ledger.sql');
     expect(files[index + 52]).toBe('00301_internal_console_role_switching_and_isolation.sql');
-    expect(index).toBe(files.length - 53);
+    expect(files[index + 53]).toBe('00302_demo_staging_procurement_isolation_parity.sql');
+    expect(index).toBe(files.length - 54);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);
