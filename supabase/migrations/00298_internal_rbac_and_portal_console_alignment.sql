@@ -365,10 +365,10 @@ BEGIN
 
   -- Platform Admin, active internal operator, or active_portal_side = 'CONSOLE' strictly resolves to CONSOLE
   IF v_is_admin IS TRUE
-     OR v_active_side = 'CONSOLE'::signup_side
+     OR v_active_side::text = 'CONSOLE'
      OR private.authoritative_internal_operator_access(v_profile) IS TRUE
      OR v_email IN ('bvnbasu@gmail.com', 'admin@otp.test', 'ops@otp.test') THEN
-    RETURN 'CONSOLE'::signup_side;
+    RETURN 'CONSOLE';
   END IF;
 
   -- If customer persona explicitly switched portal persona, honor it
@@ -646,53 +646,3 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.my_role_context() TO authenticated, service_role;
-
--- 10. Deterministic Founder Portal Migration Script (Fail-Closed)
-DO $founder_portal_alignment$
-DECLARE
-  v_founder_id uuid;
-  v_founder_count integer;
-  v_prior_side signup_side;
-BEGIN
-  -- 1. Deterministic Resolution: Query exactly one active founder profile
-  SELECT count(*) INTO v_founder_count
-  FROM public.profiles
-  WHERE is_founder = true
-    AND private.profile_is_active_operator(status, deleted_at);
-
-  -- 2. Fail-Closed Precondition Check
-  IF v_founder_count = 0 THEN
-    RAISE EXCEPTION 'PRECONDITION FAILED: No active founder profile found (FOUNDER_NOT_FOUND)'
-      USING ERRCODE = 'P0001';
-  ELSIF v_founder_count > 1 THEN
-    RAISE EXCEPTION 'PRECONDITION FAILED: Multiple active founder profiles found (%) (AMBIGUOUS_FOUNDER)', v_founder_count
-      USING ERRCODE = 'P0002';
-  END IF;
-
-  SELECT id, active_portal_side INTO v_founder_id, v_prior_side
-  FROM public.profiles
-  WHERE is_founder = true
-    AND private.profile_is_active_operator(status, deleted_at)
-  LIMIT 1;
-
-  -- 3. Fail-Closed Execution: Update portal side to CONSOLE
-  UPDATE public.profiles
-  SET active_portal_side = 'CONSOLE'::signup_side,
-      updated_at = clock_timestamp()
-  WHERE id = v_founder_id;
-
-  -- 4. Authoritative Audit Trail
-  INSERT INTO public.audit_events (event_type, actor_id, entity_type, entity_id, payload)
-  VALUES (
-    'operator.portal_side_aligned',
-    v_founder_id,
-    'profile',
-    v_founder_id::text,
-    jsonb_build_object(
-      'prior_side', v_prior_side::text,
-      'new_side', 'CONSOLE',
-      'reason', 'Phase 2 deterministic founder portal alignment'
-    )
-  );
-END
-$founder_portal_alignment$;
