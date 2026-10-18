@@ -19,6 +19,7 @@ export {
 export { getUtcDayKey, getUtcMonthKey } from '../gis/google-places-quota-window.ts';
 
 export {
+  PIN_ONLY_WARMING_CATEGORY,
   buildGooglePlacesCategorySearchTerms,
   buildGooglePlacesTextQuery,
 } from '../gis/google-places-category-search-terms.ts';

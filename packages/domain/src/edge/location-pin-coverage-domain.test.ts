@@ -10,10 +10,12 @@ import {
   generateCrockfordAlias,
   CapabilityEvidenceTier,
   SupplierTruthfulVerificationStage,
+  PIN_ONLY_WARMING_CATEGORY,
 } from './location-pin-coverage-domain';
 
 describe('location-pin-coverage-domain edge entry', () => {
   it('re-exports symbols required by the location-pin-coverage Edge bundle', () => {
+    expect(PIN_ONLY_WARMING_CATEGORY).toBe('__PIN_ONLY_WARMING__');
     expect(SupplierNetwork.GOOGLE_PLACES).toBe('GOOGLE_PLACES');
     expect(TruthfulProviderStatus.LIVE_ACTIVE).toBe('LIVE_ACTIVE');
     expect(GisExecutionMode.OFFLINE_PROVIDER_NEUTRAL).toBe('OFFLINE_PROVIDER_NEUTRAL');
