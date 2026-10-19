@@ -205,4 +205,10 @@ describe('PrintableProcurementDocument', () => {
     expect(page).toContain('fallbackModel={printModel}');
     expect(page).toContain('documentKind="PURCHASE_ORDER"');
   });
+
+  it('renders official procurement decision and fulfillment statement header (Requirement 12)', () => {
+    const src = readFileSync(resolve(__dirname, 'components/PrintableProcurementReport.tsx'), 'utf8');
+    expect(src).toContain('Procurement Decision &amp; Fulfillment Statement');
+    expect(src).toContain('print-report-container');
+  });
 });

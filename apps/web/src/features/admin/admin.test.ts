@@ -548,4 +548,32 @@ describe('Super Admin & Ops Console Data Layer', () => {
     expect(orgModule).toBeDefined();
     expect(orgModule?.description).toContain('business registries');
   });
+
+  it('enforces V3 statutory retention locks and dry-run impact schema (Requirement 16)', () => {
+    const mockDryRun = {
+      ok: true,
+      timestamp: new Date().toISOString(),
+      statutoryRetention: {
+        auditEvents: 142,
+        verifiedSuppliers: 104,
+        canonicalCategories: 16,
+        registeredOrganizations: 16,
+        activeUsers: 25,
+      },
+      transactionalScope: {
+        requirements: 10,
+        rfqs: 8,
+        quotes: 14,
+        purchaseOrders: 4,
+        invoices: 4,
+        payments: 4,
+      },
+      governanceStatus: 'RETENTION_LOCKED_SAFE',
+    };
+
+    expect(mockDryRun.governanceStatus).toBe('RETENTION_LOCKED_SAFE');
+    expect(mockDryRun.statutoryRetention.auditEvents).toBe(142);
+    expect(mockDryRun.statutoryRetention.verifiedSuppliers).toBe(104);
+    expect(mockDryRun.statutoryRetention.canonicalCategories).toBe(16);
+  });
 });

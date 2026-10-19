@@ -87,6 +87,10 @@ export interface SupplierActiveQuoteItem {
   actionUrl: string;
   submittedDate?: string | null;
   rank?: number;
+  quoteAmount?: number | null;
+  gstPercent?: number | null;
+  meritScore?: number | null;
+  supplierAlias?: string | null;
 }
 
 export interface HomeActivityEvent {

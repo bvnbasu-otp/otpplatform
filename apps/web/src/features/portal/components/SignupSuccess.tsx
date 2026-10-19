@@ -53,6 +53,19 @@ export function SignupSuccess({
 
       <p className={`leading-relaxed text-muted-foreground ${text.body}`}>{outcome.body}</p>
 
+      {/* Requirement 19: Post-registration password setup guidance */}
+      <div
+        className="rounded-xl border border-blue-300 dark:border-blue-800 bg-blue-50/80 dark:bg-blue-950/40 p-3.5 space-y-1 text-xs"
+        data-testid="registration-next-steps"
+      >
+        <p className="font-bold text-blue-950 dark:text-blue-200">
+          Next Step: Set your password
+        </p>
+        <p className="text-[12px] leading-relaxed text-blue-900/90 dark:text-blue-300">
+          Your account has been created. We&apos;ve sent you an email with instructions to set or reset your password. Follow the instructions, then log in to OTP.
+        </p>
+      </div>
+
       {isBuyer && outcome.accountState !== 'ALREADY_REGISTERED' && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 space-y-1 text-xs">
           <div className="flex items-center gap-1.5 font-bold text-emerald-950 dark:text-emerald-200">

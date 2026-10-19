@@ -60,6 +60,83 @@ export function MsmeRegistrationAgreementModal({
 
   const agreementMarkdown = compileMsmeAgreementMarkdown(agreementData);
 
+  const handlePrintPdf = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OTP MSME Agreement - ${agreementData.businessName}</title>
+  <style>
+    @page { size: A4 portrait; margin: 15mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; line-height: 1.5; font-size: 11pt; padding: 20px; }
+    .header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .brand-title { font-size: 18pt; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; }
+    .brand-sub { font-size: 10pt; color: #475569; font-weight: 600; margin-top: 4px; }
+    .meta-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 10pt; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .clause-title { font-size: 12pt; font-weight: bold; margin-top: 16px; margin-bottom: 6px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .clause-text { font-size: 10pt; color: #334155; margin-bottom: 8px; text-align: justify; }
+    .footer { margin-top: 30px; border-top: 1px solid #cbd5e1; padding-top: 12px; font-size: 9pt; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div style="font-weight: 900; font-size: 12pt; color: #0284c7; letter-spacing: 1px;">OPEN TRADE &amp; PROCUREMENT PLATFORM (OTP)</div>
+      <h1 class="brand-title">MSME Procurement Registration Agreement</h1>
+      <div class="brand-sub">Statutory Platform Governance &amp; Direct Settlement Agreement</div>
+    </div>
+    <div style="text-align: right; font-size: 9pt; color: #64748b;">
+      <strong>Ref:</strong> ${agreementData.electronicAcceptanceHash.slice(0, 24)}<br>
+      <strong>Effective Date:</strong> ${agreementData.effectiveDate}
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div class="meta-grid">
+      <div><strong>Registered Business Name:</strong> ${agreementData.businessName}</div>
+      <div><strong>Entity Constitution:</strong> ${agreementData.businessType}</div>
+      <div><strong>Primary Authorized Officer:</strong> ${agreementData.primaryOfficerName}</div>
+      <div><strong>Contact Email:</strong> ${agreementData.primaryOfficerEmail}</div>
+      <div><strong>Operational Premises:</strong> ${agreementData.registeredAddress}</div>
+      <div><strong>Statutory Identifier:</strong> ${agreementData.gstin || agreementData.pan || 'PAN/GST Exempt'}</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="clause-title">1. Purpose and Scope of Agreement</div>
+    <div class="clause-text">This binding legal instrument governs commercial procurement, competitive quotation sourcing, quotation evaluation, milestone tracking, and direct settlement executed by the Registered MSME Enterprise on the Open Trade &amp; Procurement Platform (OTP).</div>
+
+    <div class="clause-title">2. Direct Settlement &amp; Zero Commission Model</div>
+    <div class="clause-text">All financial settlements, advances, and final payments occur directly between the Buyer and the Awarded Supplier via standard banking channels (NEFT/RTGS/UPI/IMPS). OTP does not hold funds in escrow, does not operate as a payment intermediary, and charges 0% transaction commission on order values.</div>
+
+    <div class="clause-title">3. Identity Protection &amp; Sealed Quote Integrity</div>
+    <div class="clause-text">All quotation submissions remain strictly sealed and encrypted until the RFQ quotation deadline. Neither competing suppliers nor platform operators may inspect quotation pricing prior to public unsealing, guaranteeing complete freedom from price collusion.</div>
+
+    <div class="clause-title">4. Governance, Audit Snapshot &amp; Tax Compliance</div>
+    <div class="clause-text">Every procurement decision generates an immutable, timestamped audit log capturing Place of Supply, GSTIN credentials, and authorized officer signatures, satisfying statutory requirements under the MSMED Act, 2006 and the Central Goods and Services Tax Act, 2017.</div>
+
+    <div class="clause-title">5. Electronic Signature and Verification</div>
+    <div class="clause-text">Executed electronically via secure authenticated session. Acceptance Hash: ${agreementData.electronicAcceptanceHash}. Signer IP: ${agreementData.signerIpAddress}. Timestamp: ${agreementData.acceptedAt}.</div>
+  </div>
+
+  <div class="footer">
+    Open Trade &amp; Procurement Platform (OTP) · Statutory Legal Record · Verifiable at https://otpplatform.com
+  </div>
+  <script>
+    window.onload = function() { window.print(); };
+  </script>
+</body>
+</html>`;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   const handleDownloadA4 = () => {
     const element = document.createElement('a');
     const file = new Blob([agreementMarkdown], { type: 'text/markdown;charset=utf-8' });
@@ -174,13 +251,22 @@ export function MsmeRegistrationAgreementModal({
 
         {/* Footer */}
         <div className="border-t border-border/80 p-4 sm:px-6 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={handleDownloadA4}
-            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1.5"
-          >
-            <span>📥</span> Download Printable Agreement (.md)
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handlePrintPdf}
+              className="px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-2xs hover:bg-primary/90 transition flex items-center gap-1.5 cursor-pointer min-h-[38px]"
+            >
+              <span>🖨️</span> Print / Save PDF (A4)
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadA4}
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>📥</span> (.md)
+            </button>
+          </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
             {!viewOnly && (

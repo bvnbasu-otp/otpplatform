@@ -76,10 +76,23 @@ export function AddressBookManager({
     fetchAddresses();
   }, [user?.id, organizationId, persona]);
 
+  const isOrgPersona = persona === 'RWA' || persona === 'MSME' || Boolean(organizationId);
+  const maxAllowed = isOrgPersona ? 1 : 3;
+
   const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
+
+    if (!editingId && addresses.length >= maxAllowed) {
+      setError(
+        isOrgPersona
+          ? 'Organizations (RWA and MSME) are permitted exactly one registered organizational address. Please edit the existing address.'
+          : 'Individuals are permitted a maximum of three saved addresses (Home, Office, Other).'
+      );
+      setSaving(false);
+      return;
+    }
 
     const res = await saveBuyerAddress({
       addressId: editingId,
@@ -207,14 +220,18 @@ export function AddressBookManager({
         </div>
         <button
           type="button"
-          disabled={addresses.length >= 3}
+          disabled={addresses.length >= maxAllowed}
           onClick={() => {
             resetForm();
             setShowAddModal(true);
           }}
           className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm active:scale-95 touch-manipulation disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {addresses.length >= 3 ? '3 Locations Saved' : '+ Add Location'}
+          {addresses.length >= maxAllowed
+            ? isOrgPersona
+              ? '1 Registered Location Saved'
+              : `${addresses.length} Locations Saved`
+            : '+ Add Location'}
         </button>
       </div>
 
@@ -295,11 +312,34 @@ export function AddressBookManager({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Main Gate, Tower B, Hosur Plant"
+                    placeholder={
+                      isOrgPersona
+                        ? 'e.g. Registered Office, Main Gate, Hosur Plant'
+                        : 'e.g. Home, Office, Other'
+                    }
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground min-h-[44px]"
                   />
+                  {!isOrgPersona && (
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <span className="text-[10px] text-muted-foreground font-semibold">Presets:</span>
+                      {['Home', 'Office', 'Other'].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setLabel(preset)}
+                          className={`px-2 py-0.5 text-[10px] rounded-md font-medium border transition-colors cursor-pointer ${
+                            label === preset
+                              ? 'bg-primary text-primary-foreground border-primary font-bold'
+                              : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-foreground mb-1">

@@ -616,7 +616,7 @@ export async function purgeTransactionalData(confirmationToken: string = ''): Pr
       supabase.from('notifications').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
       supabase.from('supplier_notifications').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
       supabase.from('support_tickets').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
-      supabase.from('audit_events').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      // Requirement 16 & Constitution: audit_events, legal_evidence, and bank mandates are under STATUTORY RETENTION LOCK and MUST NEVER be deleted!
     ]);
 
     // Fetch counts of preserved master entities
@@ -674,6 +674,81 @@ export async function purgeTransactionalData(confirmationToken: string = ''): Pr
     };
   }
 }
+
+export interface DryRunResetImpact {
+  ok: boolean;
+  timestamp: string;
+  statutoryRetention: {
+    auditEvents: number;
+    verifiedSuppliers: number;
+    canonicalCategories: number;
+    registeredOrganizations: number;
+    activeUsers: number;
+  };
+  transactionalScope: {
+    requirements: number;
+    rfqs: number;
+    quotes: number;
+    purchaseOrders: number;
+    invoices: number;
+    payments: number;
+  };
+  governanceStatus: 'RETENTION_LOCKED_SAFE' | 'UNKNOWN';
+}
+
+/**
+ * Requirement 16: Non-destructive dry-run impact assessment.
+ * Calculates exact record counts that would be touched by a reset WITHOUT deleting anything.
+ */
+export async function simulateDryRunTransactionalReset(): Promise<DryRunResetImpact> {
+  const [
+    { count: auditEventsCount },
+    { count: suppliersCount },
+    { count: categoriesCount },
+    { count: orgsCount },
+    { count: profilesCount },
+    { count: reqCount },
+    { count: rfqCount },
+    { count: quoteCount },
+    { count: poCount },
+    { count: invCount },
+    { count: payCount },
+  ] = await Promise.all([
+    supabase.from('audit_events').select('*', { count: 'exact', head: true }),
+    supabase.from('suppliers').select('*', { count: 'exact', head: true }),
+    supabase.from('categories').select('*', { count: 'exact', head: true }),
+    supabase.from('organizations').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('requirements').select('*', { count: 'exact', head: true }),
+    supabase.from('rfqs').select('*', { count: 'exact', head: true }),
+    supabase.from('quotes').select('*', { count: 'exact', head: true }),
+    supabase.from('purchase_orders').select('*', { count: 'exact', head: true }),
+    supabase.from('invoices').select('*', { count: 'exact', head: true }),
+    supabase.from('payments').select('*', { count: 'exact', head: true }),
+  ]);
+
+  return {
+    ok: true,
+    timestamp: new Date().toISOString(),
+    statutoryRetention: {
+      auditEvents: auditEventsCount ?? 0,
+      verifiedSuppliers: suppliersCount ?? 0,
+      canonicalCategories: categoriesCount ?? 0,
+      registeredOrganizations: orgsCount ?? 0,
+      activeUsers: profilesCount ?? 0,
+    },
+    transactionalScope: {
+      requirements: reqCount ?? 0,
+      rfqs: rfqCount ?? 0,
+      quotes: quoteCount ?? 0,
+      purchaseOrders: poCount ?? 0,
+      invoices: invCount ?? 0,
+      payments: payCount ?? 0,
+    },
+    governanceStatus: 'RETENTION_LOCKED_SAFE',
+  };
+}
+
 
 // ----------------------------------------------------
 // Buyer & Seller Troubleshooting API

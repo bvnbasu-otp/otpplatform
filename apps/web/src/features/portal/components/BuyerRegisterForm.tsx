@@ -110,7 +110,7 @@ export function BuyerRegisterForm({
   function handleBuyerTypeChange(selectedType: string) {
     setBuyerType(selectedType);
     onBuyerTypeChange?.(selectedType);
-    setAgreementAccepted(false);
+    // Requirement 18: Do not reset agreement acceptance on persona switch.
     if (selectedType === 'INDIVIDUAL') {
       setOrganisation('Self');
       setRoleCode('PROPERTY_OWNER');
@@ -140,7 +140,11 @@ export function BuyerRegisterForm({
     if (!city.trim()) errors.city = 'Operational city is required.';
     if (pincode.trim().length !== 6) errors.pincode = 'Pincode must be 6 digits.';
     if (!email.trim()) errors.email = 'Work email is required.';
-    if (!phone.trim()) errors.phone = 'Phone number is required.';
+    if (!phone.trim()) {
+      errors.phone = 'Phone number is required.';
+    } else if (phone.replace(/\D/g, '').length < 10) {
+      errors.phone = 'Please enter a valid 10-digit mobile number.';
+    }
     if (buyerType && !agreementAccepted) {
       errors.agreement = 'Review and accept the agreement above to continue.';
     }

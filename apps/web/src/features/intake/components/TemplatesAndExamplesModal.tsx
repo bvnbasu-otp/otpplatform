@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Modal } from '@/components/ui/StateViews';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -303,20 +303,98 @@ export const CANONICAL_EXAMPLES: ProcurementExample[] = [
     warrantyOffered: '5 Years System Warranty / 25 Years Module SLA',
     keyTakeaway: 'Milestone-based progressive settlement ensured payments were only released after Bescom net-metering synchronization.',
   },
+  {
+    id: 'ex-blr-individual-water-purifier',
+    title: '12 L Under-Sink RO Water Purifier & Installation (Bengaluru Homeowner)',
+    location: 'Bengaluru, Karnataka (560048)',
+    organizationType: 'INDIVIDUAL',
+    scenario: 'An individual resident in Hoodi required a 12L under-sink RO water purifier with mineral cartridge, kitchen plumbing, and 1-year filter maintenance.',
+    benchmarkPriceRange: '₹12,500 – ₹15,000',
+    turnaroundDays: 2,
+    warrantyOffered: '1 Year Comprehensive Onsite Warranty',
+    keyTakeaway: 'Verified local technicians submitted sealed quotes with installation and spare-cartridge costs fully transparent.',
+  },
+  {
+    id: 'ex-chennai-individual-painting',
+    title: '3BHK Apartment Interior Painting & Polishing (Chennai Individual)',
+    location: 'Chennai, Tamil Nadu (600028)',
+    organizationType: 'INDIVIDUAL',
+    scenario: 'A homeowner needed 2-coat washable interior emulsion painting, crack filling, and teak door polish for an 1,800 sq ft flat.',
+    benchmarkPriceRange: '₹34,000 – ₹42,000',
+    turnaroundDays: 5,
+    warrantyOffered: '1 Year Workmanship Warranty',
+    keyTakeaway: 'Milestone payment protection ensured final release only after customer signed off on the final walkthrough inspection.',
+  },
+  {
+    id: 'ex-cbe-individual-inverter',
+    title: 'Pure Sine Wave Home Inverter & Battery Combo (Coimbatore Individual)',
+    location: 'Coimbatore, Tamil Nadu (641001)',
+    organizationType: 'INDIVIDUAL',
+    scenario: 'An individual resident needed a 1100 VA inverter with 150 Ah tall tubular battery, trolley, and main-line wiring integration.',
+    benchmarkPriceRange: '₹18,500 – ₹21,500',
+    turnaroundDays: 1,
+    warrantyOffered: '36 Months Battery / 24 Months Inverter OEM Warranty',
+    keyTakeaway: 'Buyer received 3 competing local dealer offers with transparent scrap value deduction for their old battery.',
+  },
 ];
 
 export interface TemplatesAndExamplesModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectTemplate?: (template: ProcurementTemplate) => void;
+  buyerPersona?: 'INDIVIDUAL' | 'RWA' | 'COMMUNITY' | 'MSME' | string;
 }
 
 export function TemplatesAndExamplesModal({
   isOpen,
   onClose,
   onSelectTemplate,
+  buyerPersona = 'ALL',
 }: TemplatesAndExamplesModalProps) {
   const [activeTab, setActiveTab] = useState<'templates' | 'examples' | 'guidance'>('templates');
+  const normalizedPersona =
+    buyerPersona === 'RESIDENTIAL_RWA' || buyerPersona === 'COMMUNITY' || buyerPersona === 'RWA'
+      ? 'COMMUNITY'
+      : buyerPersona === 'MSME'
+        ? 'MSME'
+        : buyerPersona === 'INDIVIDUAL'
+          ? 'INDIVIDUAL'
+          : 'ALL';
+  const [selectedPersonaFilter, setSelectedPersonaFilter] = useState<string>(normalizedPersona);
+
+  const displayedTemplates = useMemo(() => {
+    if (selectedPersonaFilter === 'ALL') return CANONICAL_TEMPLATES;
+    if (selectedPersonaFilter === 'INDIVIDUAL') {
+      const indivIds = ['tmpl-domestic-ro', 'tmpl-plumber-visit', 'tmpl-painting-execution', 'tmpl-describe-requirement'];
+      return [...CANONICAL_TEMPLATES].sort((a, b) => {
+        const aMatch = indivIds.includes(a.id) ? -1 : 1;
+        const bMatch = indivIds.includes(b.id) ? -1 : 1;
+        return aMatch - bMatch;
+      });
+    }
+    if (selectedPersonaFilter === 'COMMUNITY') {
+      const rwaIds = ['tmpl-submersible-motor', 'tmpl-pool-amc', 'tmpl-gym-equipment', 'tmpl-terrace-waterproofing', 'tmpl-cctv-supply', 'tmpl-cctv-install'];
+      return [...CANONICAL_TEMPLATES].sort((a, b) => {
+        const aMatch = rwaIds.includes(a.id) ? -1 : 1;
+        const bMatch = rwaIds.includes(b.id) ? -1 : 1;
+        return aMatch - bMatch;
+      });
+    }
+    if (selectedPersonaFilter === 'MSME') {
+      const msmeIds = ['tmpl-cnc-flanges', 'tmpl-hvac-maintenance', 'tmpl-office-furniture', 'tmpl-terrace-waterproofing'];
+      return [...CANONICAL_TEMPLATES].sort((a, b) => {
+        const aMatch = msmeIds.includes(a.id) ? -1 : 1;
+        const bMatch = msmeIds.includes(b.id) ? -1 : 1;
+        return aMatch - bMatch;
+      });
+    }
+    return CANONICAL_TEMPLATES;
+  }, [selectedPersonaFilter]);
+
+  const displayedExamples = useMemo(() => {
+    if (selectedPersonaFilter === 'ALL') return CANONICAL_EXAMPLES;
+    return CANONICAL_EXAMPLES.filter((ex) => ex.organizationType === selectedPersonaFilter);
+  }, [selectedPersonaFilter]);
 
   return (
     <Modal
@@ -336,6 +414,55 @@ export function TemplatesAndExamplesModal({
       subtitle="Understand the strict boundary between Structural Templates, Illustrative Examples, and Authoritative Confirmed Requirements."
       testId="templates-examples-modal"
     >
+      {/* Persona Quick Filter Bar */}
+      <div className="flex items-center gap-1.5 mb-3 bg-muted/40 p-1.5 rounded-lg text-xs overflow-x-auto">
+        <span className="text-[11px] font-semibold text-muted-foreground mr-1">Persona Context:</span>
+        <button
+          type="button"
+          onClick={() => setSelectedPersonaFilter('ALL')}
+          className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
+            selectedPersonaFilter === 'ALL'
+              ? 'bg-background shadow-xs text-foreground font-bold'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          All
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedPersonaFilter('INDIVIDUAL')}
+          className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
+            selectedPersonaFilter === 'INDIVIDUAL'
+              ? 'bg-background shadow-xs text-primary font-bold'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🏠 Individual
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedPersonaFilter('COMMUNITY')}
+          className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
+            selectedPersonaFilter === 'COMMUNITY'
+              ? 'bg-background shadow-xs text-primary font-bold'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🏢 RWA / Society
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedPersonaFilter('MSME')}
+          className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
+            selectedPersonaFilter === 'MSME'
+              ? 'bg-background shadow-xs text-primary font-bold'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          🏭 MSME / Business
+        </button>
+      </div>
+
       {/* Navigation Tabs */}
       <div className="flex border-b border-border mb-4 overflow-x-auto pb-0.5 no-scrollbar min-w-0 flex-nowrap sm:flex-wrap gap-1">
         <button
@@ -349,7 +476,7 @@ export function TemplatesAndExamplesModal({
           data-testid="tab-templates"
         >
           <span>📋</span>
-          <span className="truncate">Templates ({CANONICAL_TEMPLATES.length})</span>
+          <span className="truncate">Templates ({displayedTemplates.length})</span>
         </button>
 
         <button
@@ -363,7 +490,7 @@ export function TemplatesAndExamplesModal({
           data-testid="tab-examples"
         >
           <span>💡</span>
-          <span className="truncate">Case Studies &amp; Examples ({CANONICAL_EXAMPLES.length})</span>
+          <span className="truncate">Case Studies &amp; Examples ({displayedExamples.length})</span>
         </button>
 
         <button
@@ -392,7 +519,7 @@ export function TemplatesAndExamplesModal({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 min-w-0">
-            {CANONICAL_TEMPLATES.map((tmpl) => (
+            {displayedTemplates.map((tmpl) => (
               <div
                 key={tmpl.id}
                 className="rounded-xl border bg-card p-3.5 flex flex-col justify-between shadow-2xs hover:border-primary/50 transition min-w-0"
@@ -465,7 +592,7 @@ export function TemplatesAndExamplesModal({
           </div>
 
           <div className="space-y-3">
-            {CANONICAL_EXAMPLES.map((ex) => (
+            {displayedExamples.map((ex) => (
               <div
                 key={ex.id}
                 className="rounded-xl border bg-card p-3.5 space-y-2.5 shadow-2xs min-w-0"

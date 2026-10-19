@@ -43,6 +43,27 @@ describe('turning constraint failures into something actionable', () => {
     ).toMatch(/kind of organisation/i);
   });
 
+  it('translates duplicate email constraint violations into friendly recovery message', () => {
+    expect(
+      humanizeSignupError('duplicate key value violates unique constraint "idx_signup_requests_open_email"'),
+    ).toMatch(/already exists.*sign in/i);
+    expect(
+      humanizeSignupError('SELF_SERVICE_INELIGIBLE: email already active in auth.users'),
+    ).toMatch(/already exists.*sign in/i);
+  });
+
+  it('translates duplicate phone constraint violations into friendly message', () => {
+    expect(
+      humanizeSignupError('duplicate key value violates unique constraint "signup_requests_phone_key"'),
+    ).toMatch(/phone number is already associated/i);
+  });
+
+  it('translates duplicate GSTIN constraint violations into branch guidance', () => {
+    expect(
+      humanizeSignupError('duplicate key value violates unique constraint "suppliers_gstin_key"'),
+    ).toMatch(/GSTIN is already registered/i);
+  });
+
   it('passes an unrecognised message through rather than inventing one', () => {
     expect(humanizeSignupError('connection refused')).toBe('connection refused');
   });

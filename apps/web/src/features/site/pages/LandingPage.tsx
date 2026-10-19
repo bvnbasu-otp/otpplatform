@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import {
@@ -11,24 +12,32 @@ import {
 import { SiteLayout } from '../components/SiteLayout';
 import { PublicJourney, TrustPrinciples } from '../components/PublicJourney';
 import { DEMO_RFQ } from '../content/site-content';
+import { OtpProductDemoModal } from '../components/OtpProductDemoModal';
 
 /**
  * One message, one purpose, one place to act. Pricing, FAQs and About have their
  * own pages in the header; repeating them here only buried the call to action.
  */
 export function LandingPage() {
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+
   return (
     <SiteLayout>
       <div className="overflow-x-hidden max-w-full space-y-12 sm:space-y-16 pb-12">
-        <HeroSection />
+        <HeroSection onOpenDemo={() => setIsDemoModalOpen(true)} />
         <PublicJourney />
         <TrustPrinciples />
       </div>
+
+      <OtpProductDemoModal
+        isOpen={isDemoModalOpen}
+        onClose={() => setIsDemoModalOpen(false)}
+      />
     </SiteLayout>
   );
 }
 
-function HeroSection() {
+function HeroSection({ onOpenDemo }: { onOpenDemo: () => void }) {
   const { user } = useAuth();
 
   return (
@@ -80,6 +89,19 @@ function HeroSection() {
             >
               I’m a supplier — Join to quote →
             </Link>
+          </div>
+
+          <div className="mt-4 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={onOpenDemo}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/5 hover:bg-primary/10 text-xs font-bold text-primary transition shadow-2xs cursor-pointer min-h-[40px]"
+              data-testid="interactive-product-walkthrough-button"
+            >
+              <span>✨</span>
+              <span>Interactive Walkthrough: TELL → REVIEW → DECIDE → TRACK</span>
+              <span>→</span>
+            </button>
           </div>
 
           <p className="mt-3 text-[11px] sm:text-xs text-muted-foreground">

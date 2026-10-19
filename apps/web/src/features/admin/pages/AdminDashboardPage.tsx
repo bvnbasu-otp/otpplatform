@@ -377,6 +377,20 @@ export function AdminDashboardPage() {
 
           <button
             type="button"
+            onClick={() => setTab('INTERNAL_RBAC')}
+            className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
+              activeTab === 'INTERNAL_RBAC'
+                ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                : 'bg-card text-foreground hover:bg-muted border-purple-500/40 text-purple-900 dark:text-purple-200'
+            }`}
+            title="Open Internal RBAC Permission Matrix"
+          >
+            <span className="text-sm">🔐</span>
+            <span className="hidden sm:inline">RBAC</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setTab('TILES')}
             className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
               isTilesView
@@ -592,8 +606,8 @@ export function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Bottom Row: Compact Category Icon Pills with Tooltips */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar scrollbar-none w-full max-w-full px-0.5">
+            {/* Bottom Row: Compact Category Icon Pills with Tooltips (wraps gracefully without horizontal scroll) */}
+            <div className="flex flex-wrap items-center gap-1.5 pb-1 w-full max-w-full px-0.5">
               {ADMIN_CATEGORIES.map((cat) => {
                 const isCatActive = cat.key === currentCategory.key;
                 const firstMod = cat.modules[0]!;
@@ -635,9 +649,9 @@ export function AdminDashboardPage() {
               })}
             </div>
 
-            {/* Intra-Category Module Switcher (Compact Icons + Labels) */}
+            {/* Intra-Category Module Switcher (Fully wrapping without horizontal scroll) */}
             {currentCategory.modules.length > 1 && (
-              <div className="flex items-center gap-1 overflow-x-auto pt-1 border-t border-border/30 no-scrollbar scrollbar-none w-full max-w-full px-0.5">
+              <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-border/30 w-full max-w-full px-0.5">
                 {currentCategory.modules.map((mod) => {
                   const isModActive = mod.key === activeTab;
                   const modBadge = mod.badge?.(dynamicCounts);

@@ -79,5 +79,19 @@ describe('TemplatesAndExamplesModal & Buyer Confirmation Authority Suite', () =>
         }
       }
     });
+
+    it('verifies V3 persona-tailored intake examples include Individual, RWA, and MSME case studies (Requirement 4)', () => {
+      const individualExamples = CANONICAL_EXAMPLES.filter((ex) => ex.organizationType === 'INDIVIDUAL');
+      const rwaExamples = CANONICAL_EXAMPLES.filter((ex) => ex.organizationType === 'COMMUNITY');
+      const msmeExamples = CANONICAL_EXAMPLES.filter((ex) => ex.organizationType === 'MSME');
+
+      expect(individualExamples.length).toBeGreaterThanOrEqual(3);
+      expect(rwaExamples.length).toBeGreaterThanOrEqual(1);
+      expect(msmeExamples.length).toBeGreaterThanOrEqual(2);
+
+      const roExample = individualExamples.find((ex) => ex.title.includes('RO Water Purifier'));
+      expect(roExample).toBeDefined();
+      expect(roExample?.location).toContain('Bengaluru');
+    });
   });
 });

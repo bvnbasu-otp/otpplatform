@@ -82,7 +82,7 @@ export const GOOGLE_PLACES_API_NEW_SEARCH_TEXT_ENDPOINT =
  * Do not request website or rating; their absence is allowed.
  */
 export const PLACES_SEARCH_TEXT_FIELD_MASK =
-  'places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri,places.nationalPhoneNumber,places.internationalPhoneNumber,places.businessStatus';
+  'places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri,places.nationalPhoneNumber,places.internationalPhoneNumber,places.businessStatus,places.types';
 
 /**
  * Prefer an already-present international number when it has at least 10 digits,
@@ -407,7 +407,7 @@ export class GooglePlacesDiscoveryAdapter implements SupplierNetworkPort {
       googleMapsUri: mapsUri,
       businessStatus,
       website,
-      types: [],
+      types: Array.isArray(place.types) ? (place.types as string[]) : [],
       isDetailsComplete: Boolean(place.formattedAddress),
     };
   }

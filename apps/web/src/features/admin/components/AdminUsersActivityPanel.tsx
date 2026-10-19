@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { sanitizeSpreadsheetCell } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
 import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
 import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
+import {
+  PersonaAuditStatementModal,
+  type AuditEntityTarget,
+} from './PersonaAuditStatementModal';
 import {
   fetchUsersAndOrganizations,
   fetchSignupRequests,
@@ -127,7 +132,7 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     setSearch('');
     onSubTabChange?.(next);
   };
-  const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('CARDS');
+  const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('TABLE');
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [organizations, setOrganizations] = useState<AdminOrganizationItem[]>([]);
   const [requests, setRequests] = useState<AdminSignupRequest[]>([]);
@@ -164,6 +169,163 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
   const [selectedBlockReason, setSelectedBlockReason] = useState<AccountBlockReason | ''>('');
   const [customBlockReason, setCustomBlockReason] = useState('');
   const [undoTarget, setUndoTarget] = useState<{ type: LifecycleEntityType; ids: string[] } | null>(null);
+
+  // Audit Statement Modal State
+  const [auditTarget, setAuditTarget] = useState<AuditEntityTarget | null>(null);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+
+  const handleOpenUserAudit = (u: AdminUserItem) => {
+    setAuditTarget({
+      id: u.id,
+      name: u.fullName || u.email,
+      type: u.side === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER',
+      email: u.email,
+      phone: u.phone,
+      gstin: null,
+      orgType: u.orgType,
+      createdAt: u.createdAt,
+    });
+    setIsAuditModalOpen(true);
+  };
+
+  const handleOpenOrgAudit = (o: AdminOrganizationItem) => {
+    setAuditTarget({
+      id: o.id,
+      name: o.name,
+      type: o.entity_type === 'SUPPLIER' ? 'SUPPLIER' : 'ORGANIZATION',
+      email: o.contact_email,
+      phone: o.contact_phone,
+      gstin: o.gstin,
+      orgType: o.org_type,
+      createdAt: o.created_at,
+    });
+    setIsAuditModalOpen(true);
+  };
+
+  // CSV Export with CWE-1236 Formula Injection Protection
+  const downloadCsv = (filename: string, csvContent: string) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportUsersCsv = () => {
+    const headers = [
+      'User ID',
+      'Full Name',
+      'Email',
+      'Phone',
+      'Side',
+      'Organization',
+      'Org Type',
+      'Role',
+      'GST Verified',
+      'Status',
+      'Online Presence',
+      'Created At',
+      'Last Seen At',
+    ];
+    const rows = filteredUsers.map((u) => {
+      const presence = getUserOnlineStatus(u.lastSeenAt, now);
+      return [
+        sanitizeSpreadsheetCell(u.id),
+        `"${sanitizeSpreadsheetCell(u.fullName || '').replace(/"/g, '""')}"`,
+        sanitizeSpreadsheetCell(u.email),
+        sanitizeSpreadsheetCell(u.phone || ''),
+        sanitizeSpreadsheetCell(u.side),
+        `"${sanitizeSpreadsheetCell(u.organizationName || 'Personal Workspace').replace(/"/g, '""')}"`,
+        sanitizeSpreadsheetCell(u.orgType || ''),
+        sanitizeSpreadsheetCell(u.role || ''),
+        u.gstVerified ? 'Yes' : 'No',
+        sanitizeSpreadsheetCell(u.status),
+        sanitizeSpreadsheetCell(presence),
+        sanitizeSpreadsheetCell(u.createdAt),
+        sanitizeSpreadsheetCell(u.lastSeenAt || ''),
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\r\n');
+    downloadCsv(`otp_users_roster_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
+  const handleExportOrgsCsv = (onlySuppliers = false) => {
+    const targetOrgs = filteredOrganizations.filter((o) =>
+      onlySuppliers ? o.entity_type === 'SUPPLIER' : true,
+    );
+    const headers = [
+      'Organization ID',
+      'Name',
+      'Entity Type',
+      'Sector / Type',
+      'Members Count',
+      'Active Orders Count',
+      'GSTIN',
+      'GST Verified',
+      'Contact Person',
+      'Contact Email',
+      'Contact Phone',
+      'Status',
+      'Created At',
+      'Last Seen At',
+    ];
+    const rows = targetOrgs.map((o) => {
+      return [
+        sanitizeSpreadsheetCell(o.id),
+        `"${sanitizeSpreadsheetCell(o.name).replace(/"/g, '""')}"`,
+        sanitizeSpreadsheetCell(o.entity_type),
+        sanitizeSpreadsheetCell(o.org_type || ''),
+        o.member_count,
+        o.active_orders_count,
+        sanitizeSpreadsheetCell(o.gstin || ''),
+        o.gst_verified ? 'Yes' : 'No',
+        `"${sanitizeSpreadsheetCell(o.contact_person || '').replace(/"/g, '""')}"`,
+        sanitizeSpreadsheetCell(o.contact_email || ''),
+        sanitizeSpreadsheetCell(o.contact_phone || ''),
+        sanitizeSpreadsheetCell(o.status),
+        sanitizeSpreadsheetCell(o.created_at),
+        sanitizeSpreadsheetCell(o.last_seen_at || ''),
+      ].join(',');
+    });
+    const prefix = onlySuppliers ? 'otp_suppliers_roster_' : 'otp_organizations_roster_';
+    const csv = [headers.join(','), ...rows].join('\r\n');
+    downloadCsv(`${prefix}${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
+  const handleExportRequestsCsv = () => {
+    const headers = [
+      'Request ID',
+      'Reference',
+      'Side',
+      'Business Name',
+      'Applicant Name',
+      'Email',
+      'Phone',
+      'Verification Channel',
+      'Status',
+      'Submitted At',
+    ];
+    const rows = filteredRequests.map((r) => {
+      return [
+        sanitizeSpreadsheetCell(r.id),
+        sanitizeSpreadsheetCell(r.reference),
+        sanitizeSpreadsheetCell(r.side),
+        `"${sanitizeSpreadsheetCell(r.business_name).replace(/"/g, '""')}"`,
+        `"${sanitizeSpreadsheetCell(r.contact_full_name).replace(/"/g, '""')}"`,
+        sanitizeSpreadsheetCell(r.email),
+        sanitizeSpreadsheetCell(r.phone || ''),
+        sanitizeSpreadsheetCell(r.verification_channel || 'EMAIL'),
+        sanitizeSpreadsheetCell(r.status),
+        sanitizeSpreadsheetCell(r.created_at),
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\r\n');
+    downloadCsv(`otp_registrations_queue_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -825,6 +987,20 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
 
           <button
             type="button"
+            onClick={() => {
+              if (subTab === 'USERS') handleExportUsersCsv();
+              else if (subTab === 'ORGANIZATIONS') handleExportOrgsCsv();
+              else handleExportRequestsCsv();
+            }}
+            disabled={isLoading}
+            className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs cursor-pointer"
+            title={`Export ${subTab.toLowerCase()} to CSV (formula-injection protected)`}
+          >
+            <span>📥</span> <span className="hidden sm:inline">Export CSV</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => void loadData()}
             disabled={isLoading}
             className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shrink-0 shadow-2xs"
@@ -1266,8 +1442,16 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                                 </button>
                               )}
 
-                            </>
-                          ) : (
+                              <button
+                                  type="button"
+                                  onClick={() => handleOpenUserAudit(u)}
+                                  className="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-xl border bg-muted/40 hover:bg-muted text-foreground font-semibold px-2.5 py-1.5 text-xs transition mobile-touch-target cursor-pointer"
+                                  title="View persona audit statement and transaction ledger"
+                                >
+                                  <span>📄</span> Statement
+                                </button>
+                              </>
+                            ) : (
                             <span className="text-[10px] text-muted-foreground font-semibold px-2">Protected Admin</span>
                           )}
                         </div>
@@ -1500,8 +1684,16 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                                   </button>
                                 )}
 
-                              </div>
-                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenUserAudit(u)}
+                                    className="rounded-lg border bg-muted/40 hover:bg-muted text-foreground font-semibold px-2 py-1 text-xs transition min-h-[36px] mobile-touch-target cursor-pointer"
+                                    title="View persona audit statement"
+                                  >
+                                    <span>📄</span> Statement
+                                  </button>
+                                </div>
+                              ) : (
                               <span className="text-[10px] text-muted-foreground font-semibold">Protected</span>
                             )}
                           </td>
@@ -1686,12 +1878,19 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                               type="button"
                               onClick={() => openBlockModal('ORGANIZATIONS', [o.id], [o.name])}
                               className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-3 py-1.5 text-xs transition mobile-touch-target"
-                              title="Suspend organization"
                             >
                               <span>🚫</span> Suspend
                             </button>
                           )}
 
+                          <button
+                            type="button"
+                            onClick={() => handleOpenOrgAudit(o)}
+                            className="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-xl border bg-muted/40 hover:bg-muted text-foreground font-semibold px-2.5 py-1.5 text-xs transition mobile-touch-target cursor-pointer"
+                            title="View organization audit statement"
+                          >
+                            <span>📄</span> Statement
+                          </button>
                         </div>
                       </div>
                     </article>
@@ -1886,11 +2085,19 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                                   className="rounded-lg border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-2.5 py-1 text-xs transition min-h-[36px] mobile-touch-target"
                                   title="Suspend organization"
                                 >
-                                  Suspend
+                                  <span>🚫</span> Suspend
                                 </button>
                               )}
 
-                            </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenOrgAudit(o)}
+                                  className="rounded-lg border bg-muted/40 hover:bg-muted text-foreground font-semibold px-2 py-1 text-xs transition min-h-[36px] mobile-touch-target cursor-pointer"
+                                  title="View organization audit statement"
+                                >
+                                  <span>📄</span> Statement
+                                </button>
+                              </div>
                           </td>
                         </tr>
                       );
@@ -2389,6 +2596,15 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
         </div>
       )}
 
+      {/* Persona-Level Audit Statement Modal */}
+      <PersonaAuditStatementModal
+        isOpen={isAuditModalOpen}
+        onClose={() => {
+          setIsAuditModalOpen(false);
+          setAuditTarget(null);
+        }}
+        targetEntity={auditTarget}
+      />
     </div>
   );
 }

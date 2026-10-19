@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PLATFORM_DISCLAIMER_LINES, PRODUCT_NAME, PRODUCT_FULL_NAME } from '@/lib/brand';
+import { OtpLogo } from '@/components/ui/OtpLogo';
 
 export function SiteFooter() {
   const [isUtilityDrawerOpen, setIsUtilityDrawerOpen] = useState(false);
@@ -9,8 +10,9 @@ export function SiteFooter() {
     <>
       <footer className="mt-auto w-full min-w-0 border-t bg-card/60 backdrop-blur-xs py-5 px-3 sm:px-4" data-testid="site-footer">
         <div className="mx-auto max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-xs text-muted-foreground">
-          {/* Brand & Copyright */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-2 text-center sm:text-left">
+          {/* Brand & Copyright with Official Logo */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-2.5 text-center sm:text-left">
+            <OtpLogo size={20} className="shrink-0" />
             <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 sm:gap-2">
               <span className="font-extrabold text-foreground">{PRODUCT_NAME}</span>
               <span>·</span>
@@ -18,8 +20,8 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Strict 5-Item Navigation Footer Links */}
-          <nav className="flex flex-wrap items-center justify-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs font-semibold" aria-label="Footer Navigation">
+          {/* Strict 5-Item Navigation Footer Links (Hidden on small mobile screens to prevent double nav clash with MobileBottomNav) */}
+          <nav className="hidden sm:flex flex-wrap items-center justify-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs font-semibold" aria-label="Footer Navigation">
             <Link to="/" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Home</Link>
             <Link to="/pricing" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Pricing</Link>
             <Link to="/signup" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Get Started</Link>

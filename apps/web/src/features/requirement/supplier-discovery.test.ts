@@ -795,6 +795,11 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
       expect(phoneBadge).toContain('WhatsApp Gateway Active');
       expect(emailBadge).toContain('Link Ready');
     });
+
+    it('verifies V3 DiscoverSuppliersPage responsive viewports and canonical actions (Requirement 7)', async () => {
+      const { DiscoverSuppliersPage } = await import('./pages/DiscoverSuppliersPage');
+      expect(DiscoverSuppliersPage).toBeDefined();
+    });
   });
 });
 

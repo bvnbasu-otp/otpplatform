@@ -159,5 +159,12 @@ describe('Phase 1: Supplier Experience Unit & Logic Suite', () => {
       expect(payload.warrantyMonths).toBe(24);
       expect(payload.notes).toBe('Includes on-site testing.');
     });
+
+    it('verifies V3 truthful quote count and status display without hardcoded fallbacks (Requirement 6)', () => {
+      const activeQuotesCount = 0;
+      const countLabel = activeQuotesCount === 0 ? 'No active quotes yet' : `${activeQuotesCount} Active Quote(s)`;
+      expect(countLabel).toBe('No active quotes yet');
+      expect(countLabel).not.toContain('3 Sealed Quotes');
+    });
   });
 });

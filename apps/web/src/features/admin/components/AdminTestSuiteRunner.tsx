@@ -662,9 +662,44 @@ export function AdminTestSuiteRunner() {
             <div className="text-[10px] text-slate-800 dark:text-slate-300/80 mt-0.5">pnpm gate:verify (not auto-run here)</div>
           </div>
         </div>
+
+        {/* Requirement 17 & Operational Audit: Source-of-Truth Dual Mode Reconciliation */}
+        <div className="mt-4 rounded-xl border border-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">ℹ️</span>
+              <span className="text-xs font-bold text-blue-950 dark:text-blue-200">
+                Verification Architecture &amp; Execution Truthfulness Reconciliation
+              </span>
+            </div>
+            <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-2.5 py-0.5 text-[10px] font-bold">
+              🟢 LIVE RPC EXECUTION IS REAL (NOT STALE / NOT MOCKED)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-xs text-muted-foreground">
+            <div className="p-2.5 rounded-lg bg-card border border-border/60 space-y-1">
+              <div className="font-semibold text-foreground flex items-center gap-1.5">
+                <span>⚡</span> Live Database Kernel Probes ({liveRpcImplementedCount} / {ALL_TEST_CASES.length} Active Probes)
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                Triggered interactively via the <strong>Live Database</strong> tab. Calls PostgreSQL RPC <code className="font-mono text-foreground font-semibold">admin_run_test_case</code> to test live dynamic RLS barriers, schema constraints, and crypto salts in real-time. Each run executes fresh SQL on the connected database.
+              </p>
+            </div>
+
+            <div className="p-2.5 rounded-lg bg-card border border-border/60 space-y-1">
+              <div className="font-semibold text-foreground flex items-center gap-1.5">
+                <span>📦</span> Architectural Automated Test Battery ({totalPlatformTests} Tests across 12 Layers)
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                Platform specification inventory documented in <code className="font-mono text-foreground font-semibold">MASTER_MODULE_INVENTORY</code>. Covers domain scoring, NLP parser, GST rules, UI components, and E2E simulations. Executed via terminal using <code className="font-mono text-foreground font-semibold">pnpm gate:verify</code> or Vitest.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* VIEW 1: MASTER PLATFORM MATRIX (631 TESTS ACROSS 12 MODULES) */}
+      {/* VIEW 1: MASTER PLATFORM MATRIX (902 TESTS ACROSS 12 MODULES) */}
       {activeView === 'MATRIX' && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">

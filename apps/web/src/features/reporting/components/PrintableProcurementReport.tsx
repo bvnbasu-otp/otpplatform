@@ -1,6 +1,7 @@
 import { formatMoney } from '@/features/fulfillment/types/fulfillment';
 import { formatDateIST, formatDateTimeIST } from '@/lib/date-utils';
 import { PRODUCT_FULL_NAME, PRODUCT_NAME } from '@/lib/brand';
+import { OtpLogo } from '@/components/ui/OtpLogo';
 import type { PeriodReportingSummary } from '../types/reporting';
 import type { PurchaseOrderSummary } from '@/features/fulfillment/types/fulfillment';
 
@@ -27,9 +28,7 @@ export function PrintableProcurementReport({
       <div className="border-b-2 border-slate-900 pb-4 mb-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white font-black text-xl">
-              OTP
-            </div>
+            <OtpLogo size={44} className="shrink-0" />
             <div>
               <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">
                 Procurement Decision &amp; Fulfillment Statement

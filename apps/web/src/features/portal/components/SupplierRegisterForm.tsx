@@ -19,6 +19,7 @@ import { SUPPLIER_COPY } from '../types/portal';
 import { VerificationChoice } from './VerificationChoice';
 import { RegistrationFrozenAgreementPanel } from '@/features/legal/components/RegistrationFrozenAgreementPanel';
 import { useCurrentAgreement } from '@/features/legal/hooks/use-current-agreement';
+import { validateGstin, normalizePhoneNumber } from '@otp/domain';
 
 /**
  * Registering a business or individual service contractor.
@@ -115,7 +116,17 @@ export function SupplierRegisterForm({
     if (!firstName.trim()) errors.firstName = 'Contact first name is required.';
     if (!lastName.trim()) errors.lastName = 'Contact last name is required.';
     if (!email.trim()) errors.email = 'Work email is required.';
-    if (!phone.trim()) errors.phone = 'Phone number is required.';
+    if (!phone.trim()) {
+      errors.phone = 'Phone number is required.';
+    } else if (normalizePhoneNumber(phone).replace(/\D/g, '').length < 10) {
+      errors.phone = 'Please enter a valid 10-digit mobile number.';
+    }
+    if (businessType === 'GST_REGISTERED' && taxId.trim()) {
+      const gstinVal = validateGstin(taxId.trim());
+      if (!gstinVal.valid) {
+        errors.taxId = gstinVal.error || 'Please enter a valid 15-character GSTIN with valid checksum.';
+      }
+    }
     if (!city.trim() && !pincode.trim()) errors.city = 'Tell us the city or pin code you work in.';
     if (!agreementAccepted) {
       errors.agreement = 'Review and accept the agreement above to continue.';

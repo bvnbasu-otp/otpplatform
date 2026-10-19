@@ -13,12 +13,19 @@ import {
   type SourcingMode,
   type SupplierReach,
   type TaxonomySnapshot,
+  type BuyerAddress,
+  type BuyerPersona,
+  tryResolveBuyerPersona,
 } from '@otp/domain';
 
 import { Badge, Button } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { fetchPrimaryDeliveryLocation } from '../api/primary-address';
-import { saveBuyerAddress } from '@/features/profile/api/buyer-addresses';
+import {
+  fetchBuyerAddresses,
+  saveBuyerAddress,
+  setPrimaryBuyerAddress,
+} from '@/features/profile/api/buyer-addresses';
 import { useRoleContext } from '@/features/roles';
 
 import { inferIndianState, inferIndianCity, type DraftPatch } from '../api/draft';
@@ -155,28 +162,67 @@ export function UnifiedThreeTierIntake({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
 
-  // Prefill empty city / PIN from the primary address once per user + org.
-  // Never overwrites a value saved on the draft or typed by the buyer.
+  const buyerPersona: BuyerPersona =
+    tryResolveBuyerPersona(context.buyerType) ??
+    tryResolveBuyerPersona(context.organizations?.[0]?.orgType) ??
+    (context.organizationId ? 'RWA' : 'INDIVIDUAL');
+  const isIndividual = buyerPersona === 'INDIVIDUAL' && !context.organizationId;
+
+  const [savedAddresses, setSavedAddresses] = useState<BuyerAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
+  // Fetch address book and prefill delivery address
   const prefillKeyRef = useRef<string | null>(null);
   const prefilledRef = useRef<{ city?: string; pincode?: string }>({});
+
   useEffect(() => {
     if (!user?.id) return;
     const key = `${user.id}:${context.organizationId ?? ''}`;
     if (prefillKeyRef.current === key) return;
     prefillKeyRef.current = key;
-    if (draft?.deliveryCity || draft?.deliveryPincode) return;
 
     let cancelled = false;
     void fetchPrimaryDeliveryLocation(context.organizationId).then((primary) => {
       if (cancelled || !primary) return;
       prefilledRef.current = { city: primary.city ?? undefined, pincode: primary.pincode ?? undefined };
-      if (primary.city) setCity((prev) => prev.trim() ? prev : primary.city!);
-      if (primary.pincode) setPincode((prev) => prev.trim() ? prev : primary.pincode!);
+      if (!draft?.deliveryCity && primary.city) {
+        setCity((prev) => (prev.trim() ? prev : primary.city!));
+      }
+      if (!draft?.deliveryPincode && primary.pincode) {
+        setPincode((prev) => (prev.trim() ? prev : primary.pincode!));
+      }
+      if (!draft?.deliveryLine1 && primary.line1) {
+        setLine1((prev) => (prev.trim() ? prev : primary.line1!));
+      }
+      if (primary.addressId) {
+        setSelectedAddressId(primary.addressId);
+      }
     });
+
+    void fetchBuyerAddresses(context.organizationId, buyerPersona).then((res) => {
+      if (cancelled || !res.ok) return;
+      setSavedAddresses(res.addresses);
+      const primary = res.addresses.find((a) => a.isPrimary);
+      if (primary) {
+        setSelectedAddressId((prev) => prev ?? primary.id);
+      }
+    });
+
     return () => {
       cancelled = true;
     };
-  }, [user?.id, context.organizationId, draft?.deliveryCity, draft?.deliveryPincode]);
+  }, [user?.id, context.organizationId, buyerPersona, draft?.deliveryCity, draft?.deliveryPincode, draft?.deliveryLine1]);
+
+  const handleSelectSavedAddress = useCallback((addr: BuyerAddress | null) => {
+    if (addr) {
+      setSelectedAddressId(addr.id);
+      setCity(addr.city);
+      setPincode(addr.pincode);
+      if (addr.line1) setLine1(addr.line1);
+    } else {
+      setSelectedAddressId(null);
+    }
+  }, []);
 
   // Sync state if draft loads later
   useEffect(() => {
@@ -412,6 +458,7 @@ export function UnifiedThreeTierIntake({
     setQualityNotes('');
     setLine1('');
     setSiteNotes('');
+    setSelectedAddressId(null);
     setErrors({});
     setValidationError(null);
     onClearDraft();
@@ -565,31 +612,40 @@ export function UnifiedThreeTierIntake({
       return;
     }
 
-    // Address Readiness Gate: persist validated address to address book if none exists or location was modified
+    // Address Association (Requirement 2 & 5):
+    // If an individual has selected an address from their address book, mark it primary
+    // so the database trigger captures that exact delivery address for the RFQ
+    // without creating duplicate address book records.
     if (user && context.profileId) {
-      try {
-        const cleanPin = pincode.trim();
-        const primaryLoc = await fetchPrimaryDeliveryLocation(context.organizationId);
-        if (
-          !primaryLoc ||
-          primaryLoc.city !== city.trim() ||
-          primaryLoc.pincode !== cleanPin ||
-          (line1.trim() && primaryLoc.line1 !== line1.trim())
-        ) {
+      if (selectedAddressId && isIndividual) {
+        const targetAddr = savedAddresses.find((a) => a.id === selectedAddressId);
+        if (targetAddr && !targetAddr.isPrimary) {
+          try {
+            await setPrimaryBuyerAddress(targetAddr, context.organizationId, buyerPersona);
+          } catch {
+            // Best-effort primary update
+          }
+        }
+      } else if (savedAddresses.length === 0 && (city.trim() || pincode.trim())) {
+        // First-time buyer with NO saved addresses in their address book:
+        // Create their initial primary address so their profile address is established.
+        try {
+          const cleanPin = pincode.trim();
           await saveBuyerAddress({
-            persona: ((context as unknown as Record<string, unknown>).persona as any) || (context.organizationId ? 'RWA' : 'INDIVIDUAL'),
+            persona: buyerPersona,
             organizationId: context.organizationId || null,
-            label: 'Delivery Site',
+            label: isIndividual ? 'Home' : 'Registered Office',
             line1: line1.trim() || `${city.trim()} Delivery Point`,
             city: city.trim(),
             state: 'India',
             pincode: cleanPin,
             addressType: 'DELIVERY',
             isPrimary: true,
+            isFirstAddress: true,
           });
+        } catch {
+          // Fallback gracefully so transient address book write issues don't crash client flow
         }
-      } catch {
-        // Fallback gracefully so transient address book write issues don't crash client flow
       }
     }
 
@@ -696,6 +752,10 @@ export function UnifiedThreeTierIntake({
         onCustomVerticalChange={(val) => handleAttributeChange('custom_vertical', val)}
         isExpanded={isStage1Expanded}
         onToggleExpand={() => setIsStage1Expanded(!isStage1Expanded)}
+        savedAddresses={savedAddresses}
+        selectedAddressId={selectedAddressId}
+        onSelectSavedAddress={handleSelectSavedAddress}
+        isIndividual={isIndividual}
       />
 
       {/* Stage 2: Technical Specifications & BoQ */}
@@ -761,6 +821,7 @@ export function UnifiedThreeTierIntake({
         isOpen={isTemplatesModalOpen}
         onClose={() => setIsTemplatesModalOpen(false)}
         onSelectTemplate={handleSelectTemplate}
+        buyerPersona={context.buyerType || (typeof context.activeRole === 'string' ? context.activeRole : (context.activeRole as any)?.roleCode) || (user?.user_metadata?.persona as string) || 'INDIVIDUAL'}
       />
 
       {/* Sticky Bottom Action Bar with Dominant Primary CTA */}

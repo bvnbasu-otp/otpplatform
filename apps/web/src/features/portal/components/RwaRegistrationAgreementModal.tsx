@@ -45,6 +45,83 @@ export function RwaRegistrationAgreementModal({
 
   const agreementMarkdown = compileRwaAgreementMarkdown(agreementData);
 
+  const handlePrintPdf = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OTP RWA Agreement - ${agreementData.organizationName}</title>
+  <style>
+    @page { size: A4 portrait; margin: 15mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; line-height: 1.5; font-size: 11pt; padding: 20px; }
+    .header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .brand-title { font-size: 18pt; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; }
+    .brand-sub { font-size: 10pt; color: #475569; font-weight: 600; margin-top: 4px; }
+    .meta-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 10pt; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .clause-title { font-size: 12pt; font-weight: bold; margin-top: 16px; margin-bottom: 6px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .clause-text { font-size: 10pt; color: #334155; margin-bottom: 8px; text-align: justify; }
+    .footer { margin-top: 30px; border-top: 1px solid #cbd5e1; padding-top: 12px; font-size: 9pt; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div style="font-weight: 900; font-size: 12pt; color: #0284c7; letter-spacing: 1px;">OPEN TRADE &amp; PROCUREMENT PLATFORM (OTP)</div>
+      <h1 class="brand-title">RWA Institutional Governance Agreement</h1>
+      <div class="brand-sub">Residential Welfare Association &amp; Housing Society Procurement Charter</div>
+    </div>
+    <div style="text-align: right; font-size: 9pt; color: #64748b;">
+      <strong>Ref:</strong> ${agreementData.agreementReference}<br>
+      <strong>Effective Date:</strong> ${agreementData.effectiveDate.slice(0, 10)}
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div class="meta-grid">
+      <div><strong>Association Name:</strong> ${agreementData.organizationName}</div>
+      <div><strong>Authorized Representative:</strong> ${agreementData.authorizedOfficerName}</div>
+      <div><strong>Governance Role:</strong> ${agreementData.authorizedOfficerRole}</div>
+      <div><strong>Charter / PAN / GST:</strong> ${agreementData.panOrGstin}</div>
+      <div><strong>Jurisdiction:</strong> ${agreementData.jurisdictionState}</div>
+      <div><strong>Electronic Signature:</strong> Authenticated Admin Session</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="clause-title">1. Institutional Purpose and Authority</div>
+    <div class="clause-text">This institutional charter empowers the Management Committee of ${agreementData.organizationName} to conduct competitive sourcing, vendor discovery, multi-member quote evaluation, and collective approval on the Open Trade &amp; Procurement Platform (OTP).</div>
+
+    <div class="clause-title">2. Quorum and Weighted Voting Safeguards</div>
+    <div class="clause-text">Procurement decisions over defined spend thresholds require quorum participation. Resident owners and committee members cast weighted votes (1–4) according to society bylaws. Estate managers carry operational-only authority without voting or self-approval privileges.</div>
+
+    <div class="clause-title">3. Identity Protection &amp; Anti-Collusion Rules</div>
+    <div class="clause-text">Supplier identities and detailed quotes remain sealed until the quotation deadline. Platform operators and committee members cannot access vendor pricing prematurely, eliminating bias, favouritism, and kickbacks.</div>
+
+    <div class="clause-title">4. Direct Settlement &amp; Zero Commission</div>
+    <div class="clause-text">All society funds flow directly from the RWA bank account to the selected vendor upon milestone verification. OTP never holds society funds in escrow and extracts 0% transaction commission.</div>
+
+    <div class="clause-title">5. Auditable Ledger for AGM Compliance</div>
+    <div class="clause-text">Every RFQ, committee vote, score matrix, and approval is immutably snapshotted and exportable as a signed report for society auditors and the Annual General Body Meeting (AGM).</div>
+  </div>
+
+  <div class="footer">
+    Open Trade &amp; Procurement Platform (OTP) · Statutory RWA Record · Verifiable at https://otpplatform.com
+  </div>
+  <script>
+    window.onload = function() { window.print(); };
+  </script>
+</body>
+</html>`;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   const handleDownloadA4 = () => {
     const element = document.createElement('a');
     const file = new Blob([agreementMarkdown], { type: 'text/markdown;charset=utf-8' });
@@ -174,14 +251,24 @@ export function RwaRegistrationAgreementModal({
           )}
 
           <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 pt-1">
-            <button
-              type="button"
-              onClick={handleDownloadA4}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-border bg-card hover:bg-muted text-foreground transition min-h-[44px]"
-            >
-              <span>📥</span>
-              <span>Download Printable A4 (.md)</span>
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handlePrintPdf}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition min-h-[44px] shadow-2xs cursor-pointer"
+              >
+                <span>🖨️</span>
+                <span>Print / Save PDF (A4)</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadA4}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold border border-border bg-card hover:bg-muted text-muted-foreground transition min-h-[44px] cursor-pointer"
+              >
+                <span>📥</span>
+                <span>(.md)</span>
+              </button>
+            </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button

@@ -46,8 +46,16 @@ export function RequirementIntakePage() {
     error: taxonomyError,
     refresh: refreshTaxonomy,
   } = useTaxonomy();
-  const { draft, setDraft, isLoading: draftLoading, isSaving, error: draftError, start, save } =
-    useIntakeDraft(requirementId, context.organizationId);
+  const {
+    draft,
+    setDraft,
+    isLoading: draftLoading,
+    isSaving,
+    error: draftError,
+    start,
+    save,
+    clearDraft,
+  } = useIntakeDraft(requirementId, context.organizationId);
 
   const [suggestedWeights, setSuggestedWeights] = useState<Record<string, number>>({});
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -55,6 +63,13 @@ export function RequirementIntakePage() {
   const [subscription, setSubscription] = useState<OrganizationSubscription | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [restoredNotice, setRestoredNotice] = useState(false);
+
+  const handleClearAll = useCallback(() => {
+    clearDraft();
+    clearLocalIntakeDraft(context.organizationId);
+    setRestoredNotice(false);
+    setSearchParams({}, { replace: true });
+  }, [clearDraft, context.organizationId, setSearchParams]);
 
   useEffect(() => {
     if (!requirementId) {
@@ -236,13 +251,8 @@ export function RequirementIntakePage() {
             <span>💾 Draft recovered</span>
             <button
               type="button"
-              onClick={() => {
-                clearLocalIntakeDraft(context.organizationId);
-                setRestoredNotice(false);
-                setSearchParams({}, { replace: true });
-                window.location.reload();
-              }}
-              className="text-[10px] font-bold underline hover:opacity-80 transition ml-1"
+              onClick={handleClearAll}
+              className="text-[10px] font-bold underline hover:opacity-80 transition ml-1 cursor-pointer"
             >
               Clear
             </button>
@@ -264,9 +274,8 @@ export function RequirementIntakePage() {
             <button
               type="button"
               onClick={() => {
-                clearLocalIntakeDraft(context.organizationId);
-                setSearchParams({}, { replace: true });
-                window.location.href = '/requirements/new';
+                handleClearAll();
+                navigate('/requirements/new', { replace: true });
               }}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs hover:bg-primary/90 transition mobile-touch-target cursor-pointer"
             >
@@ -319,7 +328,7 @@ export function RequirementIntakePage() {
           onStart={handleStartDraft}
           onPublish={handlePublishWithSourcing}
           onOpenPaymentModal={() => setIsPaymentModalOpen(true)}
-          onClearDraft={() => clearLocalIntakeDraft(context.organizationId)}
+          onClearDraft={handleClearAll}
         />
       </div>
 

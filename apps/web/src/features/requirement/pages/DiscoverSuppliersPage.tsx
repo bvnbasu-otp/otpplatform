@@ -53,17 +53,26 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
       fetchMatchedSuppliers(id),
     ]);
 
-    // If 0 suppliers discovered yet, run discovery automatically
+    // Requirement 7 & 17: OTP-registered, eligible suppliers first
     if (count === 0 || (supRes.ok && supRes.suppliers.length === 0)) {
-      const discovered = await discoverForRequirement(id, 'GOOGLE_PLACES');
-      if (!discovered.ok) {
-        discoveryError = discovered.error || 'Supplier discovery failed';
-      }
+      const otpDiscovered = await discoverForRequirement(id, 'OTP_REGISTERED');
       [netRes, count, supRes] = await Promise.all([
         fetchSupplierNetworkSummary(id),
         fetchInvitationCount(id),
         fetchMatchedSuppliers(id),
       ]);
+
+      if (count === 0 || (supRes.ok && supRes.suppliers.length === 0)) {
+        const placesDiscovered = await discoverForRequirement(id, 'GOOGLE_PLACES');
+        if (!placesDiscovered.ok && !otpDiscovered.ok) {
+          discoveryError = placesDiscovered.error || 'Supplier discovery failed';
+        }
+        [netRes, count, supRes] = await Promise.all([
+          fetchSupplierNetworkSummary(id),
+          fetchInvitationCount(id),
+          fetchMatchedSuppliers(id),
+        ]);
+      }
     }
 
     if (netRes.ok) {
@@ -210,9 +219,9 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
     setInvitationCount(count);
     if (supRes.ok) setSuppliers(supRes.suppliers);
     if (discovered.otpRegisteredInvited === 0 && discovered.invited === 0) {
-      setSuccess('OTP registered suppliers: 0. This was not a Google Places search.');
+      setSuccess("We couldn't find enough matches yet. You can invite a known supplier or retry discovery.");
     } else {
-      setSuccess('OTP registered suppliers were added. They are not Google Places discoveries.');
+      setSuccess('Supplier matches are ready. Relevant suppliers have been connected.');
     }
   }
 
@@ -222,7 +231,10 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
     setError(null);
     try {
       if (invitationCount === 0 || suppliers.length === 0) {
-        const discovered = await discoverForRequirement(rfqId, 'GOOGLE_PLACES');
+        let discovered = await discoverForRequirement(rfqId, 'OTP_REGISTERED');
+        if (!discovered.ok || discovered.invited < 1) {
+          discovered = await discoverForRequirement(rfqId, 'GOOGLE_PLACES');
+        }
         if (!discovered.ok || discovered.invited < 1) {
           setError(discovered.ok
             ? 'No suppliers are invited, so this request is not open for quotes.'
@@ -247,12 +259,30 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
   if (isLoading) {
     return (
-      <div className="zero-scroll-container p-4 max-w-5xl mx-auto w-full space-y-4 text-foreground">
-        <div className="animate-pulse space-y-4">
-          <div className="h-10 bg-muted/60 rounded-lg w-1/3" />
-          <div className="h-28 bg-muted/40 rounded-xl" />
-          <div className="h-32 bg-slate-900/40 rounded-xl" />
-          <div className="h-44 bg-muted/20 rounded-xl" />
+      <div
+        className="zero-scroll-container p-3 sm:p-4 max-w-5xl mx-auto w-full space-y-4 text-foreground"
+        data-testid="discover-suppliers-loading"
+      >
+        <SupplierRadarPulseBanner
+          totalCount={0}
+          state="DISCOVERING"
+          isBroadcasting={false}
+        />
+        <div className="rounded-xl border border-border bg-card/60 p-6 flex flex-col items-center justify-center text-center space-y-3 shadow-xs">
+          <div className="relative flex items-center justify-center w-12 h-12">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/20 opacity-75" />
+            <span className="relative inline-flex rounded-full h-8 w-8 bg-primary/10 text-primary items-center justify-center font-bold text-base">
+              ⚡
+            </span>
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">
+              Connecting to relevant suppliers…
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-md">
+              Preparing your supplier matches across verified registered businesses and local service providers.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -449,9 +479,9 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           /* Granular Empty State 1: No suppliers discovered yet */
           <div className="rounded-xl border border-dashed p-6 text-center space-y-3 bg-card" data-testid="empty-suppliers-pool">
             <span className="text-3xl" aria-hidden="true">🔍</span>
-            <h3 className="text-sm font-bold text-foreground">Google Places: 0 discovered</h3>
+            <h3 className="text-sm font-bold text-foreground">We couldn&apos;t find enough matches yet</h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              No businesses were returned for this PIN and category, and no OTP supplier was substituted. The requirement is still here. You can retry Google Places, search OTP registered suppliers, invite a known vendor, or return to the specification to edit, resume later, or leave it.
+              No matching businesses were returned for this PIN and category yet. Your requirement is saved. You can retry discovery, search registered suppliers, invite a known vendor, or return to edit specifications.
             </p>
             <div className="flex flex-wrap justify-center gap-2 pt-1">
               <button
@@ -459,7 +489,8 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
                 onClick={() => void load()}
                 className="min-h-[48px] px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
               >
-                Retry Google Places
+                Retry Discovery
+                {/* Retry Google Places */}
               </button>
               <button
                 type="button"

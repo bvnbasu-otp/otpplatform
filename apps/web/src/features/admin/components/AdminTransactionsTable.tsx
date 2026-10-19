@@ -123,7 +123,7 @@ export function AdminTransactionsTable({
   onExecuteAction,
   onRefresh,
 }: AdminTransactionsTableProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('CARDS');
+  const [viewMode, setViewMode] = useState<ViewMode>('TABLE');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [stalledFilter, setStalledFilter] = useState(false);

@@ -34,6 +34,7 @@ export * from './transitions';
 export * from './taxonomy/types';
 export * from './taxonomy/units';
 export * from './taxonomy/taxonomy-cache';
+export * from './taxonomy/taxonomy-keywords';
 export * from './taxonomy/canonical-taxonomy';
 export * from './taxonomy/legacy-template-mode';
 export * from './taxonomy/intake-other-taxonomy';
@@ -112,5 +113,6 @@ export * from './types/persona-wallet';
 export * from './types/supplier-network-provider';
 export * from './types/supplier-provider-identity';
 export * from './types/funnel-analytics';
+export * from './identity/duplicate-identity-safeguards';
 
 

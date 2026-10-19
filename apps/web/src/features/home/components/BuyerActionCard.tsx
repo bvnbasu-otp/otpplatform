@@ -12,9 +12,14 @@ export function BuyerActionCard({ action, onInspect }: BuyerActionCardProps) {
   const rfqCode = action.requirement?.rfqId
     ? `RFQ #${action.requirement.rfqId.slice(-4)}`
     : `REQ #${action.id.slice(0, 6)}`;
-  const quotesText = action.requirement?.quotesCount
-    ? `${action.requirement.quotesCount} Sealed Quotes`
-    : '3 Sealed Quotes';
+
+  const count = action.requirement?.quotesCount ?? action.quotesCount ?? 0;
+  const quotesText =
+    count === 1
+      ? '1 Sealed Quote'
+      : count > 1
+        ? `${count} Sealed Quotes`
+        : 'Awaiting supplier responses';
 
   return (
     <article
@@ -36,7 +41,15 @@ export function BuyerActionCard({ action, onInspect }: BuyerActionCardProps) {
       {/* Summary Row */}
       <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/50">
         <span>{quotesText}</span>
-        <span className="font-bold text-emerald-600 dark:text-emerald-400">L1: ₹8,200</span>
+        {count > 0 ? (
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+            {count >= (action.minQuotesRequired || 3) ? 'Quorum Met · In Review' : `${count}/${action.minQuotesRequired || 3} Quotes`}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-[10px]">
+            0 quotes received
+          </span>
+        )}
       </div>
 
       {/* Single Primary Action: Min 48px touch target */}

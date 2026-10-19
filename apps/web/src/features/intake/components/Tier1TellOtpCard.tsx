@@ -3,6 +3,7 @@ import {
   REQUIREMENT_MODE_LABELS,
   RequirementMode,
   resolveDescribeOtherTaxonomyIds,
+  type BuyerAddress,
   type FulfilmentMode,
   type ParsedRequirement,
   type RequiredByMode,
@@ -48,6 +49,10 @@ export interface Tier1TellOtpCardProps {
   onCustomVerticalChange?: (value: string) => void;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  savedAddresses?: BuyerAddress[];
+  selectedAddressId?: string | null;
+  onSelectSavedAddress?: (address: BuyerAddress | null) => void;
+  isIndividual?: boolean;
 }
 
 const DESCRIBE_CATEGORY_SENTINEL = '__OTP_DESCRIBE_CATEGORY__';
@@ -222,11 +227,42 @@ export function Tier1TellOtpCard({
   onCustomVerticalChange,
   isExpanded = true,
   onToggleExpand,
+  savedAddresses = [],
+  selectedAddressId = null,
+  onSelectSavedAddress,
+  isIndividual = false,
 }: Tier1TellOtpCardProps) {
   const [showVoiceDictation, setShowVoiceDictation] = useState(false);
   const [isCustomTerms, setIsCustomTerms] = useState(false);
   const { isLocating, locationError, requestCurrentLocation } = useDeviceCapabilities();
   const [gpsNotice, setGpsNotice] = useState<string | null>(null);
+
+  const suggestedCities = useMemo(() => {
+    const list: string[] = [];
+    if (savedAddresses && savedAddresses.length > 0) {
+      for (const a of savedAddresses) {
+        if (a.city && !list.includes(a.city)) list.push(a.city);
+      }
+    }
+    const nationwideHubs = [
+      'Bengaluru',
+      'Coimbatore',
+      'Chennai',
+      'Erode',
+      'Pune',
+      'Mumbai',
+      'Hyderabad',
+      'Noida',
+      'Ahmedabad',
+      'Surat',
+      'Kochi',
+      'Jaipur',
+    ];
+    for (const hub of nationwideHubs) {
+      if (!list.includes(hub)) list.push(hub);
+    }
+    return list.slice(0, 8);
+  }, [savedAddresses]);
 
   const describeOther = useMemo(
     () => resolveDescribeOtherTaxonomyIds(taxonomy),
@@ -469,7 +505,7 @@ export function Tier1TellOtpCard({
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                AI Parser Ready
+                Auto Parser Ready
               </span>
               {onOpenTemplates && (
                 <button
@@ -489,6 +525,16 @@ export function Tier1TellOtpCard({
                 <span>{showVoiceDictation ? '✕ Close' : '🎙️ Voice'}</span>
               </button>
             </div>
+          </div>
+
+          {/* Location-aware Category Suggestion Header */}
+          <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+            <span>🏷️</span>
+            {city.trim() ? (
+              <span>Most popular categories in <strong>{city.trim()}</strong>:</span>
+            ) : (
+              <span>Popular procurement categories across India:</span>
+            )}
           </div>
 
           {/* Quick 1-Tap Category Suggestion Chips */}
@@ -720,6 +766,63 @@ export function Tier1TellOtpCard({
 
         {/* 3. Delivery Location & PIN Code */}
         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 pt-2 border-t border-border/60">
+          {/* Requirement 5: Saved Address Selector for All Buyers (Individual, RWA, MSME) */}
+          {savedAddresses && savedAddresses.length > 0 && (
+            <div className="sm:col-span-2 space-y-2 p-3.5 rounded-xl border border-primary/20 bg-primary/5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <span>📍</span> Select RFQ Delivery Address (Saved Addresses):
+                </span>
+                <span className="text-[10px] text-muted-foreground font-semibold">
+                  {savedAddresses.length} saved
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {savedAddresses.map((addr) => {
+                  const isChosen = selectedAddressId === addr.id;
+                  return (
+                    <button
+                      key={addr.id}
+                      type="button"
+                      onClick={() => {
+                        onSelectSavedAddress?.(addr);
+                        if (addr.city) onCityChange(addr.city);
+                        if (addr.pincode) onPincodeChange(addr.pincode);
+                      }}
+                      className={`p-2.5 rounded-xl border text-left transition min-h-[44px] cursor-pointer ${
+                        isChosen
+                          ? 'border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary'
+                          : 'border-border bg-card text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between font-bold text-xs">
+                        <span>{addr.label}</span>
+                        {isChosen && <span className="text-primary font-bold">✓ Selected</span>}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                        {addr.line1 ? `${addr.line1}, ` : ''}{addr.city} · {addr.pincode}
+                      </p>
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => onSelectSavedAddress?.(null)}
+                  className={`p-2.5 rounded-xl border text-left transition min-h-[44px] cursor-pointer ${
+                    !selectedAddressId
+                      ? 'border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary'
+                      : 'border-dashed border-border bg-card text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <div className="font-bold text-xs flex items-center gap-1">
+                    <span>+</span> Custom / Other Location
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Type specific city &amp; PIN</p>
+                </button>
+              </div>
+            </div>
+          )}
+
           <Field label="Delivery / Service City" error={errors.deliveryCity} required className="sm:col-span-2">
             {({ id, describedBy, invalid }) => (
               <div className="space-y-2">
@@ -729,7 +832,7 @@ export function Tier1TellOtpCard({
                     <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mr-1 shrink-0">
                       DELIVERY LOCATION (1-TAP):
                     </span>
-                    {['Bengaluru', 'Chennai', 'Coimbatore', 'Hyderabad', 'Mumbai'].map((c) => {
+                    {suggestedCities.map((c) => {
                       const isSelected = city.toLowerCase() === c.toLowerCase() ||
                         (c === 'Bangalore' && city.toLowerCase() === 'bengaluru');
                       return (

@@ -1,15 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { fetchDbBackups, createDbBackup, restoreDbBackup, purgeTransactionalData } from '../api/admin-ops';
+import {
+  fetchDbBackups,
+  createDbBackup,
+  restoreDbBackup,
+  purgeTransactionalData,
+  simulateDryRunTransactionalReset,
+  type DryRunResetImpact,
+} from '../api/admin-ops';
 import type { DbSnapshotItem } from '../types/admin';
 
 export function AdminBackupRestorePanel() {
   const [backups, setBackups] = useState<DbSnapshotItem[]>([]);
-  const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('CARDS');
+  const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('TABLE');
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [backupName, setBackupName] = useState('');
   const [backupType, setBackupType] = useState<string>('TRANSACTIONAL');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [dryRunResult, setDryRunResult] = useState<DryRunResetImpact | null>(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+
+  const handleRunDryRun = async () => {
+    setIsSimulating(true);
+    setStatusMessage(null);
+    try {
+      const res = await simulateDryRunTransactionalReset();
+      setDryRunResult(res);
+      setStatusMessage(`✓ Dry-run completed at ${new Date(res.timestamp).toLocaleTimeString()}: ${res.statutoryRetention.auditEvents} statutory audit records protected.`);
+    } catch (err) {
+      alert(`Dry run simulation failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
 
   const loadBackups = async () => {
     setIsLoading(true);
@@ -338,46 +361,128 @@ export function AdminBackupRestorePanel() {
         </div>
       )}
 
-      {/* Danger Zone */}
-      <div className="rounded-xl border border-red-300 bg-red-50/40 p-5 shadow-xs space-y-3">
-        <div className="flex items-center justify-between border-b border-red-200 pb-2">
+      {/* Requirement 16: Statutory Data Retention & Dry-Run Impact Assessment */}
+      <div className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-amber-200 dark:border-amber-800 pb-3">
           <div className="flex items-center gap-2">
-            <span className="text-red-700 font-bold text-base">⚠️</span>
-            <h4 className="text-sm font-bold text-red-900">Production Testing Danger Zone</h4>
+            <span className="text-amber-700 dark:text-amber-400 font-bold text-base">🛡️</span>
+            <div>
+              <h4 className="text-sm font-bold text-amber-950 dark:text-amber-200">
+                Data Retention Governance &amp; Dry-Run Impact Assessment
+              </h4>
+              <p className="text-[11px] text-muted-foreground">
+                Requirement 16: Non-destructive dry-run simulation and statutory retention locking.
+              </p>
+            </div>
           </div>
-          <span className="rounded-md bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 border border-red-300">
-            TRANSACTIONAL RESET
+          <span className="rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2.5 py-1 border border-emerald-300 dark:border-emerald-800">
+            🔒 STATUTORY RETENTION ACTIVE
           </span>
         </div>
-        <p className="text-xs text-red-800 leading-relaxed">
-          Wipes all buyer orders (Requirements, RFQs, Quotes, Evaluations, Votes) and seller orders (POs, Work Orders, Inspections, Invoices, Payments). Pure SuperAdmins, 104 verified suppliers, benchmark pilot org, demo accounts, and master taxonomy remain 100% intact. Ready for staging, demo, pilot, pre-production &amp; production.
-        </p>
-        <button
-          type="button"
-          onClick={async () => {
-            const entered = window.prompt(
-              '⚠️ TRANSACTIONAL PURGE CONFIRMATION:\n\nTo purge test records, enter token or leave blank if in Staging/Demo:\n(For Production DB: type PERMANENTLY_PURGE_PRODUCTION_DATA_I_AM_CERTAIN)'
-            );
-            if (entered === null) return;
-            setIsLoading(true);
-            try {
-              const res = await purgeTransactionalData(entered);
-              if (res.ok) {
-                setStatusMessage(`✓ ${res.message} (Preserved ${res.buyersPreserved ?? 'all'} buyer accounts, ${res.suppliersPreserved ?? 104} verified suppliers, ${res.organizationsPreserved ?? 16} canonical organizations, and ${res.taxonomiesPreserved ?? 16} taxonomies).`);
-                await loadBackups();
-              } else {
-                alert(`Purge failed: ${res.error}`);
-              }
-            } catch (err) {
-              alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            } finally {
-              setIsLoading(false);
-            }
-          }}
-          className="rounded-lg bg-red-600 text-white px-4 py-2 text-xs font-bold shadow hover:bg-red-700 transition"
-        >
-          🧹 Purge All Test Records &amp; Reset to Clean Production State
-        </button>
+
+        {/* Protected Entities Badges */}
+        <div className="space-y-1.5">
+          <span className="text-xs font-semibold text-foreground">Immutable Platform Entities (Never Purged):</span>
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <span className="px-2 py-1 rounded-md bg-background border font-medium">
+              📜 Audit Events &amp; Compliance Logs
+            </span>
+            <span className="px-2 py-1 rounded-md bg-background border font-medium">
+              ⚖️ EULA Consents &amp; Legal Evidence
+            </span>
+            <span className="px-2 py-1 rounded-md bg-background border font-medium">
+              🏢 Verified Supplier Profiles &amp; GSTINs
+            </span>
+            <span className="px-2 py-1 rounded-md bg-background border font-medium">
+              🏷️ Canonical Taxonomy &amp; Keywords
+            </span>
+            <span className="px-2 py-1 rounded-md bg-background border font-medium">
+              🏛️ Benchmark Pilot Organization
+            </span>
+          </div>
+        </div>
+
+        {/* Dry-Run Result Preview */}
+        {dryRunResult && (
+          <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-3 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-foreground">
+                Dry-Run Scope Impact Report (Simulated at {new Date(dryRunResult.timestamp).toLocaleTimeString()})
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-bold">
+                {dryRunResult.governanceStatus}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+              <div className="p-2 rounded bg-muted/40 border">
+                <div className="text-[10px] text-muted-foreground">Audit Logs</div>
+                <div className="font-bold text-sm text-emerald-600">
+                  {dryRunResult.statutoryRetention.auditEvents} (Locked)
+                </div>
+              </div>
+              <div className="p-2 rounded bg-muted/40 border">
+                <div className="text-[10px] text-muted-foreground">Verified Suppliers</div>
+                <div className="font-bold text-sm text-emerald-600">
+                  {dryRunResult.statutoryRetention.verifiedSuppliers} (Locked)
+                </div>
+              </div>
+              <div className="p-2 rounded bg-muted/40 border">
+                <div className="text-[10px] text-muted-foreground">Categories</div>
+                <div className="font-bold text-sm text-emerald-600">
+                  {dryRunResult.statutoryRetention.canonicalCategories} (Locked)
+                </div>
+              </div>
+              <div className="p-2 rounded bg-muted/40 border">
+                <div className="text-[10px] text-muted-foreground">Organizations</div>
+                <div className="font-bold text-sm text-emerald-600">
+                  {dryRunResult.statutoryRetention.registeredOrganizations} (Locked)
+                </div>
+              </div>
+              <div className="p-2 rounded bg-muted/40 border">
+                <div className="text-[10px] text-muted-foreground">Active Users</div>
+                <div className="font-bold text-sm text-emerald-600">
+                  {dryRunResult.statutoryRetention.activeUsers} (Locked)
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t">
+              <span className="font-semibold text-foreground text-[11px]">
+                Transactional Records in Candidate Scope (If executed in disposable test DB):
+              </span>
+              <div className="mt-1 flex flex-wrap gap-3 text-muted-foreground text-[11px]">
+                <span>📋 Requirements: <strong className="text-foreground">{dryRunResult.transactionalScope.requirements}</strong></span>
+                <span>•</span>
+                <span>📨 RFQs: <strong className="text-foreground">{dryRunResult.transactionalScope.rfqs}</strong></span>
+                <span>•</span>
+                <span>💬 Quotes: <strong className="text-foreground">{dryRunResult.transactionalScope.quotes}</strong></span>
+                <span>•</span>
+                <span>🏪 POs: <strong className="text-foreground">{dryRunResult.transactionalScope.purchaseOrders}</strong></span>
+                <span>•</span>
+                <span>🧾 Invoices: <strong className="text-foreground">{dryRunResult.transactionalScope.invoices}</strong></span>
+                <span>•</span>
+                <span>💳 Payments: <strong className="text-foreground">{dryRunResult.transactionalScope.payments}</strong></span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <button
+            type="button"
+            onClick={handleRunDryRun}
+            disabled={isSimulating}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-primary text-primary-foreground px-4 py-2 text-xs font-bold shadow hover:bg-primary/90 transition active:scale-98"
+          >
+            {isSimulating ? 'Simulating Dry-Run Impact…' : '🔍 Run Dry-Run Impact Assessment (Non-Destructive)'}
+          </button>
+
+          <span className="text-[11px] text-muted-foreground italic">
+            Note: Destructive resets are strictly blocked outside isolated disposable environments.
+          </span>
+        </div>
       </div>
     </div>
   );

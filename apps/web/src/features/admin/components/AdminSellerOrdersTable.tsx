@@ -91,7 +91,7 @@ export function AdminSellerOrdersTable({
   onExecuteAction,
   onRefresh,
 }: AdminSellerOrdersTableProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('CARDS');
+  const [viewMode, setViewMode] = useState<ViewMode>('TABLE');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [stalledFilter, setStalledFilter] = useState(false);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
@@ -21,6 +21,8 @@ import {
   BuyerSourcingCockpitCard,
   HomeSkeleton,
 } from '@/features/home';
+import { fetchBuyerAddresses } from '@/features/profile/api/buyer-addresses';
+import { tryResolveBuyerPersona } from '@otp/domain';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -53,6 +55,28 @@ export function DashboardPage() {
   const [expressQuery, setExpressQuery] = useState('');
   const [isSubmittingExpress, setIsSubmittingExpress] = useState(false);
   const [expressError, setExpressError] = useState<string | null>(null);
+
+  const [hasCheckedAddress, setHasCheckedAddress] = useState(false);
+  const [hasSavedAddress, setHasSavedAddress] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const persona =
+      tryResolveBuyerPersona(context.buyerType) ??
+      tryResolveBuyerPersona(context.organizations?.[0]?.orgType) ??
+      (context.organizationId ? 'RWA' : 'INDIVIDUAL');
+    void fetchBuyerAddresses(context.organizationId, persona).then((res) => {
+      if (cancelled) return;
+      if (res.ok) {
+        setHasSavedAddress(res.addresses.length > 0);
+      }
+      setHasCheckedAddress(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, context.organizationId, context.buyerType, context.organizations]);
 
   const greetingName =
     context.fullName?.trim().split(/\s+/)[0] ||
@@ -118,7 +142,9 @@ export function DashboardPage() {
               ? 'Treasurer'
               : context.orgRole === 'ESTATE_MANAGER' || context.orgRole === 'MANAGER'
               ? 'Estate Manager'
-              : context.orgRole || 'Buyer'
+              : context.orgRole && context.orgRole.toUpperCase() !== 'BUYER'
+              ? context.orgRole
+              : undefined
           }
           actionCount={actionRequiredItems.length}
           activeCount={activeProcurements.length}
@@ -146,6 +172,35 @@ export function DashboardPage() {
           Commercial Pilot
         </span>
       </div>
+
+      {/* Requirement 1: First-Time Buyer Address Prompt */}
+      {hasCheckedAddress && !hasSavedAddress && context.side !== 'SUPPLIER' && (
+        <div
+          data-testid="address-completion-prompt"
+          className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 p-3.5 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
+        >
+          <div className="flex items-start gap-2.5">
+            <span className="text-xl shrink-0">📍</span>
+            <div>
+              <p className="font-bold text-amber-950 dark:text-amber-200">
+                Action Required: Complete your delivery / operational address
+              </p>
+              <p className="text-amber-900/80 dark:text-amber-300/80 text-[11px] mt-0.5 leading-relaxed">
+                {context.organizationId
+                  ? 'Add your organization’s registered operational premises to enable automatic SNE local supplier matching and statutory compliance.'
+                  : 'Add your primary personal address (Home, Office, or Other) to enable 1-click RFQ dispatch and local supplier matching.'}
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/profile?tab=addresses"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition shadow-2xs shrink-0 min-h-[38px] mobile-touch-target"
+          >
+            <span>+</span>
+            <span>Set Up Address</span>
+          </Link>
+        </div>
+      )}
 
       {/* Subscription Expiry & Starter Credit Banner */}
       {subscription && !context.isPlatformAdmin && !context.isFounder && (

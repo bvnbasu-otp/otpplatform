@@ -34,7 +34,7 @@ export function HomeContextBar({
           {organizationName && (
             <div className="flex items-center gap-1.5 font-bold text-xs text-muted-foreground truncate">
               <span className="truncate max-w-[200px] sm:max-w-md">🏢 {organizationName}</span>
-              {roleLabel && (
+              {roleLabel && roleLabel.toLowerCase() !== 'buyer' && (
                 <span className="rounded bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.2 text-[10px] font-extrabold shrink-0">
                   {roleLabel}
                 </span>

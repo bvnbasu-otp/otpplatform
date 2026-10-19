@@ -185,5 +185,11 @@ export function useIntakeDraft(requirementId: string | null, orgId?: string | nu
     [orgId],
   );
 
-  return { draft, setDraft, isLoading, isSaving, error, start, save, patchLocal, setError };
+  const clearDraft = useCallback(() => {
+    setDraft(null);
+    clearLocalIntakeDraft(orgId);
+    setError(null);
+  }, [orgId]);
+
+  return { draft, setDraft, isLoading, isSaving, error, start, save, patchLocal, setError, clearDraft };
 }
