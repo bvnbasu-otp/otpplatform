@@ -40,7 +40,7 @@ export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
   // Standard responsive desktop rendering: full viewport width, no 420px mobile frame
   if (viewMode === 'desktop') {
     return (
-      <div className="w-full min-h-screen bg-background text-foreground flex flex-col relative selection:bg-primary/20 selection:text-primary">
+      <div className="w-full h-screen overflow-hidden bg-background text-foreground flex flex-col relative selection:bg-primary/20 selection:text-primary">
         {/* On-demand trigger to enter Mobile Simulator mode when requested */}
         <div className="hidden sm:flex fixed bottom-3 right-3 z-50">
           <button

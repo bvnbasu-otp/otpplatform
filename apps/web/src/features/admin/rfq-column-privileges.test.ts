@@ -20,6 +20,11 @@ describe('rfqs column privileges', () => {
     expect(src).not.toMatch(/from\('rfqs'\)\s*\.select\('\*'/);
   });
 
+  it('simulateDryRunTransactionalReset counts rfqs by id, strictly preserving column privileges', () => {
+    const src = readFileSync(resolve(__dirname, 'api/admin-ops.ts'), 'utf8');
+    expect(src).toContain("supabase.from('rfqs').select('id', { count: 'exact', head: true })");
+  });
+
   it('no web source selects * or the address snapshots from rfqs', () => {
     const root = resolve(__dirname, '../..');
     for (const file of sourceFiles(root)) {

@@ -720,7 +720,7 @@ export async function simulateDryRunTransactionalReset(): Promise<DryRunResetImp
     supabase.from('organizations').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('requirements').select('*', { count: 'exact', head: true }),
-    supabase.from('rfqs').select('*', { count: 'exact', head: true }),
+    supabase.from('rfqs').select('id', { count: 'exact', head: true }),
     supabase.from('quotes').select('*', { count: 'exact', head: true }),
     supabase.from('purchase_orders').select('*', { count: 'exact', head: true }),
     supabase.from('invoices').select('*', { count: 'exact', head: true }),
