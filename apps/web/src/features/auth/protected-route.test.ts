@@ -31,8 +31,13 @@ function createMockStorage() {
 describe('Security & Route Guard Audit — ProtectedRoute & RBAC Enforcement', () => {
   it('wraps customer and supplier workspaces in the legal gate and leaves operators outside it', () => {
     const source = readFileSync(resolve(__dirname, 'ProtectedRoute.tsx'), 'utf8');
-    expect(source).toContain("if (context?.isFounder || context?.isPlatformAdmin || context?.side === 'CONSOLE') return content;");
-    expect(source).toContain('return <LegalAcceptanceGate>{content}</LegalAcceptanceGate>');
+    expect(source).toContain('PasswordExpiryGate');
+    expect(source).toContain('return <PasswordExpiryGate>{content}</PasswordExpiryGate>');
+    expect(source).toContain('<LegalAcceptanceGate>');
+    expect(source).toContain('<PasswordExpiryGate>{content}</PasswordExpiryGate>');
+    expect(source).not.toMatch(
+      /if \(context\?\.isFounder \|\| context\?\.isPlatformAdmin \|\| context\?\.side === 'CONSOLE'\) return content;/,
+    );
   });
 
   beforeEach(() => {

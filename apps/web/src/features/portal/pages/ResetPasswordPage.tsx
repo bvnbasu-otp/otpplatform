@@ -9,7 +9,9 @@ import {
   isLikelyPkceOrLongRecoveryToken,
   isLikelyShortOtpToken,
   normalizeAuthOtpCodeInput,
+  validatePasswordComplexity,
 } from '@otp/domain';
+import { PASSWORD_REQUIREMENTS_COPY } from '@/features/auth/lib/password-requirements-copy';
 import { useAuth } from '@/features/auth';
 import { SiteLayout } from '@/features/site/components/SiteLayout';
 import { Button, Field, controlClasses } from '@/components/ui';
@@ -193,8 +195,9 @@ export function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
+    const complexity = validatePasswordComplexity(password);
+    if (!complexity.valid) {
+      setError(complexity.messages[0] ?? 'Password does not meet requirements.');
       return;
     }
 
@@ -309,7 +312,7 @@ export function ResetPasswordPage() {
                     </p>
                   </div>
 
-                  <Field label="New Password" required help="At least 8 characters.">
+                  <Field label="New Password" required help={PASSWORD_REQUIREMENTS_COPY}>
                     {({ id, describedBy, invalid }) => (
                       <input
                         id={id}
@@ -544,7 +547,7 @@ export function ResetPasswordPage() {
                         )}
                       </Field>
 
-                      <Field label="New Password" required help="At least 8 characters.">
+                      <Field label="New Password" required help={PASSWORD_REQUIREMENTS_COPY}>
                         {({ id, describedBy, invalid }) => (
                           <input
                             id={id}

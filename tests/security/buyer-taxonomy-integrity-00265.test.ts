@@ -23,7 +23,7 @@ describe('00265 buyer taxonomy and RLS integrity (static security & schema contr
       '00273_persist_pin_coverage_in_canonical_suppliers.sql',
       '00274_location_pin_coverage_durable_recovery.sql',
     ]);
-    expect(files.at(-1)).toBe('00302_demo_staging_procurement_isolation_parity.sql');
+    expect(files.at(-1)).toBe('00304_my_role_context_password_policy.sql');
     const idx264 = files.indexOf('00264_remediate_privileged_lifecycle_and_audit_contracts.sql');
     expect(idx264).toBeGreaterThan(0);
     expect(files[idx264 + 1]).toBe(FILE);

@@ -6,6 +6,7 @@ import { isSuperAdminEmail, isFounderEmail } from './user-role';
 import { RoleOnboardingPage } from '@/features/roles/pages/RoleOnboardingPage';
 import { supabase } from '@/lib/supabase';
 import { LegalAcceptanceGate } from '@/features/legal/components/LegalAcceptanceGate';
+import { PasswordExpiryGate } from './components/PasswordExpiryGate';
 
 import type { RoleContext, HeldRole } from '@/features/roles/api/roles';
 import { reconcilePortalSide } from '@/features/roles/api/roles';
@@ -303,6 +304,12 @@ export function ProtectedRoute({
   const content = children ? <>{children}</> : <Outlet />;
   // Platform operators hold no customer or supplier agreement; everyone else
   // must have accepted the current server-side version.
-  if (context?.isFounder || context?.isPlatformAdmin || context?.side === 'CONSOLE') return content;
-  return <LegalAcceptanceGate>{content}</LegalAcceptanceGate>;
+  if (context?.isFounder || context?.isPlatformAdmin || context?.side === 'CONSOLE') {
+    return <PasswordExpiryGate>{content}</PasswordExpiryGate>;
+  }
+  return (
+    <LegalAcceptanceGate>
+      <PasswordExpiryGate>{content}</PasswordExpiryGate>
+    </LegalAcceptanceGate>
+  );
 }

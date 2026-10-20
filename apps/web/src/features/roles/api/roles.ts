@@ -1,3 +1,4 @@
+import type { PasswordPolicyView } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
 
 function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, fallbackValue: T): Promise<T> {
@@ -91,6 +92,7 @@ export interface RoleContext {
   isBlocked?: boolean;
   blockedReason?: string | null;
   status?: string;
+  passwordPolicy?: PasswordPolicyView | null;
 }
 
 export const SIGNED_OUT_CONTEXT: RoleContext = {
@@ -116,7 +118,21 @@ export const SIGNED_OUT_CONTEXT: RoleContext = {
   isBlocked: false,
   blockedReason: null,
   status: 'ACTIVE',
+  passwordPolicy: null,
 };
+
+function toPasswordPolicy(raw: unknown): PasswordPolicyView | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const row = raw as Record<string, unknown>;
+  return {
+    enforced: Boolean(row.enforced),
+    exempt: Boolean(row.exempt),
+    mustChangePassword: Boolean(row.mustChangePassword),
+    expiresAt: (row.expiresAt as string | null) ?? null,
+    daysRemaining: row.daysRemaining == null ? null : Number(row.daysRemaining),
+    warnLevel: (row.warnLevel as PasswordPolicyView['warnLevel']) ?? null,
+  };
+}
 
 export function normalizeRolePermissions(raw: unknown): RolePermission[] {
   if (!Array.isArray(raw)) return [];
@@ -236,6 +252,7 @@ function toContext(payload: Record<string, unknown>): RoleContext {
     isBlocked: Boolean(payload.isBlocked),
     blockedReason: (payload.blockedReason as string | null) ?? null,
     status: (payload.status as string | null) ?? 'ACTIVE',
+    passwordPolicy: toPasswordPolicy(payload.passwordPolicy),
   };
 }
 

@@ -1,5 +1,8 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { validatePasswordComplexity } from '@otp/domain';
+import { changePasswordSecure } from '@/features/auth/api/password-policy';
+import { PASSWORD_REQUIREMENTS_COPY } from '@/features/auth/lib/password-requirements-copy';
 import { useAuth } from '@/features/auth';
 import { Button, Field, controlClasses } from '@/components/ui';
 
@@ -9,7 +12,8 @@ interface ChangePasswordModalProps {
 }
 
 export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps) {
-  const { user, updatePassword } = useAuth();
+  const { user } = useAuth();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -31,8 +35,9 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
     e.preventDefault();
     setError(null);
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
+    const complexity = validatePasswordComplexity(password);
+    if (!complexity.valid) {
+      setError(complexity.messages[0] ?? 'Password does not meet requirements.');
       return;
     }
 
@@ -42,11 +47,11 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
     }
 
     setBusy(true);
-    const res = await updatePassword(password);
+    const res = await changePasswordSecure(currentPassword, password);
     setBusy(false);
 
-    if (res.error) {
-      setError(res.error);
+    if (!res.ok) {
+      setError(res.error ?? 'Password could not be updated.');
       return;
     }
 
@@ -106,7 +111,26 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
               </div>
             )}
 
-            <Field label="New Password" required help="Minimum 8 characters.">
+            <p className="text-[11px] text-muted-foreground">{PASSWORD_REQUIREMENTS_COPY}</p>
+
+            <Field label="Current password" required>
+              {({ id, describedBy, invalid }) => (
+                <input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className={controlClasses(invalid)}
+                  placeholder="••••••••••••"
+                  required
+                  autoFocus
+                />
+              )}
+            </Field>
+
+            <Field label="New Password" required>
               {({ id, describedBy, invalid }) => (
                 <input
                   id={id}
@@ -118,7 +142,6 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                   className={controlClasses(invalid)}
                   placeholder="••••••••••••"
                   required
-                  autoFocus
                 />
               )}
             </Field>
