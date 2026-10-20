@@ -397,9 +397,12 @@ describe('R4 guard: transaction-local GUC flags cannot be forged through set_con
     expect(count).toBeGreaterThanOrEqual(13);
   });
 
-  it('only accept_delivery_inspection sets otp.wo_inspection_signoff, and it is not callable by anon', () => {
+  it('only accept_delivery_inspection and private pilot simulator set otp.wo_inspection_signoff, and neither is callable by anon', () => {
     const setters = [...LATEST].filter(([, f]) => /set_config\s*\(\s*'otp\.wo_inspection_signoff'/.test(stripComments(f.body)));
-    expect(setters.map(([k]) => k)).toEqual(['public.accept_delivery_inspection']);
+    expect(setters.map(([k]) => k).sort()).toEqual([
+      'private.simulate_pilot_supplier_fulfillment',
+      'public.accept_delivery_inspection',
+    ]);
     const readers = [...LATEST]
       .filter(([, f]) => /current_setting\s*\(\s*'otp\.wo_inspection_signoff'/.test(stripComments(f.body)))
       .map(([k]) => k)
