@@ -14,3 +14,4 @@ export * from './components/SupplierOrdersSummaryCard';
 export * from './components/HomeActivityTimeline';
 export * from './components/HomeEmptyState';
 export * from './components/HomeSkeleton';
+export * from './components/BuyerDashboardStartPanel';

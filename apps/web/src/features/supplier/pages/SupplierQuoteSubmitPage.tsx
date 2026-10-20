@@ -316,6 +316,12 @@ export function SupplierQuoteSubmitPage({ rfqId: propRfqId }: { rfqId?: string }
           onSubmit={handleSubmit}
           disabled={isExpired || isClosed}
           quoteId={existingQuote?.quoteId}
+          scopeHint={{
+            requirementTitle: rfq.rfqTitle,
+            quantity: rfq.quantity,
+            unit: rfq.unit,
+            category: rfq.subcategory ?? rfq.category,
+          }}
         />
       </section>
     </div>

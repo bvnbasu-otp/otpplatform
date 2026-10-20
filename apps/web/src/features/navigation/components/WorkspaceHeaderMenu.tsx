@@ -9,6 +9,8 @@ import { getHomeRoute, getOrdersRoute, getRoleLabel } from '../navigation-config
 
 export interface WorkspaceHeaderMenuProps {
   isOpen: boolean;
+  /** Matches `--workspace-chrome-height` on the header (e.g. 3rem or 5.25rem). */
+  chromeTop?: string;
   onClose: () => void;
   onOpenSupport?: () => void;
   onOpenSupplierCapabilities?: () => void;
@@ -29,6 +31,7 @@ function initials(nameOrEmail?: string | null): string {
 
 export function WorkspaceHeaderMenu({
   isOpen,
+  chromeTop = '3rem',
   onClose,
   onOpenSupport,
   onOpenSupplierCapabilities,
@@ -79,11 +82,13 @@ export function WorkspaceHeaderMenu({
       role="dialog"
       aria-modal="true"
       aria-label="Workspace Navigation Menu"
-      className="fixed inset-0 top-[48px] z-[1000] flex flex-col"
+      className="fixed inset-0 z-[1000] flex flex-col"
+      style={{ top: chromeTop }}
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 top-[48px] bg-black/50 backdrop-blur-xs transition-opacity duration-200"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-200"
+        style={{ top: chromeTop }}
         onClick={onClose}
         aria-hidden="true"
       />
@@ -92,7 +97,8 @@ export function WorkspaceHeaderMenu({
       <nav
         ref={menuRef}
         aria-label="Workspace Secondary Navigation"
-        className="relative z-10 w-full max-h-[calc(100dvh-48px)] overflow-y-auto overscroll-contain border-b border-border bg-card shadow-2xl animate-in slide-in-from-top-2 duration-150"
+        className="relative z-10 w-full overflow-y-auto overscroll-contain border-b border-border bg-card shadow-2xl animate-in slide-in-from-top-2 duration-150"
+        style={{ maxHeight: `calc(100dvh - ${chromeTop})` }}
       >
         <div className="mx-auto w-full max-w-lg px-4 py-4 space-y-4 text-xs">
           

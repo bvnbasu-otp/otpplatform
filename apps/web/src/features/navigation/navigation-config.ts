@@ -65,6 +65,32 @@ export function getProfileRoute(_context?: RoleContext): string {
 }
 
 /**
+ * Fourth bottom-nav tab: suppliers see Quotes; buyers and admins see Audit.
+ * (Suppliers still have audit via the workspace menu.)
+ */
+export function getBottomNavFourthTab(context: RoleContext): {
+  id: 'audit' | 'quotes';
+  label: string;
+  to: string;
+  match: string[];
+} {
+  if (context.side === 'SUPPLIER' && !context.isPlatformAdmin) {
+    return {
+      id: 'quotes',
+      label: 'Quotes',
+      to: '/supplier/quotes',
+      match: ['/supplier/quotes'],
+    };
+  }
+  return {
+    id: 'audit',
+    label: 'Audit',
+    to: '/audit',
+    match: ['/audit'],
+  };
+}
+
+/**
  * Canonical Role label for the Header Role Indicator.
  */
 export function getRoleLabel(context: RoleContext): RoleBadgeType {

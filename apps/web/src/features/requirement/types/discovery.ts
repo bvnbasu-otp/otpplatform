@@ -8,6 +8,8 @@ export interface MatchedSupplier {
   network: 'OTP_REGISTERED' | 'ONDC' | 'LOCAL_REGISTRY' | 'DIRECT' | 'INVITED' | 'BNI' | 'ASSOCIATION' | string;
   networkLabel: string;
   gstVerified: boolean;
+  /** True only when match_reasons includes otp_registered (authoritative registration signal). */
+  otpRegistered?: boolean;
   isLocal: boolean;
   distanceKm?: number;
   availabilityText: string;

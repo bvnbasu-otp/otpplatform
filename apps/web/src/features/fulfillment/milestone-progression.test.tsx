@@ -159,6 +159,16 @@ describe('Milestone progression 0 → 25 → 50 → 75 → 100 (deliberate only)
   });
 
   describe('SupplierMilestoneStepper rendering', () => {
+    it('shows single-payment plan with one 100% checkpoint', () => {
+      const html = render({
+        workOrder: workOrder(0),
+        paymentStructure: 'SINGLE_PAYMENT',
+      });
+      expect(html).toContain('data-payment-structure="SINGLE_PAYMENT"');
+      expect(html).toContain('data-plan-steps="100"');
+      expect(html).toContain('Record 100%');
+    });
+
     it('shows exactly one next-milestone action and no direct 100% shortcuts', () => {
       const html = render({ workOrder: workOrder(25) });
       expect(html.match(/data-testid="milestone-record-next-btn"/g)).toHaveLength(1);

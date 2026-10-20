@@ -33,29 +33,35 @@ export function IdentityProtectedQuoteComparisonTable({
 }: IdentityProtectedQuoteComparisonTableProps) {
   const [activeBoqQuote, setActiveBoqQuote] = useState<IdentityProtectedQuote | null>(null);
 
-  // Derive Best-in-Class Metrics Across All Quotes
+  const comparableQuotes = useMemo(
+    () => quotes.filter((q) => q.status !== 'DRAFT'),
+    [quotes],
+  );
+  const draftCount = quotes.length - comparableQuotes.length;
+
+  // Derive Best-in-Class Metrics Across comparable (submitted) quotes only
   const lowestTotal = useMemo(() => {
-    if (quotes.length === 0) return 0;
-    return Math.min(...quotes.map((q) => q.totalCost));
-  }, [quotes]);
+    if (comparableQuotes.length === 0) return 0;
+    return Math.min(...comparableQuotes.map((q) => q.totalCost));
+  }, [comparableQuotes]);
 
   const fastestTat = useMemo(() => {
-    if (quotes.length === 0) return 0;
-    const days = quotes.map((q) => q.deliveryDays).filter((d) => d > 0);
+    if (comparableQuotes.length === 0) return 0;
+    const days = comparableQuotes.map((q) => q.deliveryDays).filter((d) => d > 0);
     return days.length > 0 ? Math.min(...days) : 0;
-  }, [quotes]);
+  }, [comparableQuotes]);
 
   const longestWarranty = useMemo(() => {
-    if (quotes.length === 0) return 0;
-    const warranties = quotes.map((q) => q.warrantyMonths).filter((w) => w > 0);
+    if (comparableQuotes.length === 0) return 0;
+    const warranties = comparableQuotes.map((q) => q.warrantyMonths).filter((w) => w > 0);
     return warranties.length > 0 ? Math.max(...warranties) : 0;
-  }, [quotes]);
+  }, [comparableQuotes]);
 
   const highestScore = useMemo(() => {
-    if (quotes.length === 0) return 0;
-    const scores = quotes.map((q) => q.evaluationScore ?? 0);
+    if (comparableQuotes.length === 0) return 0;
+    const scores = comparableQuotes.map((q) => q.evaluationScore ?? 0);
     return Math.max(...scores);
-  }, [quotes]);
+  }, [comparableQuotes]);
 
   if (isLoading) {
     return (
@@ -66,8 +72,8 @@ export function IdentityProtectedQuoteComparisonTable({
         <div className="flex justify-center">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
-        <p className="font-semibold text-foreground">Loading identity-protected quotes…</p>
-        <p className="text-[11px]">Decrypting anonymized commercial parameters under zero-bias protocol</p>
+        <p className="font-semibold text-foreground">Loading sealed quotes…</p>
+        <p className="text-[11px]">Fetching anonymized commercial fields authorized for your role</p>
       </div>
     );
   }
@@ -87,7 +93,7 @@ export function IdentityProtectedQuoteComparisonTable({
     );
   }
 
-  if (quotes.length === 0) {
+  if (quotes.length === 0 || comparableQuotes.length === 0) {
     return (
       <div
         className="rounded-2xl border bg-card p-8 text-center text-muted-foreground text-xs space-y-3 shadow-2xs"
@@ -95,8 +101,16 @@ export function IdentityProtectedQuoteComparisonTable({
       >
         <span className="text-2xl">⏳</span>
         <div className="space-y-1">
-          <p className="font-bold text-foreground">No quotes available for fair anonymous comparison yet.</p>
-          <p className="text-[11px]">Suppliers are currently submitting quotes. Comparison unlocks when quotes arrive.</p>
+          <p className="font-bold text-foreground">
+            {draftCount > 0
+              ? 'No submitted quotes ready for comparison yet.'
+              : 'No quotes available for fair anonymous comparison yet.'}
+          </p>
+          <p className="text-[11px]">
+            {draftCount > 0
+              ? `${draftCount} supplier draft(s) exist but are not shown until formally submitted.`
+              : 'Suppliers are currently submitting quotes. Comparison unlocks when quotes arrive.'}
+          </p>
         </div>
         {onSimulateQuotes && (
           <div className="pt-2">
@@ -117,9 +131,17 @@ export function IdentityProtectedQuoteComparisonTable({
 
   return (
     <div data-testid="identity-protected-quotes-table" className="space-y-3">
+      {draftCount > 0 && (
+        <p
+          className="text-[10px] text-amber-800 dark:text-amber-200 font-semibold rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/30 px-3 py-2"
+          data-testid="identity-protected-quotes-draft-notice"
+        >
+          {draftCount} draft quote(s) are hidden from comparison until submitted.
+        </p>
+      )}
       {/* 1. Mobile-First Stacked 4-Pillar Comparison Cards (Universally Rendered) */}
       <div className="space-y-3" data-testid="identity-protected-quotes-mobile-cards">
-        {quotes.map((quote, idx) => {
+        {comparableQuotes.map((quote, idx) => {
           const isSelected = selectedQuoteId ? selectedQuoteId === quote.quoteId : idx === 0;
           const isLowest = quote.totalCost === lowestTotal;
           const isFastest = fastestTat > 0 && quote.deliveryDays === fastestTat;
@@ -161,7 +183,7 @@ export function IdentityProtectedQuoteComparisonTable({
       <div className="sr-only">
         <table>
           <tbody>
-            {quotes.map((quote) => (
+            {comparableQuotes.map((quote) => (
               <tr
                 key={quote.quoteId}
                 data-testid={`identity-protected-quote-row-${quote.anonymousLabel.replace(/\s+/g, '-')}`}

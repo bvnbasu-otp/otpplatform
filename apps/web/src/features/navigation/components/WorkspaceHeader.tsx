@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useRoleContext } from '@/features/roles';
 import { NotificationBell } from '@/features/notifications';
 import { SupportHelpButtonModal } from '@/features/support';
@@ -7,8 +7,10 @@ import { OtpLogo } from '@/components/ui/OtpLogo';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useLanguage } from '@/lib/i18n';
 import { getHomeRoute, getRoleLabel } from '../navigation-config';
+import { inferJourneyStageFromPath, workspaceChromeTopCss } from '../journey-stage';
 
 import { WorkspaceHeaderMenu } from './WorkspaceHeaderMenu';
+import { WorkspaceJourneyStrip } from './WorkspaceJourneyStrip';
 
 export interface WorkspaceHeaderProps {
   onOpenSupplierCapabilities?: () => void;
@@ -16,6 +18,7 @@ export interface WorkspaceHeaderProps {
 
 export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderProps) {
   const { context } = useRoleContext();
+  const { pathname } = useLocation();
   const { t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
@@ -23,11 +26,17 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
   const homeRoute = getHomeRoute(context);
   const roleLabel = getRoleLabel(context);
   const displayRole = t(roleLabel);
+  const journeyStage = inferJourneyStageFromPath(pathname);
+  const chromeTop = workspaceChromeTopCss(Boolean(journeyStage));
 
   return (
     <>
-      <header className="shrink-0 z-40 border-b border-border bg-card h-12 w-full max-w-full select-none">
-        <div className="mx-auto flex w-full h-full items-center justify-between gap-x-2 px-3">
+      <header
+        className="shrink-0 z-40 border-b border-border bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/90 w-full max-w-full select-none shadow-[0_1px_0_0_hsl(var(--border)/0.6)]"
+        data-testid="workspace-header-shell"
+        style={{ ['--workspace-chrome-height' as string]: chromeTop }}
+      >
+        <div className="mx-auto flex w-full h-12 items-center justify-between gap-x-2 px-3 sm:px-4">
           
           {/* LEFT CLUSTER: OTP LOGO | ROLE INDICATOR */}
           <div className="flex items-center gap-1.5 shrink-0 min-w-0">
@@ -97,7 +106,7 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
                   setIsSupportOpen(false);
                 }
               }}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-bold transition min-h-[32px] mobile-touch-target cursor-pointer ${
+              className={`flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-bold transition min-h-[36px] min-w-[36px] mobile-touch-target cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
                 isMenuOpen
                   ? 'border-primary bg-primary text-primary-foreground shadow-2xs'
                   : 'border-border/80 bg-card text-foreground hover:bg-muted/80'
@@ -125,11 +134,13 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
             </button>
           </div>
         </div>
+        {journeyStage ? <WorkspaceJourneyStrip activeStage={journeyStage} /> : null}
       </header>
 
       {/* Secondary Workspace Navigation Drawer Overlay */}
       <WorkspaceHeaderMenu
         isOpen={isMenuOpen}
+        chromeTop={chromeTop}
         onClose={() => setIsMenuOpen(false)}
         onOpenSupport={() => {
           setIsMenuOpen(false);

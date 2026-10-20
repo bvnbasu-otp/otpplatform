@@ -5,6 +5,7 @@ import {
   determinePlaceOfSupply,
   type InvoiceStatus,
 } from '@otp/domain';
+import { canSubmitGstTaxLines, normalizeSupplyGstTreatment } from '../lib/gst-supply-classification';
 
 export interface InvoiceLineItemSummary {
   id: string;
@@ -295,7 +296,7 @@ export async function submitInvoice(
 
   const { data: supData } = await supabase
     .from('suppliers')
-    .select('gstin, legal_name, business_name')
+    .select('gstin, legal_name, business_name, supply_gst_treatment')
     .eq('id', supplierId)
     .maybeSingle();
 
@@ -331,6 +332,17 @@ export async function submitInvoice(
       ];
 
   const taxBreakdown = calculateOrderTaxBreakdown(rawItems, pos);
+
+  const supplyTreatment = normalizeSupplyGstTreatment(supData?.supply_gst_treatment);
+  const taxComponentTotal =
+    Number(taxBreakdown.cgstTotal || 0) +
+    Number(taxBreakdown.sgstTotal || 0) +
+    Number(taxBreakdown.utgstTotal || 0) +
+    Number(taxBreakdown.igstTotal || 0);
+  const gstCheck = canSubmitGstTaxLines(supplyTreatment, taxComponentTotal);
+  if (!gstCheck.ok) {
+    return { ok: false, error: gstCheck.reason };
+  }
 
   const taxSnapshot = buildTaxSnapshot({
     supplierGstin: supGstin,

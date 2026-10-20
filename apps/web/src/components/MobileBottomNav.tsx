@@ -9,7 +9,13 @@ import { hasMultipleRoles, hasMultipleOrganizations } from '@/features/roles/api
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
-import { AdminQuickActionsSheet, shouldShowGlobalBottomNav } from '@/features/navigation';
+import {
+  AdminQuickActionsSheet,
+  getBottomNavFourthTab,
+  getCanonicalBottomNav,
+  isRouteActive,
+  shouldShowGlobalBottomNav,
+} from '@/features/navigation';
 import { useLanguage } from '@/lib/i18n';
 
 function initials(nameOrEmail?: string | null): string {
@@ -44,6 +50,11 @@ export function MobileBottomNav() {
   const isSupplier = context.side === 'SUPPLIER';
   const isAdmin = context.isPlatformAdmin;
   const isAuthenticated = Boolean(context.email || user?.email);
+  const bottomNav = getCanonicalBottomNav(context);
+  const homeTab = bottomNav[0]!;
+  const ordersTab = bottomNav[1]!;
+  const profileTab = bottomNav[4]!;
+  const fourthTab = getBottomNavFourthTab(context);
 
   const multiRole = hasMultipleRoles(context);
   const multiOrg = hasMultipleOrganizations(context);
@@ -99,32 +110,32 @@ export function MobileBottomNav() {
           <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-2">
             {/* TAB 1: HOME */}
             <NavLink
-              to={isAdmin ? '/admin' : '/dashboard'}
-              className={({ isActive }) =>
+              to={homeTab.to}
+              className={() =>
                 `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
-                  isActive || pathname === '/dashboard' || (isAdmin && pathname === '/admin')
+                  isRouteActive(homeTab, pathname)
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
                 }`
               }
             >
-              <span className="text-lg leading-none">🏠</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Home', 'Home')}</span>
+              <span className="text-lg leading-none">{homeTab.icon ?? '🏠'}</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t(homeTab.label, homeTab.label)}</span>
             </NavLink>
 
             {/* TAB 2: ORDERS */}
             <NavLink
-              to={isSupplier ? '/supplier/purchase-orders' : '/purchase-orders'}
-              className={({ isActive }) =>
+              to={ordersTab.to}
+              className={() =>
                 `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
-                  isActive || pathname.startsWith('/purchase-orders') || pathname.startsWith('/supplier/purchase-orders') || pathname.startsWith('/supplier/work-orders')
+                  isRouteActive(ordersTab, pathname) || pathname.startsWith('/supplier/work-orders')
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
                 }`
               }
             >
-              <span className="text-lg leading-none">📋</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Orders', 'Orders')}</span>
+              <span className="text-lg leading-none">{ordersTab.icon ?? '📋'}</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t(ordersTab.label, ordersTab.label)}</span>
             </NavLink>
 
             {/* TAB 3: CENTER ACTION '+' (Context-Aware for Buyer vs Supplier vs Admin) */}
@@ -170,28 +181,28 @@ export function MobileBottomNav() {
 
             {/* TAB 4: QUOTES / AUDIT (Canonical entry for Buyer, Supplier, Admin) */}
             <NavLink
-              to={isSupplier ? '/supplier/quotes' : '/audit'}
-              className={({ isActive }) =>
+              to={fourthTab.to}
+              className={() =>
                 `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
-                  isActive || pathname.startsWith('/audit') || (isSupplier && pathname.startsWith('/supplier/quotes'))
+                  fourthTab.match.some((m) => pathname === m || pathname.startsWith(`${m}/`))
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
                 }`
               }
             >
-              <span className="text-lg leading-none">🛡️</span>
+              <span className="text-lg leading-none">{fourthTab.id === 'quotes' ? '📝' : '🛡️'}</span>
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">
-                {isSupplier ? t('Quotes', 'Quotes') : t('Audit', 'Audit')}
+                {t(fourthTab.label, fourthTab.label)}
               </span>
             </NavLink>
 
             {/* TAB 5: PROFILE (Canonical entry for Buyer, Supplier, Admin) */}
             <NavLink
-              to="/profile"
+              to={profileTab.to}
               data-testid="bottom-nav-profile"
-              className={({ isActive }) =>
+              className={() =>
                 `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
-                  isActive || pathname.startsWith('/profile')
+                  isRouteActive(profileTab, pathname)
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground font-medium'
                 }`

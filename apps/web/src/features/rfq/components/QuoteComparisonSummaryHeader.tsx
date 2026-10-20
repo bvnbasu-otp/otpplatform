@@ -1,3 +1,5 @@
+import { QuoteComparisonCommercialLegend } from './QuoteComparisonCommercialLegend';
+
 export interface QuoteComparisonSummaryHeaderProps {
   rfqTitle?: string;
   location?: string;
@@ -150,13 +152,15 @@ export function QuoteComparisonSummaryHeader({
               </span>
             </div>
             <div className="space-y-0.5 rounded-lg bg-card/60 p-1.5 sm:bg-transparent sm:p-0 sm:border-l sm:border-border/50">
-              <span className="text-muted-foreground font-semibold block text-[9px]">Top Merit Score</span>
+              <span className="text-muted-foreground font-semibold block text-[9px]">Top Smart Merit</span>
               <span className="font-bold text-xs text-emerald-700 dark:text-emerald-400 block truncate">
                 {highestScore != null ? `★ ${(highestScore / 10).toFixed(1)}/10` : '—'}
               </span>
             </div>
           </div>
         )}
+
+        {quotesCount > 0 && <QuoteComparisonCommercialLegend />}
       </div>
     </div>
   );

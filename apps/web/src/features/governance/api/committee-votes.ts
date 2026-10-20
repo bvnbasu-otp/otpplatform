@@ -179,6 +179,8 @@ export async function fetchVotingSummary(rfqId: string): Promise<
       opposed: Number(row.opposed ?? 0),
       votesLockedAt: (row.votes_locked_at as string | null) ?? null,
       votingOpen: Boolean(row.voting_open),
+      quorumRequired: row.quorum_required != null ? Number(row.quorum_required) : undefined,
+      quorumMet: row.quorum_met != null ? Boolean(row.quorum_met) : undefined,
       leader: leader
         ? {
             anonymousLabel: String(leader.anonymous_label ?? ''),

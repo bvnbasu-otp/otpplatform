@@ -145,9 +145,9 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
 
       // Status filter
       if (filterTab === 'ACTIVE') {
-        if (po.isSettled || po.status === 'COMPLETED' || po.status === 'CANCELLED' || po.workOrderStatus === 'DISPUTED') return false;
+        if (po.status === 'COMPLETED' || po.status === 'CANCELLED' || po.workOrderStatus === 'DISPUTED') return false;
       } else if (filterTab === 'COMPLETED') {
-        if (!po.isSettled && po.status !== 'COMPLETED') return false;
+        if (po.status !== 'COMPLETED') return false;
       } else if (filterTab === 'CANCELLED') {
         if (po.status !== 'CANCELLED') return false;
       } else if (filterTab === 'DISPUTED') {
@@ -196,7 +196,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
       const amt = Number(po.totalAmount) || 0;
       totalAmount += amt;
 
-      const isDone = po.isSettled || po.status === 'COMPLETED';
+      const isDone = po.status === 'COMPLETED';
       const isCancelled = po.status === 'CANCELLED';
       const isDisputed = po.workOrderStatus === 'DISPUTED';
 

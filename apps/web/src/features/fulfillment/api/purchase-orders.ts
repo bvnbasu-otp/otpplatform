@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { PurchaseOrderStatus } from '@otp/domain';
+import { canTransitionPurchaseOrder, type PurchaseOrderStatus } from '@otp/domain';
 import type { PurchaseOrderSummary } from '../types/fulfillment';
 
 interface PoRow {
@@ -79,6 +79,7 @@ interface PoRow {
           | {
               id?: string;
               status?: string;
+              balance_due?: number | null;
               payments?:
                 | {
                     id?: string;
@@ -93,6 +94,7 @@ interface PoRow {
           | {
               id?: string;
               status?: string;
+              balance_due?: number | null;
               payments?:
                 | {
                     id?: string;
@@ -116,6 +118,7 @@ interface PoRow {
           | {
               id?: string;
               status?: string;
+              balance_due?: number | null;
               payments?:
                 | {
                     id?: string;
@@ -130,6 +133,7 @@ interface PoRow {
           | {
               id?: string;
               status?: string;
+              balance_due?: number | null;
               payments?:
                 | {
                     id?: string;
@@ -179,13 +183,17 @@ function mapPo(row: PoRow): PurchaseOrderSummary {
     : [];
   const pay = payList[0];
 
-  const isPaymentVerified = pay?.status === 'VERIFIED' || inv?.status === 'PAID';
-  const isSettled = row.status === 'COMPLETED' || isPaymentVerified;
+  const invPaid =
+    inv?.status === 'PAID' &&
+    (inv.balance_due == null || Number(inv.balance_due) <= 0);
+  const isPaymentVerified = pay?.status === 'VERIFIED' || invPaid;
+  /** Financial settlement hint — distinct from operational PO `COMPLETED`. */
+  const isSettled = isPaymentVerified;
 
   return {
     id: row.id,
     poNumber: row.po_number,
-    status: isSettled ? ('COMPLETED' as PurchaseOrderStatus) : row.status,
+    status: row.status,
     totalAmount: Number(row.total_amount),
     currency: row.currency,
     supplierId: row.supplier_id,
@@ -487,68 +495,49 @@ export async function fetchPurchaseOrder(poId: string): Promise<
 export async function updatePurchaseOrderStatus(
   poId: string,
   status: PurchaseOrderStatus,
+  options?: { fromStatus?: PurchaseOrderStatus },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const cleanId = (poId || '').trim();
   if (!cleanId) return { ok: false, error: 'Purchase order identifier is required' };
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
 
-  // POL-01: Financial Transition Predicate Harmonization
-  // When completing PO, cleanly synchronize any invoices with balance_due <= 0.00 or paid_amount >= amount to status = 'PAID'
-  if (status === 'COMPLETED') {
-    try {
-      let resolvedPoId = isUuid ? cleanId : null;
-      if (!resolvedPoId) {
-        const { data: poLookup } = await supabase
-          .from('purchase_orders')
-          .select('id')
-          .eq('po_number', cleanId)
-          .maybeSingle();
-        resolvedPoId = poLookup?.id || null;
-      }
-
-      if (resolvedPoId) {
-        // Query non-rejected invoices for this PO
-        const { data: invoices } = await supabase
-          .from('invoices')
-          .select('id, amount, paid_amount, balance_due, status')
-          .or(`purchase_order_id.eq.${resolvedPoId},work_order_id.in.(select id from work_orders where purchase_order_id='${resolvedPoId}')`)
-          .neq('status', 'REJECTED');
-
-        if (invoices && invoices.length > 0) {
-          const eligibleInvoiceIds = invoices
-            .filter((inv) => inv.status !== 'PAID' && (
-              (inv.balance_due !== null && inv.balance_due !== undefined && Number(inv.balance_due) <= 0) ||
-              (Number(inv.paid_amount || 0) >= Number(inv.amount) && Number(inv.amount) > 0)
-            ))
-            .map((inv) => inv.id);
-
-          if (eligibleInvoiceIds.length > 0) {
-            await supabase
-              .from('invoices')
-              .update({
-                status: 'PAID',
-                balance_due: 0,
-                updated_at: new Date().toISOString(),
-              })
-              .in('id', eligibleInvoiceIds);
-          }
-        }
-      }
-    } catch {
-      // Allow database trigger to perform final authoritative validation
-    }
+  if (options?.fromStatus && !canTransitionPurchaseOrder(options.fromStatus, status)) {
+    return {
+      ok: false,
+      error: `Purchase order cannot move from ${options.fromStatus.replace(/_/g, ' ')} to ${status.replace(/_/g, ' ')}.`,
+    };
   }
 
-  const patch: Record<string, unknown> = {
-    status,
-    updated_at: new Date().toISOString(),
-  };
-  if (status === 'ISSUED') patch.issued_at = new Date().toISOString();
-  if (status === 'ACCEPTED') patch.acknowledged_at = new Date().toISOString();
+  let resolvedPoId = isUuid ? cleanId : null;
+  if (!resolvedPoId) {
+    const { data: poLookup, error: lookupError } = await supabase
+      .from('purchase_orders')
+      .select('id')
+      .eq('po_number', cleanId)
+      .maybeSingle();
+    if (lookupError) return { ok: false, error: lookupError.message };
+    resolvedPoId = poLookup?.id || null;
+    if (!resolvedPoId) return { ok: false, error: 'Purchase order not found' };
+  }
 
-  const query = supabase.from('purchase_orders').update(patch);
-  const { error } = isUuid ? await query.eq('id', cleanId) : await query.eq('po_number', cleanId);
+  const rpcArgs: {
+    p_po_id: string;
+    p_to_status: PurchaseOrderStatus;
+    p_expected_from_status?: PurchaseOrderStatus;
+  } = {
+    p_po_id: resolvedPoId,
+    p_to_status: status,
+  };
+  if (options?.fromStatus) {
+    rpcArgs.p_expected_from_status = options.fromStatus;
+  }
+
+  const { data, error } = await supabase.rpc('transition_purchase_order', rpcArgs);
   if (error) return { ok: false, error: error.message };
+  if (data && typeof data === 'object' && (data as { ok?: boolean }).ok === false) {
+    const msg = (data as { error?: string }).error;
+    return { ok: false, error: msg || 'Purchase order transition was rejected.' };
+  }
   return { ok: true };
 }
 

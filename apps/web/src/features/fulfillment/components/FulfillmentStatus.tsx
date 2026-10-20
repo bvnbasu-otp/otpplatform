@@ -89,7 +89,7 @@ export function PoActionButtons({
               className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
             />
             <span className="text-[11px] text-foreground leading-tight">
-              I have reviewed this purchase order and commit to delivering it as specified. Payment is settled directly between the buyer and my business.
+              I have reviewed this purchase order and commit to delivering it as specified. Invoice payments are made directly between the buyer and my business; OTP does not collect or settle funds.
             </span>
           </label>
         </div>

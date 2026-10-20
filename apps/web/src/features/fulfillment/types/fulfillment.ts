@@ -72,6 +72,10 @@ export interface WorkOrderSummary {
   rating?: number | null;
   reviewText?: string | null;
   poNumber?: string;
+  paymentStructure?: string | null;
+  paymentSchedule?: PurchaseOrderSummary['paymentSchedule'];
+  poTotalAmount?: number;
+  poCurrency?: string;
 }
 
 /** Valid buyer-initiated PO transitions (presentation layer guard). */

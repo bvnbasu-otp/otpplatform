@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   IDENTITY_PROTECTED_FORBIDDEN_FIELDS,
@@ -296,6 +298,19 @@ describe('Quote Comparison Mobile Redesign — Flagship OTP Screen', () => {
     it('verifies Crockford Base32 identity shield tooltip on 4-pillar quote cards', () => {
       const shieldTooltip = '🔒 Identity Protected: Supplier identity is sealed until mutual award to ensure unbiased evaluation.';
       expect(shieldTooltip).toContain('Supplier identity is sealed');
+    });
+  });
+
+  describe('5. BoQ bottom sheet truthful copy', () => {
+    it('does not claim guaranteed TAT or 100% technical spec match', () => {
+      const src = readFileSync(
+        resolve(__dirname, 'components/QuoteBoqBottomSheet.tsx'),
+        'utf8',
+      );
+      expect(src).not.toMatch(/Guaranteed TAT/i);
+      expect(src).not.toMatch(/100% Technical Spec Match/i);
+      expect(src).toMatch(/Delivery \(supplier-stated\)/);
+      expect(src).toContain('data-testid="boq-scope-disclaimer"');
     });
   });
 });

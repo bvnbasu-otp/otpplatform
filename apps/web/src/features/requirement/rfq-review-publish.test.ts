@@ -217,7 +217,7 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
         expect(res.data.validation.state).toBe('WARNING');
         expect(res.data.validation.warnings.length).toBeGreaterThan(0);
         expect(res.data.validation.warnings).toContain(
-          'Selected pool (1) is below policy quorum recommendation (3 suppliers).'
+          'Invited pool (1) is below policy quorum recommendation (3 suppliers).',
         );
       }
     });
@@ -253,7 +253,7 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
         expect(res.data.validation.isValid).toBe(false);
         expect(res.data.validation.state).toBe('BLOCKED');
         expect(res.data.validation.errors).toContain(
-          'At least 1 verified supplier must be selected in the sourcing pool.'
+          'No suppliers are invited yet. Run supplier discovery or add a direct invite on the discover page.',
         );
         const supplierCheck = res.data.validation.checklist.find((c) => c.id === 'suppliers');
         expect(supplierCheck?.status).toBe('FAIL');
@@ -533,9 +533,8 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
 
     it('publish succeeds when discovery already opened the RFQ server-side (no false error)', async () => {
       let rfqReads = 0;
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: { success: true, invited: 3, total: 3 }, error: null } as any);
       vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [{ invited_count: 3 }], error: null });
         if (table === 'requirements') {
           return createSupabaseQueryMock({
             data: {
@@ -574,7 +573,7 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
         return Promise.resolve({ data: { success: true, invited: 2, total: 2 }, error: null });
       }) as any);
       vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [{ invited_count: 2 }], error: null });
         if (table === 'requirements') {
           return createSupabaseQueryMock({
             data: {
@@ -600,7 +599,7 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
         publishRfq({ rfqId: 'rfq-7', requirementId: 'req-7' }),
       ]);
       expect(a).toEqual(b);
-      expect(discoverCalls).toBe(1);
+      expect(discoverCalls).toBe(0);
     });
 
     it('a failed instruction save blocks publishing and a retry can then succeed', async () => {
@@ -632,7 +631,7 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
         if (table === 'requirement_categories') {
           return createSupabaseQueryMock({ data: { name: 'Office Furniture & Fixtures' }, error: null });
         }
-        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
+        if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [{ invited_count: 1 }], error: null });
         return createSupabaseQueryMock({ data: { id: 'rfq-8', status: 'OPEN', requirement_id: 'req-8' }, error: null });
       });
 
@@ -645,7 +644,7 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
       expect(retry.ok).toBe(true);
     });
 
-    it('publish path makes no synthetic quote RPC calls', async () => {
+    it('publish refuses when no suppliers are invited (no silent discover_and_invite)', async () => {
       const rpcCalls: string[] = [];
       vi.mocked(supabase.rpc).mockImplementation(((fn: string) => {
         rpcCalls.push(fn);
@@ -653,39 +652,16 @@ describe('Phase C.4 — RFQ Review & Broadcast Launch Checkpoint Polish', () => 
       }) as any);
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'rfq_supplier_networks') return createSupabaseQueryMock({ data: [], error: null });
-        if (table === 'requirements') {
-          return createSupabaseQueryMock({
-            data: {
-              id: 'req-6',
-              title: 'Office furniture',
-              delivery_city: 'Bengaluru',
-              delivery_pincode: '560048',
-              delivery_state: 'Karnataka',
-              category_id: 'office-furniture',
-              subcategory_id: 'office-chairs',
-            },
-            error: null,
-          });
-        }
-        if (table === 'requirement_categories') {
-          return createSupabaseQueryMock({ data: { name: 'Office Furniture & Fixtures' }, error: null });
-        }
-        if (table === 'requirement_subcategories') {
-          return createSupabaseQueryMock({ data: { name: 'Office Chairs' }, error: null });
-        }
-        return createSupabaseQueryMock({ data: { id: 'rfq-6', status: 'OPEN', requirement_id: 'req-6' }, error: null });
+        return createSupabaseQueryMock({ data: { id: 'rfq-6', status: 'DRAFT', requirement_id: 'req-6' }, error: null });
       });
-      await publishRfq({ rfqId: 'rfq-6', requirementId: 'req-6' });
-      expect(rpcCalls).toEqual(['discover_and_invite_for_rfq']);
-      expect(supabase.functions.invoke).toHaveBeenCalledWith('location-pin-coverage', {
-        body: expect.objectContaining({
-          city: 'Bengaluru',
-          pincode: '560048',
-          category: 'Office Furniture & Fixtures > Office Chairs',
-          executeDiscovery: true,
-          discoveryContext: 'BUYER_RFQ',
-        }),
+      const res = await publishRfq({ rfqId: 'rfq-6', requirementId: 'req-6' });
+      expect(res).toEqual({
+        ok: false,
+        error:
+          'No suppliers are invited yet. Run supplier discovery or add a direct invite on the discover page before publishing.',
       });
+      expect(rpcCalls).toEqual([]);
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
     });
 
     it('success copy states only what happened (no delivery or response-time promise)', () => {

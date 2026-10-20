@@ -8,6 +8,7 @@ interface HomeEmptyStateProps {
   actionLabel?: string;
   actionUrl?: string;
   actionOnClick?: () => void;
+  'data-testid'?: string;
 }
 
 export function HomeEmptyState({
@@ -17,9 +18,13 @@ export function HomeEmptyState({
   actionLabel,
   actionUrl,
   actionOnClick,
+  'data-testid': dataTestId,
 }: HomeEmptyStateProps) {
   return (
-    <div className="py-8 px-4 text-center bg-card rounded-2xl border border-border/80 shadow-2xs space-y-3">
+    <div
+      className="py-8 px-4 text-center bg-card rounded-2xl border border-border/80 shadow-2xs space-y-3"
+      data-testid={dataTestId}
+    >
       <span className="text-3xl block select-none">{icon}</span>
       <div className="space-y-1">
         <h3 className="text-sm font-extrabold text-foreground">{title}</h3>

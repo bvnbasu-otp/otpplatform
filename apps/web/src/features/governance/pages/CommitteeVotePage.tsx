@@ -17,6 +17,11 @@ import {
 } from '../api/rfq-governance';
 import { WeightedTallyTable } from '../components/WeightedTallyTable';
 import {
+  buildCommitteeQuorumViewModel,
+  resolveSoloBuyerMode,
+  type CommitteeSummaryLoadState,
+} from '../lib/committee-quorum-display';
+import {
   currentVoteIds,
   formatVoteChoice,
   formatVotingPower,
@@ -49,6 +54,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
   const [myVote, setMyVote] = useState<MyVote | null>(null);
   const [tally, setTally] = useState<VoteTallyEntry[]>([]);
   const [summary, setSummary] = useState<VotingSummary | null>(null);
+  const [summaryLoadState, setSummaryLoadState] = useState<CommitteeSummaryLoadState>('loading');
   const [quotes, setQuotes] = useState<IdentityProtectedQuoteForVote[]>([]);
   const [selectedQuote, setSelectedQuote] = useState('');
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
@@ -78,6 +84,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
   const load = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setSummaryLoadState('loading');
     try {
       const profile = await fetchCurrentProfile();
       setProfileId(profile?.profileId ?? null);
@@ -99,7 +106,13 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
       const fetchedQuotes = quotesRes.ok ? quotesRes.quotes : [];
       if (quotesRes.ok) setQuotes(fetchedQuotes);
       if (tallyRes.ok) setTally(tallyRes.tally);
-      if (summaryRes.ok) setSummary(summaryRes.summary);
+      if (summaryRes.ok) {
+        setSummary(summaryRes.summary);
+        setSummaryLoadState('ready');
+      } else {
+        setSummary(null);
+        setSummaryLoadState('failed');
+      }
 
       if (mineRes.ok && mineRes.vote) {
         setMyVote(mineRes.vote);
@@ -123,16 +136,18 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
   const votingOpen = summary?.votingOpen ?? true;
   const liveVoteIds = currentVoteIds(votes);
   const hasReason = selectedReasons.length > 0 || Boolean(comment.trim());
-  const isSoloBuyer =
-    myVote?.buyerType === 'INDIVIDUAL' ||
-    (summary?.assignedMembers != null && summary.assignedMembers <= 1);
-
-  // Quorum Metrics
-  const assigned = summary?.assignedMembers ?? (isSoloBuyer ? 1 : 3);
-  const votedCount = summary?.membersVoted ?? (myVote ? 1 : 0);
-  const quorumRequired = summary?.quorumRequired ?? (isSoloBuyer ? 1 : Math.ceil(assigned / 2));
-  const quorumMet = summary?.quorumMet ?? (votedCount >= quorumRequired);
-  const quorumPercent = Math.min(100, Math.round((votedCount / (assigned || 1)) * 100));
+  const isSoloBuyer = resolveSoloBuyerMode({
+    summaryLoadState,
+    summary,
+    myVoteBuyerType: myVote?.buyerType,
+  });
+  const quorumView = buildCommitteeQuorumViewModel({
+    summaryLoadState,
+    summary,
+    isSoloBuyer,
+  });
+  const committeeVoteBlocked =
+    !isSoloBuyer && summaryLoadState !== 'ready';
 
   const selectedCandidate = quotes.find((q) => q.quoteId === selectedQuote);
 
@@ -250,11 +265,12 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
           </div>
         </div>
 
-        {/* Live Quorum Meter (Visual Progress Bar) */}
-        {!isSoloBuyer && (
+        {/* Live Quorum Meter (authoritative summary only) */}
+        {quorumView.mode === 'committee' && (
           <section
             aria-label="Quorum Status"
             className="rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-2.5"
+            data-testid="committee-quorum-meter"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -265,38 +281,39 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
               </div>
               <span
                 className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                  quorumMet
+                  quorumView.quorumMet
                     ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
                     : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
                 }`}
               >
-                {quorumMet ? '✓ Quorum Reached' : `${quorumRequired - votedCount} more vote(s) needed`}
+                {quorumView.quorumMet
+                  ? '✓ Quorum Reached'
+                  : `${Math.max(0, (quorumView.quorumRequired ?? 0) - (quorumView.votedCount ?? 0))} more vote(s) needed`}
               </span>
             </div>
 
-            {/* Visual Bar */}
             <div className="space-y-1">
               <div className="h-3 w-full rounded-full bg-muted/60 overflow-hidden p-0.5 border border-border/40">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    quorumMet ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-primary'
+                    quorumView.quorumMet ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-primary'
                   }`}
-                  style={{ width: `${Math.max(8, quorumPercent)}%` }}
+                  style={{ width: `${Math.max(8, quorumView.quorumPercent ?? 0)}%` }}
                 />
               </div>
               <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium pt-0.5">
                 <span>
-                  <strong>{votedCount} of {assigned}</strong> votes recorded
+                  <strong>{quorumView.votedCount} of {quorumView.assigned}</strong> votes recorded
                 </span>
                 <span className="font-bold text-foreground">
-                  {quorumPercent}% Quorum reached
+                  {quorumView.quorumPercent}% participation
                 </span>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/40 text-[11px]">
               <span className="text-muted-foreground">
-                Quorum rule: Minimum <strong>{quorumRequired}</strong> affirmative vote(s) required to unlock Award lock.
+                Quorum rule: Minimum <strong>{quorumView.quorumRequired}</strong> affirmative vote(s) required to unlock Award lock.
               </span>
               <button
                 type="button"
@@ -307,6 +324,15 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
               </button>
             </div>
           </section>
+        )}
+        {quorumView.mode === 'unavailable' && !isSoloBuyer && (
+          <div
+            className="rounded-xl border border-amber-300/80 bg-amber-50/80 dark:bg-amber-950/30 p-3 text-xs text-amber-900 dark:text-amber-200"
+            data-testid="committee-quorum-unavailable"
+            role="status"
+          >
+            {quorumView.unavailableReason}
+          </div>
         )}
 
         {/* Alerts & Feedback */}
@@ -735,7 +761,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
             ) : (
               <button
                 type="button"
-                disabled={busy || !selectedQuote || !coiConfirmed || !hasReason}
+                disabled={busy || committeeVoteBlocked || !selectedQuote || !coiConfirmed || !hasReason}
                 onClick={() => void handleCastVote()}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-black text-primary-foreground shadow-md hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 transition min-h-[44px]"
                 data-testid="submit-vote-button"

@@ -5,12 +5,11 @@ import { ProcurementStageNavigator } from '@/features/lifecycle';
 import type { SupplierNetworkSummary } from '@otp/domain';
 import {
   discoverAndInvite,
-  discoverForRequirement,
   ensureRfqForRequirement,
-  fetchInvitationCount,
-  fetchMatchedSuppliers,
   fetchRequirementRfqContext,
   openRfq,
+  refreshSupplierInvitationPool,
+  runExplicitSupplierDiscovery,
   type RequirementRfqContext,
 } from '../api/rfq-lifecycle';
 import type { MatchedSupplier, DiscoveryFilterOption } from '../types/discovery';
@@ -20,6 +19,9 @@ import { SupplierCard } from '../components/SupplierCard';
 import { DirectInviteModal } from '../components/DirectInviteModal';
 import { classifyDiscoveryEmpty, discoveryFailureCopy, displayedSupplierCount } from '../lib/discovery-empty-state';
 import { sourceSummary } from '../lib/discovery-source';
+import { sortSuppliersForDisplay } from '../lib/supplier-truth';
+import { DiscoveryTruthLegend } from '../components/DiscoveryTruthLegend';
+import { SelectedSuppliersReviewPanel } from '../components/SelectedSuppliersReviewPanel';
 import { useLanguage } from '@/lib/i18n';
 
 
@@ -42,57 +44,27 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [discoveryRunState, setDiscoveryRunState] = useState<'NOT_STARTED' | 'DONE'>('NOT_STARTED');
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
-
-  const loadNetworksAndSuppliers = useCallback(async (id: string): Promise<string | null> => {
-    let discoveryError: string | null = null;
-    let [netRes, count, supRes] = await Promise.all([
+  const refreshPool = useCallback(async (id: string): Promise<string | null> => {
+    const [netRes, poolRes] = await Promise.all([
       fetchSupplierNetworkSummary(id),
-      fetchInvitationCount(id),
-      fetchMatchedSuppliers(id),
+      refreshSupplierInvitationPool(id),
     ]);
-
-    // Requirement 7 & 17: OTP-registered, eligible suppliers first
-    if (count === 0 || (supRes.ok && supRes.suppliers.length === 0)) {
-      const otpDiscovered = await discoverForRequirement(id, 'OTP_REGISTERED');
-      [netRes, count, supRes] = await Promise.all([
-        fetchSupplierNetworkSummary(id),
-        fetchInvitationCount(id),
-        fetchMatchedSuppliers(id),
-      ]);
-
-      if (count === 0 || (supRes.ok && supRes.suppliers.length === 0)) {
-        const placesDiscovered = await discoverForRequirement(id, 'GOOGLE_PLACES');
-        if (!placesDiscovered.ok && !otpDiscovered.ok) {
-          discoveryError = placesDiscovered.error || 'Supplier discovery failed';
-        }
-        [netRes, count, supRes] = await Promise.all([
-          fetchSupplierNetworkSummary(id),
-          fetchInvitationCount(id),
-          fetchMatchedSuppliers(id),
-        ]);
-      }
-    }
-
-    if (netRes.ok) {
-      setNetworks(netRes.networks);
-    }
-    setInvitationCount(count);
-
-    if (supRes.ok) {
-      setSuppliers(supRes.suppliers);
-      // Auto-select all discovered suppliers on initial load so user is never blocked on 0 selected
-      setSelectedIds((prev) => {
-        if (prev.size > 0) return prev;
-        return new Set(supRes.suppliers.map((s) => s.invitationId));
-      });
-    } else {
+    if (netRes.ok) setNetworks(netRes.networks);
+    if (!poolRes.ok) {
       setSuppliers([]);
-      discoveryError = discoveryError ?? supRes.error;
+      setInvitationCount(0);
+      return poolRes.error;
     }
-
-    return discoveryError;
+    setInvitationCount(poolRes.invitationCount);
+    setSuppliers(poolRes.suppliers);
+    if (poolRes.invitationCount > 0 || poolRes.suppliers.length > 0) {
+      setDiscoveryRunState('DONE');
+    }
+    return null;
   }, []);
 
   const load = useCallback(async () => {
@@ -115,10 +87,37 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
       setInvitationCount(ctxRes.context.invitationCount);
     }
 
-    const discoveryError = await loadNetworksAndSuppliers(ensure.rfqId);
-    if (discoveryError) setError(discoveryError);
+    const refreshError = await refreshPool(ensure.rfqId);
+    if (refreshError) setError(refreshError);
     setIsLoading(false);
-  }, [requirementId, loadNetworksAndSuppliers]);
+  }, [requirementId, refreshPool]);
+
+  const handleRunDiscovery = useCallback(async () => {
+    if (!rfqId || isDiscovering) return;
+    setIsDiscovering(true);
+    setError(null);
+    setSuccess(null);
+    const result = await runExplicitSupplierDiscovery(rfqId);
+    const refreshError = await refreshPool(rfqId);
+    setIsDiscovering(false);
+    if (refreshError) {
+      setError(refreshError);
+      return;
+    }
+    if (!result.ok) {
+      setError(result.error);
+      setDiscoveryRunState('DONE');
+      return;
+    }
+    setDiscoveryRunState('DONE');
+    if (result.outcome === 'ZERO_RESULTS') {
+      setSuccess(
+        'Discovery finished but no invitation records were created. Try a direct invite or adjust the requirement scope.',
+      );
+      return;
+    }
+    setSuccess('Discovery complete. Invitation records are on file for matched suppliers.');
+  }, [rfqId, isDiscovering, refreshPool]);
 
   useEffect(() => {
     void load();
@@ -152,23 +151,31 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
 
   // Filtered suppliers memo
   const filteredSuppliers = useMemo(() => {
+    let list: MatchedSupplier[];
     switch (filter) {
       case 'HIGH_MATCH':
-        return suppliers.filter((s) => s.matchScore >= 85);
+        list = suppliers.filter((s) => s.matchScore >= 85);
+        break;
       case 'GST_VERIFIED':
-        return suppliers.filter((s) => s.gstVerified);
+        list = suppliers.filter((s) => s.gstVerified);
+        break;
       case 'LOCAL':
-        return suppliers.filter((s) => s.isLocal);
+        list = suppliers.filter((s) => s.isLocal);
+        break;
       case 'ONDC':
-        return suppliers.filter((s) => s.network === 'ONDC');
+        list = suppliers.filter((s) => s.network === 'ONDC');
+        break;
       case 'OTP_NETWORK':
-        return suppliers.filter((s) => s.network === 'OTP_REGISTERED');
+        list = suppliers.filter((s) => s.network === 'OTP_REGISTERED' || s.otpRegistered);
+        break;
       case 'DIRECT':
-        return suppliers.filter((s) => s.network === 'DIRECT');
+        list = suppliers.filter((s) => s.network === 'DIRECT');
+        break;
       case 'ALL':
       default:
-        return suppliers;
+        list = suppliers;
     }
+    return sortSuppliersForDisplay(list);
   }, [suppliers, filter]);
 
   const isQuotingActive = rfqStatus === 'OPEN' || rfqStatus === 'CLARIFICATION' || rfqStatus === 'QUOTING';
@@ -189,6 +196,8 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
   // Determine Radar state
   const radarState: RadarBannerState = error
     ? 'ERROR'
+    : isDiscovering
+    ? 'DISCOVERING'
     : isLoading
     ? 'DISCOVERING'
     : isQuotingActive
@@ -206,22 +215,26 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
   const nobodyInvited = suppliers.length === 0 && invitationCount === 0;
 
   async function handleSearchOtpRegistered() {
-    if (!rfqId) return;
+    if (!rfqId || isDiscovering) return;
+    setIsDiscovering(true);
     setError(null);
     setSuccess(null);
     const discovered = await discoverAndInvite(rfqId, 'OTP_REGISTERED');
+    const refreshError = await refreshPool(rfqId);
+    setIsDiscovering(false);
+    setDiscoveryRunState('DONE');
+    if (refreshError) {
+      setError(refreshError);
+      return;
+    }
     if (!discovered.ok) {
       setError(discovered.error);
       return;
     }
-    const supRes = await fetchMatchedSuppliers(rfqId);
-    const count = await fetchInvitationCount(rfqId);
-    setInvitationCount(count);
-    if (supRes.ok) setSuppliers(supRes.suppliers);
     if (discovered.otpRegisteredInvited === 0 && discovered.invited === 0) {
-      setSuccess("We couldn't find enough matches yet. You can invite a known supplier or retry discovery.");
+      setSuccess("We couldn't find enough matches yet. You can invite a known supplier or run full discovery.");
     } else {
-      setSuccess('Supplier matches are ready. Relevant suppliers have been connected.');
+      setSuccess('OTP-registered search finished. Check invitation status on each card.');
     }
   }
 
@@ -230,18 +243,12 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
     setIsBroadcasting(true);
     setError(null);
     try {
-      if (invitationCount === 0 || suppliers.length === 0) {
-        let discovered = await discoverForRequirement(rfqId, 'OTP_REGISTERED');
-        if (!discovered.ok || discovered.invited < 1) {
-          discovered = await discoverForRequirement(rfqId, 'GOOGLE_PLACES');
-        }
-        if (!discovered.ok || discovered.invited < 1) {
-          setError(discovered.ok
-            ? 'No suppliers are invited, so this request is not open for quotes.'
-            : discovered.error);
-          setIsBroadcasting(false);
-          return;
-        }
+      if (invitationCount < 1) {
+        setError(
+          'No server-confirmed invitations exist yet. Run supplier discovery or add a direct invite before opening quotes.',
+        );
+        setIsBroadcasting(false);
+        return;
       }
       const openRes = await openRfq(rfqId);
       if (!openRes.ok && !openRes.error?.toLowerCase().includes('cannot open rfq from status open')) {
@@ -277,10 +284,10 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">
-              Connecting to relevant suppliers…
+              Loading requirement and invitation status…
             </h3>
             <p className="text-xs text-muted-foreground mt-1 max-w-md">
-              Preparing your supplier matches across verified registered businesses and local service providers.
+              Supplier discovery does not run until you choose Run supplier discovery.
             </p>
           </div>
         </div>
@@ -316,7 +323,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
         isBroadcasting={isQuotingActive}
         state={radarState}
         errorMessage={error}
-        onRetry={() => void load()}
+        onRetry={() => (discoveryRunState === 'NOT_STARTED' ? void load() : void handleRunDiscovery())}
       />
 
       {/* Notifications */}
@@ -325,7 +332,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           <span>{error}</span>
           <button
             type="button"
-            onClick={() => void load()}
+            onClick={() => void handleRunDiscovery()}
             className="min-h-[48px] px-3 py-1.5 rounded-lg bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-200 font-bold hover:bg-red-200 transition mobile-touch-target"
           >
             {t('Retry Discovery', 'Retry Discovery')}
@@ -350,9 +357,25 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
             <p className="text-[11px] text-muted-foreground" data-testid="discovery-source-summary">
               {sources.label}
             </p>
+            {context?.categoryName && (
+              <p className="text-[10px] text-muted-foreground mt-0.5" data-testid="discovery-category-scope">
+                Invitations respect this requirement&apos;s category
+                {context.deliveryPincode ? ` and delivery PIN ${context.deliveryPincode}` : ''}; nearby suppliers are not invited without a category/capability match.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={isDiscovering || !rfqId}
+              onClick={() => void handleRunDiscovery()}
+              className="min-h-[48px] px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-2xs hover:bg-primary/90 transition flex items-center gap-1 mobile-touch-target disabled:opacity-60"
+              data-testid="run-supplier-discovery-button"
+            >
+              <span>⚡</span>
+              <span>{isDiscovering ? 'Discovering…' : t('Run supplier discovery', 'Run supplier discovery')}</span>
+            </button>
             <button
               type="button"
               onClick={() => setIsInviteModalOpen(true)}
@@ -364,6 +387,18 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
             </button>
           </div>
         </div>
+
+        {discoveryRunState === 'NOT_STARTED' && invitationCount === 0 && suppliers.length === 0 && !isDiscovering && (
+          <div
+            className="rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-3 text-[11px] text-muted-foreground space-y-2"
+            data-testid="discovery-not-started-prompt"
+          >
+            <p className="font-bold text-foreground">Supplier discovery has not been run for this RFQ yet.</p>
+            <p>
+              Use <strong className="text-foreground/90">Run supplier discovery</strong> to search OTP-registered suppliers for this category and PIN, then scoped area matches. Invitations are created by that server workflow — not when you open this page.
+            </p>
+          </div>
+        )}
 
         {/* Filter Chips */}
         <div className="flex flex-wrap gap-1.5 pt-1 overflow-x-auto" role="tablist" aria-label="Supplier Filters">
@@ -459,7 +494,11 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
             </button>
           </div>
         </div>
+
+        <DiscoveryTruthLegend />
       </section>
+
+      <SelectedSuppliersReviewPanel suppliers={suppliers} selectedIds={selectedIds} />
 
       {/* Stacked Supplier Cards List */}
       <section className="space-y-2.5" aria-label="Matched Suppliers List">
@@ -486,7 +525,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
             <div className="flex flex-wrap justify-center gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => void load()}
+                onClick={() => void handleRunDiscovery()}
                 className="min-h-[48px] px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-2xs hover:bg-primary/90 transition mobile-touch-target"
               >
                 Retry Discovery
@@ -555,7 +594,7 @@ export function DiscoverSuppliersPage({ requirementId }: DiscoverSuppliersPagePr
           isOpen={isInviteModalOpen}
           onClose={() => setIsInviteModalOpen(false)}
           onInvited={() => {
-            if (rfqId) void loadNetworksAndSuppliers(rfqId);
+            if (rfqId) void refreshPool(rfqId);
           }}
         />
       )}

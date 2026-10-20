@@ -93,9 +93,9 @@ export function RfqPublishConfirmationModal({
             </div>
 
             <div className="flex items-center justify-between py-1 border-b">
-              <span className="text-muted-foreground">Selected Suppliers:</span>
+              <span className="text-muted-foreground">Invited suppliers (on record):</span>
               <span className="font-bold text-foreground">
-                👥 {supplierCount} Verified Supplier{supplierCount === 1 ? '' : 's'}
+                👥 {supplierCount} invitation{supplierCount === 1 ? '' : 's'}
               </span>
             </div>
             <div className="flex items-center justify-between py-1 border-b">

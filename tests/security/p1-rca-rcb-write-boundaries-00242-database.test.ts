@@ -470,15 +470,19 @@ describe('F-02 purchase_orders: no client INSERT, commercial columns frozen', ()
     const { poId } = await awardRwa(round, true);
 
     const supplier = await sessionFor(LOGIN.supplier);
-    const ack = new Date().toISOString();
-    const accept = await supplier
-      .from('purchase_orders')
-      .update({ status: 'ACCEPTED', acknowledged_at: ack, updated_at: ack })
-      .eq('id', poId!)
-      .select('status, acknowledged_at');
+    const accept = await supplier.rpc('transition_purchase_order', {
+      p_po_id: poId!,
+      p_to_status: 'ACCEPTED',
+      p_expected_from_status: 'ISSUED',
+    });
     expect(accept.error).toBeNull();
-    expect(accept.data![0]!.status).toBe('ACCEPTED');
-    expect(accept.data![0]!.acknowledged_at).toBeTruthy();
+    const { data: acceptedPo } = await service
+      .from('purchase_orders')
+      .select('status, acknowledged_at')
+      .eq('id', poId!)
+      .single();
+    expect(acceptedPo!.status).toBe('ACCEPTED');
+    expect(acceptedPo!.acknowledged_at).toBeTruthy();
 
     const round2 = await makeRound({ orgId: RWA_ORG, creatorEmail: LOGIN.president });
     const second = await awardRwa(round2, true);

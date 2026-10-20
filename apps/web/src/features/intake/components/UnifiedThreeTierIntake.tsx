@@ -15,7 +15,7 @@ import {
   type TaxonomySnapshot,
   type BuyerAddress,
   type BuyerPersona,
-  tryResolveBuyerPersona,
+  resolveBuyerPersonaFromContext,
 } from '@otp/domain';
 
 import { Badge, Button } from '@/components/ui';
@@ -162,10 +162,11 @@ export function UnifiedThreeTierIntake({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
 
-  const buyerPersona: BuyerPersona =
-    tryResolveBuyerPersona(context.buyerType) ??
-    tryResolveBuyerPersona(context.organizations?.[0]?.orgType) ??
-    (context.organizationId ? 'RWA' : 'INDIVIDUAL');
+  const buyerPersona: BuyerPersona = resolveBuyerPersonaFromContext({
+    buyerType: context.buyerType,
+    organizationId: context.organizationId,
+    organizations: context.organizations,
+  });
   const isIndividual = buyerPersona === 'INDIVIDUAL' && !context.organizationId;
 
   const [savedAddresses, setSavedAddresses] = useState<BuyerAddress[]>([]);

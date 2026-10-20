@@ -37,10 +37,10 @@ export function RfqSupplierPoolSummaryCard({
             )}
           </div>
           <h3 className="text-sm sm:text-base font-bold text-foreground">
-            {count} Verified Supplier{count === 1 ? '' : 's'} Selected to Compete
+            {count} invited supplier{count === 1 ? '' : 's'} on this RFQ
           </h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Suppliers submit sealed quotes under protected aliases with zero identity exposure.
+            Rows come from server invitation records. Checkboxes on the discover page are for your review only until a selective-invite API exists.
           </p>
         </div>
 
@@ -60,7 +60,7 @@ export function RfqSupplierPoolSummaryCard({
             ⚠️ No suppliers selected for this sourcing event
           </p>
           <p className="text-[11px] text-muted-foreground">
-            You must discover and select at least 1 verified supplier before broadcasting the RFQ.
+            Run supplier discovery or add a direct invite before publishing this RFQ.
           </p>
           <Link
             to={`/requirements/${requirementId}/discover`}

@@ -112,8 +112,8 @@ export function DeliveryInspectionPanel({
           </div>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
             {role === 'buyer'
-              ? 'Quality inspection is approved. Official GST tax invoices can now be reviewed, approved, and settled in the Invoice tab.'
-              : 'Quality inspection is approved by buyer. You are now authorized to generate and submit official GST tax invoices for milestone payment release.'}
+              ? 'Quality inspection is approved. Official GST tax invoices can now be reviewed and approved in the Invoice tab; off-platform payment is recorded there — OTP does not process funds.'
+              : 'Quality inspection is approved by buyer. You may submit official GST tax invoices in the Invoice tab for buyer review and off-platform payment recording.'}
           </p>
           {onGoToInvoices && (
             <div className="pt-1 flex items-center justify-end">

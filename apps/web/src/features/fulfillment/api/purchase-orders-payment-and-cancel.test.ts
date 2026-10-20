@@ -58,6 +58,37 @@ describe('purchase order client payment mapping and cancel errors', () => {
     ]);
   });
 
+  it('keeps server PO status when payment is verified but PO is not COMPLETED', async () => {
+    vi.mocked(supabase.from).mockImplementation(() =>
+      createSupabaseQueryMock(
+        poRow({
+          status: 'IN_PROGRESS',
+          work_orders: [
+            {
+              id: 'wo-1',
+              status: 'IN_PROGRESS',
+              progress_percent: 100,
+              buyer_accepted_at: '2026-09-10T00:00:00.000Z',
+              invoices: [
+                {
+                  id: 'inv-1',
+                  status: 'PAID',
+                  payments: [{ id: 'pay-1', status: 'VERIFIED' }],
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+
+    const result = await fetchPurchaseOrder(PO_NUMBER);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.order.status).toBe('IN_PROGRESS');
+    expect(result.order.isSettled).toBe(true);
+  });
+
   it('normalises a missing structure and a non-array schedule to null', async () => {
     vi.mocked(supabase.from).mockImplementation(() =>
       createSupabaseQueryMock(poRow({ payment_structure: undefined, payment_schedule: { label: 'not-a-list' } })),

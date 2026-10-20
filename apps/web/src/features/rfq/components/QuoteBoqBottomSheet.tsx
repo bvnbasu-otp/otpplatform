@@ -273,7 +273,7 @@ export function QuoteBoqBottomSheet({
           </span>
         </div>
       }
-      subtitle="Cryptographically sealed itemized commercial breakdown & technical compliance specification"
+      subtitle="Illustrative line breakdown from the supplier quote — not an independent conformance audit"
       maxHeight="max-h-[88vh]"
       footer={
         <div className="flex items-center justify-between gap-2">
@@ -412,21 +412,23 @@ export function QuoteBoqBottomSheet({
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
             <div className="rounded-xl border p-2.5 bg-card space-y-1">
-              <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-extrabold text-[11px]">
-                <span>✓</span>
-                <span>100% Technical Spec Match</span>
+              <div className="flex items-center gap-1.5 text-foreground font-bold text-[11px]">
+                <span>📋</span>
+                <span>Scope from supplier quote</span>
               </div>
-              <p className="text-[11px] text-muted-foreground leading-tight">
-                All parameters conform strictly to RFQ requirement quality thresholds.
+              <p className="text-[11px] text-muted-foreground leading-tight" data-testid="boq-scope-disclaimer">
+                Line items below are an illustrative split of the quoted commercial total for review. OTP does not certify technical conformance or spec-match percentages from this view.
               </p>
             </div>
             <div className="rounded-xl border p-2.5 bg-card space-y-1">
               <div className="flex items-center gap-1.5 text-foreground font-bold text-[11px]">
                 <span>🛡️</span>
-                <span>Quality &amp; Testing Protocol</span>
+                <span>Supplier-stated warranty</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-tight">
-                Pre-dispatch testing report and full manufacturer warranty certificate included.
+                {quote.warrantyMonths > 0
+                  ? `${quote.warrantyMonths} month(s) as declared on the quote — verify terms before award.`
+                  : 'Warranty period not declared on this quote.'}
               </p>
             </div>
           </div>
@@ -443,17 +445,21 @@ export function QuoteBoqBottomSheet({
               <span className="font-bold text-foreground">{paymentDays}-Day Net Post-Delivery</span>
             </div>
             <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
-              <span className="text-muted-foreground font-medium">Delivery Guarantee</span>
-              <span className="font-bold text-foreground">{quote.deliveryDays} Days Guaranteed TAT</span>
+              <span className="text-muted-foreground font-medium">Delivery (supplier-stated)</span>
+              <span className="font-bold text-foreground" data-testid="boq-delivery-days">
+                {quote.deliveryDays > 0 ? `${quote.deliveryDays} day(s)` : 'Not stated'}
+              </span>
             </div>
             <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
-              <span className="text-muted-foreground font-medium">Warranty SLA</span>
-              <span className="font-bold text-foreground">{quote.warrantyMonths} Months Replacement Warranty</span>
+              <span className="text-muted-foreground font-medium">Warranty (supplier-stated)</span>
+              <span className="font-bold text-foreground">
+                {quote.warrantyMonths > 0 ? `${quote.warrantyMonths} month(s)` : 'Not stated'}
+              </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground font-medium">GST Registration</span>
-              <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                {quote.isGstVerified ? '✓ Verified & Compliant' : 'Registered'}
+              <span className="text-muted-foreground font-medium">GST on quote record</span>
+              <span className="font-bold text-foreground">
+                {quote.isGstVerified ? 'Marked GST verified on quote' : 'Not marked verified on quote'}
               </span>
             </div>
           </div>

@@ -1,4 +1,6 @@
 import type { IdentityProtectedQuote } from '@otp/domain';
+import { QuoteCommercialBreakdown } from './QuoteCommercialBreakdown';
+import { buyerQuoteStatusLabel, formatQuoteInr } from '../lib/quote-commercial-present';
 
 export interface QuoteCard4PillarProps {
   quote: IdentityProtectedQuote;
@@ -12,19 +14,6 @@ export interface QuoteCard4PillarProps {
   onSelect: (quote: IdentityProtectedQuote) => void;
   onOpenBoq: (quote: IdentityProtectedQuote) => void;
   rfqStatus?: string | null;
-}
-
-function formatInr(amount: number | null | undefined): string {
-  if (amount == null || !Number.isFinite(amount)) return '—';
-  try {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `₹${Math.round(amount).toLocaleString('en-IN')}`;
-  }
 }
 
 function formatBand(
@@ -167,10 +156,11 @@ export function QuoteCard4Pillar({
           </div>
           <div className="mt-1">
             <span className="text-base sm:text-lg font-black text-foreground tabular-nums font-mono block">
-              {formatInr(quote.totalCost)}
+              {formatQuoteInr(quote.totalCost)}
             </span>
             <span className="text-[9px] text-muted-foreground block truncate">
-              Base: {formatInr(quote.basePrice)} + GST
+              GST {formatQuoteInr(quote.gstAmount)}
+              {quote.transportCost > 0 ? ` · Freight ${formatQuoteInr(quote.transportCost)}` : ''}
             </span>
           </div>
         </div>
@@ -198,7 +188,7 @@ export function QuoteCard4Pillar({
               {quote.deliveryDays} Days
             </span>
             <span className="text-[9px] text-muted-foreground block truncate">
-              Guaranteed Turnaround
+              Supplier-stated turnaround
             </span>
           </div>
         </div>
@@ -241,9 +231,9 @@ export function QuoteCard4Pillar({
         >
           <div className="flex items-center justify-between gap-1">
             <span className="text-[9px] uppercase font-extrabold text-muted-foreground tracking-wider">
-              ★ Merit Score
+              ★ Smart Merit
             </span>
-            <span className="text-[8px] font-bold text-muted-foreground">Weighted</span>
+            <span className="text-[8px] font-bold text-muted-foreground">OTP weighted</span>
           </div>
           <div className="mt-1">
             <span className="text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-400 tabular-nums block">
@@ -256,6 +246,14 @@ export function QuoteCard4Pillar({
         </div>
       </div>
 
+      <QuoteCommercialBreakdown
+        basePrice={quote.basePrice}
+        gstAmount={quote.gstAmount}
+        transportCost={quote.transportCost}
+        totalCost={quote.totalCost}
+        compact
+      />
+
       {/* 4. Quick Difference Highlights & Reliability Tag Row */}
       <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
         {/* Price Difference Tag */}
@@ -265,14 +263,16 @@ export function QuoteCard4Pillar({
           </span>
         ) : priceDelta > 0 ? (
           <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-2 py-0.5 font-semibold border">
-            <span>+{formatInr(priceDelta)}</span>
+            <span>+{formatQuoteInr(priceDelta)}</span>
             <span className="text-muted-foreground font-normal">(+{percentDelta}% vs L1)</span>
           </span>
         ) : null}
 
-        {/* Spec Match Pill */}
-        <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 dark:bg-teal-950/50 text-teal-800 dark:text-teal-300 px-2 py-0.5 font-semibold border border-teal-200 dark:border-teal-800">
-          <span>✓</span> 100% Spec Match
+        <span
+          className="inline-flex items-center gap-1 rounded-md bg-teal-50 dark:bg-teal-950/50 text-teal-800 dark:text-teal-300 px-2 py-0.5 font-semibold border border-teal-200 dark:border-teal-800"
+          data-testid={`quote-status-pill-${quote.quoteId}`}
+        >
+          {buyerQuoteStatusLabel(quote.status)}
         </span>
 
         {/* Payment Terms Pill */}

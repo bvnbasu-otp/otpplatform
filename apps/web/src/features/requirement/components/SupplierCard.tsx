@@ -1,4 +1,11 @@
 import type { MatchedSupplier } from '../types/discovery';
+import {
+  hasGstVerification,
+  hasOtpRegistration,
+  invitationStatusPresentation,
+  isDirectInvitation,
+  isGooglePlacesDiscovery,
+} from '../lib/supplier-truth';
 
 interface SupplierCardProps {
   supplier: MatchedSupplier;
@@ -19,46 +26,34 @@ export function SupplierCard({
     matchScore,
     matchLevel,
     matchReasons,
-    network,
     networkLabel,
-    gstVerified,
     isLocal,
     distanceKm,
     availabilityText,
-    status,
   } = supplier;
 
-  // Visual star rating representation
-  const starCount =
-    matchLevel === 'EXCELLENT'
-      ? 5
-      : matchLevel === 'STRONG'
-      ? 4
-      : matchLevel === 'RELEVANT'
-      ? 3
-      : 2;
-  const starsDisplay = '★'.repeat(starCount) + '☆'.repeat(5 - starCount);
+  const invite = invitationStatusPresentation(supplier);
+  const otpRegistered = hasOtpRegistration(supplier);
+  const gstVerified = hasGstVerification(supplier);
+  const placesDiscovery = isGooglePlacesDiscovery(supplier);
+  const directInvite = isDirectInvitation(supplier);
 
   const matchLevelConfig = {
     EXCELLENT: {
-      label: 'Excellent Match',
+      label: 'Excellent fit',
       textColor: 'text-emerald-600 dark:text-emerald-400',
-      badgeBg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
     },
     STRONG: {
-      label: 'Strong Match',
+      label: 'Strong fit',
       textColor: 'text-blue-600 dark:text-blue-400',
-      badgeBg: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
     },
     RELEVANT: {
-      label: 'Relevant Match',
+      label: 'Relevant fit',
       textColor: 'text-purple-600 dark:text-purple-400',
-      badgeBg: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
     },
     CANDIDATE: {
-      label: 'Candidate Match',
+      label: 'Candidate fit',
       textColor: 'text-slate-600 dark:text-slate-400',
-      badgeBg: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800',
     },
   };
 
@@ -75,44 +70,69 @@ export function SupplierCard({
       aria-label={`${anonymousLabel} - ${levelConfig.label}`}
     >
       <div className="flex items-start justify-between gap-3">
-        {/* Left Info Column */}
         <div className="min-w-0 flex-1 space-y-2">
-          {/* Header Row: Anonymous Label & Network */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="text-sm font-black text-foreground tracking-tight">
+            <h3 className="text-sm font-black text-foreground tracking-tight break-words">
               {anonymousLabel}
             </h3>
-            <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground border">
-              {networkLabel || (network === 'ONDC' ? 'ONDC Protocol' : network === 'LOCAL_REGISTRY' ? 'Local Registry' : 'OTP Network')}
+            <span
+              className="rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground border max-w-full truncate"
+              data-testid={`supplier-network-label-${invitationId}`}
+              title={networkLabel}
+            >
+              {networkLabel}
             </span>
-            {status === 'QUOTED' && (
-              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-300">
-                💬 Quoted
-              </span>
-            )}
           </div>
 
-          {/* Match Score & Stars */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-amber-500 tracking-wider" aria-hidden="true">
-              {starsDisplay}
+          <div
+            className="flex flex-wrap items-center gap-2 text-[11px]"
+            data-testid={`supplier-invitation-status-${invitationId}`}
+          >
+            <span
+              className={`font-semibold ${
+                invite.tone === 'positive'
+                  ? 'text-emerald-700 dark:text-emerald-300'
+                  : invite.tone === 'negative'
+                    ? 'text-rose-700 dark:text-rose-300'
+                    : invite.tone === 'warning'
+                      ? 'text-amber-700 dark:text-amber-300'
+                      : 'text-muted-foreground'
+              }`}
+            >
+              {invite.label}
             </span>
-            <span className={`text-xs font-bold ${levelConfig.textColor}`}>
-              {levelConfig.label}
-            </span>
+            {invite.detail && <span className="text-muted-foreground">{invite.detail}</span>}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-xs font-bold ${levelConfig.textColor}`}>{levelConfig.label}</span>
             <span
               className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-extrabold text-primary border border-primary/20"
               data-testid={`match-score-${invitationId}`}
+              title="Relevance score from discovery — not a customer rating"
             >
-              {matchScore}/100
+              Match {matchScore}/100
             </span>
           </div>
 
-          {/* Evidence Badges Grid */}
-          <div className="flex flex-wrap gap-1.5 pt-0.5 text-[11px]">
+          <div className="flex flex-wrap gap-1.5 pt-0.5 text-[11px]" data-testid={`supplier-trust-badges-${invitationId}`}>
+            {otpRegistered ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 font-semibold text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800">
+                OTP registered
+              </span>
+            ) : placesDiscovery ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-900/50 px-2 py-0.5 font-medium text-slate-700 dark:text-slate-300 border">
+                Discovered in area — not OTP registered
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground border">
+                Registration status unknown
+              </span>
+            )}
+
             {gstVerified ? (
               <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                ✓ GST Verified
+                GST verified
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground border">
@@ -120,38 +140,52 @@ export function SupplierCard({
               </span>
             )}
 
-            {matchReasons.filter((reason) => reason !== 'verified_active').length > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 font-medium text-foreground border">
-                Match signals: {matchReasons.filter((reason) => reason !== 'verified_active').slice(0, 3).join(', ')}
+            {directInvite && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 font-semibold text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
+                Direct invite
               </span>
             )}
 
             {isLocal && (
               <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 font-medium text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                📍 Local Radius {distanceKm ? `(${distanceKm} km)` : ''}
+                Local radius{distanceKm ? ` (${distanceKm} km)` : ''}
               </span>
             )}
 
             {availabilityText && (
               <span className="inline-flex items-center gap-1 rounded-md bg-muted/40 px-2 py-0.5 font-medium text-muted-foreground border">
-                ⏱️ {availabilityText}
+                {availabilityText}
               </span>
             )}
 
             {matchReasons
-              .filter((r) => !['category_match', 'verified_active', 'location_match', 'ondc', 'local'].includes(r))
-              .map((reason, idx) => (
+              .filter(
+                (r) =>
+                  ![
+                    'category_match',
+                    'verified_active',
+                    'location_match',
+                    'ondc',
+                    'local',
+                    'otp_registered',
+                    'gst_verified',
+                    'direct_invite',
+                    'discovered_in_area',
+                    'pin_coverage',
+                  ].includes(r),
+              )
+              .slice(0, 2)
+              .map((reason) => (
                 <span
-                  key={idx}
+                  key={reason}
                   className="inline-flex items-center gap-1 rounded-md bg-muted/30 px-2 py-0.5 font-medium text-muted-foreground border"
                 >
-                  ✓ {reason.replace(/_/g, ' ')}
+                  {reason.replace(/_/g, ' ')}
                 </span>
               ))}
           </div>
         </div>
 
-        {/* Right Action: 48px Touch Target Select Button */}
         <div className="shrink-0 flex flex-col items-end">
           <button
             type="button"

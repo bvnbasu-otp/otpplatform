@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { formatMoney, type WorkOrderSummary } from '../types/fulfillment';
 import { StatusBadge } from './FulfillmentStatus';
-import { MILESTONE_STEP_LABELS, nextMilestonePercent } from '../lib/milestone-progress';
+import type { PaymentScheduleEntry } from '../lib/milestone-progress';
+import {
+  buildPlanMilestoneDefs,
+  MILESTONE_STEP_LABELS,
+  nextMilestonePercent,
+  progressStepTargets,
+} from '../lib/milestone-progress';
 
 export interface MilestoneDef {
   id: number;
@@ -21,6 +27,8 @@ interface SupplierMilestoneStepperProps {
   role: 'buyer' | 'supplier';
   onUpdateProgress: (percent: number) => Promise<void>;
   busy?: boolean;
+  paymentStructure?: string | null;
+  paymentSchedule?: PaymentScheduleEntry[] | null;
 }
 
 export function SupplierMilestoneStepper({
@@ -30,6 +38,8 @@ export function SupplierMilestoneStepper({
   role,
   onUpdateProgress,
   busy = false,
+  paymentStructure = null,
+  paymentSchedule = null,
 }: SupplierMilestoneStepperProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [attachmentNote, setAttachmentNote] = useState<string>('');
@@ -38,8 +48,12 @@ export function SupplierMilestoneStepper({
   const [confirmingPercent, setConfirmingPercent] = useState<number | null>(null);
 
   const currentPercent = workOrder.progressPercent || 0;
-  const nextPercent = nextMilestonePercent(currentPercent);
+  const planSteps = progressStepTargets(paymentStructure, paymentSchedule);
+  const markerSteps = [0, ...planSteps];
+  const nextPercent = nextMilestonePercent(currentPercent, paymentStructure, paymentSchedule);
   const canRecordProgress = role === 'supplier' && workOrder.status !== 'COMPLETED' && nextPercent !== null;
+  const planDefs = buildPlanMilestoneDefs(paymentStructure, paymentSchedule);
+  const nextDef = planDefs.find((d) => d.targetPercent === nextPercent);
 
   const handleConfirmNextMilestone = async () => {
     if (confirmingPercent === null || busy) return;
@@ -48,47 +62,22 @@ export function SupplierMilestoneStepper({
     await onUpdateProgress(target);
   };
 
-  // 4 Execution Milestones
-  const milestones: MilestoneDef[] = [
-    {
-      id: 1,
-      title: 'Milestone 1: Advance / Kickoff & Mobilization',
-      stageName: 'Kickoff & Mobilization',
-      payoutPercent: 20,
-      description: 'Order confirmed, project kickoff complete, material requisition initiated.',
-      status: currentPercent >= 25 ? 'COMPLETED' : 'IN_PROGRESS',
-      completedDate: currentPercent >= 25 ? 'Verified' : undefined,
-    },
-    {
-      id: 2,
-      title: 'Milestone 2: Material Dispatch & In-Transit',
-      stageName: 'Dispatch & Transit',
-      payoutPercent: 40,
-      description: 'Goods/assemblies dispatched from factory with valid LR/e-Way bill & tracking.',
-      status: currentPercent >= 50 ? 'COMPLETED' : currentPercent >= 25 ? 'IN_PROGRESS' : 'PENDING',
-      completedDate: currentPercent >= 50 ? 'Verified' : undefined,
-    },
-    {
-      id: 3,
-      title: 'Milestone 3: Installation & QA Inspection',
-      stageName: 'Installation & QA',
-      payoutPercent: 30,
-      description: 'On-site installation, testing parameters verified, site staging photos uploaded.',
-      status: currentPercent >= 75 ? 'COMPLETED' : currentPercent >= 50 ? 'IN_PROGRESS' : 'PENDING',
-      completedDate: currentPercent >= 75 ? 'Verified' : undefined,
-      requiresInspection: true,
-    },
-    {
-      id: 4,
-      title: 'Milestone 4: Final Acceptance & Warranty Sign-off',
-      stageName: 'Acceptance & Retention',
-      payoutPercent: 10,
-      description: '100% mutual sign-off by buyer, test certificates delivered, warranty activated.',
-      status: currentPercent >= 100 && workOrder.buyerAcceptedAt ? 'COMPLETED' : currentPercent >= 75 ? 'IN_PROGRESS' : 'PENDING',
-      completedDate: workOrder.buyerAcceptedAt ? 'Signed off' : undefined,
-      requiresInspection: true,
-    },
-  ];
+  const milestones: MilestoneDef[] = planDefs.map((def, index) => {
+    const prevTarget = index > 0 ? (planDefs[index - 1]?.targetPercent ?? 0) : 0;
+    const reached = currentPercent >= def.targetPercent;
+    const inProgress = !reached && currentPercent >= prevTarget;
+    const isFinal = def.targetPercent >= 100;
+    return {
+      id: def.id,
+      title: def.title,
+      stageName: def.stageName,
+      payoutPercent: def.payoutPercent,
+      description: def.description,
+      status: reached ? 'COMPLETED' : inProgress ? 'IN_PROGRESS' : 'PENDING',
+      completedDate: reached ? (isFinal && workOrder.buyerAcceptedAt ? 'Signed off' : 'Verified') : undefined,
+      requiresInspection: isFinal,
+    };
+  });
 
   const handleAddMockAttachment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +95,12 @@ export function SupplierMilestoneStepper({
   };
 
   return (
-    <div className="space-y-4" data-testid="supplier-milestone-stepper">
+    <div
+      className="space-y-4"
+      data-testid="supplier-milestone-stepper"
+      data-payment-structure={paymentStructure ?? 'LEGACY_DEFAULT'}
+      data-plan-steps={planSteps.join(',')}
+    >
       {/* High-Impact Milestone Progress Header */}
       <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-3">
         <div className="flex items-center justify-between">
@@ -142,9 +136,8 @@ export function SupplierMilestoneStepper({
               />
             </div>
 
-            {/* 5 Step Checkpoint Markers (0%, 25%, 50%, 75%, 100%) — display only */}
             <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between px-0.5 pointer-events-none" aria-hidden="true">
-              {[0, 25, 50, 75, 100].map((step) => {
+              {markerSteps.map((step) => {
                 const isPassed = currentPercent >= step;
                 const isCurrent = currentPercent === step;
                 return (
@@ -171,13 +164,10 @@ export function SupplierMilestoneStepper({
           </div>
 
           <div className="flex justify-between text-[11px] font-bold text-muted-foreground px-0.5">
-            {[
-              { val: 0, label: '0% Start' },
-              { val: 25, label: '25% M1' },
-              { val: 50, label: '50% M2' },
-              { val: 75, label: '75% M3' },
-              { val: 100, label: '100% Done' },
-            ].map((s) => (
+            {markerSteps.map((val, idx) => ({
+              val,
+              label: val === 0 ? '0% Start' : val >= 100 ? '100% Done' : `${val}% M${idx}`,
+            })).map((s) => (
               <span
                 key={s.val}
                 className={`text-center ${currentPercent === s.val ? 'text-primary font-black' : ''}`}
@@ -201,7 +191,7 @@ export function SupplierMilestoneStepper({
                 data-testid="milestone-record-next-btn"
                 className="w-full min-h-[44px] rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-50 transition mobile-touch-target"
               >
-                Record {nextPercent}% — {MILESTONE_STEP_LABELS[nextPercent]}
+                Record {nextPercent}% — {nextDef?.stageName ?? MILESTONE_STEP_LABELS[nextPercent] ?? 'Next checkpoint'}
               </button>
             ) : (
               <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-2" data-testid="milestone-confirm-panel">

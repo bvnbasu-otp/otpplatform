@@ -116,7 +116,8 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
     const isPlacesDiscovery = reasons.includes('discovered_in_area') || reasons.includes('pin_coverage');
     const isGstVerified = reasons.includes('gst_verified');
     // Stamped only when supplier_discovery_trust_tier found a real OTP login.
-    const isOtpRegistered = reasons.includes('otp_registered') || isGstVerified;
+    const isOtpRegisteredSignal = reasons.includes('otp_registered');
+    const isOtpRegistered = isOtpRegisteredSignal || isGstVerified;
     const isLocal = reasons.includes('local') || reasons.includes('location_match') || isPlacesDiscovery;
 
     let network = 'DISCOVERED_IN_AREA';
@@ -149,6 +150,7 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
       network,
       networkLabel,
       gstVerified: isGstVerified,
+      otpRegistered: isOtpRegisteredSignal,
       isLocal,
       distanceKm: undefined,
       availabilityText: 'Availability not confirmed before quote',
@@ -470,12 +472,79 @@ export async function discoverForRequirement(
 }
 
 export async function fetchInvitationCount(rfqId: string): Promise<number> {
-  const { data } = await supabase
+  const loaded = await fetchInvitationCountResult(rfqId);
+  return loaded.ok ? loaded.count : 0;
+}
+
+export async function fetchInvitationCountResult(
+  rfqId: string,
+): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  const { data, error } = await supabase
     .from('rfq_supplier_networks')
     .select('invited_count')
     .eq('rfq_id', rfqId);
 
-  return (data ?? []).reduce((sum, row) => sum + row.invited_count, 0);
+  if (error) return { ok: false, error: error.message };
+  const count = (data ?? []).reduce((sum, row) => sum + row.invited_count, 0);
+  return { ok: true, count };
+}
+
+export type ExplicitDiscoveryResult =
+  | { ok: true; outcome: 'MATCHED' | 'ZERO_RESULTS'; invitationCount: number }
+  | { ok: false; error: string };
+
+async function runExplicitSupplierDiscoveryOnce(rfqId: string): Promise<ExplicitDiscoveryResult> {
+  const otpDiscovered = await discoverForRequirement(rfqId, 'OTP_REGISTERED');
+  let invitationCount = await fetchInvitationCount(rfqId);
+  const matched = await fetchMatchedSuppliers(rfqId);
+  if (invitationCount > 0 && matched.ok && matched.suppliers.length > 0) {
+    return { ok: true, outcome: 'MATCHED', invitationCount };
+  }
+
+  const placesDiscovered = await discoverForRequirement(rfqId, 'GOOGLE_PLACES');
+  invitationCount = await fetchInvitationCount(rfqId);
+  const matchedAfter = await fetchMatchedSuppliers(rfqId);
+
+  if (!placesDiscovered.ok && !otpDiscovered.ok) {
+    return {
+      ok: false,
+      error: placesDiscovered.error || otpDiscovered.error || 'Supplier discovery failed',
+    };
+  }
+
+  if (invitationCount < 1 || !matchedAfter.ok || matchedAfter.suppliers.length === 0) {
+    return { ok: true, outcome: 'ZERO_RESULTS', invitationCount };
+  }
+  return { ok: true, outcome: 'MATCHED', invitationCount };
+}
+
+const explicitDiscoveryInFlight = new Map<string, Promise<ExplicitDiscoveryResult>>();
+
+/**
+ * Buyer-initiated discovery only. Runs OTP-registered search first, then scoped Google Places
+ * coverage — same sequence as the discover page, without running on mount.
+ */
+export function runExplicitSupplierDiscovery(rfqId: string): Promise<ExplicitDiscoveryResult> {
+  const existing = explicitDiscoveryInFlight.get(rfqId);
+  if (existing) return existing;
+  const run = runExplicitSupplierDiscoveryOnce(rfqId).finally(() =>
+    explicitDiscoveryInFlight.delete(rfqId),
+  );
+  explicitDiscoveryInFlight.set(rfqId, run);
+  return run;
+}
+
+export async function refreshSupplierInvitationPool(rfqId: string): Promise<
+  | { ok: true; suppliers: MatchedSupplier[]; invitationCount: number }
+  | { ok: false; error: string }
+> {
+  const [countRes, supRes] = await Promise.all([
+    fetchInvitationCountResult(rfqId),
+    fetchMatchedSuppliers(rfqId),
+  ]);
+  if (!countRes.ok) return { ok: false, error: countRes.error };
+  if (!supRes.ok) return { ok: false, error: supRes.error };
+  return { ok: true, suppliers: supRes.suppliers, invitationCount: countRes.count };
 }
 
 export type DirectInviteKind = 'PHONE' | 'EMAIL';
@@ -698,15 +767,7 @@ export async function fetchRfqReviewData(
   const quoteDeadline = rfq.quote_deadline ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const evaluationDeadline = rfq.evaluation_deadline ?? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
-  let selectedSuppliers = suppRes.ok ? suppRes.suppliers : [];
-  if (selectedSuppliers.length === 0 && rfq.id) {
-    // Auto-discover verified suppliers so the sourcing pool is populated
-    await discoverAndInvite(rfq.id);
-    const retrySuppRes = await fetchMatchedSuppliers(rfq.id);
-    if (retrySuppRes.ok && retrySuppRes.suppliers.length > 0) {
-      selectedSuppliers = retrySuppRes.suppliers;
-    }
-  }
+  const selectedSuppliers = suppRes.ok ? suppRes.suppliers : [];
 
   const attachments = attRes.ok ? attRes.attachments : [];
 
@@ -776,33 +837,37 @@ export async function fetchRfqReviewData(
     });
   }
 
-  // Check 3: Verified Supplier Sourcing Pool
+  // Check 3: Server-confirmed invitation pool (rfq_invitations_manager rows)
   if (selectedSuppliers.length === 0) {
-    errors.push('At least 1 verified supplier must be selected in the sourcing pool.');
+    errors.push(
+      'No suppliers are invited yet. Run supplier discovery or add a direct invite on the discover page.',
+    );
     checklist.push({
       id: 'suppliers',
-      label: 'Supplier Sourcing Pool',
+      label: 'Supplier invitation pool',
       status: 'FAIL',
-      message: 'At least 1 verified supplier must be selected to broadcast.',
+      message: 'At least one server-confirmed invitation is required before publishing.',
       actionUrl: `/requirements/${req.id}/discover`,
       actionLabel: 'Discover Suppliers',
     });
   } else if (selectedSuppliers.length < policy.minQuotesRequired) {
-    warnings.push(`Selected pool (${selectedSuppliers.length}) is below policy quorum recommendation (${policy.minQuotesRequired} suppliers).`);
+    warnings.push(
+      `Invited pool (${selectedSuppliers.length}) is below policy quorum recommendation (${policy.minQuotesRequired} suppliers).`,
+    );
     checklist.push({
       id: 'suppliers',
-      label: 'Supplier Sourcing Pool',
+      label: 'Supplier invitation pool',
       status: 'WARN',
-      message: `${selectedSuppliers.length} supplier(s) selected (recommended: ${policy.minQuotesRequired} for full quorum).`,
+      message: `${selectedSuppliers.length} invited supplier(s) on record (recommended: ${policy.minQuotesRequired} for full quorum).`,
       actionUrl: `/requirements/${req.id}/discover`,
       actionLabel: 'Add Suppliers',
     });
   } else {
     checklist.push({
       id: 'suppliers',
-      label: 'Supplier Sourcing Pool',
+      label: 'Supplier invitation pool',
       status: 'PASS',
-      message: `${selectedSuppliers.length} verified suppliers selected (quorum met).`,
+      message: `${selectedSuppliers.length} invited supplier(s) on record (quorum met).`,
     });
   }
 
@@ -1014,12 +1079,18 @@ async function runPublishRfq(input: {
     if (!instrRes.ok) return instrRes;
   }
 
-  let count = await fetchInvitationCount(rfqId);
-  if (count === 0) {
-    const discRes = await discoverForRequirement(rfqId, 'GOOGLE_PLACES');
-    if (!discRes.ok) return discRes;
-    count = discRes.total;
+  const countRes = await fetchInvitationCountResult(rfqId);
+  if (!countRes.ok) {
+    return { ok: false, error: `Could not load invitation count: ${countRes.error}` };
   }
+  if (countRes.count < 1) {
+    return {
+      ok: false,
+      error:
+        'No suppliers are invited yet. Run supplier discovery or add a direct invite on the discover page before publishing.',
+    };
+  }
+  const count = countRes.count;
 
   const openRes = await openRfq(rfqId);
   if (!openRes.ok) return openRes;

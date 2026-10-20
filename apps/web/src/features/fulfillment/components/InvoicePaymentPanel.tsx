@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { formatMoney } from '../types/fulfillment';
 import {
   approveInvoice,
@@ -41,6 +42,8 @@ import {
   type CreditDebitNote,
 } from '@otp/domain';
 import { translateError } from '@/lib/error-translator';
+import { GstSupplyClassificationNotice } from './GstSupplyClassificationNotice';
+import { canSubmitGstTaxLines, normalizeSupplyGstTreatment } from '../lib/gst-supply-classification';
 
 export interface InvoicePaymentPanelProps {
   workOrderId: string;
@@ -109,12 +112,19 @@ export function InvoicePaymentPanel({
   const [cdnAmount, setCdnAmount] = useState('');
   const [cdnTaxAmount, setCdnTaxAmount] = useState('0');
   const [cdnReason, setCdnReason] = useState('');
+  const [supplyGstTreatment, setSupplyGstTreatment] = useState<string | null>(null);
 
   async function load() {
-    const [invsRes, mRes] = await Promise.all([
+    const [invsRes, mRes, supRes] = await Promise.all([
       fetchInvoicesByWorkOrder(workOrderId),
       fetchWorkOrderMilestones(workOrderId),
+      supabase.from('suppliers').select('supply_gst_treatment').eq('id', supplierId).maybeSingle(),
     ]);
+    if (supRes.data?.supply_gst_treatment) {
+      setSupplyGstTreatment(String(supRes.data.supply_gst_treatment));
+    } else {
+      setSupplyGstTreatment('REVIEW_REQUIRED');
+    }
 
     if (invsRes.ok) {
       setInvoices(invsRes.invoices);
@@ -267,6 +277,13 @@ export function InvoicePaymentPanel({
 
     const lineBase = Math.round((invAmount / 1.18) * 100) / 100;
     const lineGst = Math.round((invAmount - lineBase) * 100) / 100;
+    const treatment = normalizeSupplyGstTreatment(supplyGstTreatment);
+    const gstLineCheck = canSubmitGstTaxLines(treatment, lineGst);
+    if (!gstLineCheck.ok) {
+      setError(gstLineCheck.reason);
+      setBusy(false);
+      return;
+    }
 
     const result = await submitInvoice(
       workOrderId,
@@ -1357,6 +1374,7 @@ export function InvoicePaymentPanel({
             </div>
 
             <form onSubmit={(e) => void handleSubmitInvoice(e)} className="space-y-3.5">
+              <GstSupplyClassificationNotice treatment={supplyGstTreatment} />
               <div>
                 <label className="block text-[11px] font-bold text-foreground mb-1">
                   Target Milestone Allocation

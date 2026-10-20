@@ -3,6 +3,7 @@ import {
   BUYER_PERSONA_CONFIGS,
   canTransitionMemberClaimState,
   resolveBuyerPersona,
+  resolveBuyerPersonaFromContext,
   tryResolveBuyerPersona,
   UnsupportedPersonaError,
   type OrgMemberClaimState,
@@ -66,5 +67,47 @@ describe('Buyer Persona Matrix & Governance Taxonomy', () => {
     expect(tryResolveBuyerPersona('ENTERPRISE')).toBeNull();
     expect(tryResolveBuyerPersona('MSME')).toBe('MSME');
     expect(tryResolveBuyerPersona('INDIVIDUAL')).toBe('INDIVIDUAL');
+  });
+
+  it('resolveBuyerPersonaFromContext prefers active org type over organizations[0]', () => {
+    expect(
+      resolveBuyerPersonaFromContext({
+        organizationId: 'org-msme',
+        organizations: [
+          { id: 'org-rwa', orgType: 'COMMUNITY' },
+          { id: 'org-msme', orgType: 'MSME' },
+        ],
+      }),
+    ).toBe('MSME');
+
+    expect(
+      resolveBuyerPersonaFromContext({
+        organizationId: 'org-msme',
+        organizations: [{ id: 'org-rwa', orgType: 'COMMUNITY' }],
+      }),
+    ).toBe('MSME');
+
+    expect(
+      resolveBuyerPersonaFromContext({
+        organizationId: null,
+        organizations: [{ id: 'org-rwa', orgType: 'COMMUNITY' }],
+      }),
+    ).toBe('RWA');
+  });
+
+  it('resolveBuyerPersonaFromContext does not label unknown business orgs as RWA', () => {
+    expect(
+      resolveBuyerPersonaFromContext({
+        organizationId: 'org-unknown',
+        organizations: [{ id: 'org-unknown', orgType: 'ENTERPRISE' }],
+      }),
+    ).toBe('MSME');
+
+    expect(
+      resolveBuyerPersonaFromContext({
+        organizationId: 'org-personal',
+        organizations: [{ id: 'org-personal', orgType: 'INDIVIDUAL', isPersonal: true }],
+      }),
+    ).toBe('INDIVIDUAL');
   });
 });

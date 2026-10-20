@@ -153,3 +153,35 @@ export function tryResolveBuyerPersona(orgType?: string | null): BuyerPersona | 
     return null;
   }
 }
+
+export interface BuyerPersonaContextInput {
+  buyerType?: string | null;
+  organizationId?: string | null;
+  organizations?: Array<{ id: string; orgType?: string | null; isPersonal?: boolean }> | null;
+}
+
+/**
+ * Resolves buyer persona for intake/address UX from session context.
+ * Uses the active organization’s type when present — not `organizations[0]` alone —
+ * and does not treat every non-null `organizationId` as RWA committee governance.
+ */
+export function resolveBuyerPersonaFromContext(input: BuyerPersonaContextInput): BuyerPersona {
+  if (input.buyerType != null && String(input.buyerType).trim() !== '') {
+    const fromBuyerType = tryResolveBuyerPersona(input.buyerType);
+    if (fromBuyerType) return fromBuyerType;
+  }
+
+  const activeOrg = input.organizationId
+    ? input.organizations?.find((o) => o.id === input.organizationId)
+    : input.organizations?.[0];
+
+  if (activeOrg) {
+    const fromActiveOrg = tryResolveBuyerPersona(activeOrg.orgType);
+    if (fromActiveOrg) return fromActiveOrg;
+  }
+
+  if (!input.organizationId || activeOrg?.isPersonal) return 'INDIVIDUAL';
+
+  // Org without a resolvable type yet: avoid defaulting to RWA (committee UX) for MSME accounts.
+  return 'MSME';
+}

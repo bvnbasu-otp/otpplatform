@@ -8,9 +8,11 @@ import {
   getRoleLabel,
   getCanonicalBottomNav,
   getCanonicalHeaderMenuSections,
+  getBottomNavFourthTab,
   isRouteActive,
   isTransactionalWorkflowRoute,
 } from './navigation-config';
+import { inferJourneyStageFromPath } from './journey-stage';
 import { WorkspaceHeader } from './components/WorkspaceHeader';
 import { WorkspaceHeaderMenu } from './components/WorkspaceHeaderMenu';
 import { AdminQuickActionsSheet } from './components/AdminQuickActionsSheet';
@@ -136,12 +138,13 @@ describe('OTP Phase 0: Canonical Authenticated Workspace Shell', () => {
     it('generates exact 5 tabs with canonical structure for Supplier', () => {
       const supplierCtx = createMockContext({ side: 'SUPPLIER', isPlatformAdmin: false });
       const tabs = getCanonicalBottomNav(supplierCtx);
+      const fourth = getBottomNavFourthTab(supplierCtx);
 
       expect(tabs).toHaveLength(5);
       expect(tabs[0]).toMatchObject({ id: 'home', label: 'Home', to: '/dashboard' });
       expect(tabs[1]).toMatchObject({ id: 'orders', label: 'Orders', to: '/supplier/purchase-orders' });
       expect(tabs[2]).toMatchObject({ id: 'create', label: '+', isCenterAction: true });
-      expect(tabs[3]).toMatchObject({ id: 'audit', label: 'Audit', to: '/audit' });
+      expect(fourth).toMatchObject({ id: 'quotes', label: 'Quotes', to: '/supplier/quotes' });
       expect(tabs[4]).toMatchObject({ id: 'profile', label: 'Profile', to: '/profile' });
     });
 
@@ -210,7 +213,15 @@ describe('OTP Phase 0: Canonical Authenticated Workspace Shell', () => {
     });
   });
 
-  describe('7. Mobile-First Unobstructed Primary Action Bar on Transactional Routes', () => {
+  describe('7. Journey strip route mapping (shell chrome)', () => {
+    it('shows TELL → TRACK stages on workflow routes and hides on hubs', () => {
+      expect(inferJourneyStageFromPath('/intake')).toBe('TELL');
+      expect(inferJourneyStageFromPath('/rfq/rfq-1/evaluation')).toBe('DECIDE');
+      expect(inferJourneyStageFromPath('/dashboard')).toBeNull();
+    });
+  });
+
+  describe('8. Mobile-First Unobstructed Primary Action Bar on Transactional Routes', () => {
     it('correctly identifies hub routes where MobileBottomNav SHOULD be displayed', () => {
       // Top-level hub routes
       expect(isTransactionalWorkflowRoute('/dashboard')).toBe(false);

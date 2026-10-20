@@ -204,11 +204,13 @@ export function SupplierWorkOrderPage({ workOrderId }: { workOrderId: string }) 
         {activeTab === 'MILESTONES' && (
           <SupplierMilestoneStepper
             workOrder={workOrder}
-            totalAmount={50000}
-            currency="INR"
+            totalAmount={workOrder.poTotalAmount ?? 0}
+            currency={workOrder.poCurrency ?? 'INR'}
             role="supplier"
             onUpdateProgress={handleProgress}
             busy={busy}
+            paymentStructure={workOrder.paymentStructure}
+            paymentSchedule={workOrder.paymentSchedule}
           />
         )}
 

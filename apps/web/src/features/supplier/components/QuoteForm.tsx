@@ -3,6 +3,7 @@ import { AttachmentScope } from '@otp/domain';
 import { AttachmentUploader } from '@/features/attachments';
 import type { QuoteSnapshotInput } from '../types/supplier-quote';
 import { computeTotalCost } from '../types/supplier-quote';
+import { SupplierQuoteCommercialSummary } from './SupplierQuoteCommercialSummary';
 
 const DEFAULT_INPUT: QuoteSnapshotInput = {
   basePrice: 8000,
@@ -22,12 +23,20 @@ export const GST_SLABS = [
   { rate: 0, label: '0% (Exempt / Nil / Composite Scheme)', short: '0% (Exempt)' },
 ] as const;
 
+export interface QuoteFormScopeHint {
+  requirementTitle?: string;
+  quantity?: number | null;
+  unit?: string | null;
+  category?: string | null;
+}
+
 export function QuoteForm({
   initial,
   submitLabel = '🔒 Seal & Transmit Quote →',
   onSubmit,
   disabled,
   quoteId,
+  scopeHint,
 }: {
   initial?: Partial<QuoteSnapshotInput>;
   submitLabel?: string;
@@ -35,6 +44,7 @@ export function QuoteForm({
   disabled?: boolean;
   /** Absent on the first quote: there is no row to hang a file off yet. */
   quoteId?: string;
+  scopeHint?: QuoteFormScopeHint;
 }) {
   const [pricingMode, setPricingMode] = useState<'INCLUSIVE' | 'ITEMIZED'>('INCLUSIVE');
   const [gstRate, setGstRate] = useState<number>(() => {
@@ -116,11 +126,35 @@ export function QuoteForm({
     }));
   };
 
+  function validateCommercial(): string | null {
+    if (form.basePrice <= 0) {
+      return 'Enter a quoted amount greater than zero (all-inclusive total or base price).';
+    }
+    if (form.gstAmount < 0 || form.transportCost < 0) {
+      return 'GST and freight cannot be negative.';
+    }
+    if (form.deliveryDays < 1) {
+      return 'Delivery turnaround must be at least 1 day.';
+    }
+    if (form.warrantyMonths < 0) {
+      return 'Warranty months cannot be negative.';
+    }
+    if (computeTotalCost(form) <= 0) {
+      return 'Landed total (base + GST + freight) must be greater than zero.';
+    }
+    return null;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isSubmitting) return; // double-submission guard
     if (!complianceConfirmed) {
       setError('Please confirm 100% compliance with the technical BoQ specifications.');
+      return;
+    }
+    const validationError = validateCommercial();
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setIsSubmitting(true);
@@ -142,12 +176,32 @@ export function QuoteForm({
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" data-testid="supplier-quote-form">
       {/* Identity Shield Pill */}
-      <div className="rounded-xl bg-primary/10 border border-primary/20 p-2.5 text-xs flex items-center justify-between">
+      <div className="rounded-xl bg-primary/10 border border-primary/20 p-2.5 text-xs flex items-center justify-between gap-2">
         <span className="font-bold text-primary flex items-center gap-1.5">
           <span>🔒</span> Masked Evaluation Active
         </span>
-        <span className="text-muted-foreground text-[11px]">Zero Bias · 100% Merit</span>
+        <span className="text-muted-foreground text-[11px] text-right">
+          Buyer sees your alias only until award
+        </span>
       </div>
+
+      {scopeHint && (scopeHint.requirementTitle || scopeHint.quantity != null) && (
+        <div
+          className="rounded-xl border border-border/70 bg-card p-2.5 text-[11px] space-y-1"
+          data-testid="supplier-quote-scope-hint"
+        >
+          <p className="font-bold text-foreground">You are quoting for</p>
+          {scopeHint.requirementTitle && (
+            <p className="text-muted-foreground leading-snug">{scopeHint.requirementTitle}</p>
+          )}
+          <p className="text-muted-foreground">
+            {scopeHint.quantity != null
+              ? `Quantity: ${scopeHint.quantity}${scopeHint.unit ? ` ${scopeHint.unit}` : ''}`
+              : 'Quantity: as per requirement specs'}
+            {scopeHint.category ? ` · ${scopeHint.category.replace(/_/g, ' ')}` : ''}
+          </p>
+        </div>
+      )}
 
       {/* 1. Pricing Mode Switcher */}
       <div className="rounded-xl border bg-muted/40 p-1 flex items-center gap-1 text-xs">
@@ -477,6 +531,8 @@ export function QuoteForm({
           />
         </section>
       )}
+
+      <SupplierQuoteCommercialSummary form={form} pricingMode={pricingMode} gstRate={gstRate} />
 
       {/* Roll-up Summary Card & Sticky Single Primary CTA (Screen 07) */}
       <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-950/20 p-4 space-y-3 shadow-sm">

@@ -97,7 +97,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate">Once Spec is Submitted</h1>
             <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
-              Requirement specification is locked. Proceed to broadcast enquiry to verified suppliers.
+              Requirement specification is locked. Proceed to discover suppliers and send invitations.
             </p>
           </div>
         </div>
@@ -148,7 +148,7 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
             <div className="space-y-2">
               <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Workflow Transition</h2>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                This requirement is active in the procurement pipeline. Next action is matching and broadcasting the enquiry to verified suppliers.
+                This requirement is active in the procurement pipeline. Next action is running supplier discovery and confirming invitations before broadcast.
               </p>
             </div>
 

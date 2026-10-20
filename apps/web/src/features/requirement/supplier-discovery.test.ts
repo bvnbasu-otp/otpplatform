@@ -260,6 +260,7 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
         if (registeredRes.ok) {
           expect(registeredRes.suppliers[0]?.network).toBe('OTP_REGISTERED');
           expect(registeredRes.suppliers[0]?.gstVerified).toBe(false);
+          expect(registeredRes.suppliers[0]?.otpRegistered).toBe(true);
         }
 
         const gstVerifiedInvite = {
@@ -283,6 +284,7 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
           expect(gstRes.suppliers[0]?.network).toBe('OTP_REGISTERED');
           expect(gstRes.suppliers[0]?.networkLabel).toBe('GST verified supplier');
           expect(gstRes.suppliers[0]?.gstVerified).toBe(true);
+          expect(gstRes.suppliers[0]?.otpRegistered).toBe(false);
         }
 
         const s3 = res.suppliers[2];

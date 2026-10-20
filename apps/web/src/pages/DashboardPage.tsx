@@ -20,9 +20,11 @@ import {
   BuyerProcurementCard,
   BuyerSourcingCockpitCard,
   HomeSkeleton,
+  HomeEmptyState,
+  BuyerDashboardStartPanel,
 } from '@/features/home';
 import { fetchBuyerAddresses } from '@/features/profile/api/buyer-addresses';
-import { tryResolveBuyerPersona } from '@otp/domain';
+import { resolveBuyerPersonaFromContext } from '@otp/domain';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -62,10 +64,11 @@ export function DashboardPage() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    const persona =
-      tryResolveBuyerPersona(context.buyerType) ??
-      tryResolveBuyerPersona(context.organizations?.[0]?.orgType) ??
-      (context.organizationId ? 'RWA' : 'INDIVIDUAL');
+    const persona = resolveBuyerPersonaFromContext({
+      buyerType: context.buyerType,
+      organizationId: context.organizationId,
+      organizations: context.organizations,
+    });
     void fetchBuyerAddresses(context.organizationId, persona).then((res) => {
       if (cancelled) return;
       if (res.ok) {
@@ -77,6 +80,12 @@ export function DashboardPage() {
       cancelled = true;
     };
   }, [user?.id, context.organizationId, context.buyerType, context.organizations]);
+
+  const buyerPersona = resolveBuyerPersonaFromContext({
+    buyerType: context.buyerType,
+    organizationId: context.organizationId,
+    organizations: context.organizations,
+  });
 
   const greetingName =
     context.fullName?.trim().split(/\s+/)[0] ||
@@ -127,8 +136,8 @@ export function DashboardPage() {
       className="w-full max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 py-3 space-y-4 overflow-x-hidden min-w-0 max-w-full"
       data-testid="buyer-dashboard"
     >
-      {/* 1. Compact Context Header: Greeting, Org, Role, Attention Indicator (Desktop only for zero-scroll mobile visual contract) */}
-      <div className="hidden md:block">
+      {/* 1. Context header (all breakpoints) + mobile-first start panel */}
+      <div>
         <HomeContextBar
           greeting={timeGreeting}
           name={greetingName}
@@ -155,6 +164,14 @@ export function DashboardPage() {
           onRenewClick={() => setIsPaymentModalOpen(true)}
         />
       </div>
+
+      <BuyerDashboardStartPanel
+        greeting={timeGreeting}
+        name={greetingName}
+        buyerPersona={buyerPersona}
+        actionCount={actionRequiredItems.length}
+        activeCount={activeProcurements.length}
+      />
 
       {/* Pilot Sourcing Allowance & Countdown Clarity Banner */}
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-950 dark:text-emerald-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-2.5">
@@ -286,6 +303,39 @@ export function DashboardPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {actionRequiredItems.length === 0 &&
+            activeProcurements.length === 0 &&
+            (activeFilter === 'all' || activeFilter === 'settled') && (
+              <HomeEmptyState
+                data-testid="buyer-dashboard-empty"
+                icon="📋"
+                title="No open procurements yet"
+                description="Start by telling OTP what you need. Your drafts, live RFQs, and orders will appear here as you progress through Tell → Review → Decide → Track."
+                actionLabel="Tell OTP what you need"
+                actionUrl="/intake"
+              />
+            )}
+
+          {activeFilter === 'action' && actionRequiredItems.length === 0 && (
+            <HomeEmptyState
+              icon="✅"
+              title="Nothing needs your attention right now"
+              description="When a draft, invitation, quote comparison, or approval needs you, it will show under Action Needed."
+              actionLabel="Start a new request"
+              actionUrl="/intake"
+            />
+          )}
+
+          {activeFilter === 'active' && activeProcurements.length === 0 && (
+            <HomeEmptyState
+              icon="🟢"
+              title="No active purchases in progress"
+              description="Published requirements and open RFQs that are still in flight will appear here."
+              actionLabel="Start procurement"
+              actionUrl="/intake"
+            />
           )}
         </div>
       )}

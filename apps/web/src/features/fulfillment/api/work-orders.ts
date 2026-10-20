@@ -15,7 +15,15 @@ interface WoRow {
   inspection_notes: string | null;
   rating?: number | null;
   review_text?: string | null;
-  purchase_orders?: { po_number: string } | null;
+  purchase_orders?:
+    | {
+        po_number: string;
+        payment_structure?: string | null;
+        payment_schedule?: unknown;
+        total_amount?: number;
+        currency?: string;
+      }
+    | null;
 }
 
 function mapWo(row: WoRow): WorkOrderSummary {
@@ -32,6 +40,12 @@ function mapWo(row: WoRow): WorkOrderSummary {
     rating: row.rating != null ? Number(row.rating) : null,
     reviewText: row.review_text ?? row.inspection_notes,
     poNumber: row.purchase_orders?.po_number,
+    paymentStructure: row.purchase_orders?.payment_structure ?? null,
+    paymentSchedule: Array.isArray(row.purchase_orders?.payment_schedule)
+      ? (row.purchase_orders.payment_schedule as WorkOrderSummary['paymentSchedule'])
+      : null,
+    poTotalAmount: row.purchase_orders?.total_amount != null ? Number(row.purchase_orders.total_amount) : undefined,
+    poCurrency: row.purchase_orders?.currency,
   };
 }
 
@@ -73,7 +87,7 @@ export async function fetchWorkOrderByPo(poId: string): Promise<
     const { data, error } = await supabase
       .from('work_orders')
       .select(
-        'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
+        'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number, payment_structure, payment_schedule, total_amount, currency)',
       )
       .eq('purchase_order_id', resolvedPoId)
       .maybeSingle();
@@ -126,7 +140,7 @@ export async function fetchWorkOrder(woId: string): Promise<
     const { data, error } = await supabase
       .from('work_orders')
       .select(
-        'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number)',
+        'id, purchase_order_id, supplier_id, status, title, progress_percent, completed_at, buyer_accepted_at, inspection_notes, rating, review_text, purchase_orders(po_number, payment_structure, payment_schedule, total_amount, currency)',
       )
       .eq('id', cleanId)
       .maybeSingle();
@@ -145,6 +159,12 @@ export async function fetchWorkOrder(woId: string): Promise<
     if (rawError) return { ok: false, error: rawError.message };
     if (!rawData) return { ok: false, error: 'Work order not found' };
 
+    const { data: poData } = await supabase
+      .from('purchase_orders')
+      .select('po_number, payment_structure, payment_schedule, total_amount, currency')
+      .eq('id', rawData.purchase_order_id)
+      .maybeSingle();
+
     return {
       ok: true,
       workOrder: {
@@ -159,6 +179,13 @@ export async function fetchWorkOrder(woId: string): Promise<
         inspectionNotes: rawData.inspection_notes,
         rating: rawData.rating != null ? Number(rawData.rating) : null,
         reviewText: rawData.review_text ?? rawData.inspection_notes,
+        poNumber: poData?.po_number,
+        paymentStructure: poData?.payment_structure ?? null,
+        paymentSchedule: Array.isArray(poData?.payment_schedule)
+          ? (poData.payment_schedule as WorkOrderSummary['paymentSchedule'])
+          : null,
+        poTotalAmount: poData?.total_amount != null ? Number(poData.total_amount) : undefined,
+        poCurrency: poData?.currency,
       },
     };
   } catch (err: unknown) {
@@ -169,28 +196,26 @@ export async function fetchWorkOrder(woId: string): Promise<
 
 export async function createWorkOrder(
   poId: string,
-  supplierId: string,
-  title: string,
+  _supplierId: string,
+  _title: string,
 ): Promise<{ ok: true; workOrderId: string } | { ok: false; error: string }> {
-  const rpcRes = await supabase.rpc('initialize_work_order', { p_po_id: poId });
-  if (!rpcRes.error && rpcRes.data && typeof rpcRes.data === 'object' && 'work_order_id' in rpcRes.data) {
-    return { ok: true, workOrderId: String((rpcRes.data as { work_order_id: string }).work_order_id) };
+  const cleanPoId = (poId || '').trim();
+  if (!cleanPoId) return { ok: false, error: 'Purchase order identifier is required.' };
+
+  const rpcRes = await supabase.rpc('initialize_work_order', { p_po_id: cleanPoId });
+  if (rpcRes.error) {
+    return {
+      ok: false,
+      error: rpcRes.error.message || 'Work order could not be initialized. Try again or contact support.',
+    };
   }
 
-  const { data, error } = await supabase
-    .from('work_orders')
-    .insert({
-      purchase_order_id: poId,
-      supplier_id: supplierId,
-      title,
-      status: 'NOT_STARTED',
-      progress_percent: 0,
-    })
-    .select('id')
-    .single();
+  const payload = rpcRes.data;
+  if (payload && typeof payload === 'object' && 'work_order_id' in payload) {
+    return { ok: true, workOrderId: String((payload as { work_order_id: string }).work_order_id) };
+  }
 
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, workOrderId: data.id };
+  return { ok: false, error: 'Work order initialization did not return a work order id.' };
 }
 
 /**
@@ -204,14 +229,31 @@ export async function updateWorkOrderProgress(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { data: current, error: readError } = await supabase
     .from('work_orders')
-    .select('id, progress_percent, status')
+    .select(
+      'id, progress_percent, status, purchase_orders(payment_structure, payment_schedule)',
+    )
     .eq('id', woId)
     .maybeSingle();
   if (readError) return { ok: false, error: readError.message };
   if (!current) return { ok: false, error: 'Work order not found.' };
 
-  const fromPercent = Number((current as { progress_percent?: number }).progress_percent ?? 0);
-  const check = validateMilestoneTransition(fromPercent, progressPercent);
+  const row = current as {
+    progress_percent?: number;
+    purchase_orders?: { payment_structure?: string; payment_schedule?: unknown } | null;
+  };
+  const poPlan = row.purchase_orders;
+  const paymentStructure = poPlan?.payment_structure ?? null;
+  const paymentSchedule = Array.isArray(poPlan?.payment_schedule)
+    ? (poPlan.payment_schedule as { percentage?: number }[])
+    : null;
+
+  const fromPercent = Number(row.progress_percent ?? 0);
+  const check = validateMilestoneTransition(
+    fromPercent,
+    progressPercent,
+    paymentStructure,
+    paymentSchedule,
+  );
   if (!check.ok) return check;
 
   // COMPLETED is set only by the buyer's accept_delivery_inspection sign-off;

@@ -37,7 +37,7 @@ export function AppLayout() {
 
   return (
     <MobileSimulatorFrame>
-      <div className={SHELL_ROOT_CLASS}>
+      <div className={SHELL_ROOT_CLASS} data-testid="authenticated-workspace-shell">
         {/* Canonical Authenticated Header: OTP Logo | ROLE | Help & Support | Notifications | Menu */}
         <WorkspaceHeader onOpenSupplierCapabilities={() => setIsCapabilityModalOpen(true)} />
         <PasswordPolicyWarningBanner />

@@ -16,6 +16,7 @@ import {
   saveLocalIntakeDraft,
 } from '../lib/intake-storage';
 import { UnifiedThreeTierIntake } from '../components';
+import { IntakeEntryBanner } from '../components/IntakeEntryBanner';
 import {
   fetchOrganizationSubscription,
   SubscriptionPaymentModal,
@@ -230,6 +231,8 @@ export function RequirementIntakePage() {
 
   return (
     <div className="min-h-full pb-4 sm:pb-8 max-w-4xl mx-auto w-full px-3 sm:px-6 pt-2 sm:pt-3 space-y-3" data-testid="requirement-intake-page">
+      <IntakeEntryBanner />
+
       {/* Top Header Bar */}
       <header className="rounded-xl border bg-card px-3.5 py-2.5 shadow-2xs shrink-0 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">

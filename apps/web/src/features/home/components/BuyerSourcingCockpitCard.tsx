@@ -64,9 +64,9 @@ export function BuyerSourcingCockpitCard({
     const textToUse = (customQuery ?? promptText).trim();
     if (textToUse) {
       sessionStorage.setItem(REQUIREMENT_PROMPT_KEY, textToUse);
-      navigate(`/requirements/new?q=${encodeURIComponent(textToUse)}`);
+      navigate(`/intake?q=${encodeURIComponent(textToUse)}`);
     } else {
-      navigate('/requirements/new');
+      navigate('/intake');
     }
   };
 
@@ -106,8 +106,8 @@ export function BuyerSourcingCockpitCard({
             </span>
           </div>
         </div>
-        <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold shrink-0">
-          🟢 Verified
+        <span className="rounded-full bg-muted text-muted-foreground border border-border px-2 py-0.5 text-[9px] font-bold shrink-0">
+          Buyer workspace
         </span>
       </div>
 
@@ -176,6 +176,24 @@ export function BuyerSourcingCockpitCard({
               {chip.label}
             </button>
           ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+          <Link
+            to="/intake"
+            data-testid="cockpit-open-intake-wizard"
+            className="min-h-[44px] flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-extrabold hover:bg-primary/90 transition mobile-touch-target focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            Open intake wizard →
+          </Link>
+          <button
+            type="button"
+            onClick={() => handleExpressTrigger()}
+            disabled={isExpressSubmitting || !promptText.trim()}
+            className="min-h-[44px] flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-card text-xs font-bold text-foreground hover:bg-muted transition disabled:opacity-50 mobile-touch-target cursor-pointer"
+          >
+            {isExpressSubmitting ? 'Sending…' : 'Continue with text above'}
+          </button>
         </div>
       </div>
 

@@ -494,7 +494,9 @@ export function PurchaseOrderDetailPage({
     setBusy(true);
     setSuccess(null);
     try {
-      const result = await updatePurchaseOrderStatus(cleanId, next);
+      const result = await updatePurchaseOrderStatus(cleanId, next, {
+        fromStatus: order?.status,
+      });
       if (!result.ok) {
         setError(translateError(result.error));
         return;
@@ -546,7 +548,9 @@ export function PurchaseOrderDetailPage({
     setBusy(true);
     setError(null);
     try {
-      const result = await updatePurchaseOrderStatus(cleanId, 'COMPLETED');
+      const result = await updatePurchaseOrderStatus(cleanId, 'COMPLETED', {
+        fromStatus: order?.status,
+      });
       if (!result.ok) {
         setError(translateError(result.error));
         return;
@@ -1702,6 +1706,8 @@ export function PurchaseOrderDetailPage({
                   role={role}
                   onUpdateProgress={handleProgress}
                   busy={busy}
+                  paymentStructure={order.paymentStructure}
+                  paymentSchedule={order.paymentSchedule}
                 />
 
                 <DeliveryInspectionPanel

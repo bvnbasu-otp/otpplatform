@@ -163,6 +163,8 @@ describe('PurchaseOrderDetailPage wires one settlement CTA', () => {
     );
     expect(html).toContain('₹0 · Waived');
     expect(html).not.toMatch(/0\.5%|deducted only upon settlement payout|Net Payout/);
+    expect(html).toMatch(/does not collect or settle funds/);
+    expect(html).not.toMatch(/Payment is settled directly/i);
   });
 });
 

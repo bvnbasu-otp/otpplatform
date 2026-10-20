@@ -242,8 +242,11 @@ export function OtpProductDemoModal({
             <OtpLogo size={26} className="shrink-0" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-                  Interactive Demo
+                <span
+                  className="font-mono text-[10px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20"
+                  data-testid="otp-demo-illustrative-label"
+                >
+                  Interactive demo — illustrative only
                 </span>
                 <span className="text-[11px] text-muted-foreground hidden sm:inline">
                   TELL → REVIEW → DECIDE → TRACK
