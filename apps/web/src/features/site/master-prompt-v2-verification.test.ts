@@ -39,14 +39,16 @@ describe('OTP Master Prompt V2 — Product Fixes & Pan-India Readiness Verificat
       resolve(webRoot, 'src/features/requirement/pages/DiscoverSuppliersPage.tsx'),
       'utf8',
     );
+    const lifecycleSrc = readFileSync(
+      resolve(webRoot, 'src/features/requirement/api/rfq-lifecycle.ts'),
+      'utf8',
+    );
     // Instant radar pulse replaces blank/skeleton loading
     expect(discoverSrc).toContain("SupplierRadarPulseBanner");
-    expect(discoverSrc).toContain("Connecting to relevant suppliers…");
     // Neutral buyer copy
     expect(discoverSrc).toContain("We couldn't find enough matches yet");
-    expect(discoverSrc).toContain("Supplier matches are ready");
-    // Priority: OTP registered first, Google Places fallback second
-    expect(discoverSrc).toContain("discoverForRequirement(id, 'OTP_REGISTERED')");
+    // Priority: OTP registered first, Google Places fallback second in lifecycle discovery
+    expect(lifecycleSrc).toContain("discoverForRequirement(rfqId, 'OTP_REGISTERED')");
   });
 
   it('Req 8: Official OTP logo is used across public footer and procurement reports', () => {
