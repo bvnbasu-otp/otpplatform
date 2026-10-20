@@ -332,7 +332,7 @@ BEGIN
     'passwordPolicy', v_password_policy
   );
 END;
-$$
+$$;
 
 REVOKE EXECUTE ON FUNCTION public.my_role_context() FROM anon, PUBLIC;
 GRANT EXECUTE ON FUNCTION public.my_role_context() TO authenticated, service_role;

@@ -14,7 +14,10 @@ ALTER TABLE public.demo_accounts ADD CONSTRAINT demo_accounts_persona_valid CHEC
 );
 
 ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS password_changed_at timestamptz;
+  ADD COLUMN IF NOT EXISTS password_changed_at timestamptz DEFAULT now();
+
+ALTER TABLE public.profiles
+  ALTER COLUMN password_changed_at SET DEFAULT now();
 
 COMMENT ON COLUMN public.profiles.password_changed_at IS
   'UTC timestamp of last successful password set/change/reset. Rollout backfill sets deploy-effective time.';
@@ -80,7 +83,7 @@ BEGIN
   FROM public.profiles p
   WHERE p.id = p_profile_id;
 
-  IF NOT v_is_demo OR NOT private.matches_demo_qa_email_convention(v_email) THEN
+  IF NOT v_is_demo THEN
     RETURN false;
   END IF;
 
@@ -95,7 +98,7 @@ BEGIN
   LIMIT 1;
 
   IF v_persona IS NULL THEN
-    RETURN false;
+    RETURN private.matches_demo_qa_email_convention(v_email);
   END IF;
 
   -- QA requires explicit QA persona; demo personas follow demo registry.
