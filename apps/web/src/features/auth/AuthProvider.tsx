@@ -12,6 +12,7 @@ import type { NotificationStatusResolution } from '@otp/domain';
 import { setRememberDevice, supabase } from '@/lib/supabase';
 import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
 import { requestWhatsAppPasswordReset } from './lib/password-reset-dispatch';
+import { setPasswordSecure } from './api/password-policy';
 import { usePresenceHeartbeat } from './usePresenceHeartbeat';
 
 interface AuthContextValue {
@@ -146,11 +147,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
 
           if (!otpErr && data?.session) {
-            const { error: updateErr } = await supabase.auth.updateUser({
-              password: newPassword,
-            });
-            if (updateErr) {
-              return { ok: false, error: updateErr.message };
+            const setRes = await setPasswordSecure(newPassword);
+            if (!setRes.ok) {
+              return { ok: false, error: setRes.error ?? 'Password could not be updated.' };
             }
             return { ok: true, message: 'Password updated successfully' };
           }
@@ -175,8 +174,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const updatePassword = useCallback(async (password: string) => {
-    const { error } = await supabase.auth.updateUser({ password });
-    return { error: error?.message ?? null };
+    const res = await setPasswordSecure(password);
+    return { error: res.ok ? null : (res.error ?? 'Password could not be updated.') };
   }, []);
 
   const rememberDevice = useCallback((remember: boolean) => {

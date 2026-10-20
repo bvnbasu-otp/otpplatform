@@ -83,6 +83,11 @@ jwt_expiry = 3600
 enable_signup = true
 enable_anonymous_sign_ins = false
 
+# Custom JWT claims for password rotation (enable matching hook in hosted dashboard).
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
 [auth.email]
 enable_signup = true
 double_confirm_changes = true

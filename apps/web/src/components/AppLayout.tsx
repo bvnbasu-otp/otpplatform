@@ -14,6 +14,7 @@ import {
 import { SupplierCapabilityModal } from '@/features/supplier';
 import { WorkspaceHeader, shouldShowGlobalBottomNav } from '@/features/navigation';
 import { PRODUCT_NAME } from '@/lib/brand';
+import { PasswordPolicyWarningBanner } from '@/features/auth/components/PasswordPolicyWarningBanner';
 
 export function AppLayout() {
   const { context } = useRoleContext();
@@ -39,6 +40,7 @@ export function AppLayout() {
       <div className={SHELL_ROOT_CLASS}>
         {/* Canonical Authenticated Header: OTP Logo | ROLE | Help & Support | Notifications | Menu */}
         <WorkspaceHeader onOpenSupplierCapabilities={() => setIsCapabilityModalOpen(true)} />
+        <PasswordPolicyWarningBanner />
 
         <main
           ref={scrollContainerRef}

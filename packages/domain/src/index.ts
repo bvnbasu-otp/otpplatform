@@ -1,4 +1,5 @@
 export * from './auth/otp-policy';
+export * from './auth/password-policy';
 export * from './enums/procurement';
 export * from './enums/linear-pipeline';
 export * from './enums/governance';
