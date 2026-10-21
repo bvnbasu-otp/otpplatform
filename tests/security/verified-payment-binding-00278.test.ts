@@ -117,7 +117,9 @@ async function expectError(client: Client, text: string, params: unknown[], code
   expect(message).toContain(code);
 }
 
-const PAY = `SELECT private.record_verified_payment_bound($1, $2::uuid, $3::uuid, $4::numeric, $5, 'RAZORPAY', $6, $7, $8, $9, '{}'::jsonb) AS r`;
+const PAY_BOUND = `SELECT private.record_verified_payment_bound($1, $2::uuid, $3::uuid, $4::numeric, $5, 'RAZORPAY', $6, $7, $8, $9, '{}'::jsonb) AS r`;
+const PAY_PUBLIC = `SELECT public.record_verified_payment($1, $2::uuid, $3::uuid, $4::numeric, $5, 'RAZORPAY', $6, $7, $8, $9, '{}'::jsonb) AS r`;
+const PAY = PAY_BOUND;
 const pay = (
   type: string,
   org: string | null,
@@ -257,16 +259,16 @@ describe('00278 database outcomes (rolled back, simulated gateway events)', () =
                 ('TEST_T2', 'Test T2', 1000, 10000, 'INR', 'TIER_2_ENTERPRISE')`,
       );
 
-      await expectError(client, PAY, pay('SUBSCRIPTION', orgId, null, 0, 'INR', event()), 'PAY-V-PRICE-MISMATCH');
-      await expectError(client, PAY, pay('SUBSCRIPTION', orgId, null, 100, 'USD', event()), 'PRICE-CURRENCY-MISMATCH');
-      await expectError(client, PAY, pay('SUBSCRIPTION', orgId, null, 100, 'INR', event(), 'TIER_9_FREE'), 'PRICE-PLAN-NOT-CONFIGURED');
+      await expectError(client, PAY_PUBLIC, pay('SUBSCRIPTION', orgId, null, 0, 'INR', event()), 'PAY-V-PRICE-MISMATCH');
+      await expectError(client, PAY_PUBLIC, pay('SUBSCRIPTION', orgId, null, 100, 'USD', event()), 'PRICE-CURRENCY-MISMATCH');
+      await expectError(client, PAY_PUBLIC, pay('SUBSCRIPTION', orgId, null, 100, 'INR', event(), 'TIER_9_FREE'), 'PRICE-PLAN-NOT-CONFIGURED');
       await expectError(
-        client, PAY, pay('SUBSCRIPTION', orgId, null, 100, 'INR', event(), 'TIER_1_MSME', 'DAILY'), 'PRICE-UNKNOWN-CYCLE',
+        client, PAY_PUBLIC, pay('SUBSCRIPTION', orgId, null, 100, 'INR', event(), 'TIER_1_MSME', 'DAILY'), 'PRICE-UNKNOWN-CYCLE',
       );
-      await expectError(client, PAY, pay('SUBSCRIPTION', randomUUID(), null, 100, 'INR', event()), 'not found');
+      await expectError(client, PAY_PUBLIC, pay('SUBSCRIPTION', randomUUID(), null, 100, 'INR', event()), 'not found');
 
       const eventId = event();
-      const ok = await client.query(PAY, pay('SUBSCRIPTION', orgId, null, 10000, 'INR', eventId, 'TIER_2_ENTERPRISE', 'YEARLY'));
+      const ok = await client.query(PAY_PUBLIC, pay('SUBSCRIPTION', orgId, null, 10000, 'INR', eventId, 'TIER_2_ENTERPRISE', 'YEARLY'));
       expect(ok.rows[0].r.ok).toBe(true);
       const org = await client.query(
         `SELECT subscription_tier, subscription_plan, subscription_status FROM public.organizations WHERE id = $1`, [orgId],
@@ -277,7 +279,7 @@ describe('00278 database outcomes (rolled back, simulated gateway events)', () =
 
       // A replay is answered as a duplicate even after the plan price changes.
       await client.query(`UPDATE public.subscription_plans SET price_yearly = 12000 WHERE tier_code = 'TIER_2_ENTERPRISE'`);
-      const replay = await client.query(PAY, pay('SUBSCRIPTION', orgId, null, 10000, 'INR', eventId, 'TIER_2_ENTERPRISE', 'YEARLY'));
+      const replay = await client.query(PAY_PUBLIC, pay('SUBSCRIPTION', orgId, null, 10000, 'INR', eventId, 'TIER_2_ENTERPRISE', 'YEARLY'));
       expect(replay.rows[0].r.duplicate).toBe(true);
       const logs = await client.query(
         `SELECT count(*)::int AS n FROM public.subscription_payment_logs WHERE gateway_event_id = $1`, [eventId],
@@ -285,7 +287,7 @@ describe('00278 database outcomes (rolled back, simulated gateway events)', () =
       expect(logs.rows[0].n).toBe(1);
 
       await client.query(`UPDATE public.organizations SET blocked_at = now() WHERE id = $1`, [orgId]);
-      await expectError(client, PAY, pay('SUBSCRIPTION', orgId, null, 100, 'INR', event()), 'PAY-V-ORG-BLOCKED');
+      await expectError(client, PAY_PUBLIC, pay('SUBSCRIPTION', orgId, null, 100, 'INR', event()), 'PAY-V-ORG-BLOCKED');
     } finally {
       await client.query('ROLLBACK');
       await client.end();
