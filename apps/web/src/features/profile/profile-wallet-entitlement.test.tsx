@@ -78,11 +78,31 @@ vi.mock('@/features/subscription', async (importOriginal) => {
 });
 
 vi.mock('./api/profile', () => ({
+  DEFAULT_NOTIFICATION_PREFERENCES: {
+    channels: { WHATSAPP: true, SMS: true, EMAIL: true, IN_APP: true },
+    categoryOptOuts: [],
+    phoneNumber: null,
+    email: null,
+    quietHoursStart: null,
+    quietHoursEnd: null,
+  },
   fetchMyProfile: vi.fn().mockResolvedValue({ ok: false }),
   updateMyProfile: vi.fn(),
   updateOrganizationName: vi.fn(),
   requestProfileCredentialOtp: vi.fn(),
   verifyAndUpdateProfileCredential: vi.fn(),
+  fetchNotificationPreferences: vi.fn().mockResolvedValue({
+    ok: true,
+    preferences: {
+      channels: { WHATSAPP: true, SMS: true, EMAIL: true, IN_APP: true },
+      categoryOptOuts: [],
+      phoneNumber: null,
+      email: null,
+      quietHoursStart: null,
+      quietHoursEnd: null,
+    },
+  }),
+  updateNotificationPreferences: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 vi.mock('@/features/requirement/api/requirements', () => ({
