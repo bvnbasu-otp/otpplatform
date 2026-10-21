@@ -828,7 +828,7 @@ export function Tier1TellOtpCard({
               <div className="space-y-2">
                 {/* 1-Tap City Pills & GPS Location Auto-Detect (Screen 03) */}
                 <div className="flex gap-1.5 items-center justify-between overflow-x-auto pb-1.5 sm:pb-0 no-scrollbar sm:flex-wrap">
-                  <div className="flex gap-1.5 items-center overflow-x-auto no-scrollbar">
+                  <div className="flex gap-1.5 items-center overflow-x-auto scrollbar-thin py-1" tabIndex={0} aria-label="Requirement suggestions">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mr-1 shrink-0">
                       DELIVERY LOCATION (1-TAP):
                     </span>

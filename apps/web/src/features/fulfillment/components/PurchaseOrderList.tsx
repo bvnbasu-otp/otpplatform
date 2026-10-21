@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatDateIST } from '@/lib/date-utils';
 import { formatMoney, type PurchaseOrderSummary } from '../types/fulfillment';
+import { fulfillmentChip, isPurchaseOrderComplete, paymentEvidenceLabel } from '../lib/po-lifecycle-present';
 
 export interface PurchaseOrderListProps {
   orders: PurchaseOrderSummary[];
@@ -59,29 +60,25 @@ export function PurchaseOrderList({
       {orders.map((po) => {
         const isCancelled = po.status === 'CANCELLED';
         const isDisputed = po.workOrderStatus === 'DISPUTED';
-        const progress = po.progressPercent ?? (po.isSettled ? 100 : 0);
-        const isCompleted = po.isSettled || po.status === 'COMPLETED';
+        const progress = po.progressPercent ?? 0;
+        const isCompleted = isPurchaseOrderComplete(po.status);
+        const chip = fulfillmentChip(po);
+        const paymentLabel = paymentEvidenceLabel(po);
 
         let progressColor = 'bg-yellow-400';
         let progressTextColor = 'text-yellow-800 dark:text-yellow-300';
-        let fulfillmentChip = { label: '🟡 In Production', class: 'bg-yellow-100 dark:bg-yellow-950/60 text-yellow-800 dark:text-yellow-300 border-yellow-300' };
-
         if (isCancelled) {
           progressColor = 'bg-red-500';
           progressTextColor = 'text-red-700 dark:text-red-300';
-          fulfillmentChip = { label: '🚫 Cancelled', class: 'bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border-red-300' };
         } else if (isDisputed) {
           progressColor = 'bg-amber-500';
           progressTextColor = 'text-amber-700 dark:text-amber-300';
-          fulfillmentChip = { label: '⚠️ Under Audit', class: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300' };
-        } else if (isCompleted || progress >= 100) {
+        } else if (isCompleted) {
           progressColor = 'bg-emerald-600';
           progressTextColor = 'text-emerald-700 dark:text-emerald-300';
-          fulfillmentChip = { label: '✅ Delivered & Settled', class: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300' };
         } else if (progress >= 50) {
           progressColor = 'bg-blue-600';
           progressTextColor = 'text-blue-700 dark:text-blue-300';
-          fulfillmentChip = { label: '🚚 In Transit', class: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300' };
         }
 
         return (
@@ -102,9 +99,14 @@ export function PurchaseOrderList({
                   <span className="font-mono font-black text-foreground text-xs bg-muted/60 px-2 py-0.5 rounded">
                     {po.poNumber}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${fulfillmentChip.class}`}>
-                    {fulfillmentChip.label}
+                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${chip.className}`} data-testid="po-list-status">
+                    {chip.label}
                   </span>
+                  {paymentLabel && (
+                    <span className="rounded-full px-2 py-0.5 text-[9px] font-bold border border-border bg-muted text-muted-foreground" data-testid="po-list-payment-evidence">
+                      {paymentLabel}
+                    </span>
+                  )}
                 </div>
                 <h4 className={`font-bold text-foreground text-xs sm:text-sm mt-1 truncate ${isCancelled ? 'line-through text-muted-foreground' : ''}`}>
                   {po.rfqTitle}

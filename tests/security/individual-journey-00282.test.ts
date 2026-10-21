@@ -104,6 +104,44 @@ async function signup(client: Client, buyerType: 'INDIVIDUAL' | 'MSME' | 'COMMUN
   return { profileId: p.rows[0].id, authUserId: p.rows[0].auth_user_id, email };
 }
 
+async function signupSupplier(
+  client: Client,
+  categoryCodes: string[],
+  businessName: string,
+): Promise<Account & { supplierId: string }> {
+  const email = `j82s-${randomUUID()}@example.test`;
+  const phone = `98${randomUUID().replace(/\D/g, '').padEnd(8, '0').slice(0, 8)}`;
+  await client.query('RESET ROLE');
+  const legal = await catalogAcceptance(client, 'SUPPLIER');
+  await client.query('SET LOCAL ROLE anon');
+  await client.query(`SELECT public.submit_signup_request($1::jsonb)`, [JSON.stringify({
+    side: 'SUPPLIER',
+    business_name: businessName,
+    contact_first_name: 'Su',
+    contact_last_name: 'Pplier',
+    phone,
+    verification_channel: 'EMAIL',
+    coverage_city: 'Bengaluru',
+    coverage_pincode: '560048',
+    category_codes: categoryCodes,
+    ...legal,
+    email,
+  })]);
+  await client.query('RESET ROLE');
+  const row = await client.query(
+    `SELECT su.supplier_id, p.id AS profile_id, p.auth_user_id
+     FROM public.supplier_users su JOIN public.profiles p ON p.id = su.profile_id
+     WHERE lower(p.email) = lower($1)`,
+    [email],
+  );
+  return {
+    profileId: row.rows[0].profile_id,
+    authUserId: row.rows[0].auth_user_id,
+    supplierId: row.rows[0].supplier_id,
+    email,
+  };
+}
+
 async function actAs(client: Client, account: Account) {
   await client.query('RESET ROLE');
   await client.query(`SELECT set_config('request.jwt.claims', $1, true)`, [
@@ -132,11 +170,14 @@ async function taxonomy(client: Client) {
 async function newRequirement(client: Client, ownerOrg: string | null, tax: Awaited<ReturnType<typeof taxonomy>>, creator: string) {
   const r = await client.query(
     `INSERT INTO public.requirements (organization_id, created_by, requirement_type, title, category_id, subcategory_id,
-                                      delivery_city, delivery_pincode, commercial)
-     VALUES ($1, $2, 'SERVICE', 'Journey requirement', $3, $4, 'Bengaluru', '560048', '{"paymentTerms":"30-50-20"}'::jsonb)
-     RETURNING id`,
+                                      description, quantity, unit, delivery_line1, delivery_city, delivery_pincode,
+                                      delivery_state, commercial)
+     VALUES ($1, $2, 'SERVICE', 'Journey requirement', $3, $4, 'Motor rewinding service', 1, 'job',
+             '12 Journey Lane', 'Bengaluru', '560048', 'Karnataka', '{"paymentTerms":"30-50-20"}'::jsonb)
+     RETURNING id, status`,
     [ownerOrg, creator, tax.category_id, tax.subcategory_id],
   );
+  expect(r.rows[0].status).toBe('DRAFT');
   return r.rows[0].id as string;
 }
 
@@ -207,44 +248,51 @@ describe('00282 Individual journey (database, rolled back)', () => {
       expect((await client.query(`SELECT organization_id, owner_profile_id FROM public.requirements WHERE id = $1`, [requirementId])).rows[0])
         .toEqual({ organization_id: null, owner_profile_id: alice.profileId });
 
-      // Supplier signup stores the subcategory on the supplier. The supplier then
-      // declares a service area. Neither step is a superuser status rewrite.
-      const supplierEmail = `j82s-${randomUUID()}@example.test`;
-      await client.query('RESET ROLE');
-      const supplierLegal = await catalogAcceptance(client, 'SUPPLIER');
-      await client.query('SET LOCAL ROLE anon');
-      await client.query(`SELECT public.submit_signup_request($1::jsonb)`, [JSON.stringify({
-        side: 'SUPPLIER', business_name: 'Journey Supplier', contact_first_name: 'Su', contact_last_name: 'Pplier',
-        phone: '9876543211', verification_channel: 'EMAIL', coverage_city: 'Bengaluru', coverage_pincode: '560048',
-        category_codes: [tax.category_code], ...supplierLegal, email: supplierEmail,
-      })]);
-      await client.query('RESET ROLE');
-      const supplierRow = await client.query(
-        `SELECT su.supplier_id, p.id AS profile_id, p.auth_user_id
-         FROM public.supplier_users su JOIN public.profiles p ON p.id = su.profile_id
-         WHERE lower(p.email) = lower($1)`, [supplierEmail],
+      // Two suppliers match both the RFQ category and PIN. A third supplier in
+      // the same PIN has another category and must not be invited.
+      const supplier = await signupSupplier(
+        client,
+        [tax.category_code],
+        'Journey Awarded Supplier',
       );
-      const supplierId = supplierRow.rows[0].supplier_id as string;
-      const supplier: Account = {
-        profileId: supplierRow.rows[0].profile_id,
-        authUserId: supplierRow.rows[0].auth_user_id,
-        email: supplierEmail,
-      };
-      await actAs(client, supplier);
+      const rival = await signupSupplier(
+        client,
+        [tax.category_code],
+        'Journey Rival Supplier',
+      );
+      const otherTax = await client.query<{ code: string }>(
+        `SELECT code FROM public.requirement_categories WHERE id <> $1 ORDER BY code LIMIT 1`,
+        [tax.category_id],
+      );
+      const decoy = await signupSupplier(client, [otherTax.rows[0].code], 'Journey Wrong Category');
+
+      for (const matching of [supplier, rival]) {
+        await actAs(client, matching);
+        await client.query(
+          `UPDATE public.suppliers SET categories = $2::text[] WHERE id = $1`,
+          [matching.supplierId, [tax.category_code, tax.subcategory_code, tax.subcategory_name]],
+        );
+        await client.query(
+          `INSERT INTO public.supplier_service_areas (supplier_id, city, pincode, is_primary)
+           VALUES ($1, 'Bengaluru', '560048', true)`,
+          [matching.supplierId],
+        );
+      }
+      await actAs(client, decoy);
       await client.query(
         `UPDATE public.suppliers SET categories = $2::text[] WHERE id = $1`,
-        [supplierId, [tax.category_code, tax.subcategory_code, tax.subcategory_name]],
+        [decoy.supplierId, [otherTax.rows[0].code]],
       );
       await client.query(
         `INSERT INTO public.supplier_service_areas (supplier_id, city, pincode, is_primary) VALUES ($1, 'Bengaluru', '560048', true)`,
-        [supplierId],
+        [decoy.supplierId],
       );
       await actAs(client, alice);
-      const masked = await client.query(`SELECT count(*)::int AS n FROM public.suppliers WHERE id = $1`, [supplierId]);
+      const masked = await client.query(`SELECT count(*)::int AS n FROM public.suppliers WHERE id = $1`, [supplier.supplierId]);
       expect(masked.rows[0].n, 'supplier identity stays hidden before award').toBe(0);
       const discovery = await client.query(`SELECT public.discover_and_invite_for_rfq($1::uuid, 5, '{}'::uuid[], 'OTP_REGISTERED') AS d`, [rfqId]);
       await actAs(client, supplier);
-      const invitation = await client.query(`SELECT id FROM public.rfq_invitations WHERE rfq_id = $1 AND supplier_id = $2`, [rfqId, supplierId]);
+      const invitation = await client.query(`SELECT id FROM public.rfq_invitations WHERE rfq_id = $1 AND supplier_id = $2`, [rfqId, supplier.supplierId]);
       expect(invitation.rowCount, JSON.stringify(discovery.rows[0].d)).toBe(1);
       const quoteSubmitted = await client.query(
         `SELECT public.submit_supplier_quote_atomic(
@@ -252,14 +300,48 @@ describe('00282 Individual journey (database, rolled back)', () => {
            '{"basePrice":1000,"gstAmount":180,"transportCost":0,"totalCost":1180,"deliveryDays":7,"warrantyMonths":0,"currency":"INR"}'::jsonb,
            NULL
          ) AS result`,
-        [rfqId, invitation.rows[0].id, supplierId],
+        [rfqId, invitation.rows[0].id, supplier.supplierId],
       );
       const quoteId = quoteSubmitted.rows[0].result.quoteId as string;
 
+      await actAs(client, rival);
+      const rivalInvitation = await client.query(
+        `SELECT id FROM public.rfq_invitations WHERE rfq_id = $1 AND supplier_id = $2`,
+        [rfqId, rival.supplierId],
+      );
+      expect(rivalInvitation.rowCount, JSON.stringify(discovery.rows[0].d)).toBe(1);
+      const rivalQuote = await client.query(
+        `SELECT public.submit_supplier_quote_atomic(
+           $1, $2, $3,
+           '{"basePrice":1500,"gstAmount":270,"transportCost":0,"totalCost":1770,"deliveryDays":9,"warrantyMonths":0,"currency":"INR"}'::jsonb,
+           NULL
+         ) AS result`,
+        [rfqId, rivalInvitation.rows[0].id, rival.supplierId],
+      );
+      expect(rivalQuote.rows[0].result.quoteId).toBeTruthy();
+
       await actAs(client, alice);
+      const decoyInvitation = await client.query(
+        `SELECT id FROM public.rfq_invitations WHERE rfq_id = $1 AND supplier_id = $2`,
+        [rfqId, decoy.supplierId],
+      );
+      expect(decoyInvitation.rowCount, 'same-PIN supplier in another category must not be invited').toBe(0);
       await client.query(`SELECT public.close_clarification_for_evaluation($1::uuid)`, [rfqId]);
       const buyerView = await client.query(`SELECT private.can_access_rfq_as_buyer($1) AS ok`, [rfqId]);
       expect(buyerView.rows[0].ok).toBe(true);
+      const scored = await client.query<{ r: { scored: number } }>(
+        `SELECT public.compute_quote_evaluations($1) AS r`,
+        [rfqId],
+      );
+      expect(Number(scored.rows[0].r.scored)).toBe(2);
+      const ranking = await client.query<{ quote_id: string; score: string }>(
+        `SELECT quote_id, evaluation_score::text AS score
+         FROM public.quote_evaluations
+         WHERE rfq_id = $1 ORDER BY evaluation_score DESC, quote_id`,
+        [rfqId],
+      );
+      expect(ranking.rows[0].quote_id).toBe(quoteId);
+      expect(Number(ranking.rows[0].score)).toBeGreaterThan(Number(ranking.rows[1].score));
       await expectError(
         client,
         `SELECT public.cast_committee_vote($1::uuid, $2::uuid, 'RECOMMEND'::vote_choice, 'no')`,
@@ -273,7 +355,7 @@ describe('00282 Individual journey (database, rolled back)', () => {
       await expectError(
         client,
         `UPDATE public.suppliers SET verification_status = 'VERIFIED', lifecycle_state = 'VERIFIED' WHERE id = $1`,
-        [supplierId],
+        [supplier.supplierId],
         'SUPPLIER-TRUST',
       );
       await asService(client);
@@ -288,7 +370,7 @@ describe('00282 Individual journey (database, rolled back)', () => {
       await actAs(client, admin);
       const verified = await client.query(
         `UPDATE public.suppliers SET verification_status = 'VERIFIED', lifecycle_state = 'VERIFIED' WHERE id = $1 RETURNING verification_status`,
-        [supplierId],
+        [supplier.supplierId],
       );
       expect(verified.rows[0].verification_status).toBe('VERIFIED');
 
@@ -301,13 +383,45 @@ describe('00282 Individual journey (database, rolled back)', () => {
 
       await asService(client);
       const po = await client.query(
-        `SELECT id, organization_id, owner_profile_id, total_amount::float AS total FROM public.purchase_orders WHERE rfq_id = $1`, [rfqId],
+        `SELECT id, organization_id, owner_profile_id, supplier_id, status, total_amount::float AS total
+         FROM public.purchase_orders WHERE rfq_id = $1`,
+        [rfqId],
       );
       expect(po.rowCount).toBe(1);
-      expect(po.rows[0]).toMatchObject({ organization_id: null, owner_profile_id: alice.profileId, total: 1180 });
+      expect(po.rows[0]).toMatchObject({
+        organization_id: null,
+        owner_profile_id: alice.profileId,
+        supplier_id: supplier.supplierId,
+        status: 'ISSUED',
+        total: 1180,
+      });
       const poId = po.rows[0].id as string;
       const award = await client.query(`SELECT awarded_by FROM public.awards WHERE rfq_id = $1`, [rfqId]);
       expect(award.rows[0].awarded_by).toBe(alice.profileId);
+
+      await actAs(client, rival);
+      await expectError(
+        client,
+        `SELECT public.transition_purchase_order($1, 'ACCEPTED'::purchase_order_status, 'ISSUED'::purchase_order_status)`,
+        [poId],
+        'PO-TRANSITION-UNAUTHORIZED',
+      );
+      await actAs(client, supplier);
+      const accepted = await client.query<{ r: { status: string } }>(
+        `SELECT public.transition_purchase_order(
+           $1, 'ACCEPTED'::purchase_order_status, 'ISSUED'::purchase_order_status
+         ) AS r`,
+        [poId],
+      );
+      expect(accepted.rows[0].r.status).toBe('ACCEPTED');
+      await actAs(client, alice);
+      const started = await client.query<{ r: { status: string } }>(
+        `SELECT public.transition_purchase_order(
+           $1, 'IN_PROGRESS'::purchase_order_status, 'ACCEPTED'::purchase_order_status
+         ) AS r`,
+        [poId],
+      );
+      expect(started.rows[0].r.status).toBe('IN_PROGRESS');
 
       // Work order is created with the PO. The supplier submits the invoice,
       // carrying the purchase order's canonical tax snapshot.
@@ -320,6 +434,14 @@ describe('00282 Individual journey (database, rolled back)', () => {
       );
       expect(poTax.rows[0].tax_snapshot).toBeTruthy();
       await actAs(client, supplier);
+      const progressed = await client.query(
+        `UPDATE public.work_orders
+         SET progress_percent = 100, status = 'IN_PROGRESS', updated_at = now()
+         WHERE id = $1 AND progress_percent = 0
+         RETURNING progress_percent`,
+        [wo.rows[0].id],
+      );
+      expect(progressed.rows[0].progress_percent).toBe(100);
       const submitted = await client.query(
         `INSERT INTO public.invoices (
            work_order_id, purchase_order_id, supplier_id, invoice_number, amount, currency, status, submitted_at,
@@ -329,7 +451,7 @@ describe('00282 Individual journey (database, rolled back)', () => {
            $7, $8, $9, $10, $11, $12
          ) RETURNING id, amount::float AS amount`,
         [
-          wo.rows[0].id, poId, supplierId, `INV-J-${randomUUID().slice(0, 8)}`,
+          wo.rows[0].id, poId, supplier.supplierId, `INV-J-${randomUUID().slice(0, 8)}`,
           poTax.rows[0].amount, poTax.rows[0].currency,
           poTax.rows[0].tax_snapshot, poTax.rows[0].taxable_total, poTax.rows[0].cgst_total,
           poTax.rows[0].sgst_total, poTax.rows[0].utgst_total, poTax.rows[0].igst_total,
@@ -356,6 +478,22 @@ describe('00282 Individual journey (database, rolled back)', () => {
         [invoiceId],
       );
       expect(approved.rows[0].status).toBe('APPROVED');
+      await client.query(
+        `SELECT public.accept_delivery_inspection($1, 'Journey delivery accepted', 5)`,
+        [wo.rows[0].id],
+      );
+      const inspected = await client.query<{ buyer_accepted_at: Date; status: string }>(
+        `SELECT buyer_accepted_at, status FROM public.work_orders WHERE id = $1`,
+        [wo.rows[0].id],
+      );
+      expect(inspected.rows[0].buyer_accepted_at).toBeTruthy();
+      expect(inspected.rows[0].status).toBe('COMPLETED');
+      const beforePaymentCompletion = await client.query<{ status: string }>(
+        `SELECT status FROM public.purchase_orders WHERE id = $1`,
+        [poId],
+      );
+      expect(beforePaymentCompletion.rows[0].status).toBe('IN_PROGRESS');
+
       await actAs(client, intruder);
       await expectError(
         client,
@@ -382,6 +520,31 @@ describe('00282 Individual journey (database, rolled back)', () => {
         [invoiceId, poId, `idem-${randomUUID()}`],
         'not payable',
       );
+      const completed = await client.query<{ r: { status: string } }>(
+        `SELECT public.transition_purchase_order(
+           $1, 'COMPLETED'::purchase_order_status, 'IN_PROGRESS'::purchase_order_status
+         ) AS r`,
+        [poId],
+      );
+      expect(completed.rows[0].r.status).toBe('COMPLETED');
+      const final = await client.query<{ po_status: string; requirement_status: string; allocated: string }>(
+        `SELECT po.status AS po_status,
+                req.status AS requirement_status,
+                COALESCE(sum(pa.allocated_amount), 0)::text AS allocated
+         FROM public.purchase_orders po
+         JOIN public.rfqs r ON r.id = po.rfq_id
+         JOIN public.requirements req ON req.id = r.requirement_id
+         LEFT JOIN public.payments p ON p.purchase_order_id = po.id
+         LEFT JOIN public.payment_allocations pa ON pa.payment_id = p.id
+         WHERE po.id = $1
+         GROUP BY po.status, req.status`,
+        [poId],
+      );
+      expect(final.rows[0]).toEqual({
+        po_status: 'COMPLETED',
+        requirement_status: 'COMPLETED',
+        allocated: invoiceAmount.toFixed(2),
+      });
 
       // History: audit events exist for the personal actor with no organization.
       await asService(client);

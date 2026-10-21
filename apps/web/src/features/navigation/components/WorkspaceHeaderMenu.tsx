@@ -48,18 +48,51 @@ export function WorkspaceHeaderMenu({
   const ordersRoute = getOrdersRoute(context);
   const userInitials = initials(context.fullName || user?.email);
 
-  // Close menu on Escape key press
+  // Move focus into the modal, keep Tab inside it, and restore the invoker on close.
   useEffect(() => {
     if (!isOpen) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
+    const focusable = (): HTMLElement[] => {
+      const root = menuRef.current;
+      if (!root) return [];
+      return [...root.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1);
+    };
+
+    const frame = window.requestAnimationFrame(() => {
+      focusable()[0]?.focus();
+    });
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
+        e.preventDefault();
         onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const index = items.indexOf(document.activeElement as HTMLElement);
+      const atStart = index <= 0;
+      const atEnd = index === -1 || index === items.length - 1;
+      if (e.shiftKey && atStart) {
+        e.preventDefault();
+        items[items.length - 1]?.focus();
+      } else if (!e.shiftKey && atEnd) {
+        e.preventDefault();
+        items[0]?.focus();
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocused && document.contains(previouslyFocused)) previouslyFocused.focus();
+    };
   }, [isOpen, onClose]);
 
   // Lock body scroll on mobile when menu is open

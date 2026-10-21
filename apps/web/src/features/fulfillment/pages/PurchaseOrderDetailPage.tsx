@@ -31,6 +31,11 @@ import {
   resolveSettlementCtaPlacement,
   type SettlementAction,
 } from '../lib/settlement-state';
+import {
+  fulfillmentChip,
+  purchaseOrderCoreStage,
+  purchaseOrderLinearStep,
+} from '../lib/po-lifecycle-present';
 import { buildPurchaseOrderDocumentInput } from '../lib/po-document';
 import { fetchInvoicesByWorkOrder, type InvoiceSummary } from '../api/invoices';
 import { IssuedProcurementPrintDocument } from '@/features/documents/components/IssuedProcurementPrintDocument';
@@ -851,63 +856,22 @@ export function PurchaseOrderDetailPage({
 
   const listPath = role === 'buyer' ? '/purchase-orders' : '/supplier/purchase-orders';
 
+  const lifecycleInput = {
+    status: order.status,
+    progressPercent: workOrder?.progressPercent ?? order.progressPercent ?? 0,
+    buyerAcceptedAt: workOrder?.buyerAcceptedAt ?? order.buyerAcceptedAt,
+    workOrderStatus: workOrder?.status ?? order.workOrderStatus,
+    invoiceStatus: order.invoiceStatus,
+    paymentStatus: order.paymentStatus,
+  };
   const currentStage: CoreProcurementState = (() => {
     if (requestedStage === 'SETTLED' || requestedStage === 'INVOICED' || requestedStage === 'PO_ISSUED') {
       return requestedStage as CoreProcurementState;
     }
-    // 7. Settled: Payment verified, Invoice paid, or PO / Work Order completed
-    if (
-      order.status === 'COMPLETED' ||
-      order.isSettled ||
-      order.paymentStatus === 'VERIFIED' ||
-      order.invoiceStatus === 'PAID'
-    ) {
-      return 'SETTLED';
-    }
-    // 6. Invoiced: Invoice submitted or approved, partially paid, or payment recorded, or delivery accepted
-    if (
-      order.invoiceStatus === 'SUBMITTED' ||
-      order.invoiceStatus === 'APPROVED' ||
-      order.invoiceStatus === 'PARTIALLY_PAID' ||
-      order.paymentStatus === 'RECORDED' ||
-      (workOrder?.progressPercent === 100 && workOrder.buyerAcceptedAt)
-    ) {
-      return 'INVOICED';
-    }
-    return 'PO_ISSUED';
+    return purchaseOrderCoreStage(lifecycleInput);
   })();
-
-  const activeLinearStep = (() => {
-    if (
-      order.status === 'COMPLETED' ||
-      order.isSettled ||
-      order.paymentStatus === 'VERIFIED' ||
-      order.invoiceStatus === 'PAID'
-    ) {
-      return 15;
-    }
-    if (
-      order.status === 'IN_PROGRESS' ||
-      (workOrder && workOrder.progressPercent > 0) ||
-      workOrder?.buyerAcceptedAt
-    ) {
-      return 14;
-    }
-    return 13;
-  })();
-
-  const currentFulfillmentChip = (() => {
-    if (order.status === 'COMPLETED' || order.isSettled || workOrder?.buyerAcceptedAt) {
-      return { label: '✅ Delivered & Accepted', class: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300' };
-    }
-    if ((workOrder?.progressPercent || 0) >= 50) {
-      return { label: '🚚 In Transit / Staged', class: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300' };
-    }
-    if ((workOrder?.progressPercent || 0) > 0 || order.status === 'ACCEPTED' || order.status === 'IN_PROGRESS') {
-      return { label: '🟡 In Production', class: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300' };
-    }
-    return { label: '⚪ Order Issued', class: 'bg-muted text-muted-foreground border-border' };
-  })();
+  const activeLinearStep = purchaseOrderLinearStep(lifecycleInput);
+  const currentFulfillmentChip = fulfillmentChip(lifecycleInput);
 
   const settlementAction = resolveSettlementAction({
     role,
@@ -1006,7 +970,7 @@ export function PurchaseOrderDetailPage({
               <span className="text-xs font-mono font-black text-foreground bg-muted px-2 py-0.5 rounded-md">
                 {order.poNumber}
               </span>
-              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${currentFulfillmentChip.class}`}>
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${currentFulfillmentChip.className}`}>
                 {currentFulfillmentChip.label}
               </span>
               <StatusBadge status={order.status} />
@@ -1340,7 +1304,27 @@ export function PurchaseOrderDetailPage({
                   </div>
 
                   <div className="rounded-xl border overflow-hidden">
-                    <div className="overflow-x-auto">
+                    <div
+                      className="overflow-x-auto scrollbar-thin"
+                      tabIndex={0}
+                      aria-label="Purchase order line items; scroll horizontally for all columns"
+                      onKeyDown={(event) => {
+                        const tableScroller = event.currentTarget;
+                        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                          event.preventDefault();
+                          tableScroller.scrollBy({
+                            left: event.key === 'ArrowLeft' ? -160 : 160,
+                            behavior: 'smooth',
+                          });
+                        } else if (event.key === 'Home' || event.key === 'End') {
+                          event.preventDefault();
+                          tableScroller.scrollTo({
+                            left: event.key === 'Home' ? 0 : tableScroller.scrollWidth,
+                            behavior: 'smooth',
+                          });
+                        }
+                      }}
+                    >
                       <table className="w-full text-left text-xs">
                         <thead className="bg-muted/50 border-b text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                           <tr>
@@ -1793,17 +1777,24 @@ export function PurchaseOrderDetailPage({
 
       {/* PO Completion Guard & Confirmation Dialog Modal */}
       {showCompletionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="po-completion-title"
+          data-testid="po-completion-dialog"
+        >
           <div className="w-full max-w-lg rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b pb-2.5">
-              <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
+              <h3 id="po-completion-title" className="text-sm font-black text-foreground flex items-center gap-1.5">
                 <span>🏁</span>
-                <span>Complete Purchase Order &amp; Financial Settlement</span>
+                <span>Complete Purchase Order</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setShowCompletionModal(false)}
-                className="text-muted-foreground hover:text-foreground text-sm p-1"
+                className="min-h-[44px] min-w-[44px] text-muted-foreground hover:text-foreground text-sm"
+                aria-label="Close completion dialog"
               >
                 ✕
               </button>

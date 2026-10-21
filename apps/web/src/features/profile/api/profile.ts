@@ -22,6 +22,88 @@ export interface UpdateProfileInput {
   avatarUrl?: string;
 }
 
+export interface NotificationChannelPreferences {
+  WHATSAPP: boolean;
+  SMS: boolean;
+  EMAIL: boolean;
+  IN_APP: boolean;
+}
+
+export interface NotificationPreferences {
+  channels: NotificationChannelPreferences;
+  categoryOptOuts: string[];
+  phoneNumber: string | null;
+  email: string | null;
+  quietHoursStart: string | null;
+  quietHoursEnd: string | null;
+}
+
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  channels: { WHATSAPP: true, SMS: true, EMAIL: true, IN_APP: true },
+  categoryOptOuts: [],
+  phoneNumber: null,
+  email: null,
+  quietHoursStart: null,
+  quietHoursEnd: null,
+};
+
+export async function fetchNotificationPreferences(
+  profileId: string,
+  organizationId: string | null,
+): Promise<{ ok: true; preferences: NotificationPreferences } | { ok: false; error: string }> {
+  let query = supabase
+    .from('notification_preferences')
+    .select('channel_preferences, category_opt_outs, phone_number, email, quiet_hours_start, quiet_hours_end')
+    .eq('user_id', profileId);
+  query = organizationId ? query.eq('organization_id', organizationId) : query.is('organization_id', null);
+
+  const { data, error } = await query.maybeSingle();
+  if (error) return { ok: false, error: error.message };
+  if (!data) return { ok: true, preferences: DEFAULT_NOTIFICATION_PREFERENCES };
+
+  const raw = (data.channel_preferences ?? {}) as Partial<NotificationChannelPreferences>;
+  return {
+    ok: true,
+    preferences: {
+      channels: {
+        WHATSAPP: raw.WHATSAPP !== false,
+        SMS: raw.SMS !== false,
+        EMAIL: raw.EMAIL !== false,
+        IN_APP: raw.IN_APP !== false,
+      },
+      categoryOptOuts: Array.isArray(data.category_opt_outs) ? data.category_opt_outs.map(String) : [],
+      phoneNumber: data.phone_number ?? null,
+      email: data.email ?? null,
+      quietHoursStart: data.quiet_hours_start ?? null,
+      quietHoursEnd: data.quiet_hours_end ?? null,
+    },
+  };
+}
+
+export async function saveNotificationPreferences(
+  profileId: string,
+  organizationId: string | null,
+  preferences: NotificationPreferences,
+): Promise<{ ok: true; preferenceId: string } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('update_notification_preferences_atomic', {
+    p_user_id: profileId,
+    p_organization_id: organizationId,
+    p_channel_preferences: preferences.channels,
+    p_category_opt_outs: preferences.categoryOptOuts,
+    p_phone_number: preferences.phoneNumber,
+    p_email: preferences.email,
+    p_quiet_hours_start: preferences.quietHoursStart,
+    p_quiet_hours_end: preferences.quietHoursEnd,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  const result = (data ?? {}) as { success?: boolean; preference_id?: string };
+  if (!result.success || !result.preference_id) {
+    return { ok: false, error: 'Notification preferences were not persisted.' };
+  }
+  return { ok: true, preferenceId: result.preference_id };
+}
+
 export async function fetchMyProfile(): Promise<
   { ok: true; profile: UserProfileDetails } | { ok: false; error: string }
 > {

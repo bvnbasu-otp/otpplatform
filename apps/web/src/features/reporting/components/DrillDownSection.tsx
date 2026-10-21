@@ -70,13 +70,13 @@ export function DrillDownSection({
     icon = '💳';
     bannerColor = 'bg-blue-50/70 text-blue-900 border-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800/60';
   } else if (activeMetric === 'SETTLED_PAID') {
-    displayedOrders = orders.filter((po) => po.isSettled || po.status === 'COMPLETED');
-    title = 'Verified Settled & Paid Orders Drill-Down';
-    subtitle = `All ${displayedOrders.length} orders with 100% milestone completion and verified payment settlement totaling ${formatMoney(summary.settledAmount, 'INR')}`;
+    displayedOrders = orders.filter((po) => po.status === 'COMPLETED');
+    title = 'Completed Purchase Orders';
+    subtitle = `All ${displayedOrders.length} purchase orders in COMPLETED status totaling ${formatMoney(summary.settledAmount, 'INR')}`;
     icon = '🧾';
     bannerColor = 'bg-emerald-50/70 text-emerald-950 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800/60';
   } else if (activeMetric === 'ACTIVE_COMMITMENTS') {
-    displayedOrders = orders.filter((po) => !po.isSettled && po.status !== 'COMPLETED' && po.status !== 'CANCELLED' && po.workOrderStatus !== 'DISPUTED');
+    displayedOrders = orders.filter((po) => po.status !== 'COMPLETED' && po.status !== 'CANCELLED' && po.workOrderStatus !== 'DISPUTED');
     title = 'Active In-Execution Commitments Drill-Down';
     subtitle = `Ongoing milestone work orders totaling ${formatMoney(summary.activeAmount, 'INR')}`;
     icon = '⏳';
@@ -248,8 +248,8 @@ export function DrillDownSection({
             </thead>
             <tbody className="divide-y divide-border/60">
               {displayedOrders.map((po) => {
-                const progress = po.progressPercent ?? (po.isSettled ? 100 : 0);
-                const isCompleted = po.isSettled || po.status === 'COMPLETED';
+                const progress = po.progressPercent ?? 0;
+                const isCompleted = po.status === 'COMPLETED';
 
                 return (
                   <tr key={po.id} className="hover:bg-muted/30 transition">
@@ -279,7 +279,7 @@ export function DrillDownSection({
                     <td className="p-3 text-center">
                       {isCompleted ? (
                         <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-300">
-                          SETTLED &amp; PAID
+                          Completed
                         </span>
                       ) : (
                         <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-bold text-blue-800 border border-blue-300">

@@ -6,7 +6,8 @@ export function formatQuoteInr(amount: number | null | undefined): string {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   } catch {
     return `₹${Math.round(amount).toLocaleString('en-IN')}`;

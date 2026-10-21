@@ -499,9 +499,25 @@ export function EvaluationDecisionCockpit({
 
         {/* Canonical 4 Cockpit Navigation Tabs (Mobile-Hardened Horizontal Scroll) */}
         <div
-          className="flex items-center gap-2 p-1.5 rounded-2xl border border-border bg-muted/30 overflow-x-auto scrollbar-none no-scrollbar min-w-0"
+          className="flex items-center gap-2 p-1.5 rounded-2xl border border-border bg-muted/30 overflow-x-auto scrollbar-thin min-w-0"
+          tabIndex={0}
           role="tablist"
-          aria-label="Evaluation Cockpit Sections"
+          aria-label="Evaluation Cockpit Sections; scroll horizontally for all actions"
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+              event.preventDefault();
+              event.currentTarget.scrollBy({
+                left: event.key === 'ArrowRight' ? 180 : -180,
+                behavior: 'smooth',
+              });
+            } else if (event.key === 'Home' || event.key === 'End') {
+              event.preventDefault();
+              event.currentTarget.scrollTo({
+                left: event.key === 'Home' ? 0 : event.currentTarget.scrollWidth,
+                behavior: 'smooth',
+              });
+            }
+          }}
         >
           <button
             type="button"

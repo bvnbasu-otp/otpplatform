@@ -53,6 +53,7 @@ const STATES: Array<{ name: string; state: SettlementStateInput; buyer: Settleme
   { name: 'invoice approved & unpaid', state: { ...base, invoices: [approved] }, buyer: 'RECORD_OFF_PLATFORM_PAYMENT', supplier: 'AWAIT_BUYER_PAYMENT' },
   { name: 'payment recorded', state: { ...base, invoices: [approved], hasPaymentAwaitingVerification: true }, buyer: 'VERIFY_PAYMENT', supplier: 'AWAIT_PAYMENT_VERIFICATION' },
   { name: 'fully settled', state: { ...base, invoices: [paid], isFullySettled: true }, buyer: 'COMPLETE_PO', supplier: 'AWAIT_PO_CLOSURE' },
+  { name: 'paid but inspection pending', state: { ...base, invoices: [paid], isFullySettled: true, inspectionAccepted: false }, buyer: 'SIGN_OFF_DELIVERY', supplier: 'AWAIT_DELIVERY_SIGNOFF' },
 ];
 
 const TABS: FulfillmentTab[] = ['OVERVIEW', 'MILESTONES', 'INVOICE', 'PAYMENT'];

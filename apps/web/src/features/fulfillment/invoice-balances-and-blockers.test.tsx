@@ -162,7 +162,7 @@ describe('computeCompletionBlockers names the actual blockers', () => {
     expect(codes({ workOrderStatus: 'DISPUTED', hasPaymentAwaitingVerification: true })).toEqual(['DISPUTE_OPEN', 'PAYMENT_UNVERIFIED']);
   });
 
-  it('labels which checks the server enforces (migration 00171 trigger) and which are UI workflow only', () => {
+  it('labels which checks the server enforces (inspection, invoice, and allocation) and which are UI workflow only', () => {
     const all = computeCompletionBlockers({
       ...ready,
       workOrderStatus: 'DISPUTED',
@@ -176,7 +176,7 @@ describe('computeCompletionBlockers names the actual blockers', () => {
     expect(by).toEqual({
       DISPUTE_OPEN: 'WORKFLOW',
       MILESTONES_INCOMPLETE: 'WORKFLOW',
-      INSPECTION_PENDING: 'WORKFLOW',
+      INSPECTION_PENDING: 'SERVER',
       INVOICE_UNPAID: 'SERVER',
       PAYMENT_UNVERIFIED: 'WORKFLOW',
       ALLOCATED_BELOW_PO_TOTAL: 'SERVER',
@@ -184,9 +184,15 @@ describe('computeCompletionBlockers names the actual blockers', () => {
   });
 
   it('notice lists each blocker instead of a generic message', () => {
-    const blockers = computeCompletionBlockers({ ...ready, inspectionAccepted: false, invoices: [], allocatedTotal: 0 });
+    const blockers = computeCompletionBlockers({
+      ...ready,
+      progressPercent: 50,
+      inspectionAccepted: false,
+      invoices: [],
+      allocatedTotal: 0,
+    });
     const html = renderToStaticMarkup(React.createElement(CompletionBlockersNotice, { blockers }));
-    expect(html).toContain('3 items outstanding');
+    expect(html).toContain('4 items outstanding');
     expect(html).toContain('Buyer delivery inspection has not been signed off.');
     expect(html).toContain('No invoice has been submitted by the supplier.');
     expect(html).toContain('(rejected by the server until resolved)');

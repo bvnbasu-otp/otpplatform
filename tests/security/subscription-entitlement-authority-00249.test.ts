@@ -322,7 +322,13 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 56]).toBe('00305_po_transition_payment_gst_milestones.sql');
     expect(files[index + 57]).toBe('00306_po_transition_inspection_and_gst_backfill_fix.sql');
     expect(files[index + 58]).toBe('00307_internal_definer_bypass_milestone_and_pilot_sim.sql');
-    expect(index).toBe(files.length - 59);
+    expect(files[index + 59]).toBe('00308_notification_preference_profile_authorization.sql');
+    expect(files[index + 60]).toBe('00309_verified_payment_invoice_boundary.sql');
+    expect(files[index + 61]).toBe('00310_notification_preference_personal_upsert.sql');
+    expect(files[index + 62]).toBe('00311_personal_buyer_quote_evaluation.sql');
+    expect(files[index + 63]).toBe('00312_po_completion_requirement_sync.sql');
+    expect(files[index + 64]).toBe('00313_quote_invitation_state_boundary.sql');
+    expect(index).toBe(files.length - 65);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

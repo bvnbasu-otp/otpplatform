@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import type { ThemeMode, PersonaMode, ColorTheme, ThemeContextType } from './types';
+import { normalizeColorTheme, normalizeThemeMode, type ThemeMode, type PersonaMode, type ColorTheme, type ThemeContextType } from './types';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     try {
-      return (localStorage.getItem('otp-theme') as ThemeMode) || 'system';
+      return normalizeThemeMode(localStorage.getItem('otp-theme'));
     } catch {
       return 'system';
     }
@@ -22,7 +22,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const [colorTheme, setColorThemeState] = useState<ColorTheme>(() => {
     try {
-      return (localStorage.getItem('otp-color-theme') as ColorTheme) || 'auto';
+      return normalizeColorTheme(localStorage.getItem('otp-color-theme'));
     } catch {
       return 'auto';
     }
@@ -87,9 +87,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [colorTheme]);
 
   const setTheme = (newTheme: ThemeMode) => {
-    setThemeState(newTheme);
+    const safe = normalizeThemeMode(newTheme);
+    setThemeState(safe);
     try {
-      localStorage.setItem('otp-theme', newTheme);
+      localStorage.setItem('otp-theme', safe);
     } catch {
       // Ignore storage errors
     }
@@ -105,9 +106,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setColorTheme = (newColor: ColorTheme) => {
-    setColorThemeState(newColor);
+    const safe = normalizeColorTheme(newColor);
+    setColorThemeState(safe);
     try {
-      localStorage.setItem('otp-color-theme', newColor);
+      localStorage.setItem('otp-color-theme', safe);
     } catch {
       // Ignore storage errors
     }

@@ -6,6 +6,7 @@ import {
   type WebhookSecrets,
   type WebhookVerificationResult,
 } from './verify-webhook.ts';
+import { pilotWebhookDisposition } from './pilot-payment-boundary.ts';
 
 export type { WebhookVerificationResult };
 
@@ -53,6 +54,18 @@ if (import.meta.main) {
       }
 
       const payload = verification.extractedPayload;
+
+      const pilot = pilotWebhookDisposition({ paymentType: payload.paymentType });
+      if (!pilot.recordSubscription) {
+        return jsonResponse({
+          ok: true,
+          verified: true,
+          provider: verification.provider,
+          eventId: verification.eventId,
+          recorded: false,
+          message: pilot.reason,
+        });
+      }
 
       const disposition = settlementDisposition(verification.provider, payload.raw);
       if (!disposition.settle) {
@@ -117,9 +130,9 @@ if (import.meta.main) {
 
       // Execute atomic RPC transaction
       const { data, error } = await supabase.rpc('record_verified_payment', {
-        p_payment_type: payload.paymentType,
+        p_payment_type: 'SUBSCRIPTION',
         p_organization_id: payload.organizationId ?? null,
-        p_invoice_id: payload.invoiceId ?? null,
+        p_invoice_id: null,
         p_amount: payload.amount,
         p_currency: payload.currency,
         p_gateway: verification.provider,

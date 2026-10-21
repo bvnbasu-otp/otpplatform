@@ -183,12 +183,8 @@ function mapPo(row: PoRow): PurchaseOrderSummary {
     : [];
   const pay = payList[0];
 
-  const invPaid =
-    inv?.status === 'PAID' &&
-    (inv.balance_due == null || Number(inv.balance_due) <= 0);
-  const isPaymentVerified = pay?.status === 'VERIFIED' || invPaid;
-  /** Financial settlement hint — distinct from operational PO `COMPLETED`. */
-  const isSettled = isPaymentVerified;
+  /** Operational closeout only. Invoice payment does not complete the purchase order. */
+  const isSettled = row.status === 'COMPLETED';
 
   return {
     id: row.id,

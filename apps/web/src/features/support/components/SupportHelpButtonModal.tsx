@@ -60,28 +60,60 @@ export function SupportHelpButtonModal({
   } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const isSubmittingRef = useRef(isSubmitting);
   const { context } = useRoleContext();
   const { user } = useAuth();
   const location = useLocation();
 
-  // Close dropdown on outside click or ESC key
+  useEffect(() => {
+    isSubmittingRef.current = isSubmitting;
+  }, [isSubmitting]);
+
+  // Treat the surface as a modal dialog: focus it on open, contain Tab, and
+  // return focus to the trigger after a permitted close.
   useEffect(() => {
     if (!isOpen) return;
 
     function handlePointerDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (!isSubmittingRef.current && containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape' && !isSubmittingRef.current) {
+        e.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const items = [...dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )].filter((el) => el.tabIndex !== -1);
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
     }
 
+    const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
     return () => {
+      window.cancelAnimationFrame(frame);
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
+      triggerRef.current?.focus();
     };
   }, [isOpen]);
 
@@ -193,10 +225,13 @@ export function SupportHelpButtonModal({
     <div className={`relative inline-block ${className}`} ref={containerRef}>
       {/* Universal Header Trigger Button: Help & Support (?) */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(!isOpen)}
         aria-label="Help and Support"
         aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        aria-controls="support-help-dialog"
         data-testid="help-and-support-trigger"
         className={`relative flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-bold transition shadow-2xs min-h-[32px] mobile-touch-target cursor-pointer ${
           isOpen
@@ -219,21 +254,30 @@ export function SupportHelpButtonModal({
 
       {/* Modal / Popover Container */}
       {isOpen && (
-        <div className="fixed inset-x-2.5 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-[500px] max-w-[calc(100vw-1.25rem)] sm:max-w-[500px] max-h-[calc(100vh-4.5rem)] sm:max-h-[85vh] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150 space-y-4">
+        <div
+          ref={dialogRef}
+          id="support-help-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="support-help-dialog-title"
+          aria-describedby="support-help-dialog-description"
+          className="fixed inset-x-2.5 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-[500px] max-w-[calc(100vw-1.25rem)] sm:max-w-[500px] max-h-[calc(100vh-4.5rem)] sm:max-h-[85vh] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150 space-y-4"
+        >
           {/* Header */}
           <div className="flex items-center justify-between border-b pb-3">
             <div className="flex items-center gap-2">
               <span className="text-xl">🛠️</span>
               <div>
-                <h3 className="text-sm font-extrabold text-foreground">
+                <h3 id="support-help-dialog-title" className="text-sm font-extrabold text-foreground">
                   OTP Help &amp; Support Center
                 </h3>
-                <p className="text-[11px] text-muted-foreground">
+                <p id="support-help-dialog-description" className="text-[11px] text-muted-foreground">
                   Automated dispatch to <strong className="text-foreground">{ROUTED_ADMIN_EMAIL}</strong> &amp; Ops Console.
                 </p>
               </div>
             </div>
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={handleClose}
               className="text-muted-foreground hover:text-foreground text-xs font-bold p-1.5 rounded-md hover:bg-muted"

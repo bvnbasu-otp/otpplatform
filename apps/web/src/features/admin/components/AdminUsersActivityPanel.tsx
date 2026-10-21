@@ -1,4 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
+
+function handleWideTableKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+  const tableScroller = event.currentTarget;
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    event.preventDefault();
+    tableScroller.scrollBy({
+      left: event.key === 'ArrowLeft' ? -160 : 160,
+      behavior: 'smooth',
+    });
+  } else if (event.key === 'Home' || event.key === 'End') {
+    event.preventDefault();
+    tableScroller.scrollTo({
+      left: event.key === 'Home' ? 0 : tableScroller.scrollWidth,
+      behavior: 'smooth',
+    });
+  }
+}
 import { sanitizeSpreadsheetCell } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
 import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
@@ -1070,7 +1087,7 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
           </div>
 
           {/* Account Status Filter Chips */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-thin py-1.5" tabIndex={0} aria-label="User activity filters">
             {(['ALL', 'ACTIVE', 'BLOCKED', 'PENDING'] as const).map((s) => (
               <button
                 key={s}
@@ -1462,7 +1479,12 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
               </div>
             ) : (
               /* DESKTOP TABLE VIEW FOR USERS */
-              <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+              <div
+                className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20"
+                tabIndex={0}
+                aria-label="Admin user table; scroll horizontally for all columns"
+                onKeyDown={handleWideTableKeyDown}
+              >
                 <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
                   <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
                     <tr>
@@ -1899,7 +1921,12 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
               </div>
             ) : (
               /* DESKTOP TABLE VIEW FOR ORGANIZATIONS */
-              <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+              <div
+                className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20"
+                tabIndex={0}
+                aria-label="Admin organization table; scroll horizontally for all columns"
+                onKeyDown={handleWideTableKeyDown}
+              >
                 <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
                   <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
                     <tr>
@@ -2331,7 +2358,12 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
               </div>
             ) : (
               /* DESKTOP TABLE VIEW FOR REGISTRATIONS */
-              <div className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20">
+              <div
+                className="overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20"
+                tabIndex={0}
+                aria-label="Admin registration table; scroll horizontally for all columns"
+                onKeyDown={handleWideTableKeyDown}
+              >
                 <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
                   <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground shadow-2xs">
                     <tr>

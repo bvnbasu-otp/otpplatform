@@ -5,10 +5,14 @@ import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import {
   fetchMyProfile,
+  fetchNotificationPreferences,
+  saveNotificationPreferences,
   updateMyProfile,
   updateOrganizationName,
   requestProfileCredentialOtp,
   verifyAndUpdateProfileCredential,
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  type NotificationChannelPreferences,
 } from '../api/profile';
 import { fetchUserOrganization } from '@/features/requirement/api/requirements';
 import { PERSONA_AVATARS, compressAndCropAvatar } from '../lib/avatars';
@@ -133,52 +137,12 @@ export function ProfilePage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showThemeSheet, setShowThemeSheet] = useState(false);
 
-  // Notification Channel Preferences (persisted in localStorage)
-  const [channelWhatsapp, setChannelWhatsapp] = useState(() => {
-    try {
-      const saved = localStorage.getItem('otp-pref-whatsapp');
-      return saved !== null ? saved === 'true' : true;
-    } catch {
-      return true;
-    }
-  });
-
-  const [channelEmail, setChannelEmail] = useState(() => {
-    try {
-      const saved = localStorage.getItem('otp-pref-email');
-      return saved !== null ? saved === 'true' : true;
-    } catch {
-      return true;
-    }
-  });
-
-  const [channelInApp, setChannelInApp] = useState(() => {
-    try {
-      const saved = localStorage.getItem('otp-pref-inapp');
-      return saved !== null ? saved === 'true' : true;
-    } catch {
-      return true;
-    }
-  });
-
-  const handleToggleChannel = (channel: 'whatsapp' | 'email' | 'inapp', value: boolean) => {
-    try {
-      if (channel === 'whatsapp') {
-        setChannelWhatsapp(value);
-        localStorage.setItem('otp-pref-whatsapp', String(value));
-      } else if (channel === 'email') {
-        setChannelEmail(value);
-        localStorage.setItem('otp-pref-email', String(value));
-      } else {
-        setChannelInApp(value);
-        localStorage.setItem('otp-pref-inapp', String(value));
-      }
-      setSuccessMsg(`Notification preference for ${channel} updated.`);
-      setTimeout(() => setSuccessMsg(null), 2500);
-    } catch {
-      // Ignore
-    }
-  };
+  const [notificationChannels, setNotificationChannels] = useState<NotificationChannelPreferences>(
+    DEFAULT_NOTIFICATION_PREFERENCES.channels,
+  );
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationSaving, setNotificationSaving] = useState(false);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
 
   const isInternalUser = Boolean(
     context.isPlatformAdmin || context.isFounder || context.side === 'CONSOLE',
@@ -319,11 +283,49 @@ export function ProfilePage() {
     }
   }, [activeTab, context.organizationId]);
 
+  useEffect(() => {
+    if (activeTab !== 'preferences' || !context.profileId) return;
+    let cancelled = false;
+    setNotificationLoading(true);
+    setNotificationError(null);
+    void fetchNotificationPreferences(context.profileId, context.organizationId || null).then((result) => {
+      if (cancelled) return;
+      if (result.ok) setNotificationChannels(result.preferences.channels);
+      else setNotificationError(`Notification preferences could not be loaded: ${result.error}`);
+      setNotificationLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, context.profileId, context.organizationId]);
+
   const hasEmail = Boolean(email && email.trim().length > 0 && email !== 'Not registered');
   const hasPhone = Boolean(phone && phone.trim().length > 0 && phone !== 'Not registered');
 
   const canManageTeam =
     !context.isPlatformAdmin && (context.orgRole === 'OWNER' || context.orgRole === 'MANAGER');
+
+  async function handleToggleChannel(channel: keyof NotificationChannelPreferences) {
+    if (!context.profileId || notificationSaving || notificationLoading) return;
+    const nextChannels = { ...notificationChannels, [channel]: !notificationChannels[channel] };
+    setNotificationSaving(true);
+    setNotificationError(null);
+    setSuccessMsg(null);
+    const result = await saveNotificationPreferences(context.profileId, context.organizationId || null, {
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      channels: nextChannels,
+      phoneNumber: hasPhone ? phone : null,
+      email: hasEmail ? email : null,
+    });
+    setNotificationSaving(false);
+    if (!result.ok) {
+      setNotificationError(`Notification preference was not saved: ${result.error}`);
+      return;
+    }
+    setNotificationChannels(nextChannels);
+    setSuccessMsg(`Notification preference for ${channel.toLowerCase().replace('_', ' ')} updated.`);
+    setTimeout(() => setSuccessMsg(null), 2500);
+  }
 
   async function handleSendPhoneOtp() {
     setPhoneOtpError(null);
@@ -1347,6 +1349,14 @@ export function ProfilePage() {
             <p className="text-xs text-muted-foreground">
               Select which channels should receive procurement updates, sealed quotes, and purchase orders.
             </p>
+            {notificationLoading && (
+              <p className="text-xs text-muted-foreground" role="status">Loading saved notification preferences…</p>
+            )}
+            {notificationError && (
+              <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300" role="alert">
+                {notificationError}
+              </p>
+            )}
 
             <div className="space-y-3">
               {/* WhatsApp Toggle */}
@@ -1368,15 +1378,17 @@ export function ProfilePage() {
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={channelWhatsapp}
-                  onClick={() => handleToggleChannel('whatsapp', !channelWhatsapp)}
-                  className={`ml-3 relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden min-h-[24px] ${
-                    channelWhatsapp ? 'bg-primary' : 'bg-muted-foreground/30'
+                  aria-label="WhatsApp notifications"
+                  aria-checked={notificationChannels.WHATSAPP}
+                  disabled={notificationLoading || notificationSaving}
+                  onClick={() => void handleToggleChannel('WHATSAPP')}
+                  className={`ml-3 relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-60 ${
+                    notificationChannels.WHATSAPP ? 'bg-primary' : 'bg-muted-foreground/30'
                   }`}
                 >
                   <span
                     className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                      channelWhatsapp ? 'translate-x-5' : 'translate-x-0'
+                      notificationChannels.WHATSAPP ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>
@@ -1401,15 +1413,17 @@ export function ProfilePage() {
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={channelEmail}
-                  onClick={() => handleToggleChannel('email', !channelEmail)}
-                  className={`ml-3 relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden min-h-[24px] ${
-                    channelEmail ? 'bg-primary' : 'bg-muted-foreground/30'
+                  aria-label="Email notifications"
+                  aria-checked={notificationChannels.EMAIL}
+                  disabled={notificationLoading || notificationSaving}
+                  onClick={() => void handleToggleChannel('EMAIL')}
+                  className={`ml-3 relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-60 ${
+                    notificationChannels.EMAIL ? 'bg-primary' : 'bg-muted-foreground/30'
                   }`}
                 >
                   <span
                     className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                      channelEmail ? 'translate-x-5' : 'translate-x-0'
+                      notificationChannels.EMAIL ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>
@@ -1434,15 +1448,17 @@ export function ProfilePage() {
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={channelInApp}
-                  onClick={() => handleToggleChannel('inapp', !channelInApp)}
-                  className={`ml-3 relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden min-h-[24px] ${
-                    channelInApp ? 'bg-primary' : 'bg-muted-foreground/30'
+                  aria-label="In-app notifications"
+                  aria-checked={notificationChannels.IN_APP}
+                  disabled={notificationLoading || notificationSaving}
+                  onClick={() => void handleToggleChannel('IN_APP')}
+                  className={`ml-3 relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-60 ${
+                    notificationChannels.IN_APP ? 'bg-primary' : 'bg-muted-foreground/30'
                   }`}
                 >
                   <span
                     className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                      channelInApp ? 'translate-x-5' : 'translate-x-0'
+                      notificationChannels.IN_APP ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>

@@ -154,7 +154,26 @@ export function ProcurementStageNavigator({
 
         {/* 6-State Golden Path Navigation Stepper Bar */}
         <nav aria-label="6-State Golden Path Procurement Pipeline" className="pt-1 border-t border-border/60">
-          <ol className="flex items-center justify-between gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <ol
+            className="flex items-center justify-between gap-1 sm:gap-1.5 overflow-x-auto scrollbar-thin scroll-smooth py-1.5"
+            tabIndex={0}
+            aria-label="Procurement stages; scroll horizontally for all stages"
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                event.preventDefault();
+                event.currentTarget.scrollBy({
+                  left: event.key === 'ArrowRight' ? 160 : -160,
+                  behavior: 'smooth',
+                });
+              } else if (event.key === 'Home' || event.key === 'End') {
+                event.preventDefault();
+                event.currentTarget.scrollTo({
+                  left: event.key === 'Home' ? 0 : event.currentTarget.scrollWidth,
+                  behavior: 'smooth',
+                });
+              }
+            }}
+          >
             {GOLDEN_PATH_STATES.map((stageKey, idx) => {
               const stageDesc = CORE_PROCUREMENT_STATES[stageKey];
               const stepState = getStageStepState(stageKey, effectiveStage);

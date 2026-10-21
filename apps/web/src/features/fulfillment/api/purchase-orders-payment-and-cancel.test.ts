@@ -86,7 +86,9 @@ describe('purchase order client payment mapping and cancel errors', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.order.status).toBe('IN_PROGRESS');
-    expect(result.order.isSettled).toBe(true);
+    expect(result.order.isSettled).toBe(false);
+    expect(result.order.invoiceStatus).toBe('PAID');
+    expect(result.order.paymentStatus).toBe('VERIFIED');
   });
 
   it('normalises a missing structure and a non-array schedule to null', async () => {

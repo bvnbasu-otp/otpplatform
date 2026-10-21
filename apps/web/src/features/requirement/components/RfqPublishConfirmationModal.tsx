@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { PilotRfqAllowance } from '@otp/domain';
 import type { PilotAllowanceLoadStatus } from '@/features/intake/hooks/use-pilot-allowance';
 import { PilotAllowanceText } from './PilotAllowanceText';
@@ -27,25 +28,52 @@ export function RfqPublishConfirmationModal({
   isBusy,
 }: RfqPublishConfirmationModalProps) {
   const [isAcknowledged, setIsAcknowledged] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const isBusyRef = useRef(isBusy);
+  isBusyRef.current = isBusy;
 
-  // Close on Escape key press when not busy
   useEffect(() => {
     if (!isOpen) return;
-
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !isBusy) {
+      if (e.key === 'Escape' && !isBusyRef.current) {
+        e.preventDefault();
         onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     }
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isBusy, onClose]);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('keydown', handleKeyDown);
+      returnFocus?.focus();
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  return (
+  const dialog = (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in-50"
       role="dialog"
       aria-modal="true"
@@ -66,10 +94,13 @@ export function RfqPublishConfirmationModal({
             </h3>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
-            disabled={isBusy}
-            onClick={onClose}
-            className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 transition mobile-touch-target"
+            aria-disabled={isBusy}
+            onClick={() => {
+              if (!isBusy) onClose();
+            }}
+            className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted aria-disabled:opacity-50 transition mobile-touch-target"
             aria-label="Close confirmation dialog"
           >
             ✕
@@ -164,4 +195,6 @@ export function RfqPublishConfirmationModal({
       </div>
     </div>
   );
+
+  return typeof document === 'undefined' ? dialog : createPortal(dialog, document.body);
 }

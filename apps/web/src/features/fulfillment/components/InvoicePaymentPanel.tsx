@@ -1017,12 +1017,16 @@ export function InvoicePaymentPanel({
       {/* =========================================================================
           PAYMENT EXECUTION & SETTLEMENT SECTION
           ========================================================================= */}
-      <section className="rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-3.5">
+      <section
+        className="rounded-2xl border bg-card p-3.5 sm:p-4 shadow-2xs space-y-3.5"
+        aria-labelledby="off-platform-payment-title"
+        data-testid="off-platform-payment-record"
+      >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm">💳</span>
-              <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
+              <h3 id="off-platform-payment-title" className="text-xs font-extrabold text-foreground uppercase tracking-wider">
                 Off-Platform Payment Record
               </h3>
             </div>

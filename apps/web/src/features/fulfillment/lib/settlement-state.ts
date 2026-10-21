@@ -111,12 +111,6 @@ export function resolveSettlementAction(state: SettlementStateInput): Settlement
       : { kind: 'AWAIT_INVOICE_APPROVAL', label: 'Awaiting Invoice Approval', description: 'The buyer is reviewing your submitted invoice.', actionable: false, targetTab: 'INVOICE' };
   }
 
-  if (state.isFullySettled && invoices.length > 0) {
-    return buyer
-      ? { kind: 'COMPLETE_PO', label: 'Complete Purchase Order', description: 'Every invoice is paid in full. Close the contract.', actionable: true, targetTab: null }
-      : { kind: 'AWAIT_PO_CLOSURE', label: 'Awaiting Buyer Closure', description: 'All invoices are paid; the buyer closes the purchase order.', actionable: false, targetTab: null };
-  }
-
   if (!state.inspectionAccepted) {
     if (state.progressPercent < 100) {
       return buyer
@@ -124,8 +118,14 @@ export function resolveSettlementAction(state: SettlementStateInput): Settlement
         : { kind: 'REPORT_PROGRESS', label: `Report Next Milestone (${state.progressPercent}%)`, description: 'Record progress on the next milestone.', actionable: true, targetTab: 'MILESTONES' };
     }
     return buyer
-      ? { kind: 'SIGN_OFF_DELIVERY', label: 'Sign Off Delivery Inspection', description: 'Inspect the delivered work and sign off.', actionable: true, targetTab: 'MILESTONES' }
+      ? { kind: 'SIGN_OFF_DELIVERY', label: 'Sign Off Delivery Inspection', description: 'Inspect the delivered work and sign off before the purchase order can be completed.', actionable: true, targetTab: 'MILESTONES' }
       : { kind: 'AWAIT_DELIVERY_SIGNOFF', label: 'Awaiting Buyer Inspection Sign-off', description: '100% completion reported; the buyer is inspecting.', actionable: false, targetTab: 'MILESTONES' };
+  }
+
+  if (state.isFullySettled && invoices.length > 0) {
+    return buyer
+      ? { kind: 'COMPLETE_PO', label: 'Complete Purchase Order', description: 'Inspection is signed off and every invoice is paid. Close the contract.', actionable: true, targetTab: null }
+      : { kind: 'AWAIT_PO_CLOSURE', label: 'Awaiting Buyer Closure', description: 'Inspection is signed off and invoices are paid. The buyer closes the purchase order.', actionable: false, targetTab: null };
   }
 
   return buyer
@@ -217,7 +217,7 @@ export function computeCompletionBlockers(input: CompletionBlockerInput): Comple
     if (input.progressPercent < 100) {
       blockers.push({ code: 'MILESTONES_INCOMPLETE', message: `Milestones are ${input.progressPercent}% complete; the supplier has not reported 100%.`, enforcedBy: 'WORKFLOW', tab: 'MILESTONES' });
     }
-    blockers.push({ code: 'INSPECTION_PENDING', message: 'Buyer delivery inspection has not been signed off.', enforcedBy: 'WORKFLOW', tab: 'MILESTONES' });
+    blockers.push({ code: 'INSPECTION_PENDING', message: 'Buyer delivery inspection has not been signed off.', enforcedBy: 'SERVER', tab: 'MILESTONES' });
   }
 
   if (invoices.length === 0) {

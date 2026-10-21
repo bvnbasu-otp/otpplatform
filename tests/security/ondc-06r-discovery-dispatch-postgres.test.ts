@@ -45,8 +45,8 @@ describe('00231 migration contract', () => {
   it('is the migration ceiling and keeps the CI fallback', () => {
     const files = readFileSync(resolve(ROOT, 'tests/security/verified-remediation-00216-redteam.test.ts'), 'utf8');
     const ci = readFileSync(resolve(ROOT, '.github/workflows/ci-cd.yml'), 'utf8');
-    expect(files).toContain("const CEILING = '00307_internal_definer_bypass_milestone_and_pilot_sim.sql'");
-    expect(ci).toContain('EXPECTED_CEILING="00307"');
+    expect(files).toContain("const CEILING = '00313_quote_invitation_state_boundary.sql'");
+    expect(ci).toContain('EXPECTED_CEILING="00313"');
     expect(ci).toContain("process.env.EXPECTED_CEILING || '00223'");
     expect(ci).not.toContain("process.env.EXPECTED_CEILING || '00230'");
     expect(ci).not.toContain("process.env.EXPECTED_CEILING || '00231'");

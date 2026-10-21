@@ -1,5 +1,16 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fetchAdminAuditLogs, clearAuditLogsAndNotifications } from '../api/admin-ops';
+
+function handlePayloadKeyDown(event: React.KeyboardEvent<HTMLPreElement>) {
+  const scroller = event.currentTarget;
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    event.preventDefault();
+    scroller.scrollBy({ left: event.key === 'ArrowLeft' ? -160 : 160, behavior: 'smooth' });
+  } else if (event.key === 'Home' || event.key === 'End') {
+    event.preventDefault();
+    scroller.scrollTo({ left: event.key === 'Home' ? 0 : scroller.scrollWidth, behavior: 'smooth' });
+  }
+}
 
 function formatLogDate(log: any): string {
   const ts = log.occurred_at || log.created_at || log.timestamp;
@@ -428,7 +439,12 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
                       </button>
 
                       {isExpanded && (
-                        <pre className="mt-2 rounded-lg bg-muted/40 p-3 text-[10px] font-mono overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 text-foreground border leading-relaxed">
+                        <pre
+                          className="mt-2 rounded-lg bg-muted/40 p-3 text-[10px] font-mono overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 text-foreground border leading-relaxed"
+                          tabIndex={0}
+                          aria-label="Audit payload; scroll horizontally for the full record"
+                          onKeyDown={handlePayloadKeyDown}
+                        >
                           {JSON.stringify(log.payload, null, 2)}
                         </pre>
                       )}

@@ -11,7 +11,7 @@ const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
 // Repository ceiling. Later migrations do not grant this function back to clients.
-const REPOSITORY_CEILING = '00307_internal_definer_bypass_milestone_and_pilot_sim.sql';
+const REPOSITORY_CEILING = '00313_quote_invitation_state_boundary.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';
@@ -133,6 +133,7 @@ describe('record_verified_payment execute boundary', () => {
     const rel = hits.map((path) => path.slice(ROOT.length + 1).replace(/\\/g, '/')).sort();
     expect(rel).toEqual([
       'supabase/functions/payment-webhook/index.ts',
+      'supabase/functions/payment-webhook/pilot-payment-boundary.ts',
       'supabase/migrations/00150_payment_webhook_verification.sql',
       'supabase/migrations/00202_scope_invoice_work_order_updates_and_close_client_audit_notification_inserts.sql',
       'supabase/migrations/00247_revoke_record_verified_payment_client_execute.sql',
@@ -144,6 +145,7 @@ describe('record_verified_payment execute boundary', () => {
       // Wraps the 00278 implementation with the canonical subscription_plans price check; grants stay service_role only.
       'supabase/migrations/00280_canonical_subscription_pricing.sql',
       'supabase/migrations/00299_internal_procurement_hard_deny.sql',
+      'supabase/migrations/00309_verified_payment_invoice_boundary.sql',
       // Settles subscription events against the canonical plan price (00280).
       'tests/security/canonical-subscription-pricing-00280.test.ts',
       // Cites the 00247 filename and asserts 00250 SQL does not name the function.
@@ -157,6 +159,7 @@ describe('record_verified_payment execute boundary', () => {
       'tests/security/subscription-persona-authority.test.ts',
       // Simulated gateway events against the 00278 function.
       'tests/security/verified-payment-binding-00278.test.ts',
+      'tests/security/verified-payment-boundary-00309.test.ts',
     ]);
     const rpcCallers = rel.filter((path) =>
       /rpc\(\s*['"]record_verified_payment['"]/.test(readFileSync(resolve(ROOT, path), 'utf8')),

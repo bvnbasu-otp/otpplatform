@@ -656,7 +656,27 @@ export function AdminSellerOrdersTable({
           </div>
 
           {/* Desktop Table with Custom Scrollbars & Column Min-Widths */}
-          <div className="hidden md:block overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 rounded-xl border bg-card shadow-xs">
+          <div
+            className="hidden md:block overflow-x-auto w-full max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 rounded-xl border bg-card shadow-xs"
+            tabIndex={0}
+            aria-label="Seller order table; scroll horizontally for all columns"
+            onKeyDown={(event) => {
+              const tableScroller = event.currentTarget;
+              if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                event.preventDefault();
+                tableScroller.scrollBy({
+                  left: event.key === 'ArrowLeft' ? -160 : 160,
+                  behavior: 'smooth',
+                });
+              } else if (event.key === 'Home' || event.key === 'End') {
+                event.preventDefault();
+                tableScroller.scrollTo({
+                  left: event.key === 'Home' ? 0 : tableScroller.scrollWidth,
+                  behavior: 'smooth',
+                });
+              }
+            }}
+          >
             <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
               <thead className="sticky top-0 z-10 border-b bg-muted/90 backdrop-blur-xs font-bold text-muted-foreground text-[11px] uppercase tracking-wider shadow-2xs">
                 <tr>

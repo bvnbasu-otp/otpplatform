@@ -114,8 +114,8 @@ export function PrintableProcurementReport({
               </tr>
             ) : (
               orders.map((po) => {
-                const progress = po.progressPercent ?? (po.isSettled ? 100 : 0);
-                const isCompleted = po.isSettled || po.status === 'COMPLETED';
+                const progress = po.progressPercent ?? 0;
+                const isCompleted = po.status === 'COMPLETED';
                 return (
                   <tr key={po.id} className="hover:bg-slate-50">
                     <td className="p-2 border-r border-slate-300 font-mono font-bold text-slate-900">
