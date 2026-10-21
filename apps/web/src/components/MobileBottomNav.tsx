@@ -17,6 +17,8 @@ import {
   shouldShowGlobalBottomNav,
 } from '@/features/navigation';
 import { useLanguage } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { canOfferCustomerRequirementCreation, isInternalOperatorContext } from '@/features/roles/customer-procurement-access';
 
 function initials(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return '?';
@@ -49,6 +51,8 @@ export function MobileBottomNav() {
 
   const isSupplier = context.side === 'SUPPLIER';
   const isAdmin = context.isPlatformAdmin;
+  const isInternal = isInternalOperatorContext(context);
+  const allowCreateRequirement = canOfferCustomerRequirementCreation(context);
   const isAuthenticated = Boolean(context.email || user?.email);
   const bottomNav = getCanonicalBottomNav(context);
   const homeTab = bottomNav[0]!;
@@ -152,6 +156,17 @@ export function MobileBottomNav() {
                   <span className="text-2xl font-bold leading-none select-none">+</span>
                   <span className="sr-only">Admin Quick Operations</span>
                 </button>
+              ) : isInternal ? (
+                <Link
+                  to="/admin"
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 text-white shadow-lg shadow-purple-600/30 active:scale-90 transition-all duration-150 mobile-touch-target hover:bg-purple-700 min-h-[48px] min-w-[48px]"
+                  title="Internal operations"
+                  aria-label="Internal operations"
+                  data-testid="bottom-nav-internal-console"
+                >
+                  <span className="text-2xl font-bold leading-none select-none">+</span>
+                  <span className="sr-only">Internal operations</span>
+                </Link>
               ) : isSupplier ? (
                 <button
                   type="button"
@@ -164,7 +179,7 @@ export function MobileBottomNav() {
                   <span className="text-2xl font-bold leading-none select-none">+</span>
                   <span className="sr-only">Maximize Business Reach — Update Capabilities</span>
                 </button>
-              ) : (
+              ) : allowCreateRequirement ? (
                 <button
                   type="button"
                   onClick={() => setIsBuyerIntakeModalOpen(true)}
@@ -176,7 +191,7 @@ export function MobileBottomNav() {
                   <span className="text-2xl font-bold leading-none select-none">+</span>
                   <span className="sr-only">Create Requirement</span>
                 </button>
-              )}
+              ) : null}
             </div>
 
             {/* TAB 4: QUOTES / AUDIT (Canonical entry for Buyer, Supplier, Admin) */}
@@ -256,7 +271,7 @@ export function MobileBottomNav() {
 
             {/* Tab 3: + Elevated Center Button (Role & State Aware) */}
             <div className="flex flex-col items-center justify-center flex-1 shrink-0">
-              {isSupplier ? (
+              {isSupplier && !isInternal ? (
                 <button
                   type="button"
                   onClick={() => setIsCapabilityModalOpen(true)}
@@ -268,7 +283,17 @@ export function MobileBottomNav() {
                   <span className="text-2xl font-bold leading-none select-none">+</span>
                   <span className="sr-only">Maximize Business Reach — Update Capabilities</span>
                 </button>
-              ) : user ? (
+              ) : isInternal ? (
+                <Link
+                  to="/admin"
+                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 text-white shadow-lg shadow-purple-600/30 active:scale-90 transition-all duration-150 mobile-touch-target min-h-[48px] min-w-[48px]"
+                  aria-label="Internal operations"
+                  data-testid="bottom-nav-internal-console"
+                >
+                  <span className="text-2xl font-bold leading-none select-none">+</span>
+                  <span className="sr-only">Internal operations</span>
+                </Link>
+              ) : allowCreateRequirement ? (
                 <button
                   type="button"
                   onClick={() => setIsBuyerIntakeModalOpen(true)}
@@ -462,6 +487,10 @@ export function MobileBottomNav() {
               </ul>
             </div>
           )}
+
+          <div className="pt-2 border-t">
+            <LanguageSwitcher variant="full" placement="menu" />
+          </div>
 
           {/* Canonical Profile Settings Link & Sign Out Row */}
           <div className="pt-2 border-t flex items-center justify-between gap-3">

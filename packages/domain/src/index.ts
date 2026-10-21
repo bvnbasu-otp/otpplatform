@@ -96,6 +96,7 @@ export * from './types/pilot-allowance';
 export * from './types/buyer-address';
 export * from './types/buyer-persona';
 export * from './types/supplier-award-onboarding';
+export * from './types/supplier-business-address';
 export * from './types/rwa-governance';
 export * from './types/msme-governance';
 export * from './types/supplier-lifecycle-tier';

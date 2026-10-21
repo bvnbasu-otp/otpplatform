@@ -9,6 +9,7 @@ import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
 import { SupportHelpButtonModal } from '@/features/support';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { canOfferCustomerRequirementCreation, isInternalOperatorContext } from '@/features/roles/customer-procurement-access';
 
 export function SiteHeader() {
   const { user } = useAuth();
@@ -25,6 +26,8 @@ export function SiteHeader() {
     location.pathname.startsWith('/supplier') ||
     location.search.includes('side=supplier') ||
     context.side === 'SUPPLIER';
+  const allowCreateRequirement = canOfferCustomerRequirementCreation(context);
+  const isInternal = isInternalOperatorContext(context);
 
   // Close menus on navigation
   useEffect(() => {
@@ -106,7 +109,7 @@ export function SiteHeader() {
                 <span>+</span>
                 <span>Add Capabilities</span>
               </button>
-            ) : user ? (
+            ) : allowCreateRequirement ? (
               <button
                 type="button"
                 onClick={() => setIsBuyerIntakeModalOpen(true)}
@@ -118,6 +121,14 @@ export function SiteHeader() {
                 <span>+</span>
                 <span>Post Need</span>
               </button>
+            ) : isInternal ? (
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-700 dark:text-purple-300 font-bold hover:bg-purple-500/20 transition"
+                data-testid="header-internal-console"
+              >
+                Console
+              </Link>
             ) : (
               <button
                 type="button"
@@ -332,7 +343,7 @@ export function SiteHeader() {
                     <span>Add Business Capabilities</span>
                   </button>
                 </div>
-              ) : user ? (
+              ) : allowCreateRequirement ? (
                 <div className="pb-1">
                   <button
                     type="button"
@@ -347,6 +358,17 @@ export function SiteHeader() {
                     <span>+</span>
                     <span>Post Need / RFQ Intake</span>
                   </button>
+                </div>
+              ) : isInternal ? (
+                <div className="pb-1">
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-purple-600 px-4 py-2.5 font-bold text-white shadow-2xs hover:bg-purple-700 transition text-xs"
+                    data-testid="mobile-internal-console"
+                  >
+                    Internal console
+                  </Link>
                 </div>
               ) : (
                 <div className="pb-1">

@@ -5,6 +5,7 @@ import { useRoleContext } from '@/features/roles';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useLanguage } from '@/lib/i18n';
 import { getHomeRoute, getOrdersRoute, getRoleLabel } from '../navigation-config';
+import { canOfferCustomerRequirementCreation, isInternalOperatorContext } from '@/features/roles/customer-procurement-access';
 
 
 export interface WorkspaceHeaderMenuProps {
@@ -237,7 +238,7 @@ export function WorkspaceHeaderMenu({
                     <span>→</span>
                   </Link>
                 </li>
-              ) : context.side === 'SUPPLIER' ? (
+              ) : context.side === 'SUPPLIER' && !isInternalOperatorContext(context) ? (
                 <li>
                   <button
                     type="button"
@@ -254,10 +255,10 @@ export function WorkspaceHeaderMenu({
                     <span>⚡</span>
                   </button>
                 </li>
-              ) : (
+              ) : canOfferCustomerRequirementCreation(context) ? (
                 <li>
                   <Link
-                    to="/requirements/new"
+                    to="/intake"
                     onClick={onClose}
                     data-testid="drawer-buyer-create-requirement"
                     className="flex items-center justify-between rounded-xl bg-primary px-3.5 py-2.5 font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition min-h-[44px] mobile-touch-target"
@@ -268,7 +269,21 @@ export function WorkspaceHeaderMenu({
                     <span>→</span>
                   </Link>
                 </li>
-              )}
+              ) : isInternalOperatorContext(context) ? (
+                <li>
+                  <Link
+                    to="/admin"
+                    onClick={onClose}
+                    data-testid="drawer-internal-console"
+                    className="flex items-center justify-between rounded-xl bg-purple-600 px-3.5 py-2.5 font-bold text-white shadow-2xs hover:bg-purple-700 transition min-h-[44px] mobile-touch-target"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>⚡</span> {t('Internal console', 'Internal console')}
+                    </span>
+                    <span>→</span>
+                  </Link>
+                </li>
+              ) : null}
             </ul>
           </div>
 

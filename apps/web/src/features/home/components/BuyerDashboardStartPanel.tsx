@@ -23,7 +23,6 @@ export function BuyerDashboardStartPanel({
   name,
   buyerPersona,
   actionCount,
-  activeCount,
 }: BuyerDashboardStartPanelProps) {
   return (
     <section
@@ -44,23 +43,15 @@ export function BuyerDashboardStartPanel({
         </p>
       </div>
 
-      <div className="flex flex-col xs:flex-row gap-2">
+      <div className="flex flex-col gap-2">
         <Link
           to="/intake"
           data-testid="buyer-primary-intake-cta"
-          className="min-h-[48px] inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-extrabold text-primary-foreground shadow-sm hover:bg-primary/90 transition active:scale-[0.98] mobile-touch-target focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="min-h-[48px] inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-extrabold text-primary-foreground shadow-sm hover:bg-primary/90 transition active:scale-[0.98] mobile-touch-target focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <span aria-hidden="true">✏️</span>
           <span>Tell OTP what you need</span>
         </Link>
-        {activeCount > 0 && (
-          <Link
-            to="/purchase-orders"
-            className="min-h-[48px] inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-bold text-foreground hover:bg-muted transition mobile-touch-target focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <span>Track orders ({activeCount})</span>
-          </Link>
-        )}
       </div>
 
       {actionCount > 0 && (

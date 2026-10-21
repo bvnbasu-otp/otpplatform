@@ -17,11 +17,16 @@ import {
   PrintableProcurementReport,
 } from '@/features/reporting';
 import { useAuth } from '@/features/auth';
+import { useRoleContext } from '@/features/roles';
+import { canOfferCustomerRequirementCreation } from '@/features/roles/customer-procurement-access';
 
 export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'supplier' }) {
   const { user } = useAuth();
+  const { context } = useRoleContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const [perspective, setPerspective] = useState<UserReportingRole>(initialRole);
+  const allowCreateRequirement =
+    perspective === 'buyer' && canOfferCustomerRequirementCreation(context);
   const [orders, setOrders] = useState<PurchaseOrderSummary[]>([]);
   
   const viewParam = searchParams.get('view')?.toUpperCase();
@@ -388,6 +393,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                   <PurchaseOrderList
                     orders={filteredOrders.slice(0, 5)}
                     role={initialRole}
+                    allowCreateRequirement={allowCreateRequirement}
                     isLoading={isLoading}
                     error={error}
                   />
@@ -458,6 +464,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
               <PurchaseOrderList
                 orders={filteredOrders}
                 role={initialRole}
+                allowCreateRequirement={allowCreateRequirement}
                 isLoading={isLoading}
                 error={error}
               />

@@ -29,6 +29,8 @@ import {
 } from '@/features/subscription';
 import { ReferAndEarnCard } from '@/features/referral';
 import { AddressBookManager } from '../components/AddressBookManager';
+import { SupplierBusinessAddressPanel } from '@/features/supplier/components/SupplierBusinessAddressPanel';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { OrganizationCharterPanel } from '@/features/governance/components/OrganizationCharterPanel';
 import { CommitteeTeamBuilder } from '@/features/org/components/CommitteeTeamBuilder';
 import {
@@ -626,7 +628,7 @@ export function ProfilePage() {
               }`}
             >
               <span>📍</span>
-              <span>Address Book</span>
+              <span>{context.side === 'SUPPLIER' ? 'Business address' : 'Address Book'}</span>
             </button>
           )}
 
@@ -1041,7 +1043,10 @@ export function ProfilePage() {
       )}
 
       {/* 2. TAB: ADDRESS BOOK */}
-      {activeTab === 'addresses' && (
+      {activeTab === 'addresses' && context.side === 'SUPPLIER' && (
+        <SupplierBusinessAddressPanel supplierId={context.supplierId} mode="profile" />
+      )}
+      {activeTab === 'addresses' && context.side !== 'SUPPLIER' && (
         <section className="rounded-2xl border border-border bg-card p-5 shadow-xs space-y-6">
           <AddressBookManager
             organizationId={context.organizationId || null}
@@ -1341,6 +1346,16 @@ export function ProfilePage() {
             </p>
           </section>
 
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3" data-testid="profile-language-preference">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b pb-2">
+              Language
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              The same preference used in the header and mobile menu. English is the complete interface. Other languages cover a partial phrase catalogue. This choice is saved for this account only.
+            </p>
+            <LanguageSwitcher variant="full" placement="menu" />
+          </section>
+
           {/* Notification Channels Preferences */}
           <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
             <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b pb-2">
@@ -1492,7 +1507,7 @@ export function ProfilePage() {
 
           {/* Legal Agreements & EULA Acceptance: Customer buyer/supplier accounts only */}
           {!isInternalUser && (
-            <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3" data-testid="legal-agreements-eula-card">
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3" data-testid="legal-agreements-eula-card" data-no-translate="true">
               <div className="flex items-center justify-between border-b pb-2">
                 <div>
                   <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">

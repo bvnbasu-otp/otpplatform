@@ -6,6 +6,8 @@ import { fulfillmentChip, isPurchaseOrderComplete, paymentEvidenceLabel } from '
 export interface PurchaseOrderListProps {
   orders: PurchaseOrderSummary[];
   role: 'buyer' | 'supplier';
+  /** Customer buyer personas only. Internal operators must not receive this. */
+  allowCreateRequirement?: boolean;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -13,6 +15,7 @@ export interface PurchaseOrderListProps {
 export function PurchaseOrderList({
   orders,
   role,
+  allowCreateRequirement = false,
   isLoading,
   error,
 }: PurchaseOrderListProps) {
@@ -41,9 +44,10 @@ export function PurchaseOrderList({
         <p className="text-xs text-muted-foreground max-w-sm mx-auto">
           No orders match the current period or status filter. Try selecting &quot;All Time&quot; or switching filter tabs.
         </p>
-        {role === 'buyer' && (
+        {allowCreateRequirement && (
           <Link
-            to="/requirements/new"
+            to="/intake"
+            data-testid="po-empty-create-requirement"
             className="mt-2 min-h-[44px] inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 mobile-touch-target"
           >
             + Create New Requirement
@@ -96,7 +100,7 @@ export function PurchaseOrderList({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-mono font-black text-foreground text-xs bg-muted/60 px-2 py-0.5 rounded">
+                  <span className="font-mono font-black text-foreground text-xs bg-muted/60 px-2 py-0.5 rounded" data-otp-canonical="true">
                     {po.poNumber}
                   </span>
                   <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${chip.className}`} data-testid="po-list-status">
@@ -123,7 +127,7 @@ export function PurchaseOrderList({
 
             {/* Entity metadata & GSTIN */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground border-t border-border/40 pt-2">
-              <span>Vendor: <strong className="text-foreground">{po.supplierName || 'Awarded Vendor'}</strong></span>
+              <span>Vendor: <strong className="text-foreground" data-otp-canonical="true">{po.supplierName || 'Awarded Vendor'}</strong></span>
               {po.supplierGstin && <span>· GSTIN: <strong className="font-mono text-foreground">{po.supplierGstin}</strong></span>}
               {po.issuedAt && <span>· Issued: {formatDateIST(po.issuedAt)}</span>}
             </div>

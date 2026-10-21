@@ -189,13 +189,16 @@ describe('OTP Multilingual (i18n) Engine', () => {
       expect(html).toContain('Home');
     });
 
-    it('stores the anonymous preference without reloading the page', () => {
+    it('stores the account preference without reloading the page or using the legacy global key', () => {
       const source = readFileSync(new URL('../LanguageContext.tsx', import.meta.url), 'utf8');
-      expect(source).toContain('localStorage.setItem(LANGUAGE_STORAGE_KEY, newLang)');
+      expect(source).toContain('writeLanguagePreference');
+      expect(source).toContain('resetDomPageTranslation');
+      expect(source).not.toContain('localStorage.setItem(LANGUAGE_STORAGE_KEY, newLang)');
       expect(source).not.toContain('location.reload');
+      expect(source).not.toContain('triggerPageTranslation');
     });
 
-    it('reads initial preference from localStorage', () => {
+    it('does not inherit a legacy global language key before an account is bound', () => {
       mockLocalStorage.setItem(LANGUAGE_STORAGE_KEY, 'kn-IN');
       const html = renderToStaticMarkup(
         <LanguageProvider>
@@ -203,9 +206,9 @@ describe('OTP Multilingual (i18n) Engine', () => {
         </LanguageProvider>,
       );
 
-      expect(html).toContain('kn-IN');
-      expect(html).toContain('ಕನ್ನಡ');
-      expect(html).toContain('ಮುಖಪುಟ');
+      expect(html).toContain('en-IN');
+      expect(html).toContain('English');
+      expect(html).not.toContain('kn-IN');
     });
   });
 

@@ -1,4 +1,5 @@
 import type { RoleContext } from '@/features/roles/api/roles';
+import { canOfferCustomerRequirementCreation, isInternalOperatorContext } from '@/features/roles/customer-procurement-access';
 
 export type RoleBadgeType = 'Buyer' | 'Supplier' | 'Admin';
 
@@ -241,8 +242,10 @@ export function getCanonicalHeaderMenuSections(context: RoleContext): HeaderMenu
     workspaceItems.push({ label: 'Seller Diagnostics', to: '/admin?tab=seller_troubleshooter', icon: '📡' });
   } else if (context.side === 'SUPPLIER') {
     workspaceItems.push({ label: 'Capabilities & Catalog', to: '/supplier/capabilities', icon: '📡' });
-  } else {
+  } else if (canOfferCustomerRequirementCreation(context)) {
     workspaceItems.push({ label: 'New Requirement', to: '/intake', icon: '⚡' });
+  } else if (isInternalOperatorContext(context)) {
+    workspaceItems.push({ label: 'Internal console', to: '/admin', icon: '⚡' });
   }
 
   return [

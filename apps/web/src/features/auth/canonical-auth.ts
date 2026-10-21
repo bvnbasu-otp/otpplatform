@@ -13,6 +13,7 @@
  */
 
 import type { RoleContext } from '@/features/roles/api/roles';
+import { isInternalOperatorContext } from '@/features/roles/customer-procurement-access';
 import { isFounderEmail, isSuperAdminEmail } from './user-role';
 
 export type WebAuthorizationPersona =
@@ -122,10 +123,11 @@ export function evaluateWebAuthorization(context: RoleContext): WebAuthorization
   const canVote = isRwaContext ? (isRwaCommittee && !isRwaEstateManager) : false;
 
   // PO & Payment Authority
-  const canIssuePo = !isEnterprise && (isOwner || isManager || isIndividualBuyer || (context.activeRole?.permissions?.includes('AWARD') ?? false));
+  const internalOperator = isInternalOperatorContext(context);
+  const canIssuePo = !isEnterprise && !internalOperator && (isOwner || isManager || isIndividualBuyer || (context.activeRole?.permissions?.includes('AWARD') ?? false));
   const canReleasePayment = !isEnterprise && (isOwner || roleCode === 'TREASURER' || isIndividualBuyer);
   const canManageMembers = !isEnterprise && (isOwner || isManager || isAdmin);
-  const canCreateRfq = !isEnterprise; // All authenticated canonical buyer personas can initiate intake/RFQ
+  const canCreateRfq = !isEnterprise && !internalOperator && context.side === 'BUYER';
 
   // Spend Approval Checker with Anti-Self-Approval and Spend Cap
   const canApproveSpend = (amount?: number | null, creatorPersonId?: string | null): { allowed: boolean; reason: string } => {

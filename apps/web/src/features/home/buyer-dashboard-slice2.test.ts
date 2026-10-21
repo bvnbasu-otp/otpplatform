@@ -18,6 +18,7 @@ describe('Slice 2 — buyer dashboard & intake entry', () => {
     const src = readFileSync(resolve(WEB_SRC, 'features/home/components/BuyerDashboardStartPanel.tsx'), 'utf8');
     expect(src).toContain('data-testid="buyer-primary-intake-cta"');
     expect(src).toContain('to="/intake"');
+    expect(src).not.toContain('Track orders');
   });
 
   it('documents intake entry banner on the requirement intake page', () => {

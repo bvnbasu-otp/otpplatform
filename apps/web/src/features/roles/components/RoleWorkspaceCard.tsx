@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { canVoteSomewhere, isReadOnly } from '../api/roles';
+import { isInternalOperatorContext } from '../customer-procurement-access';
 import { useRoleContext } from '../hooks/use-role-context';
 import { PermissionChips } from './PermissionChips';
 
@@ -165,7 +166,10 @@ export function RoleWorkspaceCard({
   const view = VIEWS[role.code];
   if (!view) return null;
 
-  const tasks = view.tasks({ rfqId, requirementId });
+  const tasks = view.tasks({ rfqId, requirementId }).filter((task) => {
+    if (!isInternalOperatorContext(context)) return true;
+    return task.to !== '/requirements/new' && task.to !== '/intake' && !task.to.startsWith('/intake?');
+  });
   const readOnly = isReadOnly(context);
 
   return (

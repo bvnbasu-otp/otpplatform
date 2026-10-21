@@ -232,6 +232,23 @@ export function evaluateAuthorizationChain(
     message: 'Actor identity is actively authenticated and verified.',
   });
 
+  // Internal operators keep audit and administration. They do not create
+  // customer requirements, RFQs, or purchase orders, even when the platform
+  // admin shortcut would otherwise authorize every action.
+  if (
+    (context.isPlatformAdmin || context.isFounder || context.persona === 'PLATFORM_ADMIN') &&
+    (action.action === 'CREATE_REQUIREMENT' || action.action === 'CREATE_RFQ' || action.action === 'ISSUE_PO')
+  ) {
+    const res: StageEvaluationResult = {
+      stage: 'STAGE_03_CONTEXT',
+      passed: false,
+      code: 'ERR_INTERNAL_CANNOT_CREATE_CUSTOMER_PROCUREMENT',
+      message: 'Internal operators cannot create customer requirements, RFQs, or purchase orders.',
+    };
+    stageResults.push(res);
+    return failChain('STAGE_03_CONTEXT', res.message, stageResults);
+  }
+
   // Platform Admin Shortcut (with strict auditing)
   if (context.isPlatformAdmin || context.isFounder) {
     if (context.persona === 'PLATFORM_ADMIN') {

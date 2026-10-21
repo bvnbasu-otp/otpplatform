@@ -195,14 +195,49 @@ describe('OTP Phase 0: Canonical Authenticated Workspace Shell', () => {
       const supplierCtx = createMockContext({ side: 'SUPPLIER', isPlatformAdmin: false });
       const adminCtx = createMockContext({ isPlatformAdmin: true });
 
-      const buyerItems = getCanonicalHeaderMenuSections(buyerCtx)[0]!.items.map((i) => i.label);
-      expect(buyerItems).toContain('New Requirement');
+      const buyerItems = getCanonicalHeaderMenuSections(buyerCtx)[0]!.items;
+      expect(buyerItems).toContainEqual(expect.objectContaining({ label: 'New Requirement', to: '/intake' }));
 
       const supplierItems = getCanonicalHeaderMenuSections(supplierCtx)[0]!.items.map((i) => i.label);
       expect(supplierItems).toContain('Capabilities & Catalog');
+      expect(supplierItems).not.toContain('New Requirement');
 
       const adminItems = getCanonicalHeaderMenuSections(adminCtx)[0]!.items.map((i) => i.label);
       expect(adminItems).toContain('Admin Console');
+      expect(adminItems).not.toContain('New Requirement');
+      expect(adminItems).not.toContain('Internal console');
+    });
+
+    it('keeps requirement creation for customer buyers and routes other internal operators to the console', () => {
+      for (const buyerType of ['INDIVIDUAL', 'RWA', 'MSME'] as const) {
+        const items = getCanonicalHeaderMenuSections(createMockContext({
+          side: 'BUYER',
+          buyerType,
+          isPlatformAdmin: false,
+          isFounder: false,
+          organizationId: buyerType === 'INDIVIDUAL' ? null : 'org-1',
+        }))[0]!.items;
+        expect(items).toContainEqual(expect.objectContaining({ label: 'New Requirement', to: '/intake' }));
+        expect(items.map((item) => item.label)).not.toContain('Internal console');
+      }
+
+      const support = createMockContext({
+        side: 'CONSOLE',
+        isPlatformAdmin: false,
+        isFounder: false,
+        buyerType: null,
+        organizationId: null,
+        activeRole: {
+          code: 'SUPPORT_OPERATOR',
+          side: 'CONSOLE',
+          label: 'Support',
+          description: 'Internal support',
+          permissions: ['READ'],
+        },
+      });
+      const supportItems = getCanonicalHeaderMenuSections(support)[0]!.items;
+      expect(supportItems).toContainEqual(expect.objectContaining({ label: 'Internal console', to: '/admin' }));
+      expect(supportItems.map((item) => item.label)).not.toContain('New Requirement');
     });
   });
 

@@ -51,6 +51,8 @@ describe('Web Canonical Authorization Resolver (Presentation Layer)', () => {
     const spendCheck = auth.canApproveSpend(25000);
     expect(spendCheck.allowed).toBe(true);
     expect(spendCheck.reason).toContain('1-click personal purchase authority');
+    expect(auth.canCreateRfq).toBe(true);
+    expect(auth.canIssuePo).toBe(true);
   });
 
   // ---------------------------------------------------------------------------
@@ -92,6 +94,7 @@ describe('Web Canonical Authorization Resolver (Presentation Layer)', () => {
     expect(auth.isRwaEstateManager).toBe(false);
     expect(auth.canVote).toBe(true);
     expect(auth.canIssuePo).toBe(true);
+    expect(auth.canCreateRfq).toBe(true);
     expect(auth.activeOrgId).toBe('org-rwa-palm-grove');
   });
 
@@ -132,6 +135,7 @@ describe('Web Canonical Authorization Resolver (Presentation Layer)', () => {
     expect(auth.canVote).toBe(false); // Operational manager has ZERO voting rights
     expect(auth.isManager).toBe(true);
     expect(auth.canIssuePo).toBe(true);
+    expect(auth.canCreateRfq).toBe(true);
   });
 
   // ---------------------------------------------------------------------------
@@ -171,6 +175,8 @@ describe('Web Canonical Authorization Resolver (Presentation Layer)', () => {
     expect(auth.isMsmePrimary).toBe(true);
     expect(auth.canVote).toBe(false); // MSME uses spend signoff, not committee ballots
     expect(auth.canApproveSpend(50000000).allowed).toBe(true);
+    expect(auth.canCreateRfq).toBe(true);
+    expect(auth.canIssuePo).toBe(true);
   });
 
   it('enforces Anti-Self-Approval rule (PA-09) on delegated MSME managers and approvers', () => {
@@ -259,6 +265,8 @@ describe('Web Canonical Authorization Resolver (Presentation Layer)', () => {
     expect(auth.isPlatformAdmin).toBe(true);
     expect(auth.persona).toBe('PLATFORM_ADMIN');
     expect(auth.canApproveSpend(99999999).allowed).toBe(true);
+    expect(auth.canCreateRfq).toBe(false);
+    expect(auth.canIssuePo).toBe(false);
   });
 
   // ---------------------------------------------------------------------------
@@ -304,5 +312,94 @@ describe('Web Canonical Authorization Resolver (Presentation Layer)', () => {
     expect(auth.canVote).toBe(false);
     expect(auth.canApproveSpend(1000).allowed).toBe(false);
     expect(auth.canApproveSpend(1000).reason).toContain('Enterprise persona is retired and unsupported');
+  });
+});
+
+describe('customer procurement authority excludes internal operators', () => {
+  function buyer(overrides: Partial<RoleContext> = {}): RoleContext {
+    return {
+      signedIn: true,
+      profileId: 'buyer-1',
+      side: 'BUYER',
+      isPlatformAdmin: false,
+      isFounder: false,
+      needsOnboarding: false,
+      activeRole: {
+        code: 'MEMBER',
+        side: 'BUYER',
+        label: 'Member',
+        description: 'Buyer member',
+        permissions: ['READ', 'WRITE'],
+      },
+      roles: [],
+      organizations: [],
+      orgRole: 'MEMBER',
+      organizationId: 'org-msme',
+      organizationName: 'Apex Technologies',
+      buyerType: 'MSME',
+      committeeRfqCount: 0,
+      supplierId: null,
+      fullName: 'Member Buyer',
+      title: null,
+      avatarUrl: null,
+      email: 'member@apex.test',
+      phone: null,
+      ...overrides,
+    };
+  }
+
+  it('lets an MSME member create a requirement without purchase-order authority', () => {
+    const auth = evaluateWebAuthorization(buyer());
+    expect(auth.canCreateRfq).toBe(true);
+    expect(auth.canIssuePo).toBe(false);
+  });
+
+  it('denies requirement creation and purchase-order issue to console and internal role codes', () => {
+    const consoleOperator = evaluateWebAuthorization(buyer({
+      side: 'CONSOLE',
+      buyerType: null,
+      organizationId: null,
+      organizationName: null,
+      activeRole: {
+        code: 'FINANCE_OPERATOR',
+        side: 'CONSOLE',
+        label: 'Finance',
+        description: 'Internal finance',
+        permissions: ['READ', 'AWARD'],
+      },
+    }));
+    expect(consoleOperator.canCreateRfq).toBe(false);
+    expect(consoleOperator.canIssuePo).toBe(false);
+
+    const catalog = evaluateWebAuthorization(buyer({
+      side: 'BUYER',
+      activeRole: {
+        code: 'CATALOG_MANAGER',
+        side: 'CONSOLE',
+        label: 'Catalog',
+        description: 'Internal catalog',
+        permissions: ['READ', 'AWARD'],
+      },
+    }));
+    expect(catalog.canCreateRfq).toBe(false);
+    expect(catalog.canIssuePo).toBe(false);
+  });
+
+  it('denies requirement creation to a supplier persona', () => {
+    const auth = evaluateWebAuthorization(buyer({
+      side: 'SUPPLIER',
+      buyerType: null,
+      organizationId: null,
+      supplierId: 'supplier-1',
+      activeRole: {
+        code: 'OWNER',
+        side: 'SUPPLIER',
+        label: 'Supplier',
+        description: 'Supplier owner',
+        permissions: ['READ', 'WRITE', 'AWARD'],
+      },
+    }));
+    expect(auth.persona).toBe('SUPPLIER');
+    expect(auth.canCreateRfq).toBe(false);
   });
 });

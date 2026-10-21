@@ -191,6 +191,13 @@ export class CanonicalAuthorizationService {
     actor: ActorContext,
     targetOrgId?: string | null
   ): { allowed: boolean; reason: string } {
+    if (actor.isPlatformAdmin || actor.isFounder || actor.persona === 'PLATFORM_ADMIN') {
+      return {
+        allowed: false,
+        reason: 'Internal operators cannot create customer requirements or RFQs.',
+      };
+    }
+
     const isIndividual = !targetOrgId && (!actor.organizationId || actor.persona === 'INDIVIDUAL');
 
     const actionReq: AuthorizationActionRequest = {
@@ -227,6 +234,13 @@ export class CanonicalAuthorizationService {
     amount?: number,
     options?: { atTime?: Date }
   ): { allowed: boolean; reason: string } {
+    if (actor.isPlatformAdmin || actor.isFounder || actor.persona === 'PLATFORM_ADMIN') {
+      return {
+        allowed: false,
+        reason: 'Internal operators cannot issue customer purchase orders.',
+      };
+    }
+
     const isIndividual = !orgId && (!actor.organizationId || actor.persona === 'INDIVIDUAL');
 
     const actionReq: AuthorizationActionRequest = {

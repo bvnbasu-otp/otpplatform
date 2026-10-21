@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { REQUIREMENT_PROMPT_KEY } from '@/features/site/components/RequirementPrompt';
 import { useRoleContext } from '@/features/roles';
+import { isInternalOperatorContext } from '@/features/roles/customer-procurement-access';
 import { useAuth } from '@/features/auth';
 import { fetchSuggestedWeights } from '../api/taxonomy';
 import { mergeDraftPatch, persistAndPublishDraft } from '../api/draft';
@@ -199,6 +200,20 @@ export function RequirementIntakePage() {
     },
     [start, setSearchParams],
   );
+
+  if (isInternalOperatorContext(context)) {
+    return (
+      <section className="mx-auto max-w-lg px-4 py-8 space-y-3" data-testid="intake-internal-blocked">
+        <h1 className="text-sm font-extrabold text-foreground">Requirement creation is not available for internal accounts</h1>
+        <p className="text-xs text-muted-foreground">
+          Super Admin, founder, and internal operations accounts review procurement. They do not create customer requirements.
+        </p>
+        <Link to="/admin" className="inline-flex min-h-[44px] items-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground">
+          Return to the console
+        </Link>
+      </section>
+    );
+  }
 
   if (taxonomyLoading || draftLoading) {
     return (

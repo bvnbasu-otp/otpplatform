@@ -19,6 +19,7 @@ import {
 } from '@/features/maintenance';
 import { ThemeProvider, ThemePersonaSync } from '@/features/theme';
 import { LanguageProvider } from '@/lib/i18n';
+import { LanguageAccountSync } from '@/lib/i18n/LanguageAccountSync';
 
 // ============================================================================
 // ROUTE-LEVEL LAZY LOADING & SUSPENSE CHUNKING (R2-22 RELEASE HARDENING)
@@ -290,6 +291,7 @@ export function App() {
 
           <RoleProvider>
             <ThemePersonaSync />
+            <LanguageAccountSync />
             <DemoModeProvider>
               <PilotProvider>
                 <MaintenanceProvider>

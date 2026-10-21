@@ -12,6 +12,7 @@ import {
   useScrollContainerReset,
 } from '@/components/layout/scroll-model';
 import { SupplierCapabilityModal } from '@/features/supplier';
+import { SupplierBusinessAddressGate } from '@/features/supplier/components/SupplierBusinessAddressGate';
 import { WorkspaceHeader, shouldShowGlobalBottomNav } from '@/features/navigation';
 import { PRODUCT_NAME } from '@/lib/brand';
 import { PasswordPolicyWarningBanner } from '@/features/auth/components/PasswordPolicyWarningBanner';
@@ -50,7 +51,9 @@ export function AppLayout() {
           className={shellScrollerClass(showBottomNav)}
         >
           <ErrorBoundary>
-            <Outlet />
+            <SupplierBusinessAddressGate>
+              <Outlet />
+            </SupplierBusinessAddressGate>
           </ErrorBoundary>
         </main>
 
