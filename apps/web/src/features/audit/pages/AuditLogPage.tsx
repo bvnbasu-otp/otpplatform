@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { fetchAuditEvents } from '../api/fetch-audit-events';
 import { AuditTimeline } from '../components/AuditTimeline';
 import type { AuditEvent } from '../types/audit';
+import { RECORD_PAGE_SIZE, RecordPager } from '@/components/ui/RecordPager';
 
 interface AuditLogPageProps {
   rfqId?: string;
@@ -16,19 +17,22 @@ export function AuditLogPage({
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const navigate = useNavigate();
 
-  const loadEvents = async () => {
+  const loadEvents = async (nextOffset = offset) => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await fetchAuditEvents({ rfqId, limit: 100 });
+      const result = await fetchAuditEvents({ rfqId, limit: RECORD_PAGE_SIZE, offset: nextOffset });
       if (!result.ok) {
         setError(result.error);
         setEvents([]);
       } else {
         setError(null);
         setEvents(result.events);
+        setTotalCount(result.totalCount);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load audit events');
@@ -39,8 +43,14 @@ export function AuditLogPage({
   };
 
   useEffect(() => {
-    void loadEvents();
+    setOffset(0);
+    void loadEvents(0);
   }, [rfqId]);
+
+  useEffect(() => {
+    if (offset === 0) return;
+    void loadEvents(offset);
+  }, [offset]);
 
   return (
     <div className="w-full max-w-5xl mx-auto px-3 sm:px-4 py-3 space-y-3 overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
@@ -115,6 +125,14 @@ export function AuditLogPage({
       <section className="rounded-2xl border border-border bg-card p-3.5 sm:p-4 shadow-xs">
         <AuditTimeline events={events} isLoading={isLoading} error={error} />
       </section>
+      <RecordPager
+        offset={offset}
+        count={events.length}
+        totalCount={totalCount}
+        disabled={isLoading}
+        label="Audit history pages"
+        onOffsetChange={setOffset}
+      />
     </div>
   );
 }

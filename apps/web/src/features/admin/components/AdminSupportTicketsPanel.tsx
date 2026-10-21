@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { RECORD_PAGE_SIZE, RecordPager } from '@/components/ui/RecordPager';
 import { fetchSupportTickets, resolveSupportTicket } from '../api/admin-ops';
 import type { SupportTicketItem, SupportTicketCategory, SupportTicketStatus } from '../types/admin';
 
@@ -10,23 +11,33 @@ export function AdminSupportTicketsPanel() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketItem | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const loadTickets = async () => {
+  const loadTickets = async (nextOffset = offset) => {
     setIsLoading(true);
     const res = await fetchSupportTickets({
       category: selectedCategory || undefined,
       status: selectedStatus || undefined,
-      limit: 100,
+      limit: RECORD_PAGE_SIZE,
+      offset: nextOffset,
     });
     if (res.ok) {
       setTickets(res.tickets);
+      setTotalCount(res.count);
     }
     setIsLoading(false);
   };
 
   useEffect(() => {
-    void loadTickets();
+    setOffset(0);
+    void loadTickets(0);
   }, [selectedCategory, selectedStatus]);
+
+  useEffect(() => {
+    if (offset === 0) return;
+    void loadTickets(offset);
+  }, [offset]);
 
   const handleUpdateStatus = async (ticketId: string, status: SupportTicketStatus) => {
     setIsUpdating(true);
@@ -57,7 +68,7 @@ export function AdminSupportTicketsPanel() {
 
         <button
           type="button"
-          onClick={loadTickets}
+          onClick={() => void loadTickets()}
           disabled={isLoading}
           className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs"
         >
@@ -77,7 +88,7 @@ export function AdminSupportTicketsPanel() {
               selectedCategory === '' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'bg-card text-muted-foreground hover:text-foreground'
             }`}
           >
-            All Tickets ({tickets.length})
+            All Tickets ({totalCount})
           </button>
           <button
             type="button"
@@ -250,6 +261,14 @@ export function AdminSupportTicketsPanel() {
           ))}
         </div>
       )}
+      <RecordPager
+        offset={offset}
+        count={tickets.length}
+        totalCount={totalCount}
+        disabled={isLoading}
+        label="Support ticket pages"
+        onOffsetChange={setOffset}
+      />
     </div>
   );
 }

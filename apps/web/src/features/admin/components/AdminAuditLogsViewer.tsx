@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { RECORD_PAGE_SIZE, RecordPager } from '@/components/ui/RecordPager';
 import { fetchAdminAuditLogs, clearAuditLogsAndNotifications } from '../api/admin-ops';
 
 function handlePayloadKeyDown(event: React.KeyboardEvent<HTMLPreElement>) {
@@ -50,6 +51,8 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
   const [search, setSearch] = useState('');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
   const handleCopyJson = (log: any) => {
     if (!log?.payload) return;
@@ -64,7 +67,7 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
     }
   }, [isPlatformInDemoMode]);
 
-  const loadLogs = async () => {
+  const loadLogs = async (nextOffset = offset) => {
     setIsLoading(true);
     const resolvedMode = typeof isPlatformInDemoMode === 'boolean'
       ? (isPlatformInDemoMode ? 'DEMO' : 'PROD')
@@ -72,10 +75,12 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
     const res = await fetchAdminAuditLogs({
       entityType: entityFilter === 'ALL' ? undefined : entityFilter,
       mode: resolvedMode as any,
-      limit: 100,
+      limit: RECORD_PAGE_SIZE,
+      offset: nextOffset,
     });
     if (res.ok) {
       setLogs(res.logs || []);
+      setTotalCount(res.totalCount);
       if (res.activeMode) {
         setActiveMode(res.activeMode);
       }
@@ -111,8 +116,18 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
   };
 
   useEffect(() => {
-    void loadLogs();
+    setOffset(0);
+    void loadLogs(0);
   }, [entityFilter, isPlatformInDemoMode]);
+
+  useEffect(() => {
+    if (offset === 0) return;
+    void loadLogs(offset);
+  }, [offset]);
+
+  useEffect(() => {
+    setOffset(0);
+  }, [search]);
 
   const filteredLogs = logs.filter((log) => {
     if (!search.trim()) return true;
@@ -163,7 +178,7 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search event type, entity ID, correlation ID, payload..."
+              placeholder="Search this page by event, entity, correlation ID or payload…"
               className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
             />
           </div>
@@ -202,7 +217,7 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
 
           <button
             type="button"
-            onClick={loadLogs}
+            onClick={() => void loadLogs()}
             disabled={isLoading}
             className="inline-flex min-h-[44px] items-center justify-center rounded-xl border bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-98 transition shadow-2xs"
           >
@@ -456,6 +471,14 @@ export function AdminAuditLogsViewer({ isPlatformInDemoMode, onRefreshTelemetry 
           </div>
         </div>
       )}
+      <RecordPager
+        offset={offset}
+        count={logs.length}
+        totalCount={totalCount}
+        disabled={isLoading}
+        label="Audit log pages"
+        onOffsetChange={setOffset}
+      />
     </div>
   );
 }

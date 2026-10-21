@@ -111,6 +111,12 @@ describe('global CSS scroll rules (static stylesheet assertions)', () => {
     expect(css).not.toMatch(/^\.zero-scroll-pane,/m);
   });
 
+  it('page roots clip horizontal overflow without becoming a second vertical scroller', () => {
+    expect(css).toMatch(
+      /\[data-scroll-container\] > \.overflow-x-hidden:not\(\.overflow-y-auto\):not\(\.overflow-y-scroll\)\s*\{[^}]*overflow-x:\s*clip;[^}]*overflow-y:\s*visible;/,
+    );
+  });
+
   it('min-h-screen inside the shell scroller fills the scroller instead of 100vh', () => {
     expect(css).toMatch(/\[data-scroll-container\] \.min-h-screen,\s*\[data-scroll-container\] \.min-h-dvh\s*\{\s*min-height:\s*100%;/);
   });

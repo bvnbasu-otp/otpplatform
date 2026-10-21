@@ -7,6 +7,7 @@ import type { AppNotification } from '../types';
 import { fetchAuditEvents } from '@/features/audit/api/fetch-audit-events';
 import { AuditTimeline } from '@/features/audit/components/AuditTimeline';
 import type { AuditEvent } from '@/features/audit/types/audit';
+import { RECORD_PAGE_SIZE, RecordPager } from '@/components/ui/RecordPager';
 
 function formatFullDateTime(dateString?: string | null): string {
   if (!dateString) return '—';
@@ -186,9 +187,13 @@ export function NotificationsPage({
   );
 
   const [fleetView, setFleetView] = useState(true);
+  const [filter, setFilter] = useState<'ALL' | 'UNREAD' | 'QUOTES' | 'VOTES' | 'ORDERS' | 'ALERTS'>('ALL');
+  const [notificationOffset, setNotificationOffset] = useState(0);
+  const fleetFilter = filter === 'QUOTES' ? 'RFQS' : filter;
   const {
     notifications,
     unreadCount,
+    totalCount,
     activeMode,
     markAsRead,
     markAllAsRead,
@@ -199,9 +204,11 @@ export function NotificationsPage({
   } = useNotifications({
     fleetView,
     isPlatformInDemoMode,
+    fleetOffset: notificationOffset,
+    fleetLimit: RECORD_PAGE_SIZE,
+    fleetFilter,
   });
 
-  const [filter, setFilter] = useState<'ALL' | 'UNREAD' | 'QUOTES' | 'VOTES' | 'ORDERS' | 'ALERTS'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [isClearing, setIsClearing] = useState(false);
   const navigate = useNavigate();
@@ -210,9 +217,27 @@ export function NotificationsPage({
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState<string | null>(null);
+  const [auditOffset, setAuditOffset] = useState(0);
+  const [auditTotalCount, setAuditTotalCount] = useState(0);
 
   const isProd = activeMode === 'PROD';
   const modeTitle = isProd ? 'LIVE PRODUCTION MODE' : 'STAGING & DEMO MODE';
+
+  useEffect(() => {
+    setNotificationOffset(0);
+  }, [isPlatformInDemoMode]);
+
+  const handleNotificationFilterChange = (
+    nextFilter: 'ALL' | 'UNREAD' | 'QUOTES' | 'VOTES' | 'ORDERS' | 'ALERTS',
+  ) => {
+    setNotificationOffset(0);
+    setFilter(nextFilter);
+  };
+
+  const handleFleetViewChange = (nextFleetView: boolean) => {
+    setNotificationOffset(0);
+    setFleetView(nextFleetView);
+  };
 
   // Sync tab with URL
   useEffect(() => {
@@ -233,13 +258,18 @@ export function NotificationsPage({
   };
 
   // Load audit events when switching to audit tab or on mount
-  const loadAuditEvents = async () => {
+  const loadAuditEvents = async (nextOffset = auditOffset) => {
     setAuditLoading(true);
     setAuditError(null);
     try {
-      const res = await fetchAuditEvents({ rfqId, limit: 100 });
+      const res = await fetchAuditEvents({
+        rfqId,
+        limit: RECORD_PAGE_SIZE,
+        offset: nextOffset,
+      });
       if (res.ok) {
         setAuditEvents(res.events);
+        setAuditTotalCount(res.totalCount);
       } else {
         setAuditError(res.error);
         setAuditEvents([]);
@@ -254,9 +284,15 @@ export function NotificationsPage({
 
   useEffect(() => {
     if (activeMainTab === 'audit') {
-      void loadAuditEvents();
+      setAuditOffset(0);
+      void loadAuditEvents(0);
     }
   }, [activeMainTab, rfqId]);
+
+  useEffect(() => {
+    if (activeMainTab !== 'audit' || auditOffset === 0) return;
+    void loadAuditEvents(auditOffset);
+  }, [auditOffset]);
 
   const handleClearNotifications = async () => {
     const confirmationPrompt =
@@ -413,7 +449,7 @@ export function NotificationsPage({
             }`}
           >
             <span>🔔 Notifications</span>
-            {unreadCount > 0 && (
+            {unreadCount > 0 && !fleetView && (
               <span className="rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold px-1.5 py-0.2">
                 {unreadCount}
               </span>
@@ -459,16 +495,16 @@ export function NotificationsPage({
               <div className="flex items-center rounded-lg border bg-background p-0.5 shadow-2xs text-xs">
                 <button
                   type="button"
-                  onClick={() => setFleetView(true)}
+                  onClick={() => handleFleetViewChange(true)}
                   className={`rounded-md px-2.5 py-1 font-bold transition ${
                     fleetView ? 'bg-purple-600 text-white shadow-2xs' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  All Fleet ({notifications.length})
+                  All Fleet
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFleetView(false)}
+                  onClick={() => handleFleetViewChange(false)}
                   className={`rounded-md px-2.5 py-1 font-bold transition ${
                     !fleetView ? 'bg-purple-600 text-white shadow-2xs' : 'text-muted-foreground hover:text-foreground'
                   }`}
@@ -487,7 +523,7 @@ export function NotificationsPage({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by RFQ, PO, supplier, action…"
+                placeholder="Search this page by RFQ, PO, supplier or action…"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:outline-hidden min-h-[44px]"
               />
               {searchTerm && (
@@ -535,7 +571,7 @@ export function NotificationsPage({
                   className="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-2xs disabled:opacity-50 min-h-[44px] mobile-touch-target flex items-center gap-1"
                 >
                   <span>✓</span>
-                  <span>Mark ({unreadCount}) Read</span>
+                  <span>Mark All Read</span>
                 </button>
               )}
             </div>
@@ -544,8 +580,8 @@ export function NotificationsPage({
           {/* Category Filter Pills (Horizontal Scroll with Guaranteed No-Shrink) */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted/20 text-xs w-full max-w-full">
             {[
-              { id: 'ALL', label: `All (${notifications.length})`, icon: '📋' },
-              { id: 'UNREAD', label: `Unread (${unreadCount})`, icon: '🔔' },
+              { id: 'ALL', label: 'All', icon: '📋' },
+              { id: 'UNREAD', label: 'Unread', icon: '🔔' },
               { id: 'QUOTES', label: 'Quotes & RFQs', icon: '🟢' },
               { id: 'VOTES', label: 'Voting & Governance', icon: '🗳️' },
               { id: 'ORDERS', label: 'Orders & Milestones', icon: '🚚' },
@@ -556,7 +592,7 @@ export function NotificationsPage({
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setFilter(tab.id as any)}
+                  onClick={() => handleNotificationFilterChange(tab.id as typeof filter)}
                   className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 font-bold transition min-h-[44px] shrink-0 border shadow-2xs active:scale-98 mobile-touch-target cursor-pointer ${
                     isSelected
                       ? 'bg-primary text-primary-foreground border-primary shadow-xs'
@@ -721,6 +757,16 @@ export function NotificationsPage({
               })
             )}
           </div>
+          {isPlatformAdmin && fleetView && (
+            <RecordPager
+              offset={notificationOffset}
+              count={notifications.length}
+              totalCount={totalCount}
+              disabled={notificationsLoading}
+              label="Platform notification pages"
+              onOffsetChange={setNotificationOffset}
+            />
+          )}
         </div>
       )}
 
@@ -749,6 +795,14 @@ export function NotificationsPage({
           </div>
 
           <AuditTimeline events={auditEvents} isLoading={auditLoading} error={auditError} />
+          <RecordPager
+            offset={auditOffset}
+            count={auditEvents.length}
+            totalCount={auditTotalCount}
+            disabled={auditLoading}
+            label="Notification audit pages"
+            onOffsetChange={setAuditOffset}
+          />
         </section>
       )}
     </div>

@@ -21,7 +21,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <div className={SHELL_ROOT_CLASS}>
       <SiteHeader />
-      <main ref={mainRef} className={shellScrollerClass(showBottomNav)} {...scrollContainerProps('site')}>
+      <main ref={mainRef} tabIndex={0} aria-label="Page content" className={shellScrollerClass(showBottomNav)} {...scrollContainerProps('site')}>
         <div className="flex-1">
           {children}
         </div>

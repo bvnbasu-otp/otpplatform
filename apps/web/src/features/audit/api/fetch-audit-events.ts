@@ -30,30 +30,30 @@ function mapRow(row: AuditRow): AuditEvent {
 export async function fetchAuditEvents(options?: {
   rfqId?: string;
   limit?: number;
-}): Promise<{ ok: true; events: AuditEvent[] } | { ok: false; error: string }> {
+  offset?: number;
+}): Promise<{ ok: true; events: AuditEvent[]; totalCount: number } | { ok: false; error: string }> {
+  const limit = options?.limit ?? 50;
+  const offset = options?.offset ?? 0;
   let query = supabase
     .from('audit_events')
     .select(
       'id, event_type, actor_id, organization_id, entity_type, entity_id, payload, occurred_at, correlation_id',
+      { count: 'exact' },
     )
-    .order('occurred_at', { ascending: false });
+    .order('occurred_at', { ascending: false })
+    .order('id', { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (options?.rfqId) {
-    query = query.limit(100);
-  } else if (options?.limit) {
-    query = query.limit(options.limit);
+    query = query.eq('entity_id', options.rfqId);
   }
 
-  const { data, error } = await query;
+  const { data, count, error } = await query;
   if (error) return { ok: false, error: error.message };
 
-  let events = (data as AuditRow[]).map(mapRow);
-  if (options?.rfqId) {
-    events = events.filter(
-      (e) =>
-        e.entityId === options.rfqId ||
-        (e.entityType === 'rfq' && e.entityId === options.rfqId),
-    );
-  }
-  return { ok: true, events };
+  return {
+    ok: true,
+    events: (data as AuditRow[]).map(mapRow),
+    totalCount: count ?? 0,
+  };
 }

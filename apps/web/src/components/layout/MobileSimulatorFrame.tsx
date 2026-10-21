@@ -53,7 +53,7 @@ export function MobileSimulatorFrame({ children }: MobileSimulatorFrameProps) {
             <span>Mobile Simulator</span>
           </button>
         </div>
-        <div className="w-full flex-1 flex flex-col">
+        <div className="w-full min-h-0 flex-1 flex flex-col overflow-hidden">
           {children}
         </div>
         <div className="sr-only">Identity-Protected Competitive Sourcing</div>

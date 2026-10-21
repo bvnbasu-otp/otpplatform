@@ -45,6 +45,8 @@ export function AppLayout() {
         <main
           ref={scrollContainerRef}
           {...scrollContainerProps('app')}
+          tabIndex={0}
+          aria-label="Workspace content"
           className={shellScrollerClass(showBottomNav)}
         >
           <ErrorBoundary>

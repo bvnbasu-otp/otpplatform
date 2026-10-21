@@ -246,10 +246,11 @@ export async function fetchLiveTransactions(options?: {
   status?: string;
   stalledOnly?: boolean;
   mode?: AdminDataMode;
-}): Promise<{ ok: boolean; transactions: LiveTransactionItem[]; error?: string }> {
+}): Promise<{ ok: boolean; transactions: LiveTransactionItem[]; hasMore: boolean; error?: string }> {
   try {
+    const requestedLimit = options?.limit ?? 50;
     const { data, error } = await supabase.rpc('admin_get_live_transactions', {
-      p_limit: options?.limit ?? 50,
+      p_limit: requestedLimit + 1,
       p_offset: options?.offset ?? 0,
       p_status: options?.status || null,
       p_stalled_only: options?.stalledOnly ?? false,
@@ -257,11 +258,17 @@ export async function fetchLiveTransactions(options?: {
     });
 
     if (error) throw error;
-    return { ok: true, transactions: (data as LiveTransactionItem[]) || [] };
+    const rows = (data as LiveTransactionItem[]) || [];
+    return {
+      ok: true,
+      transactions: rows.slice(0, requestedLimit),
+      hasMore: rows.length > requestedLimit,
+    };
   } catch (err) {
     return {
       ok: false,
       transactions: [],
+      hasMore: false,
       error: err instanceof Error ? err.message : 'Failed to fetch live transactions',
     };
   }
@@ -273,10 +280,11 @@ export async function fetchSellerOrders(options?: {
   supplierId?: string;
   status?: string;
   mode?: AdminDataMode;
-}): Promise<{ ok: boolean; orders: SellerOrderItem[]; error?: string }> {
+}): Promise<{ ok: boolean; orders: SellerOrderItem[]; hasMore: boolean; error?: string }> {
   try {
+    const requestedLimit = options?.limit ?? 100;
     const { data, error } = await supabase.rpc('admin_get_seller_orders', {
-      p_limit: options?.limit ?? 100,
+      p_limit: requestedLimit + 1,
       p_offset: options?.offset ?? 0,
       p_supplier_id: options?.supplierId ? String(options.supplierId).trim() : null,
       p_status: options?.status || null,
@@ -284,13 +292,19 @@ export async function fetchSellerOrders(options?: {
     });
 
     if (error) throw error;
-    return { ok: true, orders: (data as SellerOrderItem[]) || [] };
+    const rows = (data as SellerOrderItem[]) || [];
+    return {
+      ok: true,
+      orders: rows.slice(0, requestedLimit),
+      hasMore: rows.length > requestedLimit,
+    };
   } catch (err: any) {
     const errMsg = err?.message || err?.error_description || (typeof err === 'string' ? err : 'Failed to fetch seller orders');
     console.error('fetchSellerOrders error:', err);
     return {
       ok: false,
       orders: [],
+      hasMore: false,
       error: errMsg,
     };
   }
@@ -405,7 +419,7 @@ export async function fetchAdminAuditLogs(options?: {
   limit?: number;
   offset?: number;
   mode?: AdminDataMode;
-}): Promise<{ ok: boolean; logs: any[]; activeMode?: string; error?: string }> {
+}): Promise<{ ok: boolean; logs: any[]; totalCount: number | null; activeMode?: string; error?: string }> {
   try {
     let resolvedMode = options?.mode || 'AUTO';
     if (resolvedMode === 'AUTO') {
@@ -428,7 +442,21 @@ export async function fetchAdminAuditLogs(options?: {
 
       if (!error && data) {
         const payload = data as { ok: boolean; logs: any[]; active_mode?: string };
-        return { ok: true, logs: payload.logs || [], activeMode: payload.active_mode || resolvedMode };
+        let countQuery = supabase.from('audit_events').select('*', { count: 'exact', head: true });
+        if (options?.entityType) countQuery = countQuery.eq('entity_type', options.entityType);
+        if (options?.correlationId) countQuery = countQuery.eq('correlation_id', options.correlationId);
+        if (resolvedMode === 'PROD') {
+          countQuery = countQuery.or('is_demo.eq.false,is_demo.is.null');
+        } else if (resolvedMode === 'DEMO') {
+          countQuery = countQuery.eq('is_demo', true);
+        }
+        const { count } = await countQuery;
+        return {
+          ok: true,
+          logs: payload.logs || [],
+          totalCount: typeof count === 'number' ? count : null,
+          activeMode: payload.active_mode || resolvedMode,
+        };
       }
     } catch (rpcErr) {
       console.warn('admin_get_audit_trail RPC failed, running direct select:', rpcErr);
@@ -439,7 +467,10 @@ export async function fetchAdminAuditLogs(options?: {
       .from('audit_events')
       .select('*')
       .order('occurred_at', { ascending: false })
-      .limit(options?.limit ?? 100);
+      .range(
+        options?.offset ?? 0,
+        (options?.offset ?? 0) + (options?.limit ?? 100) - 1,
+      );
 
     if (options?.entityType) {
       query = query.eq('entity_type', options.entityType);
@@ -455,11 +486,26 @@ export async function fetchAdminAuditLogs(options?: {
 
     const { data: fbData, error: fbError } = await query;
     if (fbError) throw fbError;
-    return { ok: true, logs: fbData || [], activeMode: resolvedMode };
+    let countQuery = supabase.from('audit_events').select('*', { count: 'exact', head: true });
+    if (options?.entityType) countQuery = countQuery.eq('entity_type', options.entityType);
+    if (options?.correlationId) countQuery = countQuery.eq('correlation_id', options.correlationId);
+    if (resolvedMode === 'PROD') {
+      countQuery = countQuery.or('is_demo.eq.false,is_demo.is.null');
+    } else if (resolvedMode === 'DEMO') {
+      countQuery = countQuery.eq('is_demo', true);
+    }
+    const { count } = await countQuery;
+    return {
+      ok: true,
+      logs: fbData || [],
+      totalCount: typeof count === 'number' ? count : null,
+      activeMode: resolvedMode,
+    };
   } catch (err) {
     return {
       ok: false,
       logs: [],
+      totalCount: null,
       error: err instanceof Error ? err.message : 'Failed to fetch audit logs',
     };
   }
@@ -1728,6 +1774,27 @@ export function normalizeAdminOrgItem(o: any): AdminOrganizationItem {
   };
 }
 
+export async function collectAdminPages<T extends { id: string }>(
+  fetchPage: (from: number, to: number) => Promise<T[]>,
+  pageSize = 200,
+): Promise<T[]> {
+  const rows: T[] = [];
+  const seen = new Set<string>();
+
+  for (let page = 0; page < 1000; page += 1) {
+    const from = page * pageSize;
+    const batch = await fetchPage(from, from + pageSize - 1);
+    for (const row of batch) {
+      if (seen.has(row.id)) continue;
+      seen.add(row.id);
+      rows.push(row);
+    }
+    if (batch.length < pageSize) return rows;
+  }
+
+  throw new Error('Admin fallback pagination exceeded its safety bound');
+}
+
 export async function fetchUsersAndOrganizations(): Promise<AdminUsersAndOrgsResponse> {
   try {
     // 1. Try RPC
@@ -1769,15 +1836,16 @@ export async function fetchUsersAndOrganizations(): Promise<AdminUsersAndOrgsRes
 
     try {
       // 2a. Fetch profiles
-      const { data: pData } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (Array.isArray(pData)) {
-        profilesData = pData;
-      }
+      profilesData = await collectAdminPages(async (from, to) => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to);
+        if (error) throw error;
+        return data || [];
+      });
     } catch (e) {
       console.warn('Direct profiles query error:', e);
     }
@@ -1785,11 +1853,16 @@ export async function fetchUsersAndOrganizations(): Promise<AdminUsersAndOrgsRes
     // 2b. Fetch organizations
     let rawOrgs: any[] = [];
     try {
-      const { data: oData } = await supabase
-        .from('organizations')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
+      const oData = await collectAdminPages(async (from, to) => {
+        const { data, error } = await supabase
+          .from('organizations')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to);
+        if (error) throw error;
+        return data || [];
+      });
       if (Array.isArray(oData)) {
         rawOrgs = oData;
         oData.forEach((org: any) => {
@@ -1803,11 +1876,16 @@ export async function fetchUsersAndOrganizations(): Promise<AdminUsersAndOrgsRes
     // 2c. Fetch suppliers
     let rawSupps: any[] = [];
     try {
-      const { data: sData } = await supabase
-        .from('suppliers')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
+      const sData = await collectAdminPages(async (from, to) => {
+        const { data, error } = await supabase
+          .from('suppliers')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to);
+        if (error) throw error;
+        return data || [];
+      });
       if (Array.isArray(sData)) {
         rawSupps = sData;
         sData.forEach((s: any) => {
@@ -1820,9 +1898,25 @@ export async function fetchUsersAndOrganizations(): Promise<AdminUsersAndOrgsRes
 
     // 2d. Fetch org members & supplier users for profile correlation
     try {
-      const [{ data: omData }, { data: suData }] = await Promise.all([
-        supabase.from('organization_members').select('*').limit(300),
-        supabase.from('supplier_users').select('*').limit(300),
+      const [omData, suData] = await Promise.all([
+        collectAdminPages(async (from, to) => {
+          const { data, error } = await supabase
+            .from('organization_members')
+            .select('*')
+            .order('id', { ascending: true })
+            .range(from, to);
+          if (error) throw error;
+          return data || [];
+        }),
+        collectAdminPages(async (from, to) => {
+          const { data, error } = await supabase
+            .from('supplier_users')
+            .select('*')
+            .order('id', { ascending: true })
+            .range(from, to);
+          if (error) throw error;
+          return data || [];
+        }),
       ]);
 
       if (Array.isArray(omData)) {

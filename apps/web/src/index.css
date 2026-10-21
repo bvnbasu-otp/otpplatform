@@ -553,6 +553,16 @@ html, body {
   min-height: 100%;
 }
 
+/*
+ * overflow-x: hidden computes overflow-y to auto. On a page root that becomes a
+ * second vertical scroller, so the shell main never moves and records past the
+ * first viewport are easy to miss. Clip horizontal overflow without scrolling.
+ */
+[data-scroll-container] > .overflow-x-hidden:not(.overflow-y-auto):not(.overflow-y-scroll) {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
 /* Mobile Safe Area & Touch Helpers */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);

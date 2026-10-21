@@ -87,12 +87,26 @@ describe('AppLayout single-scroller model (static render/class assertions, not d
     const mains = html.match(/<main\b[^>]*>/g) ?? [];
     expect(mains).toHaveLength(1);
     expect(mains[0]).toContain('data-scroll-container="app"');
+    expect(mains[0]).toContain('tabindex="0"');
+    expect(mains[0]).toContain('aria-label="Workspace content"');
 
     const mainTokens = tagClasses(mains[0]!);
     expect(mainTokens).toEqual(expect.arrayContaining(['flex-1', 'min-h-0', 'overflow-y-auto']));
 
     const scrollers = classLists(html).filter((t) => t.includes('overflow-y-auto') || t.includes('overflow-auto') || t.includes('overflow-y-scroll'));
     expect(scrollers).toHaveLength(1);
+  });
+
+  it('constrains the desktop frame slot so the shell main can scroll', () => {
+    const html = renderAppAt('/dashboard');
+    const slots = classLists(html).filter(
+      (tokens) =>
+        tokens.includes('flex-1') &&
+        tokens.includes('min-h-0') &&
+        tokens.includes('overflow-hidden') &&
+        tokens.includes('flex-col'),
+    );
+    expect(slots.length).toBeGreaterThan(0);
   });
 
   it('only the simulator frame sets a viewport height, and it clips instead of scrolling', () => {

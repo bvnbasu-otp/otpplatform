@@ -70,6 +70,49 @@ export const notificationService = {
       }
     }
 
+    // Prefer the RLS-protected table query so adjacent pages have a stable
+    // created_at + id order. The legacy RPC orders only by created_at, which
+    // can duplicate or skip rows when many notifications share a timestamp.
+    try {
+      let query = supabase
+        .from('notifications')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (resolvedMode === 'PROD') {
+        query = query.or('is_demo.eq.false,is_demo.is.null');
+      } else if (resolvedMode === 'DEMO') {
+        query = query.eq('is_demo', true);
+      }
+
+      if (filter === 'UNREAD') {
+        query = query.neq('status', 'READ');
+      } else if (filter === 'RFQS') {
+        query = query.or('event_type.like.rfq.%,action_type.in.(RFQ_INVITED,QUOTE_RECEIVED,RFQ_NOT_AWARDED)');
+      } else if (filter === 'VOTES') {
+        query = query.or('event_type.like.governance.%,action_type.in.(VOTE_REQUESTED,VOTE_CAST)');
+      } else if (filter === 'ORDERS') {
+        query = query.or('event_type.like.po.%,event_type.like.work_order.%,event_type.like.invoice.%,event_type.like.payment.%,action_type.in.(PO_ISSUED,PO_ACCEPTED,WORK_PROGRESS_UPDATED,INVOICE_SUBMITTED,PAYMENT_RECORDED)');
+      } else if (filter === 'ALERTS') {
+        query = query.or('event_type.like.admin.%,action_type.eq.PROACTIVE_MAINTENANCE');
+      }
+
+      const { data, count, error } = await query;
+      if (!error) {
+        return {
+          ok: true,
+          totalCount: count ?? 0,
+          notifications: (data as AppNotification[]) || [],
+          activeMode: resolvedMode,
+        };
+      }
+    } catch {
+      // Continue to the privileged RPC for installations whose RLS policy
+      // does not expose the platform-admin fleet query directly.
+    }
+
     try {
       const { data, error } = await supabase.rpc('admin_get_all_notifications', {
         p_limit: limit,
@@ -122,7 +165,7 @@ export const notificationService = {
         .from('notifications')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .range(offset, offset + limit - 1);
 
       if (resolvedMode === 'PROD') {
         query = query.or('is_demo.eq.false,is_demo.is.null');
@@ -154,6 +197,17 @@ export const notificationService = {
           countQ = countQ.eq('is_demo', true);
         } else if (resolvedMode === 'PROD') {
           countQ = countQ.or('is_demo.eq.false,is_demo.is.null');
+        }
+        if (filter === 'UNREAD') {
+          countQ = countQ.neq('status', 'READ');
+        } else if (filter === 'RFQS') {
+          countQ = countQ.or('event_type.like.rfq.%,action_type.in.(RFQ_INVITED,QUOTE_RECEIVED,RFQ_NOT_AWARDED)');
+        } else if (filter === 'VOTES') {
+          countQ = countQ.or('event_type.like.governance.%,action_type.in.(VOTE_REQUESTED,VOTE_CAST)');
+        } else if (filter === 'ORDERS') {
+          countQ = countQ.or('event_type.like.po.%,event_type.like.work_order.%,event_type.like.invoice.%,event_type.like.payment.%,action_type.in.(PO_ISSUED,PO_ACCEPTED,WORK_PROGRESS_UPDATED,INVOICE_SUBMITTED,PAYMENT_RECORDED)');
+        } else if (filter === 'ALERTS') {
+          countQ = countQ.or('event_type.like.admin.%,action_type.eq.PROACTIVE_MAINTENANCE');
         }
         const { count: exactCount } = await countQ;
         if (typeof exactCount === 'number') count = exactCount;

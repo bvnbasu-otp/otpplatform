@@ -72,6 +72,8 @@ describe('SiteLayout single-scroller model (static render/class assertions, not 
     const mains = renderSite().match(/<main\b[^>]*>/g) ?? [];
     expect(mains).toHaveLength(1);
     expect(mains[0]).toContain('data-scroll-container="site"');
+    expect(mains[0]).toContain('tabindex="0"');
+    expect(mains[0]).toContain('aria-label="Page content"');
     expect(tagClasses(mains[0]!)).toEqual(expect.arrayContaining(['flex-1', 'min-h-0', 'overflow-y-auto']));
   });
 

@@ -32,6 +32,7 @@ import { InternalUsersPanel } from '../components/InternalUsersPanel';
 import { InternalRbacMatrixPanel } from '../components/InternalRbacMatrixPanel';
 import { StaffReferralLedgerPanel } from '../components/StaffReferralLedgerPanel';
 import { NotificationsPage } from '@/features/notifications';
+import { RECORD_PAGE_SIZE, RecordPager } from '@/components/ui/RecordPager';
 import type {
   SystemHealthResponse,
   LiveTransactionItem,
@@ -210,6 +211,10 @@ export function AdminDashboardPage() {
   const [isLoadingHealth, setIsLoadingHealth] = useState(true);
   const [isLoadingTx, setIsLoadingTx] = useState(true);
   const [isLoadingSellerOrders, setIsLoadingSellerOrders] = useState(true);
+  const [transactionOffset, setTransactionOffset] = useState(0);
+  const [sellerOrderOffset, setSellerOrderOffset] = useState(0);
+  const [transactionsHaveMore, setTransactionsHaveMore] = useState(false);
+  const [sellerOrdersHaveMore, setSellerOrdersHaveMore] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Single Platform Operating Mode from Database
@@ -265,29 +270,45 @@ export function AdminDashboardPage() {
     setIsLoadingHealth(false);
   };
 
-  const loadTransactionsData = async () => {
+  const loadTransactionsData = async (offset = transactionOffset) => {
     setIsLoadingTx(true);
-    const res = await fetchLiveTransactions({ limit: 100, mode: 'AUTO' });
-    if (res.ok) setTransactions(res.transactions);
+    const res = await fetchLiveTransactions({ limit: RECORD_PAGE_SIZE, offset, mode: 'AUTO' });
+    if (res.ok) {
+      setTransactions(res.transactions);
+      setTransactionsHaveMore(res.hasMore);
+    }
     setIsLoadingTx(false);
   };
 
-  const loadSellerOrdersData = async () => {
+  const loadSellerOrdersData = async (offset = sellerOrderOffset) => {
     setIsLoadingSellerOrders(true);
-    const res = await fetchSellerOrders({ limit: 100, mode: 'AUTO' });
-    if (res.ok) setSellerOrders(res.orders);
+    const res = await fetchSellerOrders({ limit: RECORD_PAGE_SIZE, offset, mode: 'AUTO' });
+    if (res.ok) {
+      setSellerOrders(res.orders);
+      setSellerOrdersHaveMore(res.hasMore);
+    }
     setIsLoadingSellerOrders(false);
   };
 
   const refreshAllData = () => {
     void loadHealthData();
-    void loadTransactionsData();
-    void loadSellerOrdersData();
+    if (transactionOffset === 0) void loadTransactionsData(0);
+    else setTransactionOffset(0);
+    if (sellerOrderOffset === 0) void loadSellerOrdersData(0);
+    else setSellerOrderOffset(0);
   };
 
   useEffect(() => {
-    refreshAllData();
+    void loadHealthData();
   }, []);
+
+  useEffect(() => {
+    void loadTransactionsData(transactionOffset);
+  }, [transactionOffset]);
+
+  useEffect(() => {
+    void loadSellerOrdersData(sellerOrderOffset);
+  }, [sellerOrderOffset]);
 
   const handleExecuteAction = async (
     action: AdminServiceActionType,
@@ -704,25 +725,45 @@ export function AdminDashboardPage() {
             )}
 
             {activeTab === 'TRANSACTIONS' && (
-              <AdminTransactionsTable
-                transactions={transactions}
-                isLoading={isLoadingTx}
-                onExecuteAction={async (action, id, reason) => {
-                  await handleExecuteAction(action, id, { reason });
-                }}
-                onRefresh={refreshAllData}
-              />
+              <div className="space-y-3">
+                <AdminTransactionsTable
+                  transactions={transactions}
+                  isLoading={isLoadingTx}
+                  onExecuteAction={async (action, id, reason) => {
+                    await handleExecuteAction(action, id, { reason });
+                  }}
+                  onRefresh={refreshAllData}
+                />
+                <RecordPager
+                  offset={transactionOffset}
+                  count={transactions.length}
+                  hasNext={transactionsHaveMore}
+                  disabled={isLoadingTx}
+                  label="Buyer order pages"
+                  onOffsetChange={setTransactionOffset}
+                />
+              </div>
             )}
 
             {activeTab === 'SELLER_ORDERS' && (
-              <AdminSellerOrdersTable
-                orders={sellerOrders}
-                isLoading={isLoadingSellerOrders}
-                onExecuteAction={async (action, id, reason) => {
-                  await handleExecuteAction(action, id, { reason });
-                }}
-                onRefresh={refreshAllData}
-              />
+              <div className="space-y-3">
+                <AdminSellerOrdersTable
+                  orders={sellerOrders}
+                  isLoading={isLoadingSellerOrders}
+                  onExecuteAction={async (action, id, reason) => {
+                    await handleExecuteAction(action, id, { reason });
+                  }}
+                  onRefresh={refreshAllData}
+                />
+                <RecordPager
+                  offset={sellerOrderOffset}
+                  count={sellerOrders.length}
+                  hasNext={sellerOrdersHaveMore}
+                  disabled={isLoadingSellerOrders}
+                  label="Seller order pages"
+                  onOffsetChange={setSellerOrderOffset}
+                />
+              </div>
             )}
 
             {activeTab === 'TICKETS' && <AdminSupportTicketsPanel />}

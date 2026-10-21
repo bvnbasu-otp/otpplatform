@@ -8,11 +8,15 @@ export function useNotifications(options?: {
   fleetView?: boolean;
   mode?: 'AUTO' | 'PROD' | 'DEMO' | 'ALL';
   isPlatformInDemoMode?: boolean;
+  fleetOffset?: number;
+  fleetLimit?: number;
+  fleetFilter?: string;
 }) {
   const { context, isLoading: roleLoading } = useRoleContext();
   const { profile, isLoading: profileLoading } = usePortalRole();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [activeMode, setActiveMode] = useState<string>(
     typeof options?.isPlatformInDemoMode === 'boolean'
       ? (options.isPlatformInDemoMode ? 'DEMO' : 'PROD')
@@ -33,9 +37,15 @@ export function useNotifications(options?: {
     setLoading(true);
     try {
       if (showFleet) {
-        const res = await notificationService.getAllPlatformNotifications(100, 0, 'ALL', resolvedMode);
+        const res = await notificationService.getAllPlatformNotifications(
+          options?.fleetLimit ?? 50,
+          options?.fleetOffset ?? 0,
+          options?.fleetFilter ?? 'ALL',
+          resolvedMode,
+        );
         if (res.ok) {
           setNotifications(res.notifications);
+          setTotalCount(res.totalCount);
           setUnreadCount(res.notifications.filter((n) => n.status !== 'READ').length);
           if (res.activeMode) {
             setActiveMode(res.activeMode);
@@ -44,12 +54,19 @@ export function useNotifications(options?: {
       } else if (profileId) {
         const list = await notificationService.getNotifications(profileId, isPlatformAdmin, 50, resolvedMode);
         setNotifications(list);
+        setTotalCount(list.length);
         setUnreadCount(list.filter((n) => n.status !== 'READ').length);
       } else if (isPlatformAdmin) {
         // Platform admin without explicit personal profile id: load all fleet notifications
-        const res = await notificationService.getAllPlatformNotifications(100, 0, 'ALL', resolvedMode);
+        const res = await notificationService.getAllPlatformNotifications(
+          options?.fleetLimit ?? 50,
+          options?.fleetOffset ?? 0,
+          options?.fleetFilter ?? 'ALL',
+          resolvedMode,
+        );
         if (res.ok) {
           setNotifications(res.notifications);
+          setTotalCount(res.totalCount);
           setUnreadCount(res.notifications.filter((n) => n.status !== 'READ').length);
           if (res.activeMode) {
             setActiveMode(res.activeMode);
@@ -58,13 +75,22 @@ export function useNotifications(options?: {
       } else {
         setNotifications([]);
         setUnreadCount(0);
+        setTotalCount(0);
       }
     } catch (err) {
       console.error('Failed to load notifications:', err);
     } finally {
       setLoading(false);
     }
-  }, [profileId, isPlatformAdmin, showFleet, resolvedMode]);
+  }, [
+    profileId,
+    isPlatformAdmin,
+    showFleet,
+    resolvedMode,
+    options?.fleetLimit,
+    options?.fleetOffset,
+    options?.fleetFilter,
+  ]);
 
   useEffect(() => {
     if (roleLoading && profileLoading) return;
@@ -76,7 +102,7 @@ export function useNotifications(options?: {
     // Real-time subscription for profile
     try {
       const unsubscribe = notificationService.subscribe(profileId, (newNotif) => {
-        setNotifications((prev) => [newNotif, ...prev]);
+        if (!showFleet) setNotifications((prev) => [newNotif, ...prev]);
         setUnreadCount((prev) => prev + 1);
 
         // Trigger floating toast
@@ -135,6 +161,7 @@ export function useNotifications(options?: {
   return {
     notifications,
     unreadCount,
+    totalCount,
     activeMode,
     loading,
     toastNotification,
