@@ -117,7 +117,7 @@ async function expectError(client: Client, text: string, params: unknown[], code
   expect(message).toContain(code);
 }
 
-const PAY = `SELECT public.record_verified_payment($1, $2::uuid, $3::uuid, $4::numeric, $5, 'RAZORPAY', $6, $7, $8, $9, '{}'::jsonb) AS r`;
+const PAY = `SELECT private.record_verified_payment_bound($1, $2::uuid, $3::uuid, $4::numeric, $5, 'RAZORPAY', $6, $7, $8, $9, '{}'::jsonb) AS r`;
 const pay = (
   type: string,
   org: string | null,
