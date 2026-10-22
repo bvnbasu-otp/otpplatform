@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { InternalRole } from '../api/internal-ops';
 import { createInternalInvitation } from '../api/internal-ops';
 
@@ -16,10 +16,16 @@ export function InviteInternalUserModal({
   onSuccess,
 }: InviteInternalUserModalProps) {
   const [email, setEmail] = useState('');
-  const [roleId, setRoleId] = useState(roles[0]?.id || '');
+  const [roleId, setRoleId] = useState(roles.find((role) => role.code !== 'SUPER_ADMIN')?.id || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+
+  const inviteableRoles = roles.filter((role) => role.code !== 'SUPER_ADMIN');
+
+  useEffect(() => {
+    if (!roleId && inviteableRoles.length > 0) setRoleId(inviteableRoles[0].id);
+  }, [roleId, inviteableRoles]);
 
   if (!isOpen) return null;
 
@@ -99,7 +105,7 @@ export function InviteInternalUserModal({
               className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               required
             >
-              {roles.map((r) => (
+              {inviteableRoles.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name} ({r.code})
                 </option>
@@ -112,6 +118,7 @@ export function InviteInternalUserModal({
             <p>• Invitations strictly expire in <strong>48 hours</strong>.</p>
             <p>• Single-use cryptographic token.</p>
             <p>• Internal operators are strictly isolated from customer procurement portals.</p>
+            <p>• SUPER_ADMIN access requires the separate two-person recovery workflow and cannot be granted by an ordinary invitation.</p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
