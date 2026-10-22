@@ -205,7 +205,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, private, auth, extensions
-AS $
+AS $$
 DECLARE
   v_caller uuid := private.get_profile_id();
   v_inv public.internal_invitations%ROWTYPE;
@@ -250,7 +250,7 @@ BEGIN
 
   RETURN jsonb_build_object('ok', true, 'invitationId', v_inv.id, 'status', 'REVOKED');
 END;
-$;
+$$;
 
 -- Legacy reconciliation is deliberately narrower: it never grants a role.
 -- It can only close a pending invitation when an active, matching profile already has that exact assignment.
