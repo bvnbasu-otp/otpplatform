@@ -104,7 +104,7 @@ export async function fetchInternalRoles(): Promise<InternalRole[]> {
 export async function fetchInternalInvitations(): Promise<InternalInvitation[]> {
   const { data, error } = await supabase
     .from('internal_invitations')
-    .select('*, internal_roles(code, name)')
+    .select('id,email,role_id,invited_by,status,created_at,expires_at,accepted_at,accepted_profile_id,revoked_at,revocation_reason,internal_roles(code,name)')
     .order('created_at', { ascending: false });
   if (error) {
     console.warn('[InternalOps] fetchInternalInvitations error:', error.message);
