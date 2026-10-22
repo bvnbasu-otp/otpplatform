@@ -149,9 +149,23 @@ BEGIN
   END IF;
 
   -- Idempotent if the role was provisioned earlier; otherwise grant exactly the role named in the invitation.
+  SELECT code INTO v_role_code FROM public.internal_roles WHERE id = v_inv.role_id;
+
   INSERT INTO public.internal_user_assignments (profile_id, role_id, assigned_by)
   VALUES (v_profile, v_inv.role_id, v_inv.invited_by)
   ON CONFLICT (profile_id, role_id) DO NOTHING;
+
+  -- SUPER_ADMIN invitations are issued only by an existing platform admin.
+  -- Accepting that explicit invitation must align both role assignment and admin context.
+  IF v_role_code = 'SUPER_ADMIN' THEN
+    UPDATE public.profiles
+    SET is_platform_admin = true,
+        active_role_code = 'SUPER_ADMIN',
+        active_portal_side = 'CONSOLE'
+    WHERE id = v_profile
+      AND COALESCE(status, 'ACTIVE') NOT IN ('BLOCKED', 'SUSPENDED', 'REVOKED', 'DELETED', 'PENDING')
+      AND deleted_at IS NULL;
+  END IF;
 
   UPDATE public.internal_invitations
   SET status = 'ACCEPTED',
