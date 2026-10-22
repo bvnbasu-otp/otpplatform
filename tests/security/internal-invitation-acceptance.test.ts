@@ -34,6 +34,7 @@ describe('00314 internal invitation acceptance security contract', () => {
 
   it('never elevates a profile to platform admin through ordinary invitation acceptance', () => {
     expect(migration).toContain('SUPER_ADMIN access must be established through the two-person recovery workflow');
+    expect(migration).toContain('NOT COALESCE(v_is_platform_admin, false)');
     expect(migration).not.toMatch(/SET\s+is_platform_admin\s*=\s*true/i);
     expect(migration).not.toMatch(/SET\s+active_role_code\s*=\s*'SUPER_ADMIN'/i);
   });
@@ -41,6 +42,12 @@ describe('00314 internal invitation acceptance security contract', () => {
   it('restricts RPC execution to authenticated callers and reconciliation never grants roles', () => {
     expect(migration).toContain('REVOKE ALL ON FUNCTION public.accept_internal_invitation_atomic(text) FROM PUBLIC, anon');
     expect(migration).toContain('GRANT EXECUTE ON FUNCTION public.accept_internal_invitation_atomic(text) TO authenticated');
+    expect(migration).toContain('REVOKE ALL ON FUNCTION public.revoke_internal_invitation_atomic(uuid, text) FROM PUBLIC, anon');
+    expect(migration).toContain('GRANT EXECUTE ON FUNCTION public.revoke_internal_invitation_atomic(uuid, text) TO authenticated');
+    const revoke = migration.slice(migration.indexOf('CREATE OR REPLACE FUNCTION public.revoke_internal_invitation_atomic'));
+    expect(revoke).toContain('v_reason = \'\'');
+    expect(revoke).toContain('revoked_by = v_caller');
+    expect(revoke).toContain('revocation_reason = v_reason');
     const reconcile = migration.slice(migration.indexOf('CREATE OR REPLACE FUNCTION public.reconcile_internal_invitation_atomic'));
     expect(reconcile).toContain('IF NOT EXISTS (');
     expect(reconcile).toContain('internal_user_assignments');
