@@ -24,7 +24,8 @@ export function InviteInternalUserModal({
   const inviteableRoles = roles.filter((role) => role.code !== 'SUPER_ADMIN');
 
   useEffect(() => {
-    if (!roleId && inviteableRoles.length > 0) setRoleId(inviteableRoles[0].id);
+    const firstInviteableRole = roles.find((role) => role.code !== 'SUPER_ADMIN');
+    if (!roleId && firstInviteableRole) setRoleId(firstInviteableRole.id);
   }, [roleId, roles]);
 
   if (!isOpen) return null;
