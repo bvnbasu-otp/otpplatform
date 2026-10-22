@@ -364,7 +364,8 @@ describe('internal invitation lifecycle on local Postgres', () => {
         `SELECT public.accept_internal_invitation_atomic($1) AS result`,
         [token],
       );
-      expect(replay.result).toMatchObject({ ok: true, alreadyAccepted: true });
+      expect(replay.result).toMatchObject({ ok: false });
+      expect(String((replay.result as { error: string }).error)).toContain('already been accepted');
 
       await asOperator(client);
       const grants = await client.query<{ assignments: string; still_admin: boolean }>(
