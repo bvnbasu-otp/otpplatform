@@ -43,11 +43,11 @@ export interface InternalInvitation {
   role_code?: string;
   role_name?: string;
   invited_by: string;
-  invitation_token: string;
   status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
   created_at: string;
   expires_at: string;
   accepted_at: string | null;
+  accepted_profile_id?: string | null;
   revoked_at: string | null;
   revocation_reason: string | null;
 }
@@ -117,32 +117,56 @@ export async function fetchInternalInvitations(): Promise<InternalInvitation[]> 
   }));
 }
 
+export interface CreatedInternalInvitation {
+  invitationId: string;
+  email: string;
+  roleCode: string;
+  token: string;
+  inviteUrl: string;
+  expiresAt: string;
+}
+
 export async function createInternalInvitation(
   email: string,
   roleId: string,
-): Promise<{ ok: boolean; invitation?: InternalInvitation; error?: string }> {
-  const user = (await supabase.auth.getUser()).data.user;
-  if (!user) return { ok: false, error: 'Unauthenticated' };
-
-  const token = `inv_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000); // Strictly 48 hours
-
-  const { data, error } = await supabase
-    .from('internal_invitations')
-    .insert({
-      email: email.trim().toLowerCase(),
-      role_id: roleId,
-      invited_by: user.id,
-      invitation_token: token,
-      expires_at: expiresAt.toISOString(),
-      status: 'PENDING',
-    })
-    .select()
-    .single();
-
+): Promise<{ ok: boolean; invitation?: CreatedInternalInvitation; error?: string }> {
+  const { data, error } = await supabase.rpc('create_internal_invitation_atomic', {
+    p_email: email.trim().toLowerCase(),
+    p_role_id: roleId,
+  });
   if (error) return { ok: false, error: error.message };
-  return { ok: true, invitation: data };
+  if (!data?.ok) return { ok: false, error: data?.error || 'Failed to create invitation.' };
+  return {
+    ok: true,
+    invitation: {
+      invitationId: data.invitationId,
+      email: data.email,
+      roleCode: data.roleCode,
+      token: data.token,
+      inviteUrl: `${window.location.origin}${data.inviteUrl}`,
+      expiresAt: data.expiresAt,
+    },
+  };
+}
+
+export async function acceptInternalInvitation(
+  token: string,
+): Promise<{ ok: boolean; alreadyAccepted?: boolean; roleCode?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('accept_internal_invitation_atomic', {
+    p_token: token,
+  });
+  if (error) return { ok: false, error: error.message };
+  return data as { ok: boolean; alreadyAccepted?: boolean; roleCode?: string; error?: string };
+}
+
+export async function reconcileInternalInvitation(
+  invitationId: string,
+): Promise<{ ok: boolean; error?: string; roleCode?: string }> {
+  const { data, error } = await supabase.rpc('reconcile_internal_invitation_atomic', {
+    p_invitation_id: invitationId,
+  });
+  if (error) return { ok: false, error: error.message };
+  return data as { ok: boolean; error?: string; roleCode?: string };
 }
 
 export async function revokeInternalInvitation(
