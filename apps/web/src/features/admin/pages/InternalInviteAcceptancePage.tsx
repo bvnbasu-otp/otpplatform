@@ -69,7 +69,7 @@ export function InternalInviteAcceptancePage() {
           <div className="space-y-4">
             <div className="rounded-lg border bg-muted/30 p-3">
               <p className="text-[11px] font-semibold uppercase text-muted-foreground">Signed in as</p>
-              <p className="break-all text-sm font-semibold text-foreground">{user.email || 'Email unavailable'}</p>
+              <p data-testid="signed-in-email" className="break-all text-sm font-semibold text-foreground">{user.email || 'Email unavailable'}</p>
               <button type="button" onClick={() => void switchAccount()} className="mt-2 text-xs font-semibold text-primary underline">
                 Switch account
               </button>

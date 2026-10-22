@@ -143,6 +143,7 @@ export function InternalUsersPanel() {
                     </td>
                     <td className="py-3 px-4">
                       <span
+                        data-testid="invitation-status"
                         className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
                           displayStatus === 'PENDING'
                             ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
@@ -153,6 +154,9 @@ export function InternalUsersPanel() {
                       >
                         {displayStatus}
                       </span>
+                      {displayStatus === 'REVOKED' && inv.revocation_reason ? (
+                        <span className="mt-1 block text-[10px] text-muted-foreground">Reason: {inv.revocation_reason}</span>
+                      ) : null}
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">
                       {new Date(inv.created_at).toLocaleString()}

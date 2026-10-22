@@ -28,6 +28,13 @@ export function InviteInternalUserModal({
     if (!roleId && firstInviteableRole) setRoleId(firstInviteableRole.id);
   }, [roleId, roles]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setInviteUrl(null);
+      setError(null);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {

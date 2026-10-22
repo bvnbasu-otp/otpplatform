@@ -28,15 +28,25 @@ describe('00314 internal invitation acceptance security contract', () => {
     expect(migration).toContain("IF v_inv.status = 'ACCEPTED' THEN");
     expect(migration).toContain("IF v_inv.status = 'REVOKED' THEN");
     expect(migration).toContain('v_inv.expires_at <= clock_timestamp()');
-    expect(migration).toContain('IF lower(v_inv.email) <> v_email THEN');
+    expect(migration).toContain('IF lower(v_inv.email) <> v_auth_email THEN');
+    expect(migration).toContain('u.email_confirmed_at');
+    expect(migration).toContain("event_type = 'profile.email_verified'");
     expect(migration).toContain('accepted_profile_id = v_profile');
+    expect(migration).toContain('GET DIAGNOSTICS v_updated = ROW_COUNT');
+    expect(migration).toContain('pg_advisory_xact_lock(hashtext(v_email)::bigint)');
+    expect(migration).toContain('idx_internal_invitations_one_pending_email');
   });
 
   it('never elevates a profile to platform admin through ordinary invitation acceptance', () => {
     expect(migration).toContain('SUPER_ADMIN access must be established through the two-person recovery workflow');
     expect(migration).toContain('NOT COALESCE(v_is_platform_admin, false)');
+    expect(migration).toContain('IF v_role_code IS DISTINCT FROM \'SUPER_ADMIN\' THEN');
+    expect(migration).toContain('private.guard_internal_invitation_role');
     expect(migration).not.toMatch(/SET\s+is_platform_admin\s*=\s*true/i);
     expect(migration).not.toMatch(/SET\s+active_role_code\s*=\s*'SUPER_ADMIN'/i);
+    expect(migration).not.toMatch(/UPDATE\s+public\.profiles/i);
+    expect(migration).not.toContain('my_role_context');
+    expect(migration).not.toMatch(/CREATE TRIGGER[\s\S]*ON auth\.users/i);
   });
 
   it('restricts RPC execution to authenticated callers and reconciliation never grants roles', () => {
@@ -52,5 +62,19 @@ describe('00314 internal invitation acceptance security contract', () => {
     expect(reconcile).toContain('IF NOT EXISTS (');
     expect(reconcile).toContain('internal_user_assignments');
     expect(reconcile).not.toContain('INSERT INTO public.internal_user_assignments');
+    expect(reconcile).toContain("'granted_role', false");
+    expect(migration).toContain("'internal_invitation.created'");
+    expect(migration).toContain("'internal_invitation.accepted'");
+    expect(migration).toContain("'internal_invitation.revoked'");
+    expect(migration).toContain("'internal_invitation.reconciled'");
+    expect(migration).toContain('REVOKE ALL ON TABLE public.internal_invitations FROM PUBLIC, anon, authenticated');
+    const grant = migration.slice(migration.indexOf('GRANT SELECT ('));
+    expect(grant).not.toContain('invitation_token_hash');
+    expect(grant).not.toContain('invitation_token,');
+    const createdAudit = migration.slice(
+      migration.indexOf("'internal_invitation.created'"),
+      migration.indexOf("'token', v_token"),
+    );
+    expect(createdAudit).not.toContain('v_token');
   });
 });
