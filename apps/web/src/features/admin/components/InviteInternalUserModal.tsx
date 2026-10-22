@@ -25,7 +25,7 @@ export function InviteInternalUserModal({
 
   useEffect(() => {
     if (!roleId && inviteableRoles.length > 0) setRoleId(inviteableRoles[0].id);
-  }, [roleId, inviteableRoles]);
+  }, [roleId, roles]);
 
   if (!isOpen) return null;
 
