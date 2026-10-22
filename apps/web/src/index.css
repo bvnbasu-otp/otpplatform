@@ -489,6 +489,47 @@ html, body {
   display: none;
 }
 
+/*
+ * Desktop: a hidden scrollbar on an overflow region makes the extra content
+ * undiscoverable. From the md breakpoint up, restore a real scrollbar.
+ * Narrow viewports keep the compact touch behaviour of these utility classes.
+ */
+@media (min-width: 768px) {
+  .no-scrollbar,
+  .scrollbar-none {
+    -ms-overflow-style: auto;
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.62) hsl(var(--muted) / 0.35);
+  }
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar {
+    display: block;
+    width: 10px;
+    height: 10px;
+  }
+}
+
+[data-scroll-container]:focus-visible,
+.overflow-x-auto:focus-visible,
+.overflow-y-auto:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Subtle Scroll Fade Mask Utilities */
 .fade-mask-bottom {
   mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%);

@@ -9,6 +9,7 @@ import {
 } from '@/features/subscription';
 import { ReferAndEarnCard } from '@/features/referral';
 import { usePilotAllowance } from '@/features/intake/hooks/use-pilot-allowance';
+import { formatRfqBalanceSummary } from '@/features/requirement/components/PilotAllowanceText';
 import { checkPilotAllowanceBeforePublish } from '@/features/intake/api/pilot-allowance';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { formatDateIST } from '@/lib/date-utils';
@@ -21,7 +22,6 @@ import {
   BuyerSourcingCockpitCard,
   HomeSkeleton,
   HomeEmptyState,
-  BuyerDashboardStartPanel,
 } from '@/features/home';
 import { fetchBuyerAddresses } from '@/features/profile/api/buyer-addresses';
 import { resolveBuyerPersonaFromContext } from '@otp/domain';
@@ -52,7 +52,7 @@ export function DashboardPage() {
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedRequirement, setSelectedRequirement] = useState<OrganizationRequirementSummary | null>(null);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'action' | 'active' | 'settled'>('all');
+  const [activeFilter, setActiveFilter] = useState<'action' | 'active' | 'settled' | null>(null);
   const [isExpressModalOpen, setIsExpressModalOpen] = useState(false);
   const [expressQuery, setExpressQuery] = useState('');
   const [isSubmittingExpress, setIsSubmittingExpress] = useState(false);
@@ -162,32 +162,15 @@ export function DashboardPage() {
           subscriptionExpired={subscription?.isExpired}
           freeCredits={subscription?.freeRfqCredits}
           onRenewClick={() => setIsPaymentModalOpen(true)}
+          rfqBalance={{
+            status: pilotAllowance.status,
+            label: pilotAllowance.allowance?.label ?? null,
+            summary:
+              pilotAllowance.status === 'ready' && pilotAllowance.allowance
+                ? formatRfqBalanceSummary(pilotAllowance.allowance)
+                : null,
+          }}
         />
-      </div>
-
-      <BuyerDashboardStartPanel
-        greeting={timeGreeting}
-        name={greetingName}
-        buyerPersona={buyerPersona}
-        actionCount={actionRequiredItems.length}
-        activeCount={activeProcurements.length}
-      />
-
-      {/* Pilot Sourcing Allowance & Countdown Clarity Banner */}
-      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-950 dark:text-emerald-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🎁</span>
-          <div data-testid="pilot-allowance-label" className="font-medium text-emerald-800 dark:text-emerald-300">
-            {pilotAllowance.status === 'unavailable'
-              ? 'Pilot allowance could not be verified. Publishing stays closed until the check succeeds.'
-              : pilotAllowance.allowance
-                ? pilotAllowance.allowance.label
-                : 'Pilot Allowance: checking this month’s RFQs… (₹0 charged in Pilot Mode)'}
-          </div>
-        </div>
-        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
-          Commercial Pilot
-        </span>
       </div>
 
       {/* Requirement 1: First-Time Buyer Address Prompt */}
@@ -270,8 +253,8 @@ export function DashboardPage() {
         /* Actionable and Active Cards filtered by Glance Bar */
         <div className="space-y-3">
           {/* Action Required Items (Highest Priority) */}
-          {(activeFilter === 'all' || activeFilter === 'action') && actionRequiredItems.length > 0 && (
-            <div className="space-y-2">
+          {activeFilter === 'action' && actionRequiredItems.length > 0 && (
+            <div id="buyer-count-action" className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5 px-1">
                 <span>⚡</span> Action Needed ({actionRequiredItems.length})
               </span>
@@ -288,8 +271,8 @@ export function DashboardPage() {
           )}
 
           {/* Active Purchases (Ongoing) */}
-          {(activeFilter === 'all' || activeFilter === 'active') && activeProcurements.length > 0 && (
-            <div className="space-y-2">
+          {activeFilter === 'active' && activeProcurements.length > 0 && (
+            <div id="buyer-count-active" className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 px-1">
                 <span>🟢</span> Active Purchases ({activeProcurements.length})
               </span>
@@ -305,16 +288,14 @@ export function DashboardPage() {
             </div>
           )}
 
-          {actionRequiredItems.length === 0 &&
-            activeProcurements.length === 0 &&
-            (activeFilter === 'all' || activeFilter === 'settled') && (
+          {activeFilter === null &&
+            actionRequiredItems.length === 0 &&
+            activeProcurements.length === 0 && (
               <HomeEmptyState
                 data-testid="buyer-dashboard-empty"
                 icon="📋"
                 title="No open procurements yet"
-                description="Start by telling OTP what you need. Your drafts, live RFQs, and orders will appear here as you progress through Tell → Review → Decide → Track."
-                actionLabel="Tell OTP what you need"
-                actionUrl="/intake"
+                description="Your drafts, live requests, and orders will appear here as you move through Tell, Review, Decide, and Track."
               />
             )}
 
@@ -323,9 +304,14 @@ export function DashboardPage() {
               icon="✅"
               title="Nothing needs your attention right now"
               description="When a draft, invitation, quote comparison, or approval needs you, it will show under Action Needed."
-              actionLabel="Start a new request"
-              actionUrl="/intake"
             />
+          )}
+
+          {activeFilter === 'settled' && (
+            <div id="buyer-count-settled" className="rounded-xl border bg-card p-3 text-xs text-muted-foreground">
+              <p className="font-bold text-foreground">{stats.settled || 0} settled</p>
+              <p>This is the settled count returned with the workspace. OTP does not list orders here.</p>
+            </div>
           )}
 
           {activeFilter === 'active' && activeProcurements.length === 0 && (
@@ -333,8 +319,6 @@ export function DashboardPage() {
               icon="🟢"
               title="No active purchases in progress"
               description="Published requirements and open RFQs that are still in flight will appear here."
-              actionLabel="Start procurement"
-              actionUrl="/intake"
             />
           )}
         </div>

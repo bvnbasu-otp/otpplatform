@@ -310,6 +310,9 @@ describe('purchase order requirement access', () => {
         permissions: ['READ', 'AWARD'],
       },
     }));
+    expect(buyer).toContain('Orders you placed');
+    expect(buyer).toContain('does not hold the payment or file GST returns');
+    expect(buyer).not.toContain('GST Compliance');
     expect(internal).toContain('Ledger');
     expect(internal).not.toContain('data-testid="po-empty-create-requirement"');
     expect(internal).not.toContain('href="/intake"');
@@ -319,6 +322,9 @@ describe('purchase order requirement access', () => {
       buyerType: null,
       supplierId: 'supplier-1',
     }));
+    expect(supplier).toContain('Awarded orders');
+    expect(supplier).toContain('does not hold the payment');
+    expect(supplier).not.toContain('GST Compliance');
     expect(supplier).toContain('Ledger');
     expect(supplier).not.toContain('data-testid="po-empty-create-requirement"');
     expect(supplier).not.toContain('href="/intake"');

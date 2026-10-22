@@ -7,9 +7,9 @@ import {
   calculateDateRange,
   isDateWithinRange,
   type PeriodType,
-  type UserReportingRole,
   type PeriodReportingSummary,
   type DrillDownMetric,
+  classifyOrderCategory,
   PeriodFilterBar,
   AnalyticsCards,
   CategorySpendChart,
@@ -24,9 +24,8 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
   const { user } = useAuth();
   const { context } = useRoleContext();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [perspective, setPerspective] = useState<UserReportingRole>(initialRole);
   const allowCreateRequirement =
-    perspective === 'buyer' && canOfferCustomerRequirementCreation(context);
+    initialRole === 'buyer' && canOfferCustomerRequirementCreation(context);
   const [orders, setOrders] = useState<PurchaseOrderSummary[]>([]);
   
   const viewParam = searchParams.get('view')?.toUpperCase();
@@ -58,11 +57,6 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Synchronize perspective when navigating between buyer and supplier routes
-  useEffect(() => {
-    setPerspective(initialRole);
-  }, [initialRole]);
-
   const load = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -83,9 +77,13 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
     }
   }, []);
 
+  // A persona change must not keep the previous side's category or search.
+  // Period presets are shared and stay. Orders are re-read for the new side.
   useEffect(() => {
+    setSelectedCategory('ALL');
+    setSearchQuery('');
     void load();
-  }, [load]);
+  }, [initialRole, load]);
 
   const handleViewChange = (view: 'ORDERS' | 'REPORTS') => {
     setSearchParams((prev) => {
@@ -120,18 +118,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
   const categories = useMemo(() => {
     const set = new Set<string>();
     for (const o of orders) {
-      if (o.rfqTitle) {
-        const titleLower = o.rfqTitle.toLowerCase();
-        if (titleLower.includes('paint')) set.add('Painting & Coating');
-        else if (titleLower.includes('furnitur') || titleLower.includes('workstation')) set.add('Furniture & Interiors');
-        else if (titleLower.includes('cctv') || titleLower.includes('camera')) set.add('CCTV & Surveillance');
-        else if (titleLower.includes('pool') || titleLower.includes('swim')) set.add('Swimming Pool AMC');
-        else if (titleLower.includes('stp') || titleLower.includes('wtp')) set.add('STP & Water Treatment');
-        else if (titleLower.includes('dg') || titleLower.includes('generator')) set.add('DG Sets & Power');
-        else if (titleLower.includes('gym') || titleLower.includes('fitness')) set.add('Gym & Sports');
-        else if (titleLower.includes('vehicle') || titleLower.includes('auto')) set.add('Vehicle & Fleet');
-        else set.add('General Procurement');
-      }
+      if (o.rfqTitle) set.add(classifyOrderCategory(o.rfqTitle));
     }
     return Array.from(set);
   }, [orders]);
@@ -159,14 +146,8 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
         if (po.workOrderStatus !== 'DISPUTED') return false;
       }
 
-      // Category filter
-      if (selectedCategory !== 'ALL') {
-        const titleLower = (po.rfqTitle || '').toLowerCase();
-        if (selectedCategory === 'Painting & Coating' && !titleLower.includes('paint')) return false;
-        if (selectedCategory === 'Furniture & Interiors' && !titleLower.includes('furnitur') && !titleLower.includes('workstation')) return false;
-        if (selectedCategory === 'CCTV & Surveillance' && !titleLower.includes('cctv') && !titleLower.includes('camera')) return false;
-        if (selectedCategory === 'Swimming Pool AMC' && !titleLower.includes('pool') && !titleLower.includes('swim')) return false;
-        if (selectedCategory === 'STP & Water Treatment' && !titleLower.includes('stp') && !titleLower.includes('wtp')) return false;
+      if (selectedCategory !== 'ALL' && classifyOrderCategory(po.rfqTitle) !== selectedCategory) {
+        return false;
       }
 
       // Search Query across PO number, title, status, amount, and ID
@@ -219,14 +200,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
         activeCount++;
       }
 
-      // Category categorization
-      let cat = 'General Procurement';
-      const titleLower = (po.rfqTitle || '').toLowerCase();
-      if (titleLower.includes('paint')) cat = 'Painting & Coating';
-      else if (titleLower.includes('furnitur') || titleLower.includes('workstation')) cat = 'Furniture & Interiors';
-      else if (titleLower.includes('cctv') || titleLower.includes('camera')) cat = 'CCTV & Surveillance';
-      else if (titleLower.includes('pool') || titleLower.includes('swim')) cat = 'Swimming Pool AMC';
-      else if (titleLower.includes('stp') || titleLower.includes('wtp')) cat = 'STP & Water Treatment';
+      const cat = classifyOrderCategory(po.rfqTitle);
 
       const existing = catMap.get(cat) || { count: 0, totalAmount: 0 };
       catMap.set(cat, {
@@ -245,7 +219,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
     return {
       periodType,
       dateRange,
-      role: perspective,
+      role: initialRole,
       totalAmount,
       totalOrdersCount: filteredOrders.length,
       settledAmount,
@@ -260,7 +234,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
       categoryBreakdown,
       statusBreakdown: [],
     };
-  }, [filteredOrders, periodType, dateRange, perspective]);
+  }, [filteredOrders, periodType, dateRange, initialRole]);
 
   const handleExportPdf = () => {
     window.print();
@@ -276,10 +250,12 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
             <span className="text-base">📊</span>
             <div>
               <h1 className="text-xs sm:text-sm font-black tracking-tight text-foreground truncate">
-                Digital Orders Ledger &amp; Reporting
+                {initialRole === 'supplier' ? 'Awarded orders' : 'Orders you placed'}
               </h1>
               <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
-                GST Compliance, PO Milestone Tracking &amp; Direct Settlement
+                {initialRole === 'supplier'
+                  ? 'Execution, invoices, and the settlement status recorded on each order. OTP does not hold the payment.'
+                  : 'Milestones, delivery, invoices, and direct payment status recorded on each order. OTP does not hold the payment or file GST returns.'}
               </p>
             </div>
           </div>
@@ -324,11 +300,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
             onCustomStartChange={setCustomStartDate}
             onCustomEndChange={setCustomEndDate}
             periodLabel={dateRange.label}
-            role={perspective}
-            onRoleChange={(r) => {
-              setPerspective(r);
-              setActiveMetric(null);
-            }}
+            role={initialRole}
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
             categories={categories}
@@ -342,7 +314,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
         <div className="shrink-0 overflow-x-auto">
           <AnalyticsCards
             summary={summary}
-            role={perspective}
+            role={initialRole}
             activeMetric={activeMetric}
             onSelectMetric={setActiveMetric}
           />
@@ -478,7 +450,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
         summary={summary}
         orders={filteredOrders}
         organizationName={
-          perspective === 'buyer'
+          initialRole === 'buyer'
             ? filteredOrders[0]?.buyerOrgName || user?.email || 'Buyer Organization'
             : filteredOrders[0]?.supplierName || user?.email || 'Supplier Organization'
         }

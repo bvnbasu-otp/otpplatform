@@ -12,8 +12,8 @@ interface BuyerSourcingCockpitCardProps {
   organizationName?: string;
   organizationDetails?: string;
   orgRole?: string | null;
-  activeFilter?: 'all' | 'action' | 'active' | 'settled';
-  onFilterChange?: (filter: 'all' | 'action' | 'active' | 'settled') => void;
+  activeFilter?: 'action' | 'active' | 'settled' | null;
+  onFilterChange?: (filter: 'action' | 'active' | 'settled' | null) => void;
 }
 
 export function BuyerSourcingCockpitCard({
@@ -25,7 +25,7 @@ export function BuyerSourcingCockpitCard({
   organizationName,
   organizationDetails,
   orgRole,
-  activeFilter = 'all',
+  activeFilter = null,
   onFilterChange,
 }: BuyerSourcingCockpitCardProps) {
   const navigate = useNavigate();
@@ -126,9 +126,12 @@ export function BuyerSourcingCockpitCard({
       {/* 2. High-Impact Sourcing Prompt Card (Screen 06) */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-card to-primary/5 border border-primary/20 p-3 sm:p-3.5 space-y-2.5 shadow-2xs">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
-            <span>⚡</span> What do you need to buy?
-          </span>
+          <div className="min-w-0">
+            <span className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
+              <span>⚡</span> Tell
+            </span>
+            <p className="text-[10px] text-muted-foreground">Tell → Review → Decide → Track</p>
+          </div>
           <span className="text-[9px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
             1-Tap Sourcing
           </span>
@@ -201,7 +204,9 @@ export function BuyerSourcingCockpitCard({
       <div className="grid grid-cols-3 gap-2">
         <button
           type="button"
-          onClick={() => onFilterChange?.(activeFilter === 'active' ? 'all' : 'active')}
+          aria-expanded={activeFilter === 'active'}
+          aria-controls="buyer-count-active"
+          onClick={() => onFilterChange?.(activeFilter === 'active' ? null : 'active')}
           className={`rounded-xl border p-2 text-center transition cursor-pointer ${
             activeFilter === 'active'
               ? 'bg-primary/20 border-primary ring-2 ring-primary/40'
@@ -214,7 +219,9 @@ export function BuyerSourcingCockpitCard({
 
         <button
           type="button"
-          onClick={() => onFilterChange?.(activeFilter === 'action' ? 'all' : 'action')}
+          aria-expanded={activeFilter === 'action'}
+          aria-controls="buyer-count-action"
+          onClick={() => onFilterChange?.(activeFilter === 'action' ? null : 'action')}
           className={`rounded-xl border p-2 text-center transition cursor-pointer ${
             activeFilter === 'action'
               ? 'bg-amber-500/20 border-amber-500 ring-2 ring-amber-500/40'
@@ -227,7 +234,9 @@ export function BuyerSourcingCockpitCard({
 
         <button
           type="button"
-          onClick={() => onFilterChange?.(activeFilter === 'settled' ? 'all' : 'settled')}
+          aria-expanded={activeFilter === 'settled'}
+          aria-controls="buyer-count-settled"
+          onClick={() => onFilterChange?.(activeFilter === 'settled' ? null : 'settled')}
           className={`rounded-xl border p-2 text-center transition cursor-pointer ${
             activeFilter === 'settled'
               ? 'bg-muted border-foreground/30 ring-2 ring-muted-foreground/40'

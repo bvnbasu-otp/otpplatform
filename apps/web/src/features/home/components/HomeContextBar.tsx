@@ -1,4 +1,16 @@
 import React from 'react';
+import {
+  PILOT_ALLOWANCE_PENDING_TEXT,
+  PILOT_ALLOWANCE_UNAVAILABLE_TEXT,
+} from '@/features/requirement/components/PilotAllowanceText';
+
+export interface HomeRfqBalance {
+  status: 'loading' | 'ready' | 'unavailable';
+  /** Full sentence from the entitlement result. Null until that result exists. */
+  label: string | null;
+  /** Short nowrap text built from that same result. Null while loading or unavailable. */
+  summary: string | null;
+}
 
 interface HomeContextBarProps {
   greeting: string;
@@ -12,6 +24,7 @@ interface HomeContextBarProps {
   subscriptionExpired?: boolean;
   freeCredits?: number;
   onRenewClick?: () => void;
+  rfqBalance?: HomeRfqBalance | null;
 }
 
 export function HomeContextBar({
@@ -26,10 +39,26 @@ export function HomeContextBar({
   subscriptionExpired,
   freeCredits,
   onRenewClick,
+  rfqBalance,
 }: HomeContextBarProps) {
+  const balanceReady = rfqBalance?.status === 'ready' && Boolean(rfqBalance.label) && Boolean(rfqBalance.summary);
+  const balanceAccessible = !rfqBalance
+    ? ''
+    : balanceReady && rfqBalance.label
+      ? rfqBalance.label
+      : rfqBalance.status === 'unavailable' || rfqBalance.status === 'ready'
+        ? PILOT_ALLOWANCE_UNAVAILABLE_TEXT
+        : PILOT_ALLOWANCE_PENDING_TEXT;
+  const balanceVisible = !rfqBalance
+    ? ''
+    : balanceReady
+      ? rfqBalance.summary
+      : rfqBalance.status === 'unavailable'
+        ? 'RFQs unavailable'
+        : 'Checking RFQs';
   return (
-    <header className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-2xs space-y-2.5">
-      <div className="flex items-center justify-between gap-2.5">
+    <header className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-2xs space-y-2.5 overflow-x-hidden">
+      <div className="flex items-center justify-between gap-2.5 min-w-0">
         <div className="min-w-0 flex-1">
           {organizationName && (
             <div className="flex items-center gap-1.5 font-bold text-xs text-muted-foreground truncate">
@@ -42,9 +71,22 @@ export function HomeContextBar({
             </div>
           )}
 
-          <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight truncate mt-0.5">
-            {greeting}, {name}
-          </h1>
+          <div className="mt-0.5 flex min-w-0 flex-nowrap items-center gap-2">
+            <h1 className="min-w-0 flex-1 truncate whitespace-nowrap text-base sm:text-lg font-black text-foreground tracking-tight">
+              {greeting}, {name}
+            </h1>
+            {rfqBalance && (
+              <span
+                data-testid="pilot-allowance-label"
+                data-balance-status={rfqBalance.status}
+                className="inline-block max-w-[7.5rem] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-full border border-emerald-600/40 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold leading-none text-emerald-950 dark:text-emerald-100 sm:max-w-[14rem]"
+                title={balanceAccessible}
+                aria-label={balanceAccessible}
+              >
+                {balanceVisible}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">

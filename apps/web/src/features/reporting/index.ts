@@ -1,6 +1,7 @@
 export * from './types/reporting';
 export * from './types/drilldown';
 export * from './utils/datePeriodUtils';
+export * from './utils/order-category';
 export * from './components/PeriodFilterBar';
 export * from './components/AnalyticsCards';
 export * from './components/CategorySpendChart';

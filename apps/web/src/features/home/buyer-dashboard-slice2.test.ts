@@ -14,11 +14,15 @@ describe('Slice 2 — buyer dashboard & intake entry', () => {
     expect(inferJourneyStageFromPath('/intake')).toBe('TELL');
   });
 
-  it('exposes a primary intake CTA on the buyer dashboard', () => {
-    const src = readFileSync(resolve(WEB_SRC, 'features/home/components/BuyerDashboardStartPanel.tsx'), 'utf8');
-    expect(src).toContain('data-testid="buyer-primary-intake-cta"');
-    expect(src).toContain('to="/intake"');
-    expect(src).not.toContain('Track orders');
+  it('exposes one primary intake CTA on the buyer dashboard', () => {
+    const dashboard = readFileSync(resolve(WEB_SRC, 'pages/DashboardPage.tsx'), 'utf8');
+    expect(dashboard).not.toContain('BuyerDashboardStartPanel');
+    expect(dashboard).not.toContain('Tell OTP what you need');
+    expect(dashboard).not.toContain('Start a procurement request');
+    const cockpit = readFileSync(resolve(WEB_SRC, 'features/home/components/BuyerSourcingCockpitCard.tsx'), 'utf8');
+    expect(cockpit).toContain('data-testid="cockpit-open-intake-wizard"');
+    expect(cockpit).toContain('aria-expanded');
+    expect(cockpit).not.toContain('What do you need to buy?');
   });
 
   it('documents intake entry banner on the requirement intake page', () => {

@@ -11,6 +11,12 @@ describe('desktop scrollbar accessibility contract', () => {
     expect(css).toMatch(/\.scrollbar-thin::-webkit-scrollbar\s*\{[^}]*width:\s*8px;[^}]*height:\s*8px;/s);
     expect(css).toContain('@media (forced-colors: active)');
     expect(css).toMatch(/\.scrollbar-thin:focus\s*\{/);
+    expect(css).toContain('@media (min-width: 768px)');
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(css).toMatch(/\[data-scroll-container\]:focus-visible/);
+    const desktop = css.slice(css.indexOf('@media (min-width: 768px)'));
+    expect(desktop).toMatch(/\.no-scrollbar::-webkit-scrollbar[\s\S]*display:\s*block/);
+    expect(desktop).toMatch(/width:\s*10px/);
   });
 
   it('does not hide the critical procurement and evaluation scrollers', () => {

@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import type { PeriodType, UserReportingRole } from '../types/reporting';
 
+const ROLE_PRESET_LABEL: Record<UserReportingRole, string> = {
+  buyer: '🛒 Buyer Spend',
+  supplier: '🏪 Supplier Revenue',
+  approver: '🗳️ Approver Governance',
+  auditor: '🛡️ Auditor Compliance',
+};
+
 interface PeriodFilterBarProps {
   periodType: PeriodType;
   onPeriodChange: (type: PeriodType) => void;
@@ -11,6 +18,12 @@ interface PeriodFilterBarProps {
   periodLabel: string;
   role: UserReportingRole;
   onRoleChange?: (role: UserReportingRole) => void;
+  /**
+   * Persona choices this caller is allowed to offer. Omitted or a single
+   * choice renders no switcher, so a buyer page cannot list supplier,
+   * approver, or auditor presets.
+   */
+  roleChoices?: readonly UserReportingRole[];
   selectedCategory: string;
   onCategoryChange: (cat: string) => void;
   categories: string[];
@@ -29,6 +42,7 @@ export function PeriodFilterBar({
   periodLabel,
   role,
   onRoleChange,
+  roleChoices,
   selectedCategory,
   onCategoryChange,
   categories,
@@ -37,6 +51,8 @@ export function PeriodFilterBar({
   onExportPdf,
 }: PeriodFilterBarProps) {
   const [showRoleSelector, setShowRoleSelector] = useState(false);
+  const choices = (roleChoices ?? []).filter((choice, index, all) => all.indexOf(choice) === index);
+  const canSwitchRole = Boolean(onRoleChange) && choices.length > 1;
 
   const periods: { id: PeriodType; label: string; icon: string }[] = [
     { id: 'ALL', label: 'All Time', icon: '🌐' },
@@ -76,35 +92,36 @@ export function PeriodFilterBar({
 
         {/* Action Controls: Role Perspective + PDF Export */}
         <div className="flex items-center gap-2">
-          {onRoleChange && (
+          {canSwitchRole && onRoleChange && (
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowRoleSelector(!showRoleSelector)}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-muted transition"
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-muted transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                aria-expanded={showRoleSelector}
+                aria-haspopup="listbox"
               >
                 <span>👤 Perspective:</span>
                 <span className="capitalize font-bold text-primary">{role}</span>
                 <span>▾</span>
               </button>
               {showRoleSelector && (
-                <div className="absolute right-0 mt-1 w-44 rounded-lg border border-border bg-card p-1 shadow-lg z-20">
-                  {(['buyer', 'supplier', 'approver', 'auditor'] as UserReportingRole[]).map((r) => (
+                <div role="listbox" aria-label="Reporting perspective" className="absolute right-0 mt-1 w-44 rounded-lg border border-border bg-card p-1 shadow-lg z-20">
+                  {choices.map((r) => (
                     <button
                       key={r}
                       type="button"
+                      role="option"
+                      aria-selected={role === r}
                       onClick={() => {
                         onRoleChange(r);
                         setShowRoleSelector(false);
                       }}
-                      className={`w-full text-left rounded px-2.5 py-1.5 text-xs font-medium capitalize transition ${
+                      className={`w-full text-left rounded px-2.5 py-1.5 text-xs font-medium capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                         role === r ? 'bg-primary text-primary-foreground font-semibold' : 'hover:bg-muted'
                       }`}
                     >
-                      {r === 'buyer' && '🛒 Buyer Spend'}
-                      {r === 'supplier' && '🏪 Supplier Revenue'}
-                      {r === 'approver' && '🗳️ Approver Governance'}
-                      {r === 'auditor' && '🛡️ Auditor Compliance'}
+                      {ROLE_PRESET_LABEL[r]}
                     </button>
                   ))}
                 </div>
