@@ -35,5 +35,7 @@ describe('internal invitation acceptance module contract', () => {
     expect(panel).toContain('Reconcile this pending invitation only if the invited account already has the exact assigned internal role');
     expect(panel).toContain('This does not grant or change roles');
     expect(api).toContain("supabase.rpc('reconcile_internal_invitation_atomic'");
+    expect(api).toContain("supabase.rpc('revoke_internal_invitation_atomic'");
+    expect(api).not.toContain(".from('internal_invitations')\n    .update(");
   });
 });
