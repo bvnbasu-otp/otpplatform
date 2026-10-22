@@ -328,7 +328,8 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 62]).toBe('00311_personal_buyer_quote_evaluation.sql');
     expect(files[index + 63]).toBe('00312_po_completion_requirement_sync.sql');
     expect(files[index + 64]).toBe('00313_quote_invitation_state_boundary.sql');
-    expect(index).toBe(files.length - 65);
+    expect(files[index + 65]).toBe('00314_internal_invitation_acceptance.sql');
+    expect(index).toBe(files.length - 66);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);
