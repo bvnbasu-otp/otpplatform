@@ -102,6 +102,7 @@ DECLARE
   v_email text;
   v_status text;
   v_deleted_at timestamptz;
+  v_is_platform_admin boolean;
   v_inv public.internal_invitations%ROWTYPE;
   v_role_code text;
 BEGIN
@@ -109,8 +110,8 @@ BEGIN
     RAISE EXCEPTION 'Sign in with the invited account before accepting this invitation.';
   END IF;
 
-  SELECT lower(email), COALESCE(status, 'ACTIVE'), deleted_at
-  INTO v_email, v_status, v_deleted_at
+  SELECT lower(email), COALESCE(status, 'ACTIVE'), deleted_at, is_platform_admin
+  INTO v_email, v_status, v_deleted_at, v_is_platform_admin
   FROM public.profiles
   WHERE id = v_profile;
 
@@ -158,9 +159,12 @@ BEGIN
   -- by accepting an ordinary invitation; an existing assignment may be reconciled.
   SELECT code INTO v_role_code FROM public.internal_roles WHERE id = v_inv.role_id;
 
-  IF v_role_code = 'SUPER_ADMIN' AND NOT EXISTS (
-    SELECT 1 FROM public.internal_user_assignments
-    WHERE profile_id = v_profile AND role_id = v_inv.role_id
+  IF v_role_code = 'SUPER_ADMIN' AND (
+    NOT COALESCE(v_is_platform_admin, false)
+    OR NOT EXISTS (
+      SELECT 1 FROM public.internal_user_assignments
+      WHERE profile_id = v_profile AND role_id = v_inv.role_id
+    )
   ) THEN
     RETURN jsonb_build_object(
       'ok', false,
@@ -190,6 +194,63 @@ BEGIN
   );
 END;
 $$;
+
+
+-- Revoke through a server-authoritative actor profile and an audited state transition.
+CREATE OR REPLACE FUNCTION public.revoke_internal_invitation_atomic(
+  p_invitation_id uuid,
+  p_reason text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, private, auth, extensions
+AS $
+DECLARE
+  v_caller uuid := private.get_profile_id();
+  v_inv public.internal_invitations%ROWTYPE;
+  v_reason text := btrim(COALESCE(p_reason, ''));
+BEGIN
+  IF auth.uid() IS NULL OR v_caller IS NULL OR NOT private.is_platform_admin() THEN
+    RAISE EXCEPTION 'Only an authenticated platform administrator can revoke internal invitations.'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF v_reason = '' THEN
+    RAISE EXCEPTION 'A reason is required to revoke an internal invitation.'
+      USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_inv
+  FROM public.internal_invitations
+  WHERE id = p_invitation_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'Invitation not found.');
+  END IF;
+
+  IF v_inv.status <> 'PENDING' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'Only a pending invitation can be revoked.');
+  END IF;
+
+  IF v_inv.expires_at <= clock_timestamp() THEN
+    UPDATE public.internal_invitations
+    SET status = 'EXPIRED'
+    WHERE id = v_inv.id AND status = 'PENDING';
+    RETURN jsonb_build_object('ok', false, 'error', 'Invitation has expired and cannot be revoked as pending.');
+  END IF;
+
+  UPDATE public.internal_invitations
+  SET status = 'REVOKED',
+      revoked_by = v_caller,
+      revoked_at = clock_timestamp(),
+      revocation_reason = v_reason
+  WHERE id = v_inv.id AND status = 'PENDING';
+
+  RETURN jsonb_build_object('ok', true, 'invitationId', v_inv.id, 'status', 'REVOKED');
+END;
+$;
 
 -- Legacy reconciliation is deliberately narrower: it never grants a role.
 -- It can only close a pending invitation when an active, matching profile already has that exact assignment.
@@ -268,9 +329,11 @@ $$;
 
 REVOKE ALL ON FUNCTION public.create_internal_invitation_atomic(text, uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.accept_internal_invitation_atomic(text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.revoke_internal_invitation_atomic(uuid, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.reconcile_internal_invitation_atomic(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_internal_invitation_atomic(text, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.accept_internal_invitation_atomic(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.revoke_internal_invitation_atomic(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.reconcile_internal_invitation_atomic(uuid) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';
