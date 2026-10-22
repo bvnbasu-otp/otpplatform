@@ -4,6 +4,7 @@ import {
   fetchInternalRoles,
   fetchInternalInvitations,
   revokeInternalInvitation,
+  reconcileInternalInvitation,
 } from '../api/internal-ops';
 import { InviteInternalUserModal } from './InviteInternalUserModal';
 
@@ -13,6 +14,7 @@ export function InternalUsersPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [reconcilingId, setReconcilingId] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -46,6 +48,25 @@ export function InternalUsersPanel() {
       }
     } finally {
       setRevokingId(null);
+    }
+  };
+
+  const handleReconcile = async (id: string) => {
+    const confirmed = window.confirm(
+      'Reconcile this pending invitation only if the invited account already has the exact assigned internal role. This does not grant or change roles. Continue?',
+    );
+    if (!confirmed) return;
+
+    setReconcilingId(id);
+    try {
+      const res = await reconcileInternalInvitation(id);
+      if (res.ok) {
+        await loadData();
+      } else {
+        alert(res.error || 'Invitation could not be reconciled. Use the acceptance link if the role is not already assigned.');
+      }
+    } finally {
+      setReconcilingId(null);
     }
   };
 
@@ -110,7 +131,9 @@ export function InternalUsersPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {invitations.map((inv) => (
+                {invitations.map((inv) => {
+                  const displayStatus = inv.status === 'PENDING' && new Date(inv.expires_at).getTime() <= Date.now() ? 'EXPIRED' : inv.status;
+                  return (
                   <tr key={inv.id} className="hover:bg-muted/10 transition">
                     <td className="py-3 px-4 font-medium text-foreground">{inv.email}</td>
                     <td className="py-3 px-4">
@@ -121,14 +144,14 @@ export function InternalUsersPanel() {
                     <td className="py-3 px-4">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
-                          inv.status === 'PENDING'
+                          displayStatus === 'PENDING'
                             ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                            : inv.status === 'ACCEPTED'
+                            : displayStatus === 'ACCEPTED'
                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
                             : 'bg-destructive/10 text-destructive'
                         }`}
                       >
-                        {inv.status}
+                        {displayStatus}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">
@@ -138,7 +161,11 @@ export function InternalUsersPanel() {
                       {formatExpiry(inv.expires_at)}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      {inv.status === 'PENDING' && (
+                      {displayStatus === 'ACCEPTED' && inv.accepted_at && (
+                        <span className="text-[10px] text-muted-foreground">Accepted {new Date(inv.accepted_at).toLocaleString()}</span>
+                      )}
+                      {displayStatus === 'PENDING' && (
+                        <div className="inline-flex flex-wrap justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => handleRevoke(inv.id)}
@@ -147,10 +174,20 @@ export function InternalUsersPanel() {
                         >
                           {revokingId === inv.id ? 'Revoking…' : 'Revoke'}
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => handleReconcile(inv.id)}
+                          disabled={reconcilingId === inv.id}
+                          className="rounded border px-2 py-1 text-[11px] font-medium hover:bg-muted disabled:opacity-50"
+                        >
+                          {reconcilingId === inv.id ? 'Checking…' : 'Reconcile existing access'}
+                        </button>
+                        </div>
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
