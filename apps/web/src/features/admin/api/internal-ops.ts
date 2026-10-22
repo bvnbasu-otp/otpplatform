@@ -173,20 +173,13 @@ export async function revokeInternalInvitation(
   invitationId: string,
   reason: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const user = (await supabase.auth.getUser()).data.user;
-  if (!user) return { ok: false, error: 'Unauthenticated' };
-
-  const { error } = await supabase
-    .from('internal_invitations')
-    .update({
-      status: 'REVOKED',
-      revoked_by: user.id,
-      revoked_at: new Date().toISOString(),
-      revocation_reason: reason.trim(),
-    })
-    .eq('id', invitationId);
+  const { data, error } = await supabase.rpc('revoke_internal_invitation_atomic', {
+    p_invitation_id: invitationId,
+    p_reason: reason.trim(),
+  });
 
   if (error) return { ok: false, error: error.message };
+  if (!data?.ok) return { ok: false, error: data?.error || 'Failed to revoke invitation.' };
   return { ok: true };
 }
 
