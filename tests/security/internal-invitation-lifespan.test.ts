@@ -74,9 +74,9 @@ describe('Internal Invitation Lifespan & State Integrity (T-20)', () => {
       const err72h = await messageOf(
         client,
         `INSERT INTO public.internal_invitations (
-           email, role_id, invited_by, invitation_token, status, created_at, expires_at
+           email, role_id, invited_by, invitation_token_hash, status, created_at, expires_at
          ) VALUES (
-           'new-staff@otp.test', $1, $2, 'token-72h-invalid', 'PENDING',
+           'new-staff@otp.test', $1, $2, private.hash_invitation_token('token-72h-invalid'), 'PENDING',
            clock_timestamp(), clock_timestamp() + interval '72 hours'
          )`,
         [roleId, adminId],
@@ -87,9 +87,9 @@ describe('Internal Invitation Lifespan & State Integrity (T-20)', () => {
       const err48h1m = await messageOf(
         client,
         `INSERT INTO public.internal_invitations (
-           email, role_id, invited_by, invitation_token, status, created_at, expires_at
+           email, role_id, invited_by, invitation_token_hash, status, created_at, expires_at
          ) VALUES (
-           'new-staff@otp.test', $1, $2, 'token-48h1m-invalid', 'PENDING',
+           'new-staff@otp.test', $1, $2, private.hash_invitation_token('token-48h1m-invalid'), 'PENDING',
            clock_timestamp(), clock_timestamp() + interval '48 hours 1 minute'
          )`,
         [roleId, adminId],
@@ -100,9 +100,9 @@ describe('Internal Invitation Lifespan & State Integrity (T-20)', () => {
       const errPast = await messageOf(
         client,
         `INSERT INTO public.internal_invitations (
-           email, role_id, invited_by, invitation_token, status, created_at, expires_at
+           email, role_id, invited_by, invitation_token_hash, status, created_at, expires_at
          ) VALUES (
-           'new-staff@otp.test', $1, $2, 'token-past-invalid', 'PENDING',
+           'new-staff@otp.test', $1, $2, private.hash_invitation_token('token-past-invalid'), 'PENDING',
            clock_timestamp(), clock_timestamp() - interval '1 hour'
          )`,
         [roleId, adminId],
@@ -113,9 +113,9 @@ describe('Internal Invitation Lifespan & State Integrity (T-20)', () => {
       const invId = randomUUID();
       const insertOk = await client.query(
         `INSERT INTO public.internal_invitations (
-           id, email, role_id, invited_by, invitation_token, status, created_at, expires_at
+           id, email, role_id, invited_by, invitation_token_hash, status, created_at, expires_at
          ) VALUES (
-           $1, 'new-staff@otp.test', $2, $3, 'token-48h-valid', 'PENDING',
+           $1, 'new-staff@otp.test', $2, $3, private.hash_invitation_token('token-48h-valid'), 'PENDING',
            clock_timestamp(), clock_timestamp() + interval '48 hours'
          ) RETURNING id`,
         [invId, roleId, adminId],
