@@ -19,6 +19,7 @@ export function InviteInternalUserModal({
   const [roleId, setRoleId] = useState(roles[0]?.id || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -31,12 +32,13 @@ export function InviteInternalUserModal({
 
     setIsSubmitting(true);
     setError(null);
+    setInviteUrl(null);
     try {
       const res = await createInternalInvitation(email, roleId);
-      if (res.ok) {
+      if (res.ok && res.invitation) {
         setEmail('');
+        setInviteUrl(res.invitation.inviteUrl);
         onSuccess();
-        onClose();
       } else {
         setError(res.error || 'Failed to issue internal invitation.');
       }
@@ -60,7 +62,14 @@ export function InviteInternalUserModal({
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {error && (
+          {inviteUrl && (
+          <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200 space-y-2" data-testid="internal-invitation-created">
+            <p className="font-semibold">Invitation created — share this secure link with the invited person.</p>
+            <p className="break-all font-mono text-[11px]">{inviteUrl}</p>
+            <p>This link is shown only now. It expires within 48 hours and must be accepted while signed in with the invited email.</p>
+          </div>
+        )}
+        {error && (
             <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive">
               {error}
             </div>
@@ -108,7 +117,7 @@ export function InviteInternalUserModal({
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => { setInviteUrl(null); onClose(); }}
               disabled={isSubmitting}
               className="rounded-lg border px-4 py-2 text-xs font-semibold hover:bg-muted"
             >
@@ -119,7 +128,7 @@ export function InviteInternalUserModal({
               disabled={isSubmitting}
               className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {isSubmitting ? 'Issuing Invitation…' : 'Send Invitation (48h)'}
+              {isSubmitting ? 'Issuing Invitation…' : inviteUrl ? 'Create Another Invitation' : 'Send Invitation (48h)'}
             </button>
           </div>
         </form>
