@@ -29,6 +29,7 @@ describe('internal invitation acceptance module contract', () => {
     expect(modal).toContain('internal-invitation-created');
     expect(modal).toContain('This link is shown only now');
     expect(modal).toContain('must be accepted while signed in with the invited email');
+    expect(modal).toContain('SUPER_ADMIN access requires the separate two-person recovery workflow');
   });
 
   it('keeps reconciliation explicitly non-granting and operator-confirmed', () => {
@@ -36,6 +37,8 @@ describe('internal invitation acceptance module contract', () => {
     expect(panel).toContain('This does not grant or change roles');
     expect(api).toContain("supabase.rpc('reconcile_internal_invitation_atomic'");
     expect(api).toContain("supabase.rpc('revoke_internal_invitation_atomic'");
+    expect(api).toContain('accepted_profile_id,revoked_at,revocation_reason,internal_roles(code,name)');
+    expect(api).not.toContain(".select('*, internal_roles(code, name)')");
     expect(api).not.toContain(".from('internal_invitations')\n    .update(");
   });
 });
