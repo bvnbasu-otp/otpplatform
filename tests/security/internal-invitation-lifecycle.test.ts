@@ -596,7 +596,8 @@ describe('internal invitation lifecycle on local Postgres', () => {
       await b.query('COMMIT');
 
       expect(aResult.rows[0].result).toMatchObject({ ok: true, alreadyAccepted: false, roleCode: 'CATALOG_MANAGER' });
-      expect(bResult.rows[0].result).toMatchObject({ ok: true, alreadyAccepted: true });
+      expect(bResult.rows[0].result).toMatchObject({ ok: false });
+      expect(String((bResult.rows[0].result as { error: string }).error)).toContain('already been accepted');
       const count = await watch.query(
         `SELECT count(*)::text AS n
          FROM public.internal_user_assignments
