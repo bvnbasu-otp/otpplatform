@@ -55,6 +55,7 @@ const RfqClarificationPage = lazy(() => import('@/features/clarification').then(
 const DemoDashboardPage = lazy(() => import('@/features/demo/pages/DemoDashboardPage').then((m) => ({ default: m.DemoDashboardPage })));
 const NotificationsPage = lazy(() => import('@/features/notifications').then((m) => ({ default: m.NotificationsPage })));
 const AdminDashboardPage = lazy(() => import('@/features/admin').then((m) => ({ default: m.AdminDashboardPage })));
+const InternalInviteAcceptancePage = lazy(() => import('@/features/admin/pages/InternalInviteAcceptancePage').then((m) => ({ default: m.InternalInviteAcceptancePage })));
 const ProfilePage = lazy(() => import('@/features/profile').then((m) => ({ default: m.ProfilePage })));
 const OrgMembersPage = lazy(() => import('@/features/org').then((m) => ({ default: m.OrgMembersPage })));
 const InviteAcceptancePage = lazy(() => import('@/features/org').then((m) => ({ default: m.InviteAcceptancePage })));
@@ -352,6 +353,7 @@ export function App() {
             (renders preview & sign-in redirect) and authenticated (1-click join).
           */}
           <Route path="/invite/:token" element={<InviteAcceptancePage />} />
+          <Route path="/internal-invite/:token" element={<InternalInviteAcceptancePage />} />
           <Route path="/maintenance" element={<MaintenancePage />} />
           <Route
             element={
