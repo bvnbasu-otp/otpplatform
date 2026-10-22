@@ -233,10 +233,6 @@ BEGIN
   END IF;
 
   IF v_inv.status = 'ACCEPTED' THEN
-    IF v_inv.accepted_profile_id = v_profile THEN
-      RETURN jsonb_build_object('ok', true, 'alreadyAccepted', true, 'roleCode',
-        (SELECT code FROM public.internal_roles WHERE id = v_inv.role_id));
-    END IF;
     RETURN jsonb_build_object('ok', false, 'error', 'This invitation has already been accepted.');
   END IF;
 

@@ -32,9 +32,7 @@ export function InternalInviteAcceptancePage() {
       await refresh();
       setMessage({
         ok: true,
-        text: result.alreadyAccepted
-          ? `This invitation was already accepted for this account (${result.roleCode || 'internal role'}).`
-          : `Invitation accepted. Your internal role is ${result.roleCode || 'assigned'}.`,
+        text: `Invitation accepted. Your internal role is ${result.roleCode || 'assigned'}.`,
       });
     } catch (error) {
       setMessage({ ok: false, text: error instanceof Error ? error.message : 'Unexpected error accepting invitation.' });

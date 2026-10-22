@@ -26,6 +26,8 @@ describe('00314 internal invitation acceptance security contract', () => {
     expect(migration).toContain('WHERE invitation_token_hash = private.hash_invitation_token(p_token)');
     expect(migration).toContain('FOR UPDATE');
     expect(migration).toContain("IF v_inv.status = 'ACCEPTED' THEN");
+    expect(migration).toContain("RETURN jsonb_build_object('ok', false, 'error', 'This invitation has already been accepted.')");
+    expect(migration).not.toContain("'alreadyAccepted', true");
     expect(migration).toContain("IF v_inv.status = 'REVOKED' THEN");
     expect(migration).toContain('v_inv.expires_at <= clock_timestamp()');
     expect(migration).toContain('IF lower(v_inv.email) <> v_auth_email THEN');
