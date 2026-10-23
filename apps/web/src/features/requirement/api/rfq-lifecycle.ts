@@ -117,7 +117,6 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
     const isGstVerified = reasons.includes('gst_verified');
     // Stamped only when supplier_discovery_trust_tier found a real OTP login.
     const isOtpRegisteredSignal = reasons.includes('otp_registered');
-    const isOtpRegistered = isOtpRegisteredSignal || isGstVerified;
     const isLocal = reasons.includes('local') || reasons.includes('location_match') || isPlacesDiscovery;
 
     let network = 'DISCOVERED_IN_AREA';
@@ -125,9 +124,12 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
     if (isDirect) {
       network = 'DIRECT';
       networkLabel = 'Direct invite';
-    } else if (isPlacesDiscovery && isOtpRegistered) {
+    } else if (isPlacesDiscovery && isGstVerified) {
       network = 'GOOGLE_PLACES';
-      networkLabel = 'Google Places and OTP registered';
+      networkLabel = 'Discovered in area · GST verified';
+    } else if (isPlacesDiscovery && isOtpRegisteredSignal) {
+      network = 'GOOGLE_PLACES';
+      networkLabel = 'Discovered in area · OTP registered';
     } else if (isPlacesDiscovery) {
       // A geographic hit is not an OTP registration or a verification.
       network = 'GOOGLE_PLACES';
@@ -135,7 +137,7 @@ export async function fetchMatchedSuppliers(rfqId: string): Promise<
     } else if (isGstVerified) {
       network = 'OTP_REGISTERED';
       networkLabel = 'GST verified supplier';
-    } else if (isOtpRegistered) {
+    } else if (isOtpRegisteredSignal) {
       network = 'OTP_REGISTERED';
       networkLabel = 'OTP registered supplier';
     }

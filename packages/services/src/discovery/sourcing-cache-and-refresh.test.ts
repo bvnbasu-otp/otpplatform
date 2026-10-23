@@ -22,6 +22,7 @@ describe('Sourcing Discovery Cache & 30-Day Refresh Window Contract', () => {
         businessName: 'Whitefield Electrical Supplies',
         categoryCode: 'electrical',
         categories: ['electrical', 'cables'],
+        servicePins: ['560048'],
         network: SupplierNetwork.DIRECT,
         rating: 4.8,
       },
@@ -30,6 +31,7 @@ describe('Sourcing Discovery Cache & 30-Day Refresh Window Contract', () => {
         businessName: 'Mahadevapura Power Systems',
         categoryCode: 'electrical',
         categories: ['electrical', 'transformers'],
+        servicePins: ['560048'],
         network: SupplierNetwork.LOCAL_REGISTRY,
         rating: 4.6,
       },
@@ -153,6 +155,7 @@ describe('Sourcing Discovery Cache & 30-Day Refresh Window Contract', () => {
         supplierId: 'sup-01',
         businessName: 'Vendor Tech',
         categoryCode: 'cctv',
+        servicePins: ['560001'],
         network: SupplierNetwork.LOCAL_REGISTRY,
       },
     ]);

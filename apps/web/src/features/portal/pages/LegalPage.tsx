@@ -119,7 +119,13 @@ export function LegalPage() {
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-navy">Your Rights (GDPR/DPDP Compliance)</h2>
+              <h2 className="text-lg font-semibold text-navy">Privacy requests</h2>
+              <p className="mt-2">
+                You can ask OTP for access or a correction. This page is not a certification that OTP,
+                or your organisation, complies with the DPDP Act or GDPR. Deletion is limited where a
+                procurement or tax record still has to be kept. Counsel should review any compliance claim
+                before it is used outside the product.
+              </p>
               <ul className="mt-2 list-inside list-disc space-y-1">
                 <li>Right to access your personal data</li>
                 <li>Right to rectification of inaccurate data</li>

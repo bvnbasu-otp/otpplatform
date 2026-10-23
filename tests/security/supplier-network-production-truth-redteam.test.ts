@@ -162,9 +162,10 @@ describe('Stage R2-07 Supplier Network Engine Red Team Battery (16 Attack Vector
             network: SupplierNetwork.LOCAL_REGISTRY,
             discover: async (req) => [
               {
-                supplierId: `sup-${req.categoryCode}`,
-                businessName: `${req.categoryCode} Specialist`,
-                categoryCode: req.categoryCode,
+                supplierId: `sup-${req.category}`,
+                businessName: `${req.category} Specialist`,
+                categoryCode: req.category,
+                servicePins: ['560048'],
                 network: SupplierNetwork.LOCAL_REGISTRY,
               },
             ],
@@ -197,6 +198,8 @@ describe('Stage R2-07 Supplier Network Engine Red Team Battery (16 Attack Vector
                 phone: '+919876543210',
                 email: 'director@secretvendor.com',
                 gstin: '29ABCDE1234F1Z5',
+                categoryCode: 'Furniture',
+                servicePins: ['560048'],
                 network: SupplierNetwork.DIRECT,
               } as any,
             ],
@@ -205,7 +208,8 @@ describe('Stage R2-07 Supplier Network Engine Red Team Battery (16 Attack Vector
       ],
     });
 
-    const res = await engine.discoverCandidates({ category: 'Furniture' });
+    const res = await engine.discoverCandidates({ category: 'Furniture', location: { pinCode: '560048' } });
+    expect(res.candidates).toHaveLength(1);
     const candidate = res.candidates[0];
 
     expect(candidate.anonymousLabel).toMatch(/^Supplier [0-9A-Z]{4}$/);
@@ -253,6 +257,7 @@ describe('Stage R2-07 Supplier Network Engine Red Team Battery (16 Attack Vector
           supplierId: 'canonical-sup-42',
           businessName: 'Integrated Systems',
           categoryCode: 'cctv',
+          servicePins: ['560001'],
           network: SupplierNetwork.DIRECT,
         },
       ],
@@ -265,6 +270,7 @@ describe('Stage R2-07 Supplier Network Engine Red Team Battery (16 Attack Vector
           supplierId: 'canonical-sup-42',
           businessName: 'Integrated Systems',
           categoryCode: 'cctv',
+          servicePins: ['560001'],
           network: SupplierNetwork.LOCAL_REGISTRY,
         },
       ],
@@ -274,7 +280,7 @@ describe('Stage R2-07 Supplier Network Engine Red Team Battery (16 Attack Vector
       providers: [{ adapter: adapter1 }, { adapter: adapter2 }],
     });
 
-    const res = await engine.discoverCandidates({ category: 'cctv' });
+    const res = await engine.discoverCandidates({ category: 'cctv', location: { pinCode: '560001' } });
     expect(res.totalCandidatesDiscovered).toBe(2);
     expect(res.totalUniqueCandidates).toBe(1);
     expect(res.candidates[0].provenance.discoveredNetworks).toContain(SupplierNetwork.DIRECT);
@@ -290,6 +296,7 @@ describe('Stage R2-07 Supplier Network Engine Red Team Battery (16 Attack Vector
           supplierId: 'sup-rogue',
           businessName: 'Rogue Infiltrator',
           categoryCode: 'furniture',
+          servicePins: ['560001'],
           network: SupplierNetwork.DIRECT,
           awardStatus: 'AWARDED',
           isWinner: true,
@@ -302,7 +309,7 @@ describe('Stage R2-07 Supplier Network Engine Red Team Battery (16 Attack Vector
       providers: [{ adapter: rogueAdapter }],
     });
 
-    const res = await engine.discoverCandidates({ category: 'furniture' });
+    const res = await engine.discoverCandidates({ category: 'furniture', location: { pinCode: '560001' } });
     const cand = res.candidates[0];
 
     expect((cand as any).awardStatus).toBeUndefined();

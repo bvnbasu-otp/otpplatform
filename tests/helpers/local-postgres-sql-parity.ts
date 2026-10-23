@@ -1,10 +1,34 @@
 import { expect } from 'vitest';
 import type { ClientConfig } from 'pg';
 
+export const LOCAL_POSTGRES_HOST = '127.0.0.1';
+export const DEFAULT_LOCAL_POSTGRES_PORT = 54322;
+
+/**
+ * LOCAL_PG_PORT selects another loopback Supabase stack. Only the port is
+ * configurable; the host is always 127.0.0.1 so a hosted database cannot be
+ * targeted through the environment.
+ */
+export function resolveLocalPostgresPort(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === '') return DEFAULT_LOCAL_POSTGRES_PORT;
+  const value = raw.trim();
+  if (!/^\d+$/.test(value)) {
+    throw new Error(`LOCAL_PG_PORT must be a decimal port number, got ${JSON.stringify(raw)}`);
+  }
+  const port = Number(value);
+  if (port < 1024 || port > 65535) {
+    throw new Error(`LOCAL_PG_PORT must be between 1024 and 65535, got ${port}`);
+  }
+  return port;
+}
+
+export const LOCAL_POSTGRES_PORT = resolveLocalPostgresPort(process.env.LOCAL_PG_PORT);
+export const LOCAL_POSTGRES_ADDRESS = `${LOCAL_POSTGRES_HOST}:${LOCAL_POSTGRES_PORT}`;
+
 /** Local Supabase Docker Postgres — never hosted. */
 export const LOCAL_POSTGRES_CONFIG: ClientConfig = {
-  host: '127.0.0.1',
-  port: 54322,
+  host: LOCAL_POSTGRES_HOST,
+  port: LOCAL_POSTGRES_PORT,
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',
@@ -29,13 +53,13 @@ export function formatSqlParityUnavailableReason(
 ): string {
   const lower = skipReason.toLowerCase();
   if (lower.includes('refusing non-local') || lower.includes('non-local postgres')) {
-    return `SQL parity requires local Docker Postgres only (127.0.0.1:54322); hosted or remote DB is rejected (${skipReason})`;
+    return `SQL parity requires local Docker Postgres only (${LOCAL_POSTGRES_ADDRESS}); hosted or remote DB is rejected (${skipReason})`;
   }
   if (dbUp && !migrationApplied) {
     return `SQL parity migration/function missing on local Postgres: ${skipReason}. Apply repo migrations through 00263 (guard_profile_privileges empty-role fix).`;
   }
   if (!dbUp) {
-    return `Local Postgres unreachable at 127.0.0.1:54322 (${skipReason}). Start Supabase locally and wait for container supabase_db_otp-local.`;
+    return `Local Postgres unreachable at ${LOCAL_POSTGRES_ADDRESS} (${skipReason}). Start Supabase locally and wait for container supabase_db_otp-local.`;
   }
   return skipReason;
 }

@@ -22,19 +22,19 @@ describe('Supabase Client Configuration & Resolver', () => {
     });
   });
 
-  it('prioritizes explicit environment URL when provided', () => {
+  it('does not accept a hosted URL unless the deployment class agrees with its project ref', () => {
     const customUrl = 'https://custom-supabase.example.com';
     const resolved = resolveSupabaseUrl(customUrl, 'otpplatform-theta.vercel.app', 'https://otpplatform-theta.vercel.app');
-    expect(resolved).toBe(customUrl);
+    expect(resolved).toBe('');
   });
 
-  it('routes through same-origin when running on reverse-proxy host (not localhost, not vercel)', () => {
+  it('does not use the page origin as the database when no deployment target is configured', () => {
     const resolved = resolveSupabaseUrl(
       null,
       'app.my-custom-domain.com',
       'https://app.my-custom-domain.com'
     );
-    expect(resolved).toBe('https://app.my-custom-domain.com');
+    expect(resolved).toBe('');
   });
 
   it('falls back to local development URL on localhost', () => {
@@ -55,15 +55,30 @@ describe('Supabase Client Configuration & Resolver', () => {
     expect(resolved).toBe('http://127.0.0.1:54321');
   });
 
-  it('handles vercel.app domains without crashing and detects missing cloud env vars', () => {
+  it('does not treat a vercel.app host as a database target', () => {
     const resolved = resolveSupabaseUrl(
       null,
       'otpplatform-theta.vercel.app',
       'https://otpplatform-theta.vercel.app'
     );
-    // Dev and test mode keep the local API when no URL is configured.
-    // A production build returns before this fallback and does not emit it.
-    expect(resolved).toBe('http://127.0.0.1:54321');
+    expect(resolved).toBe('');
+  });
+
+  it('keeps the same database target when the viewport toggle changes', () => {
+    const desktop = resolveSupabaseUrl(null, 'localhost', 'http://localhost:3000', { viewMode: 'desktop' });
+    const mobile = resolveSupabaseUrl(null, 'localhost', 'http://localhost:3000', { viewMode: 'mobile' });
+    expect(desktop).toBe('http://127.0.0.1:54321');
+    expect(mobile).toBe(desktop);
+  });
+
+  it('refuses the documented production project when the class is non-production', () => {
+    const resolved = resolveSupabaseUrl(
+      'https://qsuvtcezffomtwzwyrso.supabase.co',
+      'localhost',
+      'http://localhost:3000',
+      { deploymentTarget: 'non-production' },
+    );
+    expect(resolved).toBe('');
   });
 
   it('correctly toggles device remember flag in localStorage', () => {

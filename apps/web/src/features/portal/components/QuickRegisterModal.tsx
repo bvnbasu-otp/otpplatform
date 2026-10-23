@@ -58,7 +58,7 @@ export function QuickRegisterModal({ open, onClose }: QuickRegisterModalProps) {
             </li>
             <li className="flex items-center gap-2">
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-              <span>Instant GST Purchase Orders with live milestone tracking</span>
+              <span>Purchase orders record the GST on the awarded quote. OTP does not file GST returns.</span>
             </li>
           </ul>
 

@@ -23,24 +23,39 @@ import {
   createLocalRegistryNetworkAdapter,
 } from './networks/supplier-network-adapters';
 import type { SupplierRepository } from '../repositories/interfaces';
+import type { Supplier } from '../repositories/entities';
 
 /** OTP local registry returns no rows without a repository — tests wire a minimal repo. */
 function testLocalRegistryAdapter(category = 'MOTOR_WINDING') {
-  const repo: SupplierRepository = {
-    findActiveByCategory: async (cat: string) =>
-      cat === category
-        ? [
-            {
-              id: 'a1000000-0000-4000-8000-000000000099',
-              businessName: 'OTP Registry Test Supplier',
-              categories: [cat],
-              verificationStatus: 'VERIFIED',
-              lifecycleState: 'VERIFIED',
-            },
-          ]
-        : [],
+  const row: Supplier = {
+    id: 'a1000000-0000-4000-8000-000000000099',
+    businessName: 'OTP Registry Test Supplier',
+    source: 'OTP_REGISTERED',
+    status: 'ACTIVE',
+    categories: [category],
+    verificationStatus: 'VERIFIED',
+    lifecycleState: 'VERIFIED',
+    serviceArea: { city: 'Bengaluru', pinCode: '560001' },
+  };
+  const repo = {
+    findActiveByCategory: async (cat: string): Promise<Supplier[]> => (cat === category ? [row] : []),
   } as SupplierRepository;
   return createLocalRegistryNetworkAdapter(repo);
+}
+
+/** Candidates from a real adapter, modelled as suppliers that declared Bengaluru 560001 coverage. */
+function withDeclaredCoverage(adapter: SupplierNetworkPort): SupplierNetworkPort {
+  return {
+    network: adapter.network,
+    isTruthfulLive: adapter.isTruthfulLive,
+    async discover(criteria) {
+      const rows = await adapter.discover(criteria);
+      return rows.map((row) => ({
+        ...row,
+        capability: { ...row.capability, serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
+      }));
+    },
+  };
 }
 
 describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatcher', () => {
@@ -146,9 +161,9 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
     it('dispatches discovery to all registered providers in parallel and normalizes candidates', async () => {
       const engine = new SupplierNetworkEngine({
         providers: [
-          { adapter: DirectNetworkAdapter, isLive: true },
-          { adapter: BniNetworkAdapter, isLive: true },
-          { adapter: AssociationNetworkAdapter, isLive: true },
+          { adapter: withDeclaredCoverage(DirectNetworkAdapter), isLive: true },
+          { adapter: withDeclaredCoverage(BniNetworkAdapter), isLive: true },
+          { adapter: withDeclaredCoverage(AssociationNetworkAdapter), isLive: true },
           { adapter: testLocalRegistryAdapter('VALVE_FABRICATION'), isLive: true },
         ],
       });
@@ -223,6 +238,7 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
       const response = await engine.discoverCandidates({
         rfqId: 'rfq-sne-103',
         category: 'MOTOR_WINDING',
+        location: { city: 'Bengaluru', pinCode: '560001' },
       });
 
       expect(response.hasPartialFailures).toBe(true);
@@ -258,6 +274,7 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
       const response = await engine.discoverCandidates({
         rfqId: 'rfq-sne-104',
         category: 'SOLAR_INVERTER',
+        location: { city: 'Bengaluru', pinCode: '560001' },
       });
 
       expect(response.hasPartialFailures).toBe(true);
@@ -282,7 +299,11 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
               externalRef: 'canonical-supp-001',
               network: SupplierNetwork.DIRECT,
               businessName: 'Alpha Engineering',
-              capability: { categories: ['VALVES'], verificationStatus: 'VERIFIED' },
+              capability: {
+                categories: ['VALVES'],
+                serviceArea: { city: 'Bengaluru', pinCode: '560001' },
+                verificationStatus: 'VERIFIED',
+              },
               matchScore: 80,
               matchReasons: ['category_match'],
               canReceiveRfq: true,
@@ -300,7 +321,11 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
               externalRef: 'canonical-supp-001', // Same supplier
               network: SupplierNetwork.LOCAL_REGISTRY,
               businessName: 'Alpha Engineering',
-              capability: { categories: ['VALVES'], verificationStatus: 'VERIFIED' },
+              capability: {
+                categories: ['VALVES'],
+                serviceArea: { city: 'Bengaluru', pinCode: '560001' },
+                verificationStatus: 'VERIFIED',
+              },
               matchScore: 94, // Higher score
               matchReasons: ['category_match', 'geo:local'],
               canReceiveRfq: true,
@@ -320,6 +345,7 @@ describe('Supplier Network Engine — SN.1 Core Orchestration & Provider Dispatc
       const response = await engine.discoverCandidates({
         rfqId: 'rfq-sne-105',
         category: 'VALVES',
+        location: { city: 'Bengaluru', pinCode: '560001' },
       });
 
       expect(response.totalCandidatesDiscovered).toBe(2);

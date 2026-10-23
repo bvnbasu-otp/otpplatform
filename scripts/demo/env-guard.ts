@@ -3,6 +3,8 @@
  * Enforces ABSOLUTE SAFETY RULE: Production must NEVER be reset, purged, or seeded.
  */
 
+import { DOCUMENTED_PRODUCTION_PROJECT_REF, normalizeDeploymentClass } from '../../packages/domain/src/deployment/deployment-target';
+
 const PROD_HOST_PATTERNS = [
   'prod',
   'production',
@@ -54,5 +56,30 @@ export function assertSafeEnvironment(context: string): void {
         }
       }
     }
+  }
+
+  const deployment = normalizeDeploymentClass(process.env.OTP_DEPLOYMENT_TARGET);
+  if (deployment === 'production') {
+    throw new Error(
+      `[SECURITY ERROR] Destructive operation "${context}" is strictly BLOCKED in production (OTP_DEPLOYMENT_TARGET).`
+    );
+  }
+  const projectId = (process.env.SUPABASE_PROJECT_ID ?? '').trim();
+  const projectRef = (process.env.SUPABASE_PROJECT_REF ?? '').trim();
+  const projectBlob = [dbUrl, supabaseUrl, projectRef, projectId].filter(Boolean).join(' ');
+  if (projectBlob.includes(DOCUMENTED_PRODUCTION_PROJECT_REF)) {
+    throw new Error(
+      `[SECURITY ERROR] Destructive operation "${context}" is strictly BLOCKED against production project ref.`
+    );
+  }
+  if (deployment === 'invalid') {
+    throw new Error(
+      `[SECURITY ERROR] Destructive operation "${context}" is strictly BLOCKED for an unrecognized deployment target.`
+    );
+  }
+  if (projectId && projectRef && projectId !== projectRef) {
+    throw new Error(
+      `[SECURITY ERROR] Destructive operation "${context}" is strictly BLOCKED because target identifiers disagree.`
+    );
   }
 }

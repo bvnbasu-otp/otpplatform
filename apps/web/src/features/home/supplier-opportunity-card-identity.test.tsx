@@ -47,5 +47,7 @@ describe('Supplier home opportunity card: buyer identity', () => {
     const markup = render(opportunity());
     expect(markup).toContain('data-testid="identity-protected-shield"');
     expect(markup).toContain('Identity-Protected');
+    expect(markup).toContain('Distance not confirmed');
+    expect(markup).not.toContain('4.2 km away');
   });
 });

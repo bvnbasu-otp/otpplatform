@@ -20,16 +20,7 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Strict 5-Item Navigation Footer Links (Hidden on small mobile screens to prevent double nav clash with MobileBottomNav) */}
-          <nav className="hidden sm:flex flex-wrap items-center justify-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs font-semibold" aria-label="Footer Navigation">
-            <Link to="/" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Home</Link>
-            <Link to="/pricing" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Pricing</Link>
-            <Link to="/signup" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Get Started</Link>
-            <Link to="/about-us" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">About Us</Link>
-            <Link to="/faqs" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">FAQs</Link>
-          </nav>
-
-          {/* Legal Links & Drawer Trigger */}
+          {/* Legal links stay. Primary Home / Pricing / Get Started / About / FAQs live in one nav per viewport. */}
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
             <Link to="/legal/terms" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Terms</Link>
             <Link to="/legal/privacy" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Privacy</Link>

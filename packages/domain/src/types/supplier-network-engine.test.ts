@@ -8,6 +8,7 @@ import {
   FORBIDDEN_CANDIDATE_PII_FIELDS,
   CROCKFORD_BASE32_ALPHABET,
   type NormalizedSupplierCandidate,
+  type EngineDiscoveryRequest,
   SupplierNetwork,
   ProviderExecutionStatus,
   TruthfulProviderStatus,
@@ -27,6 +28,14 @@ import {
 import { IdentityProtectedViolationError } from '../errors/blind-violation';
 
 describe('Supplier Network Engine Domain Contracts & SN.3 Intelligence Models', () => {
+  it('accepts a specific taxonomy subcategory on discovery requests', () => {
+    const request: EngineDiscoveryRequest = {
+      category: 'construction-materials',
+      subcategory: 'opc-53-cement',
+    };
+    expect(request.subcategory).toBe('opc-53-cement');
+  });
+
   describe('Crockford Base32 Pseudonym Generation', () => {
     it('generates deterministic pseudonyms of the specified length', () => {
       const alias1 = generateCrockfordAlias('rfq-101:supplier-1', 4);

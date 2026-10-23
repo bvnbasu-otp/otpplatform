@@ -103,7 +103,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
             network: SupplierNetwork.DIRECT,
             businessName: 'Precision Engineering Pvt Ltd',
             pan: 'ABCDE1234F',
-            capability: { categories: ['VALVES'] },
+            capability: { categories: ['VALVES'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 80,
             matchReasons: ['direct:match'],
             canReceiveRfq: true,
@@ -122,7 +122,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
             network: SupplierNetwork.BNI,
             businessName: 'Precision Engineering LLP', // Similar name, different PAN
             pan: 'XYZAB5678C',
-            capability: { categories: ['VALVES'] },
+            capability: { categories: ['VALVES'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 85,
             matchReasons: ['bni:match'],
             canReceiveRfq: true,
@@ -140,6 +140,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     const res = await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       category: 'VALVES',
       organizationId: ORG_ALPHA,
     });
@@ -162,7 +163,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
             network: SupplierNetwork.ONDC,
             businessName: 'Corrupt GSTIN Vendor',
             gstin: '29ABCDE1234F1Z9', // Invalid checksum (expected 5, received 9)
-            capability: { categories: ['PUMPS'] },
+            capability: { categories: ['PUMPS'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 82,
             matchReasons: ['ondc:match'],
             canReceiveRfq: true,
@@ -177,6 +178,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     const res = await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       category: 'PUMPS',
       organizationId: ORG_ALPHA,
     });
@@ -196,7 +198,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
       businessName: 'Contradictory Vendor',
       pan: 'XYZAB5678C',
       gstin: '29ABCDE1234F1Z5', // Embedded PAN is ABCDE1234F != XYZAB5678C
-      capability: { categories: ['MOTORS'] },
+      capability: { categories: ['MOTORS'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
       matchScore: 78,
       matchReasons: ['direct:match'],
       canReceiveRfq: true,
@@ -215,6 +217,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     const res = await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       category: 'MOTORS',
       organizationId: ORG_ALPHA,
     });
@@ -245,7 +248,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
             canonicalSupplierId: 'supp-private-tenant-a', // Attempting to hijack Tenant A supplier in Tenant B query
             network: SupplierNetwork.DIRECT,
             businessName: 'Rogue Hijacker',
-            capability: { categories: ['GEARS'] },
+            capability: { categories: ['GEARS'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 90,
             matchReasons: ['rogue:hijack'],
             canReceiveRfq: true,
@@ -261,6 +264,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     const res = await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       category: 'GEARS',
       organizationId: ORG_BETA, // Query executing under Tenant B
     });
@@ -284,6 +288,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
             claimedTier: CapabilityEvidenceTier.PLATFORM_VERIFIED, // False claim
             capability: {
               categories: ['BEARINGS'],
+              serviceArea: { city: 'Bengaluru', pinCode: '560001' },
               verificationStatus: 'VERIFIED',
             },
             matchScore: 85,
@@ -300,6 +305,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     const res = await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       category: 'BEARINGS',
       organizationId: ORG_ALPHA,
     });
@@ -441,7 +447,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
             externalRef: 'high-perf-vendor-12',
             network: SupplierNetwork.LOCAL_REGISTRY,
             businessName: 'High Perf Supplier',
-            capability: { categories: ['VALVES'] },
+            capability: { categories: ['VALVES'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 99,
             performanceMetrics: {
               qualityScore: 100,
@@ -463,6 +469,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     const res = await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       rfqId: 'rfq-firewall-12',
       category: 'VALVES',
       organizationId: ORG_ALPHA,
@@ -516,7 +523,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
             businessName: 'Ultra Secret Tech Pvt Ltd',
             pan: 'ABCDE1234F',
             gstin: '29ABCDE1234F1Z5',
-            capability: { categories: ['MOTORS'] },
+            capability: { categories: ['MOTORS'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 88,
             matchReasons: ['direct:match'],
             canReceiveRfq: true,
@@ -531,6 +538,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     const res = await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       category: 'MOTORS',
       organizationId: ORG_ALPHA,
     });
@@ -557,7 +565,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
             externalRef: 'supp-bni-16',
             network: SupplierNetwork.BNI,
             businessName: 'Networked Vendor',
-            capability: { categories: ['PUMPS'] },
+            capability: { categories: ['PUMPS'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 80,
             matchReasons: ['source:BNI', 'source:ONDC_GATEWAY', 'bni:live', 'local_match'],
             canReceiveRfq: true,
@@ -572,6 +580,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     const res = await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       category: 'PUMPS',
       organizationId: ORG_ALPHA,
     });
@@ -606,6 +615,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       rfqId: 'rfq-no-invite-18',
       category: 'FASTENERS',
       organizationId: ORG_ALPHA,
@@ -628,6 +638,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       rfqId: 'rfq-no-po-20',
       category: 'VALVES',
       organizationId: ORG_ALPHA,
@@ -687,6 +698,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       category: 'PUMPS',
       organizationId: ORG_ALPHA,
     });
@@ -705,7 +717,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
           network: SupplierNetwork.DIRECT,
           businessName: `Bulk Supplier ${i}`,
           pan: `ABCDE${1000 + i}F`,
-          capability: { categories: ['VALVES'] },
+          capability: { categories: ['VALVES'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
           matchScore: 70 + (i % 25),
           matchReasons: ['bulk_discovery'],
           canReceiveRfq: true,
@@ -719,6 +731,7 @@ describe('Supplier Network Engine SN.3 Red-Team Security Battery (SN3-RT-01 — 
     });
 
     const res = await engine.discoverCandidates({
+      location: { city: 'Bengaluru', pinCode: '560001' },
       category: 'VALVES',
       organizationId: ORG_ALPHA,
       maxCandidates: 10, // Bounded limit

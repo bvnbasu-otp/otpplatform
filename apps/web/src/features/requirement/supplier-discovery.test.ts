@@ -285,6 +285,33 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
           expect(gstRes.suppliers[0]?.networkLabel).toBe('GST verified supplier');
           expect(gstRes.suppliers[0]?.gstVerified).toBe(true);
           expect(gstRes.suppliers[0]?.otpRegistered).toBe(false);
+          expect(gstRes.suppliers[0]?.status).toBe('INVITED');
+          expect(gstRes.suppliers[0]?.availabilityText).toBe('Availability not confirmed before quote');
+        }
+
+        const placesAndGst = {
+          invitation_id: 'inv-places-gst',
+          rfq_id: 'rfq-202',
+          anonymous_label: 'Supplier #07',
+          status: 'INVITED',
+          match_score: 74,
+          match_reasons: ['pin_coverage', 'discovered_in_area', 'gst_verified'],
+          invited_at: '2026-09-15T10:00:00Z',
+        };
+        vi.mocked(supabase.from).mockImplementation((table: string) => {
+          if (table === 'rfq_invitations_manager') {
+            return createSupabaseQueryMock({ data: [placesAndGst], error: null });
+          }
+          return createSupabaseQueryMock({ data: null, error: null });
+        });
+        const mixedRes = await fetchMatchedSuppliers('rfq-202');
+        expect(mixedRes.ok).toBe(true);
+        if (mixedRes.ok) {
+          expect(mixedRes.suppliers[0]?.networkLabel).toBe('Discovered in area · GST verified');
+          expect(mixedRes.suppliers[0]?.gstVerified).toBe(true);
+          expect(mixedRes.suppliers[0]?.otpRegistered).toBe(false);
+          expect(mixedRes.suppliers[0]?.networkLabel).not.toMatch(/OTP registered/);
+          expect(mixedRes.suppliers[0]?.status).toBe('INVITED');
         }
 
         const s3 = res.suppliers[2];

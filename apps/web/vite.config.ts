@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
+import { resolveDeploymentTarget } from '../../packages/domain/src/deployment/deployment-target';
 
 export default defineConfig({
   plugins: [
@@ -9,22 +10,37 @@ export default defineConfig({
       name: 'production-public-env-guard',
       configResolved(config) {
         if (!config.isProduction || config.command !== 'build') return;
-        const url = config.env.VITE_SUPABASE_URL ?? '';
-        const demo = config.env.VITE_DEMO_MODE ?? '';
-        const key = config.env.VITE_SUPABASE_ANON_KEY ?? '';
+        const env = config.env;
+        const serviceRolePresent = Object.entries(env).some(
+          ([name, value]) => /SERVICE_ROLE/i.test(name) && Boolean(value),
+        );
+        const result = resolveDeploymentTarget({
+          deploymentTarget: env.VITE_OTP_DEPLOYMENT_TARGET,
+          supabaseUrl: env.VITE_SUPABASE_URL,
+          projectRef: env.VITE_SUPABASE_PROJECT_REF,
+          demoMode: env.VITE_DEMO_MODE,
+          anonKey: env.VITE_SUPABASE_ANON_KEY,
+          serviceRoleKeyPresent: serviceRolePresent,
+          viteProductionBuild: true,
+        });
+        if (!result.ok) {
+          throw new Error(`Production build refused: ${result.failure}`);
+        }
+        if (result.deploymentClass === 'local') {
+          throw new Error('Production build refused: a production bundle cannot target the local database.');
+        }
+        if (result.deploymentClass === 'non-production' && result.projectRef === 'qsuvtcezffomtwzwyrso') {
+          throw new Error('Production build refused: non-production selected the production project.');
+        }
+        const key = env.VITE_SUPABASE_ANON_KEY ?? '';
         const localDemoIssuer = 'c3VwYWJhc2UtZGVtbw';
-        if (!url.startsWith('https://') || /localhost|127\.0\.0\.1/i.test(url)) {
-          throw new Error(
-            'Production build refused: VITE_SUPABASE_URL must be an https URL that is not local.',
-          );
-        }
-        if (demo === 'true') {
-          throw new Error('Production build refused: VITE_DEMO_MODE must not be true.');
-        }
         if (!key || key.includes('service_role') || key.includes(localDemoIssuer)) {
           throw new Error(
             'Production build refused: VITE_SUPABASE_ANON_KEY must be a public anon key, not the local demo key or a service role.',
           );
+        }
+        if (result.deploymentClass === 'production' && result.demoSeedAllowed) {
+          throw new Error('Production build refused: production must not receive demo seeds.');
         }
       },
     },
