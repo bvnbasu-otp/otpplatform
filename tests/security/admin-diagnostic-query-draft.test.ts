@@ -52,7 +52,10 @@ describe('00262 admin_run_diagnostic_query (static)', () => {
   const legacy = readFileSync(LEGACY, 'utf8');
 
   it('formal migration SHA256 matches release-pinned digest', () => {
-    const digest = createHash('sha256').update(readFileSync(FORMAL)).digest('hex').toUpperCase();
+    const bytes = readFileSync(FORMAL);
+    // Normalize CRLF to LF so the release-pinned digest does not depend on Windows checkout line endings.
+    const canonicalContent = bytes.toString('utf8').replace(/\r\n/g, '\n');
+    const digest = createHash('sha256').update(canonicalContent, 'utf8').digest('hex').toUpperCase();
     expect(digest).toBe(FORMAL_00262_SHA256);
   });
 

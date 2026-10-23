@@ -68,7 +68,12 @@ describe('Migration 00261 (static authorization & unknown-ID guards)', () => {
 
   it('formal migration SHA256 matches release-pinned digest', () => {
     const bytes = fs.readFileSync(migrationPath);
-    const digest = createHash('sha256').update(bytes).digest('hex').toUpperCase();
+    // Normalize CRLF to LF so the release-pinned digest does not depend on Windows checkout line endings.
+    const canonicalContent = bytes.toString('utf8').replace(/\r\n/g, '\n');
+    const digest = createHash('sha256')
+      .update(canonicalContent, 'utf8')
+      .digest('hex')
+      .toUpperCase();
     expect(digest).toBe(FORMAL_00261_SHA256);
   });
 

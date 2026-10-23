@@ -29,7 +29,10 @@ describe('00263 guard_profile_privileges empty-role (static)', () => {
   const sql = readFileSync(FORMAL, 'utf8');
 
   it('formal migration SHA256 matches release-pinned digest', () => {
-    const digest = createHash('sha256').update(readFileSync(FORMAL)).digest('hex').toUpperCase();
+    const bytes = readFileSync(FORMAL);
+    // Normalize CRLF to LF so the release-pinned digest does not depend on Windows checkout line endings.
+    const canonicalContent = bytes.toString('utf8').replace(/\r\n/g, '\n');
+    const digest = createHash('sha256').update(canonicalContent, 'utf8').digest('hex').toUpperCase();
     expect(digest).toBe(FORMAL_00263_SHA256);
   });
   const live203 = readFileSync(LIVE203, 'utf8');
