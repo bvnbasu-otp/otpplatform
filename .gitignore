@@ -67,5 +67,6 @@ scratch/
 
 # Temporary local reference archives & festive campaign assets
 archive/
+production/
 apps/web/public/brand/festive/
 .waha-last-synced-url
