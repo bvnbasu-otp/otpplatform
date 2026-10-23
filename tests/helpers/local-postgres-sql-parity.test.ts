@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { requireLocalPostgresSqlParity } from './local-postgres-sql-parity';
+import {
+  DEFAULT_LOCAL_POSTGRES_PORT,
+  LOCAL_POSTGRES_CONFIG,
+  requireLocalPostgresSqlParity,
+  resolveLocalPostgresPort,
+} from './local-postgres-sql-parity';
 
 describe('local-postgres-sql-parity policy', () => {
+  it('pins the host to loopback and validates LOCAL_PG_PORT', () => {
+    expect(LOCAL_POSTGRES_CONFIG.host).toBe('127.0.0.1');
+    expect(resolveLocalPostgresPort(undefined)).toBe(DEFAULT_LOCAL_POSTGRES_PORT);
+    expect(resolveLocalPostgresPort('')).toBe(54322);
+    expect(resolveLocalPostgresPort('56322')).toBe(56322);
+    expect(() => resolveLocalPostgresPort('db.example.com:5432')).toThrow(/decimal port/);
+    expect(() => resolveLocalPostgresPort('postgres://evil:5432')).toThrow(/decimal port/);
+    expect(() => resolveLocalPostgresPort('80')).toThrow(/between 1024 and 65535/);
+    expect(() => resolveLocalPostgresPort('70000')).toThrow(/between 1024 and 65535/);
+  });
+
   it('honours REQUIRE_LOCAL_POSTGRES_SQL_PARITY override', () => {
     const prevCi = process.env.CI;
     const prevReq = process.env.REQUIRE_LOCAL_POSTGRES_SQL_PARITY;

@@ -28,6 +28,10 @@ import type {
 } from '../interfaces/supplier-network-port';
 import type { Repositories } from '../repositories/interfaces';
 import { ProviderNeutralLocationIntelligence } from '../gis/provider-neutral-location-intelligence';
+import {
+  classifySupplierTrust,
+  isEligibleRfqInvitationTarget,
+} from './rfq-invitation-targeting';
 
 export interface DispatcherProviderRegistration {
   adapter: SupplierNetworkPort;
@@ -260,8 +264,9 @@ export class SupplierNetworkEngine {
    */
   private getCacheKey(request: EngineDiscoveryRequest): string {
     const cat = request.category.toLowerCase().trim();
+    const sub = request.subcategory?.toLowerCase().trim() || '';
     const pin = request.location?.pinCode?.trim() || request.location?.city?.toLowerCase().trim() || 'ALL';
-    return `${cat}::${pin}`;
+    return sub ? `${cat}::${sub}::${pin}` : `${cat}::${pin}`;
   }
 
   /**
@@ -273,8 +278,12 @@ export class SupplierNetworkEngine {
       return;
     }
     const pin = pinCode?.trim() || 'ALL';
-    const key = `${category.toLowerCase().trim()}::${pin}`;
-    this.discoveryCache.delete(key);
+    const prefix = `${category.toLowerCase().trim()}::`;
+    for (const key of this.discoveryCache.keys()) {
+      if (key.startsWith(prefix) && (key === `${prefix}${pin}` || key.endsWith(`::${pin}`))) {
+        this.discoveryCache.delete(key);
+      }
+    }
   }
 
   /**
@@ -509,6 +518,7 @@ export class SupplierNetworkEngine {
         const candidates = await Promise.race([
           reg.adapter.discover({
             category: request.category,
+            subcategory: request.subcategory,
             location: request.location
               ? {
                   city: request.location.city ?? undefined,
@@ -657,6 +667,17 @@ export class SupplierNetworkEngine {
         continue;
       }
 
+      const targeting = isEligibleRfqInvitationTarget(raw, {
+        category: request.category,
+        subcategory: request.subcategory,
+        organizationId: request.organizationId,
+        location: request.location,
+      });
+      if (!targeting.eligible) {
+        continue;
+      }
+      const trust = classifySupplierTrust(raw);
+
       // Aggregate seen networks across merged providers
       const seenNetworks = new Set<SupplierNetwork>();
       let bestMatchScore = raw.matchScore ?? 70;
@@ -694,7 +715,11 @@ export class SupplierNetworkEngine {
       const sanitizedReasons = sanitizeCandidateMatchReasons([
         ...(raw.matchReasons ?? []),
         distanceResult.isLocal ? 'location_match' : 'regional_coverage',
-        raw.capability?.verificationStatus === 'VERIFIED' ? 'verified_active' : 'active_status',
+        trust === 'GST_VERIFIED'
+          ? 'gst_verified'
+          : trust === 'OTP_REGISTERED'
+            ? 'otp_registered'
+            : 'external_discovery',
       ]);
 
       const isLive = primaryItem.registration.isLive ?? raw.network === SupplierNetwork.LOCAL_REGISTRY;
@@ -763,7 +788,9 @@ export class SupplierNetworkEngine {
         matchReasons: sanitizedReasons,
         capabilityMatch: {
           isMatch: true,
-          matchedCategories: raw.capability?.categories ?? [request.category],
+          matchedCategories: raw.capability?.categories?.length
+            ? raw.capability.categories
+            : [request.subcategory || request.category],
           capacityOk: capacityHeadroom.isHeadroomKnown ? capacityHeadroom.status !== 'EXHAUSTED' : true,
           capacityHeadroomRatio: capacityHeadroom.headroomRatio,
         },
@@ -789,7 +816,7 @@ export class SupplierNetworkEngine {
         flags: {
           canReceiveRfq: raw.canReceiveRfq ?? true,
           canSubmitQuote: raw.canSubmitQuote ?? true,
-          isVerifiedActive: true,
+          isVerifiedActive: trust === 'GST_VERIFIED',
         },
         identityResolution: group.resolution,
         verificationSummary,

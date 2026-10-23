@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { fetchLegalAcceptanceStatus, type AgreementStatus } from '@/features/legal/api/legal-acceptance';
 import { useRoleContext } from '@/features/roles';
@@ -9,6 +9,7 @@ import {
   saveNotificationPreferences,
   updateMyProfile,
   updateOrganizationName,
+  planOrganizationRename,
   requestProfileCredentialOtp,
   verifyAndUpdateProfileCredential,
   DEFAULT_NOTIFICATION_PREFERENCES,
@@ -77,6 +78,7 @@ export function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const confirmedOrgNameRef = useRef<string | null>(null);
 
   // Profile Form States
   const [fullName, setFullName] = useState('');
@@ -238,7 +240,13 @@ export function ProfilePage() {
   // Load Profile and Org data
   useEffect(() => {
     setFullName(context.fullName || '');
-    setOrgName(context.organizationName || '');
+    const confirmedOrgName = confirmedOrgNameRef.current;
+    if (confirmedOrgName && (context.organizationName || '').trim() !== confirmedOrgName) {
+      setOrgName(confirmedOrgName);
+    } else {
+      setOrgName(context.organizationName || '');
+      if (confirmedOrgName) confirmedOrgNameRef.current = null;
+    }
     setOrgId(context.organizationId || null);
     setTitle(context.title || '');
     setAvatarUrl(context.avatarUrl || '');
@@ -261,7 +269,11 @@ export function ProfilePage() {
           setPhone(res.profile.phone || context.phone || 'Not registered');
         }
         if (orgRes && orgRes.ok && !isSupplierPersona) {
-          setOrgName(orgRes.org.organizationName);
+          const confirmed = confirmedOrgNameRef.current;
+          if (!confirmed || orgRes.org.organizationName.trim() === confirmed) {
+            setOrgName(orgRes.org.organizationName);
+            if (confirmed) confirmedOrgNameRef.current = null;
+          }
           setOrgId(orgRes.org.organizationId);
         }
         if (subRes && subRes.ok) {
@@ -452,6 +464,16 @@ export function ProfilePage() {
       return;
     }
 
+    const orgPlan = planOrganizationRename({
+      nextName: orgName,
+      currentName: context.organizationName,
+      organizationId: orgId || context.organizationId,
+    });
+    if (orgPlan.action === 'reject') {
+      setError(orgPlan.error);
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await updateMyProfile({
@@ -466,17 +488,21 @@ export function ProfilePage() {
         return;
       }
 
-      if (orgName.trim() && orgName.trim() !== (context.organizationName || '')) {
-        const orgRes = await updateOrganizationName(orgName.trim(), orgId || context.organizationId);
+      if (orgPlan.action === 'save') {
+        const orgRes = await updateOrganizationName(orgPlan.name, orgPlan.organizationId);
         if (!orgRes.ok) {
           setError(`Profile updated, but organization name update failed: ${orgRes.error}`);
           setSaving(false);
           return;
         }
+        confirmedOrgNameRef.current = orgRes.name;
+        setOrgName(orgRes.name);
+        setSuccessMsg(`Profile saved. Organization name is now ${orgRes.name}.`);
+      } else {
+        setSuccessMsg('Profile saved.');
       }
-
-      setSuccessMsg('Profile and workspace identity saved successfully!');
       await refresh();
+      if (confirmedOrgNameRef.current) setOrgName(confirmedOrgNameRef.current);
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unexpected error saving profile');
@@ -838,9 +864,19 @@ export function ProfilePage() {
                   type="text"
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="e.g. Durgha Rainbow Apartments RWA, Acme Corp"
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-xs text-foreground shadow-2xs focus:border-primary focus:outline-hidden min-h-[44px]"
+                  disabled={!(orgId || context.organizationId)}
+                  placeholder={
+                    orgId || context.organizationId
+                      ? 'e.g. Durgha Rainbow Apartments RWA, Acme Corp'
+                      : 'No organization is linked to this account'
+                  }
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-xs text-foreground shadow-2xs focus:border-primary focus:outline-hidden min-h-[44px] disabled:cursor-not-allowed disabled:bg-muted/50"
                 />
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {orgId || context.organizationId
+                    ? 'A rename is saved only after the server confirms one updated organization. Owners, managers, buyers, admins, and platform admins may rename it. The server checks that permission.'
+                    : 'An Individual or other account with no organization keeps that state. This form does not create an organization.'}
+                </p>
               </div>
 
               {/* Title / Role Suggestions */}

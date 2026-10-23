@@ -52,13 +52,13 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
       decideHighlights: [
         'Mathematical scoring based on price, delivery time & warranty',
         'Direct selection without supplier sales calls or spam',
-        'No platform commission or broker markups',
+        'During the pilot the supplier fee is not charged. The buyer pays the supplier. OTP does not hold the payment.',
       ],
       trackSummary: 'Digital Work Order issued with frozen specifications and milestone check-in.',
       trackMilestones: [
         { title: 'Work Order Generated & Terms Frozen', status: 'completed' },
         { title: 'Motor Pickup & Rewinding Inspection', status: 'in_progress' },
-        { title: 'Testing, Re-installation & Direct UPI Settlement', status: 'pending' },
+        { title: 'Testing and re-installation. The buyer pays the supplier.', status: 'pending' },
       ],
     },
   },
@@ -76,7 +76,7 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
       tellHighlights: [
         'Single registered organizational society address',
         'Custom committee specifications with SLA requirements',
-        'Ready for multi-member approval and statutory auditing',
+        'Ready for multi-member approval. OTP does not perform a statutory audit.',
       ],
       reviewQuotes: [
         { alias: 'Supplier #01', price: '₹1,15,000/yr', delivery: '2 hr SLA', warranty: '12 months', score: 96, gstVerified: true },
@@ -111,7 +111,7 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
       tellHighlights: [
         'Engineering drawing / BoQ attachment & technical attributes',
         'Primary account holder with authorized delegate management',
-        'Statutory GST place-of-supply validation',
+        'The quote can record GST. OTP does not decide the tax treatment or file input tax credit.',
       ],
       reviewQuotes: [
         { alias: 'Supplier #01', price: '₹3,25,000', delivery: '12 days', warranty: 'MTC included', score: 95, gstVerified: true },
@@ -120,11 +120,11 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
       ],
       decideSummary: 'Technical & commercial matrix comparison with delegate procurement authority.',
       decideHighlights: [
-        'Full GST input tax credit (ITC) compliance verification',
+        'The order records the GST on the quote. OTP does not file input tax credit.',
         'Spend-cap enforcement without complex RWA voting rules',
-        'Immutable audit snapshot for tax and compliance records',
+        'The award stays on the order record. OTP does not certify tax compliance.',
       ],
-      trackSummary: 'Production lot tracking and direct B2B settlement via RTGS/NEFT.',
+      trackSummary: 'Production progress stays on the order. The buyer pays the supplier. OTP does not move the funds.',
       trackMilestones: [
         { title: 'Technical Drawing Sign-off & PO Issued', status: 'completed' },
         { title: 'Lot 1 Sample Approval & Machining', status: 'in_progress' },
@@ -133,20 +133,20 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
     },
   },
   SUPPLIER: {
-    label: 'Verified Supplier',
+    label: 'Supplier',
     icon: '🤝',
     role: 'Industrial Vendor & Contractor',
     scenario: {
       title: 'Competitive Quoting on Genuine Buyer Requirements',
       category: 'Industrial Supplies & Machinery Spares',
       location: 'Pan-India / Regional Hubs',
-      budget: 'High-Value Verified RFQs',
+      budget: 'Requests that match category and service area',
       tellText:
-        'Verified suppliers receive instant notifications when genuine, funded buyer requirements match their category, capability, and delivery radius.',
+        'An OTP-registered supplier can be invited when the request category and service area match. An invitation is not a delivered message, and it is not a promise of award.',
       tellHighlights: [
-        'Zero commission on won orders — 100% direct buyer payments',
+        'During the pilot the supplier fee is not charged. A 0.50% platform fee is defined for later. The buyer pays you. OTP does not hold the payment.',
         'Level playing field: fair evaluation without bribery or middlemen',
-        'Instant alerts for verified local and pan-India RFQs',
+        'A website alert is not proof that WhatsApp or SMS was delivered',
       ],
       reviewQuotes: [
         { alias: 'Your Quote', price: '₹42,500', delivery: '4 days', warranty: '1 Year Full', score: 96, gstVerified: true },
@@ -349,7 +349,7 @@ export function OtpProductDemoModal({
             </div>
             <div className="text-right shrink-0">
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-300">
-                <span>🛡️</span> Zero Broker Markup
+                <span>🛡️</span> Buyer pays the supplier
               </span>
             </div>
           </div>
@@ -406,7 +406,7 @@ export function OtpProductDemoModal({
                         </span>
                         {q.gstVerified && (
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ GST Verified
+                            Example quote
                           </span>
                         )}
                         <span className="text-xs text-muted-foreground">

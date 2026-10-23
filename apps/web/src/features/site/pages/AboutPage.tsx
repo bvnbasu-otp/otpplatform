@@ -49,8 +49,9 @@ export function AboutPage() {
           <div className="rounded-2xl border bg-card p-4 shadow-2xs space-y-2">
             <h2 className="text-sm font-bold text-foreground">You pay suppliers directly</h2>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              {PRODUCT_NAME} does not take a commission or handle your money. You agree terms and pay the supplier
-              yourself.
+              You agree terms and pay the supplier yourself. {PRODUCT_NAME} does not collect, hold, or settle that payment.
+              A 0.50% supplier platform fee is defined for after the pilot and is not charged during the pilot.
+              Buyer plan amounts on the pricing page are disclosures for later billing. They are not a charge today.
             </p>
           </div>
         </div>

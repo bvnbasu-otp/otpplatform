@@ -18,6 +18,9 @@ export interface NetworkDiscoveryCandidate {
   network: SupplierNetwork;
   businessName: string;
   capability: NetworkSupplierCapability;
+  /** Declared service coverage. RFQ targeting rejects a candidate that declares none. */
+  servicePins?: string[];
+  serviceCities?: string[];
   /** Internal eligibility only — never shown in identity-protected evaluation */
   matchScore: number;
   matchReasons: string[];
@@ -64,6 +67,7 @@ export interface SupplierNetworkPort {
   isEnabled?(): boolean;
   discover(criteria: {
     category: string;
+    subcategory?: string;
     location?: { city?: string; pinCode?: string };
     structuredSpecs?: Record<string, unknown>;
   }): Promise<NetworkDiscoveryCandidate[]>;

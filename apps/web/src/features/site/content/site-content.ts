@@ -294,8 +294,8 @@ export const CONTRASTS = {
     'No complete statutory record of why',
   ],
   otp: [
-    'Eliminates favoritism and vendor lock-in',
-    'Prevents predatory pricing: buyer identity is protected',
+    'Supplier names stay hidden until you award',
+    'Buyer identity stays hidden while quotes are compared',
     'The order records the quote GST. OTP does not file ITC.',
     'One consistent scoring formula for every quote',
     'Votes carry a recorded reason and end-to-end audit trail',
@@ -407,9 +407,12 @@ export const GENERAL_FAQS: FaqEntry[] = [
   {
     question: 'How are suppliers discovered for my request?',
     answer:
-      'From your request. OTP looks at the kind of work and where it needs to be done. '
-      + 'A discovered supplier is a business found for that area. A registered supplier has an OTP account and has said what they do and where they work. '
-      + 'Discovery is not registration. You choose who to invite — no supplier can pay to be placed higher.',
+      'From your request. OTP looks at the category, subcategory and where the work needs to be done. '
+      + 'A discovered business was found for that search. An OTP-registered supplier has an OTP account. '
+      + 'A GST-verified supplier is one whose GST check is already recorded. Discovery is not registration, '
+      + 'verification, availability, or a promise to quote. Creating an invitation is not the same as sending '
+      + 'WhatsApp, SMS or email, which are not yet live, and it is not a delivery receipt. You can also invite a supplier you already know. '
+      + 'No supplier can pay to be placed higher.',
   },
   {
     question: 'How are quotes compared?',
@@ -459,6 +462,48 @@ export const GENERAL_FAQS: FaqEntry[] = [
     answer:
       'No. Your words are turned into a structured request using fixed rules that look for the type of work, '
       + 'quantities, units, place and dates. It shows you what it understood so you can correct anything it missed.',
+  },
+  {
+    question: `Why use ${PRODUCT_NAME} instead of collecting quotes yourself?`,
+    answer:
+      'So the comparison is on the offer. Names stay hidden until you award, every quote uses the same fields, '
+      + 'and the award, order and invoice stay on one record.',
+  },
+  {
+    question: 'Where does a request apply, and who can be invited?',
+    answer:
+      'To the kind of work and the place on the request. A supplier is eligible when the category matches and their '
+      + 'service area covers that PIN. Sharing a PIN is not enough. A business found in that area is not an OTP-registered '
+      + 'or GST-verified supplier unless those facts are already on their OTP account.',
+  },
+  {
+    question: 'How much does it cost, and how long can suppliers quote?',
+    answer:
+      'During the pilot, buyer plans are ₹0 and the supplier fee is waived. After the pilot, buyers pay the subscription '
+      + 'on the pricing page, and a supplier fee applies only to an order they win. Quoting stays open until the deadline '
+      + 'on that request. OTP does not hold the payment.',
+  },
+  {
+    question: 'What if nobody quotes, and what comes next?',
+    answer:
+      'You can invite a supplier you already know, or close the request. A quote after the deadline is refused. '
+      + 'WhatsApp, SMS and email reminders are not yet live, and OTP does not invent a supplier when nobody quotes. '
+      + 'If you award the work, you and that supplier are introduced and the order is tracked from there.',
+  },
+  {
+    question: 'What is different for an individual, a housing society, and an MSME?',
+    answer:
+      'An Individual account can be used for a household purchase or a business purchase. The account type alone does not decide consumer status. '
+      + 'An individual can raise a request without an organisation. A housing society or RWA keeps its organisation and, '
+      + 'where a committee is set up, votes before the award. An MSME keeps its organisation and the spend approvals it has configured. '
+      + 'OTP does not turn an organisation account into an individual account.',
+  },
+  {
+    question: 'What does OTP do with personal information?',
+    answer:
+      'OTP uses account and procurement details to run the request, the comparison and the order record. '
+      + 'You can ask for access or a correction through the privacy contact on the legal page. '
+      + 'OTP does not certify that you comply with the DPDP Act, and it does not promise that every record can be deleted while a legal retention period still applies.',
   },
 ];
 

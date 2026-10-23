@@ -12,8 +12,9 @@
  *  2. Contiguous numbering & SQL integrity validation before execution.
  *  3. PostgREST schema cache reload (`NOTIFY pgrst, 'reload schema';`).
  *  4. Production data integrity assertion (`assert_production_data_integrity()`).
- *  5. Dual engine: Native PostgreSQL client (`pg`) with automatic fallback to
- *     Supabase CLI (`supabase db push`) or local Docker (`docker exec`).
+ *  5. Dual engine: Native PostgreSQL client (`pg`) with fallback to the
+ *     Supabase CLI (`supabase db push --db-url`). Both run only after the
+ *     deployment target check; an undeclared target may only be local.
  *
  * Usage:
  *   pnpm db:migrate:deploy
@@ -28,7 +29,12 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import {
+  assertMigrationTarget,
+  normalizeDeploymentClass,
+  redactDiagnosticText,
+} from '../packages/domain/src/deployment/deployment-target';
+import { runSupabaseDbPush } from './supabase-db-push';
 
 const WORKSPACE_ROOT = path.resolve(__dirname, '..');
 const MIGRATIONS_DIR = path.join(WORKSPACE_ROOT, 'supabase', 'migrations');
@@ -112,7 +118,14 @@ export function loadEnvFileIfPresent(): void {
   if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
     return;
   }
-  const envFiles = ['.env.otp.production.local', '.env.local', '.env'];
+  const deployment = normalizeDeploymentClass(
+    process.env.OTP_DEPLOYMENT_TARGET ?? process.env.TARGET_ENV,
+  );
+  // A local command must not inherit the production env file.
+  const envFiles =
+    deployment === 'production'
+      ? ['.env.otp.production.local', '.env.local', '.env']
+      : ['.env.local', '.env'];
   for (const envFile of envFiles) {
     const fullPath = path.join(WORKSPACE_ROOT, envFile);
     if (fs.existsSync(fullPath)) {
@@ -141,10 +154,16 @@ export function loadEnvFileIfPresent(): void {
 /**
  * Resolves database connection string from environment variables
  */
-export function resolveDatabaseUrl(): { connectionString: string | null; source: string } {
+export function resolveDatabaseUrl(): {
+  connectionString: string | null;
+  source: string;
+  /** Every non-empty database URL, highest priority first. Includes URLs that were not selected. */
+  suppliedConnectionStrings: string[];
+} {
   loadEnvFileIfPresent();
 
-  // 1. Direct explicit database URLs
+  // 1. Direct explicit database URLs. The first postgres URL is selected.
+  // Later URLs stay in suppliedConnectionStrings so a conflict can be rejected.
   const directUrls = [
     { key: 'DIRECT_URL', val: process.env.DIRECT_URL },
     { key: 'DATABASE_URL', val: process.env.DATABASE_URL },
@@ -152,10 +171,14 @@ export function resolveDatabaseUrl(): { connectionString: string | null; source:
     { key: 'SUPABASE_DB_URL', val: process.env.SUPABASE_DB_URL },
     { key: 'POSTGRES_URL', val: process.env.POSTGRES_URL },
   ];
+  const suppliedConnectionStrings = directUrls
+    .map((item) => (item.val ?? '').trim())
+    .filter((val) => val.length > 0);
 
   for (const item of directUrls) {
-    if (item.val && (item.val.startsWith('postgresql://') || item.val.startsWith('postgres://'))) {
-      return { connectionString: item.val, source: item.key };
+    const val = (item.val ?? '').trim();
+    if (val.startsWith('postgresql://') || val.startsWith('postgres://')) {
+      return { connectionString: val, source: item.key, suppliedConnectionStrings };
     }
   }
 
@@ -167,11 +190,11 @@ export function resolveDatabaseUrl(): { connectionString: string | null; source:
   if (projectId && dbPassword) {
     // Standard Supabase pooler or direct host URL
     const connStr = `postgresql://postgres.${projectId}:${encodeURIComponent(dbPassword)}@aws-0-${region}.pooler.supabase.com:6543/postgres?pgbouncer=true`;
-    return { connectionString: connStr, source: 'SUPABASE_PROJECT_ID + DB_PASSWORD' };
+    return { connectionString: connStr, source: 'SUPABASE_PROJECT_ID + DB_PASSWORD', suppliedConnectionStrings };
   }
 
   // 3. Fallback to local default if port 5432 or 54322 is expected
-  return { connectionString: null, source: 'NONE' };
+  return { connectionString: null, source: 'NONE', suppliedConnectionStrings };
 }
 
 /**
@@ -235,7 +258,9 @@ export async function runMigrations() {
   console.log(`Range           : ${files[0]?.filename} -> ${files[files.length - 1]?.filename}`);
   console.log(`Contiguity Check: ${isContiguous ? '\x1b[32mPASS (Contiguous 00001 to ' + String(files.length).padStart(5, '0') + ')\x1b[0m' : '\x1b[31mFAIL (Missing: ' + missing.join(', ') + ')\x1b[0m'}`);
 
-  if (!isContiguous) {
+  // --deploy must refuse an unverified target before any later exit, connection, or push.
+  // File-only commands still fail closed on a sequence gap here.
+  if (!isContiguous && !(isDeploy && !isCheckOnly)) {
     console.error(`\x1b[31m[ERROR] Non-contiguous migration sequence detected! Missing: ${missing.join(', ')}\x1b[0m`);
     process.exit(1);
   }
@@ -257,13 +282,49 @@ export async function runMigrations() {
   }
 
   // 2. Resolve database connection
-  const { connectionString, source } = resolveDatabaseUrl();
+  const { connectionString, source, suppliedConnectionStrings } = resolveDatabaseUrl();
   console.log(`Database Source : ${source}`);
+  const deploymentTarget = process.env.OTP_DEPLOYMENT_TARGET ?? process.env.TARGET_ENV ?? null;
+  // --status connects and creates tracking tables, so it gets the same target check as --deploy.
+  if (isDeploy || isStatus) {
+    const projectId = (process.env.SUPABASE_PROJECT_ID ?? '').trim();
+    const projectRef = (process.env.SUPABASE_PROJECT_REF ?? '').trim();
+    const viteSupabaseUrl = (process.env.VITE_SUPABASE_URL ?? '').trim();
+    const supabaseApiUrl = (process.env.SUPABASE_URL ?? '').trim();
+    try {
+      if (projectId && projectRef && projectId.toLowerCase() !== projectRef.toLowerCase()) {
+        throw new Error('Environment and Supabase project ref disagree.');
+      }
+      const declared = normalizeDeploymentClass(deploymentTarget);
+      assertMigrationTarget({
+        deploymentTarget,
+        connectionString,
+        projectRef: declared === 'non-production' ? projectId || null : projectId || projectRef || null,
+        supabaseUrl: viteSupabaseUrl || supabaseApiUrl || null,
+        suppliedProjectRefs: [projectId, projectRef],
+        suppliedSupabaseUrls: [viteSupabaseUrl, supabaseApiUrl],
+        suppliedConnectionStrings,
+      });
+    } catch (guardError) {
+      const message = guardError instanceof Error ? guardError.message : 'Migration target refused.';
+      console.error(`\n\x1b[31m[ERROR] ${message}\x1b[0m\n`);
+      process.exit(1);
+    }
+  }
 
-  if (isDeploy && !connectionString && (process.env.CI || process.env.GITHUB_ACTIONS)) {
-    console.error(
-      '\n\x1b[31m[ERROR] CI deploy requires DATABASE_URL (or equivalent). Migration push was not attempted.\x1b[0m\n',
-    );
+  if (!connectionString) {
+    if (process.env.CI || process.env.GITHUB_ACTIONS) {
+      console.error(
+        '\n\x1b[31m[ERROR] CI deploy requires DATABASE_URL (or equivalent). Migration push was not attempted.\x1b[0m\n',
+      );
+      process.exit(1);
+    }
+    console.error('\n\x1b[31m[ERROR] No database connection available for --deploy. Set DATABASE_URL or SUPABASE_PROJECT_ID + SUPABASE_DB_PASSWORD.\x1b[0m\n');
+    process.exit(1);
+  }
+
+  if (!isContiguous) {
+    console.error(`\x1b[31m[ERROR] Non-contiguous migration sequence detected! Missing: ${missing.join(', ')}\x1b[0m`);
     process.exit(1);
   }
 
@@ -370,7 +431,7 @@ export async function runMigrations() {
         } catch (migErr: any) {
           await client.query('ROLLBACK');
           console.log(`\x1b[31mFAILED\x1b[0m`);
-          console.error(`\x1b[31m[ERROR] Failed to apply migration ${item.filename}:\x1b[0m`, migErr.message);
+          console.error(`\x1b[31m[ERROR] Failed to apply migration ${item.filename}:\x1b[0m`, redactDiagnosticText(String(migErr.message ?? ''), connectionString));
           await client.end();
           process.exit(1);
         }
@@ -394,63 +455,32 @@ export async function runMigrations() {
       await client.end();
       process.exit(0);
     } catch (dbErr: any) {
-      console.error(`\x1b[31m[ERROR] Database execution failed: ${dbErr.message}\x1b[0m`);
+      console.error(`\x1b[31m[ERROR] Database execution failed: ${redactDiagnosticText(String(dbErr.message ?? ''), connectionString)}\x1b[0m`);
       try { await client.end(); } catch {}
       process.exit(1);
     }
   }
 
-  // 3. Fallback: Supabase CLI execution
+  // 3. Explicit Supabase CLI target. A missing connection already exited above.
+  // `supabase db push` without `--db-url` would use the linked project, so it is never invoked that way.
+  if (!isDeploy) {
+    console.error('\n\x1b[31m[ERROR] No database connection available for --deploy. Set DATABASE_URL or SUPABASE_PROJECT_ID + SUPABASE_DB_PASSWORD.\x1b[0m\n');
+    process.exit(1);
+  }
   console.log('Attempting migration execution via Supabase CLI (`supabase db push`)...');
   try {
-    const supabaseCmd = process.env.SUPABASE_ACCESS_TOKEN ? 'npx supabase' : 'supabase';
-    const dbUrlArg = connectionString ? `--db-url "${connectionString}"` : '';
-    const cmd = `${supabaseCmd} db push ${dbUrlArg}`.trim();
-    console.log(`Executing: ${cmd}`);
-    execSync(cmd, { stdio: 'inherit', cwd: WORKSPACE_ROOT, env: process.env });
+    runSupabaseDbPush({
+      connectionString,
+      cwd: WORKSPACE_ROOT,
+      env: process.env,
+    });
     console.log('\n\x1b[32m✓ Migrations deployed successfully via Supabase CLI.\x1b[0m\n');
     process.exit(0);
-  } catch (cliErr: any) {
-    console.error(`\x1b[31m[ERROR] Supabase CLI migration failed: ${cliErr.message}\x1b[0m`);
+  } catch (cliErr: unknown) {
+    const message = cliErr instanceof Error ? cliErr.message : 'Supabase CLI migration failed';
+    console.error(`\x1b[31m[ERROR] Supabase CLI migration failed: ${redactDiagnosticText(message, connectionString)}\x1b[0m`);
     process.exit(1);
   }
-
-  // 4. Fallback: Docker execution if running locally
-  try {
-    const dockerCheck = execSync('docker ps --filter "name=otp-prod-db" --filter "status=running" -q', { stdio: 'pipe' }).toString().trim();
-    if (dockerCheck) {
-      console.log('Targeting local Docker container `otp-prod-db`...');
-      const appliedOutput = execSync('docker exec otp-prod-db psql -U postgres -d postgres -t -c "SELECT version FROM public.otp_schema_migrations;"', { stdio: 'pipe' }).toString();
-      const appliedList = appliedOutput.split('\n').map(s => s.trim()).filter(Boolean);
-      const appliedSet = new Set(appliedList);
-
-      let localApplied = 0;
-      for (const file of files) {
-        if (!appliedSet.has(file.filename)) {
-          process.stdout.write(`  [LOCAL DOCKER] Applying ${file.filename}... `);
-          execSync(`docker exec -i otp-prod-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q`, {
-            input: fs.readFileSync(file.filepath, 'utf8'),
-            stdio: ['pipe', 'pipe', 'inherit'],
-          });
-          execSync(`docker exec otp-prod-db psql -U postgres -d postgres -c "INSERT INTO public.otp_schema_migrations (version) VALUES ('${file.filename}') ON CONFLICT (version) DO NOTHING;"`, { stdio: 'pipe' });
-          console.log('\x1b[32mOK\x1b[0m');
-          localApplied++;
-        }
-      }
-      execSync(`docker exec otp-prod-db psql -U postgres -d postgres -c "NOTIFY pgrst, 'reload schema';"`, { stdio: 'pipe' });
-      console.log(`\n\x1b[32m✓ Local Docker synchronized (${localApplied} new applied, ${files.length} total).\x1b[0m\n`);
-      process.exit(0);
-    }
-  } catch {}
-
-  // If no database was accessible
-  if (process.env.CI || process.env.GITHUB_ACTIONS) {
-    console.error('\n\x1b[31m[ERROR] CI deploy requires DATABASE_URL (or equivalent). Migration push was not attempted.\x1b[0m\n');
-    process.exit(1);
-  }
-
-  console.error('\n\x1b[31m[ERROR] No database connection available for --deploy. Set DATABASE_URL or SUPABASE_PROJECT_ID + SUPABASE_DB_PASSWORD.\x1b[0m\n');
-  process.exit(1);
 }
 
 if (require.main === module || process.argv[1]?.includes('deploy-migrations')) {

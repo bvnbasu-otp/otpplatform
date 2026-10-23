@@ -4,6 +4,7 @@ import { useRoleContext } from '@/features/roles';
 import {
   updateMyProfile,
   updateOrganizationName,
+  planOrganizationRename,
   fetchMyProfile,
   requestProfileCredentialOtp,
   verifyAndUpdateProfileCredential,
@@ -299,6 +300,16 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
       return;
     }
 
+    const orgPlan = planOrganizationRename({
+      nextName: orgName,
+      currentName: context.organizationName,
+      organizationId: orgId || context.organizationId,
+    });
+    if (orgPlan.action === 'reject') {
+      setError(orgPlan.error);
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await updateMyProfile({
@@ -313,17 +324,18 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
         return;
       }
 
-      // Update Organization / Entity Name if entered and modified
-      if (orgName.trim() && orgName.trim() !== (context.organizationName || '')) {
-        const orgRes = await updateOrganizationName(orgName.trim(), orgId || context.organizationId);
+      if (orgPlan.action === 'save') {
+        const orgRes = await updateOrganizationName(orgPlan.name, orgPlan.organizationId);
         if (!orgRes.ok) {
           setError(`Profile updated, but organization name update failed: ${orgRes.error}`);
           setSaving(false);
           return;
         }
+        setOrgName(orgRes.name);
+        setSuccessMsg(`Profile saved. Organization name is now ${orgRes.name}.`);
+      } else {
+        setSuccessMsg('Profile saved.');
       }
-
-      setSuccessMsg('Profile and organization settings updated successfully!');
       await refresh();
       onProfileUpdated?.(res.profile);
 
@@ -532,11 +544,18 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
               type="text"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
-              placeholder="e.g. Basu, Durgha Rainbow Apartments, Acme Corp"
-              className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+              disabled={!(orgId || context.organizationId)}
+              placeholder={
+                orgId || context.organizationId
+                  ? 'e.g. Basu, Durgha Rainbow Apartments, Acme Corp'
+                  : 'No organization is linked to this account'
+              }
+              className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:bg-muted/50"
             />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Your company, housing society/RWA, or procurement workspace identity.
+              {orgId || context.organizationId
+                ? 'Saved only when the server confirms the organization name. RWA, MSME, and supplier workspaces use the same server check.'
+                : 'Accounts with no organization, including an Individual account, are left unchanged.'}
             </p>
           </div>
 

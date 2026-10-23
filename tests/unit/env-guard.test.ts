@@ -10,6 +10,9 @@ describe('Phase 21-23 — Multi-Environment Deterministic Reset & Safety Guard',
     delete process.env.APP_ENV;
     delete process.env.DATABASE_URL;
     delete process.env.SUPABASE_URL;
+    delete process.env.OTP_DEPLOYMENT_TARGET;
+    delete process.env.SUPABASE_PROJECT_REF;
+    delete process.env.SUPABASE_PROJECT_ID;
   });
 
   afterEach(() => {
@@ -57,6 +60,30 @@ describe('Phase 21-23 — Multi-Environment Deterministic Reset & Safety Guard',
   it('strictly blocks destructive operation if SUPABASE_URL contains rds.amazonaws.com', () => {
     process.env.SUPABASE_URL = 'https://otp-postgres.rds.amazonaws.com';
     expect(() => assertSafeEnvironment('clear-transactions')).toThrow(/production database host/);
+  });
+
+  it('strictly blocks destructive operation when the deployment class is production', () => {
+    process.env.OTP_DEPLOYMENT_TARGET = 'production';
+    process.env.DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
+    expect(() => assertSafeEnvironment('seed-demo')).toThrow(/OTP_DEPLOYMENT_TARGET/);
+  });
+
+  it('strictly blocks destructive operation against the documented production project ref', () => {
+    process.env.SUPABASE_PROJECT_REF = 'qsuvtcezffomtwzwyrso';
+    expect(() => assertSafeEnvironment('seed-demo')).toThrow(/production project ref/);
+  });
+
+  it('strictly blocks an unrecognized deployment label', () => {
+    process.env.OTP_DEPLOYMENT_TARGET = 'qa-lab';
+    process.env.DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
+    expect(() => assertSafeEnvironment('seed-demo')).toThrow(/unrecognized deployment target/);
+  });
+
+  it('strictly blocks conflicting project identifiers', () => {
+    process.env.SUPABASE_PROJECT_ID = 'abcdefghijklmnopqrst';
+    process.env.SUPABASE_PROJECT_REF = 'bcdefghijklmnopqrstu';
+    process.env.DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
+    expect(() => assertSafeEnvironment('seed-demo')).toThrow(/target identifiers disagree/);
   });
 
   it('strictly blocks destructive operation if DATABASE_URL contains vercel-storage.com', () => {

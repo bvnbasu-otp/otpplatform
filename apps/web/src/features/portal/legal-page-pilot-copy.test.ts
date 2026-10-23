@@ -15,6 +15,13 @@ describe('legal page pilot copy', () => {
     expect(source).toContain('provider configured for this deployment');
   });
 
+  it('uses qualified privacy wording rather than claiming blanket compliance', () => {
+    expect(source).toContain('Privacy requests');
+    expect(source).toContain('This page is not a certification');
+    expect(source).toContain('Deletion is limited where a');
+    expect(source).not.toContain('Your Rights (GDPR/DPDP Compliance)');
+  });
+
   it('does not display developer review warnings or internal legal disclaimer banners', () => {
     expect(source).not.toContain('⚠️ Legal Review Required');
     expect(source).not.toContain('NOT final legal text');

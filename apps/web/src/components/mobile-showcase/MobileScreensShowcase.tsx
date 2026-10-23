@@ -1284,7 +1284,7 @@ function ScreenSupplierHub({ onNext }: { onNext: () => void }) {
           <span className="rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30 px-2 py-0.5 text-[9px] font-bold">
             ⚡ New Sealed Opportunity
           </span>
-          <span className="text-[10px] font-mono text-muted-foreground">4.2 km away</span>
+          <span className="text-[10px] font-mono text-muted-foreground">Distance not confirmed</span>
         </div>
         <div>
           <h5 className="text-xs font-bold text-foreground">10 HP Submersible Motor Rewind</h5>

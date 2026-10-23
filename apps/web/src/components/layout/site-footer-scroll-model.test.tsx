@@ -77,9 +77,8 @@ describe('SiteFooter at 320–375px (static render/class assertions, not device 
   it('does not repeat the "+" primary CTA styling already owned by the header and bottom nav', () => {
     const html = renderFooter();
     expect(html).not.toContain('+ Get Started');
-    const signupLink = html.match(/<a\b[^>]*href="\/signup"[^>]*>/)![0];
-    expect(signupLink).not.toContain('text-primary');
-    expect(signupLink).not.toContain('font-bold');
+    expect(html).not.toContain('href="/signup"');
+    expect(html).not.toContain('>Get Started<');
   });
 
   it('opens the governance drawer as a viewport overlay independent of <main> positioning', () => {

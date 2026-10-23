@@ -64,12 +64,13 @@ describe('User Profile Management & Customization Suite', () => {
     const verifyShortOtp = await verifyAndUpdateProfileCredential('PHONE', '9840012345', '12');
     expect(verifyShortOtp.ok).toBe(false);
 
-    // Organization name validation
+    // A short name is rejected before any server call. A well-formed name
+    // still fails when no organization id is available to authorize.
     const invalidOrg = await updateOrganizationName('A');
     expect(invalidOrg.ok).toBe(false);
 
-    const validOrg = await updateOrganizationName('Basu Procurement Entity');
-    expect(validOrg.ok).toBe(true);
+    const missingOrg = await updateOrganizationName('Basu Procurement Entity');
+    expect(missingOrg.ok).toBe(false);
   });
 
   it('manages multi-channel notification preferences persistence', () => {

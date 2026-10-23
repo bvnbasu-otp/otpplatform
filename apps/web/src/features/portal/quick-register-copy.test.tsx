@@ -16,6 +16,8 @@ describe('QuickRegisterModal pilot copy', () => {
     expect(html).toContain('For suppliers, fabricators, and service providers');
     expect(html).toContain('0.50% platform fee is defined and is not charged during this pilot');
     expect(html).toContain('does not make an instant bank settlement');
+    expect(html).toContain('Purchase orders record the GST on the awarded quote. OTP does not file GST returns.');
+    expect(html).not.toContain('Instant GST Purchase Orders with live milestone tracking');
     expect(html).toContain('For Individuals, RWAs');
     expect(html).not.toContain('Register as Verified Supplier');
     expect(html).not.toContain('Verified Vendors');

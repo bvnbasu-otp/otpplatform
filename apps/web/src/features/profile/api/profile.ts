@@ -170,6 +170,68 @@ export async function updateMyProfile(
   };
 }
 
+const ORGANIZATION_RENAME_UNCONFIRMED = 'Organization name was not confirmed by the server.';
+
+/** Server function 00146 / unapplied 00318. Client checks do not grant this. */
+export const ORGANIZATION_RENAME_MEMBER_ROLES = ['OWNER', 'MANAGER', 'BUYER', 'ADMIN'] as const;
+
+export type OrganizationRenamePlan =
+  | { action: 'skip' }
+  | { action: 'reject'; error: string }
+  | { action: 'save'; name: string; organizationId: string };
+
+/**
+ * Decide whether a profile save should call the organization rename RPC.
+ * A blank or too-short change is a rejection, not a silent skip. An account
+ * with no organization cannot create one here. The RPC still authorizes the
+ * caller; this does not accept a role or a different organization id.
+ */
+export function planOrganizationRename(input: {
+  nextName: string;
+  currentName?: string | null;
+  organizationId?: string | null;
+}): OrganizationRenamePlan {
+  const next = input.nextName.trim();
+  const current = (input.currentName ?? '').trim();
+  const organizationId = typeof input.organizationId === 'string' ? input.organizationId.trim() : '';
+  if (next === current) return { action: 'skip' };
+  if (!organizationId) {
+    return {
+      action: 'reject',
+      error: 'No organization is linked to this profile, so the name was not changed.',
+    };
+  }
+  if (next.length < 2) {
+    return { action: 'reject', error: 'Organization name must be at least 2 characters.' };
+  }
+  return { action: 'save', name: next, organizationId };
+}
+
+/**
+ * Read-only check for the historical RPC, which can return ok and the
+ * requested name when the update matched no row. This is not a write path.
+ */
+async function readStoredOrganizationName(
+  organizationId: string,
+): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('name')
+    .eq('id', organizationId)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error: error.message || ORGANIZATION_RENAME_UNCONFIRMED };
+  }
+
+  const row = (data ?? null) as { name?: unknown } | null;
+  const name = typeof row?.name === 'string' ? row.name.trim() : '';
+  if (!name) {
+    return { ok: false, error: ORGANIZATION_RENAME_UNCONFIRMED };
+  }
+  return { ok: true, name };
+}
+
 export async function updateOrganizationName(
   organizationName: string,
   organizationId?: string | null
@@ -179,39 +241,67 @@ export async function updateOrganizationName(
     return { ok: false, error: 'Organization name must be at least 2 characters.' };
   }
 
-  // 1. Try secure RPC
+  const linkedOrganizationId = typeof organizationId === 'string' ? organizationId.trim() : '';
+  if (!linkedOrganizationId) {
+    return {
+      ok: false,
+      error: 'No organization is linked to this profile, so the name was not changed.',
+    };
+  }
+
+  // The signed-in user is taken from auth.uid() inside the RPC. This client
+  // sends only the requested name and the organization to rename.
   try {
-    const { data: rpcData, error: rpcError } = await supabase.rpc('update_my_organization_name', {
+    const { data, error } = await supabase.rpc('update_my_organization_name', {
       p_organization_name: trimmed,
-      p_organization_id: organizationId || null,
+      p_organization_id: linkedOrganizationId,
     });
 
-    if (!rpcError && rpcData && typeof rpcData === 'object' && 'ok' in rpcData) {
-      const res = rpcData as { ok: boolean; error?: string; name?: string };
-      if (res.ok) return { ok: true, name: res.name ?? trimmed };
-      if (res.error === 'Authentication required') {
-        return { ok: true, name: trimmed };
-      }
-      if (res.error) return { ok: false, error: res.error };
-    }
-  } catch {
-    // Ignore and proceed to direct update fallback
-  }
-
-  // 2. Fallback to direct update if organizationId is present
-  if (organizationId) {
-    const { error } = await supabase
-      .from('organizations')
-      .update({ name: trimmed, updated_at: new Date().toISOString() })
-      .eq('id', organizationId);
-
     if (error) {
-      return { ok: false, error: error.message };
+      return { ok: false, error: error.message || ORGANIZATION_RENAME_UNCONFIRMED };
     }
-    return { ok: true, name: trimmed };
-  }
 
-  return { ok: true, name: trimmed };
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return { ok: false, error: ORGANIZATION_RENAME_UNCONFIRMED };
+    }
+
+    const res = data as { ok?: unknown; error?: unknown; name?: unknown; rows_updated?: unknown };
+    if (res.ok !== true) {
+      const reason = typeof res.error === 'string' && res.error.trim()
+        ? res.error.trim()
+        : 'You do not have permission to rename this organization.';
+      return { ok: false, error: reason };
+    }
+
+    if ('rows_updated' in res && res.rows_updated !== 1) {
+      return { ok: false, error: ORGANIZATION_RENAME_UNCONFIRMED };
+    }
+
+    const confirmedName = typeof res.name === 'string' ? res.name.trim() : '';
+    if (!confirmedName) {
+      return { ok: false, error: ORGANIZATION_RENAME_UNCONFIRMED };
+    }
+
+    // A payload that explicitly reports one updated row is the replacement
+    // function's confirmation. The historical function omits that count and
+    // can still claim success after updating nothing, so the stored name has
+    // to match before this client agrees.
+    if (res.rows_updated === 1) {
+      return { ok: true, name: confirmedName };
+    }
+
+    const stored = await readStoredOrganizationName(linkedOrganizationId);
+    if (!stored.ok) return stored;
+    if (stored.name !== confirmedName) {
+      return { ok: false, error: ORGANIZATION_RENAME_UNCONFIRMED };
+    }
+    return { ok: true, name: stored.name };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error && err.message ? err.message : ORGANIZATION_RENAME_UNCONFIRMED,
+    };
+  }
 }
 
 /**

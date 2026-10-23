@@ -51,6 +51,17 @@ export function SiteHeader() {
     }
   }, [isAccountPopoverOpen]);
 
+  useEffect(() => {
+    if (!isMenuOpen && !isAccountPopoverOpen) return;
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setIsMenuOpen(false);
+      setIsAccountPopoverOpen(false);
+    }
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isMenuOpen, isAccountPopoverOpen]);
+
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : 'U';
 
   return (
@@ -109,7 +120,7 @@ export function SiteHeader() {
                 <span>+</span>
                 <span>Add Capabilities</span>
               </button>
-            ) : allowCreateRequirement ? (
+            ) : allowCreateRequirement && location.pathname !== '/dashboard' ? (
               <button
                 type="button"
                 onClick={() => setIsBuyerIntakeModalOpen(true)}
@@ -129,7 +140,7 @@ export function SiteHeader() {
               >
                 Console
               </Link>
-            ) : (
+            ) : allowCreateRequirement ? null : (
               <button
                 type="button"
                 onClick={() => setIsQuickRegisterOpen(true)}
@@ -221,16 +232,18 @@ export function SiteHeader() {
             </div>
           )}
 
-          {/* Mobile Hamburger Menu Button */}
+          {/* Mobile account menu. Public links live in the compact bottom nav, not here. */}
+          {user && (
           <button
             type="button"
             aria-label="Toggle navigation menu"
             aria-expanded={isMenuOpen}
+            aria-controls="site-header-mobile-menu"
             onClick={() => {
               setIsMenuOpen((prev) => !prev);
               setIsAccountPopoverOpen(false);
             }}
-            className={`rounded-lg border p-1.5 transition ${
+            className={`md:hidden rounded-lg border p-1.5 transition ${
               isMenuOpen ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted'
             }`}
           >
@@ -254,6 +267,7 @@ export function SiteHeader() {
               )}
             </svg>
           </button>
+          )}
         </div>
       </div>
 
@@ -312,7 +326,7 @@ export function SiteHeader() {
 
       {/* Slide-Out Overlay Drawer (Z-Index: 1000) */}
       {isMenuOpen && (
-        <div className="fixed sm:absolute inset-0 top-[48px] z-[1000]">
+        <div id="site-header-mobile-menu" className="fixed sm:absolute inset-0 top-[48px] z-[1000]">
           {/* Backdrop with Click-to-Close */}
           <div
             className="fixed sm:absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
@@ -343,7 +357,7 @@ export function SiteHeader() {
                     <span>Add Business Capabilities</span>
                   </button>
                 </div>
-              ) : allowCreateRequirement ? (
+              ) : allowCreateRequirement && location.pathname !== '/dashboard' ? (
                 <div className="pb-1">
                   <button
                     type="button"
@@ -370,7 +384,7 @@ export function SiteHeader() {
                     Internal console
                   </Link>
                 </div>
-              ) : (
+              ) : allowCreateRequirement ? null : (
                 <div className="pb-1">
                   <button
                     type="button"
@@ -410,54 +424,8 @@ export function SiteHeader() {
                 </div>
               )}
 
-              {/* Primary Navigation Links: Home, Pricing, About Us, FAQs */}
-              <div className="space-y-1">
-                <NavLink
-                  to="/"
-                  end
-                  onClick={() => setIsMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center rounded-lg px-3 py-2 transition font-medium ${
-                      isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    }`
-                  }
-                >
-                  Home
-                </NavLink>
-                <NavLink
-                  to="/pricing"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center rounded-lg px-3 py-2 transition font-medium ${
-                      isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    }`
-                  }
-                >
-                  Pricing
-                </NavLink>
-                <NavLink
-                  to="/about-us"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center rounded-lg px-3 py-2 transition font-medium ${
-                      isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    }`
-                  }
-                >
-                  About Us
-                </NavLink>
-                <NavLink
-                  to="/faqs"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center rounded-lg px-3 py-2 transition font-medium ${
-                      isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    }`
-                  }
-                >
-                  FAQs
-                </NavLink>
-                {user && (
+              {user && (
+                <div className="space-y-1">
                   <NavLink
                     to="/dashboard"
                     onClick={() => setIsMenuOpen(false)}
@@ -469,18 +437,20 @@ export function SiteHeader() {
                   >
                     Workspace Dashboard
                   </NavLink>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Drawer Support Quick Action */}
               <div className="pt-2 border-t flex items-center justify-between gap-2">
-                <Link
-                  to="/profile"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 font-semibold text-foreground hover:bg-muted transition text-xs shadow-2xs flex-1 justify-center"
-                >
-                  <span>👤</span> Profile
-                </Link>
+                {user && (
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 font-semibold text-foreground hover:bg-muted transition text-xs shadow-2xs flex-1 justify-center"
+                  >
+                    <span>👤</span> Profile
+                  </Link>
+                )}
                 <div className="flex-1">
                   <SupportHelpButtonModal className="w-full" />
                 </div>

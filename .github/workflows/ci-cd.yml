@@ -116,6 +116,7 @@ jobs:
       # environment overrides apps/web/.env when a local file is present.
       - name: Compile production web bundle (CI validation env)
         env:
+          VITE_OTP_DEPLOYMENT_TARGET: "non-production"
           VITE_SUPABASE_URL: "https://ci-validation.invalid"
           VITE_SUPABASE_ANON_KEY: "ci-validation-public-anon-placeholder"
           VITE_DEMO_MODE: "false"
@@ -762,14 +763,15 @@ jobs:
       - name: Synchronize Supabase Database Migrations (Staging / Demo)
         if: needs.resolve-env.outputs.target_env == 'STAGING/DEMO'
         env:
-          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.DATABASE_URL || secrets.SUPABASE_DB_URL }}
-          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL || secrets.DIRECT_URL }}
-          DATABASE_POOLER_URL: ${{ secrets.STAGING_DATABASE_POOLER_URL || secrets.DATABASE_POOLER_URL }}
-          SUPABASE_PROJECT_ID: ${{ secrets.STAGING_SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_REF }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD || secrets.SUPABASE_DB_PASSWORD || secrets.DB_PASSWORD }}
+          OTP_DEPLOYMENT_TARGET: non-production
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          DATABASE_POOLER_URL: ${{ secrets.STAGING_DATABASE_POOLER_URL }}
+          SUPABASE_PROJECT_ID: ${{ secrets.STAGING_SUPABASE_PROJECT_ID }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          VITE_SUPABASE_URL: ${{ secrets.STAGING_VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.STAGING_VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           echo "================================================================="
           echo "  SYNCHRONIZING SUPABASE STAGING / DEMO MIGRATIONS"

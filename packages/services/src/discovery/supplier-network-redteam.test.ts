@@ -284,7 +284,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
             externalRef: 'malicious-supp-08',
             network: SupplierNetwork.DIRECT,
             businessName: 'Rogue Supplier 08',
-            capability: { categories: ['MOTORS'] },
+            capability: { categories: ['MOTORS'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 99,
             matchReasons: ['rogue:self_award'],
             canReceiveRfq: true,
@@ -302,6 +302,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
     const res = await engine.discoverCandidates({
       rfqId: 'rfq-rt-08',
       category: 'MOTORS',
+      location: { city: 'Bengaluru', pinCode: '560001' },
     });
 
     expect(res.candidates.length).toBe(1);
@@ -324,7 +325,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
             externalRef: 'malicious-supp-09',
             network: SupplierNetwork.BNI,
             businessName: 'Rogue Supplier 09',
-            capability: { categories: ['VALVES'] },
+            capability: { categories: ['VALVES'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 95,
             matchReasons: ['rogue:po_creation'],
             canReceiveRfq: true,
@@ -342,6 +343,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
     const res = await engine.discoverCandidates({
       rfqId: 'rfq-rt-09',
       category: 'VALVES',
+      location: { city: 'Bengaluru', pinCode: '560001' },
     });
 
     expect(res.candidates.length).toBe(1);
@@ -371,7 +373,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
             externalRef: 'local-fast-10',
             network: SupplierNetwork.LOCAL_REGISTRY,
             businessName: 'Fast Supplier',
-            capability: { categories: ['METALS'] },
+            capability: { categories: ['METALS'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 88,
             matchReasons: ['local_match'],
             canReceiveRfq: true,
@@ -392,6 +394,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
     const res = await engine.discoverCandidates({
       rfqId: 'rfq-rt-10',
       category: 'METALS',
+      location: { city: 'Bengaluru', pinCode: '560001' },
     });
 
     expect(res.hasPartialFailures).toBe(true);
@@ -470,7 +473,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
             externalRef: 'shared-supplier-13',
             network: SupplierNetwork.DIRECT,
             businessName: 'Consensus Vendor',
-            capability: { categories: ['PUMPS'] },
+            capability: { categories: ['PUMPS'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 80,
             matchReasons: ['direct:match'],
             canReceiveRfq: true,
@@ -488,7 +491,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
             externalRef: 'shared-supplier-13',
             network: SupplierNetwork.LOCAL_REGISTRY,
             businessName: 'Consensus Vendor',
-            capability: { categories: ['PUMPS'] },
+            capability: { categories: ['PUMPS'], serviceArea: { city: 'Bengaluru', pinCode: '560001' } },
             matchScore: 85,
             matchReasons: ['local:match'],
             canReceiveRfq: true,
@@ -508,6 +511,7 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
     const res = await engine.discoverCandidates({
       rfqId: 'rfq-rt-13',
       category: 'PUMPS',
+      location: { city: 'Bengaluru', pinCode: '560001' },
     });
 
     expect(res.totalCandidatesDiscovered).toBe(2);
@@ -600,9 +604,18 @@ describe('Supplier Network Engine Red-Team Security Battery (SN2-RT-01 — SN2-R
     });
     const rfq = (rfqRes as any).value;
 
+    mem.seedSupplier({
+      id: 'sup-registered-16',
+      businessName: 'Registered General Supplier 16',
+      source: 'OTP_REGISTRY',
+      status: 'ACTIVE',
+      categories: ['General'],
+      serviceArea: { city: 'Bengaluru', pinCode: '560001' },
+    });
     const engineRes = await services.supplierNetworkEngine.discoverCandidates({
       rfqId: rfq.id,
       category: 'General',
+      location: { city: 'Bengaluru', pinCode: '560001' },
     });
     expect(engineRes.candidates.length).toBeGreaterThan(0);
 

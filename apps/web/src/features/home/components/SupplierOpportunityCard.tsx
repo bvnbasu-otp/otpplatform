@@ -20,7 +20,7 @@ export function SupplierOpportunityCard({ opportunity }: SupplierOpportunityCard
           ⚡ New Sealed Opportunity
         </span>
         <span className="text-[11px] text-muted-foreground font-medium">
-          4.2 km away
+          Distance not confirmed
         </span>
       </div>
 

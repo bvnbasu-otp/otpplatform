@@ -81,12 +81,14 @@ describe('OTP Master Prompt V2 — Product Fixes & Pan-India Readiness Verificat
     expect(rwaModalSrc).toContain("brand-title");
   });
 
-  it('Req 12: Prevents double footer on mobile by hiding footer nav links on small viewports', () => {
+  it('Req 12: Footer does not repeat the primary public nav at any viewport', () => {
     const footerSrc = readFileSync(
       resolve(webRoot, 'src/components/layout/SiteFooter.tsx'),
       'utf8',
     );
-    expect(footerSrc).toContain("hidden sm:flex");
+    expect(footerSrc).not.toContain('aria-label="Footer Navigation"');
+    expect(footerSrc).not.toContain('>Get Started<');
+    expect(footerSrc).not.toContain('>Home<');
   });
 
   it('Req 13: RFQ reset form completely clears draft from memory and local intake storage', () => {

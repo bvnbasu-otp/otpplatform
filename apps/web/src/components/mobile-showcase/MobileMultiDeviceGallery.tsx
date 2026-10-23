@@ -141,7 +141,7 @@ export function MobileMultiDeviceGallery() {
                 title="Supplier Radar"
                 badge="Supplier Radar"
                 badgeColor="bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300"
-                subtitle="Broadcasts to verified local vendors"
+                subtitle="Example only. A PIN match is not a verified supplier."
                 size="sm"
               >
                 <div className="p-3 space-y-2.5 text-left text-foreground">
@@ -322,12 +322,12 @@ export function MobileMultiDeviceGallery() {
                 <div className="p-3 space-y-2.5 text-left text-foreground">
                   <div className="rounded-xl bg-primary/10 border border-primary/20 p-2 text-[10px]">
                     <span className="font-bold block text-primary">⚡ Sri Vinayaka Works</span>
-                    <span className="text-muted-foreground">Whitefield · Verified Supplier</span>
+                    <span className="text-muted-foreground">Whitefield · Example supplier</span>
                   </div>
                   <div className="rounded-xl border-2 border-primary/40 bg-card p-2 space-y-1.5">
                     <div className="flex justify-between text-[8px] font-bold">
                       <span className="text-blue-600">⚡ New RFQ Alert</span>
-                      <span className="text-muted-foreground">4.2 km away</span>
+                      <span className="text-muted-foreground">Distance not confirmed</span>
                     </div>
                     <span className="text-[10px] font-bold block">10 HP Submersible Motor</span>
                     <div className="text-[8px] text-muted-foreground">Durga Rainbow RWA, Mahadevapura</div>
@@ -345,7 +345,7 @@ export function MobileMultiDeviceGallery() {
                 title="30-Minute Quoting Engine"
                 badge="30-Min Quoting"
                 badgeColor="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300"
-                subtitle="Instant GST auto-calculation & TAT"
+                subtitle="Example GST arithmetic. Not a filed return."
                 size="sm"
               >
                 <div className="p-3 space-y-2.5 text-left text-foreground">

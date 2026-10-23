@@ -10,6 +10,27 @@ import {
 import type { SupplierRepository } from '../../repositories/interfaces';
 import type { SupplierNetworkPort, NetworkDiscoveryCandidate } from '../../interfaces/supplier-network-port';
 
+function stringList(...values: unknown[]): string[] {
+  const out = new Set<string>();
+  for (const value of values) {
+    for (const item of Array.isArray(value) ? value : [value]) {
+      if (typeof item === 'string' && item.trim()) out.add(item.trim());
+    }
+  }
+  return [...out];
+}
+
+function declaredServiceArea(area: Record<string, unknown> | undefined): {
+  pins: string[];
+  cities: string[];
+} {
+  if (!area) return { pins: [], cities: [] };
+  return {
+    pins: stringList(area.pinCode, area.pincode, area.pins, area.pincodes),
+    cities: stringList(area.city, area.cities),
+  };
+}
+
 function mapSupplierToCandidate(s: {
   id: string;
   businessName: string;
@@ -18,10 +39,12 @@ function mapSupplierToCandidate(s: {
   verificationStatus?: string;
   lifecycleState?: string;
   categories: string[];
+  serviceArea?: Record<string, unknown>;
 }): NetworkDiscoveryCandidate {
   const verified =
     (s.verificationStatus || '').toUpperCase() === 'VERIFIED' ||
     (s.lifecycleState || '').toUpperCase() === 'VERIFIED';
+  const coverage = declaredServiceArea(s.serviceArea);
 
   return {
     externalRef: `otp-supplier:${s.id}`,
@@ -31,8 +54,13 @@ function mapSupplierToCandidate(s: {
     gstin: s.gstin,
     capability: {
       categories: s.categories,
+      ...(coverage.pins[0] || coverage.cities[0]
+        ? { serviceArea: { pinCode: coverage.pins[0], city: coverage.cities[0] } }
+        : {}),
       verificationStatus: verified ? 'PLATFORM_VERIFIED' : 'UNVERIFIED',
     },
+    servicePins: coverage.pins,
+    serviceCities: coverage.cities,
     matchScore: verified ? 88 : 70,
     matchReasons: [
       `provenance:${SupplierDiscoverySourceKind.OTP_SUPPLIER}`,

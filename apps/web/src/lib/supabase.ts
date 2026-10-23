@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { resolveDeploymentTarget } from '@otp/domain';
 
 // Local URL and the well-known demo anon JWT exist only for `pnpm dev`.
 // import.meta.env.PROD is folded to true in a production build, so those
@@ -7,11 +8,6 @@ import { createClient } from '@supabase/supabase-js';
 const envUrl = import.meta.env.VITE_SUPABASE_URL;
 const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-function devLocalSupabaseUrl(): string {
-  if (import.meta.env.PROD) return '';
-  return 'http://127.0.0.1:54321';
-}
-
 function devLocalAnonKey(): string {
   if (import.meta.env.PROD) return '';
   return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
@@ -19,35 +15,43 @@ function devLocalAnonKey(): string {
 
 const supabaseAnonKey = envKey || devLocalAnonKey();
 
+export interface SupabaseUrlResolutionOptions {
+  deploymentTarget?: string | null;
+  projectRef?: string | null;
+  demoMode?: string | null;
+  anonKey?: string | null;
+  /** Presentation state. It does not select a database. */
+  viewMode?: string | null;
+}
+
+/**
+ * Resolves the database URL from the deployment class and Supabase URL.
+ * A page hostname, viewport toggle, or missing non-production variable
+ * cannot select the production project.
+ */
 export function resolveSupabaseUrl(
   envUrlOverride?: string | null,
   hostnameOverride?: string,
-  originOverride?: string
+  _originOverride?: string,
+  options?: SupabaseUrlResolutionOptions,
 ): string {
-  // If explicitly provided (or overridden in test), prioritize it; otherwise use envUrl
   const targetEnvUrl = envUrlOverride !== undefined ? (envUrlOverride || '') : (envUrl || '');
-  if (targetEnvUrl) return targetEnvUrl;
-  if (import.meta.env.PROD) return '';
-
   const host = hostnameOverride !== undefined
     ? hostnameOverride
     : (typeof window !== 'undefined' ? window.location.hostname : '');
-  const origin = originOverride !== undefined
-    ? originOverride
-    : (typeof window !== 'undefined' ? window.location.origin : '');
-
-  // Dev only. A self-hosted reverse proxy (not Vercel) uses the page origin.
-  // localhost, 127.0.0.1, and *.vercel.app without an explicit URL use the
-  // local Supabase API. Production never reaches this branch.
-  if (
-    host &&
-    host !== 'localhost' &&
-    host !== '127.0.0.1' &&
-    !host.endsWith('.vercel.app')
-  ) {
-    return origin;
-  }
-  return devLocalSupabaseUrl();
+  const result = resolveDeploymentTarget({
+    deploymentTarget: options?.deploymentTarget ?? import.meta.env.VITE_OTP_DEPLOYMENT_TARGET,
+    supabaseUrl: targetEnvUrl,
+    projectRef: options?.projectRef ?? import.meta.env.VITE_SUPABASE_PROJECT_REF,
+    demoMode: options?.demoMode ?? import.meta.env.VITE_DEMO_MODE,
+    anonKey: options?.anonKey ?? (envKey || ''),
+    serviceRoleKeyPresent: Boolean(import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY),
+    viewMode: options?.viewMode,
+    viteProductionBuild: import.meta.env.PROD,
+    pageHostname: host,
+  });
+  if (!result.ok || !result.databaseSelected || !result.supabaseUrl) return '';
+  return result.supabaseUrl;
 }
 
 const supabaseUrl = resolveSupabaseUrl();

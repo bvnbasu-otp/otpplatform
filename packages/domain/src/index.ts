@@ -116,5 +116,6 @@ export * from './types/supplier-network-provider';
 export * from './types/supplier-provider-identity';
 export * from './types/funnel-analytics';
 export * from './identity/duplicate-identity-safeguards';
+export * from './deployment/deployment-target';
 
 

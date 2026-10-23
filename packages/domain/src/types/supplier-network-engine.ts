@@ -415,6 +415,8 @@ export interface EngineDiscoveryRequest {
   rfqId?: string;
   organizationId?: string;
   category: string;
+  /** Most specific taxonomy token. Kept out of the category cache key when absent. */
+  subcategory?: string;
   location?: LocationDescriptor;
   structuredSpecs?: Record<string, unknown>;
   maxCandidates?: number;
