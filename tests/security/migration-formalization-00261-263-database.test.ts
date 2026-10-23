@@ -227,7 +227,9 @@ describe('00261–00263 formal migrations (static parity)', () => {
   it('repo formal migration SHA256 matches release-pinned digests', () => {
     for (const [formal, expected] of Object.entries(FORMAL_SHA256)) {
       const bytes = readFileSync(resolve(ROOT, 'supabase/migrations', formal));
-      const digest = createHash('sha256').update(bytes).digest('hex').toUpperCase();
+      // Normalize CRLF to LF so the release-pinned digest does not depend on Windows checkout line endings.
+      const canonicalContent = bytes.toString('utf8').replace(/\r\n/g, '\n');
+      const digest = createHash('sha256').update(canonicalContent, 'utf8').digest('hex').toUpperCase();
       expect(digest, formal).toBe(expected);
     }
   });

@@ -222,12 +222,30 @@ describe('deploy-migrations.ts safety (UNIT / process)', () => {
     const tsx = `${process.cwd()}/node_modules/tsx/dist/cli.mjs`;
     const res = spawnSync(process.execPath, [tsx, 'scripts/deploy-migrations.ts', '--deploy'], {
       cwd: process.cwd(),
-      env: { ...process.env, DATABASE_URL: '', CI: 'true', GITHUB_ACTIONS: 'true' },
+      env: {
+        ...process.env,
+        CI: 'true',
+        GITHUB_ACTIONS: 'true',
+        OTP_DEPLOYMENT_TARGET: 'non-production',
+        TARGET_ENV: '',
+        DIRECT_URL: '',
+        DATABASE_URL: '',
+        DATABASE_POOLER_URL: '',
+        SUPABASE_DB_URL: '',
+        POSTGRES_URL: '',
+        SUPABASE_PROJECT_ID: '',
+        SUPABASE_PROJECT_REF: '',
+        SUPABASE_PROJECT_URL: '',
+        SUPABASE_DB_PASSWORD: '',
+        DB_PASSWORD: '',
+        SUPABASE_URL: '',
+        VITE_SUPABASE_URL: '',
+      },
       encoding: 'utf8',
     });
     expect(res.status).not.toBe(0);
     const out = res.stdout + res.stderr;
-    expect(out).toMatch(/CI deploy requires DATABASE_URL/i);
+    expect(out).toMatch(/Non-production project is not configured\..*Refusing to fall back to production/i);
     expect(out).not.toMatch(/SUCCESS: Applied/i);
   });
 });

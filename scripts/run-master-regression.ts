@@ -89,6 +89,7 @@ function runStep(name: string, category: string, command: string, testCount: num
       // These are not Vercel Production credentials.
       env = {
         ...process.env,
+        VITE_OTP_DEPLOYMENT_TARGET: 'non-production',
         VITE_SUPABASE_URL: 'https://ci-validation.invalid',
         VITE_SUPABASE_ANON_KEY: 'ci-validation-public-anon-placeholder',
         VITE_DEMO_MODE: 'false',
