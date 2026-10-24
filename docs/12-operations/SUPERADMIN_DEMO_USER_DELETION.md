@@ -1,26 +1,26 @@
 # SuperAdmin demo/QA user deletion
 
-Source reviewed 23 October 2026 from the working tree on `main`, including uncommitted client files and the uncommitted revision of the 00320 proposal. This is the authoritative page for this workflow. The status word lives in [CAPABILITY_STATUS.md](../13-truth/CAPABILITY_STATUS.md). Open findings live in [DOCUMENTATION_DISCOVERED_DEFECTS.md](../13-truth/DOCUMENTATION_DISCOVERED_DEFECTS.md) (DEMO-DEL-01 to DEMO-DEL-08).
+This page describes the current proposal source for SuperAdmin demo/QA deletion. The proposal files remain outside `supabase/migrations/` and have not been applied or promoted. The status word lives in [CAPABILITY_STATUS.md](../13-truth/CAPABILITY_STATUS.md). Findings live in [DOCUMENTATION_DISCOVERED_DEFECTS.md](../13-truth/DOCUMENTATION_DISCOVERED_DEFECTS.md) (DEMO-DEL-01 to DEMO-DEL-08).
 
 ## Status summary
 
 | Part | Readiness | CAPABILITY_STATUS label | Basis |
 | --- | --- | --- | --- |
-| Client UI and API wrapper | Implemented and locally verified (against a mocked Supabase client only) | `IMPLEMENTED` | `apps/web/src/features/admin/api/demo-user-deletion.test.ts` and `apps/web/src/features/admin/demo-user-deletion-ui.test.tsx`: 2 files, 35 tests passed on 23 October 2026 against the uncommitted tree. The mock stands in for every server response. |
+| Client UI and API wrapper | Implemented and locally verified (against a mocked Supabase client only) | `IMPLEMENTED` | `apps/web/src/features/admin/api/demo-user-deletion.test.ts` and `apps/web/src/features/admin/demo-user-deletion-ui.test.tsx`: 2 files, 35 tests passed on 24 October 2026. The mock stands in for every server response. |
 | Server functions `preview_demo_user_deletion` / `execute_demo_user_deletion` | Proposal only (unapplied) | `NOT-IMPLEMENTED` in any database | `supabase/00320_superadmin_demo_user_deletion.UNAPPLIED.sql`. Not in `supabase/migrations/`. |
 | Prerequisites 00315, 00316, 00321 | Proposal only (unapplied) | `NOT-IMPLEMENTED` in any database | Files sit in `supabase/`, outside the migration runner. |
 | End-to-end workflow | Blocked pending owner authorization | `PARTIAL` | The UI calls RPCs that do not exist in any database until the owner authorizes applying 00315, 00316, 00321, then 00320. |
-| Hosted or runtime proof | Planned or not available | — | No database-backed run, PostgREST call, or hosted check was made for this page. |
+| Hosted or runtime proof | Not available | — | Local rollback tests ran on 24 October 2026 against `127.0.0.1:54322`. No PostgREST call or hosted check was made. |
 
-**Implementation complete is not the same as deployment ready.** The client and the SQL proposals are written. Deployment readiness still needs the prerequisite integrity checks, database-backed tests, hosted-runtime proof, and release gates listed below. None of those exist yet.
+**Implementation complete is not the same as deployment ready.** The client and the SQL proposals are written. A local rollback harness can exercise the proposal inside a transaction that rolls back. Deployment readiness still needs owner authorization, hosted-runtime proof, and the release gates listed below.
 
-**DEMO-USER DELETION — NOT READY FOR ENFORCEMENT.** Source review found that `effective_superadmin_requester()` unnecessarily required the legacy singular `request.jwt.claim.role` GUC in addition to `auth.uid()` and `auth.role()`. The proposal now uses the established Supabase auth helpers, whose JWT context is server supplied, and still requires the full database-backed effective SUPER_ADMIN holding. This is static source evidence only; modern PostgREST claims-only behavior still needs database/PostgREST runtime proof before enforcement.
+**DEMO-USER DELETION — NOT READY FOR ENFORCEMENT.** The current proposal resolves the requester with `auth.uid()` and `auth.role() = 'authenticated'`, plus the database-backed effective SUPER_ADMIN holding. It does not require the legacy singular `request.jwt.claim.role` GUC. That is source behavior. It does not prove that a hosted PostgREST session satisfies `auth.role() = 'authenticated'`. PostgREST and hosted runtime behavior remain unverified.
 
 ## 1. Purpose and scope
 
 - The workflow permanently removes a disposable demo/QA account: its `public.profiles` row and its linked `auth.users` row.
 - It is separate from the existing account lifecycle actions in the same panel (block, deactivate, reactivate, audit statement). Those actions keep the account and its history. This one deletes the account. The modal says so: *"Irreversible: this removes both the profile and Auth identity. Existing lifecycle actions remain separate."*
-- Eligibility depends only on `public.profiles.is_demo = true`. The 00320 header says that email, name, title, and other strings the caller controls are never used to classify a target. A name or email pattern (for example `@otp.test` or "QA") is not evidence that an account is disposable. Users can set those strings, and a real account can look like a test account.
+- Trusted demo/QA classification depends only on `public.profiles.is_demo = true`. A stored email that matches `private_security.admin_whitelist` under `lower(email)` does not classify the account. It blocks deletion. The 00320 header says that email, name, title, and other strings the caller controls are never used to classify a target. A name or email pattern (for example `@otp.test` or "QA") is not evidence that an account is disposable. Users can set those strings, and a real account can look like a test account.
 - 00321 makes `is_demo` a trusted marker. Only a database-operator `INSERT` without JWT context can create `is_demo = true`. A false-to-true `UPDATE` is always denied, including for service role and the database owner. A founder profile can never carry the marker.
 
 ## 2. Where it lives and what the operator sees
@@ -29,7 +29,7 @@ Source reviewed 23 October 2026 from the working tree on `main`, including uncom
 | --- | --- |
 | Route | `/admin?tab=users` (also `user`, `roster`, `users_orgs`; the value is upper-cased), rendered by `apps/web/src/features/admin/pages/AdminDashboardPage.tsx`. The Organizations and Approvals tabs render the same panel. |
 | Panel | `apps/web/src/features/admin/components/AdminUsersActivityPanel.tsx` |
-| Modal | `apps/web/src/features/admin/components/DemoUserDeletionModal.tsx` (new, untracked) |
+| Modal | `apps/web/src/features/admin/components/DemoUserDeletionModal.tsx` |
 | API wrapper | `apps/web/src/features/admin/api/demo-user-deletion.ts` (`fetchDemoQaAccountIds`, `previewDemoUserDeletion`, `executeDemoUserDeletion`) |
 | Row mapping | `normalizeAdminUserItem` in `apps/web/src/features/admin/api/admin-ops.ts` adds `isDemo`. The `AdminUserItem.isDemo` type is in `apps/web/src/features/admin/types/admin.ts`. |
 
@@ -46,7 +46,7 @@ Source reviewed 23 October 2026 from the working tree on `main`, including uncom
 
 - Opening the modal requests a preview at once (*"Requesting server-authorized preview…"*). The modal shows Target, Email, Profile ID, and a UI marker (*"Demo/QA"* or *"Not marked demo — action unavailable"*).
 - The preview shows the server's eligibility (*Eligible* or *Ineligible*), the blocker count, and the preview expiry (or *"No token issued"*).
-- Policy blockers are listed as `category: code`. The codes are `identity: TARGET_NOT_TRUSTED_DEMO_QA`, `identity: FOUNDER_IDENTITY_PROTECTED`, and `authorization: LAST_EFFECTIVE_SUPERADMIN_PROTECTED`.
+- Policy blockers are listed as `category: code`. The codes are `identity: TARGET_NOT_TRUSTED_DEMO_QA`, `identity: FOUNDER_IDENTITY_PROTECTED`, `identity: ADMIN_WHITELIST_PROTECTED`, `identity: ADMIN_WHITELIST_PROTECTION_UNEVALUATED`, and `authorization: LAST_EFFECTIVE_SUPERADMIN_PROTECTED`. The UI prints whatever `category` and `code` the server returns.
 - Dependency details show *"(N catalog entries)"*. Each blocking entry is listed as `schema.table.column — category, N row(s), disposition`. When nothing blocks, the modal says *"No retained dependency blocks were found."*
 - **Request fresh preview** discards the current token and the typed confirmation.
 
@@ -110,7 +110,7 @@ The client reports success only when the server returns `ok: true`, the same tar
 | The last effective SuperAdmin cannot be deleted | Snapshot policy blocker `LAST_EFFECTIVE_SUPERADMIN_PROTECTED` |
 | Founder SUPER_ADMIN holdings cannot be changed through role, assignment, or catalog tables | 00316 triggers (listed in the 00320 preconditions) |
 | Target must have an Auth identity | Snapshot raises `DEMO_USER_DELETE_BLOCKED: target Auth identity is missing` |
-| Root SuperAdmin emails on `private_security.admin_whitelist` cannot be deleted | Existing `private_security.enforce_superadmin_immutability()` (00296). **The preview does not model this check** (DEMO-DEL-01) |
+| A profile whose email matches `private_security.admin_whitelist` under `lower(email)` cannot be presented as eligible | Snapshot blocker `ADMIN_WHITELIST_PROTECTED`, the same DELETE predicate as applied `private_security.enforce_superadmin_immutability()` (00296): `lower(admin_whitelist.email) = lower(profiles.email)`. This is not a demo classification. If the relation is missing, the `email` column is missing, the function owner cannot `SELECT`, row security could hide rows, or the relation is not an ordinary or partitioned table, `ADMIN_WHITELIST_PROTECTION_UNEVALUATED` makes the preview ineligible. Membership is not guessed. Execute recomputes the snapshot and raises `DEMO_USER_DELETE_BLOCKED` before `DELETE`. The trigger is not disabled or bypassed. The same trigger still calls `private.assert_recovery_floor_after` on every `DELETE`; that floor is not a preview blocker |
 
 Grants: `preview_*` and `execute_*` are `EXECUTE` for `authenticated` only. `PUBLIC`, `anon`, and `service_role` are revoked. The helpers, the manifest, and the preview table are revoked from every API role. 00320 also revokes every grant on the historical `public.admin_bulk_delete_users(uuid[], boolean)`. No application code outside tests references that function.
 
@@ -143,7 +143,7 @@ Grants: `preview_*` and `execute_*` are `EXECUTE` for `authenticated` only. `PUB
   - the audit event exists;
   - the token was consumed.
 - **Missing:**
-  - The preview does not model `BEFORE DELETE` triggers on `profiles` or `auth.users`, such as the 00296 whitelist (DEMO-DEL-01).
+  - The snapshot models the 00296 whitelist DELETE predicate. It does not copy `private.assert_recovery_floor_after`, which that same trigger calls on every DELETE. A non-whitelisted target can preview as eligible and still roll back if the floor rejects the delete. Other `BEFORE DELETE` triggers on `auth.users` are not inventoried in the snapshot. Execution leaves triggers enabled.
   - Preview rows have no retention or purge (DEMO-DEL-04).
   - Nothing outside the transaction verifies the result after commit, for example an operator query or report.
 
@@ -156,7 +156,7 @@ Filesystem check on 23 October 2026: the last file in `supabase/migrations/` is 
 | `00315_audit_actor_identity_registry.UNAPPLIED.sql` | `supabase/` | Proposal only (unapplied) | Durable audit-actor registry. Repoints `audit_events.actor_id`. Keeps attribution after a profile is deleted. Its header reads like an applied migration and lacks the `STATUS: UNAPPLIED` banner (DEMO-DEL-06). |
 | `00316_founder_superadmin_role_guard.UNAPPLIED.sql` | `supabase/` | Proposal only (unapplied) | Founder SUPER_ADMIN guards on `profiles`, `profile_roles`, `internal_user_assignments`, `internal_roles`, `user_roles` (including `TRUNCATE`). Needs the schema through 00301. |
 | `00321_restrict_is_demo_marker.UNAPPLIED.sql` | `supabase/` | Proposal only (unapplied) | Immutable `is_demo` marker trigger `trg_guard_profile_is_demo_marker`. |
-| `00320_superadmin_demo_user_deletion.UNAPPLIED.sql` | `supabase/` | Proposal only (unapplied). Modified, uncommitted. | Preview/execute functions, manifest, preview table, revoke of `admin_bulk_delete_users`. |
+| `00320_superadmin_demo_user_deletion.UNAPPLIED.sql` | `supabase/` | Proposal only (unapplied). Not in `supabase/migrations/` and not promoted. | Preview/execute functions, manifest, preview table, whitelist snapshot blocker, revoke of `admin_bulk_delete_users`. |
 
 Required apply order, stated in the 00320 header: **00315 → 00316 → 00321 → 00320**. 00321 must go before 00320 even though its number is higher. 00320 refuses to install if any prerequisite function or trigger is missing. `00317`, `00318`, `00319`, and the separate `00314_internal_procurement_and_supplier_business_address.UNAPPLIED.sql` are also unapplied proposals in `supabase/`. They are not prerequisites of 00320. The `00314` number collides with the applied `migrations/00314_internal_invitation_acceptance.sql` (DEMO-DEL-07).
 
@@ -166,39 +166,44 @@ Open prerequisites: owner review and authorization of all four files, a decision
 
 ### What the 00320 preconditions check
 
+Ten prerequisite functions are checked for signature, security mode, exact `search_path`, language, and `EXECUTE` denied to `public`, `anon`, `authenticated`, and `service_role`. Volatility is checked only where the manifest declares it. Postgres ownership is required only for the seven `private_security` functions. The three `private` functions from 00315 have no owner check. `private_security.founder_profile_protected(uuid)` stays `SECURITY INVOKER`.
+
 For each of the 16 required prerequisite triggers, the checks are:
 
 - the trigger exists under that name, is not internal, and sits on the expected table;
-- it is bound to the expected function, with no arguments, returning `trigger`;
+- it is bound to the expected zero-argument function, returning `trigger`, and `tgfoid` matches that signature;
+- `tgtype` matches, so timing, row or statement level, and events are part of the check;
+- `UPDATE OF` columns and trigger arguments match;
+- the `WHEN` clause is null;
 - it is enabled (`O` or `A`, so not disabled and not replica-only);
-- the function's `SECURITY DEFINER` flag matches;
-- the function's `search_path` setting matches exactly.
+- the function's security mode and `search_path` match.
 
 ### What they do not check (prerequisite-function integrity limitations)
 
-- **Trigger semantics can drift.** Timing (`BEFORE`/`AFTER`), events (`INSERT`/`UPDATE`/`DELETE`/`TRUNCATE`), `UPDATE OF` columns, `FOR EACH ROW`/`STATEMENT`, and `WHEN` clauses are not compared. A trigger with the right name could fire at the wrong time or on the wrong event.
-- **Function bodies are not verified.** No `prosrc` hash or behaviour check is made. A function with the expected name, flags, and `search_path` could have a weakened body.
-- **Transitive helpers are unchecked.** Helpers the guard functions call (for example `private.permit_audit_actor_registry`, `public.resolve_audit_actor`, `private.guard_profile_privileges`, `private_security.enforce_superadmin_immutability`) are not checked for presence, flags, or body.
-- **Owner and ACL policy are unchecked.** Function owner, `EXECUTE` grants, and table privileges on the prerequisite objects are not asserted. 00320 sets owner and grants only for its own objects.
-- **The 00315 precheck mostly checks names.** It looks for `public.audit_actor_identities` and `private.maintain_audit_actor_identity()` but does not check that `audit_events.actor_id` now references the registry.
+- **Function bodies are not hashed.** No `prosrc` comparison is made. A function with the expected name, flags, owner, and `search_path` could have a weakened body. Catalog checks do not prove function-body equivalence.
+- **Transitive helper bodies are not fully checked.** The 10 function checks do not prove complete helper-body integrity. Helpers outside that list, including `public.resolve_audit_actor`, `private.guard_profile_privileges`, `private.assert_recovery_floor_after`, and `private_security.enforce_superadmin_immutability`, are not body-checked.
+- **Hosted runtime behavior is not proved.** These checks do not show what a hosted database or PostgREST session will do.
+- **The early 00315 presence check is still only a name check.** It looks for `public.audit_actor_identities` and `private.maintain_audit_actor_identity()`. The later function and trigger loops add the catalog checks above. They do not prove that `audit_events.actor_id` references the registry.
 
-**These selected catalog metadata checks do not prove complete function-body integrity.** They catch a missing, misbound, or disabled prerequisite. They do not catch one that was replaced with weaker logic.
+**These selected catalog metadata checks do not prove function-body equivalence, complete helper-body integrity, or hosted runtime behavior.** They catch a missing, misbound, or disabled prerequisite. They do not catch one that was replaced with weaker logic.
 
 ### Static versus database-backed verification
 
 | Evidence | Kind | What it shows |
 | --- | --- | --- |
-| `tests/security/demo-user-deletion-00320.test.ts`, tests 1–8 | **Static.** Reads SQL text with regex and string checks. | The proposal text has the expected guards, ordering, manifest shape, grants, and revokes. It does not execute SQL. |
-| Same file, `classifies every live profile/Auth foreign key…` | Database-backed, local Postgres only, rolled back | Compiles 00320 with the preconditions removed, then compares the manifest with the live FK catalog. **Skipped with a `[SKIP REASON]` warning when local Postgres is unavailable**, unless local SQL parity is required. Not run for this page. |
-| Same file, `executes only against rollback-only disposable fixtures…` | Database-backed, local, rolled back | Runs preview and execute on disposable fixtures when the prerequisites exist locally. It sets both `request.jwt.claim.role` and `request.jwt.claims`, which can hide DEMO-DEL-02. Not run for this page. |
-| `apps/web/.../demo-user-deletion.test.ts`, `.../demo-user-deletion-ui.test.tsx` | Unit and rendered tests with a mocked Supabase client | Client behaviour only. 35 passed on 23 October 2026. |
+| `tests/security/demo-user-deletion-00320.test.ts`, static tests | **Static.** Reads SQL text with regex and string checks, including comment-stripped snapshot and execute bodies. | The proposal text has the expected guards, ordering, manifest shape, grants, revokes, and whitelist blocker. It does not execute SQL. |
+| Same file, `classifies every live profile/Auth foreign key…` | Database-backed, local Postgres only, rolled back | Compiles 00320 with the preconditions removed, then compares the manifest with the live FK catalog. **Skipped with a `[SKIP REASON]` warning when local Postgres is unavailable**, unless local SQL parity is required. On 24 October 2026 it ran against `127.0.0.1:54322` and passed inside `BEGIN`/`ROLLBACK`. Not a hosted proof. |
+| Same file, `executes only against rollback-only disposable fixtures…` | Database-backed, local, rolled back | Runs preview and execute on disposable fixtures when the prerequisites exist locally. `setRequester` sets `request.jwt.claim.role` to `authenticated` because local Postgres 15.8 `auth.role()` prefers that GUC over `request.jwt.claims`. The `service_role` case sets the GUC to `service_role` and expects `DEMO_USER_DELETE_DENIED`. The function does not read the legacy GUC. This does not prove a hosted session satisfies `auth.role() = 'authenticated'`. On 24 October 2026 the test passed inside `BEGIN`/`ROLLBACK`, including a whitelist-protected disposable profile that previewed ineligible, failed execute with `DEMO_USER_DELETE_BLOCKED`, and still had its profile row. |
+| `apps/web/.../demo-user-deletion.test.ts`, `.../demo-user-deletion-ui.test.tsx` | Unit and rendered tests with a mocked Supabase client | Client behaviour only. 35 passed on 24 October 2026. |
 
-### Runtime and database tests still needed (not run)
+### Runtime proof still required
 
-1. Apply 00315 → 00316 → 00321 → 00320 to a disposable local database. Confirm each precondition passes, and that each one fails when its prerequisite is dropped, disabled, or replaced.
-2. Call `preview_demo_user_deletion` and `execute_demo_user_deletion` through **real PostgREST** with a real SuperAdmin JWT. Confirm the requester check accepts the claims that PostgREST actually sets (DEMO-DEL-02).
+On 24 October 2026 `tests/security/demo-user-deletion-00320.test.ts` passed 18 tests, including both local database tests, against `127.0.0.1:54322`. Proposal SQL was applied only inside a transaction that rolled back. PostgREST and hosted behavior were not checked. The following are still required before enforcement.
+
+1. Confirm each 00320 precondition fails when its prerequisite is dropped, disabled, or replaced. The local rollback run applied 00315, 00316, 00321, and 00320 only when they were absent, then rolled back. It did not exercise those failure cases.
+2. Call `preview_demo_user_deletion` and `execute_demo_user_deletion` through **real PostgREST** with a real SuperAdmin JWT. Confirm the requester check accepts the claims that PostgREST actually sets (DEMO-DEL-02). Do not treat a passing local GUC fixture as proof that hosted sessions satisfy `auth.role() = 'authenticated'`.
 3. Negative callers: `anon`, ordinary `authenticated`, platform admin without an active SUPER_ADMIN role, BLOCKED or SUSPENDED SuperAdmin, and `service_role`. Each must be denied.
-4. Targets: non-demo, founder, last effective SuperAdmin, an email on the whitelist (DEMO-DEL-01), a profile with retained rows in each category, an unknown FK, and FK action drift. Each must block or fail closed with no change.
+4. Targets: non-demo, founder, last effective SuperAdmin, an email on the whitelist, a profile with retained rows in each category, an unknown FK, and FK action drift. Each must block or fail closed with no change. The 24 October 2026 local rollback run covered a whitelist-protected disposable demo: preview was ineligible (`ADMIN_WHITELIST_PROTECTED`), execute raised `DEMO_USER_DELETE_BLOCKED`, and the profile row remained before rollback. That is not a hosted proof.
 5. Stale paths: a token past 10 minutes, a token reused after success, a token issued to a different requester or target, a change in the SuperAdmin count, a new dependency row between preview and execute, and two executes at the same time.
 6. After success: confirm the audit actor evidence, the `admin.demo_user_deleted` event, the consumed preview row, and that no Auth sessions remain.
 7. After applying: confirm the `admin_bulk_delete_users` revoke does not break any caller.
@@ -251,7 +256,7 @@ For each of the 16 required prerequisite triggers, the checks are:
 - **Deployment:** **not ready.** Blocked pending owner authorization. Before deployment it still needs:
   - prerequisite-integrity hardening or an accepted-risk record (section 7);
   - database-backed and PostgREST runtime tests;
-  - DEMO-DEL-01 and DEMO-DEL-02 resolved or accepted;
+  - DEMO-DEL-02 PostgREST behavior verified or explicitly accepted. The whitelist preview disagreement (DEMO-DEL-01) is fixed in the current proposal source and is still unapplied;
   - a decision on the 00314 number collision;
   - hosted-runtime proof;
   - the release gates in [RELEASE_RUNBOOK.md](./RELEASE_RUNBOOK.md).

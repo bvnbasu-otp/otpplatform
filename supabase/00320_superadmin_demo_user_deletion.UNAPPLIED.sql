@@ -5,6 +5,11 @@
 -- Two-phase, server-authorized deletion for disposable demo/QA profiles only.
 -- Eligibility is based solely on public.profiles.is_demo. Email, name, title,
 -- and other caller-controlled strings are never used to classify a target.
+-- The snapshot also repeats the applied 00296 DELETE predicate:
+-- lower(private_security.admin_whitelist.email) = lower(profiles.email).
+-- That comparison does not classify is_demo. If the whitelist cannot be read
+-- completely, the target is ineligible. The existing BEFORE DELETE trigger is
+-- not disabled, dropped, or bypassed.
 --
 -- The workflow inventories every direct foreign key to public.profiles(id) and
 -- auth.users(id) and classifies each one only through the reviewed manifest in
@@ -445,6 +450,9 @@ DECLARE
   v_state jsonb;
   v_fingerprint text;
   fk record;
+  v_whitelist_relation oid;
+  v_whitelist_evaluable boolean := false;
+  v_whitelist_protected boolean := false;
 BEGIN
   SELECT * INTO v_target
   FROM public.profiles
@@ -494,6 +502,58 @@ BEGIN
   IF v_target_effective_admin AND v_effective_admins <= 1 THEN
     v_policy_blockers := v_policy_blockers || jsonb_build_array(
       jsonb_build_object('code', 'LAST_EFFECTIVE_SUPERADMIN_PROTECTED', 'category', 'authorization')
+    );
+  END IF;
+
+  -- 00296 BEFORE DELETE predicate: lower(admin_whitelist.email) = lower(profile.email).
+  -- search_path omits private_security, so the table is schema-qualified. The
+  -- function owner is postgres. Missing relation, missing email column, missing
+  -- SELECT, RLS that can hide rows, or a non-table relation fails closed.
+  -- Membership is not guessed. A missing relation is ineligible even though the
+  -- trigger skips its check when information_schema.tables does not list it.
+  -- Execute recomputes this snapshot and refuses an ineligible target before DELETE.
+  v_whitelist_relation := pg_catalog.to_regclass('private_security.admin_whitelist');
+  IF v_whitelist_relation IS NOT NULL THEN
+    SELECT
+      c.relkind IN ('r', 'p')
+      AND pg_catalog.has_table_privilege(c.oid, 'SELECT')
+      AND EXISTS (
+        SELECT 1
+        FROM pg_attribute email_column
+        WHERE email_column.attrelid = c.oid
+          AND email_column.attname = 'email'
+          AND email_column.attnum > 0
+          AND NOT email_column.attisdropped
+      )
+      AND (
+        NOT c.relrowsecurity
+        OR reader.rolsuper
+        OR reader.rolbypassrls
+        OR (c.relowner = reader.oid AND NOT c.relforcerowsecurity)
+      )
+      INTO v_whitelist_evaluable
+    FROM pg_class c
+    JOIN pg_roles reader ON reader.rolname = current_user
+    WHERE c.oid = v_whitelist_relation;
+    IF NOT FOUND OR v_whitelist_evaluable IS DISTINCT FROM TRUE THEN
+      v_whitelist_evaluable := false;
+    END IF;
+  END IF;
+  IF v_whitelist_evaluable THEN
+    SELECT EXISTS (
+      SELECT 1
+      FROM private_security.admin_whitelist
+      WHERE lower(email) = lower(v_target.email)
+    )
+    INTO v_whitelist_protected;
+  END IF;
+  IF NOT v_whitelist_evaluable THEN
+    v_policy_blockers := v_policy_blockers || jsonb_build_array(
+      jsonb_build_object('code', 'ADMIN_WHITELIST_PROTECTION_UNEVALUATED', 'category', 'identity')
+    );
+  ELSIF v_whitelist_protected THEN
+    v_policy_blockers := v_policy_blockers || jsonb_build_array(
+      jsonb_build_object('code', 'ADMIN_WHITELIST_PROTECTED', 'category', 'identity')
     );
   END IF;
 
@@ -827,6 +887,7 @@ BEGIN
   IF v_snapshot ->> 'fingerprint' IS DISTINCT FROM v_preview.state_fingerprint THEN
     RAISE EXCEPTION 'DEMO_USER_DELETE_STALE_PREVIEW';
   END IF;
+  -- Ineligible snapshots, including whitelist protection, never reach DELETE.
   IF (v_snapshot ->> 'eligible')::boolean IS DISTINCT FROM TRUE THEN
     RAISE EXCEPTION 'DEMO_USER_DELETE_BLOCKED: current preview is not eligible';
   END IF;

@@ -41,6 +41,16 @@ function stripPreconditions(sql: string): string {
   return sql.replace(/DO \$preconditions\$[\s\S]*?\$preconditions\$;/, '');
 }
 
+function extractSnapshotBody(sql: string): string {
+  const matches = [...sql.matchAll(
+    /CREATE FUNCTION private_security\.demo_user_deletion_snapshot\(\s*p_target_profile_id uuid,\s*p_requester_profile_id uuid\s*\)[\s\S]*?AS \$fn\$\s*([\s\S]*?)\s*\$fn\$;/g,
+  )];
+  if (matches.length !== 1 || !matches[0][1]) {
+    throw new Error(`expected exactly one demo_user_deletion_snapshot body, found ${matches.length}`);
+  }
+  return matches[0][1];
+}
+
 function extractExecuteBody(sql: string): string {
   const matches = [...sql.matchAll(
     /CREATE FUNCTION public\.execute_demo_user_deletion\(\s*p_target_profile_id uuid,\s*p_confirmation_token text,\s*p_reason text,\s*p_outcome text\s*\)[\s\S]*?AS \$fn\$\s*([\s\S]*?)\s*\$fn\$;/g,
@@ -529,8 +539,40 @@ describe('00320 disposable demo/QA deletion proposal', () => {
     expect(executable).toContain('v_target.is_demo IS DISTINCT FROM TRUE');
     expect(executable).toContain('FOUNDER_IDENTITY_PROTECTED');
     expect(executable).toContain('LAST_EFFECTIVE_SUPERADMIN_PROTECTED');
-    expect(executable).not.toMatch(/lower\s*\(\s*v_target\.email/i);
+    expect(executable.match(/lower\(\s*v_target\.email\s*\)/g)).toHaveLength(1);
+    expect(executable).toMatch(/lower\(\s*email\s*\)\s*=\s*lower\(\s*v_target\.email\s*\)/);
     expect(executable).not.toMatch(/v_target\.(?:email|full_name|title)\s+(?:LIKE|~|=)/i);
+  });
+
+  it('[static] marks a whitelist-protected target ineligible and execute still refuses it', () => {
+    const withoutBlockComments = (value: string): string => value.replace(/\/\*[\s\S]*?\*\//g, '');
+    const body = withoutBlockComments(stripComments(extractSnapshotBody(sql)));
+    expect(body).toContain("pg_catalog.to_regclass('private_security.admin_whitelist')");
+    expect(body).toMatch(
+      /FROM\s+private_security\.admin_whitelist\s+WHERE\s+lower\(\s*email\s*\)\s*=\s*lower\(\s*v_target\.email\s*\)/i,
+    );
+    expect(body).toMatch(
+      /v_policy_blockers\s*:=\s*v_policy_blockers\s*\|\|\s*jsonb_build_array\(\s*jsonb_build_object\(\s*'code',\s*'ADMIN_WHITELIST_PROTECTED',\s*'category',\s*'identity'\s*\)/i,
+    );
+    expect(body).toMatch(
+      /v_policy_blockers\s*:=\s*v_policy_blockers\s*\|\|\s*jsonb_build_array\(\s*jsonb_build_object\(\s*'code',\s*'ADMIN_WHITELIST_PROTECTION_UNEVALUATED',\s*'category',\s*'identity'\s*\)/i,
+    );
+    const protectedAt = body.indexOf("'ADMIN_WHITELIST_PROTECTED'");
+    const unevaluatedAt = body.indexOf("'ADMIN_WHITELIST_PROTECTION_UNEVALUATED'");
+    const eligibleAt = body.indexOf('v_eligible :=');
+    expect(protectedAt).toBeGreaterThanOrEqual(0);
+    expect(unevaluatedAt).toBeGreaterThanOrEqual(0);
+    expect(eligibleAt).toBeGreaterThan(Math.max(protectedAt, unevaluatedAt));
+    expect(body).toMatch(/v_eligible\s*:=\s*jsonb_array_length\(\s*v_policy_blockers\s*\)\s*=\s*0/);
+
+    const execute = withoutBlockComments(stripComments(extractExecuteBody(sql)));
+    const eligibility = execute.indexOf("(v_snapshot ->> 'eligible')::boolean IS DISTINCT FROM TRUE");
+    const blocked = execute.indexOf('DEMO_USER_DELETE_BLOCKED: current preview is not eligible');
+    const firstDelete = execute.search(/DELETE FROM public\.internal_user_assignments/i);
+    expect(eligibility).toBeGreaterThanOrEqual(0);
+    expect(blocked).toBeGreaterThan(eligibility);
+    expect(firstDelete).toBeGreaterThan(blocked);
+    expect(execute).not.toMatch(/session_replication_role\s*=\s*'replica'|ALTER\s+TABLE[\s\S]*DISABLE\s+TRIGGER|DROP\s+TRIGGER\s+trg_enforce_superadmin_immutability/i);
   });
 
   it('binds one-time confirmation to requester, target, dependency fingerprint, and expiry', () => {
@@ -1255,6 +1297,22 @@ describe('00320 disposable demo/QA deletion proposal', () => {
          VALUES ($1, $2, $1)`,
         [assignmentTarget.profileId, assignmentRole.rows[0].id],
       );
+      const whitelisted = await insertDisposableProfile(client, {
+        emailPrefix: 'delete-whitelist-protected',
+        isDemo: true,
+      });
+      const whitelistedEmail = await client.query<{ email: string }>(
+        `SELECT email FROM public.profiles WHERE id = $1`,
+        [whitelisted.profileId],
+      );
+      expect(whitelistedEmail.rows).toHaveLength(1);
+      const storedWhitelistEmail = whitelistedEmail.rows[0].email.toUpperCase();
+      expect(storedWhitelistEmail).not.toBe(whitelistedEmail.rows[0].email);
+      await client.query(
+        `INSERT INTO private_security.admin_whitelist (email, reason)
+         VALUES ($1, 'rollback-only whitelist fixture')`,
+        [storedWhitelistEmail],
+      );
       await setRequester(client, founder.rows[0].auth_user_id);
 
       const preview = await client.query<{ payload: any }>(
@@ -1351,7 +1409,7 @@ describe('00320 disposable demo/QA deletion proposal', () => {
         client,
         `SELECT public.preview_demo_user_deletion($1)`,
         [ordinary.profileId],
-      )).toContain('authenticated user context required');
+      )).toContain('DEMO_USER_DELETE_DENIED: authenticated user context required');
       await setRequester(client, founder.rows[0].auth_user_id);
 
       const founderPreview = await client.query<{ payload: any }>(
@@ -1366,6 +1424,75 @@ describe('00320 disposable demo/QA deletion proposal', () => {
           'LAST_EFFECTIVE_SUPERADMIN_PROTECTED',
         );
       }
+
+      const whitelistPreview = await client.query<{ payload: any }>(
+        `SELECT public.preview_demo_user_deletion($1::uuid) AS payload`,
+        [whitelisted.profileId],
+      );
+      expect(whitelistPreview.rows[0].payload.eligible).toBe(false);
+      expect(whitelistPreview.rows[0].payload.confirmationToken).toBeNull();
+      expect(JSON.stringify(whitelistPreview.rows[0].payload.policyBlockers)).toContain('ADMIN_WHITELIST_PROTECTED');
+      expect(JSON.stringify(whitelistPreview.rows[0].payload.policyBlockers)).not.toContain(
+        'ADMIN_WHITELIST_PROTECTION_UNEVALUATED',
+      );
+      expect(await captureError(
+        client,
+        `DELETE FROM public.profiles WHERE id = $1`,
+        [whitelisted.profileId],
+      )).toContain('SECURITY VIOLATION');
+      expect((await client.query(
+        `SELECT count(*)::int AS n FROM public.profiles WHERE id = $1`,
+        [whitelisted.profileId],
+      )).rows[0].n).toBe(1);
+
+      const whitelistSnapshot = await client.query<{ s: { fingerprint: string; eligible: boolean } }>(
+        `SELECT private_security.demo_user_deletion_snapshot($1::uuid, $2::uuid) AS s`,
+        [whitelisted.profileId, FOUNDER_ID],
+      );
+      expect(whitelistSnapshot.rows[0].s.eligible).toBe(false);
+      const whitelistToken = `whitelist-protected-${whitelisted.profileId}`;
+      await client.query(
+        `INSERT INTO private_security.demo_user_deletion_previews (
+           token_hash,
+           requester_profile_id,
+           target_profile_id,
+           target_auth_user_id,
+           state_fingerprint,
+           preview_payload,
+           created_at,
+           expires_at
+         ) VALUES (
+           extensions.digest(convert_to($1, 'UTF8'), 'sha256'),
+           $2::uuid,
+           $3::uuid,
+           $4::uuid,
+           $5,
+           $6::jsonb,
+           clock_timestamp(),
+           clock_timestamp() + interval '10 minutes'
+         )`,
+        [
+          whitelistToken,
+          FOUNDER_ID,
+          whitelisted.profileId,
+          whitelisted.authId,
+          whitelistSnapshot.rows[0].s.fingerprint,
+          JSON.stringify(whitelistSnapshot.rows[0].s),
+        ],
+      );
+      expect(await captureError(
+        client,
+        `SELECT public.execute_demo_user_deletion($1, $2, 'approved QA cleanup', 'removed fixture')`,
+        [whitelisted.profileId, whitelistToken],
+      )).toContain('DEMO_USER_DELETE_BLOCKED');
+      expect((await client.query(
+        `SELECT count(*)::int AS n FROM public.profiles WHERE id = $1`,
+        [whitelisted.profileId],
+      )).rows[0].n).toBe(1);
+      expect((await client.query(
+        `SELECT count(*)::int AS n FROM auth.users WHERE id = $1`,
+        [whitelisted.authId],
+      )).rows[0].n).toBe(1);
 
       const expiringPreview = await client.query<{ payload: any }>(
         `SELECT public.preview_demo_user_deletion($1) AS payload`,
