@@ -22,6 +22,7 @@ export function SiteFooter() {
 
           {/* Legal links stay. Primary Home / Pricing / Get Started / About / FAQs live in one nav per viewport. */}
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+            <Link to="/contact-us" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center" data-testid="footer-contact-us">Contact Us</Link>
             <Link to="/legal/terms" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Terms</Link>
             <Link to="/legal/privacy" className="hover:text-foreground transition min-h-[32px] sm:min-h-0 inline-flex items-center">Privacy</Link>
             <button
@@ -80,6 +81,9 @@ export function SiteFooter() {
                   </Link>
                   <Link to="/faqs" onClick={() => setIsUtilityDrawerOpen(false)} className="rounded border bg-card p-2 hover:bg-muted transition text-center text-primary">
                     📖 FAQs
+                  </Link>
+                  <Link to="/contact-us" onClick={() => setIsUtilityDrawerOpen(false)} className="rounded border bg-card p-2 hover:bg-muted transition text-center text-primary">
+                    ✉️ Contact Us
                   </Link>
                   <Link to="/legal/terms" onClick={() => setIsUtilityDrawerOpen(false)} className="rounded border bg-card p-2 hover:bg-muted transition text-center">
                     📄 Terms of Use

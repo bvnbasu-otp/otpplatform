@@ -14,7 +14,7 @@ Each row uses the status in [CAPABILITY_STATUS.md](../13-truth/CAPABILITY_STATUS
 | Estate manager operations without a vote | IMPLEMENTED | [GOVERNANCE.md](../03-domains/GOVERNANCE.md) |
 | MSME approval route | IMPLEMENTED | `00237`, `00242` |
 | Direct supplier quote link | IMPLEMENTED | `/q/:token` |
-| WhatsApp or SMS delivery | CONFIG-GATED | [WHATSAPP.md](../09-integrations/WHATSAPP.md), [SMS.md](../09-integrations/SMS.md) |
+| WhatsApp or SMS delivery | WhatsApp: CONFIG-GATED / PILOT-CERTIFIED (WAHA), demo provider. SMS: not available for the pilot. | [WHATSAPP.md](../09-integrations/WHATSAPP.md), [SMS.md](../09-integrations/SMS.md) |
 | ONDC discovery | CONFIG-GATED | [ONDC.md](../09-integrations/ONDC.md) |
 | Google Places | CONFIG-GATED | [GOOGLE_PLACES.md](../09-integrations/GOOGLE_PLACES.md) |
 | Entitlements, 3 + quarterly bonus | IMPLEMENTED | [PRICING_AND_ENTITLEMENTS.md](../01-product/PRICING_AND_ENTITLEMENTS.md) |

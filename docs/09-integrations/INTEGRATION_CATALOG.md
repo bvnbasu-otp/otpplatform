@@ -7,8 +7,8 @@ Capability status is only [CAPABILITY_STATUS.md](../13-truth/CAPABILITY_STATUS.m
 | OTP supplier registry | IMPLEMENTED | Available now, as registration on OTP. |
 | Direct supplier link | IMPLEMENTED | Available now, as an invite link. |
 | Google Places | CONFIG-GATED, EXTERNAL-DEPENDENCY | Not “available now”. Not a live usage number. Daily application limit is 1500. Monthly limit is NOT AUTHORITATIVELY CONFIGURED. |
-| WhatsApp | CONFIG-GATED (default `MOCK`) | Planned. Not “suppliers receive RFQs on WhatsApp”. |
-| SMS | CONFIG-GATED (default `MOCK`) | Planned. |
+| WhatsApp | CONFIG-GATED / PILOT-CERTIFIED (WAHA), demo provider | Public copy still says planned (MSG-04). Do not claim delivery receipts, inbound quoting, or production reliability. |
+| SMS | Not available for the pilot | Planned. No pilot flow sends SMS. |
 | Email SMTP | CONFIG-GATED | Do not claim a verified mailbox. |
 | ONDC | CONFIG-GATED (`CREDENTIAL_GATED`) | Not connected. |
 | BNI | PLANNED | Planned. The stub adapter is not a network. |
@@ -23,8 +23,8 @@ Capability status is only [CAPABILITY_STATUS.md](../13-truth/CAPABILITY_STATUS.m
 | --- | --- | --- | --- | --- | --- | --- |
 | Google Places | Edge coverage path plus a separate library ladder. See [GOOGLE_PLACES.md](./GOOGLE_PLACES.md). | Daily 1500. Key names `GOOGLE_PLACES_API_KEY`, `GOOGLE_MAPS_API_KEY`. | Unit tests of the guard and the library ladder passed. No live Google call. | Buyer path is the edge function. Hosted key and responses: `UNKNOWN`. | Google Places API (New). | Monthly limit NOT AUTHORITATIVELY CONFIGURED. 1500 is not usage. |
 | ONDC | Signing helpers, environment gate, `on_search` ingress that NACKs unless pre-production material is complete and hosts are not production hosts. | `ONDC_ENVIRONMENT` and the pre-prod and production slot names in [ONDC.md](./ONDC.md). Hosted values `UNKNOWN`. | Domain gate and foundation tests passed. No network call. | `CONFIG-GATED`. Not live. CI does not deploy `ondc-on-search`. | ONDC registry and gateway. | Files and CSP do not make a live channel. |
-| WhatsApp | `resolveProvider`, `messaging-outbound`. | `MESSAGING_PROVIDER` defaults to `MOCK`. | No handset delivery. | Not live. | Twilio or Meta, only if selected. | Mock success is not delivery. |
-| SMS | Same resolver, Twilio SMS from-number when selected. | Default `MOCK`. | No send observed. | Not live. | Twilio, only if selected. | No second SMS vendor in `resolve.ts`. |
+| WhatsApp | `resolveProvider` → `WahaMessagingProvider`. Used by `messaging-outbound`, `otp-dispatch`, `onboarding-notify`. | `MESSAGING_PROVIDER=WAHA`, `WAHA_BASE_URL`, `WAHA_SESSION`, optional `WAHA_API_KEY`. Unset defaults to `MOCK`. | Owner-confirmed demo sends. Not re-observed on 23 October 2026. | Demo provider. Inbound refused (MSG-01). | Operator WAHA container, bridge, and tunnel. | `SENT` means accepted, not delivered. No receipts. See [WHATSAPP.md](./WHATSAPP.md). |
+| SMS | Twilio SMS from-number, only when `MESSAGING_PROVIDER=TWILIO`. | Not a pilot configuration. | No send observed. | Not available for the pilot. | Twilio, not a pilot provider. | No second SMS vendor in `resolve.ts`. |
 | Email | `resolveSmtpConfig`. | `SMTP_*`. Production code default host `smtp.gmail.com`. Hosted values `UNKNOWN`. | No message sent. | `UNKNOWN`. | The configured SMTP host. | A default host is not a mailbox. |
 | Razorpay | Webhook HMAC branch in `payment-webhook`. | `RAZORPAY_WEBHOOK_SECRET`. | Not executed. | `CONFIG-GATED`. Checkout not shown live. | Razorpay. | An unset secret fails verification. No compiled fallback remains in source. Hosted function: NOT RE-VERIFIED. |
 | Stripe | Webhook HMAC branch, including the 300-second timestamp check. | `STRIPE_WEBHOOK_SECRET`. | Not executed. | `CONFIG-GATED`. | Stripe. | An unset secret fails verification. No compiled fallback remains in source. Hosted function: NOT RE-VERIFIED. |

@@ -9,5 +9,8 @@
   "keywords": [],
   "author": "Baskar Loganathan <bvnbasu@gmail.com>",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "dependencies": {
+    "nodemailer": "10.2.1"
+  }
 }

@@ -70,7 +70,7 @@ function renderHeader(role: RoleContext, path = '/'): string {
 }
 
 describe('site header requirement access', () => {
-  it('offers Post Need to signed-in Individual, RWA, and MSME buyers and shows the header language switcher', () => {
+  it('offers Post Need to signed-in Individual, RWA, and MSME buyers without a public language switcher', () => {
     harness.user = { id: 'user-1', email: 'asha@example.com' };
     for (const buyerType of ['INDIVIDUAL', 'RWA', 'MSME'] as const) {
       const html = renderHeader(context({
@@ -80,7 +80,7 @@ describe('site header requirement access', () => {
       expect(html).toContain('data-testid="header-buyer-create-requirement-btn"');
       expect(html).toContain('Post Need');
       expect(html).not.toContain('data-testid="header-internal-console"');
-      expect(html).toContain('data-testid="language-switcher-trigger"');
+      expect(html).not.toContain('data-testid="language-switcher');
     }
   });
 
@@ -94,7 +94,7 @@ describe('site header requirement access', () => {
     expect(founder).toContain('data-testid="header-internal-console"');
     expect(founder).toContain('href="/admin"');
     expect(founder).not.toContain('Post Need');
-    expect(founder).toContain('data-testid="language-switcher-trigger"');
+    expect(founder).not.toContain('data-testid="language-switcher');
 
     const support = renderHeader(context({
       side: 'CONSOLE',
@@ -109,7 +109,7 @@ describe('site header requirement access', () => {
     }));
     expect(support).toContain('data-testid="header-internal-console"');
     expect(support).not.toContain('>Post Need<');
-    expect(support).toContain('data-testid="language-switcher-trigger"');
+    expect(support).not.toContain('data-testid="language-switcher');
   });
 
   it('keeps suppliers on capabilities and signed-out visitors on registration', () => {
@@ -123,7 +123,7 @@ describe('site header requirement access', () => {
     expect(supplier).toContain('Add Capabilities');
     expect(supplier).not.toContain('Post Need');
     expect(supplier).not.toContain('data-testid="header-internal-console"');
-    expect(supplier).toContain('data-testid="language-switcher-trigger"');
+    expect(supplier).not.toContain('data-testid="language-switcher');
 
     harness.user = null;
     const visitor = renderHeader(context({
@@ -137,6 +137,6 @@ describe('site header requirement access', () => {
     expect(visitor).toContain('Get Started');
     expect(visitor).not.toContain('Post Need');
     expect(visitor).not.toContain('data-testid="header-internal-console"');
-    expect(visitor).toContain('data-testid="language-switcher-trigger"');
+    expect(visitor).not.toContain('data-testid="language-switcher');
   });
 });

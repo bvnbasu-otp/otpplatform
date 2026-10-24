@@ -39,7 +39,14 @@ Public words on the site: Request → Compare → Decide → Purchase → Track 
 - No integration is `LIVE-VERIFIED`.
 - Google Places on the buyer path is the edge function `location-pin-coverage`: durable `00224` cache, then `places:searchText`, or `PROVIDER_UNAVAILABLE`. Daily application limit 1500 is not measured usage. Monthly limit: NOT AUTHORITATIVELY CONFIGURED. A fresh pin with no addressable supplier can invite OTP-registered suppliers labeled `otp_registered` or `gst_verified` (`OTP_REGISTERED_FALLBACK`). Pin invitations stay `pin_coverage`. Non-fresh coverage does not use that fallback.
 - The library Places ladder (in-memory map labeled `DATABASE_CACHE`, then Bengaluru `560*` fixtures) is not the buyer edge path. Fixtures are not live Google.
-- Pilot messaging is WAHA through the operator's protected gateway (certified via `WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json` and `WAHA_E2E_RCA_CERTIFICATION_2026-10-11.json`). Meta and Twilio are not pilot providers. SMS is not a pilot provider.
+- Pilot messaging is WAHA through the operator's protected gateway (certified via `WAHA_CONTROLLED_PILOT_DISPATCH_EVIDENCE.json` and `WAHA_E2E_RCA_CERTIFICATION_2026-10-11.json`). The owner has confirmed WAHA as the working **demo** provider. That does not prove every path, delivery receipts, inbound replies (refused in WAHA mode), production reliability, or monitoring. Meta and Twilio are not pilot providers. SMS is not available for the pilot. See [WHATSAPP.md](../09-integrations/WHATSAPP.md) and [SMS.md](../09-integrations/SMS.md).
+- The public website has no language selector. Signed-in users choose a language in their profile or workspace menus. Do not tell anonymous visitors that a language choice is saved beyond their browser session.
+- Contact Us (`/contact-us`) shows the support email bvnbasu+otp.demo.otp.support@gmail.com and a WhatsApp link (`https://wa.me/919972967530`) that opens the visitor's own WhatsApp. That link is not an OTP message.
+- **What not to say about the Contact Us form:**
+  - Do not say enquiries are saved until proposal `00322` is applied and `contact-enquiry` is deployed. Until then the form reports that the enquiry was not recorded and points to email or WhatsApp.
+  - Do not say an email is sent for an enquiry. No email transport exists.
+  - Do not promise a response time.
+- The Contact Us page can be printed as an A4 sheet. Its printed and PDF appearance has not been checked visually.
 - Share-in-Success is NOT IMPLEMENTED. Public copy must not call it live.
 - The buyer platform-fee reward is not credited in this pilot. The domain credit-lot helper, when a lot is constructed, sets `expiresAt` to 365 days after `creditedAt`. The pilot does not create those lots, so there is no separate live expiry to invent.
 - The customer stage label for internal `EVALUATING` is Decide. The state value remains `EVALUATING`.

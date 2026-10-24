@@ -152,7 +152,7 @@ Domain gate `resolveOndcEnvironmentGate`. Edge `supabase/functions/ondc-on-searc
 
 ## WhatsApp, SMS, and email
 
-Phone: `messaging-outbound` and `onboarding-notify` → `resolveProvider`. Unset or `MOCK` → `MockMessagingProvider`. `TWILIO` or `META` throw if their variables are missing. SMS uses the Twilio branch when that provider is selected.
+Phone: `messaging-outbound`, `onboarding-notify`, `otp-dispatch`, and `messaging-inbound` → `resolveProvider`. Unset or `MOCK` → `MockMessagingProvider` (`otp-dispatch` refuses `MOCK`). `WAHA` → `WahaMessagingProvider`, the demo provider, WhatsApp only, which needs `WAHA_BASE_URL` and `WAHA_SESSION`. `TWILIO` or `META` throw if their variables are missing. `otp-dispatch` and `onboarding-notify` send WhatsApp only. SMS exists only in the Twilio branch and is not available for the pilot. `messaging-inbound` does not pass `WAHA_API_KEY`, so WAHA webhooks are refused (MSG-01). Detail: [WHATSAPP.md](../09-integrations/WHATSAPP.md), [SMS.md](../09-integrations/SMS.md).
 
 Email: `resolveSmtpConfig` in `packages/services/src/notifications/email-dispatcher.ts`. Registration notices that were read go through `onboarding-notify`, not through a proven SMTP send. Delivery `UNKNOWN`.
 

@@ -8,7 +8,6 @@ import { SupplierCapabilityModal } from '@/features/supplier';
 import { QuickRegisterModal } from '@/features/portal';
 import { VoiceTextRequirementIntakeModal } from '@/features/intake';
 import { SupportHelpButtonModal } from '@/features/support';
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { canOfferCustomerRequirementCreation, isInternalOperatorContext } from '@/features/roles/customer-procurement-access';
 
 export function SiteHeader() {
@@ -179,7 +178,6 @@ export function SiteHeader() {
 
         {/* Right Action Cluster: Canonical Sequence [Profile / Theme Trigger] → [Help & Support (?)] */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <LanguageSwitcher placement="header" />
           {user ? (
             <div className="flex items-center gap-1.5">
               <Link

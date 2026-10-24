@@ -36,8 +36,8 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 | --- | --- |
 | OTP registry and direct invite | IMPLEMENTED |
 | Google Places | CONFIG-GATED, EXTERNAL-DEPENDENCY |
-| WhatsApp | CONFIG-GATED / PILOT-CERTIFIED (WAHA) |
-| SMS | CONFIG-GATED, default mock |
+| WhatsApp | CONFIG-GATED / PILOT-CERTIFIED (WAHA), owner-confirmed demo provider. Inbound refused. See [WHATSAPP.md](./09-integrations/WHATSAPP.md). |
+| SMS | Not available for the pilot (Twilio code path only). See [SMS.md](./09-integrations/SMS.md). |
 | Email | CONFIG-GATED |
 | ONDC | DISABLED (`ONDC_ENABLED=false`, non-blocking) |
 | BNI | PLANNED |
@@ -61,7 +61,7 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 | Integrations | [INTEGRATION_CATALOG.md](./09-integrations/INTEGRATION_CATALOG.md), [GOOGLE_PLACES.md](./09-integrations/GOOGLE_PLACES.md), [ONDC.md](./09-integrations/ONDC.md), [WHATSAPP.md](./09-integrations/WHATSAPP.md), [SMS.md](./09-integrations/SMS.md), [EMAIL.md](./09-integrations/EMAIL.md), [PAYMENTS.md](./09-integrations/PAYMENTS.md) |
 | Platform | [TECHNOLOGY_STACK.md](./10-platform/TECHNOLOGY_STACK.md), [CI_CD.md](./10-platform/CI_CD.md), [SUPABASE.md](./10-platform/SUPABASE.md), [VERCEL.md](./10-platform/VERCEL.md), [ENVIRONMENTS.md](./10-platform/ENVIRONMENTS.md), [GIT_AND_GITHUB.md](./10-platform/GIT_AND_GITHUB.md) |
 | Testing | [TEST_STRATEGY.md](./11-testing/TEST_STRATEGY.md), [COVERAGE_POLICY.md](./11-testing/COVERAGE_POLICY.md), [PRODUCTION_GATES.md](./11-testing/PRODUCTION_GATES.md), [BLACK_BOX_TESTING.md](./11-testing/BLACK_BOX_TESTING.md) |
-| Operations | [DEPLOYMENT_RUNBOOK.md](./12-operations/DEPLOYMENT_RUNBOOK.md), [PILOT_RUNBOOK.md](./12-operations/PILOT_RUNBOOK.md), [RELEASE_RUNBOOK.md](./12-operations/RELEASE_RUNBOOK.md), [INCIDENT_RESPONSE.md](./12-operations/INCIDENT_RESPONSE.md), [ROLLBACK.md](./12-operations/ROLLBACK.md) |
+| Operations | [DEPLOYMENT_RUNBOOK.md](./12-operations/DEPLOYMENT_RUNBOOK.md), [PILOT_RUNBOOK.md](./12-operations/PILOT_RUNBOOK.md), [RELEASE_RUNBOOK.md](./12-operations/RELEASE_RUNBOOK.md), [INCIDENT_RESPONSE.md](./12-operations/INCIDENT_RESPONSE.md), [ROLLBACK.md](./12-operations/ROLLBACK.md), [SUPERADMIN_DEMO_USER_DELETION.md](./12-operations/SUPERADMIN_DEMO_USER_DELETION.md) |
 | Truth | [CAPABILITY_STATUS.md](./13-truth/CAPABILITY_STATUS.md), [PUBLIC_PILOT_TRUTH.md](./13-truth/PUBLIC_PILOT_TRUTH.md), [KNOWN_LIMITATIONS.md](./13-truth/KNOWN_LIMITATIONS.md), [LIVE_VS_PLANNED.md](./13-truth/LIVE_VS_PLANNED.md), [DOCUMENTATION_DISCOVERED_DEFECTS.md](./13-truth/DOCUMENTATION_DISCOVERED_DEFECTS.md) |
 | Mobile | [MOBILE_PRODUCT_CONTRACT.md](./14-mobile-contract/MOBILE_PRODUCT_CONTRACT.md) |
 | Change management | [RELEASE_DOCUMENTATION_PROTOCOL.md](./15-change-management/RELEASE_DOCUMENTATION_PROTOCOL.md) |

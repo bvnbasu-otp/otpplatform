@@ -216,7 +216,7 @@ describe('Product Leadership and Provenance are not in public navigation', () =>
       expect(href).not.toMatch(/provenance|leadership/i);
     }
     expect(toText(html)).not.toMatch(/Provenance|Product Leadership/i);
-    expect(html).toContain('data-testid="language-switcher-trigger"');
+    expect(html).not.toContain('data-testid="language-switcher');
   });
 
   it.each(PAGES)('%s shows no Provenance or Product Leadership to an anonymous visitor', (_name, renderPage) => {

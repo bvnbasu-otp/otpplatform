@@ -15,7 +15,7 @@ Public copy marks both “Available now”. That means the product feature, not 
 
 | Channel | Status |
 | --- | --- |
-| WhatsApp and SMS outreach | CONFIG-GATED, default `MOCK`. Public status planned. |
+| WhatsApp and SMS outreach | WhatsApp: WAHA demo provider (see [WHATSAPP.md](../09-integrations/WHATSAPP.md)). SMS: not available for the pilot. Public status planned. |
 | ONDC | CONFIG-GATED (`CREDENTIAL_GATED`). Public status planned. |
 | BNI, trade associations | PLANNED in `SUPPLIER_CHANNELS`. No adapter was read. |
 | Google Places | CONFIG-GATED discovery aid. Not a supplier network the customer is told is live. Detail: [GOOGLE_PLACES.md](../09-integrations/GOOGLE_PLACES.md). |

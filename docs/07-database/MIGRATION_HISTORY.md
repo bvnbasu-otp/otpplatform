@@ -55,5 +55,24 @@ Milestone index only. Files `00001` through `00252` are on disk and contiguous. 
 | `00271_fix_supplier_messaging_channels_unique_constraint.sql` | Establishes authoritative UNIQUE INDEX on `supplier_messaging_channels(supplier_id, channel)` to resolve Postgres 42P10 errors on `ON CONFLICT` during RFQ supplier invitations; wraps invitation notification dispatch in exception-resilient block to ensure zero rollback of discovery invitations. |
 | `00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql` | Adds 'WAHA' to `messaging_provider` enum; reassigns legacy QA suppliers away from operator handset (`+919972967530`); hardens `dispatch_supplier_invitation_notification` to abort if target phone matches gateway operator handset or buyer phone. |
 
+## Proposals outside the migration runner (checked 23 October 2026)
+
+The last file in `supabase/migrations/` is `00314_internal_invitation_acceptance.sql`. This table has not been extended past `00272`. Files `00273`–`00314` are on disk but not summarised here.
+
+These files sit in `supabase/`, are named `*.UNAPPLIED.sql`, and are not applied to any database. Promoting or applying any of them needs owner authorization ([RELEASE_RUNBOOK.md](../12-operations/RELEASE_RUNBOOK.md)).
+
+| File | Purpose (00317–00319 and 00314 inferred from file name only) | Note |
+| --- | --- | --- |
+| `00314_internal_procurement_and_supplier_business_address.UNAPPLIED.sql` | Supplier business address | Number collides with the applied `00314` (DEMO-DEL-07) |
+| `00315_audit_actor_identity_registry.UNAPPLIED.sql` | Audit actor registry | Prerequisite of 00320. Header lacks the `STATUS: UNAPPLIED` banner (DEMO-DEL-06) |
+| `00316_founder_superadmin_role_guard.UNAPPLIED.sql` | Founder SUPER_ADMIN guards | Prerequisite of 00320 |
+| `00317_revoke_anon_update_my_organization_name.UNAPPLIED.sql` | Revoke anon org-name update | — |
+| `00318_organization_rename_requires_one_row.UNAPPLIED.sql` | Org rename row check | — |
+| `00319_rfq_category_service_coverage_guard.UNAPPLIED.sql` | RFQ category coverage guard | — |
+| `00320_superadmin_demo_user_deletion.UNAPPLIED.sql` | Demo/QA deletion preview and execute | Apply after 00315, 00316, 00321. See [SUPERADMIN_DEMO_USER_DELETION.md](../12-operations/SUPERADMIN_DEMO_USER_DELETION.md) |
+| `00321_restrict_is_demo_marker.UNAPPLIED.sql` | Immutable `is_demo` marker | Must be applied before 00320 |
+| `00322_public_contact_enquiries.UNAPPLIED.sql` | Public Contact Us enquiries plus private rate events and a service-role-only atomic limiter: signed server-issued client identity 5/hour, distinct fixed endpoint emergency ceiling 200/hour. Admin reads remain platform-admin only. | Needed by edge function `contact-enquiry`. No retention defined. **CONTACT US — NOT DEPLOYMENT READY.** Static test `tests/security/contact-enquiry-00322.test.ts`; no database concurrency proof. |
+| `00323_support_ticket_rpc_hardening.UNAPPLIED.sql` | SEC-SUPPORT-01: require authenticated identity plus `private.is_platform_admin()` for support admin RPCs; revoke anonymous/service-role execution; align support routing address | Depends on applied 00140 and 00201. **IMPLEMENTATION REVIEW ONLY — NOT APPLIED.** Static test `tests/security/support-ticket-rpc-00323.test.ts`; no runtime database verification. |
+
 CI `EXPECTED_CEILING` in `.github/workflows/ci-cd.yml` is being advanced to `00272`. Hosted `schema_migrations` ceiling on Supabase `qsuvtcezffomtwzwyrso` is at 00272.
 

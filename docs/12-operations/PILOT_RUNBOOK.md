@@ -11,7 +11,8 @@ Product scope: [PILOT_SCOPE.md](../01-product/PILOT_SCOPE.md). Status of the pol
 - The buyer screen may show the allowance only after `get_buyer_pilot_allowance` returns. It must not tell a buyer with a confirmed credit to pay, and it must not publish when the check cannot be completed.
 - Published prices are displayed. The pilot policy does not charge the subscription and does not charge the supplier platform fee. The purchase simulator is disabled. Do not say checkout or UPI collection is live.
 - Buyer and Supplier EULAs are draft rows at `v1.0-20261014`, both pending legal approval. Enforcement is off and no rollout date is set. Existing users would have 30 calendar days only after a recorded rollout timestamp. Do not say either agreement is approved or that acceptance is currently enforced.
-- Suppliers join the OTP registry or receive a direct link. They are not sent the RFQ on WhatsApp or SMS unless a later, proven provider cutover says so. That cutover is not proven.
+- Suppliers join the OTP registry or receive a direct link. WhatsApp messages (RFQ invitations, verification codes, registration notices) go through WAHA, the owner-confirmed **demo** provider. They depend on the operator's WAHA session being `WORKING` and its tunnel being up. Do not promise delivery, and do not tell suppliers they can quote by replying on WhatsApp (inbound is refused). See [WHATSAPP.md](../09-integrations/WHATSAPP.md).
+- SMS is not available for the pilot. Do not tell anyone they will receive an SMS.
 - ONDC is not connected.
 
 ## What operators must not tell them

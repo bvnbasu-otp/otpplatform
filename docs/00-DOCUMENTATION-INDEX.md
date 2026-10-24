@@ -35,7 +35,7 @@ The platform has achieved **Phase 7.1 Final Closure & Independent Re-Certificati
 | **Containerized Services** | 6 Production Docker Containers (`otp-prod-*`) | 🟢 Healthy |
 | **WhatsApp Gateway** | WAHA Paired Container (`otp_whatsapp_gateway`, Port `3008`) | 🟢 Session WORKING |
 | **Email SMTP Gateway** | Gmail SMTP SSL (`bvnbasu@gmail.com`, Port `587`) | 🟢 Verified Live |
-| **Support & Ticket Routing** | Centralized automated routing to `bvnbasu@gmail.com` | 🟢 Verified Live |
+| **Support & Ticket Routing** | Canonical address `bvnbasu+otp.demo.otp.support@gmail.com`; hardening/routing proposal `00323` | 🟠 IMPLEMENTATION REVIEW ONLY — NOT APPLIED |
 | **Public UX Lifecycle** | 6-Stage Commercial Procurement Lifecycle (`DRAFT` → `QUOTING` → `EVALUATING` → `AWARDED` → `PO_ISSUED` → `SETTLED`) | 🟢 Verified Live |
 | **Linear State Machine** | 15-Step Monotonic Engine (`STEP_1_SPEC_SUBMITTED` $\rightarrow$ `STEP_15_STAR_RATING_JUSTIFICATION`) gated strictly for Admin | 🟢 Verified Live |
 | **Core Procurement States** | 8 Canonical Lifecycle States (`DRAFT`, `QUOTING`, `EVALUATING`, `AWARDED`, `PO_ISSUED`, `INVOICED`, `SETTLED`, `STALLED`) | 🟢 Verified Live |

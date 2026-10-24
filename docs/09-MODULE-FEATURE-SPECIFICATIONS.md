@@ -52,8 +52,8 @@ A centralized customer support hub linking user-submitted feedback directly to p
   - Floating trigger button present on all screens.
   - Centered mobile sheet preventing keyboard zoom issues (`text-sm sm:text-xs`).
   - Supports 5 ticket categories: `BUG`, `FEATURE`, `SALES`, `OPS`, `ENHANCEMENT`.
-- **Primary Superadmin Dispatch (`bvnbasu@gmail.com`)**:
-  - All tickets automatically route notifications and email alerts to primary superadmin `bvnbasu@gmail.com`.
+- **Support routing (`bvnbasu+otp.demo.otp.support@gmail.com`)**:
+  - Tickets are recorded and create in-app admin notifications. Unapplied proposal `00323` aligns the recorded support route; no email delivery is implemented or claimed.
   - Immediate in-app notification recorded in `notifications` table (`channel = 'IN_APP'`, `status = 'PENDING'`).
   - Tamper-evident entry logged in `audit_events`.
 - **Admin Support Console**:

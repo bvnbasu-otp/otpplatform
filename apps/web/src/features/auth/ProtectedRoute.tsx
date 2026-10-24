@@ -279,7 +279,7 @@ export function ProtectedRoute({
           )}
           <div className="mt-6 flex flex-col gap-2">
             <a
-              href="mailto:bvnbasu@gmail.com?subject=Account%20Restriction%20Inquiry"
+              href="mailto:bvnbasu+otp.demo.otp.support@gmail.com?subject=Account%20Restriction%20Inquiry"
               className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition text-center"
             >
               Contact Platform Super Admin

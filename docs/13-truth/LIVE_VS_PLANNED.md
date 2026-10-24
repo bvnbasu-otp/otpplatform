@@ -19,8 +19,8 @@ Read [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md) before this page. “Live”
 | Integration | Status | What not to say |
 | --- | --- | --- |
 | Google Places | CONFIG-GATED, EXTERNAL-DEPENDENCY | Do not say the live site is calling Google. 1,500 is the application daily limit, not usage. Monthly limit is NOT AUTHORITATIVELY CONFIGURED. |
-| WhatsApp | CONFIG-GATED, default `MOCK` | Do not say suppliers receive RFQs on WhatsApp. Public copy: planned, not yet live. |
-| SMS | CONFIG-GATED, default `MOCK` | Same. |
+| WhatsApp | CONFIG-GATED / PILOT-CERTIFIED (WAHA), owner-confirmed demo provider | Do not claim delivery receipts, inbound quoting (refused in WAHA mode), production reliability, or monitoring. Public copy still says planned (MSG-04). See [WHATSAPP.md](../09-integrations/WHATSAPP.md). |
+| SMS | Not available for the pilot (Twilio code path only) | Do not say anyone receives SMS. See [SMS.md](../09-integrations/SMS.md). |
 | Email SMTP | CONFIG-GATED | Do not say a mailbox was verified. |
 | ONDC | CONFIG-GATED (`CREDENTIAL_GATED`) | Do not say OTP is on the ONDC network. Public copy: not connected. |
 | Razorpay / Stripe | CONFIG-GATED | Pilot policy: no real charge. Do not say checkout is live. |
@@ -44,7 +44,7 @@ Read [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md) before this page. “Live”
 | --- | --- | --- |
 | OTP supplier registry | Available now | IMPLEMENTED |
 | Direct suppliers | Available now | IMPLEMENTED |
-| WhatsApp and SMS | Planned | CONFIG-GATED, default mock. Not live. |
+| WhatsApp and SMS | Planned | WhatsApp: WAHA demo provider (contradiction MSG-04). SMS: not available for the pilot. |
 | ONDC | Planned | CONFIG-GATED foundation. Not live. |
 | BNI and referrals | Planned | PLANNED |
 | Local business associations | Planned | PLANNED |

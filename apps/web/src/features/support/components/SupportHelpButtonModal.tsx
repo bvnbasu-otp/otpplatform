@@ -14,7 +14,7 @@ export interface SupportHelpButtonModalProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const ROUTED_ADMIN_EMAIL = import.meta.env.VITE_SUPPORT_ADMIN_EMAIL || 'support@on-the-process.com';
+const ROUTED_ADMIN_EMAIL = 'bvnbasu+otp.demo.otp.support@gmail.com';
 
 export function SupportHelpButtonModal({
   className = '',
@@ -272,7 +272,7 @@ export function SupportHelpButtonModal({
                   OTP Help &amp; Support Center
                 </h3>
                 <p id="support-help-dialog-description" className="text-[11px] text-muted-foreground">
-                  Automated dispatch to <strong className="text-foreground">{ROUTED_ADMIN_EMAIL}</strong> &amp; Ops Console.
+                  Recorded for <strong className="text-foreground">{ROUTED_ADMIN_EMAIL}</strong> &amp; the Ops Console.
                 </p>
               </div>
             </div>
@@ -299,7 +299,7 @@ export function SupportHelpButtonModal({
                   {ticketResult.category === 'BUG' ? 'Bug Report Submitted' : ticketResult.category === 'FEATURE' ? 'Feature Request Submitted' : 'Escalation Ticket Logged'}
                 </h4>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Dispatched directly to primary operations administrator and recorded in Ops Console:
+                  Recorded in the Ops Console with support routing:
                 </p>
                 <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1 font-mono text-xs font-bold text-primary">
                   <span>📬</span> {ticketResult.routedEmail}

@@ -15,9 +15,9 @@ describe('Support Feature Module Tests', () => {
   });
 
   it('verifies default admin routing configuration for support escalation', () => {
-    const ROUTED_ADMIN_EMAIL = 'bvnbasu@gmail.com';
+    const ROUTED_ADMIN_EMAIL = 'bvnbasu+otp.demo.otp.support@gmail.com';
     expect(ROUTED_ADMIN_EMAIL).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-    expect(ROUTED_ADMIN_EMAIL).toBe('bvnbasu@gmail.com');
+    expect(ROUTED_ADMIN_EMAIL).toBe('bvnbasu+otp.demo.otp.support@gmail.com');
   });
 
   it('exports both SupportHelpButtonModal and SupportFeedbackModal components', () => {

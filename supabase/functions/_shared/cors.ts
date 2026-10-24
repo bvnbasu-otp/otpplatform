@@ -30,11 +30,6 @@ export function isAllowedOrigin(origin: string | null | undefined): boolean {
     }
   } catch {}
 
-  // 3. Match legitimate Vercel preview deployments (e.g. https://otp-git-feature-org.vercel.app)
-  // Must end with .vercel.app and not be an attacker domain or bare vercel.app
-  if (/^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.vercel\.app$/.test(trimmed)) {
-    return true;
-  }
 
   return false;
 }
@@ -47,7 +42,7 @@ export function getCorsHeaders(requestOrigin?: string | null): Record<string, st
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers':
-      'authorization, x-client-info, apikey, content-type, x-demo-secret',
+      'authorization, x-client-info, apikey, content-type, x-demo-secret, x-otp-contact-client-token',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Vary': 'Origin',
   };

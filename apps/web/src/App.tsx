@@ -29,6 +29,7 @@ const LegalPage = lazy(() => import('@/features/portal').then((m) => ({ default:
 const AboutPage = lazy(() => import('@/features/site').then((m) => ({ default: m.AboutPage })));
 const FaqPage = lazy(() => import('@/features/site').then((m) => ({ default: m.FaqPage })));
 const PricingPage = lazy(() => import('@/features/site').then((m) => ({ default: m.PricingPage })));
+const ContactUsPage = lazy(() => import('@/features/contact').then((m) => ({ default: m.ContactUsPage })));
 const QuickQuotePage = lazy(() => import('@/features/quick-quote').then((m) => ({ default: m.QuickQuotePage })));
 const EvaluationDecisionCockpitPage = lazy(() => import('@/features/evaluation').then((m) => ({ default: m.EvaluationDecisionCockpitPage })));
 const SupplierRfqPage = lazy(() => import('@/features/supplier/pages/SupplierRfqPage').then((m) => ({ default: m.SupplierRfqPage })));
@@ -316,6 +317,8 @@ export function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/faqs" element={<FaqPage />} />
           <Route path="/about-us" element={<AboutPage />} />
+          <Route path="/contact-us" element={<ContactUsPage />} />
+          <Route path="/contact" element={<Navigate to="/contact-us" replace />} />
           {/*
             Two doors: sign in, or register. /signup names the side in a query
             parameter and shows that side's pitch beside the form.

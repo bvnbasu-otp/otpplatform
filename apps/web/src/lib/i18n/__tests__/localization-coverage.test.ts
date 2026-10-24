@@ -55,6 +55,7 @@ describe('pilot localization coverage', () => {
       'src/features/audit/pages/AuditLogPage.tsx',
       'src/features/award/pages/AwardPage.tsx',
       'src/features/clarification/pages/RfqClarificationPage.tsx',
+      'src/features/contact/pages/ContactUsPage.tsx',
       'src/features/demo/pages/DemoDashboardPage.tsx',
       'src/features/evaluation/pages/EvaluationDecisionCockpitPage.tsx',
       'src/features/founder/pages/FounderDashboardPage.tsx',

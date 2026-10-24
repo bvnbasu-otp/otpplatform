@@ -6,11 +6,11 @@
  * scripts/test-functions.ts; this file only asserts the default shape.
  */
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { corsHeaders, errorResponse, jsonResponse } from './cors.ts';
+import { corsHeaders, errorResponse, getCorsHeaders, isAllowedOrigin, jsonResponse } from './cors.ts';
 
 Deno.test('corsHeaders always allow the credentials-carrying headers we send', () => {
   const allowed = corsHeaders['Access-Control-Allow-Headers'];
-  for (const header of ['authorization', 'content-type', 'x-demo-secret']) {
+  for (const header of ['authorization', 'content-type', 'x-demo-secret', 'x-otp-contact-client-token']) {
     assertEquals(allowed.includes(header), true, header);
   }
 });
@@ -40,4 +40,35 @@ Deno.test('errorResponse defaults to 400 and carries the message', async () => {
 
 Deno.test('errorResponse honours a caller-supplied status', () => {
   assertEquals(errorResponse('forbidden', 403).status, 403);
+});
+
+Deno.test('origin allowlist accepts production and local development origins', () => {
+  for (const origin of [
+    'https://otpplatform-theta.vercel.app',
+    'https://opentradeprocurement.ai',
+    'https://www.opentradeprocurement.ai',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+  ]) {
+    assertEquals(isAllowedOrigin(origin), true, origin);
+  }
+});
+
+Deno.test('origin allowlist rejects arbitrary Vercel and hostile origins', () => {
+  for (const origin of [
+    'https://random-project.vercel.app',
+    'https://otpplatform-git-feature-org.vercel.app',
+    'https://otpplatform-theta.vercel.app.attacker.example',
+    'http://otpplatform-theta.vercel.app',
+    'https://opentradeprocurement.ai.attacker.example',
+  ]) {
+    assertEquals(isAllowedOrigin(origin), false, origin);
+  }
+});
+
+Deno.test('untrusted origin receives the production fallback, not a reflected origin', () => {
+  assertEquals(
+    getCorsHeaders('https://evil.example')['Access-Control-Allow-Origin'],
+    'https://otpplatform-theta.vercel.app',
+  );
 });

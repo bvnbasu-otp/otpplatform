@@ -91,7 +91,7 @@ export function MobileBottomNav() {
   }
 
   const isPublicRoute =
-    ['/', '/pricing', '/about-us', '/faqs', '/showcase', '/mobile', '/mobile-showcase', '/how-it-works', '/howitworks'].includes(pathname) ||
+    ['/', '/pricing', '/about-us', '/contact-us', '/faqs', '/showcase', '/mobile', '/mobile-showcase', '/how-it-works', '/howitworks'].includes(pathname) ||
     pathname.startsWith('/legal');
   const showPublicCompactNav = !(isAuthenticated && !isPublicRoute);
 

@@ -1,0 +1,186 @@
+/* Contact Us — A4 portrait print / save-as-PDF sheet. */
+
+@page contact-us {
+  size: A4 portrait;
+  margin: 14mm 14mm 14mm 14mm;
+}
+
+@media print {
+  /* Only the sheet, its ancestors and its contents are printed: no header,
+     navigation, footer, banners, buttons or on-screen form. */
+  body:has([data-print-document='contact-us'])
+    *:not(:has([data-print-document='contact-us'])):not([data-print-document='contact-us']):not([data-print-document='contact-us'] *) {
+    display: none !important;
+  }
+
+  /* The app shell is a fixed-height scroller on screen; let it flow on paper. */
+  body:has([data-print-document='contact-us']),
+  body:has([data-print-document='contact-us']) :has([data-print-document='contact-us']) {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    contain: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  .contact-print-sheet {
+    page: contact-us;
+    display: block !important;
+    width: 100%;
+    color: #000000;
+    background: #ffffff;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.35;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .contact-print-sheet img {
+    box-shadow: none !important;
+  }
+
+  .contact-print-brand {
+    display: flex;
+    align-items: center;
+    gap: 4mm;
+    padding-bottom: 3mm;
+    border-bottom: 0.6mm solid #000000;
+    break-inside: avoid;
+  }
+
+  .contact-print-platform {
+    margin: 0;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #333333;
+  }
+
+  .contact-print-title {
+    margin: 0.5mm 0 0;
+    font-size: 20pt;
+    font-weight: 800;
+  }
+
+  .contact-print-intro {
+    margin: 4mm 0 3mm;
+  }
+
+  .contact-print-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2mm 10mm;
+    margin: 0 0 4mm;
+    padding: 2.5mm 3mm;
+    border: 0.3mm solid #000000;
+    break-inside: avoid;
+  }
+
+  .contact-print-details dt {
+    font-size: 8.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #333333;
+  }
+
+  .contact-print-details dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .contact-print-section {
+    margin-top: 4mm;
+    break-inside: avoid;
+  }
+
+  .contact-print-section h2 {
+    margin: 0 0 2mm;
+    font-size: 11pt;
+    font-weight: 800;
+  }
+
+  .contact-print-categories {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.8mm 6mm;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .contact-print-categories li {
+    display: flex;
+    align-items: center;
+    gap: 2.5mm;
+  }
+
+  .contact-print-box {
+    display: inline-block;
+    width: 3.8mm;
+    height: 3.8mm;
+    flex: none;
+    border: 0.35mm solid #000000;
+  }
+
+  .contact-print-field {
+    display: flex;
+    align-items: flex-end;
+    gap: 3mm;
+    height: 10mm;
+  }
+
+  .contact-print-label {
+    flex: none;
+    min-width: 34mm;
+    font-weight: 700;
+  }
+
+  .contact-print-line {
+    flex: 1;
+    border-bottom: 0.3mm solid #000000;
+    height: 6mm;
+  }
+
+  .contact-print-message {
+    margin-top: 3mm;
+  }
+
+  .contact-print-line-block {
+    display: block;
+    height: 8.5mm;
+  }
+
+  .contact-print-note {
+    margin: 1.5mm 0 0;
+    font-size: 8.5pt;
+    color: #333333;
+  }
+
+  .contact-print-privacy p {
+    margin: 0 0 1.2mm;
+    font-size: 9pt;
+    overflow-wrap: anywhere;
+  }
+
+  .contact-print-footer {
+    margin-top: 5mm;
+    padding-top: 2mm;
+    border-top: 0.3mm solid #000000;
+    font-size: 7.5pt;
+    color: #333333;
+    break-inside: avoid;
+  }
+
+  .contact-print-footer p {
+    margin: 0;
+  }
+}

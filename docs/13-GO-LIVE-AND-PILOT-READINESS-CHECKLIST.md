@@ -11,7 +11,7 @@
 The **Open Trade & Procurement (OTP) Platform** has undergone comprehensive architectural, security, state-machine, operational, and multi-tenant evaluations under Phase 7.1 Final Closure & Re-Certification. 
 
 - **Overall Readiness Verdict**: **9.9 / 10** — 🟢 **PHASE 7.1 FULLY CERTIFIED — PHASE 8 PILOT READINESS GATE OPEN**.
-- **Scope**: Covers technical prerequisites, 187 contiguous PostgreSQL migrations, strict RLS security, hardened `search_path`, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 6-Stage Commercial Lifecycle UX mapped to the admin-gated 15-step linear monotonic engine, support ticket routing to `bvnbasu@gmail.com`, payment webhook verification, atomic award locking, Step 11 Contract Gate, Vendor Master Intelligence (VMI), and Double-Entry Financial Accounting.
+- **Scope**: Covers technical prerequisites, 187 contiguous PostgreSQL migrations, strict RLS security, hardened `search_path`, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 6-Stage Commercial Lifecycle UX mapped to the admin-gated 15-step linear monotonic engine, support tickets, payment webhook verification, atomic award locking, Step 11 Contract Gate, Vendor Master Intelligence (VMI), and Double-Entry Financial Accounting. Canonical support routing `bvnbasu+otp.demo.otp.support@gmail.com` remains an unapplied 00323 proposal, not a live-verified claim.
 - **Verification Confidence**: **1,514+ automated verifications passing (100% pass rate) across 12 layers**, 22 Formal Failure Paths suite (`failure-paths-regression.test.ts`, 32/32 tests passed), UX telemetry scrub suite (`ux-telemetry-abstraction.test.ts`), zero TypeScript build errors, and zero runtime console crashes across mobile and desktop viewports.
 - **Closed Human-Reported Defects**: Migration 00185 (`joined_at` column in `list_org_members` RPC), attachments/voice notes local UUID syntax guard, guest unauthenticated draft review & login sourcing redirect, resilient workspace loading with persistent subscription/wallet visibility, single authoritative role header, and profile preferences cleanup.
 
@@ -96,7 +96,7 @@ OTP eliminates per-message telco fees through a self-hosted messaging architectu
 
 ### 4.3 Support Ticketing & Primary Admin Dispatch
 - [x] **Universal Mobile Support Modal**: Floating help trigger on all screens (`SupportHelpButtonModal.tsx`) with mobile viewport zoom protection (`text-sm sm:text-xs`).
-- [x] **Direct SuperAdmin Notification**: Migration `00140` routes all ticket categories (`BUG`, `FEATURE`, `SALES`, `OPS`, `ENHANCEMENT`) to primary superadmin `bvnbasu@gmail.com`.
+- [ ] **Canonical Support Routing**: Unapplied proposal `00323` would route all ticket categories (`BUG`, `FEATURE`, `SALES`, `OPS`, `ENHANCEMENT`) to `bvnbasu+otp.demo.otp.support@gmail.com`; email delivery is not implemented.
 - [x] **Audit Trail & Admin Console**: Tickets recorded in `support_tickets`, `notifications`, and `audit_events`, managed via Super Admin Console (`/admin?tab=tickets`).
 
 ---
