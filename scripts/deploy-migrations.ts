@@ -22,8 +22,10 @@
  *   pnpm db:migrate:check
  *   tsx scripts/deploy-migrations.ts --deploy
  *   tsx scripts/deploy-migrations.ts --dry-run
+ *   tsx scripts/deploy-migrations.ts --dry-run --ack-disposable-bootstrap-plan
  *   tsx scripts/deploy-migrations.ts --check-only
- *   tsx scripts/deploy-migrations.ts --target-env production
+ *   OTP_DEPLOYMENT_TARGET=production tsx scripts/deploy-migrations.ts --deploy
+ * Any other argument is refused.
  * =============================================================================
  */
 
@@ -55,6 +57,35 @@ export interface MigrationStatusReport {
   pendingCount: number;
   appliedList: string[];
   pendingList: string[];
+}
+
+export const HISTORICAL_PURGE_SEQUENCE = 77;
+export const DISPOSABLE_BOOTSTRAP_PLAN_ACK = '--ack-disposable-bootstrap-plan';
+
+export function assertHistoricalPurgePlanSafety(options: {
+  plannedSequences: number[];
+  isDeploy: boolean;
+  disposablePlanAcknowledged: boolean;
+}): void {
+  if (!options.plannedSequences.includes(HISTORICAL_PURGE_SEQUENCE)) {
+    return;
+  }
+
+  if (options.isDeploy) {
+    throw new Error(
+      'HISTORICAL_PURGE_BLOCK: migration 00077 executes a destructive purge. ' +
+      'This runner will not apply a range crossing 00077; there is no deployment bypass. ' +
+      'Use an empty disposable database and the separately reviewed validation procedure.',
+    );
+  }
+
+  if (!options.disposablePlanAcknowledged) {
+    throw new Error(
+      `HISTORICAL_PURGE_BLOCK: this plan crosses destructive migration 00077. ` +
+      `For file-only planning against an empty disposable bootstrap, add ${DISPOSABLE_BOOTSTRAP_PLAN_ACK}. ` +
+      'The acknowledgement never permits database apply.',
+    );
+  }
 }
 
 /**
@@ -224,27 +255,235 @@ export async function ensureTrackingTables(client: any): Promise<void> {
  * Fetches list of applied migrations from database
  */
 export async function getAppliedMigrations(client: any): Promise<string[]> {
-  try {
-    const res = await client.query(`
-      SELECT version FROM public.otp_schema_migrations
-      UNION
-      SELECT version FROM supabase_migrations.schema_migrations;
-    `);
-    return res.rows.map((r: any) => r.version.trim()).filter(Boolean);
-  } catch {
-    return [];
+  // Read-only. A missing ledger table contributes no versions, which keeps 00077 pending.
+  const versions = new Set<string>();
+  for (const sql of [
+    'SELECT version FROM public.otp_schema_migrations',
+    'SELECT version FROM supabase_migrations.schema_migrations',
+  ]) {
+    try {
+      const res = await client.query(sql);
+      for (const row of res.rows ?? []) {
+        const version = String(row.version ?? '').trim();
+        if (version) versions.add(version);
+      }
+    } catch {
+      // Table absent or unreadable.
+    }
   }
+  return [...versions];
+}
+
+export type MigrationMode = 'check-only' | 'status' | 'dry-run' | 'deploy-dry-run' | 'deploy';
+
+export interface ParsedMigrationArgs {
+  mode: MigrationMode;
+  disposablePlanAcknowledged: boolean;
+}
+
+const MODE_FLAGS: Record<string, 'check-only' | 'status' | 'dry-run' | 'deploy'> = {
+  '--check-only': 'check-only',
+  '-c': 'check-only',
+  '--status': 'status',
+  '-s': 'status',
+  '--dry-run': 'dry-run',
+  '--deploy': 'deploy',
+};
+
+export function parseMigrationArgs(args: string[]): ParsedMigrationArgs {
+  const modes = new Set<'check-only' | 'status' | 'dry-run' | 'deploy'>();
+  let disposablePlanAcknowledged = false;
+
+  for (const arg of args) {
+    if (arg === DISPOSABLE_BOOTSTRAP_PLAN_ACK) {
+      if (disposablePlanAcknowledged) {
+        throw new Error(`Duplicate argument: ${arg}`);
+      }
+      disposablePlanAcknowledged = true;
+      continue;
+    }
+    const mode = MODE_FLAGS[arg];
+    if (!mode) {
+      if (arg === '--target-env' || arg.startsWith('--target-env=')) {
+        throw new Error('Unsupported argument: --target-env. Set OTP_DEPLOYMENT_TARGET in the environment instead.');
+      }
+      throw new Error(`Unsupported argument: ${arg}`);
+    }
+    if (modes.has(mode)) {
+      throw new Error(`Duplicate argument: ${arg}`);
+    }
+    modes.add(mode);
+  }
+
+  let mode: MigrationMode;
+  if (modes.size === 0) {
+    throw new Error('No action specified. Use --deploy, --status, --check-only, or --dry-run.');
+  } else if (modes.size === 1) {
+    mode = [...modes][0];
+  } else if (modes.size === 2 && modes.has('deploy') && modes.has('dry-run')) {
+    mode = 'deploy-dry-run';
+  } else {
+    throw new Error(`Conflicting arguments: ${args.join(' ')}`);
+  }
+
+  if (disposablePlanAcknowledged && mode !== 'dry-run') {
+    throw new Error(`${DISPOSABLE_BOOTSTRAP_PLAN_ACK} is only valid with --dry-run alone and never permits database apply.`);
+  }
+
+  return { mode, disposablePlanAcknowledged };
+}
+
+export interface MigrationDbClient {
+  query(sql: string, params?: unknown[]): Promise<{ rows?: any[] }>;
+}
+
+/**
+ * Database phase after connect. Ledger reads and the 00077 gate run before any write.
+ * Returns the process exit code; the caller owns connect/end.
+ */
+export async function runDatabaseMigrationPhase(input: {
+  client: MigrationDbClient;
+  files: MigrationFile[];
+  mode: 'status' | 'deploy-dry-run' | 'deploy';
+  connectionString: string;
+  readSql?: (file: MigrationFile) => string;
+}): Promise<number> {
+  const { client, files, mode, connectionString } = input;
+  const readSql = input.readSql ?? ((file: MigrationFile) => fs.readFileSync(file.filepath, 'utf8'));
+
+  const applied = await getAppliedMigrations(client);
+  const appliedSet = new Set(applied);
+
+  const isFileApplied = (f: MigrationFile) => {
+    const seq5 = String(f.sequenceNumber).padStart(5, '0');
+    return (
+      appliedSet.has(f.filename) ||
+      appliedSet.has(f.filename.replace('.sql', '')) ||
+      appliedSet.has(seq5)
+    );
+  };
+
+  const pending = files.filter((f) => !isFileApplied(f));
+
+  console.log(`Applied Count   : ${files.length - pending.length} migrations`);
+  console.log(`Pending Count   : ${pending.length} migrations`);
+
+  if (mode === 'status') {
+    console.log('\n--- MIGRATION STATUS BREAKDOWN ---');
+    for (const file of files) {
+      const isApp = isFileApplied(file);
+      console.log(`  ${isApp ? '\x1b[32m[APPLIED]\x1b[0m' : '\x1b[33m[PENDING]\x1b[0m'} ${file.filename}`);
+    }
+    console.log('----------------------------------\n');
+    return 0;
+  }
+
+  try {
+    assertHistoricalPurgePlanSafety({
+      plannedSequences: pending.map((file) => file.sequenceNumber),
+      isDeploy: true,
+      disposablePlanAcknowledged: false,
+    });
+  } catch (safetyError) {
+    const message = safetyError instanceof Error ? safetyError.message : 'Historical purge apply refused.';
+    console.error(`\n\x1b[31m[ERROR] ${message}\x1b[0m\n`);
+    return 1;
+  }
+
+  if (pending.length === 0) {
+    console.log('\n\x1b[32m✓ All ' + files.length + ' migrations are already synchronized with target database.\x1b[0m\n');
+    return 0;
+  }
+
+  if (mode === 'deploy-dry-run') {
+    console.log('\n[DRY-RUN] Pending migrations to apply:');
+    pending.forEach((p) => console.log(`  - ${p.filename}`));
+    return 0;
+  }
+
+  await ensureTrackingTables(client);
+
+  console.log(`\n⏳ Applying ${pending.length} pending migrations sequentially...`);
+  let successCount = 0;
+
+  for (const item of pending) {
+    process.stdout.write(`  [APPLYING] ${item.filename}... `);
+    const start = Date.now();
+    const sql = readSql(item);
+
+    try {
+      let execSql = sql;
+      const alterTypeMatches = sql.match(/ALTER\s+TYPE\s+[^;]+ADD\s+VALUE\s+(?:IF\s+NOT\s+EXISTS\s+)?'[^;]+';/gi);
+      if (alterTypeMatches) {
+        for (const alterStmt of alterTypeMatches) {
+          try {
+            await client.query(alterStmt);
+          } catch (alterErr: any) {
+            if (!alterErr.message.includes('already exists')) {
+              throw alterErr;
+            }
+          }
+          execSql = execSql.replace(alterStmt, `-- [Pre-committed] ${alterStmt}`);
+        }
+      }
+
+      await client.query('BEGIN');
+      await client.query(execSql);
+      await client.query(
+        `INSERT INTO public.otp_schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO UPDATE SET applied_at = now()`,
+        [item.filename]
+      );
+      await client.query(
+        `INSERT INTO supabase_migrations.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING`,
+        [String(item.sequenceNumber).padStart(5, '0')]
+      );
+      await client.query('COMMIT');
+      const elapsed = Date.now() - start;
+      console.log(`\x1b[32mPASSED\x1b[0m (${elapsed}ms)`);
+      successCount++;
+    } catch (migErr: any) {
+      await client.query('ROLLBACK');
+      console.log(`\x1b[31mFAILED\x1b[0m`);
+      console.error(`\x1b[31m[ERROR] Failed to apply migration ${item.filename}:\x1b[0m`, redactDiagnosticText(String(migErr.message ?? ''), connectionString));
+      return 1;
+    }
+  }
+
+  // Reload PostgREST schema cache
+  try {
+    await client.query("NOTIFY pgrst, 'reload schema';");
+    console.log('✓ PostgREST schema cache reloaded.');
+  } catch {}
+
+  // Assert Production Data Integrity
+  try {
+    const check = await client.query("SELECT public.assert_production_data_integrity();");
+    console.log(`✓ Production Data Integrity Verified: ${check.rows?.[0]?.assert_production_data_integrity || 'OK'}`);
+  } catch {
+    // Assertion function might not be installed in all test environments
+  }
+
+  console.log(`\n\x1b[32m🎉 SUCCESS: Applied ${successCount}/${pending.length} migrations. Total synchronized: ${files.length}.\x1b[0m\n`);
+  return 0;
 }
 
 /**
  * Main migration runner
  */
 export async function runMigrations() {
-  const args = process.argv.slice(2);
-  const isCheckOnly = args.includes('--check-only') || args.includes('-c');
-  const isStatus = args.includes('--status') || args.includes('-s');
-  const isDryRun = args.includes('--dry-run');
-  const isDeploy = args.includes('--deploy');
+  let parsed: ParsedMigrationArgs;
+  try {
+    parsed = parseMigrationArgs(process.argv.slice(2));
+  } catch (argError) {
+    const message = argError instanceof Error ? argError.message : 'Invalid arguments.';
+    console.error(`\n\x1b[31m[ERROR] ${message}\x1b[0m\n`);
+    process.exit(1);
+  }
+  const { mode, disposablePlanAcknowledged } = parsed;
+  const isCheckOnly = mode === 'check-only';
+  const isStatus = mode === 'status';
+  const isDryRun = mode === 'dry-run' || mode === 'deploy-dry-run';
+  const isDeploy = mode === 'deploy' || mode === 'deploy-dry-run';
 
   console.log('\n=================================================================');
   console.log('  🛡️  OTP PLATFORM — SUPABASE & DATABASE MIGRATION ENGINE');
@@ -266,26 +505,39 @@ export async function runMigrations() {
   }
 
   if (isCheckOnly) {
+    console.warn(
+      '\n[SAFETY] File continuity passes, but migration 00077 is destructive. ' +
+      'A full historical apply is blocked by this runner.',
+    );
     console.log('\n\x1b[32m✓ All migration files validated successfully with zero sequence gaps.\x1b[0m\n');
     process.exit(0);
   }
 
   if (isDryRun && !isDeploy) {
+    try {
+      assertHistoricalPurgePlanSafety({
+        plannedSequences: files.map((file) => file.sequenceNumber),
+        isDeploy: false,
+        disposablePlanAcknowledged,
+      });
+    } catch (safetyError) {
+      const message = safetyError instanceof Error ? safetyError.message : 'Historical purge plan refused.';
+      console.error(`\n\x1b[31m[ERROR] ${message}\x1b[0m\n`);
+      process.exit(1);
+    }
     console.log('\n[DRY-RUN] Migration files validated. No database connection required for file-only dry-run.');
-    console.log(`Would apply up to ${files.length} migrations when connected.\n`);
+    console.log(
+      `[DISPOSABLE-ONLY PLAN] ${files.length} migrations include destructive migration 00077. ` +
+      'This acknowledgement does not permit database apply.\n',
+    );
     process.exit(0);
-  }
-
-  if (!isDeploy && !isStatus) {
-    console.error('\n\x1b[31m[ERROR] No action specified. Use --deploy, --status, --check-only, or --dry-run.\x1b[0m\n');
-    process.exit(1);
   }
 
   // 2. Resolve database connection
   const { connectionString, source, suppliedConnectionStrings } = resolveDatabaseUrl();
   console.log(`Database Source : ${source}`);
   const deploymentTarget = process.env.OTP_DEPLOYMENT_TARGET ?? process.env.TARGET_ENV ?? null;
-  // --status connects and creates tracking tables, so it gets the same target check as --deploy.
+  // --status connects and reads the ledgers, so it gets the same target check as --deploy.
   if (isDeploy || isStatus) {
     const projectId = (process.env.SUPABASE_PROJECT_ID ?? '').trim();
     const projectRef = (process.env.SUPABASE_PROJECT_REF ?? '').trim();
@@ -348,112 +600,14 @@ export async function runMigrations() {
       await client.connect();
       console.log('\x1b[32m✓ Connected to PostgreSQL database successfully.\x1b[0m');
 
-      await ensureTrackingTables(client);
-      const applied = await getAppliedMigrations(client);
-      const appliedSet = new Set(applied);
-
-      const isFileApplied = (f: MigrationFile) => {
-        const seq5 = String(f.sequenceNumber).padStart(5, '0');
-        return (
-          appliedSet.has(f.filename) ||
-          appliedSet.has(f.filename.replace('.sql', '')) ||
-          appliedSet.has(seq5)
-        );
-      };
-
-      const pending = files.filter((f) => !isFileApplied(f));
-
-      console.log(`Applied Count   : ${files.length - pending.length} migrations`);
-      console.log(`Pending Count   : ${pending.length} migrations`);
-
-      if (isStatus) {
-        console.log('\n--- MIGRATION STATUS BREAKDOWN ---');
-        for (const file of files) {
-          const isApp = isFileApplied(file);
-          console.log(`  ${isApp ? '\x1b[32m[APPLIED]\x1b[0m' : '\x1b[33m[PENDING]\x1b[0m'} ${file.filename}`);
-        }
-        console.log('----------------------------------\n');
-        await client.end();
-        process.exit(0);
-      }
-
-      if (pending.length === 0) {
-        console.log('\n\x1b[32m✓ All ' + files.length + ' migrations are already synchronized with target database.\x1b[0m\n');
-        await client.end();
-        process.exit(0);
-      }
-
-      if (isDryRun) {
-        console.log('\n[DRY-RUN] Pending migrations to apply:');
-        pending.forEach((p) => console.log(`  - ${p.filename}`));
-        await client.end();
-        process.exit(0);
-      }
-
-      console.log(`\n⏳ Applying ${pending.length} pending migrations sequentially...`);
-      let successCount = 0;
-
-      for (const item of pending) {
-        process.stdout.write(`  [APPLYING] ${item.filename}... `);
-        const start = Date.now();
-        const sql = fs.readFileSync(item.filepath, 'utf8');
-
-        try {
-          let execSql = sql;
-          const alterTypeMatches = sql.match(/ALTER\s+TYPE\s+[^;]+ADD\s+VALUE\s+(?:IF\s+NOT\s+EXISTS\s+)?'[^;]+';/gi);
-          if (alterTypeMatches) {
-            for (const alterStmt of alterTypeMatches) {
-              try {
-                await client.query(alterStmt);
-              } catch (alterErr: any) {
-                if (!alterErr.message.includes('already exists')) {
-                  throw alterErr;
-                }
-              }
-              execSql = execSql.replace(alterStmt, `-- [Pre-committed] ${alterStmt}`);
-            }
-          }
-
-          await client.query('BEGIN');
-          await client.query(execSql);
-          await client.query(
-            `INSERT INTO public.otp_schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO UPDATE SET applied_at = now()`,
-            [item.filename]
-          );
-          await client.query(
-            `INSERT INTO supabase_migrations.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING`,
-            [String(item.sequenceNumber).padStart(5, '0')]
-          );
-          await client.query('COMMIT');
-          const elapsed = Date.now() - start;
-          console.log(`\x1b[32mPASSED\x1b[0m (${elapsed}ms)`);
-          successCount++;
-        } catch (migErr: any) {
-          await client.query('ROLLBACK');
-          console.log(`\x1b[31mFAILED\x1b[0m`);
-          console.error(`\x1b[31m[ERROR] Failed to apply migration ${item.filename}:\x1b[0m`, redactDiagnosticText(String(migErr.message ?? ''), connectionString));
-          await client.end();
-          process.exit(1);
-        }
-      }
-
-      // Reload PostgREST schema cache
-      try {
-        await client.query("NOTIFY pgrst, 'reload schema';");
-        console.log('✓ PostgREST schema cache reloaded.');
-      } catch {}
-
-      // Assert Production Data Integrity
-      try {
-        const check = await client.query("SELECT public.assert_production_data_integrity();");
-        console.log(`✓ Production Data Integrity Verified: ${check.rows[0]?.assert_production_data_integrity || 'OK'}`);
-      } catch {
-        // Assertion function might not be installed in all test environments
-      }
-
-      console.log(`\n\x1b[32m🎉 SUCCESS: Applied ${successCount}/${pending.length} migrations. Total synchronized: ${files.length}.\x1b[0m\n`);
+      const exitCode = await runDatabaseMigrationPhase({
+        client,
+        files,
+        mode: isStatus ? 'status' : isDryRun ? 'deploy-dry-run' : 'deploy',
+        connectionString,
+      });
       await client.end();
-      process.exit(0);
+      process.exit(exitCode);
     } catch (dbErr: any) {
       console.error(`\x1b[31m[ERROR] Database execution failed: ${redactDiagnosticText(String(dbErr.message ?? ''), connectionString)}\x1b[0m`);
       try { await client.end(); } catch {}
@@ -463,8 +617,15 @@ export async function runMigrations() {
 
   // 3. Explicit Supabase CLI target. A missing connection already exited above.
   // `supabase db push` without `--db-url` would use the linked project, so it is never invoked that way.
-  if (!isDeploy) {
+  if (mode !== 'deploy') {
     console.error('\n\x1b[31m[ERROR] No database connection available for --deploy. Set DATABASE_URL or SUPABASE_PROJECT_ID + SUPABASE_DB_PASSWORD.\x1b[0m\n');
+    process.exit(1);
+  }
+  if (files.some((file) => file.sequenceNumber === HISTORICAL_PURGE_SEQUENCE)) {
+    console.error(
+      '\n\x1b[31m[ERROR] HISTORICAL_PURGE_BLOCK: CLI fallback cannot prove that destructive migration 00077 ' +
+      'is already applied, so database push was not attempted.\x1b[0m\n',
+    );
     process.exit(1);
   }
   console.log('Attempting migration execution via Supabase CLI (`supabase db push`)...');

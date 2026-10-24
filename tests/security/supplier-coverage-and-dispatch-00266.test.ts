@@ -22,7 +22,7 @@ describe('00266 supplier coverage, dispatch & quorum remediation (static securit
       '00273_persist_pin_coverage_in_canonical_suppliers.sql',
       '00274_location_pin_coverage_durable_recovery.sql',
     ]);
-    expect(files.at(-1)).toBe('00314_internal_invitation_acceptance.sql');
+    expect(files.at(-1)).toBe('00327_notification_dispatch_isolation.sql');
     const idx265 = files.indexOf('00265_remediate_buyer_taxonomy_and_rls_integrity.sql');
     expect(idx265).toBeGreaterThan(0);
     expect(files[idx265 + 1]).toBe(FILE);
@@ -60,7 +60,7 @@ describe('00266 supplier coverage, dispatch & quorum remediation (static securit
     expect(SQL).toContain('sc.declared_caps_count = 0 AND sc.category_match');
   });
 
-  it('authorizes public.waive_rfq_quote_quorum RPC with strict actor checks and canonical audit logging', () => {
+  it('records the historical waiver implementation that 00325 disables', () => {
     expect(SQL).toContain('CREATE OR REPLACE FUNCTION public.waive_rfq_quote_quorum(');
     expect(SQL).toContain('SECURITY DEFINER');
     expect(SQL).toContain('SET search_path = public');
@@ -69,5 +69,14 @@ describe('00266 supplier coverage, dispatch & quorum remediation (static securit
     // Verify canonical audit_events schema compliance: must NOT use deprecated actor_role
     expect(SQL).not.toMatch(/INSERT\s+INTO\s+public\.audit_events[^;]*\bactor_role\b/i);
     expect(SQL).toContain('GRANT EXECUTE ON FUNCTION public.waive_rfq_quote_quorum(uuid, text) TO authenticated;');
+
+    const disabled = readFileSync(
+      resolve(MIGRATIONS_DIR, '00325_disable_pilot_quote_quorum_waiver.sql'),
+      'utf8',
+    );
+    expect(disabled).toContain('PILOT_QUORUM_WAIVER_DISABLED');
+    expect(disabled).toMatch(
+      /REVOKE ALL ON FUNCTION public\.waive_rfq_quote_quorum\(uuid, text\)\s+FROM PUBLIC, anon, authenticated, service_role;/,
+    );
   });
 });

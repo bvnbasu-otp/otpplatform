@@ -64,8 +64,9 @@ beforeAll(async () => {
       org_type: type,
       city: 'Bengaluru',
       status: 'ACTIVE',
-      subscription_plan: 'MONTHLY',
+      subscription_plan: 'YEARLY',
       subscription_status: 'ACTIVE',
+      subscription_expires_at: at(365 * 24 * HOUR),
       is_demo: false,
     });
     if (error) throw new Error(`fixture org ${name}: ${error.message}`);
@@ -114,6 +115,27 @@ afterAll(async () => {
 async function profileIdFor(email: string): Promise<string> {
   const { data } = await service.from('profiles').select('id').eq('email', email).single();
   return data!.id as string;
+}
+
+async function appoint(email: string, roleId: string): Promise<void> {
+  const personId = await profileIdFor(email);
+  const { data: existing } = await service
+    .from('org_role_assignments')
+    .select('id')
+    .eq('organization_id', RWA_ORG)
+    .eq('person_id', personId)
+    .eq('status', 'ACTIVE')
+    .maybeSingle();
+  if (existing) return;
+  const { error } = await service.from('org_role_assignments').insert({
+    organization_id: RWA_ORG,
+    person_id: personId,
+    role_id: roleId,
+    role_name: roleId,
+    status: 'ACTIVE',
+    effective_from: at(-HOUR),
+  });
+  if (error) throw new Error(`fixture office ${email}: ${error.message}`);
 }
 
 async function sessionFor(email: string): Promise<SupabaseClient> {
@@ -256,6 +278,8 @@ async function seat(rfqId: string, emails: string[]): Promise<void> {
 }
 
 async function recommendWinner(round: Round): Promise<void> {
+  await appoint(LOGIN.committeeA, 'TREASURER');
+  await appoint(LOGIN.committeeB, 'COMMITTEE_MEMBER');
   await seat(round.rfqId, [LOGIN.committeeA, LOGIN.committeeB]);
   for (const email of [LOGIN.committeeA, LOGIN.committeeB]) {
     const { error } = await service.from('committee_votes').insert({
@@ -650,6 +674,8 @@ describe('F-04 COI: a subject cannot clear or rewrite their own DECLARED_CONFLIC
 
   it('declare via own JWT, then clearing / rewriting / deleting / waiving is rejected; vote stays VOTE-UNAUTHORIZED', async () => {
     const round = await makeRound({ orgId: RWA_ORG, creatorEmail: LOGIN.president });
+    await appoint(LOGIN.committeeA, 'TREASURER');
+    await appoint(LOGIN.committeeB, 'COMMITTEE_MEMBER');
     await seat(round.rfqId, [LOGIN.committeeA, LOGIN.committeeB]);
     const profile = await profileIdFor(LOGIN.committeeA);
 

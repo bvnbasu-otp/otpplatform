@@ -3,6 +3,12 @@ import crypto from 'node:crypto';
 import { Client } from 'pg';
 import { catalogAcceptance } from './legal-evidence-fixture';
 
+const LOCAL_POSTGRES_PORT = Number(process.env.LOCAL_PG_PORT ?? 54322);
+if (!Number.isInteger(LOCAL_POSTGRES_PORT) || LOCAL_POSTGRES_PORT < 1024 || LOCAL_POSTGRES_PORT > 65535) {
+  throw new Error(`LOCAL_PG_PORT must select a local PostgreSQL port, got ${process.env.LOCAL_PG_PORT}`);
+}
+const DERIVED_LOCAL_API_URL = `http://127.0.0.1:${LOCAL_POSTGRES_PORT - 1}`;
+
 function generateJwt(role: 'anon' | 'service_role', secret: string): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const payload = Buffer.from(
@@ -29,7 +35,7 @@ const SECRET_CLI = 'super-secret-jwt-token-with-at-least-32-characters-long';
 export async function loadCommittedLegalAcceptance(side: 'BUYER' | 'SUPPLIER' = 'BUYER') {
   const client = new Client({
     host: '127.0.0.1',
-    port: 54322,
+    port: LOCAL_POSTGRES_PORT,
     database: process.env.OTP_PG_DATABASE ?? 'postgres',
     user: 'postgres',
     password: 'postgres',
@@ -56,7 +62,7 @@ export async function loadCommittedLegalAcceptance(side: 'BUYER' | 'SUPPLIER' = 
 export async function removeDisposableLegalEvidence(): Promise<void> {
   const client = new Client({
     host: '127.0.0.1',
-    port: 54322,
+    port: LOCAL_POSTGRES_PORT,
     database: process.env.OTP_PG_DATABASE ?? 'postgres',
     user: 'postgres',
     password: 'postgres',
@@ -114,7 +120,7 @@ if (process.env.SUPABASE_ANON_KEY) {
 }
 
 /** Default keys for local Supabase. */
-export let LOCAL_SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
+export let LOCAL_SUPABASE_URL = DERIVED_LOCAL_API_URL;
 export let LOCAL_ANON_KEY = KEY_PAIRS[0].anon;
 export let LOCAL_SERVICE_KEY = KEY_PAIRS[0].service;
 
@@ -142,14 +148,7 @@ export function createServiceClient(customUrl?: string): SupabaseClient {
 }
 
 export async function isLocalSupabaseReachable(): Promise<boolean> {
-  const candidateUrls = [
-    process.env.SUPABASE_URL,
-    process.env.VITE_SUPABASE_URL,
-    'http://127.0.0.1:54321',
-    'http://localhost:54321',
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-  ].filter(Boolean) as string[];
+  const candidateUrls = [DERIVED_LOCAL_API_URL];
 
   for (const url of candidateUrls) {
     for (const pair of KEY_PAIRS) {

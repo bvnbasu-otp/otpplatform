@@ -751,6 +751,24 @@ describe('DemoUserDeletionModal (rendered)', () => {
     expect(isDisabled(deleteButton())).toBe(true);
   });
 
+  it('does not expose unknown preview or deletion server errors', async () => {
+    const previewDetail = 'PGRST202: Could not find public.preview_demo_user_deletion in the schema cache';
+    mocks.preview.mockResolvedValueOnce({ ok: false, error: previewDetail });
+    await renderModal();
+    expect(alertsText()).toContain('Demo-account deletion is unavailable');
+    expect(alertsText()).not.toContain(previewDetail);
+    unmount();
+
+    const deletionDetail = 'internal relation private_security.demo_user_deletion_previews does not exist';
+    mocks.execute.mockResolvedValueOnce({ ok: false, error: deletionDetail });
+    await renderModal();
+    fillForm();
+    click(deleteButton());
+    await settle();
+    expect(alertsText()).toContain('No account was deleted');
+    expect(alertsText()).not.toContain(deletionDetail);
+  });
+
   it('contains Tab and Shift+Tab, closes on Escape, and restores focus to the opener', async () => {
     const opener = document.createElement('button');
     document.body.appendChild(opener);

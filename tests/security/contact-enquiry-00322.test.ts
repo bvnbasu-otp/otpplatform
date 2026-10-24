@@ -1,28 +1,22 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
-const PROPOSAL = resolve(ROOT, 'supabase/00322_public_contact_enquiries.UNAPPLIED.sql');
-const sql = readFileSync(PROPOSAL, 'utf8');
+const MIGRATION = resolve(ROOT, 'supabase/migrations/00324_public_contact_enquiries.sql');
+const sql = readFileSync(MIGRATION, 'utf8');
 const code = sql.replace(/--.*$/gm, '');
 const edge = readFileSync(resolve(ROOT, 'supabase/functions/contact-enquiry/index.ts'), 'utf8');
 
-describe('00322 contact enquiries proposal (static review, no database)', () => {
-  it('is an unapplied proposal kept outside supabase/migrations', () => {
-    expect(sql.startsWith('-- STATUS: UNAPPLIED')).toBe(true);
-    expect(readdirSync(resolve(ROOT, 'supabase/migrations')).some((f) => /contact_enquir/i.test(f))).toBe(false);
-    expect(existsSync(resolve(ROOT, 'supabase/migrations/00322_public_contact_enquiries.sql'))).toBe(false);
-  });
-
-  it('does not collide with another proposal number', () => {
-    const proposals = readdirSync(resolve(ROOT, 'supabase')).filter((f) => /^00322_/.test(f));
-    expect(proposals).toEqual(['00322_public_contact_enquiries.UNAPPLIED.sql']);
+describe('00324 contact enquiries migration (static review, no database)', () => {
+  it('is a genuine numbered migration', () => {
+    expect(sql).toContain('-- 00324: Rate-limited public contact enquiries.');
+    expect(sql).toContain('Forward-only; deployment remains a separate authorized operation.');
   });
 
   it('enables RLS and lets only platform admins read', () => {
     expect(code).toContain('ALTER TABLE public.contact_enquiries ENABLE ROW LEVEL SECURITY;');
-    expect(code).toContain('REVOKE ALL ON public.contact_enquiries FROM PUBLIC, anon, authenticated;');
+    expect(code).toContain('REVOKE ALL ON public.contact_enquiries FROM PUBLIC, anon, authenticated, service_role;');
     expect(code).toMatch(/CREATE POLICY contact_enquiries_platform_admin_read[\s\S]*FOR SELECT[\s\S]*TO authenticated[\s\S]*USING \(private\.is_platform_admin\(\)\);/);
     expect(code).not.toMatch(/GRANT[^;]*(INSERT|UPDATE|DELETE)[^;]*contact_enquiries[^;]*TO (anon|authenticated)/i);
     expect(code).not.toMatch(/CREATE POLICY[^;]*FOR (INSERT|UPDATE|DELETE|ALL)[^;]*contact_enquiries/i);
@@ -39,6 +33,18 @@ describe('00322 contact enquiries proposal (static review, no database)', () => 
       const body = code.match(new RegExp(`CREATE FUNCTION public\\.${fn}[\\s\\S]*?\\$fn\\$;`))?.[0] ?? '';
       expect(body).toContain('IF NOT private.is_platform_admin() THEN');
     }
+  });
+
+  it('uses a bounded 90-day retention contract and a service-role-only purge', () => {
+    expect(code).toContain("retention_expires_at       timestamptz NOT NULL DEFAULT (now() + interval '90 days')");
+    expect(code).toContain('CREATE FUNCTION public.purge_expired_contact_enquiries(p_limit integer DEFAULT 500)');
+    expect(code).toContain('FOR UPDATE SKIP LOCKED');
+    expect(code).toMatch(
+      /REVOKE ALL ON FUNCTION public\.purge_expired_contact_enquiries\(integer\)\s*FROM PUBLIC, anon, authenticated;/,
+    );
+    expect(code).toContain(
+      'GRANT EXECUTE ON FUNCTION public.purge_expired_contact_enquiries(integer) TO service_role;',
+    );
   });
 
   it('keeps the dedicated limiter private and exposes no caller-controlled limits or endpoint bucket', () => {
@@ -135,11 +141,13 @@ describe('00322 contact enquiries proposal (static review, no database)', () => 
     });
   });
 
-  it('flags enquiry retention and client-token lifetime as open decisions without inventing a duration', () => {
-    expect(sql).toContain('OPEN PRODUCTION DECISION (unresolved): contact enquiry retention.');
-    expect(sql).toMatch(/No\s+-- duration is assumed here\./);
-    expect(sql).toContain('OPEN DECISION (unresolved): client-token lifetime.');
-    expect(code).not.toMatch(/DELETE FROM public\.contact_enquiries\b/);
+  it('implements bounded privacy retention without granting a browser deletion path', () => {
+    expect(code).toContain("retention_expires_at       timestamptz NOT NULL DEFAULT (now() + interval '90 days')");
+    expect(code).toContain('DELETE FROM public.contact_enquiries enquiry');
+    expect(code).toContain('LIMIT LEAST(GREATEST(COALESCE(p_limit, 500), 1), 2000)');
+    expect(code).not.toMatch(
+      /GRANT EXECUTE ON FUNCTION public\.purge_expired_contact_enquiries[^;]*TO (anon|authenticated|PUBLIC)/,
+    );
   });
 
   it('uses a server-issued signed identity, not a caller-selected or spoofed network identity', () => {

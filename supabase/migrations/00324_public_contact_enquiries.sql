@@ -1,45 +1,6 @@
--- STATUS: UNAPPLIED
--- Review proposal only. This file is intentionally outside supabase/migrations.
--- It has not been applied to a local or hosted database.
---
--- Stores public Contact Us enquiries submitted through the `contact-enquiry`
--- edge function. Until this is applied, that function cannot record an
--- enquiry and tells the visitor so; it never reports a success it cannot show.
---
--- Boundaries:
---   * Separate from procurement, supplier, buyer, support-ticket and legal
---     records. No foreign keys into any of them.
---   * anon and authenticated have no table privileges except SELECT, and RLS
---     limits SELECT to platform admins. Nobody else can read or enumerate rows.
---   * Rows are written only by submit_contact_enquiry, executable by
---     service_role alone (the edge function). The browser never holds that key.
---   * submission_id is unique, so a retried submission returns the first row
---     instead of creating a second enquiry or a second notification. The RPC
---     stores a SHA-256 fingerprint of the normalized payload (fixed field
---     order) and compares it on conflict: the same payload is a DUPLICATE, a
---     different payload under a used submission_id is SUBMISSION_CONFLICT.
---     Neither creates a row, and the edge function sends no notice for either.
---   * The edge function ignores forwarded network identity headers. It accepts
---     only a server-issued HMAC-signed client credential, derives an opaque
---     per-client bucket with a server secret, and mints a new identity for a
---     missing/invalid credential. A separate fixed endpoint emergency ceiling
---     is substantially above the per-client quota.
---   * The CHECK constraints mirror the edge function's validation, including
---     the single-line rule that keeps header values free of CR/LF.
---
--- OPEN PRODUCTION DECISION (unresolved): contact enquiry retention. Rows hold
--- visitor names, emails, phone numbers and free-text messages, and nothing in
--- this proposal deletes or anonymises them; they are kept indefinitely until a
--- retention period and purge mechanism are decided and added separately. No
--- duration is assumed here. Rate-limit events are pruned opportunistically:
--- every admitted check_contact_enquiry_rate_limit call deletes events older
--- than 24 hours.
---
--- OPEN DECISION (unresolved): client-token lifetime. The signed client token
--- carries no expiry and is never rotated by the server while its signature
--- verifies; it changes only if CONTACT_RATE_LIMIT_SECRET changes or the
--- browser discards it (a fresh identity is then issued, so per-client limits
--- reset for that browser and only the endpoint ceiling still applies).
+-- 00324: Rate-limited public contact enquiries.
+-- Promoted from public_contact_enquiries.DEFERRED.UNVERSIONED.sql on 2026-10-24.
+-- Forward-only; deployment remains a separate authorized operation.
 
 BEGIN;
 
@@ -94,7 +55,10 @@ CREATE TABLE public.contact_enquiries (
   notification_attempted_at  timestamptz,
   status                     text NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW', 'IN_REVIEW', 'CLOSED')),
   created_at                 timestamptz NOT NULL DEFAULT now(),
-  updated_at                 timestamptz NOT NULL DEFAULT now()
+  retention_expires_at       timestamptz NOT NULL DEFAULT (now() + interval '90 days'),
+  updated_at                 timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT contact_enquiries_retention_after_creation
+    CHECK (retention_expires_at > created_at)
 );
 
 CREATE INDEX idx_contact_enquiries_created ON public.contact_enquiries (created_at DESC);
@@ -106,7 +70,7 @@ CREATE TRIGGER trg_contact_enquiries_updated_at
 
 ALTER TABLE public.contact_enquiries ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON public.contact_enquiries FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.contact_enquiries FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT ON public.contact_enquiries TO authenticated;
 
 CREATE POLICY contact_enquiries_platform_admin_read
@@ -315,11 +279,41 @@ BEGIN
 END;
 $fn$;
 
+-- 6. Privacy retention. Scheduling is an operator concern; this narrow RPC is
+-- the only deletion path and is executable only by service_role. Each call is
+-- bounded so cleanup cannot monopolize the table.
+CREATE FUNCTION public.purge_expired_contact_enquiries(p_limit integer DEFAULT 500)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $fn$
+DECLARE
+  v_deleted integer;
+BEGIN
+  WITH expired AS (
+    SELECT id
+    FROM public.contact_enquiries
+    WHERE retention_expires_at <= clock_timestamp()
+    ORDER BY retention_expires_at, id
+    LIMIT LEAST(GREATEST(COALESCE(p_limit, 500), 1), 2000)
+    FOR UPDATE SKIP LOCKED
+  )
+  DELETE FROM public.contact_enquiries enquiry
+  USING expired
+  WHERE enquiry.id = expired.id;
+
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+  RETURN v_deleted;
+END;
+$fn$;
+
 ALTER FUNCTION public.check_contact_enquiry_rate_limit(text) OWNER TO postgres;
 ALTER FUNCTION public.submit_contact_enquiry(uuid, text, text, text, text, text, text, text) OWNER TO postgres;
 ALTER FUNCTION public.mark_contact_enquiry_notification(uuid, text) OWNER TO postgres;
 ALTER FUNCTION public.admin_list_contact_enquiries(text, integer) OWNER TO postgres;
 ALTER FUNCTION public.admin_set_contact_enquiry_status(uuid, text) OWNER TO postgres;
+ALTER FUNCTION public.purge_expired_contact_enquiries(integer) OWNER TO postgres;
 
 REVOKE ALL ON FUNCTION public.check_contact_enquiry_rate_limit(text)
   FROM PUBLIC, anon, authenticated;
@@ -331,15 +325,18 @@ REVOKE ALL ON FUNCTION public.admin_list_contact_enquiries(text, integer)
   FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_set_contact_enquiry_status(uuid, text)
   FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.purge_expired_contact_enquiries(integer)
+  FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.check_contact_enquiry_rate_limit(text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.submit_contact_enquiry(uuid, text, text, text, text, text, text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.mark_contact_enquiry_notification(uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_list_contact_enquiries(text, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_set_contact_enquiry_status(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.purge_expired_contact_enquiries(integer) TO service_role;
 
 COMMENT ON TABLE public.contact_enquiries IS
-  'Public Contact Us enquiries. Written only via submit_contact_enquiry (service_role); readable only by platform admins.';
+  'Public Contact Us enquiries. Written only via submit_contact_enquiry (service_role), readable only by platform admins, retained for 90 days unless purged sooner under an approved legal hold process.';
 COMMENT ON TABLE public.contact_enquiry_rate_limits IS
   'Private Contact Us per-client and endpoint emergency rate-limit events; no direct client access.';
 

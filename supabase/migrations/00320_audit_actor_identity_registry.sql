@@ -1,36 +1,6 @@
--- 00315: keep audit attribution when a non-protected profile is deleted.
---
--- Number: follows 00314_internal_invitation_acceptance.sql.
--- The separate supplier-address proposal at
--- supabase/00314_internal_procurement_and_supplier_business_address.UNAPPLIED.sql
--- remains outside supabase/migrations and is not applied by this migration.
---
--- audit_events.actor_id referenced public.profiles(id) with NO ACTION, so a
--- profile that had written an audit event could not be deleted without
--- deleting or rewriting that event. INV-071 and INV-072 forbid both.
--- This migration adds a durable actor registry, backfills it from profiles,
--- and points the existing actor foreign key at the registry. Existing
--- audit_events rows are not updated or deleted. The registry row keeps the
--- original actor UUID after the profile is gone and does not cascade from
--- profiles (ON DELETE SET NULL on the profile link only).
---
--- Rollback comment (do not apply a down migration):
--- Forward-only. A reversal is unsafe after any profile_deleted_at is set,
--- because that actor UUID is no longer in public.profiles. If no profile has
--- been deleted since this migration, a later forward repair would have to:
---   1. refuse while any audit_actor_identities.profile_deleted_at is not null;
---   2. drop trg_aa_audit_actor_identity_register and
---      trg_zz_audit_actor_identity_preserve;
---   3. drop trg_audit_actor_identities_guard;
---   4. drop public.resolve_audit_actor(uuid),
---      private.maintain_audit_actor_identity(),
---      private.guard_audit_actor_identity(), and
---      private.permit_audit_actor_registry(uuid);
---   5. drop constraint audit_events_actor_id_fkey and add it again as
---      FOREIGN KEY (actor_id) REFERENCES public.profiles(id);
---   6. drop table public.audit_actor_identities.
--- Do not enable otp.allow_audit_purge. Do not disable triggers. Do not delete
--- or update audit_events. Do not weaken INV-071 or INV-072.
+-- 00320: Durable audit actor identity registry.
+-- Promoted from audit_actor_identity_registry.DEFERRED.UNVERSIONED.sql on 2026-10-24.
+-- Forward-only; deployment remains a separate authorized operation.
 
 BEGIN;
 

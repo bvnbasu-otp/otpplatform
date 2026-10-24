@@ -1,13 +1,6 @@
--- STATUS: UNAPPLIED
--- Prepared locally on 2026-10-21. This file is NOT in supabase/migrations and
--- has not been applied to any local or hosted database.
---
--- Why existing columns are sufficient:
---   suppliers.address jsonb          operating / business-office address (one primary value)
---   suppliers.registered_address     statutory GST registered address; left untouched
--- No new columns. No deletes. Rollback drops only the functions and triggers below
--- and restores private.guard_supplier_trust_fields from migration 00212.
--- Existing address and registered_address values are preserved.
+-- 00319: Supplier operating-address enforcement.
+-- Promoted from internal_procurement_and_supplier_business_address.DEFERRED.UNVERSIONED.sql on 2026-10-24.
+-- Forward-only; deployment remains a separate authorized operation.
 
 -- ---------------------------------------------------------------------------
 -- Operating address completeness (suppliers.address only)
@@ -159,6 +152,11 @@ AS $$
 DECLARE
   v_profile uuid := private.get_profile_id();
 BEGIN
+  IF private.in_demo_reset()
+     OR COALESCE(current_setting('otp.demo_staging', true), 'off') = 'on' THEN
+    RETURN NEW;
+  END IF;
+
   IF v_profile IS NULL THEN
     RETURN NEW;
   END IF;

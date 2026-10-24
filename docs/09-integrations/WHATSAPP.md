@@ -1,6 +1,8 @@
 # WhatsApp
 
-Source reviewed 23 October 2026. Status word: [CAPABILITY_STATUS.md](../13-truth/CAPABILITY_STATUS.md). SMS is a separate page: [SMS.md](./SMS.md).
+Source reviewed 24 October 2026. Status word: [CAPABILITY_STATUS.md](../13-truth/CAPABILITY_STATUS.md). SMS is a separate page: [SMS.md](./SMS.md).
+
+The local `00327` dispatch contract adds mandatory idempotency and recipient isolation before provider delivery. WAHA remains a controlled demo dependency; gateway acceptance is not a delivery receipt. No real message was sent during closure testing.
 
 **WAHA (self-hosted WhatsApp HTTP API) is the WhatsApp provider currently working for the demo. The owner has confirmed its demo status.** A successful demo send shows that the outbound path to one handset worked at that time. It does not prove every inbound and outbound path, production reliability, delivery receipts, or monitoring. Meta and Twilio code exists but they are not pilot providers.
 

@@ -389,16 +389,6 @@ export async function closeClarificationForEvaluation(rfqId: string): Promise<
   return { ok: true };
 }
 
-export async function waiveMinQuotesAndEvaluate(rfqId: string): Promise<
-  { ok: true } | { ok: false; error: string }
-> {
-  const { error } = await supabase.rpc('waive_min_quotes_and_evaluate', {
-    p_rfq_id: rfqId,
-  });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
-}
-
 export async function fetchRfqStatus(rfqId: string): Promise<
   { ok: true; status: string; minQuotesRequired: number } | { ok: false; error: string }
 > {

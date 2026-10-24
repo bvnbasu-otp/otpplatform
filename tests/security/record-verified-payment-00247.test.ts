@@ -11,7 +11,7 @@ const MIGRATIONS_DIR = resolve('supabase/migrations');
 // Security boundary under test. Not the repository migration ceiling.
 const FILE = '00247_revoke_record_verified_payment_client_execute.sql';
 // Repository ceiling. Later migrations do not grant this function back to clients.
-const REPOSITORY_CEILING = '00314_internal_invitation_acceptance.sql';
+const REPOSITORY_CEILING = '00327_notification_dispatch_isolation.sql';
 const FN = 'public.record_verified_payment';
 
 type Role = 'public' | 'anon' | 'authenticated' | 'service_role';
@@ -52,6 +52,7 @@ function listSourceFiles(): string[] {
     return listed
       .split('\n')
       .filter((file) => /\.(ts|tsx|sql|js|mjs)$/.test(file))
+      .filter((file) => !file.replace(/\\/g, '/').startsWith('packages/database/src/generated/'))
       .map((file) => resolve(ROOT, file))
       .filter((file) => existsSync(file));
   } catch {

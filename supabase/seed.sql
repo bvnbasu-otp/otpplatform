@@ -500,7 +500,7 @@ INSERT INTO quotes (id, rfq_id, supplier_id, invitation_id, status, current_vers
   'f2000000-0000-4000-8000-000000000001',
   'd0000000-0000-4000-8000-000000000002',
   'a4000001-0000-4000-8000-000000000001',
-  'SELECTED',
+  'FINAL',
   1,
   now() - interval '2 days'
 ) ON CONFLICT (id) DO NOTHING;
@@ -523,6 +523,12 @@ INSERT INTO awards (id, rfq_id, quote_id, awarded_by, justification, status, awa
   now() - interval '1 day',
   now() - interval '1 day'
 ) ON CONFLICT (id) DO NOTHING;
+
+-- The award boundary requires the winning quote to be FINAL at insert time.
+-- The persisted post-award lifecycle state is SELECTED.
+UPDATE quotes
+SET status = 'SELECTED', updated_at = now()
+WHERE id = 'a5000001-0000-4000-8000-000000000001';
 
 INSERT INTO purchase_orders (
   id, award_id, rfq_id, organization_id, supplier_id, po_number, status,

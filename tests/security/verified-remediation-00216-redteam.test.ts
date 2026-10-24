@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = resolve(__dirname, '../..');
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
 const FILE = '00216_verified_remediation_p0_p1_security_integrity.sql';
-const CEILING = '00314_internal_invitation_acceptance.sql';
+const CEILING = '00327_notification_dispatch_isolation.sql';
 const SUPPLIER_WALLET_FILE = '00220_supplier_wallet_ledger_events.sql';
 const SQL = readFileSync(resolve(MIGRATIONS_DIR, FILE), 'utf8');
 const DEPLOY = readFileSync(resolve(ROOT, 'scripts/deploy-migrations.ts'), 'utf8');
@@ -74,7 +74,8 @@ describe('migration 00216 verified remediation (static contract)', () => {
 
 describe('deploy-migrations.ts N14/N15 guards', () => {
   it('does not default to deploy and fails closed in CI without DB', () => {
-    expect(DEPLOY).toContain('const isDeploy = args.includes(\'--deploy\');');
+    expect(DEPLOY).toContain("const isDeploy = mode === 'deploy' || mode === 'deploy-dry-run';");
+    expect(DEPLOY).toContain('No action specified. Use --deploy, --status, --check-only, or --dry-run.');
     expect(DEPLOY).toContain('CI deploy requires DATABASE_URL');
     expect(DEPLOY).not.toMatch(/isDeploy = args\.includes\('--deploy'\) \|\| \(!isCheckOnly/);
   });

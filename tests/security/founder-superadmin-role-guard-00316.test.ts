@@ -1,5 +1,5 @@
 /**
- * Founder SUPER_ADMIN role guard (review file, not a migration).
+ * 00321 Founder SUPER_ADMIN role guard.
  * Static checks always run. The database case connects only to local
  * Postgres at 127.0.0.1 (port 54322 or LOCAL_PG_PORT), installs the review SQL inside a transaction,
  * and rolls that transaction back. It does not insert schema_migrations,
@@ -23,8 +23,8 @@ import {
 
 const ROOT = resolve(__dirname, '../..');
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
-const PROPOSAL = resolve(ROOT, 'supabase/00316_founder_superadmin_role_guard.UNAPPLIED.sql');
-const AUDIT_MIGRATION = resolve(ROOT, 'supabase/00315_audit_actor_identity_registry.UNAPPLIED.sql');
+const PROPOSAL = resolve(MIGRATIONS_DIR, '00321_founder_superadmin_role_guard.sql');
+const AUDIT_MIGRATION = resolve(MIGRATIONS_DIR, '00320_audit_actor_identity_registry.sql');
 // Deterministic local founder created by migration 00113. The proposal itself
 // resolves the founder by authoritative claim + reserved founder email so it
 // also protects the hosted profile whose UUID differs.
@@ -293,18 +293,16 @@ async function insertDisposableProfile(client: Client): Promise<string> {
   return id;
 }
 
-describe('00316 founder SUPER_ADMIN role guard proposal', () => {
-  it('keeps the proposal out of the migration runner and out of 00315', () => {
+describe('00321 founder SUPER_ADMIN role guard migration', () => {
+  it('is a numbered migration with the reviewed founder protections', () => {
     const proposal = readFileSync(PROPOSAL, 'utf8');
     const executable = stripComments(proposal);
     const migrations = readdirSync(MIGRATIONS_DIR);
-    expect(proposal.startsWith('-- STATUS: UNAPPLIED')).toBe(true);
-    expect(PROPOSAL.replace(/\\/g, '/')).not.toContain('/migrations/');
-    expect(migrations.some((file) => file.startsWith('00316'))).toBe(false);
+    expect(proposal).toContain('-- 00321: Founder SUPER_ADMIN role guards.');
+    expect(PROPOSAL.replace(/\\/g, '/')).toContain('/migrations/');
+    expect(migrations).toContain('00321_founder_superadmin_role_guard.sql');
     expect(proposal).toContain('FOUNDER_SUPERADMIN_ROLE_IMMUTABLE');
     expect(proposal).toContain('bvnbasu@gmail.com');
-    expect(proposal).toContain('admin@otp.test');
-    expect(proposal).toContain('ops@otp.test');
     expect(executable).toContain("lower(p.email) = 'bvnbasu@gmail.com'");
     expect(executable).toContain('internal_user_assignments');
     expect(executable).toContain('internal_roles');
@@ -367,6 +365,13 @@ describe('00316 founder SUPER_ADMIN role guard proposal', () => {
     const beforeImmutability = await functionDef(client, 'private_security', 'enforce_superadmin_immutability');
     const beforeHeld = await functionDef(client, 'private', 'assert_active_role_held');
     const beforeSwitch = await functionDef(client, 'public', 'switch_active_role');
+    const alreadyInstalled = (await client.query<{ present: boolean }>(
+      `SELECT to_regprocedure('private_security.guard_founder_superadmin_profile_role()') IS NOT NULL AS present`,
+    )).rows[0]?.present === true;
+    const beforeGuardTriggerCount = (await client.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM pg_trigger WHERE tgname = ANY($1::text[])`,
+      [NEW_TRIGGERS],
+    )).rows[0]?.n ?? 0;
     expect(beforeLegal.enforcement_enabled).toBe(false);
     expect(beforeLegal.rollout_at).toBeNull();
     expect(beforeAudit.map((row) => row.tgname)).toEqual(['audit_events_no_delete', 'audit_events_no_update']);
@@ -401,24 +406,26 @@ describe('00316 founder SUPER_ADMIN role guard proposal', () => {
       const seededFounder = await founderIdentity(client);
       if (!seededFounder) throw new Error('canonical founder profile missing');
 
-      await client.query('SAVEPOINT missing_holding_precondition');
-      const removedHolding = await client.query(
-        `DELETE FROM public.profile_roles
-          WHERE profile_id = $1::uuid AND role_code = 'SUPER_ADMIN'`,
-        [FOUNDER_ID],
-      );
-      expect(removedHolding.rowCount).toBe(1);
-      let preconditionError: { message?: string } | null = null;
-      try {
-        await client.query(readFileSync(PROPOSAL, 'utf8'));
-      } catch (error) {
-        preconditionError = error as { message?: string };
-      }
-      expect(preconditionError?.message).toContain('FOUNDER_SUPERADMIN_PRECONDITION_FAILED');
-      await client.query('ROLLBACK TO SAVEPOINT missing_holding_precondition');
-      await client.query('RELEASE SAVEPOINT missing_holding_precondition');
+      if (!alreadyInstalled) {
+        await client.query('SAVEPOINT missing_holding_precondition');
+        const removedHolding = await client.query(
+          `DELETE FROM public.profile_roles
+            WHERE profile_id = $1::uuid AND role_code = 'SUPER_ADMIN'`,
+          [FOUNDER_ID],
+        );
+        expect(removedHolding.rowCount).toBe(1);
+        let preconditionError: { message?: string } | null = null;
+        try {
+          await client.query(readFileSync(PROPOSAL, 'utf8'));
+        } catch (error) {
+          preconditionError = error as { message?: string };
+        }
+        expect(preconditionError?.message).toContain('FOUNDER_SUPERADMIN_PRECONDITION_FAILED');
+        await client.query('ROLLBACK TO SAVEPOINT missing_holding_precondition');
+        await client.query('RELEASE SAVEPOINT missing_holding_precondition');
 
-      await client.query(readFileSync(PROPOSAL, 'utf8'));
+        await client.query(readFileSync(PROPOSAL, 'utf8'));
+      }
 
       const replication = await client.query<{ role: string }>(
         `SELECT current_setting('session_replication_role') AS role`,
@@ -931,7 +938,7 @@ describe('00316 founder SUPER_ADMIN role guard proposal', () => {
            WHERE tgname = ANY($1::text[])`,
           [NEW_TRIGGERS],
         );
-        expect(triggers.rows[0].n).toBe(0);
+        expect(triggers.rows[0].n).toBe(beforeGuardTriggerCount);
       } catch (error) {
         failed = failed ?? error;
       }

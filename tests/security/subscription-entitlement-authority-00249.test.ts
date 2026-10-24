@@ -28,7 +28,7 @@ const PAYMENT_00233_SHA256 = '9c2c8ff73f554f185389808b2bd8332369a4ed6602b2ce1db9
 const DENIED = /SUBSCRIPTION-ENTITLEMENT-IMMUTABLE/;
 const LOCAL_PG: ClientConfig = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',
@@ -329,7 +329,20 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 63]).toBe('00312_po_completion_requirement_sync.sql');
     expect(files[index + 64]).toBe('00313_quote_invitation_state_boundary.sql');
     expect(files[index + 65]).toBe('00314_internal_invitation_acceptance.sql');
-    expect(index).toBe(files.length - 66);
+    expect(files[index + 66]).toBe('00315_revoke_anon_update_my_organization_name.sql');
+    expect(files[index + 67]).toBe('00316_organization_rename_requires_one_row.sql');
+    expect(files[index + 68]).toBe('00317_rfq_category_service_coverage_guard.sql');
+    expect(files[index + 69]).toBe('00318_support_ticket_rpc_hardening.sql');
+    expect(files[index + 70]).toBe('00319_supplier_business_address_enforcement.sql');
+    expect(files[index + 71]).toBe('00320_audit_actor_identity_registry.sql');
+    expect(files[index + 72]).toBe('00321_founder_superadmin_role_guard.sql');
+    expect(files[index + 73]).toBe('00322_restrict_is_demo_marker.sql');
+    expect(files[index + 74]).toBe('00323_superadmin_demo_user_deletion.sql');
+    expect(files[index + 75]).toBe('00324_public_contact_enquiries.sql');
+    expect(files[index + 76]).toBe('00325_disable_pilot_quote_quorum_waiver.sql');
+    expect(files[index + 77]).toBe('00326_authoritative_committee_tenure.sql');
+    expect(files[index + 78]).toBe('00327_notification_dispatch_isolation.sql');
+    expect(index).toBe(files.length - 79);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

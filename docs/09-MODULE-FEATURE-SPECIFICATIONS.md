@@ -53,7 +53,7 @@ A centralized customer support hub linking user-submitted feedback directly to p
   - Centered mobile sheet preventing keyboard zoom issues (`text-sm sm:text-xs`).
   - Supports 5 ticket categories: `BUG`, `FEATURE`, `SALES`, `OPS`, `ENHANCEMENT`.
 - **Support routing (`bvnbasu+otp.demo.otp.support@gmail.com`)**:
-  - Tickets are recorded and create in-app admin notifications. Unapplied proposal `00323` aligns the recorded support route; no email delivery is implemented or claimed.
+  - Tickets are recorded and create in-app admin notifications. The recorded route is `bvnbasu@gmail.com` (00140, kept by migration `00318`, former proposal `00323`, uncommitted and not applied); the modal displays the `+otp.demo.otp.support` alias. Signed-out visitors see a log-in notice instead of a form. No email delivery is implemented or claimed.
   - Immediate in-app notification recorded in `notifications` table (`channel = 'IN_APP'`, `status = 'PENDING'`).
   - Tamper-evident entry logged in `audit_events`.
 - **Admin Support Console**:

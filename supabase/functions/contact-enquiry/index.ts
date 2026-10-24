@@ -5,7 +5,7 @@
  * _shared/contact/http-handler.ts: the signed client identity, the shared
  * per-client and endpoint rate limit (consumed before the body is read), and
  * storage through a service-role-only RPC before success is reported. If the
- * rate limiter or the store is unavailable — including before proposal 00322
+ * rate limiter or the store is unavailable — including before migration 00324
  * is applied — the visitor is told the enquiry was not recorded.
  *
  * The notice to the support inbox goes through the operator email relay

@@ -1074,7 +1074,23 @@ INSERT INTO rfq_invitations (
   ('0da00000-0000-0000-0000-000000000105',
    '0d800000-0000-4000-8000-000000000004',
    '0d500000-0000-4000-8000-000000000001',
-   'Supplier A', 'QUOTED', 92.0, ARRAY['20HP capable', 'textile supplier'])
+   'Supplier A', 'QUOTED', 92.0, ARRAY['20HP capable', 'textile supplier']),
+  ('0da00000-0000-0000-0000-000000000106',
+   '0d800000-0000-4000-8000-000000000003',
+   '0d500000-0000-4000-8000-000000000017',
+   'Supplier B', 'QUOTED', 88.0, ARRAY['CNC turning', 'Coimbatore']),
+  ('0da00000-0000-0000-0000-000000000107',
+   '0d800000-0000-4000-8000-000000000003',
+   '0d500000-0000-4000-8000-000000000018',
+   'Supplier C', 'QUOTED', 91.0, ARRAY['CNC turning', 'Coimbatore']),
+  ('0da00000-0000-0000-0000-000000000108',
+   '0d800000-0000-4000-8000-000000000004',
+   '0d500000-0000-4000-8000-000000000024',
+   'Supplier B', 'QUOTED', 89.0, ARRAY['Combed yarn', 'Tiruppur']),
+  ('0da00000-0000-0000-0000-000000000109',
+   '0d800000-0000-4000-8000-000000000004',
+   '0d500000-0000-4000-8000-000000000025',
+   'Supplier C', 'QUOTED', 96.0, ARRAY['Combed yarn', 'Tiruppur'])
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO quotes (
@@ -1100,6 +1116,50 @@ SELECT
 FROM rfq_invitations ri
 WHERE ri.id = '0da00000-0000-0000-0000-000000000105'
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO quotes (
+  id, rfq_id, supplier_id, invitation_id, status, current_version,
+  evaluation_score, submitted_at, is_demo
+) VALUES
+  ('0da00000-0000-0000-0000-000000000104', '0d800000-0000-4000-8000-000000000003',
+   '0d500000-0000-4000-8000-000000000017', '0da00000-0000-0000-0000-000000000106',
+   'FINAL', 1, 84.0, now() - interval '2 days', true),
+  ('0da00000-0000-0000-0000-000000000105', '0d800000-0000-4000-8000-000000000003',
+   '0d500000-0000-4000-8000-000000000018', '0da00000-0000-0000-0000-000000000107',
+   'FINAL', 1, 89.0, now() - interval '2 days', true),
+  ('0da00000-0000-0000-0000-000000000106', '0d800000-0000-4000-8000-000000000004',
+   '0d500000-0000-4000-8000-000000000024', '0da00000-0000-0000-0000-000000000108',
+   'FINAL', 1, 86.0, now() - interval '2 days', true),
+  ('0da00000-0000-0000-0000-000000000107', '0d800000-0000-4000-8000-000000000004',
+   '0d500000-0000-4000-8000-000000000025', '0da00000-0000-0000-0000-000000000109',
+   'FINAL', 1, 94.0, now() - interval '2 days', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Authoritative one-year offices. RFQ committee seats below are deliberately
+-- separate: voting requires both the organization appointment and the RFQ seat.
+INSERT INTO org_role_assignments (
+  id, organization_id, person_id, role_id, role_name, role_category,
+  responsibility_scope, effective_from, effective_to, term_duration_days,
+  status, appointed_by, appointment_event
+) VALUES
+  ('0db10000-0000-4000-8000-000000000012', '0da00000-0000-4000-8000-000000000001',
+   '0db00000-0000-4000-8000-000000000012', 'PRESIDENT', 'President', 'RWA_GOVERNANCE',
+   'COMMUNITY_GOVERNANCE', now() - interval '1 day', now() - interval '1 day' + interval '1 year',
+   365, 'ACTIVE', '0db00000-0000-4000-8000-000000000011', 'DEMO_SEED'),
+  ('0db10000-0000-4000-8000-000000000013', '0da00000-0000-4000-8000-000000000001',
+   '0db00000-0000-4000-8000-000000000013', 'SECRETARY', 'Secretary', 'RWA_GOVERNANCE',
+   'COMMUNITY_GOVERNANCE', now() - interval '1 day', now() - interval '1 day' + interval '1 year',
+   365, 'ACTIVE', '0db00000-0000-4000-8000-000000000011', 'DEMO_SEED'),
+  ('0db10000-0000-4000-8000-000000000014', '0da00000-0000-4000-8000-000000000001',
+   '0db00000-0000-4000-8000-000000000014', 'TREASURER', 'Treasurer', 'RWA_GOVERNANCE',
+   'COMMUNITY_GOVERNANCE', now() - interval '1 day', now() - interval '1 day' + interval '1 year',
+   365, 'ACTIVE', '0db00000-0000-4000-8000-000000000011', 'DEMO_SEED'),
+  ('0db10000-0000-4000-8000-000000000022', '0da00000-0000-4000-8000-000000000002',
+   '0db00000-0000-4000-8000-000000000022', 'OWNER', 'Owner', 'MSME_MANAGEMENT',
+   'MSME_MANAGEMENT', now() - interval '1 day', now() - interval '1 day' + interval '1 year',
+   365, 'ACTIVE', '0db00000-0000-4000-8000-000000000021', 'DEMO_SEED')
+ON CONFLICT (id) DO NOTHING;
+
 -- Committees. The individual trader has none — he decides alone, and the
 -- tally view should show that as honestly as it shows a five-member vote.
 INSERT INTO committee_assignments (id, rfq_id, profile_id) VALUES

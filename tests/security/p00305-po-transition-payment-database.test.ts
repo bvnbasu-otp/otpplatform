@@ -22,7 +22,7 @@ beforeAll(async () => {
   service = createServiceClient();
   const pg = new Client({
     host: '127.0.0.1',
-    port: 54322,
+    port: Number(process.env.LOCAL_PG_PORT ?? 54322),
     database: 'postgres',
     user: 'postgres',
     password: 'postgres',
@@ -93,7 +93,7 @@ describe('00305/00306 — PO transition and payment integrity (REAL DATABASE)', 
   it('rejects idempotency key reuse with conflicting payment payload', async () => {
     const pg = new Client({
       host: '127.0.0.1',
-      port: 54322,
+      port: Number(process.env.LOCAL_PG_PORT ?? 54322),
       database: 'postgres',
       user: 'postgres',
       password: 'postgres',
@@ -134,7 +134,7 @@ describe('00305/00306 — PO transition and payment integrity (REAL DATABASE)', 
   it('blocks GST tax lines on REVIEW_REQUIRED supplier invoices', async () => {
     const pg = new Client({
       host: '127.0.0.1',
-      port: 54322,
+      port: Number(process.env.LOCAL_PG_PORT ?? 54322),
       database: 'postgres',
       user: 'postgres',
       password: 'postgres',

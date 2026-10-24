@@ -11,8 +11,8 @@ import {
 
 const ROOT = resolve(__dirname, '../..');
 const MIGRATIONS = resolve(ROOT, 'supabase/migrations');
-const PROPOSAL = resolve(ROOT, 'supabase/00321_restrict_is_demo_marker.UNAPPLIED.sql');
-const DELETE_PROPOSAL = resolve(ROOT, 'supabase/00320_superadmin_demo_user_deletion.UNAPPLIED.sql');
+const PROPOSAL = resolve(MIGRATIONS, '00322_restrict_is_demo_marker.sql');
+const DELETE_PROPOSAL = resolve(MIGRATIONS, '00323_superadmin_demo_user_deletion.sql');
 const LOCAL_PG: ClientConfig = {
   host: '127.0.0.1',
   port: LOCAL_POSTGRES_PORT,
@@ -62,24 +62,23 @@ async function insertAuthUser(client: Client, id: string, email: string): Promis
   );
 }
 
-describe('00321 profile demo-marker guard static contract', () => {
+describe('00322 profile demo-marker guard static contract', () => {
   const sql = readFileSync(PROPOSAL, 'utf8');
   const executable = stripComments(sql);
 
-  it('keeps 00321 outside the runner and makes it a 00320 prerequisite', () => {
+  it('is ordered before demo deletion and remains its prerequisite', () => {
     const migrations = readdirSync(MIGRATIONS).filter((file) => /^\d{5}_.*\.sql$/.test(file)).sort();
-    expect(migrations.at(-1)).toBe('00314_internal_invitation_acceptance.sql');
-    expect(migrations.some((file) => file.startsWith('00321_'))).toBe(false);
-    expect(readdirSync(resolve(ROOT, 'supabase')).filter((file) => file.startsWith('00321_'))).toEqual([
-      '00321_restrict_is_demo_marker.UNAPPLIED.sql',
-    ]);
+    expect(migrations).toContain('00322_restrict_is_demo_marker.sql');
+    expect(migrations).toContain('00323_superadmin_demo_user_deletion.sql');
+    expect(migrations.indexOf('00322_restrict_is_demo_marker.sql'))
+      .toBeLessThan(migrations.indexOf('00323_superadmin_demo_user_deletion.sql'));
     expect(readFileSync(DELETE_PROPOSAL, 'utf8')).toContain(
       "to_regprocedure('private_security.guard_profile_is_demo_marker()')",
     );
   });
 
   it('adds a separate fail-closed trigger without replacing existing guards', () => {
-    expect(sql.startsWith('-- STATUS: UNAPPLIED')).toBe(true);
+    expect(sql).toContain('-- 00322: Immutable trusted demo-account marker.');
     expect(executable).toContain('CREATE FUNCTION private_security.guard_profile_is_demo_marker()');
     expect(executable).toMatch(
       /CREATE TRIGGER trg_guard_profile_is_demo_marker\s+BEFORE INSERT OR UPDATE OF is_demo, is_founder ON public\.profiles/i,
@@ -110,7 +109,7 @@ describe('00321 profile demo-marker guard static contract', () => {
   });
 });
 
-describe('00321 profile demo-marker guard behavior (local postgres, always rolled back)', () => {
+describe('00322 profile demo-marker guard behavior (local postgres, always rolled back)', () => {
   it('rejects prohibited transitions and preserves unrelated updates', async (ctx) => {
     const client = new Client({ ...LOCAL_PG, connectionTimeoutMillis: 8000 });
     try {
@@ -140,7 +139,12 @@ describe('00321 profile demo-marker guard behavior (local postgres, always rolle
         throw new Error('00321 behavior prerequisites missing: profiles.is_demo/is_founder');
       }
 
-      await client.query(stripTransaction(readFileSync(PROPOSAL, 'utf8')));
+      const installed = (await client.query<{ present: boolean }>(
+        `SELECT to_regprocedure('private_security.guard_profile_is_demo_marker()') IS NOT NULL AS present`,
+      )).rows[0]?.present === true;
+      if (!installed) {
+        await client.query(stripTransaction(readFileSync(PROPOSAL, 'utf8')));
+      }
       const ordinary = randomUUID();
       const demo = randomUUID();
       const founder = randomUUID();

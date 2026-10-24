@@ -184,6 +184,7 @@ describe('R8 procurement_stage_events', () => {
     const roots = ['../../apps/web/src', '../../packages', '../../supabase/functions'].map((p) => resolve(__dirname, p));
     for (const root of roots) {
       for (const f of sourceFiles(root)) {
+        if (f.replace(/\\/g, '/').endsWith('database/src/generated/supabase.ts')) continue;
         const src = readFileSync(resolve(root, f), 'utf8');
         expect(src, f).not.toMatch(/from\(\s*'procurement_stage_events'\s*\)|advance_procurement_step/);
         if (!f.replace(/\\/g, '/').endsWith('reset/clean-start-reset.ts')) {

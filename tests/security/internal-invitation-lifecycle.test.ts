@@ -7,10 +7,11 @@
 import { randomUUID } from 'node:crypto';
 import { Client } from 'pg';
 import { describe, expect, it } from 'vitest';
+import { LOCAL_POSTGRES_PORT } from '../helpers/local-postgres-sql-parity';
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
-  port: Number(process.env.OTP_PG_PORT ?? 54322),
+  port: LOCAL_POSTGRES_PORT,
   database: process.env.OTP_PG_DATABASE ?? 'postgres',
   user: 'postgres',
   password: 'postgres',

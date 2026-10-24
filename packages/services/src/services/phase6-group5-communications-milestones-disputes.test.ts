@@ -135,6 +135,7 @@ describe('OTP Phase 6.5: Master Assurance Matrix — Communications, Milestones 
           deadline: '2026-09-30',
         },
         organizationId: BUYER_ORG_ALPHA,
+        idempotencyKey: 'green-rfq-invitation-whatsapp',
       });
 
       expect(dispatchRes.ok).toBe(true);
@@ -339,6 +340,7 @@ describe('OTP Phase 6.5: Master Assurance Matrix — Communications, Milestones 
         templateCode: 'QUOTE_SUBMISSION_WHATSAPP',
         payload: rawPayload,
         isIdentityMasked: true,
+        idempotencyKey: 'redteam-quote-submission-masked',
       });
 
       expect(dispatchRes.ok).toBe(true);
@@ -495,6 +497,7 @@ describe('OTP Phase 6.5: Master Assurance Matrix — Communications, Milestones 
         category: 'RFQ_INVITATION',
         templateCode: 'RFQ_INVITATION_WHATSAPP',
         payload: { rfq_title: 'Pumps', rfq_id: 'RFQ-02', deadline: '2026-10-01' },
+        idempotencyKey: 'preference-suppressed-rfq-invitation',
       });
 
       expect(res.ok).toBe(true);

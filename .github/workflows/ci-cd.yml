@@ -354,7 +354,7 @@ jobs:
           set -euo pipefail
           # scripts/deploy-prod.ps1 is LOCAL DOCKER ONLY (otp-prod-db). It is not this hosted path.
           PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
-          EXPECTED_CEILING="00314"
+          EXPECTED_CEILING="00327"
 
           echo "================================================================="
           echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS (Supabase CLI)"
@@ -566,6 +566,11 @@ jobs:
                 process.exit(1);
               }
             }
+          }
+
+          if (process.env.CI_VERIFY_POST_PUSH !== 'true' && !remoteApplied.includes('00077')) {
+            console.error('PRODUCTION MIGRATION BLOCKED: HISTORICAL_PURGE_BLOCK. Remote history does not include 00077, so db push would execute its destructive purge.');
+            process.exit(1);
           }
 
           console.log(`Migration chain verify (${process.env.CI_VERIFY_POST_PUSH === 'true' ? 'post-push' : 'pre-push'}): OK (remote applied: ${remoteApplied.length || 0}, repo ceiling: ${ceiling})`);

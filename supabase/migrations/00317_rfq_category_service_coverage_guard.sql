@@ -1,13 +1,32 @@
--- STATUS: UNAPPLIED
--- Review proposal only. This file is intentionally outside supabase/migrations;
--- 00314 remains the last approved runnable migration. It has not been applied.
+-- 00317: RFQ discovery requires category match and declared service coverage.
 --
 -- Tightens the registered-supplier fallback used by
 -- public.discover_and_invite_for_rfq. Geographic proximity alone is not RFQ
 -- eligibility: a candidate must match the RFQ taxonomy (or a primary required
 -- capability) and must have declared service coverage for the delivery area.
+--
+-- Wraps the 00275 private.rank_discovery_candidates(uuid, uuid[]) by renaming
+-- it to rank_discovery_candidates_pre_category_coverage_guard. This file is not
+-- rerunnable: the precondition refuses to run when the renamed function
+-- already exists or the 00275 wrapper chain is missing, instead of skipping
+-- the rename and silently replacing a different function.
+--
+-- No explicit BEGIN/COMMIT: the migration runner and the Supabase CLI apply
+-- this file and its ledger row in one transaction, so the rename and the new
+-- function either both commit or both roll back.
 
-BEGIN;
+DO $preconditions$
+BEGIN
+  IF to_regprocedure('private.rank_discovery_candidates(uuid,uuid[])') IS NULL
+     OR to_regprocedure('private.rank_discovery_candidates_pre_subcategory_isolation(uuid,uuid[])') IS NULL
+     OR to_regprocedure('private.rfq_required_capabilities(uuid)') IS NULL THEN
+    RAISE EXCEPTION 'RFQ_COVERAGE_GUARD_PRECONDITION_FAILED: migration 00275 discovery functions are required';
+  END IF;
+  IF to_regprocedure('private.rank_discovery_candidates_pre_category_coverage_guard(uuid,uuid[])') IS NOT NULL THEN
+    RAISE EXCEPTION 'RFQ_COVERAGE_GUARD_PRECONDITION_FAILED: rank_discovery_candidates_pre_category_coverage_guard already exists; 00317 was already applied or partially applied';
+  END IF;
+END
+$preconditions$;
 
 ALTER FUNCTION private.rank_discovery_candidates(uuid, uuid[])
   RENAME TO rank_discovery_candidates_pre_category_coverage_guard;
@@ -94,4 +113,9 @@ REVOKE ALL ON FUNCTION private.rank_discovery_candidates(uuid, uuid[]) FROM PUBL
 REVOKE ALL ON FUNCTION private.rank_discovery_candidates_pre_category_coverage_guard(uuid, uuid[]) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION private.rank_discovery_candidates(uuid, uuid[]) TO service_role;
 
-COMMIT;
+-- Discovery is a buyer action. Earlier function definitions left this
+-- SECURITY DEFINER entry point executable by anon even though its body rejects
+-- callers that are not members of the owning organization. Remove that
+-- unnecessary API exposure while preserving signed-in and service execution.
+REVOKE ALL ON FUNCTION public.discover_and_invite_for_rfq(uuid, integer, uuid[], text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.discover_and_invite_for_rfq(uuid, integer, uuid[], text) TO authenticated, service_role;

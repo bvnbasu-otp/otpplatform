@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 const LOCAL = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',

@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 import {
   isSupplierBusinessAddressComplete,
   parseSupplierBusinessAddress,
-  toSupplierBusinessAddressRecord,
   validateSupplierBusinessAddress,
   type SupplierBusinessAddress,
 } from '@otp/domain';
@@ -46,8 +45,8 @@ export async function fetchSupplierBusinessAddress(
 }
 
 /**
- * Writes suppliers.address only. The update payload does not include
- * registered_address, verification, or lifecycle columns.
+ * Uses the database-authorized address RPC. Direct supplier-table writes would
+ * bypass the operating-address validation and trust-field write boundary.
  */
 export async function saveSupplierBusinessAddress(
   supplierId: string,
@@ -59,19 +58,19 @@ export async function saveSupplierBusinessAddress(
     return { ok: false, error: message };
   }
 
-  const record = toSupplierBusinessAddressRecord({
-    ...input,
-    country: input.country?.trim() || 'India',
+  const { data, error } = await (supabase.rpc as any)('upsert_supplier_business_address', {
+    p_supplier_id: supplierId,
+    p_line1: input.line1.trim(),
+    p_line2: input.line2?.trim() || null,
+    p_city: input.city.trim(),
+    p_state: input.state.trim(),
+    p_pincode: input.pincode.trim(),
+    p_country: input.country?.trim() || 'India',
   });
-
-  const { error } = await supabase
-    .from('suppliers')
-    .update({ address: record })
-    .eq('id', supplierId);
 
   if (error) return { ok: false, error: error.message || 'Could not save the business address.' };
 
-  const parsed = parseSupplierBusinessAddress(record);
+  const parsed = parseSupplierBusinessAddress(data?.address);
   if (!parsed) return { ok: false, error: 'The business address could not be confirmed after saving.' };
   return { ok: true, address: parsed };
 }

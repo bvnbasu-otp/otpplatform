@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
 import { createSupportTicket } from '@/features/admin/api/admin-ops';
@@ -15,6 +15,7 @@ export interface SupportHelpButtonModalProps {
 }
 
 const ROUTED_ADMIN_EMAIL = 'bvnbasu+otp.demo.otp.support@gmail.com';
+const SIGNED_OUT_SUPPORT_MESSAGE = 'Please log in to submit a support ticket.';
 
 export function SupportHelpButtonModal({
   className = '',
@@ -134,6 +135,12 @@ export function SupportHelpButtonModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
+
+    // create_support_ticket is not executable by anon (00216/00217, 00318).
+    if (!user) {
+      setSubmitError(SIGNED_OUT_SUPPORT_MESSAGE);
+      return;
+    }
 
     let category: SupportTicketCategory = 'BUG';
     let subject = '';
@@ -334,6 +341,29 @@ export function SupportHelpButtonModal({
               >
                 Done
               </button>
+            </div>
+          ) : !user ? (
+            <div className="space-y-3 py-1 text-xs text-foreground" data-testid="support-signed-out-notice">
+              <p className="font-semibold">{SIGNED_OUT_SUPPORT_MESSAGE}</p>
+              <p className="text-muted-foreground">
+                Support tickets are recorded against your account. Visitors who are not signed in can use the Contact Us page.
+              </p>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                <Link
+                  to="/contact-us"
+                  onClick={handleClose}
+                  className="rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted min-h-[40px] mobile-touch-target inline-flex items-center"
+                >
+                  Contact Us
+                </Link>
+                <Link
+                  to="/login"
+                  onClick={handleClose}
+                  className="rounded-xl bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition min-h-[40px] mobile-touch-target inline-flex items-center"
+                >
+                  Log In
+                </Link>
+              </div>
             </div>
           ) : (
             /* Interactive Feedback Modal with Dual-Role Bug & Feature Toggles */

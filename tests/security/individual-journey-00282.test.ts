@@ -16,7 +16,7 @@ import { catalogAcceptance } from '../helpers/legal-evidence-fixture';
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: process.env.OTP_PG_DATABASE ?? 'postgres',
   user: 'postgres',
   password: 'postgres',
@@ -133,6 +133,15 @@ async function signupSupplier(
      FROM public.supplier_users su JOIN public.profiles p ON p.id = su.profile_id
      WHERE lower(p.email) = lower($1)`,
     [email],
+  );
+  await client.query(
+    `UPDATE public.suppliers
+     SET address = jsonb_build_object(
+       'kind', 'BUSINESS_OFFICE', 'line1', '82 Journey Road', 'city', 'Bengaluru',
+       'state', 'Karnataka', 'pincode', '560048', 'postalCode', '560048', 'country', 'India'
+     )
+     WHERE id = $1`,
+    [row.rows[0].supplier_id],
   );
   return {
     profileId: row.rows[0].profile_id,

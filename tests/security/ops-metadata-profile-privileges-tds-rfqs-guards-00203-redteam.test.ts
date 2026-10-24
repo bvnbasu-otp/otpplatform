@@ -220,6 +220,7 @@ describe('R9 ops metadata', () => {
   it('no client, package or edge code reads the tables or calls the integrity report', () => {
     for (const root of APP_ROOTS) {
       for (const f of sourceFiles(root)) {
+        if (f.replace(/\\/g, '/').endsWith('database/src/generated/supabase.ts')) continue;
         const src = readFileSync(resolve(root, f), 'utf8');
         if (f.replace(/\\/g, '/').endsWith('reset/clean-start-reset.ts')) continue;
         expect(src, f).not.toMatch(/platform_environment_settings|otp_schema_migrations|assert_production_data_integrity/);

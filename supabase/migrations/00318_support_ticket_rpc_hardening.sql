@@ -1,21 +1,29 @@
--- STATUS: UNAPPLIED
--- IMPLEMENTATION REVIEW ONLY — NOT APPLIED
--- Review proposal only. This file is intentionally outside supabase/migrations.
+-- 00318: support-ticket admin RPC hardening (SEC-SUPPORT-01).
 --
 -- Depends on migrations 00140, 00201, and private.is_platform_admin().
 -- Corrects SEC-SUPPORT-01 without changing applied migration history:
---   * admin support RPCs require a trusted authenticated JWT subject and the
---     established database-backed platform-admin predicate;
---   * PUBLIC, anon, and service_role cannot execute the admin RPCs;
---   * ordinary authenticated callers retain no EXECUTE path;
+--   * EXECUTE on the admin support RPCs is revoked from PUBLIC, anon,
+--     authenticated, and service_role, then granted back to authenticated
+--     only. PUBLIC, anon, and service_role cannot execute them;
+--   * the authenticated grant is not an authorization decision. Each admin
+--     function body refuses the call unless auth.uid() is a trusted
+--     authenticated JWT subject (auth.role() = 'authenticated') and the
+--     database-backed private.is_platform_admin() predicate is true, so an
+--     ordinary authenticated caller is refused inside the function;
 --   * admin_resolve_support_ticket accepts only the statuses allowed by the
 --     support_tickets CHECK constraint from 00076 (OPEN, IN_REVIEW, RESOLVED,
 --     CLOSED), and refuses an unknown ticket id; neither case updates a row or
 --     writes an audit event;
 --   * ticket notification routing stays at bvnbasu@gmail.com, as applied by
---     00140.
-
-BEGIN;
+--     00140;
+--   * create_support_ticket stays executable by authenticated and
+--     service_role only. 00140 granted it to anon, but 00216/00217 replaced
+--     that with an explicit anon allowlist that does not include it; this
+--     file does not re-grant anon.
+--
+-- No explicit BEGIN/COMMIT: the migration runner and the Supabase CLI apply
+-- this file and its ledger row in one transaction, and an inner COMMIT would
+-- end that transaction before the ledger row is written.
 
 DO $preconditions$
 BEGIN
@@ -299,9 +307,9 @@ REVOKE ALL ON FUNCTION public.admin_resolve_support_ticket(uuid, text, text)
 GRANT EXECUTE ON FUNCTION public.admin_get_support_tickets(text, text, int, int, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_resolve_support_ticket(uuid, text, text) TO authenticated;
 
--- Preserve the existing public ticket-submission capability.
-REVOKE ALL ON FUNCTION public.create_support_ticket(text, text, text, text, text, text, text, text) FROM PUBLIC;
+-- Keep the 00216/00217 anon EXECUTE allowlist: create_support_ticket is not on
+-- it, so signed-in callers and service_role keep ticket submission and anon
+-- does not regain it.
+REVOKE ALL ON FUNCTION public.create_support_ticket(text, text, text, text, text, text, text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_support_ticket(text, text, text, text, text, text, text, text)
-  TO anon, authenticated, service_role;
-
-COMMIT;
+  TO authenticated, service_role;

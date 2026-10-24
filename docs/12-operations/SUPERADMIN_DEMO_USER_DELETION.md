@@ -1,13 +1,24 @@
 # SuperAdmin demo/QA user deletion
 
-This page describes the current proposal source for SuperAdmin demo/QA deletion. The proposal files remain outside `supabase/migrations/` and have not been applied or promoted. The status word lives in [CAPABILITY_STATUS.md](../13-truth/CAPABILITY_STATUS.md). Findings live in [DOCUMENTATION_DISCOVERED_DEFECTS.md](../13-truth/DOCUMENTATION_DISCOVERED_DEFECTS.md) (DEMO-DEL-01 to DEMO-DEL-08).
+> **24 October 2026 superseding note:** the dependency chain is now promoted as `00320` audit actor registry, `00321` founder guard, `00322` demo-marker guard and `00323` transactional demo deletion. The former unversioned proposal files have been removed. The exact 00001–00327 chain applied on the isolated disposable project `otp-disposable-a24c1024`; this is local proof only, not `otp-local`, hosted or Vercel deployment proof. Runtime PostgREST identity and operator approval remain deployment gates.
+
+This page records the design and safety model for SuperAdmin demo/QA deletion. The status word lives in [CAPABILITY_STATUS.md](../13-truth/CAPABILITY_STATUS.md). Findings live in [DOCUMENTATION_DISCOVERED_DEFECTS.md](../13-truth/DOCUMENTATION_DISCOVERED_DEFECTS.md) (DEMO-DEL-01 to DEMO-DEL-08).
+
+**Numbering note (24 October 2026).** The proposal files were renamed to unversioned names. On this page `00315`, `00316`, `00320`, and `00321` are the former proposal labels, which the deferred SQL still uses in comments, error messages, and manifest labels. They are not the promoted migrations `00315`–`00318` now in `supabase/migrations/` (organization rename and support hardening work, unrelated to deletion). A new number after the ceiling in force is assigned only at promotion.
+
+| Former label | Current file |
+| --- | --- |
+| `00315` audit actor registry | `supabase/audit_actor_identity_registry.DEFERRED.UNVERSIONED.sql` |
+| `00316` founder SUPER_ADMIN guard | `supabase/founder_superadmin_role_guard.DEFERRED.UNVERSIONED.sql` |
+| `00321` immutable demo marker | `supabase/restrict_is_demo_marker.DEFERRED.UNVERSIONED.sql` |
+| `00320` demo user deletion | `supabase/superadmin_demo_user_deletion.DEFERRED.UNVERSIONED.sql` |
 
 ## Status summary
 
 | Part | Readiness | CAPABILITY_STATUS label | Basis |
 | --- | --- | --- | --- |
 | Client UI and API wrapper | Implemented and locally verified (against a mocked Supabase client only) | `IMPLEMENTED` | `apps/web/src/features/admin/api/demo-user-deletion.test.ts` and `apps/web/src/features/admin/demo-user-deletion-ui.test.tsx`: 2 files, 35 tests passed on 24 October 2026. The mock stands in for every server response. |
-| Server functions `preview_demo_user_deletion` / `execute_demo_user_deletion` | Proposal only (unapplied) | `NOT-IMPLEMENTED` in any database | `supabase/00320_superadmin_demo_user_deletion.UNAPPLIED.sql`. Not in `supabase/migrations/`. |
+| Server functions `preview_demo_user_deletion` / `execute_demo_user_deletion` | Proposal only (unapplied) | `NOT-IMPLEMENTED` in any database | `supabase/superadmin_demo_user_deletion.DEFERRED.UNVERSIONED.sql`. Not in `supabase/migrations/`. |
 | Prerequisites 00315, 00316, 00321 | Proposal only (unapplied) | `NOT-IMPLEMENTED` in any database | Files sit in `supabase/`, outside the migration runner. |
 | End-to-end workflow | Blocked pending owner authorization | `PARTIAL` | The UI calls RPCs that do not exist in any database until the owner authorizes applying 00315, 00316, 00321, then 00320. |
 | Hosted or runtime proof | Not available | — | Local rollback tests ran on 24 October 2026 against `127.0.0.1:54322`. No PostgREST call or hosted check was made. |
@@ -149,18 +160,18 @@ Grants: `preview_*` and `execute_*` are `EXECUTE` for `authenticated` only. `PUB
 
 ## 6. Proposal status and dependency chain
 
-Filesystem check on 23 October 2026: the last file in `supabase/migrations/` is `00314_internal_invitation_acceptance.sql`. No file numbered `00315`–`00321` is in `supabase/migrations/`.
+Filesystem check on 24 October 2026: the last file in `supabase/migrations/` is `00318_support_ticket_rpc_hardening.sql` (uncommitted). None of the deletion proposals below is in `supabase/migrations/`, and none has a migration number.
 
-| Proposal | Location | Status | Role |
+| Proposal (former label) | Location | Status | Role |
 | --- | --- | --- | --- |
-| `00315_audit_actor_identity_registry.UNAPPLIED.sql` | `supabase/` | Proposal only (unapplied) | Durable audit-actor registry. Repoints `audit_events.actor_id`. Keeps attribution after a profile is deleted. Its header reads like an applied migration and lacks the `STATUS: UNAPPLIED` banner (DEMO-DEL-06). |
-| `00316_founder_superadmin_role_guard.UNAPPLIED.sql` | `supabase/` | Proposal only (unapplied) | Founder SUPER_ADMIN guards on `profiles`, `profile_roles`, `internal_user_assignments`, `internal_roles`, `user_roles` (including `TRUNCATE`). Needs the schema through 00301. |
-| `00321_restrict_is_demo_marker.UNAPPLIED.sql` | `supabase/` | Proposal only (unapplied) | Immutable `is_demo` marker trigger `trg_guard_profile_is_demo_marker`. |
-| `00320_superadmin_demo_user_deletion.UNAPPLIED.sql` | `supabase/` | Proposal only (unapplied). Not in `supabase/migrations/` and not promoted. | Preview/execute functions, manifest, preview table, whitelist snapshot blocker, revoke of `admin_bulk_delete_users`. |
+| `audit_actor_identity_registry.DEFERRED.UNVERSIONED.sql` (`00315`) | `supabase/` | Proposal only (unapplied) | Durable audit-actor registry. Repoints `audit_events.actor_id`. Keeps attribution after a profile is deleted. Its header reads like an applied migration and lacks the `STATUS: UNAPPLIED` banner (DEMO-DEL-06). |
+| `founder_superadmin_role_guard.DEFERRED.UNVERSIONED.sql` (`00316`) | `supabase/` | Proposal only (unapplied) | Founder SUPER_ADMIN guards on `profiles`, `profile_roles`, `internal_user_assignments`, `internal_roles`, `user_roles` (including `TRUNCATE`). Needs the schema through 00301. |
+| `restrict_is_demo_marker.DEFERRED.UNVERSIONED.sql` (`00321`) | `supabase/` | Proposal only (unapplied) | Immutable `is_demo` marker trigger `trg_guard_profile_is_demo_marker`. |
+| `superadmin_demo_user_deletion.DEFERRED.UNVERSIONED.sql` (`00320`) | `supabase/` | Proposal only (unapplied). Not in `supabase/migrations/` and not promoted. | Preview/execute functions, manifest, preview table, whitelist snapshot blocker, revoke of `admin_bulk_delete_users`. |
 
-Required apply order, stated in the 00320 header: **00315 → 00316 → 00321 → 00320**. 00321 must go before 00320 even though its number is higher. 00320 refuses to install if any prerequisite function or trigger is missing. `00317`, `00318`, `00319`, and the separate `00314_internal_procurement_and_supplier_business_address.UNAPPLIED.sql` are also unapplied proposals in `supabase/`. They are not prerequisites of 00320. The `00314` number collides with the applied `migrations/00314_internal_invitation_acceptance.sql` (DEMO-DEL-07).
+Required apply order, stated in the 00320 header: **00315 → 00316 → 00321 → 00320**. 00321 must go before 00320 even though its number is higher. 00320 refuses to install if any prerequisite function or trigger is missing. Each file gets a new number after the ceiling in force when it is promoted, and the numbers must preserve this order. The former proposals `00317`, `00318`, `00319`, and `00323` are now promoted migrations `00315`–`00318`; they are not prerequisites of 00320. The supplier business address and contact enquiry proposals are also deferred and unversioned. The former `00314` collision (DEMO-DEL-07) is resolved by the unversioned name.
 
-Open prerequisites: owner review and authorization of all four files, a decision on the 00314 number collision before anything is promoted, and the runtime checks in section 7.
+Open prerequisites: owner review and authorization of all four files, assignment of new numbers in the order above, and the runtime checks in section 7.
 
 ## 7. Security and release limitations
 
@@ -272,7 +283,7 @@ On 24 October 2026 `tests/security/demo-user-deletion-00320.test.ts` passed 18 t
 | `isDemo` mapping | `apps/web/src/features/admin/api/admin-ops.ts`, `apps/web/src/features/admin/types/admin.ts` |
 | Admin route and tab | `apps/web/src/features/admin/pages/AdminDashboardPage.tsx` |
 | Client tests | `apps/web/src/features/admin/api/demo-user-deletion.test.ts`, `apps/web/src/features/admin/demo-user-deletion-ui.test.tsx`, `apps/web/src/features/admin/account-lifecycle.test.ts` |
-| SQL proposal | `supabase/00320_superadmin_demo_user_deletion.UNAPPLIED.sql` |
-| Prerequisites | `supabase/00315_audit_actor_identity_registry.UNAPPLIED.sql`, `supabase/00316_founder_superadmin_role_guard.UNAPPLIED.sql`, `supabase/00321_restrict_is_demo_marker.UNAPPLIED.sql` |
+| SQL proposal | `supabase/superadmin_demo_user_deletion.DEFERRED.UNVERSIONED.sql` |
+| Prerequisites | `supabase/audit_actor_identity_registry.DEFERRED.UNVERSIONED.sql`, `supabase/founder_superadmin_role_guard.DEFERRED.UNVERSIONED.sql`, `supabase/restrict_is_demo_marker.DEFERRED.UNVERSIONED.sql` |
 | Existing whitelist delete guard | `supabase/migrations/00296_platform_admin_operator_context_alignment.sql` |
 | SQL tests | `tests/security/demo-user-deletion-00320.test.ts` |

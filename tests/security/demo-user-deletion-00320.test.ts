@@ -11,10 +11,10 @@ import {
 
 const ROOT = resolve(__dirname, '../..');
 const MIGRATIONS = resolve(ROOT, 'supabase/migrations');
-const AUDIT_PROPOSAL = resolve(ROOT, 'supabase/00315_audit_actor_identity_registry.UNAPPLIED.sql');
-const FOUNDER_PROPOSAL = resolve(ROOT, 'supabase/00316_founder_superadmin_role_guard.UNAPPLIED.sql');
-const DELETE_PROPOSAL = resolve(ROOT, 'supabase/00320_superadmin_demo_user_deletion.UNAPPLIED.sql');
-const DEMO_MARKER_PROPOSAL = resolve(ROOT, 'supabase/00321_restrict_is_demo_marker.UNAPPLIED.sql');
+const AUDIT_PROPOSAL = resolve(MIGRATIONS, '00320_audit_actor_identity_registry.sql');
+const FOUNDER_PROPOSAL = resolve(MIGRATIONS, '00321_founder_superadmin_role_guard.sql');
+const DELETE_PROPOSAL = resolve(MIGRATIONS, '00323_superadmin_demo_user_deletion.sql');
+const DEMO_MARKER_PROPOSAL = resolve(MIGRATIONS, '00322_restrict_is_demo_marker.sql');
 // Migration 00113 creates this deterministic local founder. 00316 resolves the
 // founder by claim + reserved email and therefore also covers hosted UUIDs.
 const FOUNDER_ID = 'dd2dedee-0c2a-4254-b2af-342b41d56385';
@@ -510,22 +510,25 @@ async function insertDisposableProfile(
   return { profileId: id, authId: id };
 }
 
-describe('00320 disposable demo/QA deletion proposal', () => {
+describe('00323 disposable demo/QA deletion migration', () => {
   const sql = readFileSync(DELETE_PROPOSAL, 'utf8');
   const executable = stripComments(sql);
 
-  it('keeps proposals 00315 through 00321 outside the migration runner', () => {
+  it('keeps deletion prerequisites in dependency order inside the migration runner', () => {
     const migrations = readdirSync(MIGRATIONS).filter((file) => /^\d{5}_.*\.sql$/.test(file)).sort();
-    expect(migrations.at(-1)).toBe('00314_internal_invitation_acceptance.sql');
-    for (const number of ['00315', '00316', '00317', '00318', '00319', '00320', '00321']) {
-      expect(migrations.some((file) => file.startsWith(number))).toBe(false);
-      const proposals = readdirSync(resolve(ROOT, 'supabase')).filter((file) => file.startsWith(number));
-      expect(proposals).toHaveLength(1);
-      expect(proposals[0]).toMatch(/\.UNAPPLIED\.sql$/);
-    }
-    expect(readFileSync(AUDIT_PROPOSAL, 'utf8')).toContain('00315: keep audit attribution');
+    const ordered = [
+      '00320_audit_actor_identity_registry.sql',
+      '00321_founder_superadmin_role_guard.sql',
+      '00322_restrict_is_demo_marker.sql',
+      '00323_superadmin_demo_user_deletion.sql',
+    ];
+    for (const file of ordered) expect(migrations).toContain(file);
+    expect(ordered.map((file) => migrations.indexOf(file))).toEqual(
+      [...ordered.map((file) => migrations.indexOf(file))].sort((a, b) => a - b),
+    );
+    expect(readFileSync(AUDIT_PROPOSAL, 'utf8')).toContain('-- 00320: Durable audit actor identity registry.');
     expect(readFileSync(FOUNDER_PROPOSAL, 'utf8')).toContain('FOUNDER_SUPERADMIN_ROLE_IMMUTABLE');
-    expect(sql.startsWith('-- STATUS: UNAPPLIED')).toBe(true);
+    expect(sql).toContain('-- 00323: Server-authorized demo-account deletion.');
     expect(sql).toContain("to_regprocedure('private_security.guard_profile_is_demo_marker()')");
   });
 
@@ -1027,7 +1030,12 @@ describe('00320 disposable demo/QA deletion proposal', () => {
       await client.query(`SET LOCAL statement_timeout = '120s'`);
       // Compile-only install: the 00315/00316 preconditions are not evaluated here,
       // and no preview/execute RPC is called, so no founder record is required.
-      await client.query(stripTransaction(stripPreconditions(sql)));
+      const alreadyInstalled = (await client.query<{ present: boolean }>(
+        `SELECT to_regclass('private_security.demo_user_deletion_previews') IS NOT NULL AS present`,
+      )).rows[0]?.present === true;
+      if (!alreadyInstalled) {
+        await client.query(stripTransaction(stripPreconditions(sql)));
+      }
 
       const coverage = await client.query<{
         fk: string;
@@ -1241,7 +1249,12 @@ describe('00320 disposable demo/QA deletion proposal', () => {
       if ((await client.query(`SELECT to_regprocedure('private_security.guard_profile_is_demo_marker()') IS NULL AS missing`)).rows[0].missing) {
         await client.query(stripTransaction(readFileSync(DEMO_MARKER_PROPOSAL, 'utf8')));
       }
-      await client.query(stripTransaction(sql));
+      const alreadyInstalled = (await client.query<{ present: boolean }>(
+        `SELECT to_regclass('private_security.demo_user_deletion_previews') IS NOT NULL AS present`,
+      )).rows[0]?.present === true;
+      if (!alreadyInstalled) {
+        await client.query(stripTransaction(sql));
+      }
 
       const founder = await client.query<{ auth_user_id: string }>(
         `SELECT auth_user_id::text

@@ -16,7 +16,7 @@ const invite = readFileSync(
   'utf8',
 );
 const categoryCoverageGuard = readFileSync(
-  resolve(root, 'supabase/00319_rfq_category_service_coverage_guard.UNAPPLIED.sql'),
+  resolve(root, 'supabase/migrations/00317_rfq_category_service_coverage_guard.sql'),
   'utf8',
 );
 
@@ -33,8 +33,9 @@ describe('current RFQ invitation SQL contract', () => {
     expect(subcategory).toContain('required_capability.is_primary');
   });
 
-  it('proposes a fail-closed category and declared-service-coverage gate for the subcategory-null fallback', () => {
-    expect(categoryCoverageGuard.startsWith('-- STATUS: UNAPPLIED')).toBe(true);
+  it('applies a fail-closed category and declared-service-coverage gate for the subcategory-null fallback', () => {
+    expect(categoryCoverageGuard.startsWith('-- 00317: ')).toBe(true);
+    expect(categoryCoverageGuard).not.toContain('UNAPPLIED');
     expect(categoryCoverageGuard).toContain('rank_discovery_candidates_pre_category_coverage_guard');
     expect(categoryCoverageGuard).toContain('req.subcategory_id IS NULL');
     expect(categoryCoverageGuard).toContain('required_capability.is_primary');
@@ -47,6 +48,27 @@ describe('current RFQ invitation SQL contract', () => {
     expect(executable).toMatch(/\)\s*AND EXISTS \(\s*SELECT 1\s+FROM public\.supplier_service_areas service_area/);
     expect(executable).not.toMatch(/NOT EXISTS\s*\(\s*SELECT 1\s+FROM public\.supplier_service_areas/i);
     expect(executable).not.toMatch(/OR\s+NOT EXISTS/i);
+  });
+
+  it('refuses a rerun or partial apply instead of skipping the rename, and commits atomically with its ledger row', () => {
+    const executable = categoryCoverageGuard.replace(/--.*$/gm, '');
+    expect(executable).not.toMatch(/^\s*(BEGIN|COMMIT)\s*;/im);
+    const precondition = executable.indexOf('DO $preconditions$');
+    const rename = executable.indexOf('ALTER FUNCTION private.rank_discovery_candidates(uuid, uuid[])');
+    const create = executable.indexOf('CREATE FUNCTION private.rank_discovery_candidates(');
+    expect(precondition).toBeGreaterThan(-1);
+    expect(rename).toBeGreaterThan(precondition);
+    expect(create).toBeGreaterThan(rename);
+    const guard = executable.slice(precondition, rename);
+    expect(guard).toContain("to_regprocedure('private.rank_discovery_candidates(uuid,uuid[])') IS NULL");
+    expect(guard).toContain("to_regprocedure('private.rank_discovery_candidates_pre_subcategory_isolation(uuid,uuid[])') IS NULL");
+    expect(guard).toContain("to_regprocedure('private.rank_discovery_candidates_pre_category_coverage_guard(uuid,uuid[])') IS NOT NULL");
+    expect(guard.match(/RAISE EXCEPTION 'RFQ_COVERAGE_GUARD_PRECONDITION_FAILED/g)).toHaveLength(2);
+    expect(executable).not.toMatch(/CREATE OR REPLACE FUNCTION private\.rank_discovery_candidates\(/);
+    expect(executable).not.toMatch(/IF NOT EXISTS|DROP FUNCTION/i);
+    expect(executable).toContain('REVOKE ALL ON FUNCTION private.rank_discovery_candidates(uuid, uuid[]) FROM PUBLIC, anon, authenticated;');
+    expect(executable).toContain('REVOKE ALL ON FUNCTION private.rank_discovery_candidates_pre_category_coverage_guard(uuid, uuid[]) FROM PUBLIC, anon, authenticated;');
+    expect(executable).toContain('GRANT EXECUTE ON FUNCTION private.rank_discovery_candidates(uuid, uuid[]) TO service_role;');
   });
 
   it('keeps external discovery, OTP registration, and GST verification on separate invitation reasons', () => {

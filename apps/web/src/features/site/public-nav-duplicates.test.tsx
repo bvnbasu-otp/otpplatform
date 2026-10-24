@@ -58,7 +58,9 @@ vi.mock('@/features/portal', () => ({ QuickRegisterModal: () => null }));
 vi.mock('@/features/intake', () => ({ VoiceTextRequirementIntakeModal: () => null }));
 vi.mock('@/features/profile', () => ({ ProfileEditModal: () => null }));
 vi.mock('@/features/roles/components/ChangePasswordModal', () => ({ ChangePasswordModal: () => null }));
-vi.mock('@/features/support', () => ({ SupportHelpButtonModal: () => null }));
+vi.mock('@/features/support', () => ({
+  SupportHelpButtonModal: () => <button data-testid="help-and-support-trigger">Help</button>,
+}));
 vi.mock('@/lib/i18n', () => ({ useLanguage: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 vi.mock('@/components/ui/LanguageSwitcher', () => ({ LanguageSwitcher: () => null }));
 
@@ -89,6 +91,7 @@ describe('public navigation is one landmark per viewport', () => {
     expect(html).not.toContain('>Profile<');
     expect(html).not.toContain('Dashboard');
     expect(html).not.toContain('Notification');
+    expect(html).not.toContain('data-testid="help-and-support-trigger"');
     const desktop = html.match(/aria-label="Desktop Navigation"[\s\S]*?<\/nav>/)?.[0] ?? '';
     const bottom = html.match(/aria-label="Mobile Bottom Navigation"[\s\S]*?<\/nav>/)?.[0] ?? '';
     for (const label of ['Home', 'Pricing', 'About Us', 'FAQs']) {

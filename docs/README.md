@@ -10,10 +10,10 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 | --- | --- |
 | Branch | `main` (tracks `origin/main`) |
 | SHA inspected | Latest verified commit (`main`) |
-| Release status | 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (`OTP-REL-CERT-20261015-003`) |
+| Release status | Historical certificate does not certify this working tree. Current result is recorded in [LOCAL_CLOSURE_EVIDENCE_2026-10-24.md](./13-truth/LOCAL_CLOSURE_EVIDENCE_2026-10-24.md). |
 | Product Owner attestation | 15 October 2026: *"All core procurement workflows, universal multilingual page translation with Indic fonts, pincode-first supplier discovery, sourcing modes, address readiness gate, EULA attribution, database RLS boundaries, messaging gateways, and 00271 supplier channel unique constraints are verified. Complete Platform Documentation published as publication-grade PDF. Release certified GREEN."* |
-| Local migrations | `00001`–`00271` on disk. Formal migration ceiling is `00271`. |
-| Hosted database | Formal migration ceiling is `00271`. |
+| Local migrations | `00001`–`00327` on disk and contiguous (24 October 2026), all uncommitted from `00315` onward. The six former deferred areas are promoted as dependency-ordered migrations `00319`–`00324`; pilot quorum, committee tenure, and notification isolation close in `00325`–`00327`. CI `EXPECTED_CEILING` is `00327` in the working tree. Database application remains separately authorized. See [MIGRATION_HISTORY.md](./07-database/MIGRATION_HISTORY.md). |
+| Database targets | Disposable exact chain validated through `00327`. `otp-local` was not started because identity is inconsistent. Hosted database is UNKNOWN and was not inferred from files. |
 | Complete PDF Documentation | [OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf](./OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf) (6.4 MB publication-grade PDF) |
 | Public URL named in repo | `https://otpplatform-theta.vercel.app` |
 

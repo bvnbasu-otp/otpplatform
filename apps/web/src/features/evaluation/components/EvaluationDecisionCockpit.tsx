@@ -18,7 +18,6 @@ import { evaluateApprovalRoute } from '@otp/domain';
 import {
   closeClarificationForEvaluation,
   fetchRfqStatus,
-  waiveMinQuotesAndEvaluate,
   fetchInvitedLabels,
   fetchClarificationMessagesForBuyer,
   type ClarificationMessage,
@@ -356,20 +355,6 @@ export function EvaluationDecisionCockpit({
       res = await closeClarificationForEvaluation(rfqId);
     }
 
-    setBusy(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    await loadCockpitStatus();
-    void refreshQuotes();
-    void recompute();
-  };
-
-  const handleWaiveAndEvaluate = async () => {
-    setBusy(true);
-    setError(null);
-    const res = await waiveMinQuotesAndEvaluate(rfqId);
     setBusy(false);
     if (!res.ok) {
       setError(res.error);

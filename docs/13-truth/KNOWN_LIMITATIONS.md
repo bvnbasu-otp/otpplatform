@@ -2,6 +2,15 @@
 
 Statuses are defined in [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This page is the limit, not a second verdict.
 
+## Current working tree (24 October 2026)
+
+- Local source ceiling is `00327`. No claim is made that `otp-local`, hosted Supabase, or Vercel runs this revision.
+- `otp-local` was not started: its stopped database container identifies a different workdir while sibling components identify this workspace, and port 54322 belongs to another pre-existing stack.
+- Contact storage has a 90-day retention boundary, but deployment must separately schedule the privileged bounded purge and establish legal-hold operations.
+- Email remains configuration/provider dependent. WAHA remains a controlled demo dependency; gateway acceptance is not proof of recipient delivery. In-app delivery depends on authenticated subscriptions.
+- There is no minimum-quote pilot waiver. Below-minimum RFQs continue discovery but cannot be awarded.
+- Legal approval, rollout activation, payment collection and independently verified hosted deployment remain outside this local closure.
+
 ## Current working tree (16 October 2026)
 
 - Local migration files run through `00290`. The CI workflow in this tree expects that file ceiling. Hosted `schema_migrations` was not queried. A local file and a workflow string are not hosted proof.
@@ -28,14 +37,21 @@ Statuses are defined in [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This pag
 - Custom payment terms persist as `CUSTOM_TERMS` and do not invent a milestone split.
 - WhatsApp runs through WAHA, the owner-confirmed demo provider. It depends on the operator's WAHA container, bridge, and tunnel. `SENT` means the gateway accepted the message. No delivery receipts are recorded. Inbound WAHA webhooks are refused (MSG-01). No session monitoring was found. A successful demo is not proof of production reliability. See [WHATSAPP.md](../09-integrations/WHATSAPP.md).
 - SMS is not available for the pilot. No pilot flow sends SMS. Only the Twilio provider can, and Twilio is not a pilot provider. See [SMS.md](../09-integrations/SMS.md).
-- Contact Us (`/contact-us`) cannot save an enquiry until proposal `00322` is applied and `contact-enquiry` is deployed. Both need owner authorization. Until then every submission tells the visitor it was not recorded and points to email or WhatsApp.
+- Contact Us (`/contact-us`) cannot save an enquiry until the deferred proposal `supabase/public_contact_enquiries.DEFERRED.UNVERSIONED.sql` (former `00322`) is numbered, applied, and `contact-enquiry` is deployed. Both need owner authorization. Until then every submission tells the visitor it was not recorded and points to email or WhatsApp.
 - No email is sent for Contact Us enquiries; there is no transport.
 - Contact Us has no admin screen and no retention period.
 - Contact Us has no repository-evidenced trusted proxy identity, so its uncommitted edge code ignores forwarded-IP headers. It uses a server-issued HMAC-signed client credential for an isolated 5/hour allowance and a separate 200/hour endpoint emergency ceiling. A caller can discard its credential to obtain a new identity, so the emergency ceiling remains necessary. Missing/short `CONTACT_RATE_LIMIT_SECRET` fails closed.
-- Support admin RPC hardening exists only as `00323_support_ticket_rpc_hardening.UNAPPLIED.sql`; the applied 00140 functions remain unsafe until a reviewed forward migration is authorized and runtime-verified.
+- Support admin RPC hardening is promoted in source as `supabase/migrations/00318_support_ticket_rpc_hardening.sql` (former proposal `00323`). It is uncommitted and not applied to otp-local or hosted. Any database still at the 00140 bodies keeps SEC-SUPPORT-01 until 00318 is authorized, applied, and runtime-verified.
+- Signed-out visitors cannot submit support tickets. `create_support_ticket` is not executable by `anon`, and the public help modal now shows a log-in notice with a Contact Us link instead of a form. Anonymous ticket submission stays disabled until an abuse-controlled design is reviewed and approved.
+- Support tickets record `routed_email = bvnbasu@gmail.com` (00140, kept by 00318). The help modal header names `bvnbasu+otp.demo.otp.support@gmail.com`; Gmail delivers both to the same mailbox, but the stored value and the displayed text differ. No email is sent for tickets.
 - The privacy notice links to `/legal/privacy`, which is a placeholder page. The form has no consent checkbox, because no reviewed consent wording exists. That is an open decision.
 - A4 print/PDF output and 320–430 px layouts were not checked visually.
-- SuperAdmin demo/QA account deletion exists in the client only. Its server functions are the unapplied proposal `00320`, which needs the unapplied `00315`, `00316`, and `00321`. Until the owner authorizes applying them, the UI cannot delete anything. Open findings DEMO-DEL-01 to DEMO-DEL-08. See [SUPERADMIN_DEMO_USER_DELETION.md](../12-operations/SUPERADMIN_DEMO_USER_DELETION.md).
+- SuperAdmin demo/QA account deletion exists in the client only. Its server functions are the deferred, unversioned proposal `superadmin_demo_user_deletion.DEFERRED.UNVERSIONED.sql` (former `00320`), which needs the deferred audit actor registry, founder guard, and demo marker guard (former `00315`, `00316`, `00321`). Migration numbers `00315`–`00318` now belong to other, promoted migrations. Until the owner authorizes applying them, the UI cannot delete anything. The modal now sanitizes unknown backend errors, including the expected missing-RPC response. Open findings DEMO-DEL-01 to DEMO-DEL-08. See [SUPERADMIN_DEMO_USER_DELETION.md](../12-operations/SUPERADMIN_DEMO_USER_DELETION.md).
+- Migration 00317 now removes `anon` EXECUTE from `discover_and_invite_for_rfq`; prior definitions unnecessarily exposed this buyer action even though its body rejected callers outside the owning organization. This tightening is uncommitted and not applied to otp-local or hosted.
+- Buyers cannot waive the minimum-quote quorum from the evaluation cockpit. The database RPC is `public.waive_rfq_quote_quorum(uuid, text)` (00266); no UI control calls it. An unwired client wrapper for a non-existent `waive_min_quotes_and_evaluate` RPC was removed (uncommitted).
+- No web code runs the notification dispatch queue. An unused client method that called a non-existent `process_notification_dispatch_queue_batch` RPC was removed. Delivery runs only through `packages/services` workers where configured.
+- There is no admin stalled-order alert. An unimported helper that called a non-existent `admin_run_sql` RPC with embedded SQL was removed. No arbitrary-SQL RPC exists or is planned; admin diagnostics use the allowlisted `admin_run_diagnostic_query` (00262).
+- `packages/database/src/generated/supabase.ts` is behind the migrations. It lacks `update_my_organization_name`, the `p_network` argument of `discover_and_invite_for_rfq`, and several support, invitation, and GST RPCs. Regenerating it needs a database and was not done.
 - ONDC foundation status is `CREDENTIAL_GATED`. The `on_search` ingress NACKs unless a complete pre-production slot is present and the hosts are not production hosts. That is not a live network.
 - Static Bengaluru electrical fixtures live in the library adapter. The buyer coverage edge path does not call them. They are not Google, OTP-registered, or GST-verified suppliers.
 - Entitlement arithmetic is 3 RFQs a calendar month, plus one non-carrying quarterly bonus on a yearly plan. The old `WHY_5_RFQS_EXPLANATION` constant was removed. Local migration `00248` is the insert enforcement for that bonus. It is NOT applied to hosted.

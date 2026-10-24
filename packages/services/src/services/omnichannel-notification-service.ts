@@ -31,7 +31,7 @@ export interface DispatchNotificationInput {
   templateCode: string;
   payload: Record<string, unknown>;
   organizationId?: string | null;
-  idempotencyKey?: string | null;
+  idempotencyKey: string;
   isIdentityMasked?: boolean;
 }
 
@@ -66,13 +66,19 @@ export class OmnichannelNotificationService {
     if (!queueRepo || !templateRepo) {
       return err(new ValidationError('Notification repositories not configured'));
     }
+    const idempotencyKey = input.idempotencyKey?.trim();
+    if (!idempotencyKey || idempotencyKey.length > 200) {
+      return err(new ValidationError('A bounded idempotency key is required for every notification event'));
+    }
+    const recipientAddress = input.recipientAddress.trim();
+    if (recipientAddress.length < 3 || recipientAddress.length > 320) {
+      return err(new ValidationError('Notification recipient address is invalid'));
+    }
 
     // 1. Idempotency check
-    if (input.idempotencyKey) {
-      const existing = await queueRepo.findByIdempotencyKey(input.idempotencyKey);
-      if (existing) {
-        return ok(existing);
-      }
+    const existing = await queueRepo.findByIdempotencyKey(idempotencyKey);
+    if (existing) {
+      return ok(existing);
     }
 
     // 2. Template verification
@@ -107,7 +113,7 @@ export class OmnichannelNotificationService {
       id: createId(),
       organizationId: effectiveOrgId,
       recipientUserId: input.recipientUserId ?? null,
-      recipientAddress: input.recipientAddress,
+      recipientAddress,
       channel: input.channel,
       category: input.category,
       templateCode: input.templateCode,
@@ -120,7 +126,7 @@ export class OmnichannelNotificationService {
       maxRetries: 5,
       nextRetryAt: now,
       errorLog: [],
-      idempotencyKey: input.idempotencyKey ?? null,
+      idempotencyKey,
       createdAt: now,
       updatedAt: now,
     };

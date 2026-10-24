@@ -34,12 +34,13 @@ describe('supplier business address gate', () => {
     expect(layoutIndex).toBeGreaterThan(awardIndex);
   });
 
-  it('writes only suppliers.address and prepares an unapplied server guard', () => {
+  it('uses the authorized address RPC and includes the promoted server guard', () => {
     const api = read('src/features/supplier/api/business-address.ts');
-    const sql = readFileSync(resolve(repoRoot, 'supabase/00314_internal_procurement_and_supplier_business_address.UNAPPLIED.sql'), 'utf8');
-    expect(api).toContain(".update({ address: record })");
+    const sql = readFileSync(resolve(repoRoot, 'supabase/migrations/00319_supplier_business_address_enforcement.sql'), 'utf8');
+    expect(api).toContain("'upsert_supplier_business_address'");
+    expect(api).not.toContain(".from('suppliers').update");
     expect(api).not.toContain('registered_address:');
-    expect(sql).toContain('STATUS: UNAPPLIED');
+    expect(sql).toContain('-- 00319: Supplier operating-address enforcement.');
     expect(sql).toContain('registered_address is intentionally absent');
     expect(sql).toContain('Internal operators cannot create customer requirements or orders');
     expect(sql).toContain('trg_quote_requires_business_address');

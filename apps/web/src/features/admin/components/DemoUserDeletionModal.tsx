@@ -37,7 +37,7 @@ function readableError(error: string): string {
   if (error.includes('DEMO_USER_DELETE_BLOCKED')) {
     return 'Deletion is blocked by the current server-side account state. Request a fresh preview.';
   }
-  return error;
+  return 'Demo-account deletion is unavailable or the request could not be completed. No account was deleted.';
 }
 
 interface DemoUserDeletionModalProps {

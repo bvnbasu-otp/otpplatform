@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -36,12 +36,12 @@ const appliedRpc = readFileSync(
   resolve(__dirname, '../../../../../supabase/migrations/00146_update_nokia_to_basu_and_org_name_edit.sql'),
   'utf8',
 );
-const unappliedRevoke = readFileSync(
-  resolve(__dirname, '../../../../../supabase/00317_revoke_anon_update_my_organization_name.UNAPPLIED.sql'),
+const revokeMigration = readFileSync(
+  resolve(__dirname, '../../../../../supabase/migrations/00315_revoke_anon_update_my_organization_name.sql'),
   'utf8',
 );
-const unappliedRename = readFileSync(
-  resolve(__dirname, '../../../../../supabase/00318_organization_rename_requires_one_row.UNAPPLIED.sql'),
+const renameMigration = readFileSync(
+  resolve(__dirname, '../../../../../supabase/migrations/00316_organization_rename_requires_one_row.sql'),
   'utf8',
 );
 const profileEditModalSource = readFileSync(resolve(__dirname, 'components/ProfileEditModal.tsx'), 'utf8');
@@ -297,11 +297,12 @@ describe('update_my_organization_name server contract', () => {
     expect(appliedRpc).toContain('FROM public.organization_members');
     expect(appliedRpc).toContain("v_member_role NOT IN ('OWNER', 'MANAGER', 'BUYER', 'ADMIN')");
     expect(appliedRpc).not.toMatch(/p_user_id|p_profile_id|p_role/i);
-    expect(unappliedRename).toContain('v_uid uuid := auth.uid()');
-    expect(unappliedRename).toContain('WHERE auth_user_id = v_uid');
-    expect(unappliedRename).toContain("v_member_role NOT IN ('OWNER', 'MANAGER', 'BUYER', 'ADMIN')");
-    expect(unappliedRename).toContain('IF NOT v_is_admin THEN');
-    expect(unappliedRename).not.toMatch(/p_user_id|p_profile_id|p_actor_id|p_role/i);
+    expect(renameMigration).toContain('v_uid uuid := auth.uid()');
+    expect(renameMigration).toContain('WHERE auth_user_id = v_uid');
+    expect(renameMigration).toContain('SELECT id, COALESCE(is_platform_admin, false), active_organization_id');
+    expect(renameMigration).toContain("v_member_role NOT IN ('OWNER', 'MANAGER', 'BUYER', 'ADMIN')");
+    expect(renameMigration).toContain('IF NOT v_is_admin THEN');
+    expect(renameMigration).not.toMatch(/p_user_id|p_profile_id|p_actor_id|p_role/i);
   });
 
   it('returns success only after exactly one organization row is updated', () => {
@@ -310,58 +311,56 @@ describe('update_my_organization_name server contract', () => {
     expect(appliedRpc).not.toContain('GET DIAGNOSTICS');
     expect(historicalSuccess).toBeGreaterThan(historicalUpdate);
 
-    const update = unappliedRename.indexOf('UPDATE public.organizations');
-    const counted = unappliedRename.indexOf('GET DIAGNOSTICS v_updated = ROW_COUNT');
-    const zeroRows = unappliedRename.indexOf('Organization was not found, so the name was not changed');
-    const ambiguous = unappliedRename.indexOf('Organization rename matched % rows');
-    const audit = unappliedRename.indexOf('INSERT INTO public.audit_events');
-    const success = unappliedRename.lastIndexOf("'ok', true");
+    const update = renameMigration.indexOf('UPDATE public.organizations');
+    const counted = renameMigration.indexOf('GET DIAGNOSTICS v_updated = ROW_COUNT');
+    const zeroRows = renameMigration.indexOf('Organization was not found, so the name was not changed');
+    const ambiguous = renameMigration.indexOf('Organization rename matched % rows');
+    const audit = renameMigration.indexOf('INSERT INTO public.audit_events');
+    const success = renameMigration.lastIndexOf("'ok', true");
 
-    expect(update).toBeGreaterThan(unappliedRename.indexOf('Authentication required'));
-    expect(update).toBeGreaterThan(unappliedRename.indexOf('You do not have permission to rename this organization'));
+    expect(update).toBeGreaterThan(renameMigration.indexOf('Authentication required'));
+    expect(update).toBeGreaterThan(renameMigration.indexOf('You do not have permission to rename this organization'));
     expect(counted).toBeGreaterThan(update);
     expect(zeroRows).toBeGreaterThan(counted);
     expect(ambiguous).toBeGreaterThan(zeroRows);
     expect(audit).toBeGreaterThan(ambiguous);
     expect(success).toBeGreaterThan(audit);
-    expect(unappliedRename).toContain("'rows_updated', v_updated");
-    expect(unappliedRename).toContain('cardinality_violation');
-    expect(unappliedRename).not.toMatch(/^\s*GRANT\s+/im);
-    expect(unappliedRename).not.toMatch(/^\s*REVOKE\s+/im);
-    expect(unappliedRename).not.toMatch(/DROP\s+FUNCTION/i);
+    expect(renameMigration).toContain("'rows_updated', v_updated");
+    expect(renameMigration).toContain('cardinality_violation');
+    expect(renameMigration).not.toMatch(/^\s*GRANT\s+/im);
+    expect(renameMigration).not.toMatch(/^\s*REVOKE\s+/im);
+    expect(renameMigration).not.toMatch(/DROP\s+FUNCTION/i);
   });
 
-  it('keeps the anon execute removal outside the migration runner and does not grant a new role', () => {
+  it('revokes anon and PUBLIC in migration 00315 before 00316 replaces the body, and grants no new role', () => {
     expect(appliedRpc).toContain(
       'GRANT EXECUTE ON FUNCTION public.update_my_organization_name(text, uuid) TO authenticated, service_role, anon;',
     );
-    expect(unappliedRevoke).toContain('STATUS: UNAPPLIED');
-    expect(unappliedRevoke).toContain(
+    for (const sql of [revokeMigration, renameMigration]) {
+      expect(sql).not.toContain('UNAPPLIED');
+      expect(sql).not.toMatch(/^\s*(BEGIN|COMMIT)\s*;/im);
+    }
+    expect(revokeMigration).toContain(
       'REVOKE ALL ON FUNCTION public.update_my_organization_name(text, uuid) FROM PUBLIC;',
     );
-    expect(unappliedRevoke).toContain(
+    expect(revokeMigration).toContain(
       'REVOKE ALL ON FUNCTION public.update_my_organization_name(text, uuid) FROM anon;',
     );
-    expect(unappliedRevoke).not.toMatch(/^\s*GRANT\s+/im);
-    const unappliedPath = resolve(
-      __dirname,
-      '../../../../../supabase/00317_revoke_anon_update_my_organization_name.UNAPPLIED.sql',
-    ).replace(/\\/g, '/');
-    expect(unappliedPath).toMatch(/\/supabase\/00317_revoke_anon_update_my_organization_name\.UNAPPLIED\.sql$/);
-    expect(unappliedPath).not.toContain('/supabase/migrations/');
+    expect(revokeMigration).not.toMatch(/^\s*GRANT\s+/im);
+    expect(revokeMigration).not.toMatch(/CREATE\s+(OR\s+REPLACE\s+)?FUNCTION/i);
 
-    const renamePath = resolve(
-      __dirname,
-      '../../../../../supabase/00318_organization_rename_requires_one_row.UNAPPLIED.sql',
-    ).replace(/\\/g, '/');
-    expect(unappliedRename).toContain('STATUS: UNAPPLIED');
-    expect(renamePath).toMatch(/\/supabase\/00318_organization_rename_requires_one_row\.UNAPPLIED\.sql$/);
-    expect(renamePath).not.toContain('/supabase/migrations/');
+    const migrations = readdirSync(resolve(__dirname, '../../../../../supabase/migrations'))
+      .filter((file) => /^\d{5}_.+\.sql$/.test(file))
+      .sort();
+    expect(migrations.indexOf('00315_revoke_anon_update_my_organization_name.sql')).toBe(314);
+    expect(migrations.indexOf('00316_organization_rename_requires_one_row.sql')).toBe(315);
+    expect(readdirSync(resolve(__dirname, '../../../../../supabase')).filter((file) => /organization_(name|rename)/.test(file)))
+      .toEqual([]);
   });
 
   it('keeps the client role list aligned with the server membership check', () => {
     for (const role of ORGANIZATION_RENAME_MEMBER_ROLES) {
-      expect(unappliedRename).toContain(`'${role}'`);
+      expect(renameMigration).toContain(`'${role}'`);
       expect(appliedRpc).toContain(`'${role}'`);
     }
     expect(ORGANIZATION_RENAME_MEMBER_ROLES).toEqual(['OWNER', 'MANAGER', 'BUYER', 'ADMIN']);

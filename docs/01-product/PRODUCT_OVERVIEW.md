@@ -41,9 +41,9 @@ Source reviewed 23 October 2026, uncommitted working tree. Status words: [CAPABI
   - a submission id, so a retried submission returns the first record instead of creating a second;
   - a privacy notice linking to `/legal/privacy`. There is no consent checkbox; see [KNOWN_LIMITATIONS.md](../13-truth/KNOWN_LIMITATIONS.md).
 - **Saving an enquiry:**
-  - The page calls the edge function `contact-enquiry`. It validates the enquiry and ignores forwarded network-identity headers because no trusted-hop contract is established. The server issues an HMAC-signed opaque client credential; proposal `00322` atomically enforces 5 requests/hour for that server-derived identity plus a distinct 200 requests/hour endpoint emergency ceiling before storing through `submit_contact_enquiry`.
+  - The page calls the edge function `contact-enquiry`. It validates the enquiry and ignores forwarded network-identity headers because no trusted-hop contract is established. The server issues an HMAC-signed opaque client credential; the deferred contact enquiries proposal (former `00322`) atomically enforces 5 requests/hour for that server-derived identity plus a distinct 200 requests/hour endpoint emergency ceiling before storing through `submit_contact_enquiry`.
   - Success says *"Thank you — your enquiry has been recorded."* and gives a reference number.
-  - **Until 00322 is applied and the function is deployed, no enquiry can be saved.** The visitor sees *"We could not record your enquiry, so nothing has been sent."* plus the email and WhatsApp alternatives.
+  - **Until the deferred contact enquiries proposal (former `00322`) is numbered and applied and the function is deployed, no enquiry can be saved.** The visitor sees *"We could not record your enquiry, so nothing has been sent."* plus the email and WhatsApp alternatives.
 - **Email:** none is sent. No server-side email transport is wired, so each enquiry's notification status is recorded as `NOT_CONFIGURED`.
 - **Not built yet:** an admin screen to read enquiries, and a retention period.
 

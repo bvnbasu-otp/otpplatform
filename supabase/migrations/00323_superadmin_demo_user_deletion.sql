@@ -1,33 +1,6 @@
--- STATUS: UNAPPLIED
--- Review proposal only. This file is intentionally outside supabase/migrations.
--- It has not been applied to a local or hosted database.
---
--- Two-phase, server-authorized deletion for disposable demo/QA profiles only.
--- Eligibility is based solely on public.profiles.is_demo. Email, name, title,
--- and other caller-controlled strings are never used to classify a target.
--- The snapshot also repeats the applied 00296 DELETE predicate:
--- lower(private_security.admin_whitelist.email) = lower(profiles.email).
--- That comparison does not classify is_demo. If the whitelist cannot be read
--- completely, the target is ineligible. The existing BEFORE DELETE trigger is
--- not disabled, dropped, or bypassed.
---
--- The workflow inventories every direct foreign key to public.profiles(id) and
--- auth.users(id) and classifies each one only through the reviewed manifest in
--- private_security.demo_user_deletion_fk_manifest(). Table names are never
--- pattern-matched. Retained dependencies block deletion when populated. A
--- foreign key missing from the manifest, a composite foreign key, or a delete
--- action that differs from the reviewed action blocks even at zero rows.
--- No constraint is disabled, deferred, or dropped, and no DELETE statement uses
--- CASCADE. Deleting the auth.users row relies only on the existing CASCADE
--- actions of the manifest-listed Auth tables whose action matched at preview.
---
--- Manifest review basis: read-only pg_constraint inventory of the local schema
--- at migration 00313 plus the 00315 audit_actor_identities proposal.
---
--- Prerequisites: reviewed 00315 audit actor preservation, 00316 founder
--- SUPER_ADMIN guards, and 00321 immutable demo-marker guard. Promote 00321
--- before this proposal despite its later review number. This proposal refuses
--- installation without all three.
+-- 00323: Server-authorized demo-account deletion.
+-- Promoted from superadmin_demo_user_deletion.DEFERRED.UNVERSIONED.sql on 2026-10-24.
+-- Forward-only; deployment remains a separate authorized operation.
 
 BEGIN;
 
@@ -38,15 +11,15 @@ DECLARE
 BEGIN
   IF to_regclass('public.audit_actor_identities') IS NULL
      OR to_regprocedure('private.maintain_audit_actor_identity()') IS NULL THEN
-    RAISE EXCEPTION 'DEMO_USER_DELETE_PRECONDITION_FAILED: reviewed 00315 audit actor preservation is required';
+    RAISE EXCEPTION 'DEMO_USER_DELETE_PRECONDITION_FAILED: migration 00320 audit actor preservation is required';
   END IF;
   IF to_regprocedure('private_security.guard_founder_superadmin_active_role()') IS NULL
      OR to_regprocedure('private_security.guard_founder_superadmin_profile_role()') IS NULL
      OR to_regprocedure('private_security.guard_founder_superadmin_internal_assignment()') IS NULL THEN
-    RAISE EXCEPTION 'DEMO_USER_DELETE_PRECONDITION_FAILED: reviewed 00316 founder SUPER_ADMIN guards are required';
+    RAISE EXCEPTION 'DEMO_USER_DELETE_PRECONDITION_FAILED: migration 00321 founder SUPER_ADMIN guards are required';
   END IF;
   IF to_regprocedure('private_security.guard_profile_is_demo_marker()') IS NULL THEN
-    RAISE EXCEPTION 'DEMO_USER_DELETE_PRECONDITION_FAILED: reviewed 00321 immutable demo-marker guard is required';
+    RAISE EXCEPTION 'DEMO_USER_DELETE_PRECONDITION_FAILED: migration 00322 immutable demo-marker guard is required';
   END IF;
 
   -- Catalog metadata does not prove function-body equivalence; behavioral tests remain a separate gate.
@@ -111,22 +84,22 @@ BEGIN
   FOR prerequisite IN
     SELECT *
     FROM (VALUES
-      ('00315', 'trg_audit_actor_identities_guard', 'public', 'audit_actor_identities', 'private', 'guard_audit_actor_identity', true, 'search_path=public, private, pg_temp', 'private.guard_audit_actor_identity()', 31, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00315', 'trg_aa_audit_actor_identity_register', 'public', 'profiles', 'private', 'maintain_audit_actor_identity', true, 'search_path=public, private, pg_temp', 'private.maintain_audit_actor_identity()', 21, ARRAY['email', 'full_name', 'auth_user_id']::text[], ARRAY[]::text[]),
-      ('00315', 'trg_zz_audit_actor_identity_preserve', 'public', 'profiles', 'private', 'maintain_audit_actor_identity', true, 'search_path=public, private, pg_temp', 'private.maintain_audit_actor_identity()', 11, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00316', 'aa_guard_founder_profile_id', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 19, ARRAY['id', 'auth_user_id']::text[], ARRAY['id']::text[]),
-      ('00316', 'aa_guard_founder_profile_delete', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 11, ARRAY[]::text[], ARRAY['delete']::text[]),
-      ('00316', 'aa_guard_founder_profile_marker', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 19, ARRAY['email', 'is_founder']::text[], ARRAY['marker']::text[]),
-      ('00316', 'aa_guard_founder_active_role', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 19, ARRAY['active_role_code']::text[], ARRAY['active']::text[]),
-      ('00316', 'aa_guard_founder_profile_role', 'public', 'profile_roles', 'private_security', 'guard_founder_superadmin_profile_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_profile_role()', 27, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00316', 'aa_guard_founder_profile_role_truncate', 'public', 'profile_roles', 'private_security', 'guard_founder_superadmin_profile_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_profile_role()', 34, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00316', 'aa_guard_founder_internal_assignment', 'public', 'internal_user_assignments', 'private_security', 'guard_founder_superadmin_internal_assignment', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_assignment()', 27, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00316', 'aa_guard_founder_internal_assignment_truncate', 'public', 'internal_user_assignments', 'private_security', 'guard_founder_superadmin_internal_assignment', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_assignment()', 34, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00316', 'aa_guard_founder_internal_role', 'public', 'internal_roles', 'private_security', 'guard_founder_superadmin_internal_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_role()', 27, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00316', 'aa_guard_founder_internal_role_truncate', 'public', 'internal_roles', 'private_security', 'guard_founder_superadmin_internal_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_role()', 34, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00316', 'aa_guard_founder_user_role', 'public', 'user_roles', 'private_security', 'guard_founder_superadmin_user_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_user_role()', 27, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00316', 'aa_guard_founder_user_role_truncate', 'public', 'user_roles', 'private_security', 'guard_founder_superadmin_user_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_user_role()', 34, ARRAY[]::text[], ARRAY[]::text[]),
-      ('00321', 'trg_guard_profile_is_demo_marker', 'public', 'profiles', 'private_security', 'guard_profile_is_demo_marker', true, 'search_path=pg_catalog, public, auth', 'private_security.guard_profile_is_demo_marker()', 23, ARRAY['is_demo', 'is_founder']::text[], ARRAY[]::text[])
+      ('00320', 'trg_audit_actor_identities_guard', 'public', 'audit_actor_identities', 'private', 'guard_audit_actor_identity', true, 'search_path=public, private, pg_temp', 'private.guard_audit_actor_identity()', 31, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00320', 'trg_aa_audit_actor_identity_register', 'public', 'profiles', 'private', 'maintain_audit_actor_identity', true, 'search_path=public, private, pg_temp', 'private.maintain_audit_actor_identity()', 21, ARRAY['email', 'full_name', 'auth_user_id']::text[], ARRAY[]::text[]),
+      ('00320', 'trg_zz_audit_actor_identity_preserve', 'public', 'profiles', 'private', 'maintain_audit_actor_identity', true, 'search_path=public, private, pg_temp', 'private.maintain_audit_actor_identity()', 11, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00321', 'aa_guard_founder_profile_id', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 19, ARRAY['id', 'auth_user_id']::text[], ARRAY['id']::text[]),
+      ('00321', 'aa_guard_founder_profile_delete', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 11, ARRAY[]::text[], ARRAY['delete']::text[]),
+      ('00321', 'aa_guard_founder_profile_marker', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 19, ARRAY['email', 'is_founder']::text[], ARRAY['marker']::text[]),
+      ('00321', 'aa_guard_founder_active_role', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 19, ARRAY['active_role_code']::text[], ARRAY['active']::text[]),
+      ('00321', 'aa_guard_founder_profile_role', 'public', 'profile_roles', 'private_security', 'guard_founder_superadmin_profile_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_profile_role()', 27, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00321', 'aa_guard_founder_profile_role_truncate', 'public', 'profile_roles', 'private_security', 'guard_founder_superadmin_profile_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_profile_role()', 34, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00321', 'aa_guard_founder_internal_assignment', 'public', 'internal_user_assignments', 'private_security', 'guard_founder_superadmin_internal_assignment', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_assignment()', 27, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00321', 'aa_guard_founder_internal_assignment_truncate', 'public', 'internal_user_assignments', 'private_security', 'guard_founder_superadmin_internal_assignment', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_assignment()', 34, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00321', 'aa_guard_founder_internal_role', 'public', 'internal_roles', 'private_security', 'guard_founder_superadmin_internal_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_role()', 27, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00321', 'aa_guard_founder_internal_role_truncate', 'public', 'internal_roles', 'private_security', 'guard_founder_superadmin_internal_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_role()', 34, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00321', 'aa_guard_founder_user_role', 'public', 'user_roles', 'private_security', 'guard_founder_superadmin_user_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_user_role()', 27, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00321', 'aa_guard_founder_user_role_truncate', 'public', 'user_roles', 'private_security', 'guard_founder_superadmin_user_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_user_role()', 34, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00322', 'trg_guard_profile_is_demo_marker', 'public', 'profiles', 'private_security', 'guard_profile_is_demo_marker', true, 'search_path=pg_catalog, public, auth', 'private_security.guard_profile_is_demo_marker()', 23, ARRAY['is_demo', 'is_founder']::text[], ARRAY[]::text[])
     ) AS required(
       proposal,
       trigger_name,
@@ -278,7 +251,7 @@ $fn$;
 
 -- Non-blocking dispositions are limited to account-bound rows that the execute
 -- step deletes explicitly, existing Auth session/credential cascades, the
--- target profile itself, and 00315 audit actor evidence that survives with a
+-- target profile itself, and 00320 audit actor evidence that survives with a
 -- null profile link. Every other row blocks deletion when populated.
 -- delete_allowlist_owner_column: for a retained actor/reference FK, a row may
 -- be excluded only when this ownership column points at the target AND the

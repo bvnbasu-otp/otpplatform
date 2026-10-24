@@ -225,8 +225,6 @@ export function SiteHeader() {
                   Register
                 </Link>
               )}
-              {/* Universal Help & Support modal */}
-              <SupportHelpButtonModal />
             </div>
           )}
 
@@ -439,7 +437,7 @@ export function SiteHeader() {
               )}
 
               {/* Drawer Support Quick Action */}
-              <div className="pt-2 border-t flex items-center justify-between gap-2">
+              {user && <div className="pt-2 border-t flex items-center justify-between gap-2">
                 {user && (
                   <Link
                     to="/profile"
@@ -452,7 +450,7 @@ export function SiteHeader() {
                 <div className="flex-1">
                   <SupportHelpButtonModal className="w-full" />
                 </div>
-              </div>
+              </div>}
 
               {/* Bottom Auth Section */}
               {!user ? (

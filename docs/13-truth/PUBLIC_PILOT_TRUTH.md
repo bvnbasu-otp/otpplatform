@@ -43,7 +43,7 @@ Public words on the site: Request → Compare → Decide → Purchase → Track 
 - The public website has no language selector. Signed-in users choose a language in their profile or workspace menus. Do not tell anonymous visitors that a language choice is saved beyond their browser session.
 - Contact Us (`/contact-us`) shows the support email bvnbasu+otp.demo.otp.support@gmail.com and a WhatsApp link (`https://wa.me/919972967530`) that opens the visitor's own WhatsApp. That link is not an OTP message.
 - **What not to say about the Contact Us form:**
-  - Do not say enquiries are saved until proposal `00322` is applied and `contact-enquiry` is deployed. Until then the form reports that the enquiry was not recorded and points to email or WhatsApp.
+  - Do not say enquiries are saved until the deferred contact enquiries proposal (former `00322`) is numbered and applied and `contact-enquiry` is deployed. Until then the form reports that the enquiry was not recorded and points to email or WhatsApp.
   - Do not say an email is sent for an enquiry. No email transport exists.
   - Do not promise a response time.
 - The Contact Us page can be printed as an A4 sheet. Its printed and PDF appearance has not been checked visually.

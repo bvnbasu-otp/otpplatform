@@ -105,7 +105,6 @@ vi.mock('@/features/clarification/components/ClarificationThread', () => ({
 vi.mock('@/features/clarification/api/clarification', () => ({
   closeClarificationForEvaluation: vi.fn(),
   fetchRfqStatus: vi.fn(),
-  waiveMinQuotesAndEvaluate: vi.fn(),
   fetchInvitedLabels: vi.fn(),
   fetchClarificationMessagesForBuyer: vi.fn(),
 }));

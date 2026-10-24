@@ -4,6 +4,8 @@
 *Open Trade & Procurement (OTP) Platform — Identity-Protected Institutional Procurement*  
 *Last Updated:* September 2026 | *Canonical Workspace:* `G:\My Drive\otp`
 
+> **24 October 2026 correction:** the certification narrative below is historical. The current local candidate has a `00327` ceiling and is not production- or hosted-certified. A green local handoff requires an exact fresh disposable chain, ledger/manifest/catalog/behavior proof, safe regression gates, reviewed staging, and no commit/push/deploy. Separate human approval is still required for commit, database deployment, Vercel deployment, provider configuration, legal rollout and production activation. There is no pilot minimum-quote waiver.
+
 ---
 
 ## 1. Executive Summary & Readiness Verdict
@@ -11,7 +13,7 @@
 The **Open Trade & Procurement (OTP) Platform** has undergone comprehensive architectural, security, state-machine, operational, and multi-tenant evaluations under Phase 7.1 Final Closure & Re-Certification. 
 
 - **Overall Readiness Verdict**: **9.9 / 10** — 🟢 **PHASE 7.1 FULLY CERTIFIED — PHASE 8 PILOT READINESS GATE OPEN**.
-- **Scope**: Covers technical prerequisites, 187 contiguous PostgreSQL migrations, strict RLS security, hardened `search_path`, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 6-Stage Commercial Lifecycle UX mapped to the admin-gated 15-step linear monotonic engine, support tickets, payment webhook verification, atomic award locking, Step 11 Contract Gate, Vendor Master Intelligence (VMI), and Double-Entry Financial Accounting. Canonical support routing `bvnbasu+otp.demo.otp.support@gmail.com` remains an unapplied 00323 proposal, not a live-verified claim.
+- **Scope**: Covers technical prerequisites, 187 contiguous PostgreSQL migrations, strict RLS security, hardened `search_path`, friendly pilot operating modes with 16 seeded domain suppliers, telephony verification, 6-Stage Commercial Lifecycle UX mapped to the admin-gated 15-step linear monotonic engine, support tickets, payment webhook verification, atomic award locking, Step 11 Contract Gate, Vendor Master Intelligence (VMI), and Double-Entry Financial Accounting. Support tickets record `routed_email = bvnbasu@gmail.com` (00140, kept by migration `00318`, which is uncommitted and not applied to otp-local or hosted). The help modal displays `bvnbasu+otp.demo.otp.support@gmail.com`. Neither is a live-verified delivery claim.
 - **Verification Confidence**: **1,514+ automated verifications passing (100% pass rate) across 12 layers**, 22 Formal Failure Paths suite (`failure-paths-regression.test.ts`, 32/32 tests passed), UX telemetry scrub suite (`ux-telemetry-abstraction.test.ts`), zero TypeScript build errors, and zero runtime console crashes across mobile and desktop viewports.
 - **Closed Human-Reported Defects**: Migration 00185 (`joined_at` column in `list_org_members` RPC), attachments/voice notes local UUID syntax guard, guest unauthenticated draft review & login sourcing redirect, resilient workspace loading with persistent subscription/wallet visibility, single authoritative role header, and profile preferences cleanup.
 
@@ -96,7 +98,7 @@ OTP eliminates per-message telco fees through a self-hosted messaging architectu
 
 ### 4.3 Support Ticketing & Primary Admin Dispatch
 - [x] **Universal Mobile Support Modal**: Floating help trigger on all screens (`SupportHelpButtonModal.tsx`) with mobile viewport zoom protection (`text-sm sm:text-xs`).
-- [ ] **Canonical Support Routing**: Unapplied proposal `00323` would route all ticket categories (`BUG`, `FEATURE`, `SALES`, `OPS`, `ENHANCEMENT`) to `bvnbasu+otp.demo.otp.support@gmail.com`; email delivery is not implemented.
+- [ ] **Canonical Support Routing**: All ticket categories (`BUG`, `FEATURE`, `SALES`, `OPS`, `ENHANCEMENT`) record `routed_email = bvnbasu@gmail.com` (00140; migration `00318`, former proposal `00323`, keeps it and is not applied to otp-local or hosted). The help modal displays `bvnbasu+otp.demo.otp.support@gmail.com` (owner decision SEC-SUPPORT-04). Signed-out ticket submission is disabled pending an abuse-controlled design. Email delivery is not implemented.
 - [x] **Audit Trail & Admin Console**: Tickets recorded in `support_tickets`, `notifications`, and `audit_events`, managed via Super Admin Console (`/admin?tab=tickets`).
 
 ---

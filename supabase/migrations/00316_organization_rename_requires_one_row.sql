@@ -1,9 +1,4 @@
--- STATUS: UNAPPLIED
--- Prepared locally on 2026-10-22. This file is NOT in supabase/migrations.
--- A migration runner will not apply it. It has not been applied to any local
--- or hosted database. Do not move it under supabase/migrations until proposals
--- 00315 through 00317 have been independently reviewed and approved. The
--- runnable migration sequence currently ends at approved migration 00314.
+-- 00316: organization rename succeeds only when exactly one row is updated.
 --
 -- Correctness fix for public.update_my_organization_name(text, uuid), created
 -- by supabase/migrations/00146_update_nokia_to_basu_and_org_name_edit.sql.
@@ -24,12 +19,13 @@
 -- Privilege posture is unchanged. CREATE OR REPLACE keeps the existing
 -- EXECUTE grants. This file does not GRANT and does not REVOKE. 00146 grants
 -- EXECUTE to authenticated, service_role, and anon, and a new function also
--- receives EXECUTE from PUBLIC unless revoked. The narrowing revoke remains
--- in supabase/00317_revoke_anon_update_my_organization_name.UNAPPLIED.sql.
--- Applying either file first is safe: this replace does not restore PUBLIC
--- or anon, and 00317 does not replace the function.
-
-BEGIN;
+-- receives EXECUTE from PUBLIC unless revoked. Migration
+-- 00315_revoke_anon_update_my_organization_name.sql revokes PUBLIC and anon
+-- before this file runs. This replace does not restore either grant.
+--
+-- No explicit BEGIN/COMMIT: the migration runner and the Supabase CLI apply
+-- this file and its ledger row in one transaction, and an inner COMMIT would
+-- end that transaction before the ledger row is written.
 
 CREATE OR REPLACE FUNCTION public.update_my_organization_name(
   p_organization_name text,
@@ -73,7 +69,7 @@ BEGIN
       USING ERRCODE = 'cardinality_violation';
   END IF;
 
-  SELECT id, is_platform_admin, active_organization_id
+  SELECT id, COALESCE(is_platform_admin, false), active_organization_id
   INTO v_profile_id, v_is_admin, v_org_id
   FROM public.profiles
   WHERE auth_user_id = v_uid;
@@ -179,5 +175,3 @@ BEGIN
   );
 END;
 $$;
-
-COMMIT;

@@ -20,7 +20,7 @@ const FREEZE = '00249_freeze_organization_subscription_entitlement_fields.sql';
 const ENT01_SHA256 = 'a5faa3b32719eccc5de18acf7dac9cbed721a4bb07bc31015b568a02bf69df9f';
 const LOCAL_PG: ClientConfig = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',
@@ -185,7 +185,7 @@ describe('financial authority 00250', () => {
     expect(files.slice(idx + 1, idx + 36).map((f) => f.slice(0, 5))).toEqual(
       Array.from({ length: 35 }, (_, i) => String(251 + i).padStart(5, '0')),
     );
-    expect(files.at(-1)).toBe('00314_internal_invitation_acceptance.sql');
+    expect(files.at(-1)).toBe('00327_notification_dispatch_isolation.sql');
     expect(sha256(ENT01)).toBe(ENT01_SHA256);
     expect(sql).not.toMatch(/enforce_pilot_rfq_allowance/);
     expect(sql).not.toMatch(/schema_migrations/);

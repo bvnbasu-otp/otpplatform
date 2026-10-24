@@ -15,7 +15,7 @@ const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const MIGRATION = resolve(ROOT, 'supabase/migrations/00231_ondc_discovery_dispatches.sql');
 const LOCAL_PG: ClientConfig = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',
@@ -45,8 +45,8 @@ describe('00231 migration contract', () => {
   it('is the migration ceiling and keeps the CI fallback', () => {
     const files = readFileSync(resolve(ROOT, 'tests/security/verified-remediation-00216-redteam.test.ts'), 'utf8');
     const ci = readFileSync(resolve(ROOT, '.github/workflows/ci-cd.yml'), 'utf8');
-    expect(files).toContain("const CEILING = '00314_internal_invitation_acceptance.sql'");
-    expect(ci).toContain('EXPECTED_CEILING="00314"');
+    expect(files).toContain("const CEILING = '00327_notification_dispatch_isolation.sql'");
+    expect(ci).toContain('EXPECTED_CEILING="00327"');
     expect(ci).toContain("process.env.EXPECTED_CEILING || '00223'");
     expect(ci).not.toContain("process.env.EXPECTED_CEILING || '00230'");
     expect(ci).not.toContain("process.env.EXPECTED_CEILING || '00231'");

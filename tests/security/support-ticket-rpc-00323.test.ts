@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
-const PROPOSAL = resolve(ROOT, 'supabase/00323_support_ticket_rpc_hardening.UNAPPLIED.sql');
+const PROPOSAL = resolve(ROOT, 'supabase/migrations/00318_support_ticket_rpc_hardening.sql');
 const sql = readFileSync(PROPOSAL, 'utf8');
 const code = sql.replace(/--.*$/gm, '');
 
@@ -11,13 +11,23 @@ function body(name: string): string {
   return code.match(new RegExp(`CREATE OR REPLACE FUNCTION public\\.${name}[\\s\\S]*?\\$fn\\$;`))?.[0] ?? '';
 }
 
-describe('00323 support-ticket RPC hardening (static review, no database)', () => {
-  it('is a uniquely numbered unapplied proposal outside migration history', () => {
-    expect(sql.startsWith('-- STATUS: UNAPPLIED')).toBe(true);
-    expect(sql).toContain('IMPLEMENTATION REVIEW ONLY — NOT APPLIED');
-    expect(readdirSync(resolve(ROOT, 'supabase')).filter((f) => /^00323_/.test(f)))
-      .toEqual(['00323_support_ticket_rpc_hardening.UNAPPLIED.sql']);
+describe('00318 support-ticket RPC hardening, formerly proposal 00323 (static review, no database)', () => {
+  it('is retained in the promoted chain and leaves no proposal copy behind', () => {
+    expect(sql.startsWith('-- 00318: support-ticket admin RPC hardening (SEC-SUPPORT-01).')).toBe(true);
+    expect(sql).not.toMatch(/UNAPPLIED|REVIEW ONLY|NOT APPLIED/);
+    const migrations = readdirSync(resolve(ROOT, 'supabase/migrations')).filter((f) => /^\d{5}_.+\.sql$/.test(f)).sort();
+    expect(migrations.at(-1)).toBe('00327_notification_dispatch_isolation.sql');
+    expect(readdirSync(resolve(ROOT, 'supabase')).filter((f) => /support_ticket/.test(f))).toEqual([]);
     expect(existsSync(resolve(ROOT, 'supabase/migrations/00323_support_ticket_rpc_hardening.sql'))).toBe(false);
+    expect(code).not.toMatch(/^\s*(BEGIN|COMMIT)\s*;/m);
+  });
+
+  it('describes the authenticated EXECUTE grant truthfully: the body, not the grant, authorizes', () => {
+    const header = sql.slice(0, sql.indexOf('DO $preconditions$'));
+    expect(header).toContain('granted back to authenticated');
+    expect(header).toContain('the authenticated grant is not an authorization decision');
+    expect(header).toContain('private.is_platform_admin()');
+    expect(header).not.toMatch(/ordinary authenticated callers retain no EXECUTE path/);
   });
 
   it('requires authenticated JWT identity and the established platform-admin helper', () => {
@@ -41,6 +51,16 @@ describe('00323 support-ticket RPC hardening (static review, no database)', () =
       expect(code).not.toContain(`GRANT EXECUTE ON FUNCTION ${signature} TO anon`);
       expect(code).not.toContain(`GRANT EXECUTE ON FUNCTION ${signature} TO service_role`);
     }
+  });
+
+  it('keeps create_support_ticket off the 00217 anon allowlist instead of re-granting anon', () => {
+    const signature = 'public.create_support_ticket(text, text, text, text, text, text, text, text)';
+    expect(code).toContain(`REVOKE ALL ON FUNCTION ${signature} FROM PUBLIC, anon;`);
+    expect(code).toContain(`GRANT EXECUTE ON FUNCTION ${signature}\n  TO authenticated, service_role;`);
+    expect(code).not.toMatch(/GRANT EXECUTE ON FUNCTION public\.create_support_ticket\([^)]*\)\s+TO[^;]*\banon\b/);
+    const allowlist = readFileSync(resolve(ROOT, 'supabase/migrations/00217_revoke_public_execute_default_privileges.sql'), 'utf8');
+    expect(allowlist).toContain('REVOKE EXECUTE ON ALL ROUTINES IN SCHEMA public FROM anon;');
+    expect(allowlist).not.toContain('create_support_ticket');
   });
 
   it('keeps security-definer search paths explicit', () => {
@@ -106,6 +126,5 @@ describe('00323 support-ticket RPC hardening (static review, no database)', () =
     expect(bytes[0]).not.toBe(0xef);
     expect(sql).not.toMatch(/[\u00c2\u00c3][\u0080-\u00bf]|\u00e2\u20ac|\u00f0\u0178|\ufffd/);
     expect(body('create_support_ticket')).toContain("'\u{1F3AB} New ' || v_normalized_cat || ' Ticket: ' || v_ticket_number,");
-    expect(sql).toContain('IMPLEMENTATION REVIEW ONLY \u2014 NOT APPLIED');
   });
 });

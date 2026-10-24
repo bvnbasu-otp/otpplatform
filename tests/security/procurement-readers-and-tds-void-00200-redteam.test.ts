@@ -169,7 +169,9 @@ describe('R1 check_supplier_award_eligibility_atomic', () => {
     const roots = ['../../apps/web/src', '../../packages', '../../supabase/functions'].map((p) => resolve(__dirname, p));
     for (const root of roots) {
       const files = (readdirSync(root, { recursive: true }) as string[]).filter(
-        (f) => /\.(ts|tsx)$/.test(f) && !/node_modules|\.test\./.test(f),
+        (f) => /\.(ts|tsx)$/.test(f)
+          && !/node_modules|\.test\./.test(f)
+          && !f.replace(/\\/g, '/').endsWith('database/src/generated/supabase.ts'),
       );
       for (const f of files) {
         const src = readFileSync(resolve(root, f), 'utf8');

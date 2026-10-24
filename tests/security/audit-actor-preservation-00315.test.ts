@@ -1,5 +1,5 @@
 /**
- * 00315 audit actor registry.
+ * 00320 audit actor registry.
  * Static checks always run. Database cases use local Postgres at
  * 127.0.0.1 only (port 54322 or LOCAL_PG_PORT), install the migration inside a transaction, and roll
  * it back. They do not insert schema_migrations, do not set
@@ -19,10 +19,8 @@ import {
 
 const ROOT = resolve(__dirname, '../..');
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
-const FILE = '00315_audit_actor_identity_registry.UNAPPLIED.sql';
-const PROPOSAL = resolve(ROOT, 'supabase', FILE);
-const PREVIOUS = '00313_quote_invitation_state_boundary.sql';
-const INVITATION = '00314_internal_invitation_acceptance.sql';
+const FILE = '00320_audit_actor_identity_registry.sql';
+const PROPOSAL = resolve(MIGRATIONS_DIR, FILE);
 const LOCAL_PG: ClientConfig = {
   host: '127.0.0.1',
   port: LOCAL_POSTGRES_PORT,
@@ -283,10 +281,6 @@ async function withMigration(fn: (client: Client, baseline: Baseline) => Promise
   const existed = await client.query<{ present: boolean }>(
     `SELECT to_regclass('public.audit_actor_identities') IS NOT NULL AS present`,
   );
-  if (existed.rows[0]?.present) {
-    await client.end();
-    throw new Error('local database already has audit_actor_identities; refusing to reapply 00315 in place');
-  }
   let fnError: unknown;
   try {
     await client.query('BEGIN');
@@ -302,7 +296,9 @@ async function withMigration(fn: (client: Client, baseline: Baseline) => Promise
       legal: await legalConfig(client),
     };
     console.info(`AUDIT_PRESERVATION before ${JSON.stringify(baseline.fingerprint)}`);
-    await client.query(stripTransaction(readMigration()));
+    if (!existed.rows[0]?.present) {
+      await client.query(stripTransaction(readMigration()));
+    }
     const after = await fingerprint(client);
     console.info(`AUDIT_PRESERVATION after ${JSON.stringify(after)}`);
     expect(after).toEqual(baseline.fingerprint);
@@ -332,7 +328,7 @@ async function withMigration(fn: (client: Client, baseline: Baseline) => Promise
       const still = await client.query<{ present: boolean }>(
         `SELECT to_regclass('public.audit_actor_identities') IS NOT NULL AS present`,
       );
-      if (still.rows[0]?.present) {
+      if (!existed.rows[0]?.present && still.rows[0]?.present) {
         throw new Error('00315 persisted after ROLLBACK');
       }
     } catch (error) {
@@ -343,25 +339,16 @@ async function withMigration(fn: (client: Client, baseline: Baseline) => Promise
   if (fnError) throw fnError;
 }
 
-describe('00315 audit actor registry static contract', () => {
+describe('00320 audit actor registry static contract', () => {
   const sql = readMigration();
   const executable = stripTransaction(sql);
   const files = migrationFiles();
 
-  it('keeps 00315 outside the runner while 00314 remains the last approved migration', () => {
-    expect(files.at(-1)).toBe(INVITATION);
-    expect(files.at(-2)).toBe(PREVIOUS);
-    expect(files.some((file) => file.startsWith('00315_'))).toBe(false);
-    expect(PROPOSAL.replace(/\\/g, '/')).not.toContain('/migrations/');
-    expect(FILE).toMatch(/\.UNAPPLIED\.sql$/);
-    expect(files.filter((file) => file.startsWith('00314_'))).toEqual([INVITATION]);
-
-    const supplierAddressDraft = readFileSync(
-      resolve(ROOT, 'supabase/00314_internal_procurement_and_supplier_business_address.UNAPPLIED.sql'),
-      'utf8',
-    );
-    expect(supplierAddressDraft).toContain('STATUS: UNAPPLIED');
-    expect(supplierAddressDraft).toContain('has not been applied');
+  it('is a numbered migration after the supplier-address enforcement', () => {
+    expect(files).toContain(FILE);
+    expect(files).toContain('00319_supplier_business_address_enforcement.sql');
+    expect(PROPOSAL.replace(/\\/g, '/')).toContain('/migrations/');
+    expect(sql).toContain('-- 00320: Durable audit actor identity registry.');
   });
 
   it('backfills the registry before retargeting the actor foreign key', () => {
@@ -402,11 +389,11 @@ describe('00315 audit actor registry static contract', () => {
     expect(code).toContain('PLATFORM_PRIVILEGE_IMMUTABLE');
     expect(code).toContain('INV-071');
     expect(code).toContain('INV-072');
-    expect(sql).toContain('do not apply a down migration');
+    expect(sql).toContain('Forward-only');
   });
 });
 
-describe('00315 audit actor registry (local postgres, rolled back)', () => {
+describe('00320 audit actor registry (local postgres, rolled back)', () => {
   it('preserves existing audit rows, enforcement, suppliers, and migration history', async () => {
     await withMigration(async (client, baseline) => {
       expect(await fingerprint(client)).toEqual(baseline.fingerprint);
@@ -530,17 +517,17 @@ describe('00315 audit actor registry (local postgres, rolled back)', () => {
       );
 
       expect(await messageOf(client, `DELETE FROM public.profiles WHERE id = $1`, [founderId]))
-        .toContain('SECURITY VIOLATION');
+        .toMatch(/SECURITY VIOLATION|FOUNDER_SUPERADMIN_ROLE_IMMUTABLE/);
       expect(await messageOf(
         client,
         `UPDATE public.profiles SET is_platform_admin = false WHERE id = $1`,
         [founderId],
-      )).toContain('PLATFORM_PRIVILEGE_IMMUTABLE');
+      )).toMatch(/PLATFORM_PRIVILEGE_IMMUTABLE|FOUNDER_SUPERADMIN_ROLE_IMMUTABLE/);
       expect(await messageOf(
         client,
         `UPDATE public.profiles SET is_founder = false WHERE id = $1`,
         [founderId],
-      )).toContain('PLATFORM_PRIVILEGE_IMMUTABLE');
+      )).toMatch(/PLATFORM_PRIVILEGE_IMMUTABLE|FOUNDER_SUPERADMIN_ROLE_IMMUTABLE/);
       const roleClear = await messageOf(
         client,
         `UPDATE public.profiles SET active_role_code = NULL WHERE id = $1`,

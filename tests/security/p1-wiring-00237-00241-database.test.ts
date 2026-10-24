@@ -125,6 +125,19 @@ async function profileIdFor(email: string): Promise<string> {
   return data!.id as string;
 }
 
+async function appoint(email: string, roleId: string, fromMs = -HOUR, toMs: number | null = null, status = 'ACTIVE') {
+  const { error } = await service.from('org_role_assignments').insert({
+    organization_id: RWA_ORG,
+    person_id: await profileIdFor(email),
+    role_id: roleId,
+    role_name: roleId,
+    status,
+    effective_from: at(fromMs),
+    effective_to: toMs === null ? null : at(toMs),
+  });
+  if (error) throw new Error(`fixture office ${email}: ${error.message}`);
+}
+
 async function sessionFor(email: string): Promise<SupabaseClient> {
   const client = createAnonClient();
   await signInAs(client, email);
@@ -292,6 +305,8 @@ async function seat(rfqId: string, emails: string[]): Promise<void> {
 }
 
 async function recommendWinner(round: Round): Promise<void> {
+  await appoint(LOGIN.committeeA, 'TREASURER');
+  await appoint(LOGIN.committeeB, 'COMMITTEE_MEMBER');
   await seat(round.rfqId, [LOGIN.committeeA, LOGIN.committeeB]);
   for (const email of [LOGIN.committeeA, LOGIN.committeeB]) {
     const { error } = await service.from('committee_votes').insert({
@@ -630,6 +645,9 @@ describe('P1-B RWA committee vote authority is enforced by the database', () => 
 
   it('still lets authorised committee members vote, with weight stamped and revisions allowed', async () => {
     const round = await makeRound({ orgId: RWA_ORG, creatorEmail: LOGIN.president });
+    await appoint(LOGIN.committeeA, 'TREASURER');
+    await appoint(LOGIN.committeeB, 'COMMITTEE_MEMBER');
+    await appoint(LOGIN.president, 'PRESIDENT');
     await seat(round.rfqId, [LOGIN.committeeA, LOGIN.committeeB, LOGIN.president]);
     for (const email of [LOGIN.committeeA, LOGIN.committeeB, LOGIN.president]) {
       const session = await sessionFor(email);
@@ -714,16 +732,7 @@ describe('P1-B2 RWA vote needs an active appointment AND the RFQ seat AND no COI
   }
 
   async function office(email: string, roleId: string, fromMs: number, toMs: number | null, status = 'ACTIVE') {
-    const { error } = await service.from('org_role_assignments').insert({
-      organization_id: RWA_ORG,
-      person_id: await profileIdFor(email),
-      role_id: roleId,
-      role_name: roleId,
-      status,
-      effective_from: at(fromMs),
-      effective_to: toMs === null ? null : at(toMs),
-    });
-    if (error) throw new Error(`fixture office ${email}: ${error.message}`);
+    await appoint(email, roleId, fromMs, toMs, status);
   }
 
   async function voteCount(rfqId: string): Promise<number> {
@@ -781,7 +790,7 @@ describe('P1-B2 RWA vote needs an active appointment AND the RFQ seat AND no COI
   it('NEGATIVE: an EXPIRED qualifying office plus the RFQ seat is rejected (RPC and direct INSERT)', async () => {
     const round = await makeRound({ orgId: RWA_ORG, creatorEmail: LOGIN.president });
     await setMember(SPARE.expired, 'COMMITTEE_MEMBER');
-    await office(SPARE.expired, 'PRESIDENT', -400 * 24 * HOUR, -24 * HOUR); // ACTIVE row, effective_to in the past
+    await office(SPARE.expired, 'PRESIDENT', -366 * 24 * HOUR, -24 * HOUR, 'EXPIRED');
     await seat(round.rfqId, [SPARE.expired]);
     expect((await rpcVote(SPARE.expired, round)).error?.message).toMatch(/VOTE-UNAUTHORIZED/);
     expect((await directVote(SPARE.expired, round)).error?.message).toMatch(/VOTE-UNAUTHORIZED/);
@@ -808,6 +817,7 @@ describe('P1-B2 RWA vote needs an active appointment AND the RFQ seat AND no COI
 
   it('NEGATIVE: a declared conflict of interest still recuses a seated, appointed member', async () => {
     const round = await makeRound({ orgId: RWA_ORG, creatorEmail: LOGIN.president });
+    await office(LOGIN.committeeA, 'COMMITTEE_MEMBER', -HOUR, null);
     await seat(round.rfqId, [LOGIN.committeeA]);
     const { error: coiError } = await service.from('conflict_of_interest_declarations').insert({
       rfq_id: round.rfqId,
@@ -880,6 +890,7 @@ describe('P1-B2 RWA vote needs an active appointment AND the RFQ seat AND no COI
 
   it('weighted vote unchanged: power is stamped from buyer_type_config and a client-supplied weight is discarded', async () => {
     const round = await makeRound({ orgId: RWA_ORG, creatorEmail: LOGIN.president });
+    await office(LOGIN.committeeA, 'COMMITTEE_MEMBER', -HOUR, null);
     await seat(round.rfqId, [LOGIN.committeeA]);
     const { data: cfg } = await service.from('buyer_type_config').select('voting_power').eq('org_type', 'COMMUNITY').single();
     const { error } = await directVote(LOGIN.committeeA, round, 99);
@@ -896,6 +907,8 @@ describe('P1-B2 RWA vote needs an active appointment AND the RFQ seat AND no COI
   it('quorum unchanged: one authorised vote is not quorum, and a rejected seat-only vote cannot complete it', async () => {
     const round = await makeRound({ orgId: RWA_ORG, creatorEmail: LOGIN.president });
     await setMember(SPARE.manager, 'MANAGER');
+    await office(LOGIN.committeeA, 'TREASURER', -HOUR, null);
+    await office(LOGIN.committeeB, 'COMMITTEE_MEMBER', -HOUR, null);
     await seat(round.rfqId, [LOGIN.committeeA, SPARE.manager]);
     expect((await rpcVote(LOGIN.committeeA, round)).error).toBeNull();
     expect((await rpcVote(SPARE.manager, round)).error?.message).toMatch(/VOTE-UNAUTHORIZED/);

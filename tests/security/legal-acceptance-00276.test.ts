@@ -18,7 +18,7 @@ const CLIENT_HASH = 'sha256:7c8b0303d8a9e7019cf39e2df95000be05e527d91d8e13711311
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',

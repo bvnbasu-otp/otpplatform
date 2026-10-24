@@ -25,6 +25,7 @@ describe('identity-protected-quote-mapper', () => {
       payment_terms_days: null,
       rating_band: null,
       verification_status: null,
+      is_gst_verified: null,
     });
 
     expect(quote.quoteId).toBe('q-1');

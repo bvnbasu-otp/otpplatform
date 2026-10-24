@@ -107,7 +107,7 @@ describe('public language selector is removed (desktop and mobile)', () => {
     }
     expect(html).toContain('data-testid="header-log-in"');
     expect(html).toContain('data-testid="header-register"');
-    expect(html).toContain('>Help<');
+    expect(html).not.toContain('>Help<');
   });
 
   it('keeps the signed-in mobile menu toggle with its expanded state and controlled region', () => {

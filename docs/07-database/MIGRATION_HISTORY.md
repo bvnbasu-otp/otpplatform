@@ -55,24 +55,30 @@ Milestone index only. Files `00001` through `00252` are on disk and contiguous. 
 | `00271_fix_supplier_messaging_channels_unique_constraint.sql` | Establishes authoritative UNIQUE INDEX on `supplier_messaging_channels(supplier_id, channel)` to resolve Postgres 42P10 errors on `ON CONFLICT` during RFQ supplier invitations; wraps invitation notification dispatch in exception-resilient block to ensure zero rollback of discovery invitations. |
 | `00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql` | Adds 'WAHA' to `messaging_provider` enum; reassigns legacy QA suppliers away from operator handset (`+919972967530`); hardens `dispatch_supplier_invitation_notification` to abort if target phone matches gateway operator handset or buyer phone. |
 
-## Proposals outside the migration runner (checked 23 October 2026)
+## Local closure migrations 00315-00327 (24 October 2026)
 
-The last file in `supabase/migrations/` is `00314_internal_invitation_acceptance.sql`. This table has not been extended past `00272`. Files `00273`–`00314` are on disk but not summarised here.
+The chain is contiguous from `00001` through `00327_notification_dispatch_isolation.sql`. These files are local source only until a separately authorized deployment.
 
-These files sit in `supabase/`, are named `*.UNAPPLIED.sql`, and are not applied to any database. Promoting or applying any of them needs owner authorization ([RELEASE_RUNBOOK.md](../12-operations/RELEASE_RUNBOOK.md)).
+| File | Purpose |
+| --- | --- |
+| `00315_revoke_anon_update_my_organization_name.sql` | Defense-in-depth revoke of anonymous organization rename. |
+| `00316_organization_rename_requires_one_row.sql` | Rename succeeds only after exactly one organization row changes. |
+| `00317_rfq_category_service_coverage_guard.sql` | Taxonomy/capability and service-area discovery guard; anonymous discovery execution revoked. |
+| `00318_support_ticket_rpc_hardening.sql` | Authenticated platform-admin support RPCs; signed-out ticket creation unavailable. |
+| `00319_supplier_business_address_enforcement.sql` | Operating address self-service, registered-address immutability and DB quote/award gates. |
+| `00320_audit_actor_identity_registry.sql` | Durable actor attribution after eligible demo-profile removal. |
+| `00321_founder_superadmin_role_guard.sql` | Founder identity and effective SUPER_ADMIN holdings protected. |
+| `00322_restrict_is_demo_marker.sql` | Existing accounts cannot be promoted into trusted demo status. |
+| `00323_superadmin_demo_user_deletion.sql` | Two-phase, server-authorized transactional deletion for DB-classified demo accounts only. |
+| `00324_public_contact_enquiries.sql` | Rate-limit-first storage, idempotent correlation, admin-only read and bounded 90-day retention. |
+| `00325_disable_pilot_quote_quorum_waiver.sql` | Disables waiver execution and enforces actual FINAL-quote quorum on every award insert. |
+| `00326_authoritative_committee_tenure.sql` | One-calendar-year RWA/MSME tenure, concurrent-holder exclusion and appointment/seat vote authority. |
+| `00327_notification_dispatch_isolation.sql` | Mandatory idempotency, recipient-only reads and service-role-only enqueue. |
 
-| File | Purpose (00317–00319 and 00314 inferred from file name only) | Note |
-| --- | --- | --- |
-| `00314_internal_procurement_and_supplier_business_address.UNAPPLIED.sql` | Supplier business address | Number collides with the applied `00314` (DEMO-DEL-07) |
-| `00315_audit_actor_identity_registry.UNAPPLIED.sql` | Audit actor registry | Prerequisite of 00320. Header lacks the `STATUS: UNAPPLIED` banner (DEMO-DEL-06) |
-| `00316_founder_superadmin_role_guard.UNAPPLIED.sql` | Founder SUPER_ADMIN guards | Prerequisite of 00320 |
-| `00317_revoke_anon_update_my_organization_name.UNAPPLIED.sql` | Revoke anon org-name update | — |
-| `00318_organization_rename_requires_one_row.UNAPPLIED.sql` | Org rename row check | — |
-| `00319_rfq_category_service_coverage_guard.UNAPPLIED.sql` | RFQ category coverage guard | — |
-| `00320_superadmin_demo_user_deletion.UNAPPLIED.sql` | Demo/QA deletion preview and execute | Apply after 00315, 00316, 00321. See [SUPERADMIN_DEMO_USER_DELETION.md](../12-operations/SUPERADMIN_DEMO_USER_DELETION.md) |
-| `00321_restrict_is_demo_marker.UNAPPLIED.sql` | Immutable `is_demo` marker | Must be applied before 00320 |
-| `00322_public_contact_enquiries.UNAPPLIED.sql` | Public Contact Us enquiries plus private rate events and a service-role-only atomic limiter: signed server-issued client identity 5/hour, distinct fixed endpoint emergency ceiling 200/hour. Admin reads remain platform-admin only. | Needed by edge function `contact-enquiry`. No retention defined. **CONTACT US — NOT DEPLOYMENT READY.** Static test `tests/security/contact-enquiry-00322.test.ts`; no database concurrency proof. |
-| `00323_support_ticket_rpc_hardening.UNAPPLIED.sql` | SEC-SUPPORT-01: require authenticated identity plus `private.is_platform_admin()` for support admin RPCs; revoke anonymous/service-role execution; align support routing address | Depends on applied 00140 and 00201. **IMPLEMENTATION REVIEW ONLY — NOT APPLIED.** Static test `tests/security/support-ticket-rpc-00323.test.ts`; no runtime database verification. |
+No `*.DEFERRED.UNVERSIONED.sql` files remain. CI `EXPECTED_CEILING` is `00327`. The designated local stack was not started because its identity/workdir is inconsistent and port 54322 belongs to `otp-clean`; hosted status is unknown because no independently verified authorized target was available.
 
-CI `EXPECTED_CEILING` in `.github/workflows/ci-cd.yml` is being advanced to `00272`. Hosted `schema_migrations` ceiling on Supabase `qsuvtcezffomtwzwyrso` is at 00272.
+### Validation evidence
 
+The older 318-row disposable run is historical only: current 00317 and the final chain differ from its manifest. Fresh exact-chain evidence for 00001-00327 is recorded only after the isolated run; static tests alone are not database proof.
+
+00315 is a no-op on a fresh chain: `00217_revoke_public_execute_default_privileges.sql` already revoked EXECUTE on all `public` routines from PUBLIC and anon, and `update_my_organization_name` is not on the anon allowlist. It is retained as a guard for databases that drifted from the chain.

@@ -17,7 +17,7 @@ const ROLES = readFileSync(resolve('apps/web/src/features/roles/api/roles.ts'), 
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: process.env.OTP_PG_DATABASE ?? 'postgres',
   user: 'postgres',
   password: 'postgres',
@@ -120,8 +120,19 @@ describe('00294 database outcomes (rolled back)', () => {
       await client.query('BEGIN');
       await asOperator(client);
 
+      const founderRow = await client.query<{ id: string; auth_user_id: string }>(
+        `SELECT id, auth_user_id FROM public.profiles WHERE is_founder ORDER BY created_at LIMIT 1`,
+      );
+      expect(founderRow.rowCount).toBe(1);
+      const founder = { profileId: founderRow.rows[0].id, authUserId: founderRow.rows[0].auth_user_id };
+      expect(await messageOf(
+        client,
+        `SELECT public.break_glass_platform_account($1, false, false, 'ACTIVE', 'founder immutability proof')`,
+        [founder.profileId],
+      )).toMatch(/FOUNDER_SUPERADMIN_ROLE_IMMUTABLE/);
+
       const existing = await client.query<{ id: string }>(
-        `SELECT id FROM public.profiles WHERE is_platform_admin OR is_founder`,
+        `SELECT id FROM public.profiles WHERE is_platform_admin AND NOT is_founder`,
       );
       for (const row of existing.rows) {
         await client.query(
@@ -130,14 +141,13 @@ describe('00294 database outcomes (rolled back)', () => {
         );
       }
 
-      const founder = await person(client, 'founder');
       const second = await person(client, 'second');
       const third = await person(client, 'third');
       const stranger = await person(client, 'stranger');
       await asOperator(client);
       await client.query(
-        `SELECT public.bootstrap_platform_operators($1, $2, 'synthetic recovery pair')`,
-        [founder.profileId, second.profileId],
+        `SELECT public.break_glass_platform_account($1, true, false, 'ACTIVE', 'synthetic second approver')`,
+        [second.profileId],
       );
       expect(await messageOf(
         client,
@@ -248,7 +258,7 @@ describe('00294 database outcomes (rolled back)', () => {
         client,
         `SELECT public.admin_bulk_block_users($1::uuid[], 'remove founder')`,
         [[founder.profileId]],
-      )).toMatch(/PLATFORM_LAST_RECOVERY_PATH/);
+      )).toMatch(/FOUNDER_SUPERADMIN_ROLE_IMMUTABLE|PLATFORM_LAST_RECOVERY_PATH/);
       await client.query('RESET ROLE');
       expect((await client.query(`SELECT status FROM public.profiles WHERE id = $1`, [founder.profileId])).rows[0].status).toBe('ACTIVE');
 

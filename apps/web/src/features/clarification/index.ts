@@ -17,7 +17,6 @@ export {
   postBroadcastClarification,
   postClarificationMessage,
   subscribeClarificationMessages,
-  waiveMinQuotesAndEvaluate,
 } from './api/clarification';
 export type {
   ClarificationCategory,

@@ -207,13 +207,19 @@ describe('deploy-migrations.ts safety (UNIT / process)', () => {
   it('dry-run without DB exits 0 and does not require DATABASE_URL', async () => {
     const { spawnSync } = await import('node:child_process');
     const tsx = `${process.cwd()}/node_modules/tsx/dist/cli.mjs`;
-    const res = spawnSync(process.execPath, [tsx, 'scripts/deploy-migrations.ts', '--dry-run'], {
+    const res = spawnSync(process.execPath, [
+      tsx,
+      'scripts/deploy-migrations.ts',
+      '--dry-run',
+      '--ack-disposable-bootstrap-plan',
+    ], {
       cwd: process.cwd(),
       env: { ...process.env, DATABASE_URL: '', DIRECT_URL: '', SUPABASE_DB_URL: '', CI: '' },
       encoding: 'utf8',
     });
     expect(res.status).toBe(0);
     expect(res.stdout + res.stderr).toMatch(/DRY-RUN/i);
+    expect(res.stdout + res.stderr).toMatch(/DISPOSABLE-ONLY PLAN/i);
     expect(res.stdout + res.stderr).not.toMatch(/Applying \d+ pending migrations sequentially/i);
   });
 

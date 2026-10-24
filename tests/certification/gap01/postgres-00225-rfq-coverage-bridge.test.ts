@@ -9,7 +9,7 @@ import { isLocalSupabaseReachable } from '../../helpers/supabase-local';
 
 const LOCAL_PG: ClientConfig = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',
@@ -197,8 +197,11 @@ describe('00225 RFQ pin coverage supplier bridge (local postgres)', () => {
       );
       expect(inv.rows[0].n).toBe(0);
 
-      const active = await c.query(`SELECT count(*)::int AS n FROM suppliers WHERE status = 'ACTIVE'`);
-      if ((active.rows[0].n as number) > 0) {
+      const eligible = await c.query(
+        `SELECT count(*)::int AS n FROM private.rank_discovery_candidates($1, '{}'::uuid[])`,
+        [rfqId],
+      );
+      if ((eligible.rows[0].n as number) > 0) {
         const activeInvited = await c.query(
           `SELECT count(*)::int AS n
            FROM rfq_invitations i

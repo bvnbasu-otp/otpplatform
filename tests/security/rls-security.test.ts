@@ -250,6 +250,24 @@ describe('RLS security — live Supabase', () => {
   it('committee_votes cannot be updated after insert (immutable)', async () => {
     const service = createServiceClient();
     const committeeProfileId = 'b0000000-0000-4000-8000-000000000002';
+    const { data: rfq } = await service
+      .from('rfqs')
+      .select('organization_id')
+      .eq('id', SEED.borewellRfq)
+      .single();
+    const { data: office, error: officeError } = await service
+      .from('org_role_assignments')
+      .insert({
+        organization_id: rfq!.organization_id,
+        person_id: committeeProfileId,
+        role_id: 'COMMITTEE_MEMBER',
+        role_name: 'COMMITTEE_MEMBER',
+        status: 'ACTIVE',
+        effective_from: new Date(Date.now() - 3_600_000).toISOString(),
+      })
+      .select('id')
+      .single();
+    expect(officeError).toBeNull();
 
     await service.from('rfqs').update({ status: 'EVALUATING' }).eq('id', SEED.borewellRfq);
 
@@ -287,6 +305,7 @@ describe('RLS security — live Supabase', () => {
     expect(error).not.toBeNull();
 
     // Restore the seeded state — other suites read this shared RFQ.
+    await service.from('org_role_assignments').delete().eq('id', office!.id);
     await service.from('rfqs').update({ status: 'EVALUATING' }).eq('id', SEED.borewellRfq);
   });
 });

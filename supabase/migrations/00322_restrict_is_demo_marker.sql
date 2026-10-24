@@ -1,20 +1,6 @@
--- STATUS: UNAPPLIED
--- Review proposal only. This file is intentionally outside supabase/migrations.
--- It has not been applied to a local or hosted database.
---
--- public.profiles.is_demo is a trusted deletion-eligibility marker. Existing
--- accounts can never be promoted into demo status, including by a platform
--- admin, SUPER_ADMIN, service-role request, SECURITY DEFINER function, or
--- database owner. A true marker can be cleared; it cannot be restored.
---
--- The only trusted creation path is the repository's local seed SQL configured
--- in supabase/config.toml. Those files insert new profiles with is_demo=true
--- while running as the local database operator. Application signup and admin
--- RPC paths create is_demo=false profiles. No application RPC is introduced.
---
--- Existing demo seed ON CONFLICT clauses may leave true as true. They cannot
--- change false to true after this guard is installed. Founder profiles can
--- never carry the marker.
+-- 00322: Immutable trusted demo-account marker.
+-- Promoted from restrict_is_demo_marker.DEFERRED.UNVERSIONED.sql on 2026-10-24.
+-- Forward-only; deployment remains a separate authorized operation.
 
 BEGIN;
 

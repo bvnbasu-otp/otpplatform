@@ -13,7 +13,7 @@ import { isLocalSupabaseReachable } from '../../helpers/supabase-local';
 
 const LOCAL_PG: ClientConfig = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',
@@ -137,9 +137,10 @@ async function insertSupplier(
 ): Promise<string> {
   const inserted = await c.query<{ id: string }>(
     `INSERT INTO suppliers (
-       business_name, city, status, lifecycle_state, verification_status, gst_verified
+       business_name, city, status, lifecycle_state, verification_status, gst_verified, categories
      ) VALUES (
-       $1, $2, $3, $4, $5, $6
+       $1, $2, $3, $4, $5, $6,
+       ARRAY[(SELECT code FROM requirement_categories ORDER BY name LIMIT 1)]
      ) RETURNING id`,
     [
       input.name,

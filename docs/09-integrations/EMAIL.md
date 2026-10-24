@@ -2,6 +2,8 @@
 
 Status: `CONFIG-GATED`. Delivery `UNKNOWN`.
 
+The local `00327` dispatch contract requires a non-null idempotency key, limits recipient-address length, prevents authenticated direct mutation, and limits reads to the recipient profile or platform administrators. Provider attempts retain retry/idempotency semantics. Tests use mocks or local sinks only; no real recipient was contacted. SMTP configuration and hosted delivery remain separately unverified.
+
 | Layer | Evidence |
 | --- | --- |
 | Implementation | `resolveSmtpConfig` in `email-dispatcher.ts`. |
@@ -54,4 +56,4 @@ Variable names (values are never committed or printed):
 
 Start: `node scripts/whatsapp-bridge/index.js` (unchanged). The startup banner states only `ENABLED` or `DISABLED (<reason code>)` for the relay. The bridge generates no secrets and changes no tunnel or hosted setting.
 
-Future operator actions (not done): choose and set a long random `CONTACT_EMAIL_RELAY_SECRET` on the bridge and as a hosted secret. Set the Gmail `SMTP_*` values; Gmail needs 2-Step Verification and an app password for `SMTP_PASS`. Expose bridge port 3009 (not WAHA port 3008) through an HTTPS tunnel and set `CONTACT_EMAIL_RELAY_URL` to that origin. Deploy `contact-enquiry` after `00322` is applied. Then prove one SMTP acceptance end to end.
+Future operator actions (not done): choose and set a long random `CONTACT_EMAIL_RELAY_SECRET` on the bridge and as a hosted secret. Set the Gmail `SMTP_*` values; Gmail needs 2-Step Verification and an app password for `SMTP_PASS`. Expose bridge port 3009 (not WAHA port 3008) through an HTTPS tunnel and set `CONTACT_EMAIL_RELAY_URL` to that origin. Deploy `contact-enquiry` after the deferred proposal `supabase/public_contact_enquiries.DEFERRED.UNVERSIONED.sql` (former `00322`) is numbered and applied. Then prove one SMTP acceptance end to end.

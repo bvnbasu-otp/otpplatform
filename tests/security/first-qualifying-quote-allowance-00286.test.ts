@@ -14,7 +14,7 @@ import { removeDisposableLegalEvidence } from '../helpers/supabase-local';
 
 const LOCAL_POSTGRES = {
   host: '127.0.0.1',
-  port: 54322,
+  port: Number(process.env.LOCAL_PG_PORT ?? 54322),
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',
@@ -125,6 +125,15 @@ async function signup(client: Client, side: 'BUYER' | 'SUPPLIER', buyerType?: 'I
   if (side === 'SUPPLIER') {
     const supplier = await client.query(`SELECT supplier_id FROM public.supplier_users WHERE profile_id = $1`, [account.profileId]);
     account.supplierId = supplier.rows[0].supplier_id;
+    await client.query(
+      `UPDATE public.suppliers
+       SET address = jsonb_build_object(
+         'kind', 'BUSINESS_OFFICE', 'line1', '286 Fixture Road', 'city', 'Bengaluru',
+         'state', 'Karnataka', 'pincode', '560048', 'postalCode', '560048', 'country', 'India'
+       )
+       WHERE id = $1`,
+      [account.supplierId],
+    );
   }
   return account;
 }
