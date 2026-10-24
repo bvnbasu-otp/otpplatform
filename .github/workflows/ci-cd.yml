@@ -261,6 +261,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install WhatsApp bridge dependencies
+        run: pnpm --dir scripts/whatsapp-bridge install --frozen-lockfile --ignore-workspace
+
       - name: Setup Supabase CLI (local Postgres for SQL parity)
         uses: supabase/setup-cli@v1
         with:
