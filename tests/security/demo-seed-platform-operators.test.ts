@@ -147,9 +147,11 @@ async function bootstrapAuditsSince(client: Client, since: Date): Promise<number
 
 async function clearOperators(client: Client): Promise<void> {
   await client.query('RESET ROLE');
+  // 00321 makes the canonical founder immutable; isolate only noncanonical fixture claims.
   const existing = await client.query<{ id: string }>(
     `SELECT id::text FROM public.profiles
-     WHERE COALESCE(is_platform_admin, false) OR COALESCE(is_founder, false)`,
+     WHERE (COALESCE(is_platform_admin, false) OR COALESCE(is_founder, false))
+       AND lower(email) <> 'bvnbasu@gmail.com'`,
   );
   for (const row of existing.rows) {
     await client.query(
