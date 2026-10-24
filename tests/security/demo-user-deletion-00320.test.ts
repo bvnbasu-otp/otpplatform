@@ -458,10 +458,17 @@ async function captureError(client: Client, sql: string, params: unknown[] = [])
 }
 
 async function setRequester(client: Client, authId: string): Promise<void> {
-  await client.query(`SELECT set_config('request.jwt.claim.sub', $1, true)`, [authId]);
-  await client.query(`SELECT set_config('request.jwt.claims', $1, true)`, [
-    JSON.stringify({ role: 'authenticated', sub: authId }),
-  ]);
+  await client.query(
+    `SELECT set_config('request.jwt.claim.role', 'authenticated', true)`,
+  );
+  await client.query(
+    `SELECT set_config('request.jwt.claim.sub', $1, true)`,
+    [authId],
+  );
+  await client.query(
+    `SELECT set_config('request.jwt.claims', $1, true)`,
+    [JSON.stringify({ role: 'authenticated', sub: authId })],
+  );
 }
 
 async function insertDisposableProfile(
