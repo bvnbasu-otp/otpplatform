@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { executeDemoUserDeletion, previewDemoUserDeletion } from './demo-user-deletion';
+import {
+  executeDemoUserDeletion,
+  fetchDemoQaAccountIds,
+  previewDemoUserDeletion,
+} from './demo-user-deletion';
 
 const { rpc, from } = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn() }));
 
@@ -10,6 +14,8 @@ vi.mock('@/lib/supabase', () => ({ supabase: { rpc, from } }));
 const TARGET = '11111111-2222-4333-8444-555555555555';
 const eligiblePayload = {
   targetProfileId: TARGET,
+  targetAuthUserId: TARGET,
+  trustedDemoQa: true,
   eligible: true,
   blockerCount: 0,
   fingerprint: 'f'.repeat(64),
@@ -31,6 +37,25 @@ describe('demo/QA user deletion admin API', () => {
     expect(rpc).toHaveBeenCalledWith('preview_demo_user_deletion', { p_target_profile_id: TARGET });
     expect(result).toMatchObject({ ok: true, preview: { eligible: true, confirmationToken: 'a'.repeat(64) } });
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it('reads only trusted demo markers to identify accounts that may show the UI action', async () => {
+    const is = vi.fn().mockResolvedValue({
+      data: [{ id: TARGET }, { id: '22222222-2222-4222-8222-222222222222' }],
+      error: null,
+    });
+    const eq = vi.fn().mockReturnValue({ is });
+    const select = vi.fn().mockReturnValue({ eq });
+    from.mockReturnValue({ select });
+
+    expect(await fetchDemoQaAccountIds()).toEqual({
+      ok: true,
+      ids: [TARGET, '22222222-2222-4222-8222-222222222222'],
+    });
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(select).toHaveBeenCalledWith('id');
+    expect(eq).toHaveBeenCalledWith('is_demo', true);
+    expect(is).toHaveBeenCalledWith('deleted_at', null);
   });
 
   it('surfaces a server authorization denial', async () => {
@@ -124,6 +149,6 @@ describe('demo/QA user deletion admin API', () => {
     const source = readFileSync(resolve(__dirname, 'demo-user-deletion.ts'), 'utf8');
     expect(source).toContain("from '@/lib/supabase'");
     expect(source).not.toMatch(/service[_-]?role|SERVICE_ROLE|createClient/i);
-    expect(source).not.toMatch(/\.from\(|\.delete\(/);
+    expect(source).not.toMatch(/\.delete\(/);
   });
 });

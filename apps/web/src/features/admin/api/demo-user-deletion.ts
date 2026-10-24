@@ -19,6 +19,8 @@ export interface DemoUserDeletionDependency {
 
 export interface DemoUserDeletionPreview {
   targetProfileId: string;
+  targetAuthUserId: string;
+  trustedDemoQa: boolean;
   eligible: boolean;
   blockerCount: number;
   fingerprint: string;
@@ -34,6 +36,23 @@ export interface DemoUserDeletionResult {
   outcome: string;
 }
 
+export async function fetchDemoQaAccountIds(): Promise<
+  { ok: true; ids: string[] } | { ok: false; error: string }
+> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('is_demo', true)
+    .is('deleted_at', null);
+  if (error) return { ok: false, error: error.message };
+  const ids = Array.isArray(data)
+    ? data
+        .map((row) => (row && typeof row.id === 'string' ? row.id : null))
+        .filter((id): id is string => id !== null)
+    : [];
+  return { ok: true, ids };
+}
+
 export async function previewDemoUserDeletion(
   targetProfileId: string,
 ): Promise<{ ok: true; preview: DemoUserDeletionPreview } | { ok: false; error: string }> {
@@ -42,7 +61,16 @@ export async function previewDemoUserDeletion(
     p_target_profile_id: targetProfileId,
   });
   if (error) return { ok: false, error: error.message };
-  if (!data || typeof data !== 'object' || typeof data.fingerprint !== 'string' || typeof data.eligible !== 'boolean') {
+  if (
+    !data ||
+    typeof data !== 'object' ||
+    data.targetProfileId !== targetProfileId ||
+    typeof data.targetAuthUserId !== 'string' ||
+    typeof data.trustedDemoQa !== 'boolean' ||
+    typeof data.fingerprint !== 'string' ||
+    typeof data.eligible !== 'boolean' ||
+    !Number.isFinite(Number(data.blockerCount))
+  ) {
     return { ok: false, error: 'The server did not return a deletion preview.' };
   }
   const eligible = data.eligible === true && Number(data.blockerCount) === 0;
@@ -50,6 +78,8 @@ export async function previewDemoUserDeletion(
     ok: true,
     preview: {
       targetProfileId: data.targetProfileId,
+      targetAuthUserId: data.targetAuthUserId,
+      trustedDemoQa: data.trustedDemoQa,
       eligible,
       blockerCount: Number(data.blockerCount ?? 0),
       fingerprint: data.fingerprint,

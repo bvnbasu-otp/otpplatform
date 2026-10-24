@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 function handleWideTableKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
   const tableScroller = event.currentTarget;
@@ -18,6 +18,7 @@ function handleWideTableKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
 }
 import { sanitizeSpreadsheetCell } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
+import { useRoleContext } from '@/features/roles';
 import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
 import { resolveSupabaseEmailDispatch } from '@/features/notifications/lib/outbound-dispatch';
 import {
@@ -29,6 +30,8 @@ import {
   fetchSignupRequests,
   reviewSignupRequest,
 } from '../api/admin-ops';
+import { fetchDemoQaAccountIds } from '../api/demo-user-deletion';
+import { DemoUserDeletionModal } from './DemoUserDeletionModal';
 import {
   computeUndoTargets,
   effectiveSelection,
@@ -133,6 +136,9 @@ export interface AdminUsersActivityPanelProps {
 }
 
 export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChange }: AdminUsersActivityPanelProps = {}) {
+  const { context: roleContext } = useRoleContext();
+  const isEffectiveSuperAdmin =
+    roleContext.isPlatformAdmin === true && roleContext.activeRole?.code === 'SUPER_ADMIN';
   const [subTab, setSubTab] = useState<'USERS' | 'ORGANIZATIONS' | 'REGISTRATIONS'>(initialSubTab);
 
   useEffect(() => {
@@ -176,6 +182,13 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [isBulkExecuting, setIsBulkExecuting] = useState(false);
   const [bannerMessage, setBannerMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [demoDeletionTarget, setDemoDeletionTarget] = useState<AdminUserItem | null>(null);
+  const [demoDeletionNotice, setDemoDeletionNotice] = useState<{
+    email: string;
+    auditEventId: string;
+    rosterRefreshFailed: boolean;
+  } | null>(null);
+  const knownDemoIdsRef = useRef<Set<string>>(new Set());
 
   // Block Modal State
   const [blockModalTarget, setBlockModalTarget] = useState<{
@@ -344,26 +357,62 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
     downloadCsv(`otp_registrations_queue_${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
-  const loadData = async () => {
+  const loadData = async (): Promise<boolean> => {
     setIsLoading(true);
-    const [usersOrgsRes, reqsRes] = await Promise.all([
-      fetchUsersAndOrganizations(),
-      fetchSignupRequests('ALL'),
-    ]);
+    try {
+      const [usersOrgsRes, reqsRes, demoIdsRes] = await Promise.all([
+        fetchUsersAndOrganizations(),
+        fetchSignupRequests('ALL'),
+        isEffectiveSuperAdmin
+          ? fetchDemoQaAccountIds()
+          : Promise.resolve({ ok: true as const, ids: [] }),
+      ]);
 
-    if (usersOrgsRes.ok) {
-      setUsers(usersOrgsRes.users);
-      setOrganizations(usersOrgsRes.organizations);
+      // A failed demo lookup must not replace the last reliable classification.
+      if (demoIdsRes.ok) {
+        knownDemoIdsRef.current = new Set(demoIdsRes.ids);
+      }
+      if (usersOrgsRes.ok) {
+        const demoIds = knownDemoIdsRef.current;
+        setUsers(
+          usersOrgsRes.users.map((user) => ({
+            ...user,
+            isDemo: user.isDemo === true || demoIds.has(user.id),
+          })),
+        );
+        setOrganizations(usersOrgsRes.organizations);
+      }
+      if (reqsRes.ok) {
+        setRequests(reqsRes.requests);
+      }
+      return usersOrgsRes.ok && reqsRes.ok && demoIdsRes.ok;
+    } finally {
+      setIsLoading(false);
     }
-    if (reqsRes.ok) {
-      setRequests(reqsRes.requests);
-    }
-    setIsLoading(false);
+  };
+
+  const handleDemoUserDeleted = (target: AdminUserItem, auditEventId: string) => {
+    setDemoDeletionTarget(null);
+    setUsers((current) => current.filter((user) => user.id !== target.id));
+    setDemoDeletionNotice({ email: target.email, auditEventId, rosterRefreshFailed: false });
+    // Best-effort refresh only; the deletion RPC is never re-invoked from here.
+    void loadData()
+      .catch(() => false)
+      .then((refreshed) => {
+        if (!refreshed) {
+          setDemoDeletionNotice((notice) =>
+            notice?.auditEventId === auditEventId ? { ...notice, rosterRefreshFailed: true } : notice,
+          );
+        }
+      });
   };
 
   useEffect(() => {
     void loadData();
-  }, []);
+    // Reload when the active persona changes so demo controls never inherit a
+    // stale candidate list from a non-SUPER_ADMIN context.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEffectiveSuperAdmin]);
 
   // Clear selections when changing tabs
   useEffect(() => {
@@ -893,6 +942,39 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {demoDeletionNotice && (
+        <div
+          data-testid="demo-deletion-notice"
+          className="shrink-0 space-y-2 rounded-xl border border-emerald-500/30 bg-emerald-500/15 p-3 text-xs font-semibold text-emerald-950 dark:text-emerald-200"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <p role="status" aria-live="polite" data-testid="demo-deletion-success">
+              ✓ Permanently deleted demo/QA account {demoDeletionNotice.email}. Audit event:{' '}
+              <span className="font-mono">{demoDeletionNotice.auditEventId}</span>
+            </p>
+            <button
+              type="button"
+              onClick={() => setDemoDeletionNotice(null)}
+              className="text-muted-foreground hover:text-foreground font-bold px-1.5 py-0.5"
+              title="Dismiss"
+              aria-label="Dismiss permanent deletion notice"
+            >
+              ✕
+            </button>
+          </div>
+          {demoDeletionNotice.rosterRefreshFailed && (
+            <p
+              role="alert"
+              data-testid="demo-deletion-refresh-warning"
+              className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-amber-900 dark:text-amber-200"
+            >
+              ⚠️ The deletion succeeded, but the user roster could not be refreshed. Reload this page to see the
+              current roster; do not retry the deletion.
+            </p>
+          )}
         </div>
       )}
 
@@ -1467,6 +1549,16 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                                 >
                                   <span>📄</span> Statement
                                 </button>
+                              {isEffectiveSuperAdmin && u.isDemo === true && (
+                                <button
+                                  type="button"
+                                  onClick={() => setDemoDeletionTarget(u)}
+                                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-rose-600/50 bg-rose-500/10 px-2.5 py-1.5 text-xs font-bold text-rose-800 hover:bg-rose-500/20 dark:text-rose-200"
+                                  title="Preview permanent demo/QA account deletion"
+                                >
+                                  Delete demo/QA
+                                </button>
+                              )}
                               </>
                             ) : (
                             <span className="text-[10px] text-muted-foreground font-semibold px-2">Protected Admin</span>
@@ -1714,6 +1806,16 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
                                   >
                                     <span>📄</span> Statement
                                   </button>
+                                {isEffectiveSuperAdmin && u.isDemo === true && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setDemoDeletionTarget(u)}
+                                    className="min-h-[36px] rounded-lg border border-rose-600/50 bg-rose-500/10 px-2 py-1 text-xs font-bold text-rose-800 hover:bg-rose-500/20 dark:text-rose-200"
+                                    title="Preview permanent demo/QA account deletion"
+                                  >
+                                    Delete demo/QA
+                                  </button>
+                                )}
                                 </div>
                               ) : (
                               <span className="text-[10px] text-muted-foreground font-semibold">Protected</span>
@@ -2626,6 +2728,15 @@ export function AdminUsersActivityPanel({ initialSubTab = 'USERS', onSubTabChang
             </div>
           </div>
         </div>
+      )}
+
+      {isEffectiveSuperAdmin && demoDeletionTarget?.isDemo === true && (
+        <DemoUserDeletionModal
+          key={demoDeletionTarget.id}
+          target={demoDeletionTarget}
+          onClose={() => setDemoDeletionTarget(null)}
+          onDeleted={(auditEventId) => handleDemoUserDeleted(demoDeletionTarget, auditEventId)}
+        />
       )}
 
       {/* Persona-Level Audit Statement Modal */}

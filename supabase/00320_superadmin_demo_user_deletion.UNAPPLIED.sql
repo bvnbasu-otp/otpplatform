@@ -27,6 +27,9 @@
 BEGIN;
 
 DO $preconditions$
+DECLARE
+  prerequisite record;
+  required_function record;
 BEGIN
   IF to_regclass('public.audit_actor_identities') IS NULL
      OR to_regprocedure('private.maintain_audit_actor_identity()') IS NULL THEN
@@ -40,6 +43,165 @@ BEGIN
   IF to_regprocedure('private_security.guard_profile_is_demo_marker()') IS NULL THEN
     RAISE EXCEPTION 'DEMO_USER_DELETE_PRECONDITION_FAILED: reviewed 00321 immutable demo-marker guard is required';
   END IF;
+
+  -- Catalog metadata does not prove function-body equivalence; behavioral tests remain a separate gate.
+  IF NOT (
+    SELECT count(*) = 3
+    FROM pg_roles
+    WHERE rolname IN ('anon', 'authenticated', 'service_role')
+  ) THEN
+    RAISE EXCEPTION 'DEMO_USER_DELETE_PRECONDITION_FAILED: anon, authenticated, and service_role must exist before EXECUTE privilege checks';
+  END IF;
+
+  FOR required_function IN
+    SELECT *
+    FROM (VALUES
+      ('private.permit_audit_actor_registry(uuid)', true, 'search_path=public, private, pg_temp', 'plpgsql', NULL::text, false),
+      ('private.guard_audit_actor_identity()', true, 'search_path=public, private, pg_temp', 'plpgsql', NULL::text, false),
+      ('private.maintain_audit_actor_identity()', true, 'search_path=public, private, pg_temp', 'plpgsql', NULL::text, false),
+      ('private_security.founder_profile_protected(uuid)', false, 'search_path=pg_catalog, public', 'sql', 's', true),
+      ('private_security.guard_founder_superadmin_active_role()', true, 'search_path=pg_catalog, public', 'plpgsql', NULL::text, true),
+      ('private_security.guard_founder_superadmin_profile_role()', true, 'search_path=pg_catalog, public', 'plpgsql', NULL::text, true),
+      ('private_security.guard_founder_superadmin_internal_assignment()', true, 'search_path=pg_catalog, public', 'plpgsql', NULL::text, true),
+      ('private_security.guard_founder_superadmin_internal_role()', true, 'search_path=pg_catalog, public', 'plpgsql', NULL::text, true),
+      ('private_security.guard_founder_superadmin_user_role()', true, 'search_path=pg_catalog, public', 'plpgsql', NULL::text, true),
+      ('private_security.guard_profile_is_demo_marker()', true, 'search_path=pg_catalog, public, auth', 'plpgsql', NULL::text, true)
+    ) AS manifest(
+      signature,
+      security_definer,
+      search_path_config,
+      language_name,
+      volatility,
+      require_owner
+    )
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_proc p
+      JOIN pg_language lang ON lang.oid = p.prolang
+      LEFT JOIN pg_roles owner_role ON owner_role.oid = p.proowner
+      WHERE p.oid = to_regprocedure(required_function.signature)
+        AND p.prosecdef IS NOT DISTINCT FROM required_function.security_definer
+        AND p.proconfig = ARRAY[required_function.search_path_config]::text[]
+        AND lang.lanname = required_function.language_name
+        AND (
+          required_function.volatility IS NULL
+          OR p.provolatile::text = required_function.volatility
+        )
+        AND (
+          NOT required_function.require_owner
+          OR owner_role.rolname = 'postgres'
+        )
+        AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+        AND NOT has_function_privilege('anon', p.oid, 'EXECUTE')
+        AND NOT has_function_privilege('authenticated', p.oid, 'EXECUTE')
+        AND NOT has_function_privilege('service_role', p.oid, 'EXECUTE')
+    ) THEN
+      RAISE EXCEPTION
+        'DEMO_USER_DELETE_PRECONDITION_FAILED: prerequisite function % is missing or failed security, language, search_path, volatility, owner, or EXECUTE checks',
+        required_function.signature;
+    END IF;
+  END LOOP;
+
+  FOR prerequisite IN
+    SELECT *
+    FROM (VALUES
+      ('00315', 'trg_audit_actor_identities_guard', 'public', 'audit_actor_identities', 'private', 'guard_audit_actor_identity', true, 'search_path=public, private, pg_temp', 'private.guard_audit_actor_identity()', 31, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00315', 'trg_aa_audit_actor_identity_register', 'public', 'profiles', 'private', 'maintain_audit_actor_identity', true, 'search_path=public, private, pg_temp', 'private.maintain_audit_actor_identity()', 21, ARRAY['email', 'full_name', 'auth_user_id']::text[], ARRAY[]::text[]),
+      ('00315', 'trg_zz_audit_actor_identity_preserve', 'public', 'profiles', 'private', 'maintain_audit_actor_identity', true, 'search_path=public, private, pg_temp', 'private.maintain_audit_actor_identity()', 11, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00316', 'aa_guard_founder_profile_id', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 19, ARRAY['id', 'auth_user_id']::text[], ARRAY['id']::text[]),
+      ('00316', 'aa_guard_founder_profile_delete', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 11, ARRAY[]::text[], ARRAY['delete']::text[]),
+      ('00316', 'aa_guard_founder_profile_marker', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 19, ARRAY['email', 'is_founder']::text[], ARRAY['marker']::text[]),
+      ('00316', 'aa_guard_founder_active_role', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_active_role()', 19, ARRAY['active_role_code']::text[], ARRAY['active']::text[]),
+      ('00316', 'aa_guard_founder_profile_role', 'public', 'profile_roles', 'private_security', 'guard_founder_superadmin_profile_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_profile_role()', 27, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00316', 'aa_guard_founder_profile_role_truncate', 'public', 'profile_roles', 'private_security', 'guard_founder_superadmin_profile_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_profile_role()', 34, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00316', 'aa_guard_founder_internal_assignment', 'public', 'internal_user_assignments', 'private_security', 'guard_founder_superadmin_internal_assignment', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_assignment()', 27, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00316', 'aa_guard_founder_internal_assignment_truncate', 'public', 'internal_user_assignments', 'private_security', 'guard_founder_superadmin_internal_assignment', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_assignment()', 34, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00316', 'aa_guard_founder_internal_role', 'public', 'internal_roles', 'private_security', 'guard_founder_superadmin_internal_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_role()', 27, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00316', 'aa_guard_founder_internal_role_truncate', 'public', 'internal_roles', 'private_security', 'guard_founder_superadmin_internal_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_internal_role()', 34, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00316', 'aa_guard_founder_user_role', 'public', 'user_roles', 'private_security', 'guard_founder_superadmin_user_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_user_role()', 27, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00316', 'aa_guard_founder_user_role_truncate', 'public', 'user_roles', 'private_security', 'guard_founder_superadmin_user_role', true, 'search_path=pg_catalog, public', 'private_security.guard_founder_superadmin_user_role()', 34, ARRAY[]::text[], ARRAY[]::text[]),
+      ('00321', 'trg_guard_profile_is_demo_marker', 'public', 'profiles', 'private_security', 'guard_profile_is_demo_marker', true, 'search_path=pg_catalog, public, auth', 'private_security.guard_profile_is_demo_marker()', 23, ARRAY['is_demo', 'is_founder']::text[], ARRAY[]::text[])
+    ) AS required(
+      proposal,
+      trigger_name,
+      table_schema,
+      table_name,
+      function_schema,
+      function_name,
+      security_definer,
+      search_path_config,
+      function_signature,
+      tgtype,
+      update_columns,
+      trigger_args
+    )
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_trigger t
+      JOIN pg_class rel ON rel.oid = t.tgrelid
+      JOIN pg_namespace rel_ns ON rel_ns.oid = rel.relnamespace
+      JOIN pg_proc p ON p.oid = t.tgfoid
+      JOIN pg_namespace proc_ns ON proc_ns.oid = p.pronamespace
+      WHERE t.tgname = prerequisite.trigger_name
+        AND NOT t.tgisinternal
+        AND rel_ns.nspname = prerequisite.table_schema
+        AND rel.relname = prerequisite.table_name
+        AND proc_ns.nspname = prerequisite.function_schema
+        AND p.proname = prerequisite.function_name
+        AND p.pronargs = 0
+        AND p.prorettype = 'trigger'::regtype
+        AND t.tgenabled IN ('O', 'A')
+        AND p.prosecdef IS NOT DISTINCT FROM prerequisite.security_definer
+        AND (
+          SELECT COALESCE(array_agg(cfg ORDER BY ord), ARRAY[]::text[])
+          FROM unnest(COALESCE(p.proconfig, ARRAY[]::text[])) WITH ORDINALITY AS configured(cfg, ord)
+          WHERE cfg LIKE 'search_path=%'
+        ) = ARRAY[prerequisite.search_path_config]
+        AND t.tgfoid = to_regprocedure(prerequisite.function_signature)
+        AND t.tgtype = prerequisite.tgtype
+        AND t.tgqual IS NULL
+        AND t.tgnargs = cardinality(prerequisite.trigger_args)
+        AND (
+          (
+            cardinality(prerequisite.trigger_args) = 0
+            AND COALESCE(octet_length(t.tgargs), 0) = 0
+          )
+          OR (
+            cardinality(prerequisite.trigger_args) > 0
+            AND t.tgargs IS NOT DISTINCT FROM (
+              SELECT string_agg(
+                convert_to(trigger_arg.arg, 'UTF8') || decode('00', 'hex'),
+                ''::bytea
+                ORDER BY trigger_arg.ord
+              )
+              FROM unnest(prerequisite.trigger_args) WITH ORDINALITY AS trigger_arg(arg, ord)
+            )
+          )
+        )
+        AND (
+          SELECT COALESCE(array_agg(att.attname::text ORDER BY att.attname::text), ARRAY[]::text[])
+          FROM unnest(t.tgattr) AS col(attnum)
+          JOIN pg_attribute att
+            ON att.attrelid = t.tgrelid
+           AND att.attnum = col.attnum
+           AND NOT att.attisdropped
+        ) = (
+          SELECT COALESCE(array_agg(column_name ORDER BY column_name), ARRAY[]::text[])
+          FROM unnest(prerequisite.update_columns) AS updated(column_name)
+        )
+    ) THEN
+      RAISE EXCEPTION
+        'DEMO_USER_DELETE_PRECONDITION_FAILED: % trigger % on %.% is missing, misbound, disabled/replica-only, shape/argument/column mismatched, or has unsafe function %.%() security/search_path properties',
+        prerequisite.proposal,
+        prerequisite.trigger_name,
+        prerequisite.table_schema,
+        prerequisite.table_name,
+        prerequisite.function_schema,
+        prerequisite.function_name;
+    END IF;
+  END LOOP;
 END
 $preconditions$;
 
@@ -75,8 +237,7 @@ DECLARE
   v_requester uuid;
 BEGIN
   IF auth.uid() IS NULL
-     OR COALESCE(auth.role(), '') IS DISTINCT FROM 'authenticated'
-     OR nullif(current_setting('request.jwt.claim.role', true), '') IS DISTINCT FROM 'authenticated' THEN
+     OR COALESCE(auth.role(), '') IS DISTINCT FROM 'authenticated' THEN
     RAISE EXCEPTION 'DEMO_USER_DELETE_DENIED: authenticated user context required'
       USING ERRCODE = '42501';
   END IF;
@@ -114,8 +275,12 @@ $fn$;
 -- step deletes explicitly, existing Auth session/credential cascades, the
 -- target profile itself, and 00315 audit actor evidence that survives with a
 -- null profile link. Every other row blocks deletion when populated.
--- self_exclusion_column: rows owned by the target through that column are
--- deleted by the plan, so only references from other accounts block.
+-- delete_allowlist_owner_column: for a retained actor/reference FK, a row may
+-- be excluded only when this ownership column points at the target AND the
+-- same table/ownership column has its own reviewed
+-- delete_allowlisted_before_profile manifest row. This keeps target-owned rows
+-- in the explicit account delete plan while references on another account
+-- remain retained security evidence and block.
 CREATE FUNCTION private_security.demo_user_deletion_fk_manifest()
 RETURNS TABLE (
   source_schema text,
@@ -124,7 +289,7 @@ RETURNS TABLE (
   delete_action text,
   category text,
   disposition text,
-  self_exclusion_column text
+  delete_allowlist_owner_column text
 )
 LANGUAGE sql
 IMMUTABLE
@@ -251,7 +416,7 @@ SELECT * FROM (VALUES
   ('public', 'profile_roles', 'assigned_by', 'NO ACTION', 'security_identity', 'block_retained_dependency', 'profile_id'),
   ('public', 'profiles', 'blocked_by', 'NO ACTION', 'security_identity', 'block_retained_dependency', NULL),
   ('public', 'signup_requests', 'reviewed_by', 'SET NULL', 'security_identity', 'block_retained_dependency', NULL)
-) AS m(source_schema, source_table, source_column, delete_action, category, disposition, self_exclusion_column)
+) AS m(source_schema, source_table, source_column, delete_action, category, disposition, delete_allowlist_owner_column)
 $manifest$;
 
 CREATE FUNCTION private_security.demo_user_deletion_snapshot(
@@ -345,7 +510,7 @@ BEGIN
       m.delete_action AS manifest_delete_action,
       m.category AS manifest_category,
       m.disposition AS manifest_disposition,
-      m.self_exclusion_column
+      m.delete_allowlist_owner_column
     FROM pg_constraint c
     JOIN pg_class src ON src.oid = c.conrelid
     JOIN pg_namespace ns ON ns.oid = src.relnamespace
@@ -366,6 +531,10 @@ BEGIN
       )
     ORDER BY ns.nspname, src.relname, c.conname
   LOOP
+    v_category := NULL;
+    v_disposition := NULL;
+    v_count := 0;
+    v_blocks := true;
     v_delete_action := CASE fk.delete_action_code
       WHEN 'a' THEN 'NO ACTION'
       WHEN 'r' THEN 'RESTRICT'
@@ -381,7 +550,7 @@ BEGIN
       v_disposition := 'block_unknown_fk';
       v_blocks := true;
     ELSE
-      IF fk.self_exclusion_column IS NULL THEN
+      IF fk.delete_allowlist_owner_column IS NULL THEN
         EXECUTE format(
           'SELECT count(*)::bigint FROM %I.%I WHERE %I::text = $1',
           fk.source_schema,
@@ -394,18 +563,37 @@ BEGIN
           ELSE v_target.id::text
         END;
       ELSE
-        EXECUTE format(
-          'SELECT count(*)::bigint FROM %I.%I WHERE %I::text = $1 AND %I::text IS DISTINCT FROM $1',
-          fk.source_schema,
-          fk.source_table,
-          fk.source_column,
-          fk.self_exclusion_column
-        )
-        INTO v_count
-        USING v_target.id::text;
+        IF fk.target_schema IS DISTINCT FROM 'public'
+           OR fk.target_table IS DISTINCT FROM 'profiles'
+           OR NOT EXISTS (
+             SELECT 1
+             FROM private_security.demo_user_deletion_fk_manifest() owner_manifest
+             WHERE owner_manifest.source_schema = fk.source_schema
+               AND owner_manifest.source_table = fk.source_table
+               AND owner_manifest.source_column = fk.delete_allowlist_owner_column
+               AND owner_manifest.disposition = 'delete_allowlisted_before_profile'
+               AND owner_manifest.delete_allowlist_owner_column IS NULL
+           ) THEN
+          v_count := 0;
+          v_category := COALESCE(fk.manifest_category, 'unknown');
+          v_disposition := 'block_invalid_delete_owner_exclusion';
+          v_blocks := true;
+        ELSE
+          EXECUTE format(
+            'SELECT count(*)::bigint FROM %I.%I WHERE %I::text = $1 AND %I::text IS DISTINCT FROM $1',
+            fk.source_schema,
+            fk.source_table,
+            fk.source_column,
+            fk.delete_allowlist_owner_column
+          )
+          INTO v_count
+          USING v_target.id::text;
+        END IF;
       END IF;
 
-      IF fk.manifest_disposition IS NULL THEN
+      IF v_disposition = 'block_invalid_delete_owner_exclusion' THEN
+        NULL;
+      ELSIF fk.manifest_disposition IS NULL THEN
         v_category := 'unknown';
         v_disposition := 'block_unknown_fk';
       ELSIF fk.manifest_delete_action IS DISTINCT FROM v_delete_action THEN
@@ -417,7 +605,11 @@ BEGIN
       END IF;
 
       v_blocks := CASE
-        WHEN v_disposition IN ('block_unknown_fk', 'block_fk_action_drift') THEN true
+        WHEN v_disposition IN (
+          'block_unknown_fk',
+          'block_fk_action_drift',
+          'block_invalid_delete_owner_exclusion'
+        ) THEN true
         WHEN v_disposition = 'block_retained_dependency' AND v_count > 0 THEN true
         WHEN v_disposition = 'block_retained_dependency' THEN false
         WHEN v_disposition IN (
@@ -585,6 +777,7 @@ BEGIN
     RAISE EXCEPTION 'DEMO_USER_DELETE_CONFIRMATION_REQUIRED';
   END IF;
 
+  -- Lock order for every execution: preview/confirmation, profile, Auth user.
   SELECT *
     INTO v_preview
   FROM private_security.demo_user_deletion_previews
@@ -604,26 +797,39 @@ BEGIN
     RAISE EXCEPTION 'DEMO_USER_DELETE_CONFIRMATION_EXPIRED';
   END IF;
 
-  PERFORM 1
+  SELECT auth_user_id
+    INTO v_target_auth_user_id
   FROM public.profiles
   WHERE id = p_target_profile_id
   FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'DEMO_USER_DELETE_TARGET_NOT_FOUND';
   END IF;
+  IF v_target_auth_user_id IS DISTINCT FROM v_preview.target_auth_user_id THEN
+    RAISE EXCEPTION 'DEMO_USER_DELETE_STALE_IDENTITY: profile Auth identity changed';
+  END IF;
+
+  PERFORM 1
+  FROM auth.users
+  WHERE id = v_target_auth_user_id
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'DEMO_USER_DELETE_AUTH_NOT_FOUND: linked Auth identity is missing';
+  END IF;
 
   v_snapshot := private_security.demo_user_deletion_snapshot(
     p_target_profile_id,
     v_requester
   );
+  IF (v_snapshot ->> 'targetAuthUserId')::uuid IS DISTINCT FROM v_target_auth_user_id THEN
+    RAISE EXCEPTION 'DEMO_USER_DELETE_STALE_IDENTITY: snapshot Auth identity changed';
+  END IF;
   IF v_snapshot ->> 'fingerprint' IS DISTINCT FROM v_preview.state_fingerprint THEN
     RAISE EXCEPTION 'DEMO_USER_DELETE_STALE_PREVIEW';
   END IF;
   IF (v_snapshot ->> 'eligible')::boolean IS DISTINCT FROM TRUE THEN
     RAISE EXCEPTION 'DEMO_USER_DELETE_BLOCKED: current preview is not eligible';
   END IF;
-
-  v_target_auth_user_id := (v_snapshot ->> 'targetAuthUserId')::uuid;
 
   -- Explicit allowlist matching the manifest's delete_allowlisted_before_profile
   -- rows. No other public/private rows are removed.

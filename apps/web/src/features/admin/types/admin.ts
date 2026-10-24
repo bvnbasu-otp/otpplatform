@@ -226,6 +226,7 @@ export interface AdminUserItem {
   phone?: string | null;
   title?: string | null;
   isPlatformAdmin?: boolean;
+  isDemo?: boolean;
   status: AccountLifecycleStatus;
   side: 'BUYER' | 'SUPPLIER' | 'ADMIN';
   role: string | null;

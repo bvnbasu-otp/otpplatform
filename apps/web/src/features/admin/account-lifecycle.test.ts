@@ -189,15 +189,17 @@ describe('executeBulkDeactivation / executeBulkReactivation', () => {
   });
 });
 
-describe('admin lifecycle surface has no hard delete', () => {
+describe('admin lifecycle surface keeps general bulk deletion disabled', () => {
   it('admin-ops no longer exports bulk delete helpers', () => {
     expect((adminOps as Record<string, unknown>).bulkDeleteUsers).toBeUndefined();
     expect((adminOps as Record<string, unknown>).bulkDeleteOrganizations).toBeUndefined();
   });
 
-  it('the admin users panel does not reference delete RPCs or helpers', () => {
+  it('the admin users panel does not restore historical bulk-delete paths', () => {
     const source = readFileSync(resolve(__dirname, 'components/AdminUsersActivityPanel.tsx'), 'utf8');
     expect(source).not.toMatch(/admin_bulk_delete|bulkDelete|openDeleteModal/);
+    expect(source).toContain('DemoUserDeletionModal');
+    expect(source).toContain('isEffectiveSuperAdmin && u.isDemo === true');
   });
 });
 

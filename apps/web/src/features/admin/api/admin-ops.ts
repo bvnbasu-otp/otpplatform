@@ -1707,6 +1707,7 @@ export function normalizeAdminUserItem(p: any): AdminUserItem {
     phone: p.phone || null,
     title: p.title || null,
     isPlatformAdmin,
+    isDemo: p.is_demo === true || p.isDemo === true,
     status,
     side,
     role,

@@ -41,6 +41,316 @@ function stripPreconditions(sql: string): string {
   return sql.replace(/DO \$preconditions\$[\s\S]*?\$preconditions\$;/, '');
 }
 
+function extractExecuteBody(sql: string): string {
+  const matches = [...sql.matchAll(
+    /CREATE FUNCTION public\.execute_demo_user_deletion\(\s*p_target_profile_id uuid,\s*p_confirmation_token text,\s*p_reason text,\s*p_outcome text\s*\)[\s\S]*?AS \$fn\$\s*([\s\S]*?)\s*\$fn\$;/g,
+  )];
+  if (matches.length !== 1 || !matches[0][1]) {
+    throw new Error(`expected exactly one execute_demo_user_deletion body, found ${matches.length}`);
+  }
+  return matches[0][1];
+}
+
+function extractPreconditionsBody(sql: string): string {
+  const matches = [...sql.matchAll(/DO \$preconditions\$\s*([\s\S]*?)\s*\$preconditions\$;/g)];
+  if (matches.length !== 1 || !matches[0][1]) {
+    throw new Error(`expected exactly one 00320 precondition body, found ${matches.length}`);
+  }
+  return matches[0][1];
+}
+
+const PREREQUISITE_SIGNATURES = [
+  'private.permit_audit_actor_registry(uuid)',
+  'private.guard_audit_actor_identity()',
+  'private.maintain_audit_actor_identity()',
+  'private_security.founder_profile_protected(uuid)',
+  'private_security.guard_founder_superadmin_active_role()',
+  'private_security.guard_founder_superadmin_profile_role()',
+  'private_security.guard_founder_superadmin_internal_assignment()',
+  'private_security.guard_founder_superadmin_internal_role()',
+  'private_security.guard_founder_superadmin_user_role()',
+  'private_security.guard_profile_is_demo_marker()',
+] as const;
+
+const POSTGRES_OWNED_SIGNATURES = new Set<string>(PREREQUISITE_SIGNATURES.slice(3));
+const UNOWNED_PRIVATE_SIGNATURES = PREREQUISITE_SIGNATURES.slice(0, 3);
+
+type ParsedFunction = {
+  signature: string;
+  header: string;
+  body: string;
+  language: string;
+  security: 'DEFINER' | 'INVOKER';
+  searchPath: string;
+  volatility: 's' | null;
+};
+
+type ParsedTrigger = {
+  name: string;
+  table: string;
+  functionName: string;
+  signature: string;
+  timing: string;
+  level: string;
+  events: string;
+  columns: string[];
+  args: string[];
+  tgtype: number;
+};
+
+type FunctionManifestRow = {
+  signature: string;
+  securityDefiner: boolean;
+  searchPath: string;
+  language: string;
+  volatility: 's' | null;
+  requireOwner: boolean;
+};
+
+type TriggerManifestRow = {
+  proposal: string;
+  name: string;
+  tableSchema: string;
+  tableName: string;
+  functionSchema: string;
+  functionName: string;
+  securityDefiner: boolean;
+  searchPath: string;
+  signature: string;
+  tgtype: number;
+  columns: string[];
+  args: string[];
+};
+
+function mustGet<T>(value: T | undefined, label: string): T {
+  if (value === undefined) throw new Error(`missing ${label}`);
+  return value;
+}
+
+function canonicalSignature(qualifiedName: string, argList: string): string {
+  const trimmed = argList.trim();
+  if (!trimmed) return `${qualifiedName}()`;
+  const types = trimmed.split(',').map((part) => {
+    const tokens = part.trim().split(/\s+/).filter((token) => !/^(IN|OUT|INOUT|VARIADIC)$/i.test(token));
+    const type = tokens[tokens.length - 1];
+    if (!type) throw new Error(`unparsed argument in ${qualifiedName}(${argList})`);
+    return type;
+  });
+  return `${qualifiedName}(${types.join(', ')})`;
+}
+
+function findClosingParen(sql: string, openIndex: number): number {
+  let depth = 0;
+  for (let index = openIndex; index < sql.length; index += 1) {
+    const char = sql[index];
+    if (char === '(') depth += 1;
+    else if (char === ')') {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  throw new Error('unbalanced parenthesis');
+}
+
+function extractFunctions(sql: string): ParsedFunction[] {
+  const stripped = stripComments(sql);
+  const results: ParsedFunction[] = [];
+  const startRe = /CREATE(?:\s+OR\s+REPLACE)?\s+FUNCTION\s+([a-z_]+\.[a-z_]+)\s*\(/gi;
+  for (const match of stripped.matchAll(startRe)) {
+    const qualifiedName = match[1];
+    if (match.index === undefined) throw new Error(`missing index for ${qualifiedName}`);
+    const openParen = match.index + match[0].length - 1;
+    const closeParen = findClosingParen(stripped, openParen);
+    const headerStart = closeParen + 1;
+    const asMatch = /AS\s+\$([A-Za-z_][A-Za-z0-9_]*)\$/i.exec(stripped.slice(headerStart));
+    if (!asMatch || asMatch.index === undefined) throw new Error(`missing body for ${qualifiedName}`);
+    const header = stripped.slice(headerStart, headerStart + asMatch.index);
+    const tag = asMatch[1];
+    const bodyStart = headerStart + asMatch.index + asMatch[0].length;
+    const bodyEnd = stripped.indexOf(`$${tag}$`, bodyStart);
+    if (bodyEnd < 0) throw new Error(`unterminated body for ${qualifiedName}`);
+    const language = header.match(/LANGUAGE\s+(sql|plpgsql)\b/i)?.[1]?.toLowerCase();
+    if (!language) throw new Error(`missing language for ${qualifiedName}`);
+    const invoker = /SECURITY\s+INVOKER\b/i.test(header);
+    const definer = /SECURITY\s+DEFINER\b/i.test(header);
+    if (invoker === definer) throw new Error(`ambiguous security mode for ${qualifiedName}`);
+    const searchPathValue = header.match(/SET\s+search_path\s*=\s*([^\n;]+)/i)?.[1]?.replace(/\r/g, '').trim();
+    if (!searchPathValue) throw new Error(`missing search_path for ${qualifiedName}`);
+    const settings = [...header.matchAll(/\bSET\s+([a-z_]+)\s*=/gi)].map((item) => item[1].toLowerCase());
+    if (settings.length !== 1 || settings[0] !== 'search_path') {
+      throw new Error(`expected only search_path for ${qualifiedName}, found ${settings.join(', ')}`);
+    }
+    const volatilityWord = header.match(/\b(STABLE|IMMUTABLE|VOLATILE)\b/i)?.[1]?.toUpperCase() ?? null;
+    if (volatilityWord && volatilityWord !== 'STABLE') {
+      throw new Error(`${qualifiedName} declares ${volatilityWord}, which this check does not map`);
+    }
+    results.push({
+      signature: canonicalSignature(qualifiedName, stripped.slice(openParen + 1, closeParen)),
+      header,
+      body: stripped.slice(bodyStart, bodyEnd),
+      language,
+      security: invoker ? 'INVOKER' : 'DEFINER',
+      searchPath: `search_path=${searchPathValue}`,
+      volatility: volatilityWord === 'STABLE' ? 's' : null,
+    });
+  }
+  return results;
+}
+
+function triggerTgtype(timing: string, level: string, events: { insert: boolean; delete: boolean; update: boolean; truncate: boolean }): number {
+  let value = 0;
+  if (level.toUpperCase() === 'ROW') value += 1;
+  if (timing.toUpperCase() === 'BEFORE') value += 2;
+  if (timing.toUpperCase() === 'INSTEAD OF') value += 64;
+  if (events.insert) value += 4;
+  if (events.delete) value += 8;
+  if (events.update) value += 16;
+  if (events.truncate) value += 32;
+  return value;
+}
+
+function parseTriggerEvents(eventsSql: string): { insert: boolean; delete: boolean; update: boolean; truncate: boolean; columns: string[] } {
+  let insert = false;
+  let deleteEvent = false;
+  let update = false;
+  let truncate = false;
+  let columns: string[] = [];
+  for (const part of eventsSql.trim().split(/\s+OR\s+/i)) {
+    const updateOf = /^UPDATE\s+OF\s+(.+)$/i.exec(part.trim());
+    if (updateOf) {
+      update = true;
+      columns = updateOf[1].split(',').map((column) => column.trim()).filter(Boolean);
+    } else if (/^INSERT$/i.test(part.trim())) insert = true;
+    else if (/^DELETE$/i.test(part.trim())) deleteEvent = true;
+    else if (/^UPDATE$/i.test(part.trim())) update = true;
+    else if (/^TRUNCATE$/i.test(part.trim())) truncate = true;
+    else throw new Error(`unparsed trigger event: ${part}`);
+  }
+  return { insert, delete: deleteEvent, update, truncate, columns };
+}
+
+function parseTriggerArguments(rawArgs: string, functionName: string): string[] {
+  const trimmed = rawArgs.trim();
+  if (!trimmed) return [];
+  if (!/^(?:'(?:[^']|'')*'\s*,\s*)*'(?:[^']|'')*'$/.test(trimmed)) {
+    throw new Error(`expected quoted trigger arguments for ${functionName}, found ${rawArgs}`);
+  }
+  return [...trimmed.matchAll(/'([^']*)'/g)].map((match) => match[1]);
+}
+
+function extractTriggers(sql: string): ParsedTrigger[] {
+  const stripped = stripComments(sql);
+  const results: ParsedTrigger[] = [];
+  const triggerRe = /CREATE\s+TRIGGER\s+([a-z0-9_]+)\s+(BEFORE|AFTER|INSTEAD OF)\s+([\s\S]*?)\s+ON\s+(public\.[a-z_]+)\s+FOR\s+EACH\s+(ROW|STATEMENT)\s+EXECUTE\s+(?:FUNCTION|PROCEDURE)\s+([a-z_]+\.[a-z_]+)\s*\(([\s\S]*?)\)\s*;/gi;
+  for (const match of stripped.matchAll(triggerRe)) {
+    const [, name, timing, eventsSql, table, level, functionName, rawArgs] = match;
+    const events = parseTriggerEvents(eventsSql);
+    const args = parseTriggerArguments(rawArgs, functionName);
+    results.push({
+      name,
+      table,
+      functionName,
+      signature: `${functionName}()`,
+      timing,
+      level,
+      events: eventsSql.trim().replace(/\s+/g, ' '),
+      columns: events.columns,
+      args,
+      tgtype: triggerTgtype(timing, level, events),
+    });
+  }
+  return results;
+}
+
+function parseSqlTextArray(literal: string): string[] {
+  const match = /^ARRAY\[([\s\S]*)\]::text\[\]$/.exec(literal.trim());
+  if (!match) throw new Error(`unparsed text array: ${literal}`);
+  const inner = match[1].trim();
+  if (!inner) return [];
+  const values = [...inner.matchAll(/'([^']*)'/g)].map((item) => item[1]);
+  if (values.length === 0) throw new Error(`unparsed text array values: ${literal}`);
+  return values;
+}
+
+function sortedCopy(values: string[]): string[] {
+  return [...values].sort();
+}
+
+function preconditionText(sql: string): string {
+  return stripComments(extractPreconditionsBody(sql));
+}
+
+function parseFunctionManifest(preconditions: string): Map<string, FunctionManifestRow> {
+  const rows = [...preconditions.matchAll(
+    /\('((?:private|private_security)\.[a-z_]+\([^)]*\))',\s*(true|false),\s*'(search_path=[^']+)',\s*'(sql|plpgsql)',\s*(NULL::text|'s'),\s*(true|false)\)/g,
+  )];
+  const manifest = new Map<string, FunctionManifestRow>();
+  for (const row of rows) {
+    const signature = row[1];
+    if (manifest.has(signature)) throw new Error(`duplicate function manifest signature ${signature}`);
+    manifest.set(signature, {
+      signature,
+      securityDefiner: row[2] === 'true',
+      searchPath: row[3],
+      language: row[4],
+      volatility: row[5] === "'s'" ? 's' : null,
+      requireOwner: row[6] === 'true',
+    });
+  }
+  return manifest;
+}
+
+function parseTriggerManifest(preconditions: string): Map<string, TriggerManifestRow> {
+  const rows = [...preconditions.matchAll(
+    /\('(\d{5})',\s*'([a-z0-9_]+)',\s*'([a-z_]+)',\s*'([a-z_]+)',\s*'([a-z_]+)',\s*'([a-z_]+)',\s*(true|false),\s*'(search_path=[^']+)',\s*'([a-z0-9_]+\.[a-z0-9_]+\([^)]*\))',\s*(\d+),\s*(ARRAY\[[^\]]*\]::text\[\]),\s*(ARRAY\[[^\]]*\]::text\[\])/g,
+  )];
+  const manifest = new Map<string, TriggerManifestRow>();
+  for (const row of rows) {
+    const name = row[2];
+    if (manifest.has(name)) throw new Error(`duplicate trigger manifest name ${name}`);
+    manifest.set(name, {
+      proposal: row[1],
+      name,
+      tableSchema: row[3],
+      tableName: row[4],
+      functionSchema: row[5],
+      functionName: row[6],
+      securityDefiner: row[7] === 'true',
+      searchPath: row[8],
+      signature: row[9],
+      tgtype: Number(row[10]),
+      columns: parseSqlTextArray(row[11]),
+      args: parseSqlTextArray(row[12]),
+    });
+  }
+  return manifest;
+}
+
+function signatureRegexp(signature: string): { name: string; args: string } {
+  const match = /^([a-z_]+\.[a-z_]+)\(([^)]*)\)$/.exec(signature);
+  if (!match) throw new Error(`unparsed signature ${signature}`);
+  return {
+    name: match[1].replace('.', '\\.'),
+    args: match[2] === '' ? '\\(\\s*\\)' : `\\(\\s*${match[2]}\\s*\\)`,
+  };
+}
+
+function loadPrerequisiteFunctions(): Map<string, ParsedFunction> {
+  const functions = new Map<string, ParsedFunction>();
+  for (const path of [AUDIT_PROPOSAL, FOUNDER_PROPOSAL, DEMO_MARKER_PROPOSAL]) {
+    for (const fn of extractFunctions(readFileSync(path, 'utf8'))) {
+      if (functions.has(fn.signature)) throw new Error(`duplicate declaration ${fn.signature}`);
+      functions.set(fn.signature, fn);
+    }
+  }
+  return functions;
+}
+
+function loadPrerequisiteTriggers(): ParsedTrigger[] {
+  return [AUDIT_PROPOSAL, FOUNDER_PROPOSAL, DEMO_MARKER_PROPOSAL]
+    .flatMap((path) => extractTriggers(readFileSync(path, 'utf8')));
+}
+
 const RETAINED_CATEGORIES = [
   'audit_history',
   'legal_evidence',
@@ -148,7 +458,6 @@ async function captureError(client: Client, sql: string, params: unknown[] = [])
 }
 
 async function setRequester(client: Client, authId: string): Promise<void> {
-  await client.query(`SELECT set_config('request.jwt.claim.role', 'authenticated', true)`);
   await client.query(`SELECT set_config('request.jwt.claim.sub', $1, true)`, [authId]);
   await client.query(`SELECT set_config('request.jwt.claims', $1, true)`, [
     JSON.stringify({ role: 'authenticated', sub: authId }),
@@ -206,6 +515,7 @@ describe('00320 disposable demo/QA deletion proposal', () => {
   it('requires effective server-side SUPER_ADMIN authorization and trusted is_demo classification', () => {
     expect(executable).toContain('effective_superadmin_requester');
     expect(executable).toContain("auth.role(), '') IS DISTINCT FROM 'authenticated'");
+    expect(executable).not.toContain("current_setting('request.jwt.claim.role'");
     expect(executable).toContain("p.active_role_code = 'SUPER_ADMIN'");
     expect(executable).toContain("pr.role_code = 'SUPER_ADMIN'");
     expect(executable).toContain("ir.code = 'SUPER_ADMIN'");
@@ -228,6 +538,340 @@ describe('00320 disposable demo/QA deletion proposal', () => {
     expect(executable.indexOf('DEMO_USER_DELETE_STALE_PREVIEW')).toBeLessThan(
       executable.indexOf('current preview is not eligible'),
     );
+  });
+
+  it('[static] locks and revalidates the execute target before any destructive delete', () => {
+    const body = stripComments(extractExecuteBody(sql));
+    const uniqueIndex = (pattern: RegExp, label: string): number => {
+      const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+      const matches = [...body.matchAll(new RegExp(pattern.source, flags))];
+      expect(matches, label).toHaveLength(1);
+      return matches[0].index;
+    };
+
+    const ordered = [
+      uniqueIndex(
+        /FROM private_security\.demo_user_deletion_previews[\s\S]*?AND consumed_at IS NULL\s+FOR UPDATE;/i,
+        'one-time preview row lock',
+      ),
+      uniqueIndex(
+        /SELECT auth_user_id\s+INTO v_target_auth_user_id\s+FROM public\.profiles\s+WHERE id = p_target_profile_id\s+FOR UPDATE;/i,
+        'target profile row lock',
+      ),
+      uniqueIndex(
+        /v_target_auth_user_id IS DISTINCT FROM v_preview\.target_auth_user_id/i,
+        'profile Auth identity comparison',
+      ),
+      uniqueIndex(
+        /PERFORM 1\s+FROM auth\.users\s+WHERE id = v_target_auth_user_id\s+FOR UPDATE;/i,
+        'matching Auth row lock',
+      ),
+      uniqueIndex(
+        /v_snapshot := private_security\.demo_user_deletion_snapshot\(\s*p_target_profile_id,\s*v_requester\s*\);/i,
+        'snapshot recomputation',
+      ),
+      uniqueIndex(
+        /\(v_snapshot ->> 'targetAuthUserId'\)::uuid IS DISTINCT FROM v_target_auth_user_id/i,
+        'snapshot Auth identity check',
+      ),
+      uniqueIndex(
+        /v_snapshot ->> 'fingerprint' IS DISTINCT FROM v_preview\.state_fingerprint/i,
+        'snapshot fingerprint check',
+      ),
+      uniqueIndex(
+        /\(v_snapshot ->> 'eligible'\)::boolean IS DISTINCT FROM TRUE/i,
+        'snapshot eligibility check',
+      ),
+    ];
+    expect(ordered).toEqual([...ordered].sort((a, b) => a - b));
+    const firstDelete = uniqueIndex(
+      /DELETE FROM public\.internal_user_assignments/i,
+      'first destructive delete',
+    );
+    expect(ordered.every((index) => index < firstDelete)).toBe(true);
+
+    expect(body).toMatch(/token_hash = extensions\.digest\([\s\S]*?AND consumed_at IS NULL\s+FOR UPDATE;/i);
+    expect(body).toContain('requester_profile_id = v_requester');
+    expect(body).toContain('target_profile_id = p_target_profile_id');
+    expect(body).toContain('v_preview.expires_at <= clock_timestamp()');
+    expect(body).toContain('DEMO_USER_DELETE_CONFIRMATION_MISMATCH');
+    expect(body).toContain('DEMO_USER_DELETE_CONFIRMATION_EXPIRED');
+    expect(body).toMatch(/RAISE EXCEPTION 'DEMO_USER_DELETE_STALE_PREVIEW'/);
+    expect(body).toMatch(/UPDATE private_security\.demo_user_deletion_previews[\s\S]*?SET consumed_at = clock_timestamp\(\)/i);
+    expect(body.indexOf('SET consumed_at = clock_timestamp()')).toBeGreaterThan(firstDelete);
+    expect(body).not.toMatch(/\b(?:BEGIN|COMMIT|ROLLBACK)\s*;/i);
+  });
+
+  it('[static] fail-closes on exact prerequisite trigger and function catalog metadata', () => {
+    const preconditions = stripComments(extractPreconditionsBody(sql));
+    const tuples = [
+      ['trg_audit_actor_identities_guard', 'public', 'audit_actor_identities', 'private', 'guard_audit_actor_identity', 'search_path=public, private, pg_temp'],
+      ['trg_aa_audit_actor_identity_register', 'public', 'profiles', 'private', 'maintain_audit_actor_identity', 'search_path=public, private, pg_temp'],
+      ['trg_zz_audit_actor_identity_preserve', 'public', 'profiles', 'private', 'maintain_audit_actor_identity', 'search_path=public, private, pg_temp'],
+      ['aa_guard_founder_profile_id', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_profile_delete', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_profile_marker', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_active_role', 'public', 'profiles', 'private_security', 'guard_founder_superadmin_active_role', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_profile_role', 'public', 'profile_roles', 'private_security', 'guard_founder_superadmin_profile_role', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_profile_role_truncate', 'public', 'profile_roles', 'private_security', 'guard_founder_superadmin_profile_role', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_internal_assignment', 'public', 'internal_user_assignments', 'private_security', 'guard_founder_superadmin_internal_assignment', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_internal_assignment_truncate', 'public', 'internal_user_assignments', 'private_security', 'guard_founder_superadmin_internal_assignment', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_internal_role', 'public', 'internal_roles', 'private_security', 'guard_founder_superadmin_internal_role', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_internal_role_truncate', 'public', 'internal_roles', 'private_security', 'guard_founder_superadmin_internal_role', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_user_role', 'public', 'user_roles', 'private_security', 'guard_founder_superadmin_user_role', 'search_path=pg_catalog, public'],
+      ['aa_guard_founder_user_role_truncate', 'public', 'user_roles', 'private_security', 'guard_founder_superadmin_user_role', 'search_path=pg_catalog, public'],
+      ['trg_guard_profile_is_demo_marker', 'public', 'profiles', 'private_security', 'guard_profile_is_demo_marker', 'search_path=pg_catalog, public, auth'],
+    ];
+    for (const [trigger, tableSchema, table, functionSchema, fn, searchPath] of tuples) {
+      expect(preconditions).toContain(`'${trigger}', '${tableSchema}', '${table}', '${functionSchema}', '${fn}', true, '${searchPath}'`);
+    }
+    expect(preconditions).toMatch(/FROM pg_trigger t\s+JOIN pg_class rel ON rel\.oid = t\.tgrelid\s+JOIN pg_namespace rel_ns/i);
+    expect(preconditions).toMatch(/JOIN pg_proc p ON p\.oid = t\.tgfoid\s+JOIN pg_namespace proc_ns/i);
+    expect(preconditions).toContain('NOT t.tgisinternal');
+    expect(preconditions).toContain("t.tgenabled IN ('O', 'A')");
+    expect(preconditions).toContain("p.prorettype = 'trigger'::regtype");
+    expect(preconditions).toContain('p.prosecdef IS NOT DISTINCT FROM prerequisite.security_definer');
+    expect(preconditions).toContain("WHERE cfg LIKE 'search_path=%'");
+    expect(preconditions).toContain('= ARRAY[prerequisite.search_path_config]');
+    expect(preconditions).toContain('DEMO_USER_DELETE_PRECONDITION_FAILED');
+    expect(preconditions).toContain('t.tgfoid = to_regprocedure(prerequisite.function_signature)');
+    expect(preconditions).toContain('t.tgtype = prerequisite.tgtype');
+    expect(preconditions).toContain('t.tgqual IS NULL');
+    expect(preconditions).toContain('t.tgnargs = cardinality(prerequisite.trigger_args)');
+    expect(preconditions).toContain('unnest(t.tgattr)');
+    expect(preconditions).toContain("t.tgenabled IN ('O', 'A')");
+  });
+
+  it('[STATIC] direct and transitive prerequisite function inventory is complete', () => {
+    const preconditions = preconditionText(sql);
+    const manifest = parseFunctionManifest(preconditions);
+    const declared = loadPrerequisiteFunctions();
+    expect([...manifest.keys()].sort()).toEqual([...PREREQUISITE_SIGNATURES].sort());
+    for (const signature of PREREQUISITE_SIGNATURES) {
+      expect(preconditions).toContain(`'${signature}'`);
+      expect(declared.has(signature)).toBe(true);
+    }
+    expect(preconditions).toContain('to_regprocedure(required_function.signature)');
+    expect(declared.has('public.resolve_audit_actor(uuid)')).toBe(true);
+    expect(stripComments(readFileSync(AUDIT_PROPOSAL, 'utf8'))).toMatch(
+      /CREATE OR REPLACE FUNCTION public\.resolve_audit_actor\(p_actor_id uuid\)/,
+    );
+    expect(preconditions).not.toContain('resolve_audit_actor');
+    expect(manifest.has('public.resolve_audit_actor(uuid)')).toBe(false);
+  });
+
+  it('[STATIC] prerequisite security modes and search paths match source', () => {
+    const preconditions = preconditionText(sql);
+    const manifest = parseFunctionManifest(preconditions);
+    const declared = loadPrerequisiteFunctions();
+    const founderSignature = 'private_security.founder_profile_protected(uuid)';
+    const founderSql = stripComments(readFileSync(FOUNDER_PROPOSAL, 'utf8'));
+    expect(founderSql).toMatch(
+      /CREATE FUNCTION private_security\.founder_profile_protected\(p_profile_id uuid\)\s+RETURNS boolean\s+LANGUAGE sql\s+STABLE\s+SECURITY INVOKER\s+SET search_path = pg_catalog, public/,
+    );
+    for (const signature of PREREQUISITE_SIGNATURES) {
+      const source = mustGet(declared.get(signature), signature);
+      const row = mustGet(manifest.get(signature), `${signature} manifest`);
+      const invoker = signature === founderSignature;
+      expect(source.security).toBe(invoker ? 'INVOKER' : 'DEFINER');
+      expect(source.header).toMatch(invoker ? /SECURITY\s+INVOKER/ : /SECURITY\s+DEFINER/);
+      expect(source.header).not.toMatch(invoker ? /SECURITY\s+DEFINER/ : /SECURITY\s+INVOKER/);
+      expect(row.securityDefiner).toBe(!invoker);
+      expect(source.language).toBe(invoker ? 'sql' : 'plpgsql');
+      expect(row.language).toBe(source.language);
+      expect(source.volatility).toBe(invoker ? 's' : null);
+      expect(row.volatility).toBe(source.volatility);
+      expect(row.searchPath).toBe(source.searchPath);
+    }
+    expect(new Set(PREREQUISITE_SIGNATURES.map((signature) => mustGet(declared.get(signature), signature).searchPath))).toEqual(
+      new Set([
+        'search_path=public, private, pg_temp',
+        'search_path=pg_catalog, public',
+        'search_path=pg_catalog, public, auth',
+      ]),
+    );
+    expect(mustGet(manifest.get(founderSignature), founderSignature).securityDefiner).toBe(false);
+  });
+
+  it('[STATIC] explicit owner and EXECUTE policies remain source-aligned', () => {
+    const preconditions = preconditionText(sql);
+    const manifest = parseFunctionManifest(preconditions);
+    const auditSql = stripComments(readFileSync(AUDIT_PROPOSAL, 'utf8'));
+    const founderSql = stripComments(readFileSync(FOUNDER_PROPOSAL, 'utf8'));
+    const markerSql = stripComments(readFileSync(DEMO_MARKER_PROPOSAL, 'utf8'));
+    const proposalSql = `${auditSql}\n${founderSql}\n${markerSql}`;
+    expect(auditSql).not.toMatch(/OWNER\s+TO/i);
+    for (const signature of UNOWNED_PRIVATE_SIGNATURES) {
+      const { name, args } = signatureRegexp(signature);
+      expect(auditSql).not.toMatch(new RegExp(`ALTER\\s+FUNCTION\\s+${name}\\s*${args}\\s+OWNER\\s+TO`, 'i'));
+      expect(mustGet(manifest.get(signature), signature).requireOwner).toBe(false);
+    }
+    for (const signature of POSTGRES_OWNED_SIGNATURES) {
+      const { name, args } = signatureRegexp(signature);
+      const owner = new RegExp(`ALTER\\s+FUNCTION\\s+${name}\\s*${args}\\s+OWNER\\s+TO\\s+postgres\\b`, 'gi');
+      const source = signature.endsWith('guard_profile_is_demo_marker()') ? markerSql : founderSql;
+      expect(source.match(owner)).toHaveLength(1);
+      expect(mustGet(manifest.get(signature), signature).requireOwner).toBe(true);
+    }
+    for (const signature of PREREQUISITE_SIGNATURES) {
+      const { name, args } = signatureRegexp(signature);
+      const revoke = new RegExp(
+        `REVOKE\\s+ALL\\s+ON\\s+FUNCTION\\s+${name}\\s*${args}\\s+FROM\\s+PUBLIC\\s*,\\s*anon\\s*,\\s*authenticated\\s*,\\s*service_role`,
+        'gi',
+      );
+      const grant = new RegExp(`GRANT\\s+EXECUTE\\s+ON\\s+FUNCTION\\s+${name}\\s*${args}`, 'gi');
+      expect(proposalSql.match(revoke)).toHaveLength(1);
+      expect(proposalSql.match(grant)).toBeNull();
+    }
+    expect(preconditions).toMatch(/NOT required_function\.require_owner\s+OR owner_role\.rolname = 'postgres'/);
+    expect(preconditions.match(/rolname = 'postgres'/g)).toEqual(["rolname = 'postgres'"]);
+    expect(preconditions).toContain("WHERE rolname IN ('anon', 'authenticated', 'service_role')");
+    expect(preconditions).not.toMatch(/rolname IN \([^)]*'public'/);
+    expect(preconditions).not.toMatch(/has_function_privilege\(\s*'postgres'/);
+    for (const role of ['public', 'anon', 'authenticated', 'service_role']) {
+      expect(preconditions).toContain(`NOT has_function_privilege('${role}', p.oid, 'EXECUTE')`);
+    }
+    expect(preconditions).not.toMatch(/REVOKE\s+USAGE|GRANT\s+USAGE/i);
+  });
+
+  it('[STATIC] prerequisite trigger shape, arguments, and UPDATE OF columns are checked', () => {
+    const preconditions = preconditionText(sql);
+    const manifest = parseTriggerManifest(preconditions);
+    const sourceTriggers = loadPrerequisiteTriggers();
+    expect(sourceTriggers).toHaveLength(16);
+    expect(manifest.size).toBe(16);
+    expect(new Set(sourceTriggers.map((trigger) => trigger.name)).size).toBe(16);
+    for (const source of sourceTriggers) {
+      const row = mustGet(manifest.get(source.name), source.name);
+      expect(`${row.tableSchema}.${row.tableName}`).toBe(source.table);
+      expect(`${row.functionSchema}.${row.functionName}`).toBe(source.functionName);
+      expect(row.signature).toBe(source.signature);
+      expect(row.tgtype).toBe(source.tgtype);
+      expect(sortedCopy(row.columns)).toEqual(sortedCopy(source.columns));
+      expect(row.args).toEqual(source.args);
+      expect(row.securityDefiner).toBe(true);
+    }
+    expect(preconditions).toMatch(/t\.tgtype\s*=\s*prerequisite\.tgtype/);
+    expect(preconditions).toContain('t.tgqual IS NULL');
+    expect(preconditions).toContain('unnest(t.tgattr)');
+    expect(preconditions).toContain('NOT att.attisdropped');
+    expect(preconditions).toContain('array_agg(att.attname::text ORDER BY att.attname::text)');
+    expect(preconditions).toContain('t.tgnargs = cardinality(prerequisite.trigger_args)');
+    expect(preconditions).toContain('t.tgargs IS NOT DISTINCT FROM');
+    expect(preconditions).toContain("convert_to(trigger_arg.arg, 'UTF8') || decode('00', 'hex')");
+    expect(preconditions).toContain('COALESCE(octet_length(t.tgargs), 0) = 0');
+    expect(preconditions).not.toMatch(/chr\s*\(\s*0\s*\)/);
+    expect(preconditions).toContain("t.tgenabled IN ('O', 'A')");
+    expect(preconditions).toContain("WHERE cfg LIKE 'search_path=%'");
+  });
+
+  it('[STATIC] exact function identities include transitive helpers', () => {
+    const preconditions = preconditionText(sql);
+    const manifest = parseFunctionManifest(preconditions);
+    for (const signature of [
+      'private.permit_audit_actor_registry(uuid)',
+      'private_security.founder_profile_protected(uuid)',
+      ...PREREQUISITE_SIGNATURES,
+    ]) {
+      expect(manifest.has(signature)).toBe(true);
+      expect(preconditions).toContain(`'${signature}'`);
+    }
+    expect(preconditions).toContain('p.oid = to_regprocedure(required_function.signature)');
+    expect(preconditions).toContain('t.tgfoid = to_regprocedure(prerequisite.function_signature)');
+    const founder = mustGet(manifest.get('private_security.founder_profile_protected(uuid)'), 'founder helper');
+    expect(founder.securityDefiner).toBe(false);
+    expect(founder.language).toBe('sql');
+    expect(founder.volatility).toBe('s');
+    expect(loadPrerequisiteFunctions().get('private_security.founder_profile_protected(uuid)')?.security).toBe('INVOKER');
+  });
+
+  it('[STATIC] prerequisite metadata checks fail closed', () => {
+    const preconditions = preconditionText(sql);
+    expect(preconditions).toContain('to_regprocedure(required_function.signature)');
+    expect(preconditions).toContain("'private.permit_audit_actor_registry(uuid)'");
+    expect(preconditions).toContain("'private_security.founder_profile_protected(uuid)'");
+    expect(preconditions).toContain('t.tgtype = prerequisite.tgtype');
+    expect(preconditions).toContain('t.tgqual IS NULL');
+    expect(preconditions).toContain('unnest(t.tgattr)');
+    expect(preconditions).toContain('t.tgargs IS NOT DISTINCT FROM');
+    expect(preconditions).toContain('t.tgnargs = cardinality(prerequisite.trigger_args)');
+    expect(preconditions).toContain('p.proconfig = ARRAY[required_function.search_path_config]::text[]');
+    expect(preconditions).toContain("WHERE cfg LIKE 'search_path=%'");
+    expect(preconditions).toContain('owner_role.oid = p.proowner');
+    expect(preconditions).toMatch(/NOT required_function\.require_owner\s+OR owner_role\.rolname = 'postgres'/);
+    expect(preconditions).toContain("NOT has_function_privilege('public', p.oid, 'EXECUTE')");
+    expect(preconditions).toContain("NOT has_function_privilege('anon', p.oid, 'EXECUTE')");
+    expect(preconditions).toContain("NOT has_function_privilege('authenticated', p.oid, 'EXECUTE')");
+    expect(preconditions).toContain("NOT has_function_privilege('service_role', p.oid, 'EXECUTE')");
+    expect(preconditions).toMatch(
+      /RAISE EXCEPTION\s+'DEMO_USER_DELETE_PRECONDITION_FAILED: prerequisite function % is missing or failed security, language, search_path, volatility, owner, or EXECUTE checks'/,
+    );
+    expect(preconditions).toMatch(
+      /RAISE EXCEPTION\s+'DEMO_USER_DELETE_PRECONDITION_FAILED: % trigger % on %\.% is missing, misbound, disabled\/replica-only, shape\/argument\/column mismatched/,
+    );
+    expect(preconditions).toMatch(
+      /RAISE EXCEPTION 'DEMO_USER_DELETE_PRECONDITION_FAILED: anon, authenticated, and service_role must exist before EXECUTE privilege checks'/,
+    );
+  });
+
+  it('[STATIC] prerequisite call edges and trigger mappings match source', () => {
+    const preconditions = preconditionText(sql);
+    const declared = loadPrerequisiteFunctions();
+    const maintain = mustGet(declared.get('private.maintain_audit_actor_identity()'), 'maintain');
+    const between = (body: string, start: string, end: string | null): string => {
+      const from = body.indexOf(start);
+      expect(from).toBeGreaterThanOrEqual(0);
+      const to = end === null ? body.length : body.indexOf(end, from + start.length);
+      expect(to).toBeGreaterThan(from);
+      return body.slice(from, to);
+    };
+    for (const [start, end] of [
+      ["TG_OP = 'INSERT'", "TG_OP = 'UPDATE'"],
+      ["TG_OP = 'UPDATE'", "TG_OP = 'DELETE'"],
+      ["TG_OP = 'DELETE'", null],
+    ] as const) {
+      expect(between(maintain.body, start, end)).toMatch(/private\.permit_audit_actor_registry\s*\(/);
+    }
+    expect(maintain.body).not.toMatch(/(?<!private\.)permit_audit_actor_registry\s*\(/);
+    for (const signature of [
+      'private_security.guard_founder_superadmin_active_role()',
+      'private_security.guard_founder_superadmin_profile_role()',
+      'private_security.guard_founder_superadmin_internal_assignment()',
+    ]) {
+      const body = mustGet(declared.get(signature), signature).body;
+      expect(body).toMatch(/private_security\.founder_profile_protected\s*\(/);
+      expect(body).not.toMatch(/(?<!private_security\.)founder_profile_protected\s*\(/);
+      expect(body).not.toMatch(/permit_audit_actor_registry/);
+    }
+    for (const signature of [
+      'private.guard_audit_actor_identity()',
+      'private_security.guard_founder_superadmin_internal_role()',
+      'private_security.guard_founder_superadmin_user_role()',
+      'private_security.guard_profile_is_demo_marker()',
+    ]) {
+      const body = mustGet(declared.get(signature), signature).body;
+      expect(body).not.toMatch(/founder_profile_protected/);
+      expect(body).not.toMatch(/permit_audit_actor_registry/);
+    }
+    const manifest = parseTriggerManifest(preconditions);
+    const sourceTriggers = loadPrerequisiteTriggers();
+    expect(sourceTriggers).toHaveLength(manifest.size);
+    for (const source of sourceTriggers) {
+      const row = mustGet(manifest.get(source.name), source.name);
+      expect(row.signature).toBe(source.signature);
+      expect(row.args).toEqual(source.args);
+    }
+    expect(mustGet(manifest.get('aa_guard_founder_profile_id'), 'id trigger').args).toEqual(['id']);
+    expect(mustGet(manifest.get('aa_guard_founder_profile_delete'), 'delete trigger').args).toEqual(['delete']);
+    expect(mustGet(manifest.get('aa_guard_founder_profile_marker'), 'marker trigger').args).toEqual(['marker']);
+    expect(mustGet(manifest.get('aa_guard_founder_active_role'), 'active trigger').args).toEqual(['active']);
+    const activeRoleTriggers = sourceTriggers.filter((trigger) => trigger.functionName.endsWith('guard_founder_superadmin_active_role'));
+    expect(activeRoleTriggers.map((trigger) => [trigger.name, trigger.args])).toEqual([
+      ['aa_guard_founder_profile_id', ['id']],
+      ['aa_guard_founder_profile_delete', ['delete']],
+      ['aa_guard_founder_profile_marker', ['marker']],
+      ['aa_guard_founder_active_role', ['active']],
+    ]);
   });
 
   it('inventories FK actions, blocks retained and unknown dependencies, and uses an explicit delete allowlist', () => {
@@ -263,6 +907,8 @@ describe('00320 disposable demo/QA deletion proposal', () => {
     ]);
     expect(executable).toContain('private_security.demo_user_deletion_fk_manifest()');
     expect(executable).toContain('block_fk_action_drift');
+    expect(executable).toContain('block_invalid_delete_owner_exclusion');
+    expect(executable).toContain('delete_allowlist_owner_column');
     expect(executable).not.toMatch(/source_table\s*~/);
     expect(executable).not.toMatch(/relname\s*~/);
     expect(executable).not.toMatch(/DELETE\s+FROM[\s\S]{0,100}\bCASCADE\b/i);
@@ -287,6 +933,15 @@ describe('00320 disposable demo/QA deletion proposal', () => {
         expect(`${row[1]}.${row[2]}.${row[3]}:${row[6]}`).toBe('public.audit_actor_identities.profile_id:preserve_evidence_set_null');
       }
     }
+    const ownerExclusions = rows
+      .filter((row) => row[7] !== 'NULL')
+      .map((row) => `${row[1]}.${row[2]}.${row[3]}:${row[7].replaceAll("'", '')}`)
+      .sort();
+    expect(ownerExclusions).toEqual([
+      'public.internal_user_assignments.assigned_by:profile_id',
+      'public.profile_roles.assigned_by:profile_id',
+    ]);
+    expect(executable).toContain("owner_manifest.disposition = 'delete_allowlisted_before_profile'");
     expect(executable).toMatch(/IF \(v_snapshot ->> 'eligible'\)::boolean IS DISTINCT FROM TRUE THEN\s+RETURN v_snapshot/);
     expect(executable).toContain("current_setting('session_replication_role') IS DISTINCT FROM 'origin'");
   });
@@ -389,6 +1044,46 @@ describe('00320 disposable demo/QA deletion proposal', () => {
       );
       expect(assignedBy).toMatchObject({ count: 0, blocks: false, disposition: 'block_retained_dependency' });
 
+      const role = await client.query<{ id: string }>(
+        `SELECT id::text FROM public.internal_roles ORDER BY code LIMIT 1`,
+      );
+      expect(role.rows).toHaveLength(1);
+      await client.query(
+        `INSERT INTO public.internal_user_assignments (profile_id, role_id, assigned_by)
+         VALUES ($1, $2, $1)`,
+        [target.profileId, role.rows[0].id],
+      );
+      const targetOwnedAssignment = await snapshot(target.profileId);
+      expect(targetOwnedAssignment.eligible).toBe(true);
+      expect(
+        targetOwnedAssignment.dependencies.find(
+          (d: any) => d.table === 'internal_user_assignments' && d.column === 'assigned_by',
+        ),
+      ).toMatchObject({
+        category: 'security_identity',
+        disposition: 'block_retained_dependency',
+        count: 0,
+        blocks: false,
+      });
+
+      await client.query(
+        `INSERT INTO public.internal_user_assignments (profile_id, role_id, assigned_by)
+         VALUES ($1, $2, $3)`,
+        [realAccount.profileId, role.rows[0].id, target.profileId],
+      );
+      const assignmentOnAnotherAccount = await snapshot(target.profileId);
+      expect(assignmentOnAnotherAccount.eligible).toBe(false);
+      expect(
+        assignmentOnAnotherAccount.dependencies.find(
+          (d: any) => d.table === 'internal_user_assignments' && d.column === 'assigned_by',
+        ),
+      ).toMatchObject({
+        category: 'security_identity',
+        disposition: 'block_retained_dependency',
+        count: 1,
+        blocks: true,
+      });
+
       await client.query(
         `INSERT INTO public.notifications (profile_id, channel, event_type) VALUES ($1, 'IN_APP', 'qa.fixture')`,
         [target.profileId],
@@ -428,6 +1123,41 @@ describe('00320 disposable demo/QA deletion proposal', () => {
         count: 0,
         blocks: true,
       });
+
+      await client.query(`
+        ALTER TABLE public.notifications
+          ADD CONSTRAINT zz_notifications_action_drift
+          FOREIGN KEY (profile_id) REFERENCES public.profiles(id) ON DELETE RESTRICT
+      `);
+      const actionDrift = await snapshot(unreviewedTarget.profileId);
+      expect(
+        actionDrift.dependencies.find((d: any) => d.constraint === 'zz_notifications_action_drift'),
+      ).toMatchObject({
+        disposition: 'block_fk_action_drift',
+        count: 0,
+        blocks: true,
+      });
+
+      await client.query(`
+        ALTER TABLE public.profiles
+          ADD CONSTRAINT zz_profiles_id_auth_unique UNIQUE (id, auth_user_id);
+        CREATE TABLE public.zz_composite_profile_dependency (
+          subject_profile_id uuid NOT NULL,
+          subject_auth_id uuid NOT NULL,
+          CONSTRAINT zz_composite_profile_fk
+            FOREIGN KEY (subject_profile_id, subject_auth_id)
+            REFERENCES public.profiles(id, auth_user_id)
+        )
+      `);
+      const composite = await snapshot(unreviewedTarget.profileId);
+      expect(
+        composite.dependencies.find((d: any) => d.constraint === 'zz_composite_profile_fk'),
+      ).toMatchObject({
+        category: 'unknown',
+        disposition: 'block_unknown_fk',
+        count: 0,
+        blocks: true,
+      });
     } catch (error) {
       failed = error;
     } finally {
@@ -457,7 +1187,7 @@ describe('00320 disposable demo/QA deletion proposal', () => {
         await client.query(stripTransaction(readFileSync(AUDIT_PROPOSAL, 'utf8')));
       }
       if ((await client.query(`SELECT to_regprocedure('private_security.guard_founder_superadmin_active_role()') IS NULL AS missing`)).rows[0].missing) {
-        await client.query(readFileSync(FOUNDER_PROPOSAL, 'utf8'));
+        await client.query(stripTransaction(readFileSync(FOUNDER_PROPOSAL, 'utf8')));
       }
       if ((await client.query(`SELECT to_regprocedure('private_security.guard_profile_is_demo_marker()') IS NULL AS missing`)).rows[0].missing) {
         await client.query(stripTransaction(readFileSync(DEMO_MARKER_PROPOSAL, 'utf8')));
@@ -501,6 +1231,23 @@ describe('00320 disposable demo/QA deletion proposal', () => {
         emailPrefix: 'delete-unknown-fk',
         isDemo: true,
       });
+      const assignmentTarget = await insertDisposableProfile(client, {
+        emailPrefix: 'delete-assignment-target',
+        isDemo: true,
+      });
+      const assignmentOwner = await insertDisposableProfile(client, {
+        emailPrefix: 'delete-assignment-owner',
+        isDemo: false,
+      });
+      const assignmentRole = await client.query<{ id: string }>(
+        `SELECT id::text FROM public.internal_roles ORDER BY code LIMIT 1`,
+      );
+      expect(assignmentRole.rows).toHaveLength(1);
+      await client.query(
+        `INSERT INTO public.internal_user_assignments (profile_id, role_id, assigned_by)
+         VALUES ($1, $2, $1)`,
+        [assignmentTarget.profileId, assignmentRole.rows[0].id],
+      );
       await setRequester(client, founder.rows[0].auth_user_id);
 
       const preview = await client.query<{ payload: any }>(
@@ -643,6 +1390,50 @@ describe('00320 disposable demo/QA deletion proposal', () => {
         client,
         `SELECT public.execute_demo_user_deletion($1, $2, 'approved QA cleanup', 'removed fixture')`,
         [stale.profileId, stalePreview.rows[0].payload.confirmationToken],
+      )).toContain('DEMO_USER_DELETE_STALE_PREVIEW');
+
+      const assignmentPreview = await client.query<{ payload: any }>(
+        `SELECT public.preview_demo_user_deletion($1) AS payload`,
+        [assignmentTarget.profileId],
+      );
+      expect(assignmentPreview.rows[0].payload).toMatchObject({
+        eligible: true,
+        blockerCount: 0,
+      });
+      expect(
+        assignmentPreview.rows[0].payload.dependencies.find(
+          (d: any) => d.table === 'internal_user_assignments' && d.column === 'assigned_by',
+        ),
+      ).toMatchObject({ category: 'security_identity', count: 0, blocks: false });
+
+      await client.query(
+        `INSERT INTO public.internal_user_assignments (profile_id, role_id, assigned_by)
+         VALUES ($1, $2, $3)`,
+        [assignmentOwner.profileId, assignmentRole.rows[0].id, assignmentTarget.profileId],
+      );
+      const blockedAssignmentPreview = await client.query<{ payload: any }>(
+        `SELECT public.preview_demo_user_deletion($1) AS payload`,
+        [assignmentTarget.profileId],
+      );
+      expect(blockedAssignmentPreview.rows[0].payload).toMatchObject({
+        eligible: false,
+        blockerCount: 1,
+        confirmationToken: null,
+      });
+      expect(
+        blockedAssignmentPreview.rows[0].payload.dependencies.find(
+          (d: any) => d.table === 'internal_user_assignments' && d.column === 'assigned_by',
+        ),
+      ).toMatchObject({
+        category: 'security_identity',
+        disposition: 'block_retained_dependency',
+        count: 1,
+        blocks: true,
+      });
+      expect(await captureError(
+        client,
+        `SELECT public.execute_demo_user_deletion($1, $2, 'approved QA cleanup', 'removed fixture')`,
+        [assignmentTarget.profileId, assignmentPreview.rows[0].payload.confirmationToken],
       )).toContain('DEMO_USER_DELETE_STALE_PREVIEW');
 
       await client.query(
