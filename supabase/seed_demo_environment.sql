@@ -5,7 +5,8 @@
 -- requirements sitting at different points in the lifecycle so a walkthrough
 -- can start anywhere.
 --
--- Everything here is flagged is_demo, which is what makes demo_reset safe.
+-- Demo data is flagged is_demo so demo_reset can clean it up. The founder
+-- profile is intentionally excluded: protected founders cannot be demo users.
 --
 -- UUIDs use the 0d... namespace ("d" for demo) to stay clear of the earlier
 -- seed files. Logins are all password "password".
@@ -110,13 +111,14 @@ SET identity_data = EXCLUDED.identity_data,
 -- must not write either column: a rerun has to keep claims the audited
 -- functions already recorded.
 INSERT INTO profiles (id, auth_user_id, email, full_name, is_demo)
-SELECT p.profile_id, p.auth_id, p.email, p.full_name, true
+SELECT p.profile_id, p.auth_id, p.email, p.full_name,
+       p.email <> 'founder@otp.test'
 FROM demo_people p
 ON CONFLICT (id) DO UPDATE
 SET auth_user_id = EXCLUDED.auth_user_id,
     email = EXCLUDED.email,
     full_name = EXCLUDED.full_name,
-    is_demo = true,
+    is_demo = EXCLUDED.is_demo,
     updated_at = now();
 
 -- founder@otp.test is the founder. admin@otp.test is the other operator.

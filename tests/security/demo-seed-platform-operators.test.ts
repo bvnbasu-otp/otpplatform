@@ -410,16 +410,16 @@ describe('demo seed platform operators (disposable databases)', () => {
     await applySeed(openDb);
     await openDb.query('RESET ROLE');
 
-    const founder = await openDb.query<{ is_founder: boolean; is_platform_admin: boolean; status: string }>(
-      `SELECT is_founder, is_platform_admin, status FROM public.profiles WHERE id = $1`,
+    const founder = await openDb.query<{ is_founder: boolean; is_platform_admin: boolean; is_demo: boolean; status: string }>(
+      `SELECT is_founder, is_platform_admin, is_demo, status FROM public.profiles WHERE id = $1`,
       [FOUNDER_PROFILE],
     );
-    const adminProfile = await openDb.query<{ is_founder: boolean; is_platform_admin: boolean; status: string }>(
-      `SELECT is_founder, is_platform_admin, status FROM public.profiles WHERE id = $1`,
+    const adminProfile = await openDb.query<{ is_founder: boolean; is_platform_admin: boolean; is_demo: boolean; status: string }>(
+      `SELECT is_founder, is_platform_admin, is_demo, status FROM public.profiles WHERE id = $1`,
       [ADMIN_PROFILE],
     );
-    expect(founder.rows[0]).toEqual({ is_founder: true, is_platform_admin: true, status: 'ACTIVE' });
-    expect(adminProfile.rows[0]).toEqual({ is_founder: false, is_platform_admin: true, status: 'ACTIVE' });
+    expect(founder.rows[0]).toEqual({ is_founder: true, is_platform_admin: true, is_demo: false, status: 'ACTIVE' });
+    expect(adminProfile.rows[0]).toEqual({ is_founder: false, is_platform_admin: true, is_demo: true, status: 'ACTIVE' });
 
     const ordinary = await openDb.query<{ email: string; is_founder: boolean; is_platform_admin: boolean }>(
       `SELECT email, is_founder, is_platform_admin
