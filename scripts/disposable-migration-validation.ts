@@ -193,22 +193,37 @@ export function isGoogleDrivePath(p: string): boolean {
   return /(^|[\\/])(my drive|shared drives|google drive|googledrive|drivefs)([\\/]|$)/i.test(p);
 }
 
-function normalizeForCompare(p: string): string {
-  return path.resolve(p).replace(/[\\/]+$/, '').toLowerCase();
+function pathApiFor(p: string): typeof path | typeof path.win32 {
+  return path.win32.isAbsolute(p) ? path.win32 : path;
+}
+
+function normalizeForCompare(p: string, api: typeof path | typeof path.win32): string {
+  const resolved = api.resolve(p);
+  const root = api.parse(resolved).root;
+  const normalized = resolved.toLowerCase();
+  return normalized.length > root.length ? normalized.replace(/[\\/]+$/, '') : normalized;
 }
 
 export function assertWorkdirLocation(workdir: string, repoRoot: string): void {
-  if (!path.isAbsolute(workdir)) refuse(`workdir must be absolute: ${workdir}`);
-  const target = normalizeForCompare(workdir);
-  const repo = normalizeForCompare(repoRoot);
-  if (target === repo || target.startsWith(`${repo}${path.sep}`) || repo.startsWith(`${target}${path.sep}`)) {
+  const workdirPath = pathApiFor(workdir);
+  const repoPath = pathApiFor(repoRoot);
+  if (!workdirPath.isAbsolute(workdir)) refuse(`workdir must be absolute: ${workdir}`);
+  const target = normalizeForCompare(workdir, workdirPath);
+  const repo = normalizeForCompare(repoRoot, repoPath);
+  if (workdirPath === repoPath && (
+    target === repo
+    || target.startsWith(`${repo}${workdirPath.sep}`)
+    || repo.startsWith(`${target}${workdirPath.sep}`)
+  )) {
     refuse('workdir overlaps the repository');
   }
   if (isGoogleDrivePath(workdir)) refuse('workdir is under Google Drive');
-  if (isGoogleDrivePath(repoRoot) && path.parse(target).root === path.parse(repo).root) {
+  if (workdirPath === repoPath
+      && isGoogleDrivePath(repoRoot)
+      && workdirPath.parse(target).root === workdirPath.parse(repo).root) {
     refuse('workdir is on the same synced drive as the repository');
   }
-  if (path.parse(target).root === target) refuse('workdir cannot be a drive or filesystem root');
+  if (workdirPath.parse(target).root === target) refuse('workdir cannot be a drive or filesystem root');
 }
 
 export function assertNoLinkState(workdir: string, fresh: boolean): void {

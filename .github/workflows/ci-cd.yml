@@ -28,6 +28,14 @@ on:
           - Production
           - Staging
           - Demo
+      approve_production_deployment:
+        description: 'Explicitly approve deployment to Production after all checks pass'
+        required: true
+        default: 'No'
+        type: choice
+        options:
+          - 'No'
+          - 'Yes'
 
 env:
   NODE_VERSION: '22'
@@ -177,6 +185,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install WhatsApp bridge dependencies
+        run: pnpm --dir scripts/whatsapp-bridge install --frozen-lockfile --ignore-workspace
+
       - name: Setup Supabase CLI (local Postgres for SQL parity)
         uses: supabase/setup-cli@v1
         with:
@@ -312,10 +323,12 @@ jobs:
     name: Deploy to Environment
     runs-on: ubuntu-latest
     needs: [resolve-env, quality-gate]
-    # Pull requests never reach this job. GitHub Environment required reviewers
-    # must be configured in repository settings; this workflow does not create
-    # that protection. Verify the environment rules before allowing deployment.
-    if: github.event_name != 'pull_request'
+    # Branch pushes validate only. Deployment requires a manual dispatch; Production
+    # also requires the explicit approval input and the GitHub Environment reviewer.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (needs.resolve-env.outputs.target_env != 'PRODUCTION' ||
+       github.event.inputs.approve_production_deployment == 'Yes')
     environment:
       name: ${{ needs.resolve-env.outputs.target_env == 'PRODUCTION' && 'Production' || 'Staging' }}
     env:

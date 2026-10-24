@@ -94,6 +94,7 @@ function fakeReq(opts: { method?: string; url?: string; headers?: Record<string,
   const chunk = 4096;
   const total = opts.streamBytes ?? body.length;
   const req = new Readable({
+    highWaterMark: chunk,
     read() {
       if (offset >= total) {
         this.push(null);
