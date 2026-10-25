@@ -222,6 +222,7 @@ jobs:
             echo "OTP_DISPOSABLE_PROJECT_ID=$PROJECT_ID"
             echo "OTP_DISPOSABLE_WORKDIR=$WORKDIR"
             echo "LOCAL_PG_PORT=$DB_PORT"
+            echo "LOCAL_POSTGRES_PORT=$DB_PORT"
             echo "SUPABASE_URL=http://127.0.0.1:${API_PORT}"
             echo "VITE_SUPABASE_URL=http://127.0.0.1:${API_PORT}"
             echo "SUPABASE_ANON_KEY=$ANON_KEY"
@@ -246,7 +247,7 @@ jobs:
           PROJECT_ID="otp-disposable-${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
           WORKDIR="${RUNNER_TEMP}/${PROJECT_ID}"
           if [ -f "$WORKDIR/.otp-disposable-validation.json" ]; then
-            env -u SUPABASE_URL -u VITE_SUPABASE_URL -u SUPABASE_SERVICE_ROLE_KEY -u SUPABASE_ANON_KEY -u VITE_SUPABASE_ANON_KEY -u LOCAL_PG_PORT \
+            env -u SUPABASE_URL -u VITE_SUPABASE_URL -u SUPABASE_SERVICE_ROLE_KEY -u SUPABASE_ANON_KEY -u VITE_SUPABASE_ANON_KEY -u LOCAL_PG_PORT -u LOCAL_POSTGRES_PORT \
               pnpm exec tsx scripts/disposable-migration-validation.ts teardown --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base 58320
           fi
 
@@ -314,6 +315,7 @@ jobs:
             echo "OTP_DISPOSABLE_PROJECT_ID=$PROJECT_ID"
             echo "OTP_DISPOSABLE_WORKDIR=$WORKDIR"
             echo "LOCAL_PG_PORT=$DB_PORT"
+            echo "LOCAL_POSTGRES_PORT=$DB_PORT"
             echo "SUPABASE_URL=http://127.0.0.1:${API_PORT}"
             echo "VITE_SUPABASE_URL=http://127.0.0.1:${API_PORT}"
             echo "SUPABASE_ANON_KEY=$ANON_KEY"
@@ -342,7 +344,7 @@ jobs:
           PROJECT_ID="otp-disposable-${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
           WORKDIR="${RUNNER_TEMP}/${PROJECT_ID}"
           if [ -f "$WORKDIR/.otp-disposable-validation.json" ]; then
-            env -u SUPABASE_URL -u VITE_SUPABASE_URL -u SUPABASE_SERVICE_ROLE_KEY -u SUPABASE_ANON_KEY -u VITE_SUPABASE_ANON_KEY -u LOCAL_PG_PORT \
+            env -u SUPABASE_URL -u VITE_SUPABASE_URL -u SUPABASE_SERVICE_ROLE_KEY -u SUPABASE_ANON_KEY -u VITE_SUPABASE_ANON_KEY -u LOCAL_PG_PORT -u LOCAL_POSTGRES_PORT \
               pnpm exec tsx scripts/disposable-migration-validation.ts teardown --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base 58320
           fi
 

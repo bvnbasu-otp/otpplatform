@@ -429,3 +429,18 @@ GitHub Actions run `40179080349` was triggered directly on commit `84292feb5fd51
 To resolve the CI failure, `.github/workflows/ci-cd.yml` was remediated with explicit founder authorization:
 1. Canonical test fixture seeds (`seed.sql`, `seed_pilots_horizontals.sql`, `seed_market_intelligence.sql`, `seed_procurement_policies.sql`, `seed_taxonomy_alignment.sql`, `seed_demo_environment.sql`, `seed_demo_messaging.sql`, `seed_demo_roles.sql`, `seed_demo_test_accounts.sql`, `seed_master_role_accounts.sql`) are now loaded immediately after `stage-D` migration completion via `scripts/disposable-migration-validation.ts sql`.
 2. Disposable Supabase teardown now inspects `.otp-disposable-validation.json` and safely unsets forbidden environment variables (`env -u ...`) to guarantee clean teardown without refusal.
+
+### Subsequent CI executions and resolutions
+
+#### CI Run 40182579049 (Commit `6af8276db6eddd46634b9f9f795af290d17f84a8`)
+- **Status:** FAIL (Run `40182579049`)
+- **Root Cause:** All seeds loaded successfully; 140 of 141 functional test files passed (1,490 tests passed). A single test in `tests/integration/requirement-engine.test.ts:1158` failed due to hardcoded port `54321` (`http://127.0.0.1:54321`) instead of reading dynamic `process.env.SUPABASE_URL` (`58321`).
+- **Remediation:** Remediated `requirement-engine.test.ts` to fallback dynamically to `process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321'`.
+
+#### CI Run 40183412340 (Commit `a44330295f83eab8bae278f81858c63de4135631`)
+- **Tiered Automated Test Batteries:** 100% PASS (6m36s). All unit tests, module tests, and functional test batteries (141 test files, 1,492 tests) passed completely green!
+- **Staging / Production Quality Gatekeeper:** FAIL (6m39s). Master Regression Suite executed 5,842 passed tests with 0 failures across 11 layers. However, `INTEGRATION: Live Database Integration & RLS Security Suite` was marked `BLOCKED` due to 1 skipped test (`passed: 1473, failed: 0, skipped: 1, blocked: 1`).
+- **Root Cause:** In `tests/security/migration-formalization-00261-263-database.test.ts`, line 22 read `process.env.LOCAL_POSTGRES_PORT ?? 54322`, while the disposable Supabase CI runner exported `LOCAL_PG_PORT` (`58322`). As a result, direct Postgres connection defaulted to 54322, failed to connect, and invoked `ctx.skip()`, tripping the zero-skip production gating policy.
+- **Remediation:**
+  1. Updated `tests/security/migration-formalization-00261-263-database.test.ts` line 22 to check `process.env.LOCAL_PG_PORT ?? process.env.LOCAL_POSTGRES_PORT ?? 54322`.
+  2. Updated `.github/workflows/ci-cd.yml` in both `test-suites` and `quality-gate` jobs to export both `LOCAL_PG_PORT` and `LOCAL_POSTGRES_PORT` to `$GITHUB_ENV`, and unset both in teardown.

@@ -19,7 +19,7 @@ import {
 const ROOT = resolve(__dirname, '../..');
 const LOCAL_PG: ClientConfig = {
   host: process.env.LOCAL_POSTGRES_HOST ?? '127.0.0.1',
-  port: Number(process.env.LOCAL_POSTGRES_PORT ?? 54322),
+  port: Number(process.env.LOCAL_PG_PORT ?? process.env.LOCAL_POSTGRES_PORT ?? 54322),
   database: 'postgres',
   user: 'postgres',
   password: 'postgres',
