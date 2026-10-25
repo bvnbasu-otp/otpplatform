@@ -406,3 +406,26 @@ All 67 scanner findings identified in the redacted Gitleaks scan evidence reconc
 5. All CI jobs are evaluated honestly; no skips or missing tests are masked.
 6. Push, deployment, and hosted verification remain strictly unauthorized until separate explicit authorization is granted.
 
+## Phase G — Exact-SHA CI execution, artifact disposition verification, and CI pipeline remediation
+
+### Artifact disposition and candidate commit creation
+
+Following explicit founder authorization ("approved all 1, 2 & 3"), the surgical artifact disposition was executed across all 16 physical files identified in the security scan. All sensitive materials were backed up to offline quarantine (`C:\Users\Dhiya\.gemini\antigravity\brain\c268ec6a-c789-433c-93f3-24bcdd7a804e\scratch\quarantine\`) and removed or redacted from the worktree.
+
+Pre-commit quality verification passed all checks (vocabulary compliance, test coverage append rule, 995 domain unit tests). Candidate commit `84292feb5fd51fdc9018c6d710991eea050bf9ac` was created on `main` and pushed to `origin/main` under authorized Option B.
+
+### Exact-SHA CI execution result (Run 40179080349)
+
+GitHub Actions run `40179080349` was triggered directly on commit `84292feb5fd51fdc9018c6d710991eea050bf9ac`:
+- **Resolve Target Environment:** PASS (9s)
+- **Mandatory Test Expansion Policy:** PASS (15s)
+- **Build & Static Policy Verification:** PASS (29s) — clean build and scoped ESLint passed in CI.
+- **Tiered Automated Test Batteries:** FAIL (4m49s). Disposable Supabase started and applied all migrations contiguous to 00328. Unit and module tests passed. Functional tests failed on missing test authentication seeds (`manager@greenview.test`, `committee1@greenview.test`, `secretary@sunrise.test`), exactly as predicted in diff review.
+- **Staging / Production Quality Gatekeeper:** SKIPPED due to upstream failure.
+- **Deploy to Environment:** SKIPPED — verified no production deployment occurred.
+
+### CI pipeline remediation
+
+To resolve the CI failure, `.github/workflows/ci-cd.yml` was remediated with explicit founder authorization:
+1. Canonical test fixture seeds (`seed.sql`, `seed_pilots_horizontals.sql`, `seed_market_intelligence.sql`, `seed_procurement_policies.sql`, `seed_taxonomy_alignment.sql`, `seed_demo_environment.sql`, `seed_demo_messaging.sql`, `seed_demo_roles.sql`, `seed_demo_test_accounts.sql`, `seed_master_role_accounts.sql`) are now loaded immediately after `stage-D` migration completion via `scripts/disposable-migration-validation.ts sql`.
+2. Disposable Supabase teardown now inspects `.otp-disposable-validation.json` and safely unsets forbidden environment variables (`env -u ...`) to guarantee clean teardown without refusal.
