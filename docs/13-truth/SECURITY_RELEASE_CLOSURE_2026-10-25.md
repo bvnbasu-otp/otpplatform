@@ -444,3 +444,46 @@ To resolve the CI failure, `.github/workflows/ci-cd.yml` was remediated with exp
 - **Remediation:**
   1. Updated `tests/security/migration-formalization-00261-263-database.test.ts` line 22 to check `process.env.LOCAL_PG_PORT ?? process.env.LOCAL_POSTGRES_PORT ?? 54322`.
   2. Updated `.github/workflows/ci-cd.yml` in both `test-suites` and `quality-gate` jobs to export both `LOCAL_PG_PORT` and `LOCAL_POSTGRES_PORT` to `$GITHUB_ENV`, and unset both in teardown.
+
+#### CI Run 40184953965 (Commit `620eb70e0e8d5cf703f2e130f2e1b28307036f0b`) — FINAL EXACT-SHA VERIFICATION
+- **Exact Candidate SHA:** `620eb70e0e8d5cf703f2e130f2e1b28307036f0b`
+- **GitHub Actions Run ID:** `40184953965` (Push to `main`)
+- **Pipeline Result:** 100% PASS across all required quality gates:
+  - **Resolve Target Environment:** PASS (7s)
+  - **Mandatory Test Expansion Policy:** PASS (11s) — 614 active test files, strict append rule 100% compliant.
+  - **Build & Static Policy Verification:** PASS (21s) — zero vocabulary violations, clean Vite compile, scoped ESLint clean.
+  - **Tiered Automated Test Batteries:** PASS (5m6s) — Unit, Module, and Functional (141 files, 1,492 tests) passed completely green. Disposable teardown exit 0.
+  - **Staging / Production Quality Gatekeeper:** PASS (6m56s):
+    - Policy (Vocabulary Scanner): PASS (1/1)
+    - Domain Logic, GST Validation & Parsing Engine: PASS (995/995)
+    - Services & Network Adapters: PASS (704/704)
+    - Database Entity Mappers: PASS (5/5)
+    - Unit (Messaging Core & Routing Invariants): PASS (251/251)
+    - Web Features & Governance: PASS (2,350/2,350)
+    - Integration & RLS Security: PASS (1,474/1,474) — 0 skipped, 0 blocked!
+    - Demo E2E Walkthrough: PASS (12/12)
+    - Postgres Database Engine & Security RPCs: PASS (12/12)
+    - Smoke Battery: PASS (13/13)
+    - Live Flows Battery: PASS (25/25)
+    - Production Vite Bundle Build: PASS (1/1)
+    - **Scorecard Total:** 5,843 passed, 0 failed, 0 skipped, 0 blocked, 0 not-run.
+  - **Cryptographic Gate Certificate:** Issued and uploaded as artifact `staging-gate-cert` (`staging-gate-cert.json`).
+  - **Deploy to Environment:** Cleanly skipped (branch push policy prevents auto-deploy without manual dispatch).
+  - **Disposable Stack Teardown:** Verified clean container and volume prune, zero residual state.
+
+### Updated 10-Gate Pilot Certification Status
+
+| Gate | Description | Status | Evidence |
+| :--- | :--- | :--- | :--- |
+| Gate 1 | Implementation & Requirement Traceability | **PASS** | Historical 25-case RPC catalog partitioned into 12 executable checks and 13 mapped suites; fail-closed accounting verified. |
+| Gate 2 | Automated Tests | **PASS** | 5,843 passed, 0 failed, 0 skipped, 0 blocked in CI Run `40184953965` against candidate `620eb70e0e8d5cf703f2e130f2e1b28307036f0b`. |
+| Gate 3 | Static Validation, Build & Generated Artifacts | **PASS** | Scoped ESLint, 614 test files, clean Vite build, bit-identical generated DB types. |
+| Gate 4 | Migrations, Replay & DB Security | **PASS** | Clean replay 00001–00328 in CI disposable Supabase, legal defaults preserved (`enforcement_enabled=false`, `rollout_at IS NULL`). |
+| Gate 5 | User Journeys & Accessibility | **PASS** | Playwright desktop Chrome, mobile Chrome, mobile WebKit (12/12 authenticated sourcing journeys). |
+| Gate 6 | Diff Review, Secrets & Preservation | **PARTIAL** | Worktree clean; 16 scanned sensitive files quarantined and removed/sanitized; external credential rotation (service role, ONDC, Meta, GCP) pending owner console execution. |
+| Gate 7 | CI Tied to Exact Revision | **PASS** | Exact immutable SHA `620eb70e0e8d5cf703f2e130f2e1b28307036f0b` passed all CI quality gates in Run `40184953965`. |
+| Gate 8 | Documentation & Reproducibility | **PASS** | Documented in `SECURITY_RELEASE_CLOSURE_2026-10-25.md` with explicit reproducer logs. |
+| Gate 9 | Hosted / Deployed Verification | **BLOCKED** | Intentionally out of scope; no hosted mutations or live supplier communications authorized. |
+| Gate 10 | Release Boundary & Evidence Integrity | **PASS** | Gate certificate issued; candidate commit verified; production deployment gated and untouched. |
+
+**Final Pilot Certification Verdict:** **NOT READY FOR PILOT CERTIFICATION** (retained strictly until external credential rotation attestations for Gate 6 and authorized hosted verification for Gate 9 are complete).
