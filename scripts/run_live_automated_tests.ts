@@ -1,10 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'http://127.0.0.1:54321';
-const SERVICE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
-const ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+
+if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
+  console.error('Live call flow suite requires an explicitly configured Supabase URL and API keys.');
+  process.exit(1);
+}
+try {
+  if (!['127.0.0.1', 'localhost', '::1'].includes(new URL(SUPABASE_URL).hostname)) {
+    throw new Error('non-loopback host');
+  }
+} catch {
+  console.error('Live call flow suite accepts only a loopback Supabase URL.');
+  process.exit(1);
+}
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
@@ -39,20 +50,19 @@ async function runAllTests() {
   console.log('🚀 EXECUTING REAL-TIME AUTOMATED END-TO-END CALL FLOW TESTS');
   console.log('===============================================================\n');
 
-  if (process.env.ALLOW_OFFLINE === 'true') {
-    try {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/health`, { signal: AbortSignal.timeout(1500) });
-      if (!res.ok) throw new Error('Gateway non-200');
-    } catch {
-      console.log('⚠️ Live database backend offline — skipping live call flow tests because ALLOW_OFFLINE=true is explicitly set.\n');
-      process.exit(0);
-    }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/health`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch {
+    console.error('Required live call flow backend is unavailable.');
+    process.exit(1);
   }
 
   let indReqId = '';
   let rwaReqId = '';
   let indRfqId = '';
   let rwaRfqId = '';
+  const governanceAssignmentIds: string[] = [];
 
   try {
   // -------------------------------------------------------------------------
@@ -257,7 +267,7 @@ async function runAllTests() {
         rfq_id: indRfqId,
         supplier_id: inv.supplier_id,
         invitation_id: inv.id,
-        status: 'SUBMITTED',
+        status: 'FINAL',
         current_version: 1,
         evaluation_score: 92.5 - idx * 3.0,
         submitted_at: new Date().toISOString(),
@@ -447,7 +457,7 @@ async function runAllTests() {
         rfq_id: rwaRfqId,
         supplier_id: s.id,
         invitation_id: inv.id,
-        status: 'SUBMITTED',
+        status: 'FINAL',
         current_version: 1,
         evaluation_score: 91.0 - idx * 4.0,
       }).select().single();
@@ -463,6 +473,35 @@ async function runAllTests() {
   });
 
   await test('GOVERNANCE', '3. Cast Committee Votes in Evaluation & Voting Room', async () => {
+    const appointmentClient = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
+    const { error: appointmentLoginError } = await appointmentClient.auth.signInWithPassword({
+      email: 'admin@otp.test',
+      password: 'password',
+    });
+    if (appointmentLoginError) {
+      throw new Error(`Committee appointing administrator login failed: ${appointmentLoginError.message}`);
+    }
+    for (const appointment of [
+      { profileId: rwaPresidentProfile.id, roleId: 'VICE_PRESIDENT', roleName: 'Vice President' },
+      { profileId: rwaMember3Profile.id, roleId: 'COMMITTEE_MEMBER', roleName: 'Committee Member' },
+    ]) {
+      const { data, error } = await appointmentClient.rpc('appoint_org_role_atomic', {
+        p_organization_id: rwaOrgId,
+        p_person_id: appointment.profileId,
+        p_role_id: appointment.roleId,
+        p_role_name: appointment.roleName,
+        p_role_category: 'RWA_GOVERNANCE',
+        p_responsibility_scope: 'PROCUREMENT_GOVERNANCE',
+        p_authority_scope: { vote: true },
+        p_appointment_event: 'DISPOSABLE_TEST_APPOINTMENT',
+        p_term_duration_days: 365,
+      });
+      if (error || data?.ok !== true || !data?.assignmentId) {
+        throw new Error(`Committee appointment failed: ${error?.message ?? 'invalid result'}`);
+      }
+      governanceAssignmentIds.push(data.assignmentId);
+    }
+
     // Assign committee seats on this RFQ to allow voting under migration 00238 authority boundary
     await admin.from('committee_assignments').upsert([
       { rfq_id: rwaRfqId, profile_id: rwaPresidentProfile.id },
@@ -655,6 +694,9 @@ async function runAllTests() {
       if (reqIds.length > 0) {
         await admin.from('requirements').delete().in('id', reqIds);
       }
+      if (governanceAssignmentIds.length > 0) {
+        await admin.from('org_role_assignments').delete().in('id', governanceAssignmentIds);
+      }
     } catch (cleanupErr) {
       console.error('Warning during test cleanup:', cleanupErr);
     }
@@ -675,10 +717,7 @@ async function runAllTests() {
     console.log('\n🎉 ALL REAL-TIME CALL FLOWS & CORE CAPABILITIES ARE 100% OPERATIONAL!');
   } else {
     const isConnErr = results.some(r => !r.passed && (r.error?.includes('fetch failed') || r.error?.includes('ECONNREFUSED')));
-    if (isConnErr && process.env.ALLOW_OFFLINE === 'true') {
-      console.log(`\n⚠️ Live database backend offline — skipping live call flow tests because ALLOW_OFFLINE=true is explicitly set.`);
-      process.exit(0);
-    }
+    if (isConnErr) console.error('Required live call flow backend is unavailable.');
     console.log(`\n❌ ${failed} live tests failed or backend is unreachable (Exit Code 1). See log above.`);
     process.exit(1);
   }

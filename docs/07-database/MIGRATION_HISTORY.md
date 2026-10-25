@@ -55,9 +55,9 @@ Milestone index only. Files `00001` through `00252` are on disk and contiguous. 
 | `00271_fix_supplier_messaging_channels_unique_constraint.sql` | Establishes authoritative UNIQUE INDEX on `supplier_messaging_channels(supplier_id, channel)` to resolve Postgres 42P10 errors on `ON CONFLICT` during RFQ supplier invitations; wraps invitation notification dispatch in exception-resilient block to ensure zero rollback of discovery invitations. |
 | `00272_add_waha_to_messaging_provider_and_isolate_operator_phone.sql` | Adds 'WAHA' to `messaging_provider` enum; reassigns legacy QA suppliers away from operator handset (`+919972967530`); hardens `dispatch_supplier_invitation_notification` to abort if target phone matches gateway operator handset or buyer phone. |
 
-## Local closure migrations 00315-00327 (24 October 2026)
+## Local closure migrations 00315-00328 (25 October 2026)
 
-The chain is contiguous from `00001` through `00327_notification_dispatch_isolation.sql`. These files are local source only until a separately authorized deployment.
+The chain is contiguous from `00001` through `00328_admin_test_runner_canonical_status_enum.sql`. These files are local source only until a separately authorized deployment.
 
 | File | Purpose |
 | --- | --- |
@@ -74,11 +74,12 @@ The chain is contiguous from `00001` through `00327_notification_dispatch_isolat
 | `00325_disable_pilot_quote_quorum_waiver.sql` | Disables waiver execution and enforces actual FINAL-quote quorum on every award insert. |
 | `00326_authoritative_committee_tenure.sql` | One-calendar-year RWA/MSME tenure, concurrent-holder exclusion and appointment/seat vote authority. |
 | `00327_notification_dispatch_isolation.sql` | Mandatory idempotency, recipient-only reads and service-role-only enqueue. |
+| `00328_admin_test_runner_canonical_status_enum.sql` | Forward-only repair of the administrative test runner's stale `rfq_phase` enum probe; canonical enums are `rfq_status` and `requirement_status`. |
 
-No `*.DEFERRED.UNVERSIONED.sql` files remain. CI `EXPECTED_CEILING` is `00327`. The designated local stack was not started because its identity/workdir is inconsistent and port 54322 belongs to `otp-clean`; hosted status is unknown because no independently verified authorized target was available.
+No `*.DEFERRED.UNVERSIONED.sql` files remain. CI `EXPECTED_CEILING` in the working tree is `00328`. On 25 October 2026, the full chain replayed on disposable project `otp-disposable-b25c1025` (loopback API `127.0.0.1:58901`, database port `58902`); migration 00077 ran only after the disposable empty-table proof. The canonical `otp-local` database and hosted database were not touched. The current hosted ceiling remains UNKNOWN. Database regression checks reported unresolved failures; see [recertification evidence](../13-truth/PILOT_RECERTIFICATION_EVIDENCE_2026-10-25.md).
 
 ### Validation evidence
 
-The older 318-row disposable run is historical only: current 00317 and the final chain differ from its manifest. Fresh exact-chain evidence for 00001-00327 is recorded only after the isolated run; static tests alone are not database proof.
+The earlier 318- and 327-migration disposable runs are historical. The current staged replay applied 76 + 1 + 237 + 14 migrations and reached `00328`. This proves local replay only; it does not certify runtime invariants or hosted state. Current RPC/security and browser gate failures are recorded in [PILOT_RECERTIFICATION_EVIDENCE_2026-10-25.md](../13-truth/PILOT_RECERTIFICATION_EVIDENCE_2026-10-25.md).
 
 00315 is a no-op on a fresh chain: `00217_revoke_public_execute_default_privileges.sql` already revoked EXECUTE on all `public` routines from PUBLIC and anon, and `update_my_organization_name` is not on the anon allowlist. It is retained as a guard for databases that drifted from the chain.

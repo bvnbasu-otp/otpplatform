@@ -1,10 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://otpplatform-theta.vercel.app';
-const LOCAL_SUPABASE_URL = 'http://127.0.0.1:54321';
-const ANON_KEY =
-  process.env.VITE_SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const ADMIN_EMAIL = process.env.OTP_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.OTP_ADMIN_PASSWORD;
+const INITIAL_PASSWORD = process.env.OTP_INITIAL_USER_PASSWORD;
+if (!SUPABASE_URL || !ANON_KEY || !ADMIN_EMAIL || !ADMIN_PASSWORD || !INITIAL_PASSWORD) {
+  throw new Error('Explicit endpoint, key, admin credentials, and initial password are required');
+}
+
+type SignupRequest = {
+  id: string;
+  side: string;
+  status: string;
+  email: string;
+  contact_first_name?: string;
+  contact_last_name?: string;
+  business_name?: string;
+  created_at?: string;
+};
 
 async function tryApproveOnEndpoint(url: string) {
   console.log(`\n-----------------------------------------------------------------`);
@@ -17,12 +31,7 @@ async function tryApproveOnEndpoint(url: string) {
 
   // Authenticate as Super Admin
   let token: string | null = null;
-  const adminCredentials = [
-    { email: 'bvnbasu@gmail.com', password: 'Admin@OTP2026!' },
-    { email: 'admin@otp.test', password: 'password' },
-    { email: 'admin@otp.test', password: '@dm!n123' },
-    { email: 'ops@otp.test', password: 'password' },
-  ];
+  const adminCredentials = [{ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }];
 
   for (const cred of adminCredentials) {
     try {
@@ -32,7 +41,7 @@ async function tryApproveOnEndpoint(url: string) {
         token = data.session.access_token;
         break;
       }
-    } catch (e: any) {
+    } catch {
       // ignore
     }
   }
@@ -44,10 +53,10 @@ async function tryApproveOnEndpoint(url: string) {
 
   // Fetch pending requests via RPC
   const { data: rpcRequests, error: rpcErr } = await supabase.rpc('admin_get_signup_requests');
-  let requests: any[] = [];
+  let requests: SignupRequest[] = [];
 
   if (!rpcErr && Array.isArray(rpcRequests)) {
-    requests = rpcRequests;
+    requests = rpcRequests as SignupRequest[];
   } else {
     console.log(`⚠️ admin_get_signup_requests RPC notice: ${rpcErr?.message || 'Empty'}. Trying direct table select...`);
     const { data: tableRequests, error: tblErr } = await supabase
@@ -58,7 +67,7 @@ async function tryApproveOnEndpoint(url: string) {
     if (tblErr) {
       console.log(`❌ Table query error: ${tblErr.message}`);
     } else {
-      requests = tableRequests || [];
+      requests = (tableRequests || []) as SignupRequest[];
     }
   }
 
@@ -84,27 +93,11 @@ async function tryApproveOnEndpoint(url: string) {
       p_request_id: req.id,
       p_action: 'APPROVE',
       p_notes: 'Batch auto-approved by Super Admin',
-      p_initial_password: 'Welcome@OTP2026!',
+      p_initial_password: INITIAL_PASSWORD,
     });
 
     if (reviewErr) {
       console.log(`❌ RPC error reviewing ${req.email}: ${reviewErr.message}`);
-      
-      // Fallback: direct table update if RPC failed
-      const { data: updateRes, error: updateErr } = await supabase
-        .from('signup_requests')
-        .update({
-          status: 'ONBOARDED',
-          reviewed_at: new Date().toISOString(),
-          review_notes: 'Direct approval by Super Admin',
-        })
-        .eq('id', req.id);
-
-      if (updateErr) {
-        console.log(`❌ Direct update error: ${updateErr.message}`);
-      } else {
-        console.log(`✅ Direct table update set status = ONBOARDED for ${req.email}`);
-      }
     } else {
       console.log(`✅ Approved successfully via RPC:`, reviewRes);
     }
@@ -112,7 +105,6 @@ async function tryApproveOnEndpoint(url: string) {
 }
 
 async function main() {
-  await tryApproveOnEndpoint(LOCAL_SUPABASE_URL);
   await tryApproveOnEndpoint(SUPABASE_URL);
 }
 

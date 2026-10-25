@@ -378,7 +378,14 @@ SELECT 'HISTORICAL_PURGE_TARGET_EMPTY' AS proof;
 }
 
 function run(cmd: string, args: string[], env: NodeJS.ProcessEnv, capture = false): string {
-  const out = execFileSync(cmd, args, { env, encoding: 'utf8', stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit' });
+  // On Windows npm exposes Supabase as a .cmd shim. Node's execFileSync does
+  // not execute .cmd files unless it invokes the platform shell.
+  const out = execFileSync(cmd, args, {
+    env,
+    encoding: 'utf8',
+    stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
+    shell: process.platform === 'win32' && cmd === 'supabase',
+  });
   return capture ? String(out) : '';
 }
 
@@ -401,7 +408,7 @@ async function assertPortsFree(ports: Ports): Promise<void> {
   }
 }
 
-function assertDbContainer(projectId: string, ports: Ports, env: NodeJS.ProcessEnv): string {
+export function assertDbContainer(projectId: string, ports: Ports, env: NodeJS.ProcessEnv): string {
   const name = `supabase_db_${projectId}`;
   const raw = run('docker', ['inspect', '--format', '{{json .Config.Labels}}|{{json .NetworkSettings.Ports}}', name], env, true).trim();
   const [labelsJson, portsJson] = raw.split('|');
@@ -455,7 +462,11 @@ export async function main(argv: string[], repoRoot: string): Promise<number> {
     assertNoDockerOverlap(options.projectId, dockerInventory(env));
     await assertPortsFree(ports);
     if (listMigrationFiles(migrationsDir).at(-1)?.slice(0, 5) !== '00076') refuse('start requires only stage A (through 00076) in supabase/migrations');
-    run('supabase', ['start', '--workdir', options.workdir, '-x', EXCLUDED_SERVICES.join(',')], env);
+    const output = run('supabase', ['start', '--workdir', options.workdir, '-x', EXCLUDED_SERVICES.join(',')], env, true);
+    for (const line of output.split(/\r?\n/)) {
+      if (!line || /(DB_URL|PASSWORD|SERVICE_ROLE_KEY|ANON_KEY|SECRET|JWT|S3_PROTOCOL|ACCESS KEY|PUBLISHABLE|API KEY)/i.test(line)) continue;
+      process.stdout.write(`${line}\n`);
+    }
     assertDbContainer(options.projectId, ports, env);
     return 0;
   }

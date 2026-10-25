@@ -27,12 +27,10 @@ type CoverageRequest = {
   limit?: number;
 };
 
-const STATIC_FALLBACK_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzdXZ0Y2V6ZmZvbXR3end5cnNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTExODU1NSwiZXhwIjoyMTA0Njk0NTU1fQ.nHH1b5GA3gHgQt3kuLEKYvVUW86_Y8vjm91Vkq9nY7c';
-
-function serviceClient(overrideKey?: string) {
+function serviceClient() {
   const url = Deno.env.get('SUPABASE_URL') ?? '';
-  const key = overrideKey || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || STATIC_FALLBACK_SERVICE_ROLE_KEY;
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!url || !key) throw new Error('Supabase service environment is not configured');
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -41,14 +39,8 @@ async function rpcWithClockSkewFallback<T = unknown>(
   fn: string,
   args: Record<string, unknown>,
 ): Promise<{ client: ReturnType<typeof serviceClient>; data: T | null; error: { message?: string; code?: string } | null }> {
-  let activeClient = client;
-  let res = await activeClient.rpc(fn, args);
-  if (res.error && (res.error.code === 'PGRST303' || res.error.message?.includes('JWT issued at future'))) {
-    console.warn(`[location-pin-coverage] Clock skew detected on ${fn} (${res.error.message}). Retrying with static service role credentials...`);
-    activeClient = serviceClient(STATIC_FALLBACK_SERVICE_ROLE_KEY);
-    res = await activeClient.rpc(fn, args);
-  }
-  return { client: activeClient, data: res.data as T | null, error: res.error };
+  const res = await client.rpc(fn, args);
+  return { client, data: res.data as T | null, error: res.error };
 }
 
 Deno.serve(async (req) => {

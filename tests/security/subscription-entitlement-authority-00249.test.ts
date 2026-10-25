@@ -342,7 +342,7 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 76]).toBe('00325_disable_pilot_quote_quorum_waiver.sql');
     expect(files[index + 77]).toBe('00326_authoritative_committee_tenure.sql');
     expect(files[index + 78]).toBe('00327_notification_dispatch_isolation.sql');
-    expect(index).toBe(files.length - 79);
+    expect(index).toBe(files.length - 80);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

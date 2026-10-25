@@ -4,7 +4,7 @@ Statuses are defined in [CAPABILITY_STATUS.md](./CAPABILITY_STATUS.md). This pag
 
 ## Current working tree (24 October 2026)
 
-- Local source ceiling is `00327`. No claim is made that `otp-local`, hosted Supabase, or Vercel runs this revision.
+- Local source ceiling is `00328`. No claim is made that `otp-local`, hosted Supabase, or Vercel runs this revision.
 - `otp-local` was not started: its stopped database container identifies a different workdir while sibling components identify this workspace, and port 54322 belongs to another pre-existing stack.
 - Contact storage has a 90-day retention boundary, but deployment must separately schedule the privileged bounded purge and establish legal-hold operations.
 - Email remains configuration/provider dependent. WAHA remains a controlled demo dependency; gateway acceptance is not proof of recipient delivery. In-app delivery depends on authenticated subscriptions.

@@ -1,5 +1,5 @@
 /**
- * 00295 against disposable databases on local supabase_db_otp-clean.
+ * 00295 against disposable databases on the explicitly marked local Supabase target.
  * Drops only disposable databases whose CREATE DATABASE succeeded.
  * Temporarily disables connections to the original database named postgres
  * and terminates sessions on that database, then restores the saved
@@ -12,9 +12,11 @@ import { resolve } from 'node:path';
 import { Client } from 'pg';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { asLegalReviewer } from '../helpers/legal-evidence-fixture';
+import { resolveDisposableRegressionTarget } from '../../scripts/regression-target';
 
 const HOST = '127.0.0.1';
-const PORT = 54322;
+const TARGET = resolveDisposableRegressionTarget(process.env, process.cwd());
+const PORT = TARGET.dbPort;
 const STAMP = `${Date.now().toString(36)}${randomUUID().slice(0, 8).replace(/-/g, '')}`;
 const BASE = `otp_m295_base_${STAMP}`;
 const EMPTY = `otp_m295_empty_${STAMP}`;

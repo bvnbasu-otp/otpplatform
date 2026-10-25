@@ -1,6 +1,6 @@
 # 11. Testing Architecture, Staging Verification Gate & Superadmin Test Center
 
-> 24 October 2026: the current local gate targets contiguous migrations through `00327`. Database claims require a fresh isolated exact-manifest disposable run, including the pre-00077 empty-table proof, post-chain catalog/grant/RLS/behavior checks and explicit loopback type generation. Static tests and skips are not database passes. Browser coverage includes desktop scrollbar discovery/focus and mobile horizontal-overflow checks.
+> 25 October 2026: the current local gate targets contiguous migrations through `00328`. Database claims require a fresh isolated exact-manifest disposable run, including the pre-00077 empty-table proof, post-chain catalog/grant/RLS/behavior checks and explicit loopback type generation. Static tests and skips are not database passes. Browser coverage includes desktop scrollbar discovery/focus and mobile horizontal-overflow checks.
 
 ## 1. Testing Philosophy & "No Unverified Code in Production" Mandate
 

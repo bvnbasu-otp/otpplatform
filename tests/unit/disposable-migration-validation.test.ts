@@ -137,7 +137,7 @@ describe('workdir location and state', () => {
 describe('stage plan isolates 00077', () => {
   it('splits the real chain into A=1-76, B=77 alone, C=78-314, D=315-ceiling', () => {
     const files = listMigrationFiles(resolve(REPO, 'supabase/migrations'));
-    const plan = planStages(files, 327);
+    const plan = planStages(files, 328);
     expect(plan.A).toHaveLength(76);
     expect(plan.B).toEqual(['00077_clear_all_transactional_data_keep_logins.sql']);
     expect(plan.C).toHaveLength(237);
@@ -155,6 +155,7 @@ describe('stage plan isolates 00077', () => {
       '00325_disable_pilot_quote_quorum_waiver.sql',
       '00326_authoritative_committee_tenure.sql',
       '00327_notification_dispatch_isolation.sql',
+      '00328_admin_test_runner_canonical_status_enum.sql',
     ]);
   });
 
@@ -209,6 +210,7 @@ describe('generated config and command surface', () => {
     expect(code.match(/'stop'/g)).toHaveLength(1);
     expect(code).toContain("['stop', '--workdir', options.workdir, '--project-id', options.projectId, '--no-backup']");
     expect(code).not.toMatch(/process\.env\.(DATABASE_URL|SUPABASE_DB_URL|DIRECT_URL)/);
+    expect(SOURCE).toMatch(/ACCESS KEY|PUBLISHABLE|API KEY/);
   });
 
   it('refuses before touching Docker when the environment or workdir is unsafe', async () => {

@@ -22,13 +22,13 @@ This README is an entry point. It is not a certification. The canonical pilot-fr
 | | |
 | --- | --- |
 | Branch | `main` (tracks `origin/main`) |
-| HEAD inspected | `a497c403323a63ecad90731f87aa9ec244eb63cf` |
-| Release status | 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (`OTP-REL-CERT-20261015-001`) |
-| Product Owner attestation | 15 October 2026: *"All claims are working correctly. All release gates may be declared GREEN."* |
-| Migration files on disk | `00001`–`00270` on disk. Formal migration ceiling is `00270`. |
-| Hosted database migration | Formal migration ceiling is `00270`. |
-| Public URL | `https://otpplatform-theta.vercel.app` |
-| Deployed git SHA | Release baseline `a497c403323a63ecad90731f87aa9ec244eb63cf` |
+| Repository baseline | `519d424dbc35e14a7bc7a79af739fb1a69bc1367` on `main`; the worktree contains uncommitted changes and is not certified. |
+| Release status | The 15 October 2026 green certificate is historical; the current local recertification is **NOT READY**. See [current evidence](docs/13-truth/PILOT_RECERTIFICATION_EVIDENCE_2026-10-25.md). |
+| Historical Product Owner attestation | 15 October 2026; it does not certify the current worktree. |
+| Migration files on disk | `00001`–`00328`, contiguous; `00328` repairs the canonical status-enum check in the admin test runner. |
+| Hosted database migration | Current hosted ceiling is **UNKNOWN**; this run made no hosted database changes. |
+| Public URL in repository | `https://otpplatform-theta.vercel.app` (not independently verified in this recertification) |
+| Last CI SHA checked | `519d424dbc35e14a7bc7a79af739fb1a69bc1367`; that successful run did not include the current worktree changes. |
 
 Product facts, statuses, and limits are in [docs/13-truth/CAPABILITY_STATUS.md](docs/13-truth/CAPABILITY_STATUS.md). Do not treat this README as a second status table.
 
@@ -40,7 +40,7 @@ Monorepo (`pnpm` workspaces: `apps/*`, `packages/*`):
 - `packages/domain` — types, tax, entitlement, governance
 - `packages/services` — application services and provider adapters
 - `packages/database` — database access
-- `supabase/migrations` — SQL files `00001` through `00270` on disk. Formal migration ceiling is `00270`.
+- `supabase/migrations` — SQL files `00001` through `00328` on disk; hosted application is a separate unknown.
 - `supabase/functions` — edge functions
 
 Rules that must hold against a hostile client belong in database functions and row-level security, not only in React. A migration file on disk is not proof the hosted database has applied it.

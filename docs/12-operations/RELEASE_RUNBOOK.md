@@ -4,8 +4,8 @@ A release is a person’s git commit and git push, plus whatever hosting actuall
 
 ## 24 October local closure candidate
 
-- Source ceiling: `00327`; CI must match exactly. Migrations `00319`–`00324` resolve the six former deferred areas in dependency order; `00325` disables pilot quote-quorum waiver, `00326` enforces RWA/MSME committee tenure, and `00327` isolates notification dispatch.
-- A release requires a fresh exact-manifest disposable run, ledger `327`, post-migration grant/RLS/behavior checks, generated types from that disposable, and all safe gates. The old 318-row disposable run is not evidence for this chain.
+- Source ceiling: `00328`; CI must match exactly. Migrations `00319`–`00324` resolve the six former deferred areas in dependency order; `00325` disables pilot quote-quorum waiver, `00326` enforces RWA/MSME committee tenure, `00327` isolates notification dispatch, and `00328` forward-repairs the canonical administrative enum probe.
+- A release requires a fresh exact-manifest disposable run, ledger `328`, post-migration grant/RLS/behavior checks, generated types from that disposable, and all safe gates. The old 318- and 327-row disposable runs are not evidence for this chain.
 - `otp-local` is not a validation target while stopped and identity-inconsistent. Port 54322 currently belongs to `otp-clean`; do not start or repair either stack in this run.
 - Hosted Supabase and Vercel remain read-only/unknown unless identity is independently verified with already-authorized access. Never use linked CLI state.
 - No pilot minimum-quote waiver exists. Discovery may continue below the threshold, but award insertion must fail until actual FINAL quotes meet `min_quotes_required`.

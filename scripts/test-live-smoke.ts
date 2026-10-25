@@ -49,11 +49,18 @@ if (envFileIdx !== -1 && args[envFileIdx + 1]) {
   loadEnvFile(path.resolve(process.cwd(), '.env.otp.production.local'));
 }
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const ANON_KEY =
   process.env.VITE_SUPABASE_ANON_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+  process.env.SUPABASE_ANON_KEY || '';
+
+const apiHost = (() => {
+  try { return new URL(SUPABASE_URL).hostname; } catch { return ''; }
+})();
+if (!['127.0.0.1', 'localhost', '::1'].includes(apiHost) || !ANON_KEY || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('Live smoke suite requires explicit loopback Supabase URL and API keys.');
+  process.exit(1);
+}
 
 interface CheckResult {
   flow: string;
@@ -337,9 +344,8 @@ export async function runLiveSmokeTests(): Promise<{ passed: number; failed: num
 
   // 10. WhatsApp Password Reset RPC Flow
   await recordCheck('Database WhatsApp Password Reset RPC', 'RPC request_whatsapp_password_reset', async () => {
-    const serviceRoleKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    if (!serviceRoleKey) throw new Error('Local service role key is required');
     const serviceClient = createClient(SUPABASE_URL, serviceRoleKey, {
       auth: { persistSession: false },
     });
@@ -350,9 +356,9 @@ export async function runLiveSmokeTests(): Promise<{ passed: number; failed: num
     const res = data as { ok: boolean; error?: string; otp_code?: string; phone?: string };
     if (!res.ok) throw new Error(res.error || 'RPC returned ok: false');
     if (!res.otp_code || (res.otp_code.length !== 6 && res.otp_code.length !== 8)) {
-      throw new Error(`Invalid OTP generated: ${res.otp_code}`);
+      throw new Error('Invalid OTP generated; value redacted');
     }
-    return `Generated 8-digit OTP: ${res.otp_code} for ${res.phone || 'admin'}`;
+    return `Generated ${res.otp_code.length}-digit OTP (value redacted)`;
   });
 
   const passed = results.filter((r) => r.passed).length;
@@ -368,10 +374,7 @@ export async function runLiveSmokeTests(): Promise<{ passed: number; failed: num
 
   if (failed > 0) {
     const isConnErr = results.some(r => !r.passed && (r.message.includes('fetch failed') || r.message.includes('ECONNREFUSED')));
-    if (isConnErr && process.env.ALLOW_OFFLINE === 'true') {
-      console.log('⚠️ Live backend offline — skipping live smoke check because ALLOW_OFFLINE=true is explicitly set.\n');
-      process.exit(0);
-    }
+    if (isConnErr) console.error('Required live smoke backend is unavailable.');
     console.error('❌ LIVE SMOKE CHECKS FAILED — BACKEND UNREACHABLE OR INVARIANT VIOLATED (Exit Code 1)!\n');
     process.exit(1);
   } else {

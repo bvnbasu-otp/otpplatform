@@ -816,12 +816,25 @@ describe('00289 pilot simulated purchases', () => {
       );
 
       await asOwner(client);
+      // 00280 deliberately does not seed canonical prices. Give this rolled-back
+      // fixture the Individual plan the purchase path requires, regardless of
+      // whether the disposable database has any demo plan rows.
       await client.query(
-        `UPDATE public.subscription_plans
-         SET tier_code = 'INDIVIDUAL', price_monthly = 199, price_yearly = 1999,
-             price_extra_rfq = 149, currency = 'INR', gst_rate = 18,
-             supplier_state_code = '29', is_active = true
-         WHERE code = 'COMMUNITY_FREE'`,
+        `INSERT INTO public.subscription_plans (
+           code, name, description, price_monthly, currency, features, is_active,
+           tier_code, price_yearly, price_extra_rfq, gst_rate, supplier_state_code
+         ) VALUES (
+           'TEST_INDIVIDUAL_CANONICAL', 'Test Individual', 'transaction-scoped test plan',
+           199, 'INR', '{}'::jsonb, true, 'INDIVIDUAL', 1999, 149, 18, '29'
+         )
+         ON CONFLICT (tier_code) WHERE tier_code IS NOT NULL DO UPDATE
+         SET price_monthly = EXCLUDED.price_monthly,
+             currency = EXCLUDED.currency,
+             is_active = EXCLUDED.is_active,
+             price_yearly = EXCLUDED.price_yearly,
+             price_extra_rfq = EXCLUDED.price_extra_rfq,
+             gst_rate = EXCLUDED.gst_rate,
+             supplier_state_code = EXCLUDED.supplier_state_code`,
       );
       await actAs(client, buyer);
       const address = await client.query(

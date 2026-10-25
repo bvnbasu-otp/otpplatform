@@ -24,7 +24,12 @@ describe('Supabase Client Configuration & Resolver', () => {
 
   it('does not accept a hosted URL unless the deployment class agrees with its project ref', () => {
     const customUrl = 'https://custom-supabase.example.com';
-    const resolved = resolveSupabaseUrl(customUrl, 'otpplatform-theta.vercel.app', 'https://otpplatform-theta.vercel.app');
+    const resolved = resolveSupabaseUrl(
+      customUrl,
+      'otpplatform-theta.vercel.app',
+      'https://otpplatform-theta.vercel.app',
+      { deploymentTarget: 'local' },
+    );
     expect(resolved).toBe('');
   });
 
@@ -41,7 +46,8 @@ describe('Supabase Client Configuration & Resolver', () => {
     const resolved = resolveSupabaseUrl(
       null,
       'localhost',
-      'http://localhost:3000'
+      'http://localhost:3000',
+      { deploymentTarget: 'local' },
     );
     expect(resolved).toBe('http://127.0.0.1:54321');
   });
@@ -50,7 +56,8 @@ describe('Supabase Client Configuration & Resolver', () => {
     const resolved = resolveSupabaseUrl(
       null,
       '127.0.0.1',
-      'http://127.0.0.1:3000'
+      'http://127.0.0.1:3000',
+      { deploymentTarget: 'local' },
     );
     expect(resolved).toBe('http://127.0.0.1:54321');
   });
@@ -65,8 +72,8 @@ describe('Supabase Client Configuration & Resolver', () => {
   });
 
   it('keeps the same database target when the viewport toggle changes', () => {
-    const desktop = resolveSupabaseUrl(null, 'localhost', 'http://localhost:3000', { viewMode: 'desktop' });
-    const mobile = resolveSupabaseUrl(null, 'localhost', 'http://localhost:3000', { viewMode: 'mobile' });
+    const desktop = resolveSupabaseUrl(null, 'localhost', 'http://localhost:3000', { deploymentTarget: 'local', viewMode: 'desktop' });
+    const mobile = resolveSupabaseUrl(null, 'localhost', 'http://localhost:3000', { deploymentTarget: 'local', viewMode: 'mobile' });
     expect(desktop).toBe('http://127.0.0.1:54321');
     expect(mobile).toBe(desktop);
   });

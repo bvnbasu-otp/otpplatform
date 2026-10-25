@@ -1,380 +1,295 @@
-/**
- * =============================================================================
- * OTP Platform — Master Regression Test Suite
- * =============================================================================
- * Executes the complete regression battery across all layers of the platform:
- *  1. Canonical Procurement Vocabulary & Anti-Leak Policy Compliance
- *  2. Domain Layer Logic & Standards Engine (@otp/domain)
- *  3. Network Adapters & External Services (@otp/services)
- *  4. Database Entity & Mappings Layer (@otp/database)
- *  5. Messaging & Routing Core Units (tests/unit)
- *  6. Web Application Features & Governance UI (@otp/web)
- *  7. Full Production Vite Bundle Build
- *  8. Live Postgres Operational Test Engine (admin_run_test_case RPC)
- * =============================================================================
- */
-
-import { execSync } from 'child_process';
+/** Runs required regression suites against a positively identified disposable Supabase project. */
+import { execFileSync, execSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, existsSync, unlinkSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import * as path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import {
+  aggregateRegressionResults,
+  resultForCheck,
+  resultForUnavailableSuite,
+  resultFromVitestReport,
+  runRequiredTestBattery,
+  type RegressionSuiteResult,
+} from './regression-results';
+import { assertDisposableRestReady, resolveDisposableRegressionTarget, type DisposableRegressionTarget } from './regression-target';
+import { EXECUTABLE_DATABASE_RPC_TEST_IDS } from './regression-rpc-scope';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321';
-const SUPABASE_SERVICE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+const summary: RegressionSuiteResult[] = [];
+const reportDir = mkdtempSync(path.join(tmpdir(), 'otp-regression-vitest-'));
+let target: DisposableRegressionTarget | undefined;
 
-interface SuiteSummary {
-  name: string;
-  category: string;
-  passed: number;
-  failed: number;
-  durationMs: number;
-  details?: string;
-}
-
-const summary: SuiteSummary[] = [];
-
-function logHeader(title: string) {
+function logHeader(title: string): void {
   console.log('\n=================================================================');
   console.log(`  ${title}`);
   console.log('=================================================================');
 }
 
-function getExecCommand(cmd: string): string {
-  const nodeExecutable = process.execPath;
-  if (cmd.startsWith('node ')) {
-    return cmd.replace(/^node\b/, `"${nodeExecutable}"`);
-  }
-  if (cmd.startsWith('pnpm test:vocab')) {
-    return `"${nodeExecutable}" ./node_modules/tsx/dist/cli.mjs scripts/verify-vocabulary.ts`;
-  }
-  if (cmd.startsWith('pnpm test:domain')) {
-    return `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run --config packages/domain/vitest.config.ts`;
-  }
-  if (cmd.startsWith('pnpm test:services')) {
-    return `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run --config packages/services/vitest.config.ts`;
-  }
-  if (cmd.startsWith('pnpm test:database')) {
-    return `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run --config packages/database/vitest.config.ts`;
-  }
-  if (cmd.startsWith('pnpm test:web')) {
-    return `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run --config apps/web/vitest.config.ts`;
-  }
-  if (cmd.startsWith('pnpm test:db')) {
-    return `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run tests/integration tests/security`;
-  }
-  if (cmd.startsWith('pnpm test:smoke')) {
-    return `"${nodeExecutable}" ./node_modules/tsx/dist/cli.mjs scripts/test-live-smoke.ts`;
-  }
-  if (cmd.startsWith('pnpm test:live')) {
-    return `"${nodeExecutable}" ./node_modules/tsx/dist/cli.mjs scripts/run_live_automated_tests.ts`;
-  }
-  if (cmd.startsWith('pnpm vitest run ')) {
-    const target = cmd.replace(/^pnpm vitest run\s+/, '');
-    return `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run ${target}`;
-  }
-  if (cmd.startsWith('pnpm --filter @otp/web build')) {
-    return `"${nodeExecutable}" ./node_modules/vite/bin/vite.js build apps/web --config apps/web/vite.config.ts`;
-  }
-  return cmd;
+function isVitestCommand(command: string): boolean {
+  return [
+    'pnpm test:domain', 'pnpm test:services', 'pnpm test:database', 'pnpm test:web',
+    'pnpm test:db', 'pnpm vitest run ',
+  ].some((prefix) => command.startsWith(prefix));
 }
 
-function runStep(name: string, category: string, command: string, testCount: number) {
-  process.stdout.write(`⏳ [${category}] ${name}... `);
-  const start = Date.now();
-  try {
-    const resolvedCmd = getExecCommand(command);
-    let env = process.env;
-    if (command.startsWith('pnpm --filter @otp/web build')) {
-      // CI validation placeholders, aligned with the workflow compile step.
-      // These are not Vercel Production credentials.
-      env = {
-        ...process.env,
-        VITE_OTP_DEPLOYMENT_TARGET: 'non-production',
-        VITE_SUPABASE_URL: 'https://ci-validation.invalid',
-        VITE_SUPABASE_ANON_KEY: 'ci-validation-public-anon-placeholder',
-        VITE_DEMO_MODE: 'false',
-      };
-    }
-    const output = execSync(resolvedCmd, { stdio: 'pipe', encoding: 'utf8', env });
-    const durationMs = Date.now() - start;
-    let actualCount = testCount;
-    const cleanOutput = output.replace(/\x1b\[[0-9;]*m/g, '');
-    const vitestMatch = cleanOutput.match(/Tests\s+(\d+)\s+passed/i);
-    if (vitestMatch && parseInt(vitestMatch[1], 10) > 0) {
-      actualCount = parseInt(vitestMatch[1], 10);
-    }
-    console.log(`\x1b[32mPASSED\x1b[0m (${actualCount} tests, ${durationMs}ms)`);
-    summary.push({ name, category, passed: actualCount, failed: 0, durationMs });
-  } catch (err: any) {
-    const durationMs = Date.now() - start;
-    console.log(`\x1b[31mFAILED\x1b[0m (${durationMs}ms)`);
-    const output = err.stdout || err.stderr || err.message;
-    console.error(output);
-    const cleanOutput = (output || '').replace(/\x1b\[[0-9;]*m/g, '');
-    const vitestPassed = cleanOutput.match(/Tests\s+.*?(\d+)\s+passed/i);
-    const vitestFailed = cleanOutput.match(/Tests\s+.*?(\d+)\s+failed/i);
-    const actualPassed = vitestPassed ? parseInt(vitestPassed[1], 10) : 0;
-    const actualFailed = vitestFailed ? parseInt(vitestFailed[1], 10) : testCount;
-    summary.push({ name, category, passed: actualPassed, failed: actualFailed, durationMs, details: err.message });
+function getExecCommand(command: string, reportPath?: string): string {
+  const nodeExecutable = process.execPath;
+  let resolved: string;
+  if (command.startsWith('pnpm test:vocab')) {
+    resolved = `"${nodeExecutable}" ./node_modules/tsx/dist/cli.mjs scripts/verify-vocabulary.ts`;
+  } else if (command.startsWith('pnpm test:domain')) {
+    resolved = `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run --config packages/domain/vitest.config.ts`;
+  } else if (command.startsWith('pnpm test:services')) {
+    resolved = `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run --config packages/services/vitest.config.ts`;
+  } else if (command.startsWith('pnpm test:database')) {
+    resolved = `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run --config packages/database/vitest.config.ts`;
+  } else if (command.startsWith('pnpm test:web')) {
+    resolved = `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run --config apps/web/vitest.config.ts`;
+  } else if (command.startsWith('pnpm test:db')) {
+    resolved = `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run tests/integration tests/security`;
+  } else if (command.startsWith('pnpm test:smoke')) {
+    resolved = `"${nodeExecutable}" ./node_modules/tsx/dist/cli.mjs scripts/test-live-smoke.ts`;
+  } else if (command.startsWith('pnpm test:live')) {
+    resolved = `"${nodeExecutable}" ./node_modules/tsx/dist/cli.mjs scripts/run_live_automated_tests.ts`;
+  } else if (command.startsWith('pnpm vitest run ')) {
+    const targetArg = command.replace(/^pnpm vitest run\s+/, '');
+    resolved = `"${nodeExecutable}" ./node_modules/vitest/vitest.mjs run ${targetArg}`;
+  } else if (command.startsWith('pnpm --filter @otp/web build')) {
+    resolved = `"${nodeExecutable}" ./node_modules/vite/bin/vite.js build apps/web --config apps/web/vite.config.ts`;
+  } else {
+    throw new Error(`Unrecognized regression command: ${command}`);
   }
+  return reportPath ? `${resolved} --reporter=json --outputFile "${reportPath}"` : resolved;
+}
+
+function removePrivateVitestReport(reportPath: string): void {
+  if (existsSync(reportPath)) unlinkSync(reportPath);
+}
+
+function printSuiteResult(result: RegressionSuiteResult): void {
+  const label = result.status.padEnd(8);
+  console.log(`${label} ${result.category}: ${result.name} — passed ${result.passed}, failed ${result.failed}, skipped ${result.skipped}, blocked ${result.blocked}, not-run ${result.notRun}`);
+}
+
+function parseSmokeSummary(output: string): { passed: number; failed: number; total: number } | undefined {
+  const clean = output.replace(/\x1b\[[0-9;]*m/g, '');
+  const total = clean.match(/Total Checks\s*:\s*(\d+)/i);
+  const passed = clean.match(/Passed\s*:\s*(\d+)/i);
+  const failed = clean.match(/Failed\s*:\s*(\d+)/i);
+  if (!total || !passed || !failed) return undefined;
+  return { total: Number(total[1]), passed: Number(passed[1]), failed: Number(failed[1]) };
+}
+
+function parseLiveSummary(output: string): { passed: number; failed: number; total: number } | undefined {
+  const clean = output.replace(/\x1b\[[0-9;]*m/g, '');
+  const match = clean.match(/TEST SUITE SUMMARY:\s*(\d+)\/(\d+)\s+PASSED\s+\((\d+)\s+FAILED\)/i);
+  if (!match) return undefined;
+  return { passed: Number(match[1]), total: Number(match[2]), failed: Number(match[3]) };
+}
+
+function runStep(name: string, category: string, command: string): RegressionSuiteResult {
+  process.stdout.write(`⏳ [${category}] ${name}... `);
+  const startedAt = Date.now();
+  const vitest = isVitestCommand(command);
+  const reportPath = vitest ? path.join(reportDir, `${summary.length}.json`) : undefined;
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  if (command.startsWith('pnpm --filter @otp/web build')) {
+    env.VITE_OTP_DEPLOYMENT_TARGET = 'non-production';
+    env.VITE_SUPABASE_URL = 'https://ci-validation.invalid';
+    env.VITE_SUPABASE_ANON_KEY = 'ci-validation-public-anon-placeholder';
+    env.VITE_DEMO_MODE = 'false';
+  }
+
+  let exitCode = 0;
+  let output = '';
+  try {
+    output = execSync(getExecCommand(command, reportPath), {
+      stdio: 'pipe',
+      encoding: 'utf8',
+      env,
+      timeout: Number(process.env.OTP_REGRESSION_STEP_TIMEOUT_MS ?? 900_000),
+      killSignal: 'SIGKILL',
+    });
+  } catch (error: unknown) {
+    const processError = error as { status?: unknown; stdout?: unknown; stderr?: unknown };
+    exitCode = typeof processError.status === 'number' ? processError.status : 1;
+    output = `${processError.stdout ?? ''}\n${processError.stderr ?? ''}`;
+  }
+
+  const durationMs = Date.now() - startedAt;
+  let result: RegressionSuiteResult;
+  if (vitest) {
+    let report: unknown = null;
+    try {
+      if (reportPath && existsSync(reportPath)) report = JSON.parse(readFileSync(reportPath, 'utf8'));
+    } catch {
+      report = null;
+    }
+    result = resultFromVitestReport({ name, category, report, exitCode, durationMs });
+  } else if (command.startsWith('pnpm test:smoke')) {
+    const counts = parseSmokeSummary(output);
+    result = counts
+      ? resultForCheck({ name, category, exitCode, durationMs, details: `${counts.passed}/${counts.total} checks; ${counts.failed} failed` })
+      : resultForUnavailableSuite({ name, category, expected: 1, durationMs, details: 'Missing smoke-suite result summary' });
+    if (counts && (counts.total === 0 || counts.failed > 0 || counts.passed + counts.failed !== counts.total || exitCode !== 0 || /\bSKIPPED\b/i.test(output))) {
+      result = resultForUnavailableSuite({ name, category, expected: counts.total - counts.passed - counts.failed, durationMs, details: 'Smoke suite failed or did not execute every check' });
+      if (counts.failed > 0 || exitCode !== 0) result = { ...result, status: 'FAIL', failed: counts.failed || 1, blocked: 0 };
+    } else if (counts) {
+      result = { ...result, passed: counts.passed, failed: 0, status: 'PASS' };
+    }
+  } else if (command.startsWith('pnpm test:live')) {
+    const counts = parseLiveSummary(output);
+    if (!counts) {
+      result = resultForUnavailableSuite({ name, category, expected: 1, durationMs, details: 'Missing live-suite result summary' });
+    } else if (counts.total === 0 || counts.failed > 0 || counts.passed + counts.failed !== counts.total || exitCode !== 0) {
+      result = {
+        name, category, required: true, status: counts.failed > 0 || exitCode !== 0 ? 'FAIL' : 'BLOCKED',
+        passed: counts.passed, failed: counts.failed || (exitCode !== 0 ? 1 : 0), skipped: 0,
+        blocked: counts.passed + counts.failed !== counts.total ? 1 : 0,
+        notRun: Math.max(0, counts.total - counts.passed - counts.failed), durationMs,
+      };
+    } else {
+      result = { name, category, required: true, status: 'PASS', passed: counts.passed, failed: 0, skipped: 0, blocked: 0, notRun: 0, durationMs };
+    }
+  } else {
+    result = resultForCheck({ name, category, exitCode, durationMs, details: exitCode === 0 ? undefined : `Command exited with code ${exitCode}` });
+    if (output.includes('SKIPPED')) {
+      result = resultForUnavailableSuite({ name, category, expected: 1, durationMs, details: 'Command reported a skipped required check' });
+    }
+  }
+
+  if (reportPath) removePrivateVitestReport(reportPath);
+  summary.push(result);
+  printSuiteResult(result);
+  return result;
 }
 
 async function runDatabaseRpcBattery(): Promise<void> {
-  process.stdout.write('⏳ [POSTGRES] Live Database Benchmark RPC Battery (25 tests)... ');
-  const start = Date.now();
-  const testIds = [
-    'SEC-001', 'SEC-002', 'SEC-003', 'SEC-004', 'SEC-005',
-    'ID-001', 'ID-002', 'ID-003', 'ID-004', 'ID-005',
-    'INT-001', 'INT-002', 'INT-003', 'INT-004', 'INT-005', 'INT-006', 'INT-007', 'INT-008',
-    'E2E-001', 'E2E-002', 'E2E-003', 'E2E-004',
-    'UNIT-001', 'UNIT-002', 'UNIT-003',
-  ];
-
-  try {
-    const client = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-      auth: { persistSession: false },
-    });
-
-    let passed = 0;
-    let failed = 0;
-    const failures: string[] = [];
-
-    for (const testId of testIds) {
+  if (!target) throw new Error('Disposable database preflight was not completed');
+  const client = createClient(target.apiUrl, target.serviceRoleKey, { auth: { persistSession: false } });
+  const startedAt = Date.now();
+  const result = await runRequiredTestBattery({
+    name: 'Database Engine & Security RPCs',
+    category: 'POSTGRES',
+    testIds: EXECUTABLE_DATABASE_RPC_TEST_IDS,
+    runOne: async (testId) => {
       const { data, error } = await client.rpc('admin_run_test_case', {
         p_test_id: testId,
         p_test_name: testId,
       });
-
-      if (error || !data?.passed) {
-        failed++;
-        failures.push(`${testId}: ${error?.message || data?.error_message}`);
-      } else {
-        passed++;
+      if (error) {
+        if (/fetch failed|ECONNREFUSED|network|timeout/i.test(error.message)) throw new Error('PostgREST request failed');
+        return { status: 'FAIL', details: 'RPC returned an error' };
       }
-    }
+      return data?.passed === true
+        ? { status: 'PASS' }
+        : { status: 'FAIL', details: 'RPC did not report a pass' };
+    },
+    elapsedMs: () => Date.now() - startedAt,
+  });
+  summary.push(result);
+  printSuiteResult(result);
+}
 
-    const durationMs = Date.now() - start;
-    if (failed === 0) {
-      console.log(`\x1b[32mPASSED\x1b[0m (${passed}/${testIds.length} tests, ${durationMs}ms)`);
-      summary.push({
-        name: 'Database Engine & Security RPCs',
-        category: 'POSTGRES',
-        passed,
-        failed: 0,
-        durationMs,
-      });
-    } else {
-      // If Postgres endpoint is unavailable in unit-only environment, record as skipped gracefully
-      const isConnectionError = failures.some(f => f.includes('fetch failed') || f.includes('ECONNREFUSED'));
-      if (isConnectionError) {
-        console.log(`\x1b[33mSKIPPED\x1b[0m (Live DB endpoint offline, ${durationMs}ms)`);
-        summary.push({
-          name: 'Database Engine & Security RPCs',
-          category: 'POSTGRES',
-          passed: testIds.length,
-          failed: 0,
-          durationMs,
-        });
-      } else {
-        console.log(`\x1b[31mFAILED\x1b[0m (${passed} passed, ${failed} failed, ${durationMs}ms)`);
-        failures.forEach((f) => console.log(`   ❌ ${f}`));
-        summary.push({
-          name: 'Database Engine & Security RPCs',
-          category: 'POSTGRES',
-          passed,
-          failed,
-          durationMs,
-          details: failures.join('; '),
-        });
-      }
+async function seedDisposableFixtures(): Promise<void> {
+  if (!target) throw new Error('Disposable target is not set');
+  const client = createClient(target.apiUrl, target.serviceRoleKey, { auth: { persistSession: false } });
+  const initial = await client.from('requirements').select('id', { count: 'exact', head: true });
+  if (initial.error) throw new Error('Could not verify disposable fixture state');
+
+  if ((initial.count ?? 0) === 0) {
+    const seedFiles = [
+      'seed.sql',
+      'seed_pilots_horizontals.sql',
+      'seed_market_intelligence.sql',
+      'seed_procurement_policies.sql',
+      'seed_taxonomy_alignment.sql',
+      'seed_demo_environment.sql',
+      'seed_demo_messaging.sql',
+      'seed_demo_roles.sql',
+      'seed_demo_test_accounts.sql',
+      'seed_master_role_accounts.sql',
+    ];
+    for (const file of seedFiles) {
+      const sql = readFileSync(path.resolve('supabase', file), 'utf8');
+      execFileSync('docker', [
+        'exec', '-i', target.container,
+        'psql', '-X', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1',
+      ], { input: sql, stdio: ['pipe', 'ignore', 'pipe'] });
     }
-  } catch (err: any) {
-    const durationMs = Date.now() - start;
-    if (err.message.includes('fetch failed') || err.message.includes('ECONNREFUSED')) {
-      console.log(`\x1b[33mSKIPPED\x1b[0m (Live DB endpoint offline, ${durationMs}ms)`);
-      summary.push({
-        name: 'Database Engine & Security RPCs',
-        category: 'POSTGRES',
-        passed: testIds.length,
-        failed: 0,
-        durationMs,
-      });
-    } else {
-      console.log(`\x1b[31mFAILED\x1b[0m (${durationMs}ms): ${err.message}`);
-      summary.push({
-        name: 'Database Engine & Security RPCs',
-        category: 'POSTGRES',
-        passed: 0,
-        failed: testIds.length,
-        durationMs,
-        details: err.message,
-      });
-    }
+  } else if ((initial.count ?? 0) < 5) {
+    throw new Error('Disposable fixture state is partial; refusing to overlay the canonical seed set');
+  }
+
+  const [requirements, channels] = await Promise.all([
+    client.from('requirements').select('id', { count: 'exact', head: true }),
+    client.from('supplier_messaging_channels').select('id', { count: 'exact', head: true }),
+  ]);
+  if (requirements.error || channels.error || (requirements.count ?? 0) < 5 || (channels.count ?? 0) < 5) {
+    throw new Error('Disposable canonical seed verification failed');
   }
 }
 
-async function main() {
-  logHeader('OTP PLATFORM — MASTER REGRESSION SUITE EXECUTION');
-
-  // 1. Vocabulary Scanner
-  runStep(
-    'Canonical Procurement Vocabulary Scanner',
-    'POLICY',
-    'pnpm test:vocab',
-    1
-  );
-
-  // 2. Domain Unit Tests
-  runStep(
-    'Domain Logic, GST Validation & Parsing Engine',
-    'DOMAIN',
-    'pnpm test:domain',
-    71
-  );
-
-  // 3. Services Tests
-  runStep(
-    'Network Discovery & External Services Adapters',
-    'SERVICES',
-    'pnpm test:services',
-    30
-  );
-
-  // 4. Database Tests
-  runStep(
-    'Database Entity Mappers',
-    'DATABASE',
-    'pnpm test:database',
-    1
-  );
-
-  // 5. Core Unit Tests
-  runStep(
-    'Messaging Core & Web Routing Invariants',
-    'UNIT',
-    'pnpm vitest run tests/unit/',
-    75
-  );
-
-  // 6. Web Application Feature Battery
-  runStep(
-    'Web Features, Governance & State Machine Tests',
-    'WEB',
-    'pnpm test:web',
-    616
-  );
-
-  // Ensure Database Integration Fixtures are loaded for regression validation
-  try {
-    const client = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
-    const { count } = await client.from('requirements').select('*', { count: 'exact', head: true });
-    const { count: msgCount } = await client.from('supplier_messaging_channels').select('*', { count: 'exact', head: true });
-    if (!count || count < 5 || !msgCount || msgCount < 5) {
-      const fs = await import('fs');
-      const { execSync: runSync } = await import('child_process');
-      const fixtureFiles = [
-        'supabase/seed.sql',
-        'supabase/seed_pilots_horizontals.sql',
-        'supabase/seed_fulfillment.sql',
-        'supabase/seed_demo_environment.sql',
-        'supabase/seed_demo_messaging.sql',
-      ];
-      for (const f of fixtureFiles) {
-        if (fs.existsSync(f)) {
-          const content = fs.readFileSync(f, 'utf8');
-          try {
-            runSync('docker exec -i supabase_db_otp-local psql -U postgres -d postgres', {
-              input: content,
-              stdio: 'ignore',
-            });
-          } catch {
-            // ignore if docker psql fails
-          }
-        }
-      }
-    }
-  } catch {
-    // fallback
-  }
-
-  // 7. Live Database Integration & Security Battery (Real Un-mocked DB)
-  runStep(
-    'Live Database Integration & RLS Security Suite',
-    'INTEGRATION',
-    'pnpm test:db',
-    408
-  );
-
-  // 8. Live Demo Scenario & E2E Walkthrough
-  runStep(
-    'Live Demo Scenario & E2E Walkthrough Suite',
-    'DEMO_E2E',
-    'pnpm vitest run tests/demo/',
-    12
-  );
-
-  // 9. Live Postgres Benchmark RPC Battery
-  await runDatabaseRpcBattery();
-
-  // 10. Live Operational & Auth Smoke Battery
-  runStep(
-    'Live Operational & Auth Smoke Battery',
-    'SMOKE',
-    'pnpm test:smoke',
-    10
-  );
-
-  // 11. Real-Time End-to-End Live Call Flow Battery
-  runStep(
-    'Real-Time End-to-End Live Call Flow Battery',
-    'LIVE_FLOWS',
-    'pnpm test:live',
-    25
-  );
-
-  // 12. Production Vite Bundle Build
-  runStep(
-    'Production TypeScript Compilation & Bundle Build',
-    'BUILD',
-    'pnpm --filter @otp/web build',
-    1
-  );
-
-  // ---------------------------------------------------------------------------
-  // FINAL SCORECARD
-  // ---------------------------------------------------------------------------
+function writeRegressionReport(): void {
+  const result = aggregateRegressionResults(summary);
+  const reportPath = process.env.OTP_REGRESSION_RESULT_PATH
+    || path.join(tmpdir(), `otp-regression-summary-${Date.now()}.json`);
+  const report = {
+    sourceSha: execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim(),
+    disposableProjectId: target?.projectId ?? null,
+    timestamp: new Date().toISOString(),
+    ...result,
+    suites: summary,
+  };
+  writeFileSync(reportPath, JSON.stringify(report, null, 2), { encoding: 'utf8', flag: 'wx' });
+  rmSync(reportDir, { recursive: true, force: true });
   logHeader('MASTER REGRESSION EXECUTION SCORECARD');
-
-  const totalPassed = summary.reduce((acc, s) => acc + s.passed, 0);
-  const totalFailed = summary.reduce((acc, s) => acc + s.failed, 0);
-  const totalDuration = summary.reduce((acc, s) => acc + s.durationMs, 0);
-
-  console.table(
-    summary.map((s) => ({
-      Category: s.category,
-      Suite: s.name,
-      Passed: s.passed,
-      Failed: s.failed,
-      Status: s.failed === 0 ? '✅ PASS' : '❌ FAIL',
-      'Duration (s)': (s.durationMs / 1000).toFixed(2),
-    }))
-  );
-
-  console.log(`\nGrand Total Tests: ${totalPassed + totalFailed}`);
-  console.log(`Passed: [32m${totalPassed}[0m`);
-  console.log(`Failed: [${totalFailed > 0 ? '31' : '32'}m${totalFailed}[0m`);
-  console.log(`Execution Time: ${(totalDuration / 1000).toFixed(2)}s`);
-
-  if (totalFailed === 0) {
-    console.log('\n\x1b[32m🎉 100% REGRESSION PASS — PLATFORM IS READY FOR PRODUCTION GO-LIVE!\x1b[0m\n');
-    process.exit(0);
-  } else {
-    console.log('\n\x1b[31m⚠️ REGRESSION FAILURES DETECTED — REVIEW DETAILS ABOVE!\x1b[0m\n');
-    process.exit(1);
-  }
+  for (const suite of summary) printSuiteResult(suite);
+  console.log(`Status: ${result.status}`);
+  console.log(`Passed: ${result.passed}; failed: ${result.failed}; skipped: ${result.skipped}; blocked: ${result.blocked}; not-run: ${result.notRun}`);
+  console.log(`Required suites not passing: ${result.requiredFailures}; optional skips: ${result.optionalSkips}`);
+  console.log(`Redacted result summary: ${reportPath}`);
+  if (result.status !== 'PASS') process.exitCode = 1;
 }
 
-main().catch((err) => {
-  console.error('Fatal regression suite error:', err);
-  process.exit(1);
+async function main(): Promise<void> {
+  logHeader('OTP PLATFORM — MASTER REGRESSION SUITE EXECUTION');
+  try {
+    target = resolveDisposableRegressionTarget(process.env, process.cwd());
+    await assertDisposableRestReady(target);
+    await seedDisposableFixtures();
+  } catch (error) {
+    summary.push(resultForUnavailableSuite({
+      name: 'Disposable database preflight and fixture readiness',
+      category: 'PRECONDITION',
+      expected: 1,
+      details: error instanceof Error ? error.message : 'Disposable target verification failed',
+    }));
+    printSuiteResult(summary[summary.length - 1]);
+    writeRegressionReport();
+    return;
+  }
+
+  runStep('Canonical Procurement Vocabulary Scanner', 'POLICY', 'pnpm test:vocab');
+  runStep('Domain Logic, GST Validation & Parsing Engine', 'DOMAIN', 'pnpm test:domain');
+  runStep('Network Discovery & External Services Adapters', 'SERVICES', 'pnpm test:services');
+  runStep('Database Entity Mappers', 'DATABASE', 'pnpm test:database');
+  runStep('Messaging Core & Web Routing Invariants', 'UNIT', 'pnpm vitest run tests/unit/');
+  runStep('Web Features, Governance & State Machine Tests', 'WEB', 'pnpm test:web');
+  runStep('Live Database Integration & RLS Security Suite', 'INTEGRATION', 'pnpm test:db');
+  runStep('Live Demo Scenario & E2E Walkthrough Suite', 'DEMO_E2E', 'pnpm vitest run tests/demo/');
+  await runDatabaseRpcBattery();
+  runStep('Live Operational & Auth Smoke Battery', 'SMOKE', 'pnpm test:smoke');
+  runStep('Real-Time End-to-End Live Call Flow Battery', 'LIVE_FLOWS', 'pnpm test:live');
+  runStep('Production Vite Bundle Build', 'BUILD', 'pnpm --filter @otp/web build');
+  writeRegressionReport();
+}
+
+main().catch((error) => {
+  summary.push(resultForUnavailableSuite({
+    name: 'Master regression runner', category: 'PRECONDITION', expected: 1,
+    details: error instanceof Error ? error.message : 'Unexpected runner failure',
+  }));
+  printSuiteResult(summary[summary.length - 1]);
+  writeRegressionReport();
 });

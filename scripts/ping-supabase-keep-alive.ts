@@ -9,13 +9,16 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL ||
-  process.env.VITE_SUPABASE_URL ||
-  'https://otpplatform-theta.vercel.app';
+  process.env.VITE_SUPABASE_URL;
 
-const SUPABASE_ANON_KEY =
-  process.env.SUPABASE_ANON_KEY ||
-  process.env.VITE_SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY are required');
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error';
+}
 
 async function runKeepAlive() {
   const timestamp = new Date().toISOString();
@@ -51,8 +54,8 @@ async function runKeepAlive() {
     } else {
       console.warn(`[WARN] PostgREST returned HTTP ${res.status}: ${await res.text()}`);
     }
-  } catch (err: any) {
-    console.error(`[FAIL] PostgREST Ping Error: ${err.message}`);
+  } catch (err: unknown) {
+    console.error(`[FAIL] PostgREST Ping Error: ${errorMessage(err)}`);
   }
 
   // 2. Auth Service Liveness Ping
@@ -71,8 +74,8 @@ async function runKeepAlive() {
     } else {
       console.warn(`[WARN] GoTrue Auth returned HTTP ${authRes.status}`);
     }
-  } catch (err: any) {
-    console.error(`[FAIL] Auth Health Check Error: ${err.message}`);
+  } catch (err: unknown) {
+    console.error(`[FAIL] Auth Health Check Error: ${errorMessage(err)}`);
   }
 
   // 3. JS Client RPC / Query Assertion
@@ -89,8 +92,8 @@ async function runKeepAlive() {
       console.log(`[PASS] Supabase JS Client Query -> Active connection verified (${data?.length ?? 0} rows retrieved)`);
       successCount++;
     }
-  } catch (err: any) {
-    console.error(`[FAIL] Supabase JS Client Error: ${err.message}`);
+  } catch (err: unknown) {
+    console.error(`[FAIL] Supabase JS Client Error: ${errorMessage(err)}`);
   }
 
   const totalElapsed = Date.now() - startTime;

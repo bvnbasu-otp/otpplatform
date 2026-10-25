@@ -8,7 +8,7 @@
     "build": "vite build apps/web",
     "dev": "vite apps/web",
     "preview": "vite preview apps/web",
-    "lint": "echo 'lint: passed'",
+    "lint": "eslint scripts/run-master-regression.ts scripts/regression-results.ts scripts/regression-rpc-scope.ts scripts/regression-target.ts scripts/disposable-migration-validation.ts tests/unit/regression-results.test.ts tests/unit/regression-rpc-scope.test.ts tests/unit/disposable-migration-validation.test.ts",
     "test": "vitest run && vitest run --config packages/domain/vitest.config.ts && vitest run --config packages/services/vitest.config.ts && vitest run --config packages/database/vitest.config.ts && tsx scripts/test-functions.ts",
     "test:db": "vitest run tests/integration tests/security",
     "test:domain": "vitest run --config packages/domain/vitest.config.ts",
@@ -45,12 +45,16 @@
     "demo:walkthrough": "tsx scripts/demo/walkthrough.ts"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "@supabase/supabase-js": "^2.49.1",
     "@types/pg": "^8.11.11",
+    "eslint": "^10.13.0",
     "jimp": "^1.6.1",
     "pg": "^8.13.3",
     "tsx": "^4.19.2",
     "typescript": "5.6.3",
+    "typescript-eslint": "^8.72.0",
     "vitest": "^2.1.8"
   },
   "engines": {

@@ -9,9 +9,8 @@ import { assertSafeEnvironment } from './env-guard';
 assertSafeEnvironment('clear-transactions');
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const SERVICE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ??
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4Mzg3OTYwMH0.ZXhwLXNlcnZpY2Utcm9sZS1rZXk-OTk5OTk5OTk5OTk5';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SERVICE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 

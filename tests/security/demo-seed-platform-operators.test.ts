@@ -9,10 +9,12 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { resolveDisposableRegressionTarget } from '../../scripts/regression-target';
 
 const SEED = readFileSync(resolve('supabase/seed_demo_environment.sql'), 'utf8');
 const HOST = '127.0.0.1';
-const PORT = 54322;
+const TARGET = resolveDisposableRegressionTarget(process.env, process.cwd());
+const PORT = TARGET.dbPort;
 const STAMP = `${Date.now().toString(36)}${randomUUID().slice(0, 8).replace(/-/g, '')}`;
 const BASE = `otp_seed_base_${STAMP}`;
 const OPEN = `otp_seed_open_${STAMP}`;
@@ -512,13 +514,13 @@ describe('demo seed platform operators (disposable databases)', () => {
 
   it('leaves an already completed bootstrap unchanged and does not advertise ordinary operators', async () => {
     await clearOperators(closedDb);
+    await detachOperators(closedDb);
     const founder = await insertPlainProfile(closedDb, 'existing-founder');
     const second = await insertPlainProfile(closedDb, 'existing-operator');
     await closedDb.query(
       `SELECT public.bootstrap_platform_operators($1, $2, 'pre-existing recovery pair on the disposable database')`,
       [founder, second],
     );
-    await detachOperators(closedDb);
     const beforeClaims = await claimsOf(closedDb);
     await clearStagedRfqs(closedDb);
     const mark = await pgNow(closedDb);

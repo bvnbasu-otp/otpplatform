@@ -118,7 +118,6 @@ ON CONFLICT (id) DO UPDATE
 SET auth_user_id = EXCLUDED.auth_user_id,
     email = EXCLUDED.email,
     full_name = EXCLUDED.full_name,
-    is_demo = EXCLUDED.is_demo,
     updated_at = now();
 
 -- founder@otp.test is the founder. admin@otp.test is the other operator.

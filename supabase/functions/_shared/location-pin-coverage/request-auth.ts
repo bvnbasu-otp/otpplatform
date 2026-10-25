@@ -8,15 +8,9 @@ import {
 import { PIN_ONLY_WARMING_CATEGORY } from '../../../../packages/domain/src/gis/google-places-category-search-terms.ts';
 import { isExactServiceRoleBearer } from '../../../../packages/services/src/discovery/location-pin-coverage-request-auth.ts';
 
-const STATIC_FALLBACK_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzdXZ0Y2V6ZmZvbXR3end5cnNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTExODU1NSwiZXhwIjoyMTA0Njk0NTU1fQ.nHH1b5GA3gHgQt3kuLEKYvVUW86_Y8vjm91Vkq9nY7c';
-
 export function isLocationCoverageWorkerRequest(req: Request): boolean {
   const auth = req.headers.get('Authorization');
-  return (
-    isExactServiceRoleBearer(auth, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '') ||
-    isExactServiceRoleBearer(auth, STATIC_FALLBACK_SERVICE_ROLE_KEY)
-  );
+  return isExactServiceRoleBearer(auth, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 }
 
 export async function authorizeLocationCoverageRecoveryAdmin(

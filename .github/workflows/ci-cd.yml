@@ -113,6 +113,9 @@ jobs:
       - name: Canonical Vocabulary Enforcement
         run: pnpm test:vocab
 
+      - name: Lint regression gate and accounting
+        run: pnpm lint
+
       - name: Verify Supabase Migration Continuity & Integrity
         run: pnpm db:migrate:check
 
@@ -193,32 +196,35 @@ jobs:
         with:
           version: 2.118.0
 
-      - name: Start local Postgres and apply migrations (through 00265)
+      - name: Start isolated disposable Supabase and apply complete migration chain
         run: |
           set -euo pipefail
-          supabase start -x edge-runtime,imgproxy,logflare,mailpit,realtime,storage-api,studio,vector,kong,gotrue,postgrest
-          DB_CONTAINER="supabase_db_otp-local"
+          PROJECT_ID="otp-disposable-${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          WORKDIR="${RUNNER_TEMP}/${PROJECT_ID}"
+          PORT_BASE=58320
+          pnpm exec tsx scripts/disposable-migration-validation.ts prepare --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          pnpm exec tsx scripts/disposable-migration-validation.ts start --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          pnpm exec tsx scripts/disposable-migration-validation.ts stage-B --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          pnpm exec tsx scripts/disposable-migration-validation.ts stage-C --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          pnpm exec tsx scripts/disposable-migration-validation.ts stage-D --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          eval "$(supabase status --workdir "$WORKDIR" --output env 2>/dev/null)"
+          DB_PORT=$((PORT_BASE + 2))
+          API_PORT=$((PORT_BASE + 1))
           for i in $(seq 1 60); do
-            if docker exec "${DB_CONTAINER}" pg_isready -U postgres >/dev/null 2>&1; then
-              echo "Local Postgres ready on 127.0.0.1:54322 (${DB_CONTAINER})"
-              break
-            fi
-            if [ "$i" -eq 60 ]; then
-              echo "::error::Timed out waiting for local Postgres on 54322"
-              docker ps -a
-              docker logs "${DB_CONTAINER}" --tail 200 || true
-              exit 1
-            fi
+            if curl --fail --silent --output /dev/null -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" "http://127.0.0.1:${API_PORT}/rest/v1/"; then break; fi
+            if [ "$i" -eq 60 ]; then echo "::error::Disposable PostgREST readiness timed out"; exit 1; fi
             sleep 2
           done
-          docker exec "${DB_CONTAINER}" psql -U postgres -v ON_ERROR_STOP=1 -c \
-            "DO \$\$
-            BEGIN
-              IF to_regprocedure('private.js_string_utf16_length(text)') IS NULL THEN
-                RAISE EXCEPTION 'Migration 00260 verification failed: private.js_string_utf16_length(text) is missing';
-              END IF;
-            END
-            \$\$;"
+          {
+            echo "OTP_DISPOSABLE_PROJECT_ID=$PROJECT_ID"
+            echo "OTP_DISPOSABLE_WORKDIR=$WORKDIR"
+            echo "LOCAL_PG_PORT=$DB_PORT"
+            echo "SUPABASE_URL=http://127.0.0.1:${API_PORT}"
+            echo "VITE_SUPABASE_URL=http://127.0.0.1:${API_PORT}"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "VITE_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
 
       - name: Run Unit Tests (Domain, Utilities, Formulas)
         run: pnpm test:unit
@@ -230,6 +236,15 @@ jobs:
         env:
           REQUIRE_LOCAL_POSTGRES_SQL_PARITY: 'true'
         run: pnpm test:functional
+
+      - name: Teardown disposable Supabase
+        if: always()
+        run: |
+          PROJECT_ID="otp-disposable-${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          WORKDIR="${RUNNER_TEMP}/${PROJECT_ID}"
+          if [ -f "$WORKDIR/.otp-disposable-marker.json" ]; then
+            pnpm exec tsx scripts/disposable-migration-validation.ts teardown --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base 58320
+          fi
 
   # ───────────────────────────────────────────────────────────────────────────
   # 4. QUALITY GATEKEEPER
@@ -269,45 +284,40 @@ jobs:
         with:
           version: 2.118.0
 
-      - name: Start local Postgres for SQL parity
+      - name: Start isolated disposable Supabase and apply complete migration chain
         run: |
           set -euo pipefail
-          supabase start -x edge-runtime,imgproxy,logflare,mailpit,realtime,storage-api,studio,vector,kong,gotrue,postgrest
-          DB_CONTAINER="supabase_db_otp-local"
+          PROJECT_ID="otp-disposable-${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          WORKDIR="${RUNNER_TEMP}/${PROJECT_ID}"
+          PORT_BASE=58320
+          pnpm exec tsx scripts/disposable-migration-validation.ts prepare --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          pnpm exec tsx scripts/disposable-migration-validation.ts start --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          pnpm exec tsx scripts/disposable-migration-validation.ts stage-B --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          pnpm exec tsx scripts/disposable-migration-validation.ts stage-C --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          pnpm exec tsx scripts/disposable-migration-validation.ts stage-D --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base "$PORT_BASE"
+          eval "$(supabase status --workdir "$WORKDIR" --output env 2>/dev/null)"
+          DB_PORT=$((PORT_BASE + 2))
+          API_PORT=$((PORT_BASE + 1))
           for i in $(seq 1 60); do
-            if docker exec "${DB_CONTAINER}" pg_isready -U postgres >/dev/null 2>&1; then
-              echo "Local Postgres ready on 127.0.0.1:54322 (${DB_CONTAINER})"
-              break
-            fi
-            if [ "$i" -eq 60 ]; then
-              echo "::error::Timed out waiting for local Postgres on 54322"
-              docker ps -a
-              docker logs "${DB_CONTAINER}" --tail 200 || true
-              exit 1
-            fi
+            if curl --fail --silent --output /dev/null -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" "http://127.0.0.1:${API_PORT}/rest/v1/"; then break; fi
+            if [ "$i" -eq 60 ]; then echo "::error::Disposable PostgREST readiness timed out"; exit 1; fi
             sleep 2
           done
-
-      - name: Apply migrations to disposable local database
-        run: |
-          set -euo pipefail
-          supabase db reset --local
-
-      - name: Verify SQL parity migration helper
-        run: |
-          set -euo pipefail
-          docker exec "supabase_db_otp-local" psql -U postgres -v ON_ERROR_STOP=1 -c \
-            "DO \$\$
-            BEGIN
-              IF to_regprocedure('private.js_string_utf16_length(text)') IS NULL THEN
-                RAISE EXCEPTION 'Migration 00260 verification failed: private.js_string_utf16_length(text) is missing';
-              END IF;
-            END
-            \$\$;"
+          {
+            echo "OTP_DISPOSABLE_PROJECT_ID=$PROJECT_ID"
+            echo "OTP_DISPOSABLE_WORKDIR=$WORKDIR"
+            echo "LOCAL_PG_PORT=$DB_PORT"
+            echo "SUPABASE_URL=http://127.0.0.1:${API_PORT}"
+            echo "VITE_SUPABASE_URL=http://127.0.0.1:${API_PORT}"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "VITE_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
       - name: Execute Quality Verification Gate
         env:
-          ALLOW_OFFLINE: 'true'
           REQUIRE_LOCAL_POSTGRES_SQL_PARITY: 'true'
+          OTP_REGRESSION_RESULT_PATH: ${{ runner.temp }}/otp-regression-result.json
+          OTP_GATE_CERT_PATH: ${{ runner.temp }}/staging-gate-cert.json
         run: |
           pnpm gate:verify --env "${{ env.TARGET_ENV }}"
 
@@ -316,8 +326,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: staging-gate-cert
-          path: backups/staging-gate-cert.json
+          path: ${{ runner.temp }}/staging-gate-cert.json
           if-no-files-found: warn
+
+      - name: Teardown disposable Supabase
+        if: always()
+        run: |
+          PROJECT_ID="otp-disposable-${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          WORKDIR="${RUNNER_TEMP}/${PROJECT_ID}"
+          if [ -f "$WORKDIR/.otp-disposable-marker.json" ]; then
+            pnpm exec tsx scripts/disposable-migration-validation.ts teardown --workdir "$WORKDIR" --project-id "$PROJECT_ID" --port-base 58320
+          fi
 
   # ───────────────────────────────────────────────────────────────────────────
   # 5. ENVIRONMENT ROUTING & GATED DEPLOYMENT
@@ -370,7 +389,7 @@ jobs:
           set -euo pipefail
           # scripts/deploy-prod.ps1 is LOCAL DOCKER ONLY (otp-prod-db). It is not this hosted path.
           PRODUCTION_PROJECT_REF="qsuvtcezffomtwzwyrso"
-          EXPECTED_CEILING="00327"
+          EXPECTED_CEILING="00328"
 
           echo "================================================================="
           echo "  SYNCHRONIZING SUPABASE PRODUCTION MIGRATIONS (Supabase CLI)"

@@ -9,11 +9,11 @@ The numbered canonical tree under `docs/00-governance` through `docs/15-change-m
 | Item | Value |
 | --- | --- |
 | Branch | `main` (tracks `origin/main`) |
-| SHA inspected | Latest verified commit (`main`) |
-| Release status | Historical certificate does not certify this working tree. Current result is recorded in [LOCAL_CLOSURE_EVIDENCE_2026-10-24.md](./13-truth/LOCAL_CLOSURE_EVIDENCE_2026-10-24.md). |
-| Product Owner attestation | 15 October 2026: *"All core procurement workflows, universal multilingual page translation with Indic fonts, pincode-first supplier discovery, sourcing modes, address readiness gate, EULA attribution, database RLS boundaries, messaging gateways, and 00271 supplier channel unique constraints are verified. Complete Platform Documentation published as publication-grade PDF. Release certified GREEN."* |
-| Local migrations | `00001`–`00327` on disk and contiguous (24 October 2026), all uncommitted from `00315` onward. The six former deferred areas are promoted as dependency-ordered migrations `00319`–`00324`; pilot quorum, committee tenure, and notification isolation close in `00325`–`00327`. CI `EXPECTED_CEILING` is `00327` in the working tree. Database application remains separately authorized. See [MIGRATION_HISTORY.md](./07-database/MIGRATION_HISTORY.md). |
-| Database targets | Disposable exact chain validated through `00327`. `otp-local` was not started because identity is inconsistent. Hosted database is UNKNOWN and was not inferred from files. |
+| SHA inspected | Baseline `519d424dbc35e14a7bc7a79af739fb1a69bc1367`; current worktree is dirty and not certified. |
+| Release status | Historical certificates do not certify this worktree. Current result is [PILOT_RECERTIFICATION_EVIDENCE_2026-10-25.md](./13-truth/PILOT_RECERTIFICATION_EVIDENCE_2026-10-25.md). |
+| Historical Product Owner attestation | 15 October 2026; this historical statement does not certify the current worktree. |
+| Local migrations | `00001`–`00328` on disk and contiguous; fresh disposable replay passed on 25 October 2026. The worktree remains uncommitted. Hosted application is UNKNOWN. See [MIGRATION_HISTORY.md](./07-database/MIGRATION_HISTORY.md). |
+| Database targets | Fresh disposable exact-chain replay through `00328` passed. `otp-local` and hosted databases were not touched; hosted status is UNKNOWN. See the [current evidence report](./13-truth/PILOT_RECERTIFICATION_EVIDENCE_2026-10-25.md). |
 | Complete PDF Documentation | [OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf](./OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf) (6.4 MB publication-grade PDF) |
 | Public URL named in repo | `https://otpplatform-theta.vercel.app` |
 

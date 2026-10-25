@@ -144,10 +144,26 @@ describe('00261–00263 formal migrations (REAL DATABASE)', () => {
     expect(data?.passed).toBe(false);
   });
 
+  it('00328: UNIT-001 checks the canonical rfq_status and requirement_status enums', async (ctx) => {
+    if (!restUp) ctx.skip(SKIP_REST_ONLY_CI);
+    const svc = createServiceClient();
+    const { data, error } = await svc.rpc('admin_run_test_case', {
+      p_test_id: 'UNIT-001',
+      p_test_name: 'canonical requirement and RFQ status enums',
+    });
+    expect(error).toBeNull();
+    expect(data?.passed).toBe(true);
+    expect(data?.execution_status).toBe('PASSED');
+    expect(data?.details?.required).toEqual(['rfq_status', 'requirement_status']);
+  });
+
   it('00261: authenticated non-admin receives Unauthorized from admin_run_test_case', async (ctx) => {
     if (!restUp) ctx.skip(SKIP_REST_ONLY_CI);
     const client = createAnonClient();
-    await signInAs(client, 'buyer@greenview.test');
+    // Use the dedicated seeded QA buyer, whose password is defined by
+    // seed_demo_test_accounts.sql, instead of the walkthrough alias that is
+    // not present in every disposable seed profile.
+    await signInAs(client, 'qa-buyer@otp.test', 'password');
     const { error } = await client.rpc('admin_run_test_case', {
       p_test_id: 'SEC-001',
       p_test_name: 'probe',
@@ -190,7 +206,7 @@ describe('00261–00263 formal migrations (REAL DATABASE)', () => {
       const {
         rows: [buyer],
       } = await c!.query<{ auth_user_id: string }>(
-        `SELECT auth_user_id::text FROM profiles WHERE email = 'buyer@greenview.test' LIMIT 1`,
+          `SELECT auth_user_id::text FROM profiles WHERE email = 'qa-buyer@otp.test' LIMIT 1`,
       );
       expect(buyer?.auth_user_id).toBeTruthy();
       // Empty JWT role must not bypass guard (00263); postgres session + RLS off reaches trigger body.
@@ -202,7 +218,7 @@ describe('00261–00263 formal migrations (REAL DATABASE)', () => {
       ]);
       await expect(
         c!.query(
-          `UPDATE profiles SET is_platform_admin = true WHERE email = 'buyer@greenview.test'`,
+          `UPDATE profiles SET is_platform_admin = true WHERE email = 'qa-buyer@otp.test'`,
         ),
       ).rejects.toThrow(/PROFILE-PRIVILEGE|platform admin|PLATFORM_PRIVILEGE_IMMUTABLE/i);
     } finally {

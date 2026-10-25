@@ -29,7 +29,6 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as crypto from 'crypto';
 
 export type TargetEnvironment = 'PRODUCTION' | 'STAGING/DEMO';
 
@@ -124,25 +123,7 @@ export function resolveBuildVersionHash(): string {
     // git not available
   }
 
-  // 4. Deterministic content hash from package.json version + latest timestamp
-  const pkgPath = path.resolve('package.json');
-  let version = '0.1.0';
-  if (fs.existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-      version = pkg.version || version;
-    } catch {
-      // fallback
-    }
-  }
-
-  const hash = crypto
-    .createHash('sha256')
-    .update(`${version}-${new Date().toISOString().slice(0, 13)}`)
-    .digest('hex')
-    .substring(0, 12);
-
-  return `${version}-${hash}`;
+  throw new Error('A Git commit is required to identify the certified source revision');
 }
 
 const steps: GateStep[] = [
@@ -203,11 +184,14 @@ async function main() {
   }
 
   const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
-  const certDir = path.resolve('backups');
+  const certPath = path.resolve(process.env.OTP_GATE_CERT_PATH || 'backups/staging-gate-cert.json');
+  const certDir = path.dirname(certPath);
   if (!fs.existsSync(certDir)) {
     fs.mkdirSync(certDir, { recursive: true });
   }
-  const certPath = path.join(certDir, 'staging-gate-cert.json');
+  if (fs.existsSync(certPath)) {
+    throw new Error(`Refusing to overwrite existing gate certificate: ${certPath}`);
+  }
 
   if (allPassed) {
     // MANDATORY POST-GATE LOG OUTPUTS
@@ -221,22 +205,35 @@ async function main() {
     console.log('Zero-Data-Loss Guaranteed: Production DB, Buyer/Supplier orders,');
     console.log('and Organization accounts are 100% retained.\n');
 
+    const sourceSha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+    const regressionPath = process.env.OTP_REGRESSION_RESULT_PATH;
+    if (!regressionPath || !fs.existsSync(regressionPath)) {
+      throw new Error('A fresh master regression result report is required for certification');
+    }
+    const regression = JSON.parse(fs.readFileSync(regressionPath, 'utf8'));
+    if (regression.status !== 'PASS' || regression.sourceSha !== sourceSha || regression.requiredFailures !== 0 || regression.blocked !== 0 || regression.failed !== 0 || regression.skipped !== 0 || regression.notRun !== 0) {
+      throw new Error('Master regression report does not prove a complete pass for the current source SHA');
+    }
     const certData = {
       status: 'APPROVED',
       gateResult: 'PASS',
       targetEnvironment: targetEnv,
+      sourceSha,
       activeLiveBuildVersionHash: buildHash,
       timestamp: new Date().toISOString(),
       durationSeconds: parseFloat(durationSec),
-      verifiedSuites: [
-        'POLICY', 'TEST_EXPANSION_ENGINE', 'DOMAIN', 'SERVICES',
-        'DATABASE', 'UNIT', 'WEB', 'INTEGRATION', 'DEMO_E2E',
-        'POSTGRES', 'SMOKE', 'LIVE_FLOWS', 'BUILD'
-      ],
+      regression: {
+        passed: regression.passed,
+        failed: regression.failed,
+        skipped: regression.skipped,
+        blocked: regression.blocked,
+        notRun: regression.notRun,
+        suites: regression.suites,
+      },
       gateVersion: '2.1.0',
     };
 
-    fs.writeFileSync(certPath, JSON.stringify(certData, null, 2), 'utf8');
+    fs.writeFileSync(certPath, JSON.stringify(certData, null, 2), { encoding: 'utf8', flag: 'wx' });
     console.log(`✓ Staging Gate Certificate recorded at: ${certPath}\n`);
     process.exit(0);
   } else {
@@ -264,7 +261,7 @@ async function main() {
       failureReasons,
       gateVersion: '2.1.0',
     };
-    fs.writeFileSync(certPath, JSON.stringify(certData, null, 2), 'utf8');
+    fs.writeFileSync(certPath, JSON.stringify(certData, null, 2), { encoding: 'utf8', flag: 'wx' });
 
     process.exit(1);
   }

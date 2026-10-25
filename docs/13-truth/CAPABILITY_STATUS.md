@@ -1,21 +1,15 @@
 > Current working tree, 16 October 2026: the green decision below is the 15 October 2026 record. It does not certify uncommitted migrations through `00290`, hosted runtime of those migrations, or EULA legal approval. Enforcement is off. Payment collection is not activated. See [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md).
-
-> **24 October 2026 superseding local-source note:** the current candidate ceiling is `00327`, not `00290`. Source now includes promoted supplier-address, audit-actor, founder-guard, demo-marker, demo-deletion and contact-enquiry migrations, plus no-waiver, committee-tenure and notification-isolation migrations. This is not hosted or Vercel proof. `otp-local` was not started because its identity is inconsistent; hosted targets were not inferred from files. The historical green certificate below remains historical and does not certify this working tree.
-
+> **25 October 2026 superseding local-source note:** the current candidate ceiling is `00328`, not `00290`. Source includes promoted supplier-address, audit-actor, founder-guard, demo-marker, demo-deletion and contact-enquiry migrations, plus no-waiver, committee-tenure, notification-isolation and the corrected admin test-runner enum probe. This is not hosted or Vercel proof. The historical green certificate below remains historical and does not certify this working tree.
 # Capability status
-
-**Release Certificate:** `OTP-REL-CERT-20261015-002`  
-**Release Decision:** 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (15 October 2026)  
-**Release Baseline:** `9e50289b5c2560cefa7f7dfa7bb4ff3f3cf3bfe8` (`main` tracking `origin/main`)  
-**Formal Migration Ceiling:** `00270` (hosted and local migrations `00001`–`00270` applied; CI `EXPECTED_CEILING = 00270`)  
-**CI/CD Verification Run:** GitHub Actions run [#38697267795](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38697267795) (100% Success across 6 jobs)  
-**Operational Gateway:** WAHA session `default` (`WORKING`), paired to `919972967530@c.us`  
-
+**Release Certificate:** `OTP-REL-CERT-20261015-002`
+**Release Decision:** 🟢 **GREEN — EVIDENCE-BACKED PILOT RELEASE CERTIFIED** (15 October 2026)
+**Release Baseline:** `9e50289b5c2560cefa7f7dfa7bb4ff3f3cf3bfe8` (`main` tracking `origin/main`)
+**Historical certification ceiling:** `00270`. Current repository ceiling is `00328`; fresh disposable replay through `00328` passed locally. The hosted ceiling is UNKNOWN. Required RPC and browser journeys still fail, so the current worktree is NOT READY for pilot certification (see [recertification evidence](./PILOT_RECERTIFICATION_EVIDENCE_2026-10-25.md)).
+**CI/CD Verification Run:** GitHub Actions run [#38697267795](https://github.com/bvnbasu-otp/otpplatform/actions/runs/38697267795) (100% Success across 6 jobs)
+**Operational Gateway:** WAHA session `default` (`WORKING`), paired to `919972967530@c.us`
 **Product Owner Attestation (15 October 2026):**
 > *"All core procurement workflows, universal multilingual page translation with Indic fonts, pincode-first supplier discovery, sourcing modes, address readiness gate, EULA attribution, database RLS boundaries, and messaging gateways are verified. GitHub Actions CI/CD run #38697267795 and production deployment verified. Release certified GREEN."*
-
 This is the canonical capability and status table for the controlled pilot. Share-in-Success is NOT IMPLEMENTED. Supplier cashback is 100% prohibited and not an active product mechanism.
-
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | Positioning: identity-protected competitive sourcing | IMPLEMENTED | `PRODUCT_TAGLINE` in `apps/web/src/lib/brand.ts`. Principle text is the product README and site trust copy. |
@@ -58,8 +52,8 @@ This is the canonical capability and status table for the controlled pilot. Shar
 | SMS (any flow) | NOT-IMPLEMENTED for the pilot — **not available** | No pilot flow sends SMS. Only `TwilioMessagingProvider` can (`MESSAGING_PROVIDER=TWILIO`), and Twilio is not a pilot provider. The WAHA provider is WhatsApp-only. Public copy `PLANNED`. Limits: [SMS.md](../09-integrations/SMS.md). |
 | Registration notices by phone | CONFIG-GATED / PILOT-CERTIFIED (WAHA) — demo provider | `supabase/functions/onboarding-notify` sends `channel: 'WHATSAPP'` through the same resolver. The demo-provider limits in the WhatsApp row apply. |
 | SuperAdmin demo/QA account permanent deletion | PARTIAL — client `IMPLEMENTED`. Server proposal unapplied. **Blocked pending owner authorization.** | UI: `AdminUsersActivityPanel.tsx`, `DemoUserDeletionModal.tsx`. Unknown backend errors are shown as a generic unavailable/no-deletion message rather than raw server text. API: `demo-user-deletion.ts` (mocked client tests). Server: deferred proposal `supabase/superadmin_demo_user_deletion.DEFERRED.UNVERSIONED.sql` (former `00320`) needs the deferred audit actor registry, founder SUPER_ADMIN guard, and demo marker guard (former `00315`, `00316`, `00321`), all unapplied, unversioned, and outside `supabase/migrations/`. Not deployment ready. See [SUPERADMIN_DEMO_USER_DELETION.md](../12-operations/SUPERADMIN_DEMO_USER_DELETION.md). |
-| Migrations `00315`–`00318` (org rename grant and row check, RFQ category/service-coverage and discovery grant guard, support admin RPC hardening) | IMPLEMENTED in source — uncommitted, not pushed, not applied to otp-local or hosted | `supabase/migrations/00315`–`00318`. A prior form was applied once to a disposable database on 24 October 2026. Migration 00317 was subsequently tightened to remove anonymous discovery execution, so the historical manifest no longer matches the current chain. Local and hosted ledgers were not read and are UNKNOWN. See [MIGRATION_HISTORY.md](../07-database/MIGRATION_HISTORY.md). |
-| Deferred SQL proposals (business address, audit actor registry, founder guard, demo marker, demo user deletion, contact enquiries) | NOT-IMPLEMENTED in any database (proposal files only) | Files `supabase/*.DEFERRED.UNVERSIONED.sql`, formerly `00314` and `00315`–`00322` `*.UNAPPLIED.sql`. No migration number is assigned. The migration runner ends at `supabase/migrations/00318_support_ticket_rpc_hardening.sql`. Numbering, promoting, or applying any of them requires owner authorization. |
+| Current local closure migrations `00315`–`00328` | SOURCE PRESENT; migrations `00001`–`00328` fresh disposable replay PASS; hosted status UNKNOWN | The replay used disposable Supabase and did not touch canonical `otp-local` or hosted databases. Database RPC and journey checks still have failures; see [current recertification evidence](./PILOT_RECERTIFICATION_EVIDENCE_2026-10-25.md). |
+| Former deferred proposals (business address, audit actor registry, founder guard, demo marker, demo deletion, contact enquiries) | Promoted to migrations `00319`–`00324`; local disposable replay PASS; hosted application UNKNOWN | These source files are now versioned. Their presence and local replay do not prove application to `otp-local` or hosted databases. |
 | Support tickets from signed-out visitors | NOT-IMPLEMENTED (disabled pending an abuse-controlled design) | `create_support_ticket` is not executable by `anon` (00216/00217 allowlist, kept by `00318`). The public header help modal shows a log-in notice and links to Contact Us instead of a ticket form when no user is signed in (`SupportHelpButtonModal.tsx`, `support-signed-out.test.tsx`; uncommitted). |
 | Email dispatcher | CONFIG-GATED | `packages/services/src/notifications/email-dispatcher.ts` (`SMTP_HOST` and related). Delivery `UNKNOWN`. |
 | ONDC search / on_search foundation | DISABLED / NON-BLOCKING | `ONDC_ENABLED=false`. Not a live pilot network; non-blocking for controlled pilot. |
@@ -71,7 +65,7 @@ This is the canonical capability and status table for the controlled pilot. Shar
 | Production web deploy inside GitHub Actions | IMPLEMENTED | Verified in GitHub Actions CI run deploying to Vercel production: `https://otpplatform-theta.vercel.app`. |
 | Production `supabase db push` inside GitHub Actions | IMPLEMENTED | Verified in GitHub Actions CI run applying contiguous migrations `00001`–`00272` to hosted project `qsuvtcezffomtwzwyrso`. |
 | Docker script `scripts/deploy-prod.ps1` | IMPLEMENTED | LOCAL DOCKER ONLY. Writes container `otp-prod-db`. Success text says local Docker only and does not claim a hosted production deploy. Hosted production migrations are applied exclusively via verified CI/CD. |
-| Hosted database ceiling | UNKNOWN (historical record `00272`, not re-verified) | Earlier record: baseline `00272` verified live. Not re-verified on 24 October 2026. The repository ceiling is now `00318` and CI `EXPECTED_CEILING = 00318` in the uncommitted tree; that string is not hosted proof. |
+| Hosted database ceiling | UNKNOWN | Historical record `00272` is not current verification. Repository ceiling is `00328`; no hosted migration or runtime verification was performed. |
 | Multilingual Interface (8 Indian Languages) | IMPLEMENTED | Complete localization for English, Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, and Bengali (`apps/web/src/lib/i18n/`), accessible LanguageSwitcher, localStorage persistence, and voice dictation sync. The public website has no language selector: `LanguageSwitcher` was removed from the public `SiteHeader.tsx` (uncommitted, 23 October 2026). Signed-in users still choose a language on the profile page, the workspace header and its menu, and the mobile account sheet. An anonymous visitor's choice lasts only for the browser session (`language-account.ts`). Locally tested: `public-language-selector-removal.test.tsx`. |
 | Public Contact Us page and form (`/contact-us`, `/contact` redirect) | IMPLEMENTED — locally tested, not runtime-verified | `apps/web/src/features/contact/`. Support email `bvnbasu+otp.demo.otp.support@gmail.com`; unchanged `wa.me` WhatsApp link; five categories, validation, generic honeypot rejection, single-flight guard, submission id. Widths 320–430 px were not checked visually. |
 | Contact Us enquiry recording | NOT-IMPLEMENTED in any database — proposal only (unapplied). **CONTACT US — NOT DEPLOYMENT READY.** | Edge `supabase/functions/contact-enquiry` (not deployed), server-issued signed client identity, dedicated atomic 5/hour client limit plus fixed 200/hour endpoint emergency ceiling, and deferred store proposal `public_contact_enquiries.DEFERRED.UNVERSIONED.sql` (former `00322`). Static/unit evidence only; no database concurrency or edge-runtime proof. No admin screen or retention period. |
@@ -87,20 +81,11 @@ This is the canonical capability and status table for the controlled pilot. Shar
 | Supplier Messaging Channels Unique Index & Resilient Dispatch | IMPLEMENTED | Migration 00271; establishes `idx_supplier_messaging_channels_supp_channel` on `(supplier_id, channel)` preventing Postgres 42P10 `ON CONFLICT` errors, with exception-resilient notification dispatch ensuring core RFQ invitations never roll back. |
 | WAHA Messaging Provider Enum & Gateway Operator Isolation | IMPLEMENTED | Migration 00272; adds 'WAHA' to `messaging_provider` enum; isolates gateway operator handset (`+919972967530`) from receiving automated supplier invitations; reassigns legacy QA suppliers to isolated test numbers; defensive guards in edge function and database trigger. |
 | Publication-Grade Complete Documentation PDF | IMPLEMENTED | Canonical complete platform documentation compiled into a standalone 6.4MB PDF document (`docs/OTP_PLATFORM_COMPLETE_DOCUMENTATION.pdf`) via Chrome headless, encompassing all 16 core specification volumes, governance policies, domain state machines, and release runbooks. |
-
-
 ## Findings
-
 Finding IDs, and whether they are open, live only in [DOCUMENTATION_DISCOVERED_DEFECTS.md](./DOCUMENTATION_DISCOVERED_DEFECTS.md). That file is not a second capability table.
-
 Phase 3 source is in the hosted history through `00263`. That history reading is not a live payment, ONDC, or Share-in-Success certification. DEFECT-02 success text says LOCAL DOCKER ONLY; the script still writes Docker `otp-prod-db`. Deployed website and edge functions are certified only when production serves this commit.
-
 Legacy, code unchanged: DOC-LEGACY-02 through DOC-LEGACY-05 (Enterprise tier object, unused monthly Google figures, `DATABASE_CACHE` naming, Bengaluru fixtures).
-
 `SUBSCRIPTION_TIERS.ENTERPRISE` is an internal compatibility artifact; not a customer-facing OTP product type.
-
 Public pilot wording: [PUBLIC_PILOT_TRUTH.md](./PUBLIC_PILOT_TRUTH.md).
-
 Integration evidence (implementation, configuration, runtime verification, production status, dependency, limitation) is on each page under `docs/09-integrations/` and in [INTEGRATION_CATALOG.md](../09-integrations/INTEGRATION_CATALOG.md). Those pages point here for the status word.
-
 P0–P4 remediations are closed. This table does not reopen them. Later migrations (`00216` onward, including `00237`–`00245`) are repository facts, not a new severity scale.

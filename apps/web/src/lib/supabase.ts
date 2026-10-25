@@ -1,19 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { resolveDeploymentTarget } from '@otp/domain';
 
-// Local URL and the well-known demo anon JWT exist only for `pnpm dev`.
-// import.meta.env.PROD is folded to true in a production build, so those
-// literals are unreachable and are not emitted. A production build must set
-// VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the process environment.
+// Every environment supplies its own project-scoped public key. Keeping even a
+// local fallback JWT in tracked source makes accidental cross-project use easy.
 const envUrl = import.meta.env.VITE_SUPABASE_URL;
 const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-function devLocalAnonKey(): string {
-  if (import.meta.env.PROD) return '';
-  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
-}
-
-const supabaseAnonKey = envKey || devLocalAnonKey();
+const supabaseAnonKey = envKey || 'missing-supabase-anon-key';
 
 export interface SupabaseUrlResolutionOptions {
   deploymentTarget?: string | null;
