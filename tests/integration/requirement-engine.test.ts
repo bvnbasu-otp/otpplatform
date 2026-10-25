@@ -1155,8 +1155,9 @@ describe('attachments', () => {
       .limit(1)
       .single();
 
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321';
     const res = await fetch(
-      `http://127.0.0.1:54321/storage/v1/object/public/otp-attachments/${attachment!.storage_path}`,
+      `${supabaseUrl}/storage/v1/object/public/otp-attachments/${attachment!.storage_path}`,
     );
 
     expect(res.ok).toBe(false);
