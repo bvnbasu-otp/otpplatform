@@ -157,10 +157,9 @@ BEGIN
     v_created := true;
   END IF;
 
-  -- Shareable if newly created unregistered placeholder, unclaimed direct, or in demo mode
+  -- Shareable if newly created unregistered placeholder or unclaimed direct
   v_shareable := v_created
-    OR private.is_unclaimed_direct_placeholder(v_supplier_id, p_contact_kind, v_normalized, v_rfq.organization_id)
-    OR COALESCE(v_rfq.is_demo, false);
+    OR private.is_unclaimed_direct_placeholder(v_supplier_id, p_contact_kind, v_normalized, v_rfq.organization_id);
 
   -- Reuse existing invitation or allocate canonical Crockford Base32 pseudonym label
   SELECT id INTO v_invite_id
