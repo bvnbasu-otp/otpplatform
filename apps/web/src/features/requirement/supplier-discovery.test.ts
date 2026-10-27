@@ -493,7 +493,6 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
         expect(res.shareLinkAvailable).toBe(true);
         expect(res.token).toBe('demo-magic-token-789');
       }
-      }
     });
 
     it('executes discover_and_invite_for_rfq RPC and returns candidate count', async () => {

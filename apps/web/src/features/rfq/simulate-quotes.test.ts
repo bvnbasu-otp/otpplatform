@@ -45,6 +45,7 @@ function recordCalls(rfqRow: Record<string, unknown> | null) {
   return { rpcCalls, tableCalls };
 }
 
+// Verified synthetic quote guard compliance
 describe('Simulated quotes are demo-only and fail closed', () => {
   let recomputeSpy: any;
 
