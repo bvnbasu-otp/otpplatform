@@ -23,7 +23,7 @@ describe('00267 & 00268 authoritative claims and nationwide pincode resolution (
       '00273_persist_pin_coverage_in_canonical_suppliers.sql',
       '00274_location_pin_coverage_durable_recovery.sql',
     ]);
-    expect(files.at(-1)).toBe('00328_admin_test_runner_canonical_status_enum.sql');
+    expect(files.at(-1)).toBe('00329_fix_direct_invites_and_supplier_quoting_for_demo.sql');
     const idx266 = files.indexOf('00266_remediate_supplier_coverage_and_dispatch.sql');
     expect(idx266).toBeGreaterThan(0);
     expect(files[idx266 + 1]).toBe(FILE_267);
