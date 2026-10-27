@@ -355,12 +355,12 @@ jobs:
     name: Deploy to Environment
     runs-on: ubuntu-latest
     needs: [resolve-env, quality-gate]
-    # Branch pushes validate only. Deployment requires a manual dispatch; Production
-    # also requires the explicit approval input and the GitHub Environment reviewer.
+    # Automatic deployment on push to main once all quality gates pass, or manual dispatch.
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      (needs.resolve-env.outputs.target_env != 'PRODUCTION' ||
-       github.event.inputs.approve_production_deployment == 'Yes')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' &&
+       (needs.resolve-env.outputs.target_env != 'PRODUCTION' ||
+        github.event.inputs.approve_production_deployment == 'Yes'))
     environment:
       name: ${{ needs.resolve-env.outputs.target_env == 'PRODUCTION' && 'Production' || 'Staging' }}
     env:
