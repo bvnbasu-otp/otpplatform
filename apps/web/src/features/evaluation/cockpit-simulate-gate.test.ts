@@ -21,4 +21,8 @@ describe('Evaluation cockpit simulator entry points (REAL PILOT RFQ = ZERO SYNTH
       expect(window).toMatch(/\{isDemoMode && \(/);
     });
   });
+
+  it('calls ensureSimulatedQuotesForRfq conditionally on isDemoMode on cockpit mount', () => {
+    expect(cockpitSrc).toContain('ensureSimulatedQuotesForRfq(rfqId, { isDemo: true })');
+  });
 });

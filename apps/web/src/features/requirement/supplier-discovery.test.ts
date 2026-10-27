@@ -474,6 +474,28 @@ describe('Phase C.3 — Supplier Discovery & Radar UX Polish Tests', () => {
       }
     });
 
+    it('returns quick quote share link for demo direct invites', async () => {
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: {
+          ok: true,
+          reused: false,
+          invitationId: 'inv-demo-1',
+          supplierId: 'supp-demo-1',
+          token: 'demo-magic-token-789',
+          quickQuotePath: '/q/demo-magic-token-789',
+          shareLinkAvailable: true,
+        },
+        error: null,
+      } as any);
+      const res = await inviteDirectSupplier('rfq-demo-202', 'EMAIL', 'supplier01@otpdemo.test');
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.shareLinkAvailable).toBe(true);
+        expect(res.token).toBe('demo-magic-token-789');
+      }
+      }
+    });
+
     it('executes discover_and_invite_for_rfq RPC and returns candidate count', async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({
         data: { invited: 4, total: 4 },

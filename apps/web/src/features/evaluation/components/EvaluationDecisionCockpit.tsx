@@ -24,7 +24,7 @@ import {
 } from '@/features/clarification/api/clarification';
 import { ClarificationThread } from '@/features/clarification/components/ClarificationThread';
 import { openRfq, discoverAndInvite } from '@/features/requirement/api/rfq-lifecycle';
-import { simulateQuotesForRfq } from '@/features/rfq/api/simulate-quotes';
+import { simulateQuotesForRfq, ensureSimulatedQuotesForRfq } from '@/features/rfq/api/simulate-quotes';
 import { isDemoMode } from '@/features/demo/demo-config';
 import {
   fetchAward,
@@ -163,13 +163,27 @@ export function EvaluationDecisionCockpit({
       if (statusRes.ok) {
         setRfqStatus(statusRes.status);
         if (statusRes.minQuotesRequired) setMinQuotesRequired(statusRes.minQuotesRequired);
-        // Auto-seed quotes if landed on evaluation while in draft
+        // Auto-seed quotes if landed on evaluation while in draft or in demo mode
         if (statusRes.status === 'DRAFT') {
           void discoverAndInvite(rfqId).then(() => {
             void openRfq(rfqId).then(() => {
+              if (isDemoMode) {
+                void ensureSimulatedQuotesForRfq(rfqId, { isDemo: true }).then(() => {
+                  void refreshQuotes();
+                  void recompute();
+                });
+              } else {
+                void refreshQuotes();
+                void recompute();
+              }
+            });
+          });
+        } else if (isDemoMode) {
+          void ensureSimulatedQuotesForRfq(rfqId, { isDemo: true }).then((simRes) => {
+            if (simRes && simRes.ok && (simRes.quotesSubmitted ?? 0) > 0) {
               void refreshQuotes();
               void recompute();
-            });
+            }
           });
         }
       }

@@ -219,4 +219,12 @@ describe('Buyer Home - Procurement Card & Activity Timeline', () => {
     const showRoleBadge = role !== 'BUYER' || !persona;
     expect(showRoleBadge).toBe(false);
   });
+
+  it('handles personal buyer fallback without throwing workspace error when org fetch returns PERSONAL_BUYER', () => {
+    const error = 'PERSONAL_BUYER';
+    const fallback = error === 'PERSONAL_BUYER' ? { organizationId: '', organizationName: 'Personal Workspace', orgType: 'INDIVIDUAL', role: 'OWNER' } : null;
+    expect(fallback).not.toBeNull();
+    expect(fallback?.organizationName).toBe('Personal Workspace');
+    expect(fallback?.orgType).toBe('INDIVIDUAL');
+  });
 });

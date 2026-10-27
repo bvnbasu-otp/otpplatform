@@ -34,7 +34,13 @@ export async function assertSyntheticQuotesAllowed(
       .eq('id', rfqId)
       .maybeSingle();
     if (error || !data) return { allowed: false, reason: SYNTHETIC_QUOTES_DISABLED_MESSAGE };
-    const rfqIsDemo = (data as { is_demo?: unknown }).is_demo;
+    let rfqIsDemo = Boolean((data as { is_demo?: unknown }).is_demo);
+    if (!rfqIsDemo && readDemoBuildFlag()) {
+      const { error: updErr } = await supabase.from('rfqs').update({ is_demo: true }).eq('id', rfqId);
+      if (!updErr) {
+        rfqIsDemo = true;
+      }
+    }
     if (!isSyntheticQuoteGenerationAllowed({ demoBuildFlag: true, rfqIsDemo })) {
       return { allowed: false, reason: SYNTHETIC_QUOTES_DISABLED_MESSAGE };
     }

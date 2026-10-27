@@ -383,6 +383,14 @@ export function useBuyerHomeData(fallbackOrg?: {
 
       if (orgRes.ok) {
         resolvedOrg = orgRes.org;
+      } else if (orgRes.error === 'PERSONAL_BUYER' || (!fallbackOrg?.organizationId && !orgRes.ok)) {
+        // Individual / Personal buyer fallback
+        resolvedOrg = {
+          organizationId: '',
+          organizationName: fallbackOrg?.organizationName || 'Personal Workspace',
+          orgType: 'INDIVIDUAL',
+          role: fallbackOrg?.orgRole || 'OWNER',
+        };
       } else if (fallbackOrg?.organizationId) {
         resolvedOrg = {
           organizationId: fallbackOrg.organizationId,
@@ -399,8 +407,10 @@ export function useBuyerHomeData(fallbackOrg?: {
       setOrg(resolvedOrg);
 
       const [reqRes, subRes] = await Promise.all([
-        fetchOrganizationRequirements(resolvedOrg.organizationId),
-        fetchOrganizationSubscription(resolvedOrg.organizationId),
+        fetchOrganizationRequirements(resolvedOrg.organizationId || null),
+        resolvedOrg.organizationId
+          ? fetchOrganizationSubscription(resolvedOrg.organizationId)
+          : Promise.resolve({ ok: true as const, subscription: null }),
       ]);
 
       if (reqRes.ok) {

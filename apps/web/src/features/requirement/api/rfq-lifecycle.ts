@@ -1,3 +1,4 @@
+import { isDemoMode } from '@/features/demo/demo-config';
 import { supabase } from '@/lib/supabase';
 import { fetchCurrentProfile } from '@/features/auth/user-role';
 import type { MatchedSupplier, CompactRequirementContext } from '../types/discovery';
@@ -217,6 +218,7 @@ export async function ensureRfqForRequirement(requirementId: string): Promise<
       buyer_anonymous_to_suppliers: true,
       min_quotes_required: minQuotes,
       created_by: profile.profileId,
+      is_demo: isDemoMode,
     })
     .select('id')
     .single();

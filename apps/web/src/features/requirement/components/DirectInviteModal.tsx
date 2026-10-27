@@ -1,3 +1,4 @@
+import { isDemoMode } from '@/features/demo/demo-config';
 import { useState, useEffect } from 'react';
 import { inviteDirectSupplier, type DirectInviteKind } from '../api/rfq-lifecycle';
 
@@ -304,12 +305,20 @@ export function DirectInviteModal({
               )}
             </div>
             ) : (
-              <p
-                className="rounded-xl border bg-muted/20 p-3 text-[11px] text-muted-foreground leading-snug"
+              <div
+                className="rounded-xl border bg-muted/20 p-3 text-[11px] text-muted-foreground leading-snug space-y-2"
                 data-testid="direct-invite-no-share-link"
               >
-                No share link is issued for this contact. OTP notifies the supplier through its own channels.
-              </p>
+                <p>
+                  Invitation registered in database. OTP notifies registered suppliers through internal notifications.
+                </p>
+                {isDemoMode && (
+                  <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-2 text-[10px] text-amber-800 dark:text-amber-300 font-medium space-y-1">
+                    <p className="font-bold">⚡ Demo Interactive Quoting:</p>
+                    <p>This supplier is registered in the demo pool. You can log in using their supplier credentials (e.g. <span className="font-mono bg-muted/60 px-1 py-0.5 rounded">supplier01@otpdemo.test</span> / password <span className="font-mono bg-muted/60 px-1 py-0.5 rounded">password</span>) to submit or revise an offer in real time.</p>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="flex justify-end pt-1">

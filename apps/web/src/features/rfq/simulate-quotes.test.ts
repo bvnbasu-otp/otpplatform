@@ -165,6 +165,12 @@ describe('Simulated quotes are demo-only and fail closed', () => {
     });
   });
 
+  
+    it('isSyntheticQuoteGenerationAllowed correctly validates demo flags', () => {
+      expect(isSyntheticQuoteGenerationAllowed({ demoBuildFlag: true, rfqIsDemo: true })).toBe(true);
+      expect(isSyntheticQuoteGenerationAllowed({ demoBuildFlag: false, rfqIsDemo: true })).toBe(false);
+      expect(isSyntheticQuoteGenerationAllowed({ demoBuildFlag: true, rfqIsDemo: false })).toBe(false);
+    });
   describe('Canonical Vocabulary Compliance', () => {
     it('contains ZERO prohibited auction terms in simulator messages', () => {
       const prohibitedTerms = ['bid', 'bids', 'bidder', 'bidders', 'bidding', 'blind'];

@@ -1,3 +1,4 @@
+import { isDemoMode } from '@/features/demo/demo-config';
 import type { AttributeValue } from '@otp/domain';
 import { supabase } from '@/lib/supabase';
 import { fetchCurrentProfile } from '@/features/auth/user-role';
@@ -339,6 +340,7 @@ export async function createDraft(input: CreateDraftInput): Promise<DraftResult>
     .insert({
       organization_id: orgId,
       created_by: profile.profileId,
+      is_demo: isDemoMode,
       // requirement_type is derived from requirement_mode by trigger; the
       // insert needs a value for the NOT NULL column and the understanding
       // step replaces it as soon as a mode is chosen.

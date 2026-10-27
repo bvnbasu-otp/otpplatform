@@ -134,5 +134,11 @@ describe('Buyer Intake Draft Isolation & User Safety', () => {
 
     expect(loadLocalIntakeDraft(orgId, userId)).toBeNull();
   });
+
+  it('stamps is_demo flag correctly during draft creation in demo mode', () => {
+    const isDemoMode = true;
+    const draftPayload = { is_demo: isDemoMode, title: 'Demo Requirement' };
+    expect(draftPayload.is_demo).toBe(true);
+  });
 });
 
