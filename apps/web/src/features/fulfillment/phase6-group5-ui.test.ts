@@ -127,6 +127,7 @@ describe('Phase 6.5 Web UI Controls & State Verification', () => {
 
     const poListSrc = fs.readFileSync(path.resolve(__dirname, 'components/PurchaseOrderList.tsx'), 'utf8');
     expect(poListSrc).toContain('View Order Details →');
+    expect(poListSrc).not.toContain('View PO & Inspection →');
   });
 });
 

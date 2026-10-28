@@ -172,7 +172,7 @@ export function PurchaseOrderList({
                   ? 'View Digital PO & Ledger →'
                   : role === 'supplier'
                   ? 'Update Milestones →'
-                  : 'View PO & Inspection →'}
+                  : 'View Order Details →'}
               </Link>
             </div>
           </li>

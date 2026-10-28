@@ -375,7 +375,38 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
           ) : (
             <div className="space-y-3">
               {/* Status Tabs */}
-              <div className="flex flex-wrap items-center gap-1 rounded-xl bg-muted/30 p-1 text-xs border overflow-x-auto">
+              {/* Mobile 2-Pill Segmented Control (Watrify Style) */}
+              <div className="sm:hidden grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-muted/40 border border-border">
+                <button
+                  type="button"
+                  data-testid="mobile-tab-active"
+                  onClick={() => handleTabChange(filterTab === 'ACTIVE' ? 'ALL' : 'ACTIVE')}
+                  className={`min-h-[44px] rounded-xl px-3 py-2 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    filterTab === 'ACTIVE' || filterTab === 'ALL'
+                      ? 'bg-primary text-primary-foreground shadow-xs'
+                      : 'bg-card text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <span>🟡</span>
+                  <span>Active ({summary.activeOrdersCount})</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid="mobile-tab-completed"
+                  onClick={() => handleTabChange('COMPLETED')}
+                  className={`min-h-[44px] rounded-xl px-3 py-2 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    filterTab === 'COMPLETED'
+                      ? 'bg-emerald-700 text-white shadow-xs'
+                      : 'bg-card text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <span>🟢</span>
+                  <span>Completed ({summary.settledOrdersCount})</span>
+                </button>
+              </div>
+
+              {/* Desktop / Tablet Granular Status Tabs */}
+              <div className="hidden sm:flex flex-wrap items-center gap-1 rounded-xl bg-muted/30 p-1 text-xs border overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => handleTabChange('ALL')}

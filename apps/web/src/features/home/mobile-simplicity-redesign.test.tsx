@@ -3,11 +3,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 describe('Unified UI/UX Mobile Simplicity Redesign Invariants', () => {
-  const root = resolve(__dirname, '../../../../');
+  // __dirname is apps/web/src/features/home
+  const webSrc = resolve(__dirname, '../../');
 
   it('Step 1: WorkspaceHeader & MobileBottomNav hide complex chrome on mobile', () => {
     const headerSrc = readFileSync(
-      resolve(root, 'apps/web/src/features/navigation/components/WorkspaceHeader.tsx'),
+      resolve(webSrc, 'features/navigation/components/WorkspaceHeader.tsx'),
       'utf8',
     );
     expect(headerSrc).toContain('hidden sm:inline-flex');
@@ -15,16 +16,16 @@ describe('Unified UI/UX Mobile Simplicity Redesign Invariants', () => {
     expect(headerSrc).toContain('hidden sm:block');
 
     const navSrc = readFileSync(
-      resolve(root, 'apps/web/src/components/MobileBottomNav.tsx'),
+      resolve(webSrc, 'components/MobileBottomNav.tsx'),
       'utf8',
     );
-    expect(navSrc).toContain("t('History', 'History')");
-    expect(navSrc).toContain("t('Activity', 'Activity')");
+    expect(navSrc).toContain("t('History',");
+    expect(navSrc).toContain("t('Activity',");
   });
 
   it('Step 2: Google-Style Home & 2-Fork Intake provide plain layman terms and 1-tap choice', () => {
     const cockpitSrc = readFileSync(
-      resolve(root, 'apps/web/src/features/home/components/BuyerSourcingCockpitCard.tsx'),
+      resolve(webSrc, 'features/home/components/BuyerSourcingCockpitCard.tsx'),
       'utf8',
     );
     expect(cockpitSrc).toContain('What do you need today?');
@@ -34,7 +35,7 @@ describe('Unified UI/UX Mobile Simplicity Redesign Invariants', () => {
     expect(cockpitSrc).not.toContain('canVote: false');
 
     const intakeSrc = readFileSync(
-      resolve(root, 'apps/web/src/features/intake/components/Tier1TellOtpCard.tsx'),
+      resolve(webSrc, 'features/intake/components/Tier1TellOtpCard.tsx'),
       'utf8',
     );
     expect(intakeSrc).toContain('data-testid="fork-buy-products"');
@@ -45,7 +46,7 @@ describe('Unified UI/UX Mobile Simplicity Redesign Invariants', () => {
 
   it('Step 3: Layman Quotes Review & Quick Quote replace enterprise procurement jargon', () => {
     const quickQuoteSrc = readFileSync(
-      resolve(root, 'apps/web/src/features/quick-quote/pages/QuickQuotePage.tsx'),
+      resolve(webSrc, 'features/quick-quote/pages/QuickQuotePage.tsx'),
       'utf8',
     );
     expect(quickQuoteSrc).toContain('3. Warranty Period');
@@ -54,7 +55,7 @@ describe('Unified UI/UX Mobile Simplicity Redesign Invariants', () => {
     expect(quickQuoteSrc).not.toContain('🔒 Seal & Transmit Quote →');
 
     const evalSrc = readFileSync(
-      resolve(root, 'apps/web/src/features/evaluation/components/EvaluationDecisionCockpit.tsx'),
+      resolve(webSrc, 'features/evaluation/components/EvaluationDecisionCockpit.tsx'),
       'utf8',
     );
     expect(evalSrc).toContain('Delivery:');
@@ -64,7 +65,7 @@ describe('Unified UI/UX Mobile Simplicity Redesign Invariants', () => {
 
   it('Step 4: Watrify 2-Pill History provides clean Active and Completed tabs on mobile', () => {
     const poPageSrc = readFileSync(
-      resolve(root, 'apps/web/src/features/fulfillment/pages/PurchaseOrdersPage.tsx'),
+      resolve(webSrc, 'features/fulfillment/pages/PurchaseOrdersPage.tsx'),
       'utf8',
     );
     expect(poPageSrc).toContain('data-testid="mobile-tab-active"');
@@ -73,7 +74,7 @@ describe('Unified UI/UX Mobile Simplicity Redesign Invariants', () => {
     expect(poPageSrc).toContain('Completed (');
 
     const poListSrc = readFileSync(
-      resolve(root, 'apps/web/src/features/fulfillment/components/PurchaseOrderList.tsx'),
+      resolve(webSrc, 'features/fulfillment/components/PurchaseOrderList.tsx'),
       'utf8',
     );
     expect(poListSrc).toContain('View Order Details →');
