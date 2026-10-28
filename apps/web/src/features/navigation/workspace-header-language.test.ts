@@ -29,5 +29,10 @@ describe('WorkspaceHeader Language Switcher Integration', () => {
     expect(menuCode).toContain("import { useLanguage } from '@/lib/i18n'");
     expect(menuCode).toContain('const { t } = useLanguage()');
   });
+it('hides dense role badge, language switcher, and journey strip on mobile viewports for simplicity', () => {
+    const headerCode = readFile('components/WorkspaceHeader.tsx');
+    expect(headerCode).toContain('hidden sm:inline-flex');
+    expect(headerCode).toContain('hidden sm:flex');
+    expect(headerCode).toContain('hidden sm:block');
+  });
 });
-

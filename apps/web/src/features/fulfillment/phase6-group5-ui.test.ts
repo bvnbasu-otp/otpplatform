@@ -117,5 +117,16 @@ describe('Phase 6.5 Web UI Controls & State Verification', () => {
       expect(dockClasses).not.toContain('fixed sm:absolute');
     });
   });
+
+  it('renders mobile 2-pill toggle and layman order details action', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const poPageSrc = fs.readFileSync(path.resolve(__dirname, 'pages/PurchaseOrdersPage.tsx'), 'utf8');
+    expect(poPageSrc).toContain('data-testid="mobile-tab-active"');
+    expect(poPageSrc).toContain('data-testid="mobile-tab-completed"');
+
+    const poListSrc = fs.readFileSync(path.resolve(__dirname, 'components/PurchaseOrderList.tsx'), 'utf8');
+    expect(poListSrc).toContain('View Order Details →');
+  });
 });
 

@@ -116,6 +116,7 @@ vi.mock('@/features/requirement/api/rfq-lifecycle', () => ({
 
 vi.mock('@/features/rfq/api/simulate-quotes', () => ({
   simulateQuotesForRfq: vi.fn(),
+  ensureSimulatedQuotesForRfq: vi.fn().mockResolvedValue({ ok: true, quotesSubmitted: 0 }),
 }));
 
 vi.mock('@/features/award/api/awards', () => ({

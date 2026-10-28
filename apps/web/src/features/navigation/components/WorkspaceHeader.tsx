@@ -51,14 +51,14 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
             </Link>
 
             {/* Separator */}
-            <span className="text-muted-foreground/50 text-xs font-light select-none shrink-0" aria-hidden="true">
+            <span className="hidden sm:inline text-muted-foreground/50 text-xs font-light select-none shrink-0" aria-hidden="true">
               |
             </span>
 
             {/* Role Indicator Tag */}
             <Link
               to={homeRoute}
-              className="hover:opacity-85 transition shrink-0"
+              className="hidden sm:inline-flex hover:opacity-85 transition shrink-0"
               title={`Active Workspace: ${roleLabel}`}
               aria-label={`Active Workspace: ${roleLabel}`}
             >
@@ -80,13 +80,17 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
           {/* RIGHT ACTION CLUSTER: [Language (🌐)] → [Help & Support] → [Notifications (🔔)] → [Menu (☰)] */}
           <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* Language Selector Universal Trigger */}
-            <LanguageSwitcher placement="header" />
+            <div className="hidden sm:flex">
+              <LanguageSwitcher placement="header" />
+            </div>
 
             {/* Help & Support Universal Trigger */}
-            <SupportHelpButtonModal
-              isOpen={isSupportOpen}
-              onOpenChange={setIsSupportOpen}
-            />
+            <div className="hidden sm:flex">
+              <SupportHelpButtonModal
+                isOpen={isSupportOpen}
+                onOpenChange={setIsSupportOpen}
+              />
+            </div>
 
 
             {/* Notifications Universal Trigger */}
@@ -134,7 +138,7 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
             </button>
           </div>
         </div>
-        {journeyStage ? <WorkspaceJourneyStrip activeStage={journeyStage} /> : null}
+        {journeyStage ? <div className="hidden sm:block"><WorkspaceJourneyStrip activeStage={journeyStage} /></div> : null}
       </header>
 
       {/* Secondary Workspace Navigation Drawer Overlay */}

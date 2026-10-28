@@ -371,7 +371,7 @@ export function QuickQuoteForm({
         <div>
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-bold text-foreground uppercase tracking-wider">
-              3. Warranty SLA
+              3. Warranty Period
             </span>
             <span className="text-xs font-bold text-primary">{warrantyMonths === '0' ? 'None' : `${warrantyMonths} Months`}</span>
           </div>
@@ -441,7 +441,7 @@ export function QuickQuoteForm({
             disabled={isSubmitting}
           />
           <span className="text-xs font-bold text-emerald-950 dark:text-emerald-200 leading-snug">
-            ✓ I confirm 100% compliance with technical BoQ specifications and delivery terms.
+            ✓ I confirm full agreement with the requirement details and delivery terms.
           </span>
         </label>
       </div>
@@ -450,7 +450,7 @@ export function QuickQuoteForm({
       <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-3 shadow-xs">
         <div className="flex items-baseline justify-between">
           <span className="text-xs font-extrabold uppercase tracking-wide text-foreground">
-            Total Final Quoted:
+            Total Quoted Price:
           </span>
           <span className="text-xl font-black text-primary tabular-nums">
             ₹{total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
@@ -476,7 +476,7 @@ export function QuickQuoteForm({
         className="w-full min-h-[50px] rounded-xl bg-primary px-4 py-3 text-base font-extrabold text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-50 transition active:scale-[0.98] flex items-center justify-center gap-2 mobile-touch-target"
         data-testid="submit-quick-quote-btn"
       >
-        <span>{isSubmitting ? 'Transmitting Sealed Quote…' : '🔒 Seal & Transmit Quote →'}</span>
+        <span>{isSubmitting ? 'Transmitting Sealed Quote…' : 'Submit Quote →'}</span>
       </button>
 
       <IdentityProtectedShield variant="note" className="text-center px-1" />

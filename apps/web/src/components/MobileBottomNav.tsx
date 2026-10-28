@@ -140,7 +140,7 @@ export function MobileBottomNav() {
               }
             >
               <span className="text-lg leading-none">{ordersTab.icon ?? '📋'}</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t(ordersTab.label, ordersTab.label)}</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('History', ordersTab.label === 'Orders' ? 'History' : ordersTab.label)}</span>
             </NavLink>
 
             {/* TAB 3: CENTER ACTION '+' (Context-Aware for Buyer vs Supplier vs Admin) */}
@@ -206,9 +206,9 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">{fourthTab.id === 'quotes' ? '📝' : '🛡️'}</span>
+              <span className="text-lg leading-none">{fourthTab.id === 'quotes' ? '⚡' : '📜'}</span>
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">
-                {t(fourthTab.label, fourthTab.label)}
+                {fourthTab.id === 'quotes' ? t('Quotes', fourthTab.label) : t('Activity', fourthTab.label === 'Audit' ? 'Activity' : fourthTab.label)}
               </span>
             </NavLink>
 

@@ -41,24 +41,24 @@ export function BuyerSourcingCockpitCard({
   const isMember = orgRole === 'MEMBER' || orgRole === 'BUYER';
 
   const roleLabel = isPresident
-    ? 'President (Executive Governance)'
+    ? 'President'
     : isSecretary
-    ? 'Secretary (Secretarial & Notices)'
+    ? 'Secretary'
     : isTreasurer
-    ? 'Treasurer (Financial Signoffs)'
+    ? 'Treasurer'
     : isEstateManager
-    ? 'Estate Manager (Operational Procurement & Inspection)'
+    ? 'Estate Manager'
     : isPrimary
-    ? 'Primary Administrator (Full Spend Authority)'
+    ? 'Admin'
     : isMsmeManager
-    ? 'Operations Manager (Spend Sign-off up to Cap)'
+    ? 'Operations Manager'
     : isDelegate
-    ? 'Delegated Lead (Spend Proxy Authority)'
+    ? 'Delegate'
     : isMember
-    ? 'Team Member (Operational Participation)'
+    ? 'Team Member'
     : orgRole
     ? `Officer (${orgRole})`
-    : 'Independent Buyer · Personal Procurement';
+    : 'Personal Account';
 
   const handleStartRequirement = (customQuery?: string) => {
     const textToUse = (customQuery ?? promptText).trim();
@@ -118,7 +118,7 @@ export function BuyerSourcingCockpitCard({
             <span className="font-semibold">Estate Manager Mode: Operational drafting &amp; inspection enabled.</span>
           </div>
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-200 dark:bg-blue-900">
-            canVote: false
+            Review &amp; Inspect
           </span>
         </div>
       )}
@@ -127,13 +127,13 @@ export function BuyerSourcingCockpitCard({
       <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-card to-primary/5 border border-primary/20 p-3 sm:p-3.5 space-y-2.5 shadow-2xs">
         <div className="flex items-center justify-between">
           <div className="min-w-0">
-            <span className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
-              <span>⚡</span> Tell
+            <span className="text-xs sm:text-sm font-extrabold text-foreground flex items-center gap-1.5">
+              <span>✨</span> What do you need today?
             </span>
-            <p className="text-[10px] text-muted-foreground">Tell → Review → Decide → Track</p>
+            <p className="text-[10px] text-muted-foreground">Ask in plain words · Get verified local quotes</p>
           </div>
           <span className="text-[9px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
-            1-Tap Sourcing
+            Fast Quote
           </span>
         </div>
 
@@ -148,7 +148,7 @@ export function BuyerSourcingCockpitCard({
                 handleExpressTrigger();
               }
             }}
-            placeholder="10 HP Submersible Borewell Motor Rewind..."
+            placeholder="e.g. Submersible motor repair, painting, security..."
             className="w-full min-h-[48px] rounded-xl border border-primary/30 bg-card px-3.5 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground pr-10 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
@@ -187,7 +187,7 @@ export function BuyerSourcingCockpitCard({
             data-testid="cockpit-open-intake-wizard"
             className="min-h-[44px] flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-extrabold hover:bg-primary/90 transition mobile-touch-target focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            Open intake wizard →
+            Start New Request →
           </Link>
           <button
             type="button"
@@ -195,7 +195,7 @@ export function BuyerSourcingCockpitCard({
             disabled={isExpressSubmitting || !promptText.trim()}
             className="min-h-[44px] flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-card text-xs font-bold text-foreground hover:bg-muted transition disabled:opacity-50 mobile-touch-target cursor-pointer"
           >
-            {isExpressSubmitting ? 'Sending…' : 'Continue with text above'}
+            {isExpressSubmitting ? 'Sending…' : 'Get Quotes →'}
           </button>
         </div>
       </div>
@@ -214,7 +214,7 @@ export function BuyerSourcingCockpitCard({
           }`}
         >
           <span className="block text-sm sm:text-base font-black text-primary">{activeRfqsCount}</span>
-          <span className="text-[10px] font-bold text-foreground">🟢 Active</span>
+          <span className="text-[10px] font-bold text-foreground">🟢 Open</span>
         </button>
 
         <button
@@ -229,7 +229,7 @@ export function BuyerSourcingCockpitCard({
           }`}
         >
           <span className="block text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">{pendingVotesCount}</span>
-          <span className="text-[10px] font-bold text-foreground">🟡 Action</span>
+          <span className="text-[10px] font-bold text-foreground">🟡 Needs You</span>
         </button>
 
         <button
@@ -244,7 +244,7 @@ export function BuyerSourcingCockpitCard({
           }`}
         >
           <span className="block text-sm sm:text-base font-black text-muted-foreground">{settledOrdersCount}</span>
-          <span className="text-[10px] font-bold text-foreground">⚪ Settled</span>
+          <span className="text-[10px] font-bold text-foreground">⚪ Completed</span>
         </button>
       </div>
     </section>

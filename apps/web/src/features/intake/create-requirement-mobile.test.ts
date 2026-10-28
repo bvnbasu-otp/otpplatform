@@ -465,5 +465,14 @@ describe('Create Requirement Mobile Redesign — Progressive Flow & Invariants',
         expect(regex.test(combinedText)).toBe(false);
       }
     });
+    it('provides clear 2-button choice between Buy Products and Hire a Service on mobile', () => {
+      const fs = require('node:fs');
+      const path = require('node:path');
+      const src = fs.readFileSync(path.resolve(__dirname, 'components/Tier1TellOtpCard.tsx'), 'utf8');
+      expect(src).toContain('data-testid="fork-buy-products"');
+      expect(src).toContain('data-testid="fork-hire-service"');
+      expect(src).toContain('Buy Products');
+      expect(src).toContain('Hire a Service');
+    });
   });
 });

@@ -496,6 +496,47 @@ export function Tier1TellOtpCard({
         </div>
       ) : (
         <div className="space-y-4" id="stage-1-scope-body">
+        {/* 0. Primary Intent Fork: Buy Products vs Hire a Service */}
+        <div className="space-y-1.5 p-3 rounded-2xl bg-muted/30 border border-border/80">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-foreground">What do you want to do today?</span>
+            <span className="text-[10px] text-muted-foreground">Pick one to simplify your options</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              data-testid="fork-buy-products"
+              onClick={() => onModeChange(RequirementMode.PRODUCT_MATERIAL)}
+              className={`p-3 rounded-xl border text-left transition flex items-center gap-2.5 cursor-pointer min-h-[52px] ${
+                mode === RequirementMode.PRODUCT_MATERIAL || mode === RequirementMode.COMMODITY_TRADING
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary/30 text-primary font-bold shadow-xs'
+                  : 'border-border/80 bg-card hover:bg-muted text-foreground'
+              }`}
+            >
+              <span className="text-2xl shrink-0">📦</span>
+              <div className="min-w-0">
+                <div className="text-xs sm:text-sm font-bold truncate">Buy Products</div>
+                <div className="text-[10px] text-muted-foreground truncate">Goods, materials, supplies</div>
+              </div>
+            </button>
+            <button
+              type="button"
+              data-testid="fork-hire-service"
+              onClick={() => onModeChange(RequirementMode.SERVICE)}
+              className={`p-3 rounded-xl border text-left transition flex items-center gap-2.5 cursor-pointer min-h-[52px] ${
+                mode !== RequirementMode.PRODUCT_MATERIAL && mode !== RequirementMode.COMMODITY_TRADING && mode !== ''
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary/30 text-primary font-bold shadow-xs'
+                  : 'border-border/80 bg-card hover:bg-muted text-foreground'
+              }`}
+            >
+              <span className="text-2xl shrink-0">🔧</span>
+              <div className="min-w-0">
+                <div className="text-xs sm:text-sm font-bold truncate">Hire a Service</div>
+                <div className="text-[10px] text-muted-foreground truncate">Repair, maintenance, contractor</div>
+              </div>
+            </button>
+          </div>
+        </div>
         {/* 1. Natural Language Prompt + Voice & Templates Controls */}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -747,7 +788,7 @@ export function Tier1TellOtpCard({
             </div>
           )}
 
-          <Field label="Procurement Mode" error={errors.requirementMode} required className="sm:col-span-2">
+          <Field label="Detailed Type (Optional)" error={errors.requirementMode} required className="sm:col-span-2">
             {({ id, describedBy, invalid }) => (
               <Select
                 id={id}

@@ -16,4 +16,11 @@ describe('Quick quote update customer copy', () => {
     expect(pageSource).not.toContain('reply with a new price');
     expect(pageSource).not.toContain('tap the WhatsApp link again');
   });
+
+  it('uses plain language for warranty and submission without corporate acronyms', () => {
+    expect(pageSource).toContain('3. Warranty Period');
+    expect(pageSource).not.toContain('3. Warranty SLA');
+    expect(pageSource).toContain('Submit Quote →');
+    expect(pageSource).not.toContain('🔒 Seal & Transmit Quote →');
+  });
 });

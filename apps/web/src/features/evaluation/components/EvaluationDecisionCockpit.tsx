@@ -997,7 +997,7 @@ export function EvaluationDecisionCockpit({
 
                     <div className="grid grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-primary/20">
                       <div>
-                        <span className="text-[10px] text-muted-foreground block">TAT:</span>
+                        <span className="text-[10px] text-muted-foreground block">Delivery:</span>
                         <strong className="font-bold">{selectedQuote.deliveryDays} Days</strong>
                       </div>
                       <div>
@@ -1005,7 +1005,7 @@ export function EvaluationDecisionCockpit({
                         <strong className="font-bold">{selectedQuote.warrantyMonths} Months</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-muted-foreground block">Merit Score:</span>
+                        <span className="text-[10px] text-muted-foreground block">Match Score:</span>
                         <strong className="font-bold">
                           {selectedQuote.evaluationScore != null
                             ? `${(selectedQuote.evaluationScore / 10).toFixed(1)}/10`
@@ -1095,7 +1095,7 @@ export function EvaluationDecisionCockpit({
                     </span>
                   </div>
                   <p className="text-[10px] text-muted-foreground truncate">
-                    ⚡ {selectedQuote.deliveryDays}d TAT · 🛡️ {selectedQuote.warrantyMonths}m Warranty · ★{' '}
+                    ⚡ {selectedQuote.deliveryDays}d delivery · 🛡️ {selectedQuote.warrantyMonths}m warranty · ★{' '}
                     {selectedQuote.evaluationScore != null
                       ? `${(selectedQuote.evaluationScore / 10).toFixed(1)}/10`
                       : '—'}
@@ -1170,7 +1170,7 @@ export function EvaluationDecisionCockpit({
                 data-testid="lock-award-button"
               >
                 <span>🔒</span>
-                <span>Lock Award &amp; Unmask Winner →</span>
+                <span>Choose Winner &amp; Create Order →</span>
               </button>
             )}
           </div>

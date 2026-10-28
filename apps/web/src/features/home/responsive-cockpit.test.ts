@@ -73,6 +73,16 @@ describe('Phase 1 Cockpit - Responsive & Touch Standards', () => {
       expect(supplierChips).toContain('5-25 HP');
       expect(supplierChips).toContain('Live RFQs');
     });
+    it('renders plain layman procurement wording without enterprise jargon', () => {
+      const fs = require('node:fs');
+      const path = require('node:path');
+      const src = fs.readFileSync(path.resolve(__dirname, 'components/BuyerSourcingCockpitCard.tsx'), 'utf8');
+      expect(src).toContain('What do you need today?');
+      expect(src).toContain('Start New Request →');
+      expect(src).toContain('Get Quotes →');
+      expect(src).toContain('Review &amp; Inspect');
+      expect(src).not.toContain('canVote: false');
+    });
   });
 });
 
