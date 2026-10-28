@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import type { SupplierCapabilityProfile } from '@/features/supplier/types/capability-profile';
 
 interface SupplierIdentityShieldBannerProps {
+  businessName?: string;
+  categoryLabel?: string;
   profile?: SupplierCapabilityProfile;
   opportunitiesCount?: number;
   actionCount?: number;
@@ -20,6 +22,8 @@ const SUPPLIER_COMMERCIAL_STAGES = [
 ];
 
 export function SupplierIdentityShieldBanner({
+  businessName,
+  categoryLabel,
   profile,
   opportunitiesCount = 0,
   actionCount = 0,
@@ -44,11 +48,11 @@ export function SupplierIdentityShieldBanner({
             ⚡
           </div>
           <div className="min-w-0">
-            <h4 className="text-xs sm:text-sm font-bold text-foreground truncate">
-              Sri Vinayaka Works
+            <h4 className="text-xs sm:text-sm font-bold text-foreground truncate" data-testid="supplier-banner-name">
+              {businessName || 'Verified Supplier'}
             </h4>
             <span className="text-[10px] text-muted-foreground block truncate">
-              Whitefield · Rewinding &amp; Pumps
+              {profile?.baseCity || 'Local Hub'} · {categoryLabel || (profile?.categories && profile.categories.length > 0 ? profile.categories.slice(0, 2).map((c) => c.replace(/_/g, ' ')).join(' & ') : 'Verified Contractor')}
             </span>
           </div>
         </div>
@@ -61,10 +65,10 @@ export function SupplierIdentityShieldBanner({
       {/* 2. Quick Filter Chips (Screen 05) */}
       <div className="flex flex-wrap gap-1.5 pt-0.5">
         <span className="rounded-lg bg-primary text-primary-foreground px-2.5 py-1 text-[11px] font-bold shadow-2xs">
-          📍 &lt; 10 km
+          📍 {radiusText}
         </span>
         <span className="rounded-lg bg-card border border-border/80 text-foreground px-2.5 py-1 text-[11px] font-semibold">
-          ⚡ 5-25 HP
+          ⚡ {categoryCount > 0 ? `${categoryCount} Categories Covered` : "Verified Scope"}
         </span>
         <span className="rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-300 px-2.5 py-1 text-[11px] font-bold">
           🟢 Live RFQs ({opportunitiesCount || 2})

@@ -92,11 +92,11 @@ export async function fetchSupplierPerformance(): Promise<
     poData?.[0]?.supplier_id;
 
   // 3. Fetch supplier base details
-  let supplier: { id: string; name: string; rating_avg: number | null; completed_jobs: number | null; on_time_percent: number | null; gst_verified?: boolean | null } | null = null;
+  let supplier: { id: string; business_name?: string; name?: string; rating_avg: number | null; completed_jobs: number | null; on_time_percent: number | null; gst_verified?: boolean | null } | null = null;
   if (activeSupplierId) {
     const { data: sup } = await supabase
       .from('suppliers')
-      .select('id, name, rating_avg, completed_jobs, on_time_percent, gst_verified')
+      .select('id, business_name, rating_avg, completed_jobs, on_time_percent, gst_verified')
       .eq('id', activeSupplierId)
       .maybeSingle();
     supplier = sup;
@@ -105,7 +105,7 @@ export async function fetchSupplierPerformance(): Promise<
   if (!supplier) {
     const { data: fallbackSup } = await supabase
       .from('suppliers')
-      .select('id, name, rating_avg, completed_jobs, on_time_percent, gst_verified')
+      .select('id, business_name, rating_avg, completed_jobs, on_time_percent, gst_verified')
       .order('rating_avg', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -181,7 +181,7 @@ export async function fetchSupplierPerformance(): Promise<
     ok: true,
     performance: {
       supplierId: supplier?.id ?? 'demo-supplier',
-      supplierName: supplier?.name ?? 'Supplier Partner',
+      supplierName: supplier?.business_name ?? supplier?.name ?? 'Supplier Partner',
       ratingAvg: computedAvg,
       completedJobs: Math.max(Number(supplier?.completed_jobs ?? 0), completedOrdersCount, ratedCount),
       inExecutionCount,

@@ -70,6 +70,7 @@ export function SupplierDashboardPage() {
 
       {/* 2. Identity-Protected Sourcing Hub & Scope Overview */}
       <SupplierIdentityShieldBanner
+        businessName={businessName}
         profile={profile}
         opportunitiesCount={newOpportunities.length}
         actionCount={actionRequiredItems.length}

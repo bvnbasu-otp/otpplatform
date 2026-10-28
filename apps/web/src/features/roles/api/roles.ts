@@ -160,6 +160,7 @@ export function reconcilePortalSide(
   if (!activeRole) return payloadSide;
 
   const roleSide = activeRole.side;
+  if (!payloadSide) return roleSide;
   if (payloadSide === roleSide) return payloadSide;
 
   if (payloadSide === 'BUYER' && roleSide === 'SUPPLIER') {
@@ -396,6 +397,11 @@ export async function fetchRoleContext(): Promise<
           const firstSuppUser = suppUsers[0];
           if (firstSuppUser) {
             supplierId = firstSuppUser.supplier_id || firstSuppUser.id;
+            const rawSup = (firstSuppUser as unknown as { suppliers?: { business_name?: string } | { business_name?: string }[] }).suppliers;
+            const supObj = Array.isArray(rawSup) ? rawSup[0] : rawSup;
+            if (supObj?.business_name) {
+              organizationName = supObj.business_name;
+            }
           }
         } else if (profile.email) {
           // 2. Check suppliers by contact_email
@@ -409,6 +415,9 @@ export async function fetchRoleContext(): Promise<
           if (directSupp?.id) {
             side = 'SUPPLIER';
             supplierId = directSupp.id;
+            if (directSupp.business_name) {
+              organizationName = directSupp.business_name;
+            }
           } else if (profile.active_role_code && profile.active_role_code.startsWith('SUPPLIER')) {
             side = 'SUPPLIER';
           } else {
@@ -428,6 +437,15 @@ export async function fetchRoleContext(): Promise<
             ) {
               side = 'SUPPLIER';
             }
+          }
+        }
+
+        if (side === 'SUPPLIER' && !organizationName) {
+          const metaName =
+            (user?.user_metadata?.business_name as string | undefined) ||
+            (user?.user_metadata?.organization_name as string | undefined);
+          if (metaName) {
+            organizationName = metaName;
           }
         }
 
