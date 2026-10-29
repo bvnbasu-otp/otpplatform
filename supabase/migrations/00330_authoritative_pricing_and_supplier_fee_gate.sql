@@ -355,6 +355,21 @@ BEGIN
 
   -- Check whether supplier fee was already settled
   SELECT * INTO v_fee_order FROM public.supplier_fee_orders WHERE rfq_id = p_rfq_id;
+  IF (
+    v_rfq.is_demo IS TRUE
+    OR COALESCE(current_setting('otp.demo_staging', true), 'off') = 'on'
+    OR COALESCE(current_setting('otp.demo_reset', true), 'off') = 'on'
+  ) AND p_auto_reveal THEN
+    UPDATE public.supplier_fee_orders
+    SET status = 'SUCCEEDED',
+        paid_at = v_now,
+        non_refund_terms_accepted = true,
+        payment_gateway = 'SIMULATED',
+        payment_reference = 'SIM_DEMO_STAGING'
+    WHERE rfq_id = p_rfq_id;
+    SELECT * INTO v_fee_order FROM public.supplier_fee_orders WHERE rfq_id = p_rfq_id;
+  END IF;
+
   IF v_supplier.lifecycle_state = 'VERIFIED' AND v_supplier.verification_status = 'VERIFIED'
      AND v_fee_order.status = 'SUCCEEDED' THEN
     v_can_reveal := p_auto_reveal;
@@ -464,6 +479,31 @@ BEGIN
 
   -- 0.50% Supplier Platform Fee Gate
   SELECT * INTO v_fee_order FROM public.supplier_fee_orders WHERE rfq_id = p_rfq_id;
+  IF (NOT FOUND OR v_fee_order.status <> 'SUCCEEDED') AND (
+    v_rfq.is_demo IS TRUE
+    OR COALESCE(current_setting('otp.demo_staging', true), 'off') = 'on'
+    OR COALESCE(current_setting('otp.demo_reset', true), 'off') = 'on'
+  ) THEN
+    INSERT INTO public.supplier_fee_orders (
+      rfq_id, award_id, quote_id, supplier_id,
+      agreed_transaction_value, fee_rate, fee_amount, gst_rate, gst_amount, total_fee_payable,
+      currency, status, non_refund_terms_accepted, terms_version, terms_accepted_at, paid_at,
+      payment_gateway, payment_reference
+    ) VALUES (
+      p_rfq_id, v_award.id, v_award.quote_id, v_supplier_id,
+      10000.00, 0.0050, 50.00, 18.00, 9.00, 59.00,
+      'INR', 'SUCCEEDED', true, 'DEMO-V1', v_now, v_now,
+      'SIMULATED', 'SIM_DEMO_' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10))
+    )
+    ON CONFLICT (rfq_id) DO UPDATE SET
+      status = 'SUCCEEDED',
+      paid_at = v_now,
+      non_refund_terms_accepted = true,
+      payment_gateway = 'SIMULATED',
+      payment_reference = 'SIM_DEMO_STAGING'
+    RETURNING * INTO v_fee_order;
+  END IF;
+
   IF NOT FOUND OR v_fee_order.status <> 'SUCCEEDED' THEN
     RAISE EXCEPTION 'Cannot reveal identity: supplier platform fee of 0.50%% has not been paid (FEE-NOT-PAID)'
       USING ERRCODE = '42501';
