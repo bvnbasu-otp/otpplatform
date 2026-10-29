@@ -38,7 +38,7 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
       >
         <div className="mx-auto flex w-full h-12 items-center justify-between gap-x-2 px-3 sm:px-4">
           
-          {/* LEFT CLUSTER: OTP LOGO | ROLE INDICATOR */}
+          {/* LEFT CLUSTER: OTP LOGO */}
           <div className="flex items-center gap-1.5 shrink-0 min-w-0">
             {/* OTP Logo (Role-aware Home Link) */}
             <Link
@@ -50,53 +50,46 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
               <OtpLogo size={24} />
             </Link>
 
-            {/* Separator */}
-            <span className="hidden sm:inline text-muted-foreground/50 text-xs font-light select-none shrink-0" aria-hidden="true">
+            {/* Separator - Hidden across all viewports to maintain uncrowded workspace */}
+            <span className="hidden text-muted-foreground/50 text-xs font-light select-none shrink-0" aria-hidden="true">
               |
             </span>
 
-            {/* Role Indicator Tag */}
+            {/* Role Indicator Tag - Hidden across all viewports; role details live in Profile */}
             <Link
               to={homeRoute}
-              className="hidden sm:inline-flex hover:opacity-85 transition shrink-0"
+              className="hidden hover:opacity-85 transition shrink-0"
               title={`Active Workspace: ${roleLabel}`}
               aria-label={`Active Workspace: ${roleLabel}`}
             >
               <span
                 data-testid="header-role-indicator"
-                className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold tracking-tight shrink-0 transition shadow-2xs ${
-                  context.isPlatformAdmin
-                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-300 dark:border-purple-800'
-                    : context.side === 'SUPPLIER'
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                    : 'bg-primary/10 text-primary border border-primary/20'
-                }`}
+                className="hidden"
               >
                 {displayRole}
               </span>
             </Link>
           </div>
 
-          {/* RIGHT ACTION CLUSTER: [Language (🌐)] → [Help & Support] → [Notifications (🔔)] → [Menu (☰)] */}
+          {/* RIGHT ACTION CLUSTER: Notifications only; Language & Support moved to Profile */}
           <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
-            {/* Language Selector Universal Trigger */}
-            <div className="hidden sm:flex">
+            {/* Language Selector Universal Trigger - Moved to Profile; kept hidden for static accessibility */}
+            <div className="hidden" aria-hidden="true">
               <LanguageSwitcher placement="header" />
             </div>
 
-            {/* Help & Support Universal Trigger */}
-            <div className="hidden sm:flex">
+            {/* Help & Support Universal Trigger - Moved to Profile; kept hidden for static accessibility */}
+            <div className="hidden" aria-hidden="true">
               <SupportHelpButtonModal
                 isOpen={isSupportOpen}
                 onOpenChange={setIsSupportOpen}
               />
             </div>
 
-
-            {/* Notifications Universal Trigger */}
+            {/* Notifications Universal Trigger - Only persistent header icon */}
             <NotificationBell />
 
-            {/* Secondary Navigation Menu Trigger */}
+            {/* Secondary Navigation Menu Trigger - Hidden across all personas for minimal uncrowded workspace */}
             <button
               type="button"
               aria-label={t('Menu', 'Toggle Workspace Menu')}
@@ -110,35 +103,15 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
                   setIsSupportOpen(false);
                 }
               }}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-bold transition min-h-[36px] min-w-[36px] mobile-touch-target cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
-                isMenuOpen
-                  ? 'border-primary bg-primary text-primary-foreground shadow-2xs'
-                  : 'border-border/80 bg-card text-foreground hover:bg-muted/80'
-              }`}
+              className="hidden"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" aria-hidden="true">
-                {isMenuOpen ? (
-                  <path
-                    d="M3 3l10 10M13 3L3 13"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                  />
-                ) : (
-                  <path
-                    d="M2 4h12M2 8h12M2 12h12"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                  />
-                )}
+                <path d="M2 4h12M2 8h12M2 12h12" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
               </svg>
             </button>
           </div>
         </div>
-        {journeyStage ? <div className="hidden sm:block"><WorkspaceJourneyStrip activeStage={journeyStage} /></div> : null}
+        {journeyStage ? <div className="hidden" aria-hidden="true"><WorkspaceJourneyStrip activeStage={journeyStage} /></div> : null}
       </header>
 
       {/* Secondary Workspace Navigation Drawer Overlay */}

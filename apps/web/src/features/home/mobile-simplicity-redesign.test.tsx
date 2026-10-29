@@ -11,9 +11,8 @@ describe('Unified UI/UX Mobile Simplicity Redesign Invariants', () => {
       resolve(webSrc, 'features/navigation/components/WorkspaceHeader.tsx'),
       'utf8',
     );
-    expect(headerSrc).toContain('hidden sm:inline-flex');
-    expect(headerSrc).toContain('hidden sm:flex');
-    expect(headerSrc).toContain('hidden sm:block');
+    expect(headerSrc).toContain('data-testid="header-role-indicator"');
+    expect(headerSrc).toContain('className="hidden"');
 
     const navSrc = readFileSync(
       resolve(webSrc, 'components/MobileBottomNav.tsx'),

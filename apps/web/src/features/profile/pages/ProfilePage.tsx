@@ -32,6 +32,7 @@ import { ReferAndEarnCard } from '@/features/referral';
 import { AddressBookManager } from '../components/AddressBookManager';
 import { SupplierBusinessAddressPanel } from '@/features/supplier/components/SupplierBusinessAddressPanel';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { SupportHelpButtonModal } from '@/features/support';
 import { OrganizationCharterPanel } from '@/features/governance/components/OrganizationCharterPanel';
 import { CommitteeTeamBuilder } from '@/features/org/components/CommitteeTeamBuilder';
 import {
@@ -140,6 +141,7 @@ export function ProfilePage() {
   // Password modal & Canonical Theme Sheet Drawer
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showThemeSheet, setShowThemeSheet] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
 
   const [notificationChannels, setNotificationChannels] = useState<NotificationChannelPreferences>(
     DEFAULT_NOTIFICATION_PREFERENCES.channels,
@@ -1380,6 +1382,60 @@ export function ProfilePage() {
             <p className="text-xs text-muted-foreground">
               Display theme, dark/light modes, and curated accent color palettes are managed exclusively via the bottom-up Appearance Sheet.
             </p>
+          </section>
+
+          {/* 🎧 Help & Support Universal Access in Profile */}
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3" data-testid="profile-support-section">
+            <div className="flex items-center justify-between border-b pb-2">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  🎧 Help &amp; Support
+                </h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Need assistance with an order, request, or have technical questions?
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSupportOpen(true)}
+                data-testid="profile-open-support-btn"
+                className="rounded-xl bg-primary text-primary-foreground px-4 py-2 text-xs font-bold hover:bg-primary/90 transition active:scale-95 min-h-[40px] inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <span>💬 Get Help</span>
+                <span>→</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Direct access to OTP guidance, FAQs, ticket dispatch, and customer support team.
+            </p>
+            {isSupportOpen && (
+              <SupportHelpButtonModal
+                isOpen={isSupportOpen}
+                onOpenChange={setIsSupportOpen}
+              />
+            )}
+          </section>
+
+          {/* 📜 Activity & Audit Trail Access in Profile */}
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3" data-testid="profile-activity-section">
+            <div className="flex items-center justify-between border-b pb-2">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  📜 Activity &amp; Audit Trail
+                </h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  View organizational history, logs, and tamper-evident records.
+                </p>
+              </div>
+              <Link
+                to="/audit"
+                data-testid="profile-view-activity-btn"
+                className="rounded-xl border border-border bg-muted/40 hover:bg-muted text-foreground px-4 py-2 text-xs font-bold transition active:scale-95 min-h-[40px] inline-flex items-center gap-1.5 shadow-2xs"
+              >
+                <span>View Log</span>
+                <span>→</span>
+              </Link>
+            </div>
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3" data-testid="profile-language-preference">

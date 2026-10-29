@@ -126,4 +126,12 @@ describe('profile address book and language preference', () => {
     expect(html).toContain('data-testid="legal-agreements-eula-card"');
     expect(html).toContain('data-no-translate="true"');
   });
+
+  it('renders dedicated Help & Support and Activity & Audit Trail sections under preferences tab', () => {
+    const html = renderProfile(context({ buyerType: 'RWA' }), 'preferences');
+    expect(html).toContain('data-testid="profile-support-section"');
+    expect(html).toContain('data-testid="profile-open-support-btn"');
+    expect(html).toContain('data-testid="profile-activity-section"');
+    expect(html).toContain('data-testid="profile-view-activity-btn"');
+  });
 });
