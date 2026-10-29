@@ -184,6 +184,7 @@ describe('00284 database outcomes (rolled back)', () => {
       const event = () => `evt_${randomUUID()}`;
 
       // Unmapped plan: fail closed, nothing provisioned.
+      await client.query(`DELETE FROM public.subscription_plans WHERE tier_code = 'INDIVIDUAL'`);
       await expectError(client, SETTLE, [alice.profileId, 100, event(), 'ref', 'INDIVIDUAL', 'YEARLY'], 'PRICE-PLAN-NOT-CONFIGURED');
 
       await client.query(

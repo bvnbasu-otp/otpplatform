@@ -47,6 +47,11 @@ export async function deleteFixtureRequirements(requirementIds: string[]): Promi
        )`,
       [requirementIds],
     );
+    await client.query(
+      `DELETE FROM supplier_fee_orders
+       WHERE rfq_id IN (SELECT id FROM rfqs WHERE requirement_id = ANY($1::uuid[]))`,
+      [requirementIds],
+    );
     await client.query(`DELETE FROM requirements WHERE id = ANY($1::uuid[])`, [requirementIds]);
     await client.query('COMMIT');
   } catch (error) {

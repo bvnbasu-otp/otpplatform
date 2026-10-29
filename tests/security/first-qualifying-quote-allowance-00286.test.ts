@@ -807,6 +807,7 @@ describe('00289 pilot simulated purchases', () => {
              pilot_payment_simulation_enabled = true, pilot_simulated_outcome = 'SUCCESS'
          WHERE id = 'current'`,
       );
+      await client.query(`DELETE FROM public.subscription_plans WHERE tier_code = 'INDIVIDUAL'`);
       await actAs(client, buyer);
       await expectError(
         client,
