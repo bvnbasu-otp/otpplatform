@@ -36,12 +36,16 @@ BEGIN;
 -- ---------------------------------------------------------------------------
 
 -- Upsert Canonical Plans matching published commercial rules
+-- Clean legacy ENTERPRISE if it has a non-canonical ID to avoid seed.sql conflict
+DELETE FROM public.subscription_plans WHERE code = 'ENTERPRISE' AND id <> 'a8000000-0000-4000-8000-000000000003';
+
 INSERT INTO public.subscription_plans (
-  code, tier_code, name, description,
+  id, code, tier_code, name, description,
   price_monthly, price_yearly, price_extra_rfq,
   gst_rate, supplier_state_code, currency, is_active, features
 ) VALUES
 (
+  'a8000000-0000-4000-8000-000000000010',
   'INDIVIDUAL', 'INDIVIDUAL', 'Individual Buyer',
   'For independent property owners, solo buyers & personal procurement',
   199.00, 1999.00, 149.00,
@@ -49,6 +53,7 @@ INSERT INTO public.subscription_plans (
   '{"monthlyRfqs": 3, "quarterlyBonus": 1, "targetOrgTypes": ["INDIVIDUAL"]}'::jsonb
 ),
 (
+  'a8000000-0000-4000-8000-000000000011',
   'RWA', 'RWA', 'RWA & Society',
   'For housing societies, apartment committees & residential welfare',
   1499.00, 14999.00, 999.00,
@@ -56,6 +61,7 @@ INSERT INTO public.subscription_plans (
   '{"monthlyRfqs": 3, "quarterlyBonus": 1, "targetOrgTypes": ["COMMUNITY", "RWA", "SOCIETY"]}'::jsonb
 ),
 (
+  'a8000000-0000-4000-8000-000000000012',
   'MSME', 'MSME', 'MSME & Commercial Business',
   'For small & medium enterprises, workshops, plants & commercial teams',
   1999.00, 19999.00, 1499.00,
@@ -63,6 +69,7 @@ INSERT INTO public.subscription_plans (
   '{"monthlyRfqs": 3, "quarterlyBonus": 1, "targetOrgTypes": ["MSME"]}'::jsonb
 ),
 (
+  'a8000000-0000-4000-8000-000000000003',
   'ENTERPRISE', 'ENTERPRISE', 'Enterprise & Institutional',
   'For multi-location institutions, healthcare trusts, colleges & developer groups',
   4999.00, 49999.00, 1499.00,
