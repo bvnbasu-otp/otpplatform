@@ -131,3 +131,40 @@ Deno.test('Payment Webhook — Missing signature headers rejected', async () => 
   assertEquals(result.provider, 'UNKNOWN');
   assertEquals(result.error?.includes('Missing webhook signature headers'), true);
 });
+
+Deno.test('Payment Webhook — Razorpay valid supplier platform fee payload', async () => {
+  const secret = 'rzp_test_secret_supplier_fee';
+  const body = JSON.stringify({
+    event_id: 'evt_rzp_supplier_fee_101',
+    payload: {
+      payment: {
+        entity: {
+          id: 'pay_rzp_fee_987654',
+          amount: 59000, // ₹590.00 (₹500 fee + ₹90 GST on ₹100,000 transaction)
+          currency: 'INR',
+          notes: {
+            rfq_id: 'f2000000-0000-4000-8000-000000000001',
+            award_id: 'a2000001-0000-4000-8000-000000000002',
+            supplier_id: 's0000000-0000-4000-8000-000000000001',
+            payment_type: 'SUPPLIER_FEE',
+          },
+        },
+      },
+    },
+  });
+
+  const sig = await hmacSha256Hex(secret, body);
+  const headers = new Headers({
+    'x-razorpay-signature': sig,
+  });
+
+  const result = await verifyAndExtractWebhook(headers, body, { razorpaySecret: secret });
+
+  assertEquals(result.valid, true);
+  assertEquals(result.provider, 'RAZORPAY');
+  assertEquals(result.eventId, 'evt_rzp_supplier_fee_101');
+  assertEquals(result.extractedPayload?.paymentType, 'SUPPLIER_FEE');
+  assertEquals(result.extractedPayload?.amount, 590);
+  assertEquals(result.extractedPayload?.rfqId, 'f2000000-0000-4000-8000-000000000001');
+  assertEquals(result.extractedPayload?.supplierId, 's0000000-0000-4000-8000-000000000001');
+});

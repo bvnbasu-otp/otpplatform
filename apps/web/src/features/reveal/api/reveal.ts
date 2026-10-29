@@ -91,3 +91,113 @@ export async function revealSupplier(rfqId: string): Promise<
     },
   };
 }
+
+export interface SupplierFeeDetails {
+  rfqId: string;
+  awardId: string;
+  quoteId: string;
+  supplierId: string;
+  agreedTransactionValue: number;
+  feeRatePercent: number;
+  feeAmount: number;
+  gstRatePercent: number;
+  gstAmount: number;
+  totalFeePayable: number;
+  currency: string;
+  status: 'PENDING' | 'SUCCEEDED' | 'DISPUTED' | 'REFUNDED';
+  nonRefundTermsAccepted: boolean;
+  termsVersion: string | null;
+  paidAt: string | null;
+  nonRefundPolicySummary: string;
+}
+
+export async function fetchSupplierFeeDetails(rfqId: string): Promise<
+  { ok: true; feeDetails: SupplierFeeDetails } | { ok: false; error: string }
+> {
+  const { data, error } = await supabase.rpc('get_supplier_fee_details', { p_rfq_id: rfqId });
+  if (error) return { ok: false, error: error.message };
+
+  const res = (data ?? {}) as Record<string, unknown>;
+  if (!res.ok) return { ok: false, error: String(res.error ?? 'Failed to retrieve fee details') };
+
+  return {
+    ok: true,
+    feeDetails: {
+      rfqId: String(res.rfq_id),
+      awardId: String(res.award_id),
+      quoteId: String(res.quote_id),
+      supplierId: String(res.supplier_id),
+      agreedTransactionValue: Number(res.agreed_transaction_value || 0),
+      feeRatePercent: Number(res.fee_rate_percent || 0.5),
+      feeAmount: Number(res.fee_amount || 0),
+      gstRatePercent: Number(res.gst_rate_percent || 18),
+      gstAmount: Number(res.gst_amount || 0),
+      totalFeePayable: Number(res.total_fee_payable || 0),
+      currency: String(res.currency ?? 'INR'),
+      status: (res.status as any) || 'PENDING',
+      nonRefundTermsAccepted: Boolean(res.non_refund_terms_accepted),
+      termsVersion: (res.terms_version as string | null) ?? null,
+      paidAt: (res.paid_at as string | null) ?? null,
+      nonRefundPolicySummary: String(res.non_refund_policy_summary ?? ''),
+    },
+  };
+}
+
+export async function acceptSupplierFeeTerms(
+  rfqId: string,
+  termsVersion = '2026-10-V1',
+): Promise<{ ok: true; termsVersion: string; acceptedAt: string } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('accept_supplier_fee_terms', {
+    p_rfq_id: rfqId,
+    p_terms_version: termsVersion,
+  });
+  if (error) return { ok: false, error: error.message };
+  const res = (data ?? {}) as Record<string, unknown>;
+  if (!res.ok) return { ok: false, error: String(res.error ?? 'Failed to accept terms') };
+  return {
+    ok: true,
+    termsVersion: String(res.terms_version ?? termsVersion),
+    acceptedAt: String(res.accepted_at ?? new Date().toISOString()),
+  };
+}
+
+export async function paySupplierFeeSimulated(
+  rfqId: string,
+  idempotencyKey?: string,
+  paymentReference?: string,
+): Promise<{ ok: true; feeOrderId: string; status: string; totalPaid: number } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('pay_supplier_fee_simulated', {
+    p_rfq_id: rfqId,
+    p_idempotency_key: idempotencyKey ?? null,
+    p_payment_reference: paymentReference ?? null,
+  });
+  if (error) return { ok: false, error: error.message };
+  const res = (data ?? {}) as Record<string, unknown>;
+  if (!res.ok) return { ok: false, error: String(res.error ?? 'Failed to settle simulated fee') };
+  return {
+    ok: true,
+    feeOrderId: String(res.fee_order_id ?? ''),
+    status: String(res.status ?? 'SUCCEEDED'),
+    totalPaid: Number(res.total_fee_paid || 0),
+  };
+}
+
+export async function requestSupplierFeeRefund(
+  rfqId: string,
+  reason: string,
+  exceptionCategory: 'DUPLICATE_PAYMENT' | 'GATEWAY_ERROR' | 'PLATFORM_REVEAL_FAILURE',
+): Promise<{ ok: true; status: string; message: string } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('request_supplier_fee_refund', {
+    p_rfq_id: rfqId,
+    p_reason: reason,
+    p_exception_category: exceptionCategory,
+  });
+  if (error) return { ok: false, error: error.message };
+  const res = (data ?? {}) as Record<string, unknown>;
+  if (!res.ok) return { ok: false, error: String(res.error ?? 'Refund request failed') };
+  return {
+    ok: true,
+    status: String(res.status ?? 'DISPUTED'),
+    message: String(res.message ?? ''),
+  };
+}

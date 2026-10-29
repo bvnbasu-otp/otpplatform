@@ -99,6 +99,33 @@ if (import.meta.main) {
         auth: { persistSession: false },
       });
 
+      if (payload.paymentType === 'SUPPLIER_FEE') {
+        if (!payload.rfqId) {
+          return errorResponse('Supplier fee events must specify an rfq_id', 422);
+        }
+        const { data: feeResult, error: feeError } = await supabase.rpc(
+          'record_verified_supplier_fee_payment',
+          {
+            p_rfq_id: payload.rfqId,
+            p_amount: payload.amount,
+            p_currency: payload.currency,
+            p_gateway: verification.provider,
+            p_gateway_event_id: verification.eventId,
+            p_payment_reference: payload.paymentReference,
+            p_gateway_payload: payload.raw,
+          },
+        );
+        if (feeError) {
+          return errorResponse(`Database transaction failed: ${feeError.message}`, 500);
+        }
+        return jsonResponse({
+          ok: true,
+          verified: true,
+          provider: verification.provider,
+          result: feeResult,
+        });
+      }
+
       // The plan and cycle must come from the verified event: there is no default tier or price.
       if (payload.paymentType === 'SUBSCRIPTION' && (!payload.tier || !payload.billingCycle)) {
         return errorResponse('Subscription events must name a tier and billing cycle', 422);

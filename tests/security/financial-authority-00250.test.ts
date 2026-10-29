@@ -185,7 +185,7 @@ describe('financial authority 00250', () => {
     expect(files.slice(idx + 1, idx + 36).map((f) => f.slice(0, 5))).toEqual(
       Array.from({ length: 35 }, (_, i) => String(251 + i).padStart(5, '0')),
     );
-    expect(files.at(-1)).toBe('00329_fix_direct_invites_and_supplier_quoting_for_demo.sql');
+    expect(files.at(-1)).toBe('00330_authoritative_pricing_and_supplier_fee_gate.sql');
     expect(sha256(ENT01)).toBe(ENT01_SHA256);
     expect(sql).not.toMatch(/enforce_pilot_rfq_allowance/);
     expect(sql).not.toMatch(/schema_migrations/);

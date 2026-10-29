@@ -137,7 +137,7 @@ describe('workdir location and state', () => {
 describe('stage plan isolates 00077', () => {
   it('splits the real chain into A=1-76, B=77 alone, C=78-314, D=315-ceiling', () => {
     const files = listMigrationFiles(resolve(REPO, 'supabase/migrations'));
-    const plan = planStages(files, 329);
+    const plan = planStages(files, 330);
     expect(plan.A).toHaveLength(76);
     expect(plan.B).toEqual(['00077_clear_all_transactional_data_keep_logins.sql']);
     expect(plan.C).toHaveLength(237);
@@ -157,6 +157,7 @@ describe('stage plan isolates 00077', () => {
       '00327_notification_dispatch_isolation.sql',
       '00328_admin_test_runner_canonical_status_enum.sql',
       '00329_fix_direct_invites_and_supplier_quoting_for_demo.sql',
+      '00330_authoritative_pricing_and_supplier_fee_gate.sql',
     ]);
   });
 

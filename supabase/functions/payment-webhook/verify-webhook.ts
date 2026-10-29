@@ -6,11 +6,14 @@ export interface WebhookVerificationResult {
   error?: string;
   eventId?: string;
   extractedPayload?: {
-    paymentType: 'SUBSCRIPTION' | 'INVOICE';
+    paymentType: 'SUBSCRIPTION' | 'INVOICE' | 'SUPPLIER_FEE';
     organizationId?: string;
     /** Individual (personal) buyer subscriptions are settled against a profile, not an organization. */
     profileId?: string;
     invoiceId?: string;
+    rfqId?: string;
+    awardId?: string;
+    supplierId?: string;
     amount: number;
     currency: string;
     tier?: string;
@@ -70,16 +73,25 @@ export async function verifyAndExtractWebhook(
       const parsed = JSON.parse(rawBody);
       const entity = parsed.payload?.payment?.entity ?? parsed.payload?.order?.entity ?? parsed;
       const notes = entity.notes ?? parsed.notes ?? {};
+      const rawType = (notes.payment_type ?? '').toUpperCase();
+      const paymentType = rawType === 'INVOICE'
+        ? 'INVOICE'
+        : rawType === 'SUPPLIER_FEE'
+        ? 'SUPPLIER_FEE'
+        : 'SUBSCRIPTION';
 
       return {
         valid: true,
         provider: 'RAZORPAY',
         eventId: parsed.event_id ?? entity.id ?? `rzp_${Date.now()}`,
         extractedPayload: {
-          paymentType: notes.payment_type?.toUpperCase() === 'INVOICE' ? 'INVOICE' : 'SUBSCRIPTION',
+          paymentType,
           organizationId: notes.organization_id ?? notes.org_id,
           profileId: notes.profile_id,
           invoiceId: notes.invoice_id,
+          rfqId: notes.rfq_id ?? notes.rfqId,
+          awardId: notes.award_id ?? notes.awardId,
+          supplierId: notes.supplier_id ?? notes.supplierId,
           amount: typeof entity.amount === 'number' ? entity.amount / 100 : Number(entity.amount || 0),
           currency: entity.currency ?? 'INR',
           tier: notes.tier,
@@ -127,16 +139,25 @@ export async function verifyAndExtractWebhook(
       const parsed = JSON.parse(rawBody);
       const dataObj = parsed.data?.object ?? parsed;
       const meta = dataObj.metadata ?? parsed.metadata ?? {};
+      const rawType = (meta.payment_type ?? '').toUpperCase();
+      const paymentType = rawType === 'INVOICE'
+        ? 'INVOICE'
+        : rawType === 'SUPPLIER_FEE'
+        ? 'SUPPLIER_FEE'
+        : 'SUBSCRIPTION';
 
       return {
         valid: true,
         provider: 'STRIPE',
         eventId: parsed.id ?? `evt_${Date.now()}`,
         extractedPayload: {
-          paymentType: meta.payment_type?.toUpperCase() === 'INVOICE' ? 'INVOICE' : 'SUBSCRIPTION',
+          paymentType,
           organizationId: meta.organization_id ?? meta.org_id,
           profileId: meta.profile_id,
           invoiceId: meta.invoice_id,
+          rfqId: meta.rfq_id ?? meta.rfqId,
+          awardId: meta.award_id ?? meta.awardId,
+          supplierId: meta.supplier_id ?? meta.supplierId,
           amount: typeof dataObj.amount === 'number' ? dataObj.amount / 100 : Number(dataObj.amount || 0),
           currency: (dataObj.currency ?? 'INR').toUpperCase(),
           tier: meta.tier,
@@ -161,15 +182,25 @@ export async function verifyAndExtractWebhook(
 
     try {
       const parsed = JSON.parse(rawBody);
+      const rawType = (parsed.payment_type ?? '').toUpperCase();
+      const paymentType = rawType === 'INVOICE'
+        ? 'INVOICE'
+        : rawType === 'SUPPLIER_FEE'
+        ? 'SUPPLIER_FEE'
+        : 'SUBSCRIPTION';
+
       return {
         valid: true,
         provider: 'GENERIC_SECURE',
         eventId: parsed.gateway_event_id ?? parsed.event_id ?? `gen_${Date.now()}`,
         extractedPayload: {
-          paymentType: parsed.payment_type?.toUpperCase() === 'INVOICE' ? 'INVOICE' : 'SUBSCRIPTION',
+          paymentType,
           organizationId: parsed.organization_id,
           profileId: parsed.profile_id,
           invoiceId: parsed.invoice_id,
+          rfqId: parsed.rfq_id ?? parsed.rfqId,
+          awardId: parsed.award_id ?? parsed.awardId,
+          supplierId: parsed.supplier_id ?? parsed.supplierId,
           amount: Number(parsed.amount || 0),
           currency: parsed.currency ?? 'INR',
           tier: parsed.tier,
