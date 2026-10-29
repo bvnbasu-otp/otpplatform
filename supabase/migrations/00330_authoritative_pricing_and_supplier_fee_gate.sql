@@ -314,7 +314,15 @@ BEGIN
   END IF;
 
   -- Calculate Authoritative 0.50% Supplier Platform Fee (+ 18% GST)
-  v_gross := COALESCE(v_quote.net_amount, v_quote.amount, 0);
+  SELECT COALESCE(
+    (qv.snapshot->>'totalCost')::numeric,
+    (qv.snapshot->>'basePrice')::numeric,
+    0
+  ) INTO v_gross
+  FROM public.quotes q
+  LEFT JOIN public.quote_versions qv ON qv.quote_id = q.id AND qv.version = q.current_version
+  WHERE q.id = p_quote_id;
+
   v_fee := round(v_gross * 0.0050, 2);
   v_gst := round(v_fee * 0.18, 2);
   v_total_fee := round(v_fee + v_gst, 2);
@@ -813,6 +821,8 @@ GRANT EXECUTE ON FUNCTION public.request_supplier_fee_refund(uuid, text, text) T
 -- 6. Update rfq_buyer_revealed: Support Individual Personal Buyers & Fee Gate
 -- ---------------------------------------------------------------------------
 
+DROP VIEW IF EXISTS public.rfq_buyer_revealed CASCADE;
+
 CREATE OR REPLACE VIEW public.rfq_buyer_revealed
 WITH (security_barrier = true) AS
 SELECT
@@ -825,14 +835,15 @@ SELECT
   COALESCE(o.contact_phone, p_owner.phone)               AS contact_phone,
   COALESCE(o.contact_email, p_owner.email)               AS contact_email,
   o.tax_registration,
-  COALESCE(o.city, (r.delivery_location->>'city')::text) AS city,
-  COALESCE(o.address, r.delivery_location)                AS address,
+  COALESCE(o.city, (r.delivery_address_snapshot->>'city')::text, req.delivery_city) AS city,
+  COALESCE(o.address, r.delivery_address_snapshot, CASE WHEN req.delivery_city IS NOT NULL THEN jsonb_build_object('city', req.delivery_city, 'pincode', req.delivery_pincode, 'line1', req.delivery_line1) ELSE NULL END) AS address,
   aw.full_name          AS awarded_by_name,
   aw.email              AS awarded_by_email,
   a.awarded_at,
   a.revealed_at
 FROM public.awards a
 JOIN public.rfqs r                     ON r.id = a.rfq_id
+LEFT JOIN public.requirements req      ON req.id = r.requirement_id
 LEFT JOIN public.organizations o       ON o.id = r.organization_id
 LEFT JOIN public.profiles p_owner      ON p_owner.id = COALESCE(r.owner_profile_id, r.created_by)
 LEFT JOIN public.profiles aw           ON aw.id = a.awarded_by
