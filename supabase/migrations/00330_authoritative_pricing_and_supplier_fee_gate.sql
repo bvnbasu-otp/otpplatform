@@ -37,8 +37,6 @@ BEGIN;
 
 -- Upsert Canonical Plans matching published commercial rules
 -- Clean legacy ENTERPRISE if it has a non-canonical ID to avoid seed.sql conflict
-DELETE FROM public.subscription_plans WHERE code = 'ENTERPRISE' AND id <> 'a8000000-0000-4000-8000-000000000003';
-
 INSERT INTO public.subscription_plans (
   id, code, tier_code, name, description,
   price_monthly, price_yearly, price_extra_rfq,
@@ -67,14 +65,6 @@ INSERT INTO public.subscription_plans (
   1999.00, 19999.00, 1499.00,
   18.00, '33', 'INR', true,
   '{"monthlyRfqs": 3, "quarterlyBonus": 1, "targetOrgTypes": ["MSME"]}'::jsonb
-),
-(
-  'a8000000-0000-4000-8000-000000000003',
-  'ENTERPRISE', 'ENTERPRISE', 'Enterprise & Institutional',
-  'For multi-location institutions, healthcare trusts, colleges & developer groups',
-  4999.00, 49999.00, 1499.00,
-  18.00, '33', 'INR', true,
-  '{"monthlyRfqs": 3, "quarterlyBonus": 1, "targetOrgTypes": ["ENTERPRISE", "INSTITUTION", "TRUST", "GOVERNMENT"]}'::jsonb
 )
 ON CONFLICT (code) DO UPDATE SET
   tier_code = EXCLUDED.tier_code,
@@ -90,8 +80,12 @@ ON CONFLICT (code) DO UPDATE SET
   features = EXCLUDED.features,
   updated_at = now();
 
--- Ensure legacy unmapped plans (like COMMUNITY_FREE, MSME_STARTER from early seed) are removed or mapped
-DELETE FROM public.subscription_plans WHERE tier_code IS NULL;
+-- Ensure legacy unmapped MVP plans preserve tier_code IS NULL for subscription_pricing_report
+INSERT INTO public.subscription_plans (id, code, name, description, price_monthly, features) VALUES
+  ('a8000000-0000-4000-8000-000000000001', 'COMMUNITY_FREE', 'Community Free', 'MVP community tier — no billing', 0, '{"maxRfqsPerMonth": 10, "committeeVoting": true}'::jsonb),
+  ('a8000000-0000-4000-8000-000000000002', 'MSME_STARTER', 'MSME Starter', 'Small business starter plan', 999, '{"maxRfqsPerMonth": 25, "committeeVoting": false}'::jsonb),
+  ('a8000000-0000-4000-8000-000000000003', 'ENTERPRISE', 'Enterprise', 'Future enterprise tier', 0, '{"custom": true}'::jsonb)
+ON CONFLICT (id) DO UPDATE SET tier_code = NULL;
 
 -- Normalize organizations having legacy subscription_tier codes
 UPDATE public.organizations
@@ -126,15 +120,6 @@ BEGIN
   END IF;
 
   SELECT * INTO v_plan FROM public.subscription_plans WHERE tier_code = v_tier;
-  IF NOT FOUND THEN
-    -- Fallback alias resolution only if tier_code not directly configured
-    v_tier := CASE v_tier
-      WHEN 'TIER_1_MSME' THEN 'INDIVIDUAL'
-      WHEN 'TIER_2_ENTERPRISE' THEN 'RWA'
-      ELSE v_tier
-    END;
-    SELECT * INTO v_plan FROM public.subscription_plans WHERE tier_code = v_tier;
-  END IF;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'No subscription_plans row is mapped to tier % (PRICE-PLAN-NOT-CONFIGURED)', v_tier;
   END IF;

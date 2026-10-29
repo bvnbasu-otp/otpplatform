@@ -35,16 +35,14 @@ describe('Migration 00330: Static SQL Contract & Security Boundaries', () => {
     expect(sql).toMatch(/'MSME',\s*'MSME',\s*'MSME & Commercial Business'/);
     expect(sql).toMatch(/1999\.00,\s*19999\.00,\s*1499\.00/);
 
-    // Enterprise
-    expect(sql).toMatch(/'ENTERPRISE',\s*'ENTERPRISE'/);
-    expect(sql).toMatch(/4999\.00,\s*49999\.00,\s*1499\.00/);
+    // Preserves unmapped legacy MVP plans for subscription_pricing_report
+    expect(sql).toContain("'COMMUNITY_FREE'");
+    expect(sql).toContain("'MSME_STARTER'");
+    expect(sql).toContain("'ENTERPRISE'");
 
-    // Cleans unmapped legacy plans so subscription_pricing_report() is clean
-    expect(sql).toContain('DELETE FROM public.subscription_plans WHERE tier_code IS NULL;');
-
-    // Backward compatibility alias normalization in private.canonical_subscription_price
-    expect(sql).toContain("WHEN 'TIER_1_MSME' THEN 'INDIVIDUAL'");
-    expect(sql).toContain("WHEN 'TIER_2_ENTERPRISE' THEN 'RWA'");
+    // Backward compatibility alias normalization in organizations
+    expect(sql).toContain("WHEN subscription_tier = 'TIER_1_MSME' THEN 'INDIVIDUAL'");
+    expect(sql).toContain("WHEN subscription_tier = 'TIER_2_ENTERPRISE' THEN 'RWA'");
   });
 
   it('creates public.supplier_fee_orders with strict constraints and RLS', () => {
