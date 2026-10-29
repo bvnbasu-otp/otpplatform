@@ -274,9 +274,9 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-sm">🗳️</span>
+                <span className="text-sm">👥</span>
                 <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                  Live Quorum Meter
+                  Team Decision Progress
                 </span>
               </div>
               <span
@@ -287,7 +287,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                 }`}
               >
                 {quorumView.quorumMet
-                  ? '✓ Quorum Reached'
+                  ? '✓ Target Reached'
                   : `${Math.max(0, (quorumView.quorumRequired ?? 0) - (quorumView.votedCount ?? 0))} more vote(s) needed`}
               </span>
             </div>
@@ -313,7 +313,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/40 text-[11px]">
               <span className="text-muted-foreground">
-                Quorum rule: Minimum <strong>{quorumView.quorumRequired}</strong> affirmative vote(s) required to unlock Award lock.
+                Minimum <strong>{quorumView.quorumRequired}</strong> team approval(s) required to proceed with order.
               </span>
               <button
                 type="button"
@@ -518,7 +518,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
               <div className="flex items-center justify-between border-b border-border/50 pb-2">
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                    Recorded Evaluation Ballot
+                    Your Submitted Choice
                   </span>
                   <h3 className="text-sm font-bold text-foreground">
                     {formatVoteChoice(myVote.choice)} — {myVote.recommendedAlias ?? 'Selected Candidate'}
@@ -536,14 +536,14 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                     }}
                     className="rounded-xl border border-primary/40 bg-card px-3 py-2 text-xs font-bold text-primary hover:bg-muted min-h-[44px]"
                   >
-                    ↺ Revise Vote
+                    ↺ Change Choice
                   </button>
                 )}
               </div>
 
               {myVote.comment && (
                 <div className="rounded-xl border bg-muted/20 p-3 text-xs text-muted-foreground">
-                  <span className="font-bold text-foreground block mb-0.5">Recorded Rationale:</span>
+                  <span className="font-bold text-foreground block mb-0.5">Recorded Reason:</span>
                   &ldquo;{myVote.comment}&rdquo;
                 </div>
               )}
@@ -553,10 +553,10 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
               <div className="flex items-center justify-between border-b border-border/50 pb-2">
                 <div>
                   <h2 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                    {myVote ? '↺ Revise Your Decision Ballot' : '2. Decision Ballot & Justification'}
+                    {myVote ? '↺ Change Your Choice' : '2. Select Your Preferred Supplier'}
                   </h2>
                   <p className="text-[11px] text-muted-foreground">
-                    Select suggested rationale templates below or enter custom comments to justify your recommendation on record.
+                    Select suggested reasons below or enter comments explaining your choice.
                   </p>
                 </div>
                 {myVote && (
@@ -631,7 +631,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                 />
               </div>
 
-              {/* COI Affirmation Checkbox (≥44px Touch Target) */}
+              {/* Fair Decision Affirmation Checkbox (≥44px Touch Target) */}
               <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/80 bg-muted/20 p-3 text-xs text-foreground transition hover:bg-muted/40 min-h-[44px]">
                 <input
                   type="checkbox"
@@ -640,7 +640,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                   className="mt-0.5 h-4 w-4 rounded text-primary focus:ring-primary"
                 />
                 <span className="leading-snug text-[11px]">
-                  <strong>Conflict of Interest (COI) Affirmation:</strong> I declare and certify that I have no personal, commercial, or relational conflict of interest with any participating supplier in this RFQ.
+                  <strong>Fair Decision Check:</strong> I confirm I have no personal or commercial connection with this supplier.
                 </span>
               </label>
 
@@ -649,7 +649,7 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                   className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2.5 text-[11px] text-amber-800 dark:text-amber-200"
                   data-testid="reason-required-warning"
                 >
-                  ⚠️ <strong>Rationale Required:</strong> Please tap at least one rationale chip above or enter notes before submitting your vote.
+                  ⚠️ <strong>Reason Required:</strong> Please choose at least one reason chip above or enter notes before submitting your choice.
                 </div>
               )}
             </div>
@@ -769,11 +769,11 @@ export function CommitteeVotePage({ rfqId }: { rfqId: string }) {
                 {busy ? (
                   <span>Recording Decision…</span>
                 ) : isSoloBuyer ? (
-                  <span>🏆 Proceed to Award →</span>
+                  <span>🏆 Proceed to Order →</span>
                 ) : myVote ? (
-                  <span>✓ Confirm &amp; Update Vote</span>
+                  <span>✓ Update My Choice →</span>
                 ) : (
-                  <span>🗳️ Confirm &amp; Cast Vote</span>
+                  <span>Submit My Choice →</span>
                 )}
               </button>
             )}

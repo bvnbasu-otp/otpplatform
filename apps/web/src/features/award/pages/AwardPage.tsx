@@ -242,8 +242,8 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
     setRevealedWinner(result.winner);
     setSuccess(
       result.winner.aliasBeforeReveal
-        ? `Authoritative reveal complete: ${result.winner.aliasBeforeReveal} is ${result.winner.businessName}.${result.winner.poId ? ' Official Purchase Order generated!' : ''}`
-        : `Identity unmasked: The winner is ${result.winner.businessName}.`,
+        ? `Winner Selected: ${result.winner.businessName}!${result.winner.poId ? ' Purchase order placed!' : ''}`
+        : `Winner Selected: ${result.winner.businessName}!`,
     );
     await load();
   }
@@ -418,7 +418,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                   </span>
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block">
-                      Authoritative Award Winner
+                      Winner Selected
                     </span>
                     <h2 className="text-base sm:text-lg font-black text-foreground">
                       {revealedWinner?.businessName || revealedWinnerQuote?.businessName || 'Awarded Supplier'}
@@ -459,17 +459,37 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
 
                 <div>
                   <span className="text-[10px] font-bold uppercase text-muted-foreground block">
-                    Commercial Contract Total:
+                    Total Order Value:
                   </span>
                   <strong className="font-mono font-black text-foreground text-base block">
                     ₹{(winningQuote?.totalCost || 0).toLocaleString('en-IN')}
                   </strong>
-                  <span className="text-[10px] text-muted-foreground">Turnaround: {winningQuote?.deliveryDays ? `${winningQuote.deliveryDays} Days TAT` : 'Standard SLA'}</span>
+                  <span className="text-[10px] text-muted-foreground">Delivery: {winningQuote?.deliveryDays ? `${winningQuote.deliveryDays} Days` : 'Standard Delivery'}</span>
                 </div>
               </div>
 
-              {/* Secondary Utilities Row */}
+              {/* Instant Contact & Secondary Utilities Row */}
               <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                {(revealedWinner?.contactPhone || revealedWinnerQuote?.phone) && (
+                  <>
+                    <a
+                      href={`tel:${revealedWinner?.contactPhone || revealedWinnerQuote?.phone}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground px-4 py-3 text-xs font-bold hover:bg-primary/90 transition min-h-[44px] mobile-touch-target"
+                    >
+                      <span>📞</span>
+                      <span>Call Supplier</span>
+                    </a>
+                    <a
+                      href={`https://wa.me/${(revealedWinner?.contactPhone || revealedWinnerQuote?.phone || '').replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 text-white px-4 py-3 text-xs font-bold hover:bg-emerald-700 transition min-h-[44px] mobile-touch-target"
+                    >
+                      <span>💬</span>
+                      <span>WhatsApp Chat</span>
+                    </a>
+                  </>
+                )}
 
                 <button
                   type="button"
@@ -477,7 +497,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 px-4 py-3 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition min-h-[44px]"
                 >
                   <span>📲</span>
-                  <span>Share via WhatsApp</span>
+                  <span>Share Order</span>
                 </button>
 
                 <button

@@ -610,10 +610,10 @@ export function EvaluationDecisionCockpit({
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-black uppercase tracking-wider text-muted-foreground">
-                  4-Pillar Offer Comparison Matrix
+                  Compare Quotes &amp; Offers
                 </span>
                 <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">
-                  🔒 Identity-Protected Sealed Protocol
+                  🛡️ Verified Private Quotes
                 </span>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -897,7 +897,7 @@ export function EvaluationDecisionCockpit({
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 text-xs border-t border-emerald-300 dark:border-emerald-800/60">
                     <div>
                       <span className="text-[10px] text-muted-foreground uppercase font-bold block">
-                        Landed Commercial Value:
+                        Total Price (incl. GST):
                       </span>
                       <span className="font-mono font-black text-foreground text-sm">
                         {formatInr(winningQuoteRevealed?.totalCost || selectedQuote?.totalCost)}

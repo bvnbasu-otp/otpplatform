@@ -16,4 +16,13 @@ describe('award surfaces use the canonical IST formatter (issue 19)', () => {
     expect(formatDateTimeIST('2026-09-26T12:40:00Z')).toBe('26 Sep 2026, 18:10 IST');
     expect(formatDateIST('2026-12-31T19:00:00Z')).toBe('01 Jan 2027');
   });
+
+  it('displays consumer-friendly winner announcement and direct contact links', () => {
+    const src = readFileSync(resolve(__dirname, 'pages/AwardPage.tsx'), 'utf8');
+    expect(src).toContain('Winner Selected:');
+    expect(src).toContain('Winner Selected');
+    expect(src).toContain('Call Supplier');
+    expect(src).toContain('WhatsApp Chat');
+    expect(src).not.toContain('Identity unmasked:');
+  });
 });

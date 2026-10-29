@@ -28,5 +28,18 @@ describe('Tier3 sourcing controls customer copy', () => {
     expect(cardSource).toContain('All Eligible Network Suppliers');
     expect(cardSource).toContain('Geographic Sourcing Reach');
   });
+
+  it('exposes natural consumer-style intake stage titles across all cards', () => {
+    const dir = dirname(fileURLToPath(import.meta.url));
+    const tier1 = readFileSync(join(dir, 'components', 'Tier1TellOtpCard.tsx'), 'utf8');
+    const tier2 = readFileSync(join(dir, 'components', 'Tier2PrecisionScopeCard.tsx'), 'utf8');
+    const tier3 = readFileSync(join(dir, 'components', 'Tier3SourcingControlsCard.tsx'), 'utf8');
+    const unified = readFileSync(join(dir, 'components', 'UnifiedThreeTierIntake.tsx'), 'utf8');
+
+    expect(tier1).toContain('Stage 1 — What do you need?');
+    expect(tier2).toContain('Stage 2 — Item Details &amp; Specifications');
+    expect(tier3).toContain('Stage 3 — Supplier &amp; Location Preferences');
+    expect(unified).toContain('Submit Request &amp; Get Quotes →');
+  });
 });
 

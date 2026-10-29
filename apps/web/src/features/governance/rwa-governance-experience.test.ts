@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   RWA_CANONICAL_ROLES,
   RWA_RACI_MATRIX,
@@ -142,6 +144,19 @@ describe('RWA Housing Society Governance Experience (Stage R2-05 Suite)', () => 
       });
 
       expect(res.isAttributedToOriginalActor).toBe(true);
+    });
+  });
+
+  describe('6. Consumer-Friendly Committee Decision Vocabulary', () => {
+    it('verifies CommitteeVotePage presents natural decision terms instead of enterprise jargon', () => {
+      const voteSrc = readFileSync(
+        join(__dirname, 'pages/CommitteeVotePage.tsx'),
+        'utf8',
+      );
+      expect(voteSrc).toContain('Team Decision Progress');
+      expect(voteSrc).toContain('Fair Decision Check:');
+      expect(voteSrc).toContain('Submit My Choice →');
+      expect(voteSrc).toContain('Your Submitted Choice');
     });
   });
 });

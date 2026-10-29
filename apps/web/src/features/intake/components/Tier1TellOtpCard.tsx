@@ -445,11 +445,11 @@ export function Tier1TellOtpCard({
                 1
               </span>
               <span className="font-extrabold text-sm sm:text-base text-foreground">
-                Stage 1 — Requirement Scope &amp; Logistics
+                Stage 1 — What do you need?
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge tone="info">⚡ Essential Sourcing Basis</Badge>
+              <Badge tone="info">⚡ Essential Details</Badge>
               <span className="text-xs font-bold text-primary">
                 {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
               </span>
@@ -462,14 +462,14 @@ export function Tier1TellOtpCard({
                 1
               </span>
               <span className="font-extrabold text-sm sm:text-base text-foreground">
-                Stage 1 — Requirement Scope &amp; Logistics
+                Stage 1 — What do you need?
               </span>
             </div>
-            <Badge tone="info">⚡ Essential Sourcing Basis</Badge>
+            <Badge tone="info">⚡ Essential Details</Badge>
           </div>
         )
       }
-      description="Describe what you need in plain words or voice. Our AI automatically extracts vertical categories, location, turnaround time, and technical parameters."
+      description="Describe what you need in plain words or voice. OTP automatically finds matching verified suppliers and gathers quotes."
       data-testid="tier-1-tell-otp-card"
     >
       {!isExpanded ? (

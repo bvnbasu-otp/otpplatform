@@ -111,9 +111,9 @@ export function MobileBottomNav() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {isAuthenticated && !isPublicRoute ? (
-          /* CANONICAL 5-TAB AUTHENTICATED WORKSPACE BOTTOM NAVIGATION: Home | Orders | + | Audit | Profile */
-          <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-2">
-            {/* TAB 1: HOME */}
+          /* CONSUMER 3-ITEM AUTHENTICATED MOBILE BOTTOM NAVIGATION: Home | History | Profile */
+          <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-4" data-testid="bottom-nav-3-items">
+            {/* ITEM 1: HOME */}
             <NavLink
               to={homeTab.to}
               className={() =>
@@ -124,11 +124,11 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">{homeTab.icon ?? '🏠'}</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t(homeTab.label, homeTab.label)}</span>
+              <span className="text-xl leading-none">{homeTab.icon ?? '🏠'}</span>
+              <span className="text-[11px] mt-1 tracking-tight font-semibold">{t(homeTab.label, homeTab.label)}</span>
             </NavLink>
 
-            {/* TAB 2: ORDERS */}
+            {/* ITEM 2: HISTORY */}
             <NavLink
               to={ordersTab.to}
               className={() =>
@@ -139,80 +139,11 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">{ordersTab.icon ?? '📋'}</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('History', ordersTab.label === 'Orders' ? 'History' : ordersTab.label)}</span>
+              <span className="text-xl leading-none">{ordersTab.icon ?? '📋'}</span>
+              <span className="text-[11px] mt-1 tracking-tight font-semibold">{t('History', ordersTab.label === 'Orders' ? 'History' : ordersTab.label)}</span>
             </NavLink>
 
-            {/* TAB 3: CENTER ACTION '+' (Context-Aware for Buyer vs Supplier vs Admin) */}
-            <div className="flex flex-col items-center justify-center flex-1 shrink-0">
-              {isAdmin ? (
-                <button
-                  type="button"
-                  onClick={() => setIsAdminQuickActionsOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 text-white shadow-lg shadow-purple-600/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-purple-700 min-h-[48px] min-w-[48px]"
-                  title="Admin Quick Operations"
-                  aria-label="Admin Quick Operations"
-                  data-testid="bottom-nav-admin-quick-actions"
-                >
-                  <span className="text-2xl font-bold leading-none select-none">+</span>
-                  <span className="sr-only">Admin Quick Operations</span>
-                </button>
-              ) : isInternal ? (
-                <Link
-                  to="/admin"
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 text-white shadow-lg shadow-purple-600/30 active:scale-90 transition-all duration-150 mobile-touch-target hover:bg-purple-700 min-h-[48px] min-w-[48px]"
-                  title="Internal operations"
-                  aria-label="Internal operations"
-                  data-testid="bottom-nav-internal-console"
-                >
-                  <span className="text-2xl font-bold leading-none select-none">+</span>
-                  <span className="sr-only">Internal operations</span>
-                </Link>
-              ) : isSupplier ? (
-                <button
-                  type="button"
-                  onClick={() => setIsCapabilityModalOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
-                  title="Maximize Business Reach — Update Capabilities"
-                  aria-label="Maximize Business Reach — Update Capabilities"
-                  data-testid="bottom-nav-supplier-add-capabilities"
-                >
-                  <span className="text-2xl font-bold leading-none select-none">+</span>
-                  <span className="sr-only">Maximize Business Reach — Update Capabilities</span>
-                </button>
-              ) : allowCreateRequirement ? (
-                <button
-                  type="button"
-                  onClick={() => setIsBuyerIntakeModalOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
-                  title="Post a new requirement / broadcast RFQ"
-                  aria-label="Post a new requirement / broadcast RFQ"
-                  data-testid="bottom-nav-buyer-create-requirement"
-                >
-                  <span className="text-2xl font-bold leading-none select-none">+</span>
-                  <span className="sr-only">Create Requirement</span>
-                </button>
-              ) : null}
-            </div>
-
-            {/* TAB 4: QUOTES / AUDIT (Canonical entry for Buyer, Supplier, Admin) */}
-            <NavLink
-              to={fourthTab.to}
-              className={() =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
-                  fourthTab.match.some((m) => pathname === m || pathname.startsWith(`${m}/`))
-                    ? 'text-primary font-bold'
-                    : 'text-muted-foreground hover:text-foreground font-medium'
-                }`
-              }
-            >
-              <span className="text-lg leading-none">{fourthTab.id === 'quotes' ? '⚡' : '📜'}</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">
-                {fourthTab.id === 'quotes' ? t('Quotes', fourthTab.label) : t('Activity', fourthTab.label === 'Audit' ? 'Activity' : fourthTab.label)}
-              </span>
-            </NavLink>
-
-            {/* TAB 5: PROFILE (Canonical entry for Buyer, Supplier, Admin) */}
+            {/* ITEM 3: PROFILE */}
             <NavLink
               to={profileTab.to}
               data-testid="bottom-nav-profile"
@@ -224,22 +155,22 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[9px] font-black text-primary overflow-hidden shadow-2xs border border-primary/20">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[10px] font-black text-primary overflow-hidden shadow-2xs border border-primary/20">
                 {context.avatarUrl ? (
                   <img src={context.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                 ) : (
                   userInitials
                 )}
               </span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold truncate max-w-[48px]">
+              <span className="text-[11px] mt-1 tracking-tight font-semibold truncate max-w-[64px]">
                 {t('Profile', 'Profile')}
               </span>
             </NavLink>
           </div>
         ) : (
-          /* PUBLIC & PRE-LOGIN STRICT 5 TABS: Home, Pricing, +, About Us, FAQs */
-          <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-2">
-            {/* Tab 1: Home (/) */}
+          /* CONSUMER 3-ITEM PUBLIC & PRE-LOGIN NAVIGATION: Home | Pricing | Help & FAQs */
+          <div className="flex items-center justify-around h-14 w-full max-w-md mx-auto px-4" data-testid="bottom-nav-3-items-public">
+            {/* Item 1: Home (/) */}
             <NavLink
               to="/"
               end
@@ -251,11 +182,11 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">🏠</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Home', 'Home')}</span>
+              <span className="text-xl leading-none">🏠</span>
+              <span className="text-[11px] mt-1 tracking-tight font-semibold">{t('Home', 'Home')}</span>
             </NavLink>
 
-            {/* Tab 2: Pricing (/pricing) */}
+            {/* Item 2: Pricing (/pricing) */}
             <NavLink
               to="/pricing"
               className={({ isActive }) =>
@@ -266,77 +197,11 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">💳</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Pricing', 'Pricing')}</span>
+              <span className="text-xl leading-none">💳</span>
+              <span className="text-[11px] mt-1 tracking-tight font-semibold">{t('Pricing', 'Pricing')}</span>
             </NavLink>
 
-            {/* Tab 3: + Elevated Center Button (Role & State Aware) */}
-            <div className="flex flex-col items-center justify-center flex-1 shrink-0">
-              {isSupplier && !isInternal ? (
-                <button
-                  type="button"
-                  onClick={() => setIsCapabilityModalOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
-                  title="Maximize Business Reach — Update Capabilities"
-                  aria-label="Maximize Business Reach — Update Capabilities"
-                  data-testid="bottom-nav-supplier-add-capabilities"
-                >
-                  <span className="text-2xl font-bold leading-none select-none">+</span>
-                  <span className="sr-only">Maximize Business Reach — Update Capabilities</span>
-                </button>
-              ) : isInternal ? (
-                <Link
-                  to="/admin"
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 text-white shadow-lg shadow-purple-600/30 active:scale-90 transition-all duration-150 mobile-touch-target min-h-[48px] min-w-[48px]"
-                  aria-label="Internal operations"
-                  data-testid="bottom-nav-internal-console"
-                >
-                  <span className="text-2xl font-bold leading-none select-none">+</span>
-                  <span className="sr-only">Internal operations</span>
-                </Link>
-              ) : allowCreateRequirement ? (
-                <button
-                  type="button"
-                  onClick={() => setIsBuyerIntakeModalOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
-                  title="Post a new requirement / broadcast RFQ"
-                  aria-label="Post a new requirement / broadcast RFQ"
-                  data-testid="bottom-nav-buyer-create-requirement"
-                >
-                  <span className="text-2xl font-bold leading-none select-none">+</span>
-                  <span className="sr-only">Create Requirement</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsQuickRegisterOpen(true)}
-                  className="relative -top-3 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-90 transition-all duration-150 mobile-touch-target cursor-pointer hover:bg-primary/90 min-h-[48px] min-w-[48px]"
-                  title="Get Started — Quick Registration"
-                  aria-label="Get Started — Quick Registration"
-                  data-testid="bottom-nav-prelogin-create-requirement"
-                >
-                  <span className="text-2xl font-bold leading-none select-none">+</span>
-                  <span className="sr-only">Get Started</span>
-                </button>
-              )}
-            </div>
-
-            {/* Tab 4: About Us (/about-us) */}
-            <NavLink
-              to="/about-us"
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
-                  isActive
-                    ? 'text-primary font-bold'
-                    : 'text-muted-foreground hover:text-foreground font-medium'
-                }`
-              }
-            >
-              <span className="text-lg leading-none">🏢</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('About Us', 'About Us')}</span>
-            </NavLink>
-
-            {/* Tab 5: FAQs (/faqs) */}
+            {/* Item 3: FAQs (/faqs) */}
             <NavLink
               to="/faqs"
               className={({ isActive }) =>
@@ -347,8 +212,8 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">📖</span>
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('FAQs', 'FAQs')}</span>
+              <span className="text-xl leading-none">📖</span>
+              <span className="text-[11px] mt-1 tracking-tight font-semibold">{t('FAQs', 'Help & FAQs')}</span>
             </NavLink>
           </div>
         )}

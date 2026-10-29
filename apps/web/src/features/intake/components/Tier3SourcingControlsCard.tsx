@@ -170,18 +170,18 @@ export function Tier3SourcingControlsCard({
               3
             </span>
             <span className="font-extrabold text-sm sm:text-base text-foreground">
-              Stage 3 — Sourcing &amp; Evaluation Controls
+              Stage 3 — Supplier &amp; Location Preferences
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Badge tone="neutral">⚙️ Sourcing Controls</Badge>
+            <Badge tone="neutral">⚙️ Preferences</Badge>
             <span className="text-xs font-bold text-primary">
               {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
             </span>
           </div>
         </button>
       }
-      description="Customize supplier identity shielding, competitive quote quorum, deadlines, evaluation criteria weights, and private site access notes."
+      description="Customize supplier preferences, quote deadlines, evaluation priorities, and special instructions."
       data-testid="tier-3-sourcing-controls-card"
     >
       <div className="space-y-4" id="tier-3-sourcing-controls-body">

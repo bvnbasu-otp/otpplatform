@@ -15,4 +15,14 @@ describe('individual buyer decision copy', () => {
     expect(cockpit).toContain('Committee Quorum Met');
     expect(cockpit).toContain('Committee Quorum Pending');
   });
+
+  it('uses consumer-friendly comparison and pricing terminology', () => {
+    const cockpit = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'components', 'EvaluationDecisionCockpit.tsx'),
+      'utf8',
+    );
+    expect(cockpit).toContain('Compare Quotes &amp; Offers');
+    expect(cockpit).toContain('🛡️ Verified Private Quotes');
+    expect(cockpit).toContain('Total Price (incl. GST):');
+  });
 });

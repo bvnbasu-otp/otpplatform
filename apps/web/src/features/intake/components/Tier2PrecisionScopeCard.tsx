@@ -104,11 +104,11 @@ export function Tier2PrecisionScopeCard({
                 2
               </span>
               <span className="font-extrabold text-sm sm:text-base text-foreground">
-                Stage 2 — Technical Specifications &amp; BoQ
+                Stage 2 — Item Details &amp; Specifications
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge tone="neutral">📐 Technical Specifications</Badge>
+              <Badge tone="neutral">📐 Item Details</Badge>
               <span className="text-xs font-bold text-primary">
                 {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
               </span>
@@ -121,14 +121,14 @@ export function Tier2PrecisionScopeCard({
                 2
               </span>
               <span className="font-extrabold text-sm sm:text-base text-foreground">
-                Stage 2 — Technical Specifications &amp; BoQ
+                Stage 2 — Item Details &amp; Specifications
               </span>
             </div>
-            <Badge tone="neutral">📐 Technical Specifications</Badge>
+            <Badge tone="neutral">📐 Item Details</Badge>
           </div>
         )
       }
-      description="Refine quantities, technical parameters, warranty milestones, and upload drawings or BoQ spreadsheets."
+      description="Refine quantities, item specifications, warranty, and upload photos or documents."
       data-testid="tier-2-precision-scope-card"
     >
       {!isExpanded ? (

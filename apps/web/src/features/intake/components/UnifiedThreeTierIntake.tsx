@@ -856,7 +856,7 @@ export function UnifiedThreeTierIntake({
             className="min-h-[48px] font-extrabold text-sm shadow-md mobile-touch-target w-full sm:w-auto"
             data-testid="publish-requirement-btn"
           >
-            Publish Sealed RFQ →
+            Submit Request &amp; Get Quotes →
           </Button>
         </div>
       </div>

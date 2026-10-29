@@ -148,7 +148,7 @@ export function BuyerSourcingCockpitCard({
                 handleExpressTrigger();
               }
             }}
-            placeholder="e.g. Submersible motor repair, painting, security..."
+            placeholder="e.g. RO water servicing, painting, electrical repair..."
             className="w-full min-h-[48px] rounded-xl border border-primary/30 bg-card px-3.5 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground pr-10 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
@@ -162,10 +162,12 @@ export function BuyerSourcingCockpitCard({
         {/* 1-Tap Category Pills */}
         <div className="flex flex-wrap gap-1.5 pt-0.5">
           {[
-            { label: '⚡ Motor Rewind', query: 'Require 10 HP submersible borewell motor rewinding in Bengaluru within 5 days with 6 months warranty' },
-            { label: '🏊 Pool Overhaul', query: 'Swimming pool filtration overhaul and pump maintenance in Bengaluru' },
-            { label: '⚙️ CNC Machining', query: 'Precision CNC machining for stainless steel shafts tolerance 0.02mm' },
-            { label: '🏗️ Waterproofing', query: 'Terrace elastomeric membrane waterproofing 4500 sq ft in Bengaluru with 5-year leak warranty' },
+            { label: '🔧 Home Repairs', query: 'Home repair and maintenance services in Bengaluru' },
+            { label: '⚡ Electrical & Plumbing', query: 'Electrical wiring and plumbing repairs in Bengaluru' },
+            { label: '💧 Drinking Water', query: 'Drinking water supply and RO purification servicing in Bengaluru' },
+            { label: '🧹 Cleaning & Maintenance', query: 'Facility cleaning, housekeeping and pest control in Bengaluru' },
+            { label: '🪑 Office Furniture', query: 'Ergonomic office chairs and modular workstations' },
+            { label: '📦 Office Supplies', query: 'Essential office stationery and printing supplies' },
           ].map((chip) => (
             <button
               key={chip.label}
