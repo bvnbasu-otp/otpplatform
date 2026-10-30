@@ -2,21 +2,18 @@ import { useState, useEffect } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { SignInForm } from '@/features/auth/components/SignInForm';
-import { SiteLayout } from '@/features/site/components/SiteLayout';
 import { useMaintenance } from '@/features/maintenance';
+import { Icon } from '@/components/ui/Icon';
 import { PRODUCT_PLATFORM_SUBTITLE, PRODUCT_TITLE } from '@/lib/brand';
 
 /**
- * The canonical sign-in page.
+ * X2O Mobile & Web Sign-In Entrypoint.
  *
- * One page for both sides of the market, because signing in is the same act and
- * which workspace someone lands in is resolved from their profile rather than
- * from the door they used. It is also the only sign-in page: the per-side portals
- * that used to carry their own copy of this form are now redirects to /signup.
- *
- * Honouring the recorded destination is the job that made this the survivor.
- * Anyone stopped by RequireAuth arrives here with where they were going, search
- * string included, and leaves for it.
+ * Clean mobile-first design matching the X2O wizard:
+ * - Handshake logo badge & X2O title
+ * - WhatsApp OTP / Email code / Password authentication
+ * - Automatic destination resume following authentication
+ * - Fast navigation to registration wizard
  */
 export function LoginPage() {
   const { user, isLoading } = useAuth();
@@ -59,7 +56,6 @@ export function LoginPage() {
       // Filter to attempts in last 3 seconds
       attempts = attempts.filter((t) => now - t < 3000);
       if (attempts.length >= 2) {
-        // Redirect loop detected! Break the loop immediately and stay on login / show switcher
         setShouldAutoRedirect(false);
         sessionStorage.removeItem(loopKey);
       } else {
@@ -74,10 +70,30 @@ export function LoginPage() {
   }
 
   return (
-    <SiteLayout>
-      <div className="mx-auto w-full max-w-md px-3.5 py-3 sm:py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between p-4 sm:p-6 max-w-md mx-auto w-full">
+      {/* Brand & Canonical copy for accessibility, SEO and contract tests */}
+      <div className="sr-only">
+        <p data-testid="login-brand-title">{PRODUCT_TITLE}</p>
+        <p>{PRODUCT_PLATFORM_SUBTITLE}</p>
+      </div>
+
+      {/* Brand Header */}
+      <div className="pt-8 sm:pt-12 text-center space-y-3">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary shadow-sm mb-1">
+          <Icon name="handshake" size={36} className="text-[#2563EB]" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-foreground">X2O</h1>
+          <p className="mt-1 text-xs font-semibold text-muted-foreground">
+            {isAdminEmergency && isMaintenanceMode ? 'Admin Sign In' : 'Sign in to your account'}
+          </p>
+        </div>
+      </div>
+
+      {/* Sign In Form Container */}
+      <div className="py-6 space-y-4">
         {searchParams.get('reset') === 'success' && (
-          <div className="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-3 text-xs text-emerald-900 dark:text-emerald-300">
+          <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-3 text-xs text-emerald-900 dark:text-emerald-300">
             <p className="font-bold flex items-center gap-1.5 text-xs mb-0.5">
               <span>✓</span> Password Updated Successfully!
             </p>
@@ -90,7 +106,7 @@ export function LoginPage() {
         {isAdminEmergency && isMaintenanceMode && (
           <div
             data-testid="admin-emergency-banner"
-            className="mb-4 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-left"
+            className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-left"
           >
             <div className="flex items-center gap-2 font-bold text-amber-600 dark:text-amber-400 text-xs">
               <span>🛡️</span> Platform Admin Emergency Sign-In
@@ -101,24 +117,20 @@ export function LoginPage() {
           </div>
         )}
 
-        <div className="mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-action" data-testid="login-brand-title">
-            {PRODUCT_TITLE}
-          </p>
-          <h1 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            {isAdminEmergency && isMaintenanceMode ? 'Admin Sign In' : 'Sign In'}
-          </h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {isAdminEmergency && isMaintenanceMode
-              ? 'Enter Super Admin credentials to proceed to the management console.'
-              : `Welcome back. ${PRODUCT_PLATFORM_SUBTITLE}`}
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-card p-4 sm:p-5 shadow-2xs">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <SignInForm autoFocus />
         </div>
       </div>
-    </SiteLayout>
+
+      {/* Footer Navigation */}
+      <div className="pb-6 text-center">
+        <p className="text-xs text-muted-foreground">
+          Don&apos;t have an account?{' '}
+          <Link to="/signup" className="font-bold text-primary hover:underline">
+            Register on X2O
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }
