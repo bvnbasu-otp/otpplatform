@@ -210,6 +210,7 @@ export function getCanonicalOpportunityDetail(rfqId: string): SupplierRfqDetail 
     requirementMode: 'CUSTOM',
     attributes: {
       'Material / Type': isPlumbing ? 'Commercial Grade PVC (Schedule 40)' : isElectrical ? '630A 4-Pole ACB' : 'Commercial Grade',
+      'Pipe Material': isPlumbing ? 'Commercial Grade PVC (Schedule 40)' : 'Standard Specification',
       'Warranty': '1-yr Warranty on Joints & Labor',
       'Scope': isPlumbing ? 'Main Supply Line Pressure Testing' : 'Complete Overhaul',
       'Estimated Value': isPlumbing ? '₹15,000 - ₹20,000' : '₹15,000 - ₹35,000',

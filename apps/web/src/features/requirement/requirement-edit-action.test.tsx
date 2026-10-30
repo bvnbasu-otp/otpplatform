@@ -8,6 +8,7 @@ describe('Requirement Detail Specification Editing Support', () => {
     const content = readFileSync(pagePath, 'utf8');
 
     expect(content).toContain('/intake?draft=');
-    expect(content).toContain('Edit & Refine Specifications');
+    expect(content).toContain('data-testid="edit-requirement-btn"');
+    expect(content).toContain('Edit &amp; Refine Specifications');
   });
 });

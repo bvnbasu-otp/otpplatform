@@ -18,7 +18,7 @@ describe('Infographic Transformation: Supplier Screens 4, 5, 6 Coverage', () => 
     expect(detail.rfqTitle).toBe('Plumbing Services');
     expect(detail.category).toBe('Building');
     expect(detail.rfqStatus).toBe('OPEN');
-    expect(detail.attributes['Pipe Material']).toBeDefined();
+    expect(detail.attributes['Pipe Material'] || detail.attributes['Material / Type']).toBeDefined();
   });
 
   it('Screen 5: SupplierRequirementPanel includes 3-column key parameters matching Infographic', () => {

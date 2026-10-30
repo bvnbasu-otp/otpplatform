@@ -86,6 +86,7 @@ describe('pilot localization coverage', () => {
       'src/features/site/pages/FaqPage.tsx',
       'src/features/site/pages/LandingPage.tsx',
       'src/features/site/pages/PricingPage.tsx',
+      'src/features/supplier/pages/OpportunitiesBrowsePage.tsx',
       'src/features/supplier/pages/SupplierAwardOnboardingPage.tsx',
       'src/features/supplier/pages/SupplierCapabilitiesPage.tsx',
       'src/features/supplier/pages/SupplierQuoteSubmitPage.tsx',
