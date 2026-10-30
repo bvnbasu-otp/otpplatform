@@ -18,6 +18,7 @@ import {
 } from '@/features/navigation';
 import { useLanguage } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { Icon } from '@/components/ui/Icon';
 import { canOfferCustomerRequirementCreation, isInternalOperatorContext } from '@/features/roles/customer-procurement-access';
 
 function initials(nameOrEmail?: string | null): string {
@@ -124,7 +125,7 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-xl leading-none">{homeTab.icon ?? '🏠'}</span>
+              <Icon name="home" size={24} filled={isRouteActive(homeTab, pathname)} />
               <span className="text-[11px] mt-1 tracking-tight font-semibold">{t(homeTab.label, homeTab.label)}</span>
             </NavLink>
 
@@ -139,7 +140,7 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-xl leading-none">{ordersTab.icon ?? '📋'}</span>
+              <Icon name="receipt_long" size={24} filled={isRouteActive(ordersTab, pathname) || pathname.startsWith('/supplier/work-orders')} />
               <span className="text-[11px] mt-1 tracking-tight font-semibold">{t('History', ordersTab.label === 'Orders' ? 'History' : ordersTab.label)}</span>
             </NavLink>
 
@@ -182,7 +183,7 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">🏠</span>
+              <Icon name="home" size={20} filled={pathname === '/'} />
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Home', 'Home')}</span>
             </NavLink>
 
@@ -197,7 +198,7 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">💳</span>
+              <Icon name="payments" size={20} filled={pathname === '/pricing'} />
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Pricing', 'Pricing')}</span>
             </NavLink>
 
@@ -263,7 +264,7 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">🏢</span>
+              <Icon name="groups" size={20} filled={pathname === '/about-us'} />
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('About Us', 'About Us')}</span>
             </NavLink>
 
@@ -278,7 +279,7 @@ export function MobileBottomNav() {
                 }`
               }
             >
-              <span className="text-lg leading-none">📖</span>
+              <Icon name="help" size={20} filled={pathname === '/faqs'} />
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('FAQs', 'FAQs')}</span>
             </NavLink>
           </div>

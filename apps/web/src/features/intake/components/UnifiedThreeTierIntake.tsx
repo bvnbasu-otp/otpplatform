@@ -203,9 +203,18 @@ export function UnifiedThreeTierIntake({
     void fetchBuyerAddresses(context.organizationId, buyerPersona).then((res) => {
       if (cancelled || !res.ok) return;
       setSavedAddresses(res.addresses);
-      const primary = res.addresses.find((a) => a.isPrimary);
+      const primary = res.addresses.find((a) => a.isPrimary) || res.addresses[0];
       if (primary) {
         setSelectedAddressId((prev) => prev ?? primary.id);
+        if (!draft?.deliveryCity) {
+          setCity((prev) => (prev.trim() ? prev : primary.city));
+        }
+        if (!draft?.deliveryPincode) {
+          setPincode((prev) => (prev.trim() ? prev : primary.pincode));
+        }
+        if (!draft?.deliveryLine1 && primary.line1) {
+          setLine1((prev) => (prev.trim() ? prev : primary.line1));
+        }
       }
     });
 

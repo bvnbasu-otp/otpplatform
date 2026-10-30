@@ -20,6 +20,8 @@ export { QuoteStickyBottomBar } from './QuoteStickyBottomBar';
 export type { QuoteStickyBottomBarProps } from './QuoteStickyBottomBar';
 
 export { CancelRfqModal } from './CancelRfqModal';
+export { QuorumExpiryDecisionCard } from './QuorumExpiryDecisionCard';
+export type { QuorumExpiryDecisionCardProps } from './QuorumExpiryDecisionCard';
 
 export { ActiveRfqHeaderBanner } from './ActiveRfqHeaderBanner';
 export { ActiveRfqActionRequiredCard } from './ActiveRfqActionRequiredCard';

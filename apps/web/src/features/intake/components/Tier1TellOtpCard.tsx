@@ -10,6 +10,7 @@ import {
   type TaxonomySnapshot,
 } from '@otp/domain';
 import { Badge, Button, Card, Field, Input, NumberInput, Select, Textarea } from '@/components/ui';
+import { Icon } from '@/components/ui/Icon';
 import { useDeviceCapabilities } from '@/hooks/useDeviceCapabilities';
 import { VoiceRequirementDictation } from './VoiceRequirementDictation';
 
@@ -234,6 +235,8 @@ export function Tier1TellOtpCard({
 }: Tier1TellOtpCardProps) {
   const [showVoiceDictation, setShowVoiceDictation] = useState(false);
   const [isCustomTerms, setIsCustomTerms] = useState(false);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [showAddressSelector, setShowAddressSelector] = useState(false);
   const { isLocating, locationError, requestCurrentLocation } = useDeviceCapabilities();
   const [gpsNotice, setGpsNotice] = useState<string | null>(null);
 
@@ -810,57 +813,109 @@ export function Tier1TellOtpCard({
           {/* Requirement 5: Saved Address Selector for All Buyers (Individual, RWA, MSME) */}
           {savedAddresses && savedAddresses.length > 0 && (
             <div className="sm:col-span-2 space-y-2 p-3.5 rounded-xl border border-primary/20 bg-primary/5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  <span>📍</span> Select RFQ Delivery Address (Saved Addresses):
-                </span>
-                <span className="text-[10px] text-muted-foreground font-semibold">
-                  {savedAddresses.length} saved
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {savedAddresses.map((addr) => {
-                  const isChosen = selectedAddressId === addr.id;
+              {(() => {
+                const selectedAddress = savedAddresses.find((a) => a.id === selectedAddressId);
+                if (selectedAddress && !showAddressSelector) {
                   return (
-                    <button
-                      key={addr.id}
-                      type="button"
-                      onClick={() => {
-                        onSelectSavedAddress?.(addr);
-                        if (addr.city) onCityChange(addr.city);
-                        if (addr.pincode) onPincodeChange(addr.pincode);
-                      }}
-                      className={`p-2.5 rounded-xl border text-left transition min-h-[44px] cursor-pointer ${
-                        isChosen
-                          ? 'border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary'
-                          : 'border-border bg-card text-foreground hover:bg-muted'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between font-bold text-xs">
-                        <span>{addr.label}</span>
-                        {isChosen && <span className="text-primary font-bold">✓ Selected</span>}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                          <Icon name="location_on" size={20} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                            <span>Delivering to:</span>
+                            <span className="text-primary font-black">{selectedAddress.label}</span>
+                            <span className="rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">From Profile</span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                            {selectedAddress.line1 ? `${selectedAddress.line1}, ` : ''}{selectedAddress.city} · {selectedAddress.pincode}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                        {addr.line1 ? `${addr.line1}, ` : ''}{addr.city} · {addr.pincode}
-                      </p>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddressSelector(true)}
+                        className="text-xs font-bold text-primary hover:underline px-2 py-1 min-h-[36px]"
+                      >
+                        Change Address ▼
+                      </button>
+                    </div>
                   );
-                })}
-                <button
-                  type="button"
-                  onClick={() => onSelectSavedAddress?.(null)}
-                  className={`p-2.5 rounded-xl border text-left transition min-h-[44px] cursor-pointer ${
-                    !selectedAddressId
-                      ? 'border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary'
-                      : 'border-dashed border-border bg-card text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  <div className="font-bold text-xs flex items-center gap-1">
-                    <span>+</span> Custom / Other Location
+                }
+
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Icon name="location_on" size={16} className="text-primary" />
+                        <span>Select Delivery Address (Saved Addresses):</span>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {savedAddresses.length} saved
+                        </span>
+                        {selectedAddress && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAddressSelector(false)}
+                            className="text-xs font-bold text-primary hover:underline ml-1"
+                          >
+                            Done ▲
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {savedAddresses.map((addr) => {
+                        const isChosen = selectedAddressId === addr.id;
+                        return (
+                          <button
+                            key={addr.id}
+                            type="button"
+                            onClick={() => {
+                              onSelectSavedAddress?.(addr);
+                              if (addr.city) onCityChange(addr.city);
+                              if (addr.pincode) onPincodeChange(addr.pincode);
+                              setShowAddressSelector(false);
+                            }}
+                            className={`p-2.5 rounded-xl border text-left transition min-h-[44px] cursor-pointer ${
+                              isChosen
+                                ? 'border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary'
+                                : 'border-border bg-card text-foreground hover:bg-muted'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between font-bold text-xs">
+                              <span>{addr.label}</span>
+                              {isChosen && <span className="text-primary font-bold">✓ Selected</span>}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                              {addr.line1 ? `${addr.line1}, ` : ''}{addr.city} · {addr.pincode}
+                            </p>
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectSavedAddress?.(null);
+                          setShowAddressSelector(false);
+                        }}
+                        className={`p-2.5 rounded-xl border text-left transition min-h-[44px] cursor-pointer ${
+                          !selectedAddressId
+                            ? 'border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary'
+                            : 'border-dashed border-border bg-card text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        <div className="font-bold text-xs flex items-center gap-1">
+                          <span>+</span> Custom / Other Location
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Type specific city &amp; PIN</p>
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Type specific city &amp; PIN</p>
-                </button>
-              </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1097,111 +1152,157 @@ export function Tier1TellOtpCard({
           </div>
 
           {/* 5. Payment Structure & Terms */}
-          <div className="space-y-2.5 pt-3 border-t border-border/40">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <span>💳 Payment Structure &amp; Schedule</span>
-                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
-                  Cash Flow Terms
-                </span>
-              </label>
-              <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[200px]">
-                {paymentTerms || '100% on delivery'}
-              </span>
-            </div>
+          {(() => {
+            const isHighValue = Boolean(budgetAmount && budgetAmount > 50000);
+            const isNonStandardPayment = Boolean(paymentTerms && paymentTerms !== '100% on delivery');
+            const shouldShowPresets = showPaymentOptions || isHighValue || isNonStandardPayment;
 
-            {/* Presets Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {PAYMENT_PRESETS.map((preset) => {
-                const isSelected =
-                  paymentTerms === preset.value ||
-                  (!paymentTerms && preset.id === 'SINGLE') ||
-                  (preset.id === 'THREE_SPLIT' && paymentTerms?.includes('30%')) ||
-                  (preset.id === 'MILESTONES' && paymentTerms?.includes('25%'));
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => {
-                      onPaymentTermsChange?.(preset.value);
-                      setIsCustomTerms(false);
-                    }}
-                    className={`rounded-2xl border p-3 text-left transition flex flex-col justify-between space-y-1.5 min-h-[72px] mobile-touch-target ${
-                      isSelected
-                        ? 'border-primary bg-primary/10 dark:bg-primary/20 shadow-2xs'
-                        : 'border-border bg-card hover:bg-muted/40'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-bold text-foreground">{preset.label}</span>
-                      {isSelected && (
-                        <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+            return (
+              <div className="space-y-2.5 pt-3 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Icon name="payments" size={16} className="text-primary" />
+                    <span>Payment Structure &amp; Schedule</span>
+                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
+                      Cash Flow Terms
+                    </span>
+                  </label>
+                  <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[200px]">
+                    {paymentTerms || '100% on delivery'}
+                  </span>
+                </div>
+
+                {!shouldShowPresets ? (
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Icon name="verified_user" size={22} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <span>100% on Delivery &amp; Sign-off</span>
+                          <span className="rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 text-[9px] font-bold">Standard Consumer Terms</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate sm:whitespace-normal">
+                          Full payment released upon delivery inspection and mutual acceptance sign-off.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPaymentOptions(true)}
+                      className="text-xs font-bold text-primary hover:underline whitespace-nowrap self-end sm:self-center min-h-[36px] px-2 py-1"
+                    >
+                      Change payment terms ▼
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {/* Presets Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {PAYMENT_PRESETS.map((preset) => {
+                        const isSelected =
+                          paymentTerms === preset.value ||
+                          (!paymentTerms && preset.id === 'SINGLE') ||
+                          (preset.id === 'THREE_SPLIT' && paymentTerms?.includes('30%')) ||
+                          (preset.id === 'MILESTONES' && paymentTerms?.includes('25%'));
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => {
+                              onPaymentTermsChange?.(preset.value);
+                              setIsCustomTerms(false);
+                            }}
+                            className={`rounded-2xl border p-3 text-left transition flex flex-col justify-between space-y-1.5 min-h-[72px] mobile-touch-target ${
+                              isSelected
+                                ? 'border-primary bg-primary/10 dark:bg-primary/20 shadow-2xs'
+                                : 'border-border bg-card hover:bg-muted/40'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <span className="text-xs font-bold text-foreground">{preset.label}</span>
+                              {isSelected && (
+                                <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                              )}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground leading-tight">
+                              {preset.sublabel}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Custom Payment Terms Toggle Button */}
+                    <div className="flex items-center justify-between pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomTerms(!isCustomTerms)}
+                        className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Icon name="edit" size={14} />
+                        <span>{isCustomTerms ? 'Hide Custom Terms' : 'Need custom payment split or credit terms?'}</span>
+                      </button>
+                      {!isHighValue && !isNonStandardPayment && (
+                        <button
+                          type="button"
+                          onClick={() => setShowPaymentOptions(false)}
+                          className="text-[11px] font-bold text-muted-foreground hover:text-foreground"
+                        >
+                          Hide options ▲
+                        </button>
                       )}
                     </div>
-                    <span className="text-[10px] text-muted-foreground leading-tight">
-                      {preset.sublabel}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
 
-            {/* Custom Payment Terms Toggle Button */}
-            <div className="flex items-center justify-between pt-0.5">
-              <button
-                type="button"
-                onClick={() => setIsCustomTerms(!isCustomTerms)}
-                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
-              >
-                <span>✏️</span>
-                <span>{isCustomTerms ? 'Hide Custom Terms' : 'Need custom payment split or credit terms?'}</span>
-              </button>
-            </div>
+                    {/* Custom Terms Text Input */}
+                    {isCustomTerms && (
+                      <div className="pt-1">
+                        <input
+                          type="text"
+                          placeholder="e.g. 20% advance, 70% delivery, 10% 30-day retention"
+                          value={paymentTerms || ''}
+                          onChange={(e) => onPaymentTermsChange?.(e.target.value)}
+                          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
+                        />
+                      </div>
+                    )}
 
-            {/* Custom Terms Text Input */}
-            {isCustomTerms && (
-              <div className="pt-1">
-                <input
-                  type="text"
-                  placeholder="e.g. 20% advance, 70% delivery, 10% 30-day retention"
-                  value={paymentTerms || ''}
-                  onChange={(e) => onPaymentTermsChange?.(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
-                />
-              </div>
-            )}
-
-            {/* Dynamic Rupee Split Breakdown Table (When Preset is Selected) */}
-            {activePreset && activePreset.splits.length > 0 && (
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5 space-y-1.5 text-xs animate-in fade-in-50">
-                <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  <span>Payment Schedule Stages:</span>
-                  <span>{budgetAmount ? `Allocated from ₹${budgetAmount.toLocaleString('en-IN')}` : 'Percentage Split'}</span>
-                </div>
-                <div className="space-y-1">
-                  {activePreset.splits.map((s, idx) => {
-                    const splitRupees = budgetAmount ? Math.round((budgetAmount * s.pct) / 100) : null;
-                    return (
-                      <div key={idx} className="flex items-center justify-between text-[11px] py-0.5 border-b border-border/30 last:border-0">
-                        <span className="text-foreground font-medium flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          <span>{s.label}</span>
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-muted-foreground">{s.pct}%</span>
-                          {splitRupees !== null && (
-                            <span className="font-mono font-bold text-foreground">
-                              ₹{splitRupees.toLocaleString('en-IN')}
-                            </span>
-                          )}
+                    {/* Dynamic Rupee Split Breakdown Table */}
+                    {activePreset && activePreset.splits.length > 0 && (
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5 space-y-1.5 text-xs animate-in fade-in-50">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                          <span>Payment Schedule Stages:</span>
+                          <span>{budgetAmount ? `Allocated from ₹${budgetAmount.toLocaleString('en-IN')}` : 'Percentage Split'}</span>
+                        </div>
+                        <div className="space-y-1">
+                          {activePreset.splits.map((s, idx) => {
+                            const splitRupees = budgetAmount ? Math.round((budgetAmount * s.pct) / 100) : null;
+                            return (
+                              <div key={idx} className="flex items-center justify-between text-[11px] py-0.5 border-b border-border/30 last:border-0">
+                                <span className="text-foreground font-medium flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                  <span>{s.label}</span>
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-muted-foreground">{s.pct}%</span>
+                                  {splitRupees !== null && (
+                                    <span className="font-mono font-bold text-foreground">
+                                      ₹{splitRupees.toLocaleString('en-IN')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
         </div>
       </div>
     )}

@@ -7,6 +7,7 @@ import {
   type SupplierReach,
 } from '@otp/domain';
 import { Badge, Button, Card, Field, Input, NumberInput, RadioCardGroup, Textarea } from '@/components/ui';
+import { Icon } from '@/components/ui/Icon';
 import { EvaluationCriteriaEditor } from '@/features/evaluation/components/EvaluationCriteriaEditor';
 
 export interface Tier3SourcingControlsCardProps {
@@ -207,7 +208,9 @@ export function Tier3SourcingControlsCard({
               <span>·</span>
               <span className="text-foreground">{deadlineDays ?? 7} Days Window</span>
               <span>·</span>
-              <span className="text-foreground">{geographicReach === 'LOCAL' ? '📍 Local' : geographicReach === 'STATE' ? '🗺️ State' : '🌐 PAN-India'}</span>
+              <span className="text-foreground">{geographicReach === 'LOCAL' ? '📍 Local First' : geographicReach === 'STATE' ? '🗺️ State' : '🌐 PAN-India'}</span>
+              <span>·</span>
+              <span className="text-foreground">Concentric Sourcing</span>
               <span>·</span>
               <span className="text-foreground">{supplierReach === 'EXISTING_SUCCESSFUL' ? '🤝 Past Suppliers' : supplierReach === 'ALL_ELIGIBLE' ? '🌐 All Network' : '✨ Curated'}</span>
               <span className="text-primary font-bold ml-1">Tap to Customize →</span>
@@ -298,6 +301,38 @@ export function Tier3SourcingControlsCard({
                 value={geographicReach}
                 onValueChange={(val) => onGeographicReachChange(val as 'PAN_INDIA' | 'LOCAL' | 'STATE')}
               />
+
+              {/* Concentric Supplier Discovery Flow */}
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 space-y-2.5 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Icon name="radar" size={16} className="text-primary" />
+                    <span>Concentric Supplier Discovery (Progressive Radius)</span>
+                  </span>
+                  <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[9px] font-bold">Auto-Cascade</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  OTP prioritizes trusted local suppliers first, expanding progressively if needed to guarantee genuine, competitive quotes.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 text-[11px]">
+                  <div className="rounded-xl border border-border bg-card p-2 text-center">
+                    <span className="font-bold text-primary block">1. PIN Code</span>
+                    <span className="text-[10px] text-muted-foreground">0–5 km Hyperlocal</span>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-2 text-center">
+                    <span className="font-bold text-primary block">2. City &amp; Suburbs</span>
+                    <span className="text-[10px] text-muted-foreground">10–50 km Corridor</span>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-2 text-center">
+                    <span className="font-bold text-primary block">3. ONDC &amp; Google</span>
+                    <span className="text-[10px] text-muted-foreground">Public &amp; Verified</span>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-2 text-center">
+                    <span className="font-bold text-primary block">4. State / Pan-India</span>
+                    <span className="text-[10px] text-muted-foreground">Wider Network</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
 

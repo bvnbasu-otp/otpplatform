@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Icon } from '@/components/ui/Icon';
 import { VoiceRequirementDictation } from '@/features/intake/components/VoiceRequirementDictation';
 import { REQUIREMENT_PROMPT_KEY } from '@/features/site/components/RequirementPrompt';
 
@@ -162,12 +163,12 @@ export function BuyerSourcingCockpitCard({
         {/* 1-Tap Category Pills */}
         <div className="flex flex-wrap gap-1.5 pt-0.5">
           {[
-            { label: '🔧 Home Repairs', query: 'Home repair and maintenance services in Bengaluru' },
-            { label: '⚡ Electrical & Plumbing', query: 'Electrical wiring and plumbing repairs in Bengaluru' },
-            { label: '💧 Drinking Water', query: 'Drinking water supply and RO purification servicing in Bengaluru' },
-            { label: '🧹 Cleaning & Maintenance', query: 'Facility cleaning, housekeeping and pest control in Bengaluru' },
-            { label: '🪑 Office Furniture', query: 'Ergonomic office chairs and modular workstations' },
-            { label: '📦 Office Supplies', query: 'Essential office stationery and printing supplies' },
+            { icon: 'build' as const, label: 'Home Repairs', query: 'Home repair and maintenance services in Bengaluru' },
+            { icon: 'electrical_services' as const, label: 'Electrical & Plumbing', query: 'Electrical wiring and plumbing repairs in Bengaluru' },
+            { icon: 'water_drop' as const, label: 'Drinking Water', query: 'Drinking water supply and RO purification servicing in Bengaluru' },
+            { icon: 'cleaning_services' as const, label: 'Cleaning & Maintenance', query: 'Facility cleaning, housekeeping and pest control in Bengaluru' },
+            { icon: 'chair' as const, label: 'Office Furniture', query: 'Ergonomic office chairs and modular workstations' },
+            { icon: 'inventory_2' as const, label: 'Office Supplies', query: 'Essential office stationery and printing supplies' },
           ].map((chip) => (
             <button
               key={chip.label}
@@ -176,9 +177,10 @@ export function BuyerSourcingCockpitCard({
                 setPromptText(chip.query);
                 handleExpressTrigger(chip.query);
               }}
-              className="rounded-lg bg-card border border-border/80 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/50 transition cursor-pointer"
+              className="inline-flex items-center rounded-lg bg-card border border-border/80 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/50 transition cursor-pointer"
             >
-              {chip.label}
+              <Icon name={chip.icon} size={14} className="mr-1 text-primary shrink-0" />
+              <span>{chip.label}</span>
             </button>
           ))}
         </div>

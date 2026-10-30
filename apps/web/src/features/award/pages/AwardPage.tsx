@@ -26,6 +26,7 @@ import { triggerPrintDialog } from '@/features/reporting/lib/pdf-generator';
 import { IssuedProcurementPrintDocument } from '@/features/documents/components/IssuedProcurementPrintDocument';
 import { IssuedDecisionReceiptFromSnapshot } from '@/features/documents/components/IssuedDecisionReceiptFromSnapshot';
 import { MultiTierApprovalGatePanel } from '@/features/governance/components/MultiTierApprovalGatePanel';
+import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
 import { supabase } from '@/lib/supabase';
 import {
@@ -476,7 +477,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                       href={`tel:${revealedWinner?.contactPhone || revealedWinnerQuote?.phone}`}
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground px-4 py-3 text-xs font-bold hover:bg-primary/90 transition min-h-[44px] mobile-touch-target"
                     >
-                      <span>📞</span>
+                      <Icon name="call" size={16} />
                       <span>Call Supplier</span>
                     </a>
                     <a
@@ -485,7 +486,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 text-white px-4 py-3 text-xs font-bold hover:bg-emerald-700 transition min-h-[44px] mobile-touch-target"
                     >
-                      <span>💬</span>
+                      <Icon name="chat" size={16} />
                       <span>WhatsApp Chat</span>
                     </a>
                   </>
@@ -496,7 +497,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                   onClick={handleNativeShare}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 px-4 py-3 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition min-h-[44px]"
                 >
-                  <span>📲</span>
+                  <Icon name="share" size={16} />
                   <span>Share Order</span>
                 </button>
 
@@ -505,7 +506,7 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                   onClick={() => triggerPrintDialog()}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border bg-card px-4 py-3 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition min-h-[44px]"
                 >
-                  <span>📥</span>
+                  <Icon name="description" size={16} />
                   <span>PDF Receipt</span>
                 </button>
 

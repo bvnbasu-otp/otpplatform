@@ -9,6 +9,7 @@ import { MobileVotingCard } from './MobileVotingCard';
 import { DecisionReceipt } from '@/features/reveal/components/DecisionReceipt';
 import { QuoteComparisonSummaryHeader } from '@/features/rfq/components/QuoteComparisonSummaryHeader';
 import { IdentityProtectedQuoteComparisonTable } from '@/features/rfq/components/IdentityProtectedQuoteComparisonTable';
+import { QuorumExpiryDecisionCard } from '@/features/rfq/components/QuorumExpiryDecisionCard';
 import { QuoteBoqBottomSheet } from '@/features/rfq/components/QuoteBoqBottomSheet';
 import { MarketIntelligencePanel } from '@/features/procurement-os/components/MarketIntelligencePanel';
 import { fetchMarketIntelligence } from '@/features/procurement-os/api/fetch-market-intelligence';
@@ -605,6 +606,29 @@ export function EvaluationDecisionCockpit({
               highestScore={topRatedQuote?.evaluationScore}
               comparisonLevel={quotes[0]?.comparisonLevel ?? null}
             />
+
+            {/* Quorum Fallback Decision Card (3-Tier & 7-Day Window Fallback) */}
+            {!isAwarded && quotes.length >= 1 && quotes.length < minQuotesRequired && (
+              <QuorumExpiryDecisionCard
+                quotesCount={quotes.length}
+                minQuotesRequired={minQuotesRequired}
+                onProceedWithCurrentQuotes={() => {
+                  if (selectedQuoteId) {
+                    handleTabChange('award');
+                  } else if (quotes[0]) {
+                    setSelectedQuoteId(quotes[0].quoteId);
+                    handleTabChange('award');
+                  }
+                }}
+                onExtendDeadline={(days) => {
+                  setSuccess(`Quoting window extended by ${days} days. Concentric supplier search expanded to 10–50 km radius.`);
+                }}
+                onCancelRequest={() => {
+                  navigate('/dashboard');
+                }}
+                isBusy={busy}
+              />
+            )}
 
             {/* 4-Pillar Offers Header & Fast Actions */}
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">

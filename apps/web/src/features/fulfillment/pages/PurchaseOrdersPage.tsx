@@ -16,6 +16,7 @@ import {
   DrillDownSection,
   PrintableProcurementReport,
 } from '@/features/reporting';
+import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
 import { useRoleContext } from '@/features/roles';
 import { canOfferCustomerRequirementCreation } from '@/features/roles/customer-procurement-access';
@@ -387,7 +388,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                       : 'bg-card text-muted-foreground hover:bg-muted'
                   }`}
                 >
-                  <span>🟡</span>
+                  <Icon name="pending_actions" size={16} />
                   <span>Active ({summary.activeOrdersCount})</span>
                 </button>
                 <button
@@ -400,7 +401,7 @@ export function PurchaseOrdersPage({ role: initialRole }: { role: 'buyer' | 'sup
                       : 'bg-card text-muted-foreground hover:bg-muted'
                   }`}
                 >
-                  <span>🟢</span>
+                  <Icon name="task_alt" size={16} />
                   <span>Completed ({summary.settledOrdersCount})</span>
                 </button>
               </div>

@@ -51,4 +51,5 @@ export type {
 } from './StateViews';
 export { LanguageSwitcher } from './LanguageSwitcher';
 export type { LanguageSwitcherProps } from './LanguageSwitcher';
-
+export { Icon } from './Icon';
+export type { IconProps, MaterialIconName } from './Icon';

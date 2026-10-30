@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AttachmentScope, type AttributeDef, type AttributeValue } from '@otp/domain';
 import { Badge, Card, Checkbox, Field, Input, NumberInput, Textarea } from '@/components/ui';
+import { Icon } from '@/components/ui/Icon';
 import { AttachmentUploader } from '@/features/attachments';
 import { AttributeFields } from './AttributeFields';
 
@@ -147,7 +148,7 @@ export function Tier2PrecisionScopeCard({
           <p className="text-xs font-semibold text-foreground">
             Quantity: <span className="text-primary font-bold">{quantity ?? 1} {unit}</span>
             {warrantyMonths ? ` · 🛡️ ${warrantyMonths} Mo Warranty` : ''}
-            <span className="text-primary font-bold ml-1.5 underline">Customize Specs, BoQ &amp; Drawings ▼</span>
+            <span className="text-primary font-bold ml-1.5 underline">Add Details, Photo or Drawing ▼</span>
           </p>
         </div>
       ) : (
@@ -437,20 +438,22 @@ export function Tier2PrecisionScopeCard({
           </Field>
         </div>
 
-        {/* 5. Drawings, BoQ & Attachments Management */}
+        {/* 5. Photos, Bills, Drawings & Attachments Management */}
         <div className="space-y-2 pt-2 border-t border-border/60">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <span>📎</span> Technical Drawings, BoQ &amp; Site Photos (Optional)
+              <Icon name="photo_camera" size={16} className="text-primary" />
+              <span>Photos, Bills or Drawings (Optional)</span>
             </h4>
           </div>
 
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-foreground space-y-1">
             <div className="flex items-center gap-1.5 font-bold text-primary">
-              <span>🔒</span> 100% Identity-Protected Uploads:
+              <Icon name="verified_user" size={16} />
+              <span>100% Identity-Protected Uploads:</span>
             </div>
             <p className="text-muted-foreground text-[11px] leading-relaxed">
-              All files are stripped of metadata and company headers before sharing. Invited suppliers only see anonymized titles like <em>&ldquo;Drawing 1&rdquo;</em>, <em>&ldquo;Specification 1&rdquo;</em>, or <em>&ldquo;Site Photo 1&rdquo;</em>.
+              All photos and files are stripped of metadata and company headers before sharing. Invited suppliers only see anonymized titles like <em>&ldquo;Item Photo 1&rdquo;</em>, <em>&ldquo;Broken Part 1&rdquo;</em>, <em>&ldquo;Specification 1&rdquo;</em>, or <em>&ldquo;Drawing 1&rdquo;</em>.
             </p>
           </div>
 
@@ -459,13 +462,13 @@ export function Tier2PrecisionScopeCard({
               scope={AttachmentScope.REQUIREMENT}
               requirementId={requirementId}
               disabled={isBusy}
-              label="Drop drawings, BoQ spreadsheets, or site photos here"
-              hint="Supports PDF, CAD/DWG, Excel/CSV, JPG, PNG up to 25MB"
+              label="Take photo or upload item pictures, old bills, broken parts, or architectural drawings"
+              hint="Supports JPG, PNG, PDF, CAD/DWG, Excel/CSV up to 25MB"
               allowVoiceNote={true}
             />
           ) : (
             <div className="rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground bg-muted/20">
-              💡 File upload will be available as soon as your draft initializes.
+              💡 File &amp; photo upload will be available as soon as your draft initializes.
             </div>
           )}
         </div>

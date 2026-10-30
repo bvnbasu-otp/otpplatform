@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Icon } from '@/components/ui/Icon';
 import { formatDateIST } from '@/lib/date-utils';
 import { formatMoney, type PurchaseOrderSummary } from '../types/fulfillment';
 import { fulfillmentChip, isPurchaseOrderComplete, paymentEvidenceLabel } from '../lib/po-lifecycle-present';
@@ -148,13 +149,90 @@ export function PurchaseOrderList({
                   style={{ width: isCancelled ? '100%' : `${Math.min(100, Math.max(0, progress))}%` }}
                 />
               </div>
+
+              {/* 4-Stage Visual Milestone Progression */}
+              <div className="grid grid-cols-4 gap-1 pt-1 text-[10px] text-center font-bold">
+                <div
+                  className={`p-1 rounded-lg border ${
+                    isCancelled
+                      ? 'bg-muted/40 border-border text-muted-foreground'
+                      : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+                  }`}
+                >
+                  <span>1. Confirmed</span>
+                </div>
+                <div
+                  className={`p-1 rounded-lg border ${
+                    isCancelled
+                      ? 'bg-muted/40 border-border text-muted-foreground'
+                      : progress >= 30
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+                      : progress > 0
+                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      : 'bg-muted/40 border-border text-muted-foreground'
+                  }`}
+                >
+                  <span>2. In-Transit</span>
+                </div>
+                <div
+                  className={`p-1 rounded-lg border ${
+                    isCancelled
+                      ? 'bg-muted/40 border-border text-muted-foreground'
+                      : progress >= 70
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+                      : progress >= 30
+                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      : 'bg-muted/40 border-border text-muted-foreground'
+                  }`}
+                >
+                  <span>3. Execution</span>
+                </div>
+                <div
+                  className={`p-1 rounded-lg border ${
+                    isCompleted
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+                      : progress >= 70
+                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      : 'bg-muted/40 border-border text-muted-foreground'
+                  }`}
+                >
+                  <span>4. Paid</span>
+                </div>
+              </div>
             </div>
 
-            {/* Bottom Action */}
-            <div className="pt-1 flex items-center justify-end">
+            {/* Quick Contact & Bottom Action */}
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border/40">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {po.supplierPhone ? (
+                  <>
+                    <a
+                      href={`tel:${po.supplierPhone}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-xs font-bold transition min-h-[36px]"
+                      title={`Call ${po.supplierName || 'supplier'}`}
+                    >
+                      <Icon name="call" size={14} className="text-emerald-600" />
+                      <span>Call</span>
+                    </a>
+                    <a
+                      href={`https://wa.me/${po.supplierPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                        `Hi ${po.supplierName || ''}, regarding OTP Purchase Order #${po.poNumber}:`,
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition min-h-[36px]"
+                      title="WhatsApp Chat with supplier"
+                    >
+                      <Icon name="chat" size={14} className="text-emerald-600" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </>
+                ) : null}
+              </div>
+
               <Link
                 to={`${base}/${po.id}`}
-                className={`w-full sm:w-auto min-h-[44px] text-center inline-flex items-center justify-center rounded-xl px-4 py-2 text-xs font-black shadow-xs transition mobile-touch-target ${
+                className={`w-full sm:w-auto min-h-[40px] text-center inline-flex items-center justify-center rounded-xl px-4 py-2 text-xs font-black shadow-xs transition mobile-touch-target ${
                   isCancelled
                     ? 'border border-red-300 bg-red-50 text-red-800 hover:bg-red-100'
                     : isDisputed

@@ -6,6 +6,7 @@ export {
   QuoteCard4Pillar,
   QuoteStickyBottomBar,
   CancelRfqModal,
+  QuorumExpiryDecisionCard,
 } from './components';
 export type {
   IdentityProtectedQuoteComparisonTableProps,
@@ -14,6 +15,7 @@ export type {
   QuoteBoqBottomSheetProps,
   QuoteCard4PillarProps,
   QuoteStickyBottomBarProps,
+  QuorumExpiryDecisionCardProps,
 } from './components';
 
 export {
