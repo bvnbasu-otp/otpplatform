@@ -345,7 +345,8 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 79]).toBe('00328_admin_test_runner_canonical_status_enum.sql');
     expect(files[index + 80]).toBe('00329_fix_direct_invites_and_supplier_quoting_for_demo.sql');
     expect(files[index + 81]).toBe('00330_authoritative_pricing_and_supplier_fee_gate.sql');
-    expect(index).toBe(files.length - 82);
+    expect(files[index + 82]).toBe('00331_authoritative_17_category_taxonomy.sql');
+    expect(index).toBe(files.length - 83);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

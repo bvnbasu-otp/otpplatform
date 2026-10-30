@@ -16,7 +16,7 @@ describe('00318 support-ticket RPC hardening, formerly proposal 00323 (static re
     expect(sql.startsWith('-- 00318: support-ticket admin RPC hardening (SEC-SUPPORT-01).')).toBe(true);
     expect(sql).not.toMatch(/UNAPPLIED|REVIEW ONLY|NOT APPLIED/);
     const migrations = readdirSync(resolve(ROOT, 'supabase/migrations')).filter((f) => /^\d{5}_.+\.sql$/.test(f)).sort();
-    expect(migrations.at(-1)).toBe('00330_authoritative_pricing_and_supplier_fee_gate.sql');
+    expect(migrations.at(-1)).toBe('00331_authoritative_17_category_taxonomy.sql');
     expect(readdirSync(resolve(ROOT, 'supabase')).filter((f) => /support_ticket/.test(f))).toEqual([]);
     expect(existsSync(resolve(ROOT, 'supabase/migrations/00323_support_ticket_rpc_hardening.sql'))).toBe(false);
     expect(code).not.toMatch(/^\s*(BEGIN|COMMIT)\s*;/m);

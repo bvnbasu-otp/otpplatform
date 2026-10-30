@@ -15,11 +15,11 @@ describe('Migration 00330: Static SQL Contract & Security Boundaries', () => {
   const migrations = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.+\.sql$/.test(f)).sort();
   const sql = readFileSync(resolve(MIGRATIONS_DIR, FILE_00330), 'utf8');
 
-  it('is the newest contiguous migration in the repository chain', () => {
-    expect(migrations.at(-1)).toBe(FILE_00330);
+  it('is contiguous in the promoted repository chain', () => {
     const index = migrations.indexOf(FILE_00330);
     expect(index).toBe(329); // 330th file (0-indexed)
     expect(migrations[index - 1]).toBe('00329_fix_direct_invites_and_supplier_quoting_for_demo.sql');
+    expect(migrations[index + 1]).toBe('00331_authoritative_17_category_taxonomy.sql');
   });
 
   it('seeds authoritative canonical plans matching published commercial rules', () => {
