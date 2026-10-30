@@ -474,7 +474,7 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
       const prohibitedTerms = ['bid', 'bids', 'bidder', 'bidders', 'bidding', 'blind'];
       const combinedText = `
         Tier 1 — Tell OTP Know Now Natural Language Quick Suggestions Voice Dictate
-        Requirement Description AI Auto-Extracted Parameters Requirement Title
+        Requirement Description Auto-Extracted Parameters Requirement Title
         Category Type of Work Procurement Mode Delivery Service City Postal PIN Code
         Fulfilment Urgency Target Turnaround Indicative Target Budget Private to Buyer
         Tier 2 — Precision Scope Quantity Unit of Measure Category Technical Specifications
@@ -500,10 +500,10 @@ describe('OTP Platform — Unified 3-Tier Progressive Intake Suite (Phase C.1)',
   });
 
   describe('8. Screens.docx — Lightweight Intake Cockpit Standards', () => {
-    it('verifies Step 1 of 3 progress marker and AI Parser badge', () => {
-      const stepHeader = 'Step 1 of 3 · AI Parser Ready';
+    it('verifies Step 1 of 3 progress marker and Auto Parser badge', () => {
+      const stepHeader = 'Step 1 of 3 · Auto Parser Ready';
       expect(stepHeader).toContain('Step 1 of 3');
-      expect(stepHeader).toContain('AI Parser Ready');
+      expect(stepHeader).toContain('Auto Parser Ready');
     });
 
     it('verifies 1-tap fast-track city chips', () => {

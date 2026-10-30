@@ -92,7 +92,7 @@ export function QuorumExpiryDecisionCard({
             <span className="text-xs text-amber-700 dark:text-amber-400 font-bold">+3 Days</span>
           </div>
           <p className="text-[11px] text-muted-foreground leading-snug">
-            Expand search to 10–50 km radius, ONDC &amp; Google Places to gather more quotes.
+            Expand search across city &amp; regional network (10–50 km) to gather more quotes.
           </p>
         </button>
 
@@ -124,7 +124,7 @@ export function QuorumExpiryDecisionCard({
             <Icon name="radar" size={16} className="text-amber-600" />
             <span>Concentric Discovery Reach:</span>
           </span>
-          <span className="text-muted-foreground text-[10px]">Pincode → Corridor → Open Network</span>
+          <span className="text-muted-foreground text-[10px]">Local Hub → City Network → Pan-India Network</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
           <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-1.5 text-center text-emerald-800 dark:text-emerald-300 font-semibold">
@@ -134,7 +134,7 @@ export function QuorumExpiryDecisionCard({
             {quotesCount < minQuotesRequired ? '⚡ Expanding to 10–50 km' : '✓ 10–50 km City'}
           </div>
           <div className="rounded-lg bg-muted/60 border border-border p-1.5 text-center text-muted-foreground">
-            ONDC &amp; Google Places
+            Extended Network Hub
           </div>
           <div className="rounded-lg bg-muted/60 border border-border p-1.5 text-center text-muted-foreground">
             State &amp; Pan-India

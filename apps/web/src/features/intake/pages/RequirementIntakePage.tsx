@@ -33,7 +33,7 @@ export function RequirementIntakePage() {
   const { context } = useRoleContext();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const requirementId = searchParams.get('draft');
+  const requirementId = searchParams.get('draft') || searchParams.get('edit') || searchParams.get('requirementId');
   const [handoff] = useState(() =>
     requirementId ? '' : readHandoff(searchParams.get('q')),
   );

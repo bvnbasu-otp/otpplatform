@@ -42,6 +42,7 @@ import { IssuedProcurementPrintDocument } from '@/features/documents/components/
 import { buildProcurementDocumentModel } from '@/features/reporting/lib/procurement-document';
 import { SupplierMilestoneStepper } from '../components/SupplierMilestoneStepper';
 import { FivePointMilestoneStepper } from '../components/FivePointMilestoneStepper';
+import { OrderTrackingTimeline } from '../components/OrderTrackingTimeline';
 import { PoActionButtons, StatusBadge } from '../components/FulfillmentStatus';
 import { ChangeOrderModal } from '../components/ChangeOrderModal';
 import { ProcurementStageNavigator, type CoreProcurementState } from '@/features/lifecycle';
@@ -929,6 +930,14 @@ export function PurchaseOrderDetailPage({
           backToUrl={listPath}
           backToLabel="All Purchase Orders"
         />
+        {/* Mobile Order Tracking Timeline matching Infographic Screen 9 */}
+        <div className="block sm:hidden">
+          <OrderTrackingTimeline
+            order={order}
+            workOrder={workOrder}
+            role={role}
+          />
+        </div>
         {/* Canonical 5-Point Milestone Stepper */}
         <FivePointMilestoneStepper
           params={{

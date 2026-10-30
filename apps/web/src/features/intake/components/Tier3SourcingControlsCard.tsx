@@ -324,7 +324,7 @@ export function Tier3SourcingControlsCard({
                     <span className="text-[10px] text-muted-foreground">10–50 km Corridor</span>
                   </div>
                   <div className="rounded-xl border border-border bg-card p-2 text-center">
-                    <span className="font-bold text-primary block">3. ONDC &amp; Google</span>
+                    <span className="font-bold text-primary block">3. Extended Network</span>
                     <span className="text-[10px] text-muted-foreground">Public &amp; Verified</span>
                   </div>
                   <div className="rounded-xl border border-border bg-card p-2 text-center">

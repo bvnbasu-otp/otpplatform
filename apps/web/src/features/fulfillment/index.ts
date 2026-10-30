@@ -13,3 +13,4 @@ export { MilestoneInspectionChecklist } from './components/MilestoneInspectionCh
 export { DisputeResolutionDrawer } from './components/DisputeResolutionDrawer';
 export { StatusBadge, PoActionButtons } from './components/FulfillmentStatus';
 export { formatMoney } from './types/fulfillment';
+export { OrderTrackingTimeline } from './components/OrderTrackingTimeline';

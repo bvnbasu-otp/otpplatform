@@ -23,7 +23,7 @@ describe('QuorumExpiryDecisionCard Invariants & Logic', () => {
     expect(cardSrc).toContain('Concentric Discovery Reach:');
     expect(cardSrc).toContain('PIN Code (0–5 km)');
     expect(cardSrc).toContain('10–50 km');
-    expect(cardSrc).toContain('ONDC &amp; Google Places');
+    expect(cardSrc).toContain('Extended Network Hub');
     expect(cardSrc).toContain('State &amp; Pan-India');
   });
 });

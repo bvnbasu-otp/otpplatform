@@ -153,6 +153,14 @@ export function RequirementDetailPage({ requirementId }: RequirementDetailPagePr
             </div>
 
             <div className="space-y-2 pt-2 border-t">
+              <Link
+                to={`/intake?draft=${requirementId}`}
+                className="min-h-[48px] w-full flex items-center justify-between rounded-lg border border-primary/40 bg-card px-3 py-2 text-xs font-bold text-primary hover:bg-primary/5 transition mobile-touch-target"
+                data-testid="edit-requirement-btn"
+              >
+                <span>✏️ Edit &amp; Refine Specifications</span>
+                <span>→</span>
+              </Link>
               {rfqId ? (
                 <>
                   <Link

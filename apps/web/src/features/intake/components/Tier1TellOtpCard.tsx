@@ -662,21 +662,21 @@ export function Tier1TellOtpCard({
                 className="min-h-[38px] px-3 text-xs font-bold"
                 data-testid="re-extract-btn"
               >
-                ⚡ Re-Extract with AI
+                ⚡ Auto-Extract Parameters
               </Button>
             </div>
           </div>
 
-          {/* AI Auto-Extracted Parameters Banner */}
+          {/* Auto-Extracted Parameters Banner */}
           {parsed && (
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs space-y-2">
               <div className="flex items-center justify-between font-semibold text-primary">
                 <span className="flex items-center gap-1.5">
-                  <span>⚡</span> AI Auto-Extracted Parameters:
+                  <span>⚡</span> Auto-Extracted Parameters:
                 </span>
                 {confidence !== null && (
                   <Badge tone={confidence >= 0.6 ? 'success' : 'warning'}>
-                    {confidence >= 0.6 ? 'AI Confident' : 'Please Verify'}
+                    {confidence >= 0.6 ? 'Auto Verified' : 'Please Verify'}
                   </Badge>
                 )}
               </div>

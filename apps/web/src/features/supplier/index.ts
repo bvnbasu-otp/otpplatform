@@ -1,3 +1,4 @@
+export { OpportunitiesBrowsePage } from './pages/OpportunitiesBrowsePage';
 export { SupplierRfqPage } from './pages/SupplierRfqPage';
 export { SupplierQuoteSubmitPage } from './pages/SupplierQuoteSubmitPage';
 export { SupplierCapabilitiesPage } from './pages/SupplierCapabilitiesPage';

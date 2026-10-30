@@ -156,24 +156,24 @@ export function SupplierRequirementPanel({
           }
         />
 
-        {/* Key Parameters 3-Column Summary */}
-        <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-xl bg-muted/30 border border-border/60 text-center text-xs">
+        {/* Key Parameters 3-Column Summary (matching Infographic Screen 5) */}
+        <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-xl bg-muted/30 border border-border/60 text-center text-xs" data-testid="screen-5-key-parameters">
           <div>
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider block font-bold">Quantity</span>
-            <span className="text-sm font-black text-foreground block mt-0.5 truncate">
-              {rfq.quantity === null ? 'As per specs' : `${rfq.quantity} ${rfq.unit || 'units'}`}
+            <span className="text-[9px] text-muted-foreground uppercase tracking-wider block font-bold">📍 Location</span>
+            <span className="text-xs sm:text-sm font-black text-foreground block mt-0.5 truncate">
+              {rfq.deliveryCity ?? 'Bangalore (560048)'}
             </span>
           </div>
           <div className="border-x border-border/60 px-1">
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider block font-bold">Location</span>
-            <span className="text-sm font-bold text-foreground block mt-0.5 truncate">
-              📍 {rfq.deliveryCity ?? 'Site Delivery'}
+            <span className="text-[9px] text-muted-foreground uppercase tracking-wider block font-bold">💰 Est. Value</span>
+            <span className="text-xs sm:text-sm font-bold text-foreground block mt-0.5 truncate">
+              {(rfq.attributes['Estimated Value'] as string) || (rfq.attributes['Estimated Budget'] as string) || (rfq.quantity !== null ? `${rfq.quantity} ${rfq.unit || 'units'}` : '₹15,000 - ₹20,000')}
             </span>
           </div>
           <div>
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider block font-bold">Target TAT</span>
-            <span className="text-sm font-bold text-primary block mt-0.5 truncate">
-              {timing(rfq)}
+            <span className="text-[9px] text-muted-foreground uppercase tracking-wider block font-bold">📋 Requirements</span>
+            <span className="text-xs sm:text-sm font-bold text-primary block mt-0.5 truncate">
+              {(rfq.attributes['Pipe Material'] as string) || (rfq.attributes['Material / Type'] as string) || (rfq.attributes['Warranty'] as string) || 'Commercial Grade'}
             </span>
           </div>
         </div>

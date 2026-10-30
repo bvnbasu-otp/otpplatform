@@ -265,48 +265,92 @@ export function MobileVotingCard({
         </label>
       </div>
 
-      {/* 3. Candidate Target Details */}
-      {activeCandidate && (
-        <div className="rounded-2xl border border-primary/20 bg-primary/[0.02] dark:bg-primary/[0.06] p-3.5 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-              Candidate for Recommendation:
-            </span>
-            <span className="font-mono text-xs font-bold text-foreground">
-              {formatInr(activeCandidate.totalCost)}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-mono font-black text-sm text-foreground">
-                🔒 {activeCandidate.anonymousLabel}
-              </span>
-              {activeCandidate.evaluationScore != null && (
-                <span className="rounded bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 text-[10px] font-black">
-                  ★ {(activeCandidate.evaluationScore / 10).toFixed(1)}/10
-                </span>
-              )}
-            </div>
-
-            {quotes.length > 1 && onSelectQuote && (
-              <select
-                value={activeQuoteId}
-                onChange={(e) => onSelectQuote(e.target.value)}
-                disabled={disabled || isSubmitting}
-                aria-label="Select candidate supplier"
-                className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-bold text-foreground focus:ring-1 focus:ring-primary min-h-[44px] mobile-touch-target"
-              >
-                {quotes.map((q) => (
-                  <option key={q.quoteId} value={q.quoteId}>
-                    {q.anonymousLabel} — {formatInr(q.totalCost)}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+      {/* 3. Candidate Target Details & Radio Cards (matching Infographic Screen 7) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
+            Cast Your Vote — Candidate Options:
+          </span>
+          {quotes.length > 1 && onSelectQuote && (
+            <select
+              value={activeQuoteId}
+              onChange={(e) => onSelectQuote(e.target.value)}
+              disabled={disabled || isSubmitting}
+              aria-label="Select candidate supplier"
+              className="sr-only"
+            >
+              {quotes.map((q) => (
+                <option key={q.quoteId} value={q.quoteId}>
+                  {q.anonymousLabel} — {formatInr(q.totalCost)}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-      )}
+
+        <div className="space-y-2" data-testid="voting-candidate-radio-cards">
+          {quotes.map((q) => {
+            const isSelected = q.quoteId === activeQuoteId;
+            return (
+              <div
+                key={q.quoteId}
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={0}
+                onClick={() => !disabled && !isSubmitting && onSelectQuote?.(q.quoteId)}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    !disabled && !isSubmitting && onSelectQuote?.(q.quoteId);
+                  }
+                }}
+                className={`rounded-2xl border p-3.5 transition cursor-pointer flex items-center justify-between gap-3 ${
+                  isSelected
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-2xs'
+                    : 'border-border/80 bg-card hover:border-primary/40 hover:bg-muted/30'
+                }`}
+                data-testid={`candidate-card-${q.quoteId}`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition ${
+                      isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 bg-card'
+                    }`}
+                  >
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-black text-sm text-foreground">
+                        {q.anonymousLabel}
+                      </span>
+                      {q.evaluationScore != null && (
+                        <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-black">
+                          ★ {(q.evaluationScore / 10).toFixed(1)}/10
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
+                      {q.deliveryDays != null && <span>⚡ {q.deliveryDays}d turnaround</span>}
+                      {q.warrantyMonths != null && <span>· 🛡️ {q.warrantyMonths}m warranty</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="font-mono font-black text-sm text-foreground block">
+                    {formatInr(q.totalCost)}
+                  </span>
+                  {isSelected && (
+                    <span className="text-[10px] font-extrabold text-primary block mt-0.5">
+                      Selected
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* 4. 1-Tap Vote Buttons (RECOMMEND / ABSTAIN / OPPOSE) */}
       <div className="space-y-1.5">

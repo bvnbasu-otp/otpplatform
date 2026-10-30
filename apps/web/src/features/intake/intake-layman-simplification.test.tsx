@@ -36,7 +36,7 @@ describe('Intake Layman Simplification & Concentric Sourcing', () => {
     expect(tier3Src).toContain('0–5 km Hyperlocal');
     expect(tier3Src).toContain('2. City &amp; Suburbs');
     expect(tier3Src).toContain('10–50 km Corridor');
-    expect(tier3Src).toContain('3. ONDC &amp; Google');
+    expect(tier3Src).toContain('3. Extended Network');
     expect(tier3Src).toContain('4. State / Pan-India');
   });
 });

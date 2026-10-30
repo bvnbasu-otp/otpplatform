@@ -148,7 +148,7 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
     }
     if (rfqOpen) {
       return {
-        label: 'Respond to RFQ',
+        label: "I'm Interested",
         to: `/supplier/rfq/${rfqId}/quote`,
         icon: '⚡',
         variant: 'primary',
@@ -171,10 +171,10 @@ export function SupplierRfqPage({ rfqId }: { rfqId: string }) {
       <header className="rounded-2xl border bg-card p-3 shadow-2xs flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Link
-            to="/"
+            to="/opportunities"
             className="min-h-[48px] px-3 rounded-xl text-xs font-black text-muted-foreground hover:text-foreground hover:bg-muted flex items-center gap-1 shrink-0 mobile-touch-target transition"
           >
-            ← Opportunities
+            ← Opportunity Details
           </Link>
           <span className="text-muted-foreground/60">·</span>
           <span className="text-xs font-mono font-black text-foreground truncate">

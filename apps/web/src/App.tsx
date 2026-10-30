@@ -32,6 +32,7 @@ const PricingPage = lazy(() => import('@/features/site').then((m) => ({ default:
 const ContactUsPage = lazy(() => import('@/features/contact').then((m) => ({ default: m.ContactUsPage })));
 const QuickQuotePage = lazy(() => import('@/features/quick-quote').then((m) => ({ default: m.QuickQuotePage })));
 const EvaluationDecisionCockpitPage = lazy(() => import('@/features/evaluation').then((m) => ({ default: m.EvaluationDecisionCockpitPage })));
+const OpportunitiesBrowsePage = lazy(() => import('@/features/supplier').then((m) => ({ default: m.OpportunitiesBrowsePage })));
 const SupplierRfqPage = lazy(() => import('@/features/supplier/pages/SupplierRfqPage').then((m) => ({ default: m.SupplierRfqPage })));
 const SupplierQuoteSubmitPage = lazy(() => import('@/features/supplier/pages/SupplierQuoteSubmitPage').then((m) => ({ default: m.SupplierQuoteSubmitPage })));
 const SupplierCapabilitiesPage = lazy(() => import('@/features/supplier/pages/SupplierCapabilitiesPage').then((m) => ({ default: m.SupplierCapabilitiesPage })));
@@ -459,7 +460,8 @@ export function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/supplier/opportunities" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/opportunities" element={<OpportunitiesBrowsePage />} />
+            <Route path="/supplier/opportunities" element={<OpportunitiesBrowsePage />} />
             <Route path="/quotes" element={<Navigate to="/dashboard" replace />} />
             <Route
               path="/purchase-orders"

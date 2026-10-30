@@ -560,6 +560,9 @@ export function QuoteForm({
         >
           <span>{isSubmitting ? 'Submitting Quote…' : submitLabel}</span>
         </button>
+        <p className="text-center text-[11px] text-muted-foreground pt-1" data-testid="quote-change-later-hint">
+          You can change this later
+        </p>
       </div>
 
       {error && (
