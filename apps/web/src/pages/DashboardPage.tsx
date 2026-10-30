@@ -12,6 +12,7 @@ import { usePilotAllowance } from '@/features/intake/hooks/use-pilot-allowance';
 import { formatRfqBalanceSummary } from '@/features/requirement/components/PilotAllowanceText';
 import { checkPilotAllowanceBeforePublish } from '@/features/intake/api/pilot-allowance';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { Icon } from '@/components/ui/Icon';
 import { formatDateIST } from '@/lib/date-utils';
 import type { OrganizationRequirementSummary } from '@/features/requirement/api/requirements';
 import {
@@ -136,6 +137,94 @@ export function DashboardPage() {
       className="w-full max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 py-3 space-y-4 overflow-x-hidden min-w-0 max-w-full"
       data-testid="buyer-dashboard"
     >
+      {/* Mobile Screen 9 Greeting & Quick Actions Header */}
+      <div className="block sm:hidden space-y-3 pb-1" data-testid="screen-9-mobile-header">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-black text-foreground">
+              {timeGreeting}, {greetingName}
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium">
+              Find what you need, when you need it
+            </p>
+          </div>
+          <Link
+            to="/notifications"
+            className="relative w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center text-foreground hover:bg-muted transition"
+            aria-label="Notifications"
+          >
+            <Icon name="notifications" size={20} />
+            {actionRequiredItems.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
+                {actionRequiredItems.length}
+              </span>
+            )}
+          </Link>
+        </div>
+
+        {/* 3x2 Quick Action Grid (Screen 9) */}
+        <div className="grid grid-cols-3 gap-2" data-testid="screen-9-quick-actions">
+          <Link
+            to="/requirements/new"
+            className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs"
+          >
+            <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-1 group-hover:scale-105 transition">
+              <Icon name="add" size={20} />
+            </div>
+            <span className="text-[11px] font-bold text-foreground leading-tight">Create RFQ</span>
+          </Link>
+
+          <Link
+            to="/requirements"
+            className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs"
+          >
+            <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
+              <Icon name="description" size={20} />
+            </div>
+            <span className="text-[11px] font-bold text-foreground leading-tight">My Requirements</span>
+          </Link>
+
+          <Link
+            to="/requirements"
+            className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs"
+          >
+            <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
+              <Icon name="request_quote" size={20} />
+            </div>
+            <span className="text-[11px] font-bold text-foreground leading-tight">My Quotes</span>
+          </Link>
+
+          <Link
+            to="/purchase-orders"
+            className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs"
+          >
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
+              <Icon name="receipt_long" size={20} />
+            </div>
+            <span className="text-[11px] font-bold text-foreground leading-tight">My Orders</span>
+          </Link>
+
+          <Link
+            to="/notifications"
+            className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs"
+          >
+            <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
+              <Icon name="notifications" size={20} />
+            </div>
+            <span className="text-[11px] font-bold text-foreground leading-tight">Notifications</span>
+          </Link>
+
+          <Link
+            to="/profile"
+            className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs"
+          >
+            <div className="w-9 h-9 rounded-lg bg-slate-500/10 text-slate-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
+              <Icon name="person" size={20} />
+            </div>
+            <span className="text-[11px] font-bold text-foreground leading-tight">Profile</span>
+          </Link>
+        </div>
+      </div>
       {/* 1. Context header (all breakpoints) + mobile-first start panel */}
       <div>
         <HomeContextBar

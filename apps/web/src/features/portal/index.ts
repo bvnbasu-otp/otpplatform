@@ -12,6 +12,16 @@ export { SignupSuccess } from './components/SignupSuccess';
 export { QuickRegisterModal } from './components/QuickRegisterModal';
 export { VerificationChoice } from './components/VerificationChoice';
 export { RoleChoiceField } from './components/RoleChoiceField';
+export { X2ORegistrationWizard } from './components/wizard/X2ORegistrationWizard';
+export { WizardProgress } from './components/wizard/WizardProgress';
+export { WizardStep1Welcome } from './components/wizard/WizardStep1Welcome';
+export { WizardStep2Contact } from './components/wizard/WizardStep2Contact';
+export { WizardStep3AccountType } from './components/wizard/WizardStep3AccountType';
+export { WizardStep4Persona } from './components/wizard/WizardStep4Persona';
+export { WizardStep5Individual } from './components/wizard/WizardStep5Individual';
+export { WizardStep5RWA } from './components/wizard/WizardStep5RWA';
+export { WizardStep5MSME } from './components/wizard/WizardStep5MSME';
+export { WizardStep5Supplier } from './components/wizard/WizardStep5Supplier';
 export {
   BUYER_COPY,
   SUPPLIER_COPY,
