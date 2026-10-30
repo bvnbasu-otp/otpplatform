@@ -896,9 +896,9 @@ export function UnifiedThreeTierIntake({
           >
             {buyingMode === 'BUY_ITEM'
               ? 'Get Supplier Offers for this Item →'
-              : buyingMode === 'GET_QUOTES'
-              ? 'Request Quotes &amp; Compare Offers →'
-              : 'Submit Procurement &amp; Discover Suppliers →'}
+              : buyingMode === 'PLAN_PROCUREMENT'
+              ? 'Publish Procurement RFQ →'
+              : 'Submit Request &amp; Get Quotes →'}
           </Button>
         </div>
       </div>

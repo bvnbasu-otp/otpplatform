@@ -471,6 +471,7 @@ describe('Create Requirement Mobile Redesign — Progressive Flow & Invariants',
       const src = fs.readFileSync(path.resolve(__dirname, 'components/Tier1TellOtpCard.tsx'), 'utf8');
       expect(src).toContain('data-testid="fork-buy-products"');
       expect(src).toContain('data-testid="fork-hire-service"');
+      expect(src).toContain('data-testid="buying-mode-buy-item"');
       expect(src).toContain('Buy Products');
       expect(src).toContain('Hire a Service');
     });

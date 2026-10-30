@@ -325,5 +325,6 @@ describe('deriveCategoryFromText', () => {
     expect(deriveCategoryFromText('Need 3 split AC 1.5 ton')).toBe('HVAC & Refrigeration');
     expect(deriveCategoryFromText('Ceiling fan 1200mm')).toBe('Electrical & Power');
     expect(deriveCategoryFromText('Office chairs and workstations')).toBe('Property & Facility Management');
+    expect(deriveCategoryFromText('Industrial chemicals and paints')).toBe('Chemicals & Process Materials');
   });
 });

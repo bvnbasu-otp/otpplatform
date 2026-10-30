@@ -85,7 +85,7 @@ describe('supplier identity-protected RFQ mapping', () => {
     expect(keys.some((k) => /buyerOrg|orgId|contact|email|phone/i.test(k))).toBe(false);
   });
   it('maps invitations with unbundled categories and OTHER mode', () => {
-    const inv = toInvitation(row({
+    const inv = toDetail(row({
       category: 'Plumbing & Sanitary',
       subcategory: 'Valves & Taps',
       requirement_mode: 'OTHER' as any,

@@ -288,7 +288,7 @@ export async function discoverAndInvite(
   return payload;
 }
 
-function deriveCategoryFromText(text?: string | null): string | null {
+export function deriveCategoryFromText(text?: string | null): string | null {
   if (!text) return null;
   const t = text.toLowerCase();
   if (/plumb|tap|faucet|sanitary|wash\s*basin|drainage|pvc\s*pipe|cpvc|upvc/i.test(t)) {
