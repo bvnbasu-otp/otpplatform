@@ -37,4 +37,14 @@ describe('Slice 4 — supplier quote form UX', () => {
     const legend = readFileSync(resolve(WEB_SRC, 'features/rfq/components/QuoteComparisonCommercialLegend.tsx'), 'utf8');
     expect(legend).toContain('data-testid="quote-comparison-commercial-legend"');
   });
+
+  it('QuoteForm and SupplierQuoteSubmitPage use clean consumer Submit Quote CTA without Seal & Transmit jargon', () => {
+    const qfSource = readFileSync(resolve(__dirname, 'components/QuoteForm.tsx'), 'utf8');
+    expect(qfSource).toContain("submitLabel = 'Submit Quote →'");
+    expect(qfSource).not.toContain("submitLabel = '🔒 Seal & Transmit Quote →'");
+
+    const submitPageSource = readFileSync(resolve(__dirname, 'pages/SupplierQuoteSubmitPage.tsx'), 'utf8');
+    expect(submitPageSource).toContain("submitLabel={existingQuote ? 'Update Quote →' : 'Submit Quote →'}");
+    expect(submitPageSource).not.toContain('🔒 Seal & Transmit');
+  });
 });

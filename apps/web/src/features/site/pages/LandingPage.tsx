@@ -57,6 +57,11 @@ function HeroSection({ onOpenDemo }: { onOpenDemo: () => void }) {
             {PRODUCT_PLATFORM_TITLE}
           </h1>
 
+          <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+            <span>✨</span>
+            <span>Better Procurement for Everyone — Trusted. Transparent. Fair.</span>
+          </div>
+
           <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             {PRODUCT_PLATFORM_SUBTITLE}
           </p>
@@ -90,6 +95,15 @@ function HeroSection({ onOpenDemo }: { onOpenDemo: () => void }) {
               I’m a supplier — Join to quote →
             </Link>
           </div>
+
+          {!user && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Already have an account?{' '}
+              <Link to="/login" className="font-bold text-primary hover:underline">
+                Log In
+              </Link>
+            </p>
+          )}
 
           <div className="mt-4 flex items-center justify-center">
             <button

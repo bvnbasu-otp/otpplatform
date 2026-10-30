@@ -16,4 +16,18 @@ describe('Home Cockpit Google Material Symbols & Layout', () => {
     expect(cockpitSrc).toContain("icon: 'chair'");
     expect(cockpitSrc).toContain("icon: 'inventory_2'");
   });
+
+  it('SupplierDashboardPage renders Find Opportunities banner and 4-card action grid with Google Material Symbols', () => {
+    const supplierSrc = readFileSync(
+      resolve(__dirname, '../../pages/SupplierDashboardPage.tsx'),
+      'utf8',
+    );
+    expect(supplierSrc).toContain('data-testid="find-opportunities-banner"');
+    expect(supplierSrc).toContain('data-testid="supplier-action-grid"');
+    expect(supplierSrc).toContain('Icon name="search"');
+    expect(supplierSrc).toContain('Icon name="request_quote"');
+    expect(supplierSrc).toContain('Icon name="local_shipping"');
+    expect(supplierSrc).toContain('Icon name="notifications"');
+    expect(supplierSrc).toContain('Icon name="person"');
+  });
 });

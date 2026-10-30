@@ -434,6 +434,46 @@ export function AwardPage({ rfqId }: { rfqId: string }) {
                 </div>
               </div>
 
+                            {/* Infographic Screen 8: 4-Milestone Completed Procurement Checklist */}
+              <div
+                data-testid="award-milestone-checklist"
+                className="rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 p-3 space-y-2"
+              >
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block">
+                  Procurement Milestones Completed:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-card border border-emerald-500/20 shadow-2xs">
+                    <Icon name="check_circle" size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="font-bold text-foreground block text-[11px]">Requirement Published</span>
+                      <span className="text-[10px] text-muted-foreground">Specifications set</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-card border border-emerald-500/20 shadow-2xs">
+                    <Icon name="check_circle" size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="font-bold text-foreground block text-[11px]">Quotes Compared</span>
+                      <span className="text-[10px] text-muted-foreground">{quotes.length || 3} competitive quotes</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-card border border-emerald-500/20 shadow-2xs">
+                    <Icon name="check_circle" size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="font-bold text-foreground block text-[11px]">Voting Completed</span>
+                      <span className="text-[10px] text-muted-foreground">Consensus locked</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-card border border-emerald-500/30 shadow-2xs ring-1 ring-emerald-500/40">
+                    <Icon name="verified" size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="font-bold text-emerald-800 dark:text-emerald-300 block text-[11px]">Winner Awarded</span>
+                      <span className="text-[10px] text-muted-foreground">Identity revealed</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Verified Identity Credentials Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-muted/20 dark:bg-muted/10 p-3.5 rounded-xl border border-border/50 text-xs">
                 <div>

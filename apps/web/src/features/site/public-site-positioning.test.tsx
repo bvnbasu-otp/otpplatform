@@ -107,6 +107,12 @@ describe('canonical positioning on public pages', () => {
     expect(text).toContain("OTP .... Think beyond the Password, Procurement is Common, it is Everyone's Everyday Business !");
   });
 
+  it('homepage hero displays consumer clarity tagline and login helper link', () => {
+    const text = toText(render(<LandingPage />));
+    expect(text).toContain('Better Procurement for Everyone — Trusted. Transparent. Fair.');
+    expect(text).toContain('Already have an account? Log In');
+  });
+
   it('About page shows the canonical title and subtitle', () => {
     const text = toText(render(<AboutPage />, '/about-us'));
     expect(text).toContain(CANONICAL_TITLE);

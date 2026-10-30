@@ -312,7 +312,7 @@ export function SupplierQuoteSubmitPage({ rfqId: propRfqId }: { rfqId?: string }
 
         <QuoteForm
           initial={existingQuote?.snapshot ?? undefined}
-          submitLabel={existingQuote ? '🔒 Seal & Transmit Revised Quote →' : '🔒 Seal & Transmit Quote →'}
+          submitLabel={existingQuote ? 'Update Quote →' : 'Submit Quote →'}
           onSubmit={handleSubmit}
           disabled={isExpired || isClosed}
           quoteId={existingQuote?.quoteId}

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import {
   LandingPage,
@@ -123,6 +125,15 @@ describe('Phase 3 Public Experience & Authentication Screens (Screens 31–40)',
       expect(titles).toContain('Work order tracking');
     });
   });
+
+    it('provides 4-card consumer role selection on registration page', () => {
+      const signupSrc = readFileSync(resolve(__dirname, 'pages/SignupPage.tsx'), 'utf8');
+      expect(signupSrc).toContain('data-testid="role-selection-grid"');
+      expect(signupSrc).toContain("I'm a Buyer");
+      expect(signupSrc).toContain("I'm a Supplier");
+      expect(signupSrc).toContain("I'm a Committee Member");
+      expect(signupSrc).toContain("I'm an Individual");
+    });
 
   describe('Screens 37–40: Pricing, FAQs, Password Recovery & Legal Pages', () => {
     it('exports all pricing, FAQ, reset password, and legal page components', () => {

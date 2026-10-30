@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { SiteLayout } from '@/features/site/components/SiteLayout';
+import { Icon } from '@/components/ui/Icon';
 import { BuyerRegisterForm } from '../components/BuyerRegisterForm';
 import { FormDensityProvider } from '../components/FormDensity';
 import { BUYER_GLYPHS, SUPPLIER_GLYPHS } from '../components/PortalGlyphs';
@@ -34,6 +35,41 @@ import { PRODUCT_NAME, PRODUCT_PLATFORM_SUBTITLE, PRODUCT_TITLE } from '@/lib/br
  * these accounts really get created: a buyer forwards the supplier link to the
  * contractor they already use.
  */
+const ROLE_CARDS = [
+  {
+    id: 'buyer',
+    side: 'BUYER' as const,
+    buyerType: 'MSME',
+    icon: 'storefront' as const,
+    title: "I'm a Buyer",
+    subtitle: 'I need to buy goods or services for my business or organisation',
+  },
+  {
+    id: 'supplier',
+    side: 'SUPPLIER' as const,
+    buyerType: '',
+    icon: 'local_shipping' as const,
+    title: "I'm a Supplier",
+    subtitle: 'I want to sell products or services and grow my commercial leads',
+  },
+  {
+    id: 'committee',
+    side: 'BUYER' as const,
+    buyerType: 'COMMUNITY',
+    icon: 'how_to_vote' as const,
+    title: "I'm a Committee Member",
+    subtitle: 'I will help evaluate proposals and vote on community purchases',
+  },
+  {
+    id: 'individual',
+    side: 'BUYER' as const,
+    buyerType: 'INDIVIDUAL',
+    icon: 'person' as const,
+    title: "I'm an Individual",
+    subtitle: 'I am buying for myself, my property, or a small group',
+  },
+];
+
 export function SignupPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
@@ -95,6 +131,51 @@ export function SignupPage() {
                       </div>
                     </div>
                   )}
+
+                                    {/* Screen 2: 4-Card Role Selector */}
+                  <div className="space-y-2 mb-4">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block">
+                      Choose Your Role:
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" data-testid="role-selection-grid">
+                      {ROLE_CARDS.map((card) => {
+                        const active =
+                          card.side === side &&
+                          (card.side === 'SUPPLIER' || (buyerType ? card.buyerType === buyerType : card.id === 'buyer'));
+                        return (
+                          <button
+                            key={card.id}
+                            type="button"
+                            onClick={() => {
+                              chooseSide(card.side);
+                              if (card.buyerType) setBuyerType(card.buyerType);
+                            }}
+                            className={`text-left rounded-xl border p-2.5 transition flex items-start gap-2.5 cursor-pointer ${
+                              active
+                                ? 'border-primary bg-primary/10 shadow-2xs ring-1 ring-primary'
+                                : 'border-border/80 bg-card hover:bg-muted/40'
+                            }`}
+                          >
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                              }`}
+                            >
+                              <Icon name={card.icon} size={18} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className={`text-xs font-bold block ${active ? 'text-primary' : 'text-foreground'}`}>
+                                {card.title}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5 line-clamp-2">
+                                {card.subtitle}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   {/*
                     The same segmented switch the sign-in form uses to choose a
