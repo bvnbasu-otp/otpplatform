@@ -114,6 +114,36 @@ const CATEGORY_PROFILES: Record<string, CategoryEvaluationProfile> = {
     advancedCriteriaCodes: ['technical_fit', 'experience', 'supplier_rating'],
     rationale: 'Civil and construction contracts emphasize material specifications, structural safety standards, and proven past execution experience.',
   },
+  PLUMBING: {
+    categoryCode: 'PLUMBING',
+    categoryName: 'Plumbing & Sanitary Systems',
+    description: 'Pipes, fittings, valves, taps, pumps, sanitaryware, and drainage solutions.',
+    suggestedWeights: {
+      price: 40,
+      delivery_time: 25,
+      warranty: 20,
+      technical_fit: 15,
+    },
+    recommendedCriteriaCodes: ['price', 'delivery_time', 'warranty', 'technical_fit'],
+    essentialCriteriaCodes: ['price', 'delivery_time', 'warranty'],
+    advancedCriteriaCodes: ['technical_fit', 'supplier_rating', 'certification'],
+    rationale: 'Plumbing purchases balance quality fitting standards (pressure ratings, material grade) with warranty and delivery speed.',
+  },
+  HVAC: {
+    categoryCode: 'HVAC',
+    categoryName: 'HVAC & Refrigeration',
+    description: 'Air conditioners, commercial chillers, ventilation systems, and ducting.',
+    suggestedWeights: {
+      price: 35,
+      warranty: 25,
+      delivery_time: 20,
+      technical_fit: 20,
+    },
+    recommendedCriteriaCodes: ['price', 'warranty', 'delivery_time', 'technical_fit'],
+    essentialCriteriaCodes: ['price', 'delivery_time', 'warranty'],
+    advancedCriteriaCodes: ['technical_fit', 'response_time', 'supplier_rating'],
+    rationale: 'HVAC procurement prioritizes energy ratings (ISEER), warranty coverage, and reliable installation turnaround.',
+  },
   SERVICES: {
     categoryCode: 'SERVICES',
     categoryName: 'Facility Management & Maintenance Services',
@@ -220,6 +250,12 @@ export function getCategoryEvaluationProfile(
 
   if (query.includes('ELEC') || query.includes('POWER') || query.includes('MOTOR') || query.includes('WIRE')) {
     return CATEGORY_PROFILES.ELECTRICAL!;
+  }
+  if (query.includes('PLUMB') || query.includes('SANITAR') || query.includes('TAP') || query.includes('PIPE')) {
+    return CATEGORY_PROFILES.PLUMBING!;
+  }
+  if (query.includes('HVAC') || query.includes('REFRIGERAT') || query.includes('AIR_CON') || query.includes('CHILLER')) {
+    return CATEGORY_PROFILES.HVAC!;
   }
   if (query.includes('CIVIL') || query.includes('BUILD') || query.includes('CONSTRUCT') || query.includes('CEMENT') || query.includes('STEEL')) {
     return CATEGORY_PROFILES.CIVIL!;

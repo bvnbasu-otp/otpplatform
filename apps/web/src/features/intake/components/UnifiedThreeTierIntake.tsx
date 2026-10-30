@@ -128,6 +128,9 @@ export function UnifiedThreeTierIntake({
   const [isStage1Expanded, setIsStage1Expanded] = useState(true);
   const [isStage2Expanded, setIsStage2Expanded] = useState(false);
   const [isStage3Expanded, setIsStage3Expanded] = useState(false);
+  const [buyingMode, setBuyingMode] = useState<'BUY_ITEM' | 'GET_QUOTES' | 'PLAN_PROCUREMENT'>('BUY_ITEM');
+  const [preferredBrand, setPreferredBrand] = useState<string>('');
+  const [installationRequired, setInstallationRequired] = useState<boolean>(false);
 
   // Form State: Stage 3 Sourcing Controls
   const [sourcingMode, setSourcingMode] = useState<SourcingMode>(
@@ -576,7 +579,12 @@ export function UnifiedThreeTierIntake({
       requirementMode: (mode as RequirementMode) || null,
       quantity,
       unit: unit.trim() || null,
-      attributes,
+      attributes: {
+        ...attributes,
+        ...(preferredBrand ? { preferred_brand: preferredBrand } : {}),
+        installation_required: installationRequired,
+        buying_experience_mode: buyingMode,
+      },
       quality: {
         warrantyMonths,
         certifications: certifications
@@ -766,6 +774,27 @@ export function UnifiedThreeTierIntake({
         selectedAddressId={selectedAddressId}
         onSelectSavedAddress={handleSelectSavedAddress}
         isIndividual={isIndividual}
+        buyingMode={buyingMode}
+        onBuyingModeChange={(mode) => {
+          setBuyingMode(mode);
+          if (mode === 'BUY_ITEM') {
+            setMinQuotes(2);
+            setDeadlineDays(3);
+            setIsStage3Expanded(false);
+          } else if (mode === 'GET_QUOTES') {
+            setMinQuotes(3);
+            setDeadlineDays(7);
+          } else if (mode === 'PLAN_PROCUREMENT') {
+            setMinQuotes(3);
+            setDeadlineDays(14);
+            setIsStage2Expanded(true);
+            setIsStage3Expanded(true);
+          }
+        }}
+        preferredBrand={preferredBrand}
+        onPreferredBrandChange={setPreferredBrand}
+        installationRequired={installationRequired}
+        onInstallationRequiredChange={setInstallationRequired}
       />
 
       {/* Stage 2: Technical Specifications & BoQ */}
@@ -865,7 +894,11 @@ export function UnifiedThreeTierIntake({
             className="min-h-[48px] font-extrabold text-sm shadow-md mobile-touch-target w-full sm:w-auto"
             data-testid="publish-requirement-btn"
           >
-            Submit Request &amp; Get Quotes →
+            {buyingMode === 'BUY_ITEM'
+              ? 'Get Supplier Offers for this Item →'
+              : buyingMode === 'GET_QUOTES'
+              ? 'Request Quotes &amp; Compare Offers →'
+              : 'Submit Procurement &amp; Discover Suppliers →'}
           </Button>
         </div>
       </div>

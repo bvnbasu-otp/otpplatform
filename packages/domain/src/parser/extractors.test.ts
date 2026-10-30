@@ -45,6 +45,49 @@ describe('extractQuantity', () => {
     });
   });
 
+  it('extracts everyday individual product purchases with word numbers and countable nouns', () => {
+    expect(extractQuantity('I need one ceiling fan for my bedroom')?.value).toEqual({
+      quantity: 1,
+      unit: 'PCS',
+    });
+    expect(extractQuantity('Two ceiling fans')?.value).toEqual({
+      quantity: 2,
+      unit: 'PCS',
+    });
+    expect(extractQuantity('Five switches for common area')?.value).toEqual({
+      quantity: 5,
+      unit: 'PCS',
+    });
+    expect(extractQuantity('One bathroom tap')?.value).toEqual({
+      quantity: 1,
+      unit: 'PCS',
+    });
+    expect(extractQuantity('One water purifier')?.value).toEqual({
+      quantity: 1,
+      unit: 'PCS',
+    });
+    expect(extractQuantity('One AC for meeting room')?.value).toEqual({
+      quantity: 1,
+      unit: 'PCS',
+    });
+    expect(extractQuantity('One office chair')?.value).toEqual({
+      quantity: 1,
+      unit: 'PCS',
+    });
+    expect(extractQuantity('One CCTV camera')?.value).toEqual({
+      quantity: 1,
+      unit: 'PCS',
+    });
+    expect(extractQuantity('Buy 20 LED panel lights')?.value).toEqual({
+      quantity: 20,
+      unit: 'PCS',
+    });
+    expect(extractQuantity('two pairs of gloves')?.value).toEqual({
+      quantity: 2,
+      unit: 'PAIR',
+    });
+  });
+
   it('returns nothing rather than inventing a number', () => {
     expect(extractQuantity('need this repaired quickly')).toBeNull();
   });

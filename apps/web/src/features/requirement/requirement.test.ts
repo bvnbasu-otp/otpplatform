@@ -1,3 +1,4 @@
+import { deriveCategoryFromText } from './api/rfq-lifecycle';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchUserOrganization, fetchOrganizationRequirements } from './api/requirements';
 import { supabase } from '@/lib/supabase';
@@ -315,5 +316,14 @@ describe('Requirement Feature Module Tests', () => {
     it('verifies single-click sealed RFQ publishing action flow', () => {
       expect(true).toBe(true);
     });
+  });
+});
+
+describe('deriveCategoryFromText', () => {
+  it('classifies plumbing and hvac independently into canonical 17 categories', () => {
+    expect(deriveCategoryFromText('Need 1 bathroom tap quarter turn')).toBe('Plumbing & Sanitary');
+    expect(deriveCategoryFromText('Need 3 split AC 1.5 ton')).toBe('HVAC & Refrigeration');
+    expect(deriveCategoryFromText('Ceiling fan 1200mm')).toBe('Electrical & Power');
+    expect(deriveCategoryFromText('Office chairs and workstations')).toBe('Property & Facility Management');
   });
 });

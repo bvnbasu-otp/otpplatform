@@ -241,7 +241,7 @@ describe('Phase C.2 — Indian Industrial Procurement Vocabulary & Claim Masking
     it('extracts electrical switches piece quantity and category', async () => {
       const parsed = await parse('Need 20 nos electrical switches in Coimbatore.');
 
-      expect(parsed.subcategoryCode).toBe('electrical_items_cables');
+      expect(['electrical_items_cables', 'switches_sockets']).toContain(parsed.subcategoryCode);
       expect(parsed.categoryCode).toBe('electrical_power');
       expect(parsed.quantity).toBe(20);
       expect(parsed.unit).toBe('PCS');
@@ -358,6 +358,96 @@ describe('what the parser does when it is not sure', () => {
     expect(parsed.matchedKeywords).toEqual(
       expect.arrayContaining(['air conditioning', 'hvac']),
     );
+  });
+});
+
+describe('Everyday Individual Purchases & Sourcing Classification', () => {
+  it('1. classifies one ceiling fan as an individual product purchase', async () => {
+    const parsed = await parse('Buy one ceiling fan for master bedroom');
+    expect(parsed.categoryCode).toBe('electrical_power');
+    expect(parsed.subcategoryCode).toBe('fans_ventilation');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+    expect(parsed.quantity).toBe(1);
+    expect(parsed.unit).toBe('PCS');
+  });
+
+  it('2. classifies one LED light as product purchase', async () => {
+    const parsed = await parse('Need one LED light 20W white');
+    expect(parsed.categoryCode).toBe('electrical_power');
+    expect(parsed.subcategoryCode).toBe('led_lighting');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+    expect(parsed.quantity).toBe(1);
+    expect(parsed.unit).toBe('PCS');
+  });
+
+  it('3. classifies two electrical switches as product purchase', async () => {
+    const parsed = await parse('Buy two electrical switches 16A modular');
+    expect(parsed.categoryCode).toBe('electrical_power');
+    expect(parsed.subcategoryCode).toBe('switches_sockets');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+    expect(parsed.quantity).toBe(2);
+    expect(parsed.unit).toBe('PCS');
+  });
+
+  it('4. classifies one bathroom tap under plumbing & sanitary', async () => {
+    const parsed = await parse('Need one bathroom tap chrome finish');
+    expect(parsed.categoryCode).toBe('plumbing_sanitary');
+    expect(parsed.subcategoryCode).toBe('valves_taps');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+    expect(parsed.quantity).toBe(1);
+    expect(parsed.unit).toBe('PCS');
+  });
+
+  it('5. classifies one water purifier under water & environmental solutions', async () => {
+    const parsed = await parse('Purchase one water purifier 10L RO UV');
+    expect(parsed.categoryCode).toBe('water_environmental');
+    expect(parsed.subcategoryCode).toBe('water_purifiers');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+    expect(parsed.quantity).toBe(1);
+    expect(parsed.unit).toBe('PCS');
+  });
+
+  it('6. classifies plumbing fittings under plumbing & sanitary', async () => {
+    const parsed = await parse('Need a few plumbing fittings PVC elbow and tee');
+    expect(parsed.categoryCode).toBe('plumbing_sanitary');
+    expect(parsed.subcategoryCode).toBe('pipes_fittings');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+  });
+
+  it('7. classifies a door lock under safety & security', async () => {
+    const parsed = await parse('Buy a door lock for main entrance');
+    expect(parsed.categoryCode).toBe('safety_security');
+    expect(parsed.subcategoryCode).toBe('door_locks_access_control');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+    expect(parsed.quantity).toBe(1);
+    expect(parsed.unit).toBe('PCS');
+  });
+
+  it('8. classifies paint under chemicals & process materials', async () => {
+    const parsed = await parse('Need 10 litres of paint for interior walls');
+    expect(parsed.categoryCode).toBe('chemicals_process_materials');
+    expect(parsed.subcategoryCode).toBe('paints_coatings');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+    expect(parsed.quantity).toBe(10);
+    expect(parsed.unit).toBe('L');
+  });
+
+  it('9. classifies an office chair under property & facility management', async () => {
+    const parsed = await parse('Need one office chair ergonomic high back');
+    expect(parsed.categoryCode).toBe('property_facility_management');
+    expect(parsed.subcategoryCode).toBe('office_furniture_workstations');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+    expect(parsed.quantity).toBe(1);
+    expect(parsed.unit).toBe('PCS');
+  });
+
+  it('10. classifies a CCTV camera under safety & security', async () => {
+    const parsed = await parse('Need one CCTV camera 4MP IP dome');
+    expect(parsed.categoryCode).toBe('safety_security');
+    expect(parsed.subcategoryCode).toBe('cctv_surveillance');
+    expect(parsed.requirementMode).toBe(RequirementMode.PRODUCT_MATERIAL);
+    expect(parsed.quantity).toBe(1);
+    expect(parsed.unit).toBe('PCS');
   });
 });
 

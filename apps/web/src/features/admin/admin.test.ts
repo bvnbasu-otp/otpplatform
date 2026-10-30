@@ -1,3 +1,4 @@
+import { CANONICAL_CATEGORIES } from './components/AdminSupplierNetworkConsole';
 import { describe, it, expect } from 'vitest';
 import { normalizeAdminUserItem, normalizeAdminOrgItem } from './api/admin-ops';
 import { MASTER_MODULE_INVENTORY } from './components/AdminTestSuiteRunner';
@@ -575,5 +576,12 @@ describe('Super Admin & Ops Console Data Layer', () => {
     expect(mockDryRun.statutoryRetention.auditEvents).toBe(142);
     expect(mockDryRun.statutoryRetention.verifiedSuppliers).toBe(104);
     expect(mockDryRun.statutoryRetention.canonicalCategories).toBe(16);
+  });
+  it('enforces canonical 17 categories in AdminSupplierNetworkConsole', () => {
+    expect(CANONICAL_CATEGORIES).toHaveLength(17);
+    expect(CANONICAL_CATEGORIES).toContain('Plumbing & Sanitary');
+    expect(CANONICAL_CATEGORIES).toContain('HVAC & Refrigeration');
+    expect(CANONICAL_CATEGORIES).toContain('General / Miscellaneous / Other');
+    expect(CANONICAL_CATEGORIES).toContain('Construction & Civil Infrastructure');
   });
 });

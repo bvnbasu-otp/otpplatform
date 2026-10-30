@@ -40,7 +40,65 @@ const QUANTITY_UNITS = new Set([
   'BOX',
   'BAG',
   'LPH',
+  'PAIR',
+  'PACK',
+  'QUINTAL',
+  'DRUM',
+  'BARREL',
+  'CARTON',
+  'ROLL',
+  'SHEET',
 ]);
+
+const WORD_NUMBERS: Record<string, number> = {
+  a: 1,
+  an: 1,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  twenty: 20,
+  fifty: 50,
+  hundred: 100,
+};
+
+const RATING_UNITS_SET = new Set([
+  'hp',
+  'kva',
+  'kw',
+  'v',
+  'volt',
+  'volts',
+  'a',
+  'amp',
+  'amps',
+  'mm',
+  'cm',
+  'inch',
+  'inches',
+]);
+
+const COUNTABLE_ITEMS_REGEX =
+  '(?:(?:bldc|high\\s*speed|ceiling|exhaust|pedestal|wall|ventilation)\\s+)*fans?|' +
+  '(?:(?:led|panel|tube|down|surface|flood|street|batten)\\s+)*(?:lights?|bulbs?)|' +
+  '(?:(?:electrical|modular|light)\\s+)*(?:switches?|sockets?|switchboards?)|' +
+  '(?:(?:bathroom|bib|angle|pillar|mixer|water)\\s+)*(?:taps?|faucets?|valves?)|' +
+  'wash\\s*basins?|basins?|sinks?|water\\s*pumps?|pumps?|' +
+  '(?:(?:water|ro|uv|domestic|commercial)\\s+)*(?:purifiers?|filters?)|ro\\s*systems?|' +
+  '(?:(?:split|window|cassette|inverter|ductable)\\s+)*(?:air\\s*conditioners?|acs?\\b)|' +
+  '(?:(?:office|ergonomic|executive|mesh)\\s+)*(?:chairs?|desks?|workstations?|tables?)|' +
+  '(?:(?:cctv|surveillance|security|ip|dome|bullet)\\s+)*cameras?|' +
+  '(?:(?:door|smart|biometric|digital|electronic)\\s+)*locks?|geysers?|water\\s*heaters?|' +
+  'refrigerators?|fridges?|washing\\s*machines?|treadmills?|inverters?|generators?|dg\\s*sets?|' +
+  'laptops?|computers?|printers?';
 
 /**
  * "2000 kg", "5,000 kgs", "500 pieces".
@@ -57,9 +115,75 @@ export function extractQuantity(
     u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s*'),
   ).join('|');
 
+  const wordNumbersPattern = Object.keys(WORD_NUMBERS)
+    .sort((a, b) => b.length - a.length)
+    .join('|');
+
+  // 1. Word number + countable everyday product: e.g. "one ceiling fan", "two switches", "one bathroom tap"
+  // Prioritized to prevent capacity/specs (e.g. "one water purifier 10L", "two switches 16A") from masking item count.
+  const wordItemRegex = new RegExp(
+    `(?:^|\\s|\\b)(${wordNumbersPattern})\\s+(${COUNTABLE_ITEMS_REGEX})(?:\\b|\\s|$|[.,!?])`,
+    'iu',
+  );
+  const wordItemMatch = wordItemRegex.exec(text);
+  if (wordItemMatch) {
+    const rawWord = wordItemMatch[1]?.toLowerCase().trim();
+    const qty = rawWord ? WORD_NUMBERS[rawWord] : undefined;
+    if (qty !== undefined) {
+      return {
+        value: { quantity: qty, unit: 'PCS' },
+        evidence: wordItemMatch[0].trim(),
+      };
+    }
+  }
+
+  // 2. Word number + recognized unit: e.g. "two pieces", "five boxes", "two pairs"
+  const wordNumUnitRegex = new RegExp(
+    `(?:^|\\s|\\b)(${wordNumbersPattern})\\s+(${units})(?:\\b|\\s|$|[.,!?])`,
+    'iu',
+  );
+  const wordUnitMatch = wordNumUnitRegex.exec(text);
+  if (wordUnitMatch) {
+    const rawWord = wordUnitMatch[1]?.toLowerCase().trim();
+    const qty = rawWord ? WORD_NUMBERS[rawWord] : undefined;
+    const unit = normalizeUnit(wordUnitMatch[2]);
+    if (qty !== undefined && unit !== null && QUANTITY_UNITS.has(unit)) {
+      return {
+        value: { quantity: qty, unit },
+        evidence: wordUnitMatch[0].trim(),
+      };
+    }
+  }
+
+  // 3. Number + countable everyday product: e.g. "20 LED panel lights", "5 switches", "2 ceiling fans"
+  const numItemRegex = new RegExp(
+    `(?:^|\\s|\\b)${NUMBER}\\s+(${COUNTABLE_ITEMS_REGEX})(?:\\b|\\s|$|[.,!?])`,
+    'iu',
+  );
+  const numItemMatch = numItemRegex.exec(text);
+  if (numItemMatch) {
+    // Ensure the number isn't followed immediately by a rating (e.g. 12.5 HP)
+    const ratingCheck = new RegExp(
+      `(?:^|\\s|\\b)${NUMBER}\\s*([a-zA-Z]+)`,
+      'iu',
+    ).exec(text);
+    const followingToken = ratingCheck?.[2]?.toLowerCase().trim();
+    if (!followingToken || !RATING_UNITS_SET.has(followingToken)) {
+      return {
+        value: { quantity: toNumber(numItemMatch[1]), unit: 'PCS' },
+        evidence: numItemMatch[0].trim(),
+      };
+    }
+  }
+
+  // 4. Number + recognized unit: e.g. "2000 kg", "500 pieces", "4 nos"
   const pattern = new RegExp(`(?:^|\\s|\\b)${NUMBER}\\s*(${units})(?:\\b|\\s|$|[.,!?])`, 'giu');
 
   for (const match of text.matchAll(pattern)) {
+    const rawUnit = match[2]?.toLowerCase().trim();
+    if (rawUnit && RATING_UNITS_SET.has(rawUnit)) {
+      continue;
+    }
     const unit = normalizeUnit(match[2]);
     if (unit !== null && QUANTITY_UNITS.has(unit)) {
       return {
@@ -68,6 +192,7 @@ export function extractQuantity(
       };
     }
   }
+
   return null;
 }
 

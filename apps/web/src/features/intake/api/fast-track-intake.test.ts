@@ -142,3 +142,11 @@ describe('fastTrackExpressIntake validation', () => {
     expect(fastTrackExpressIntake.length).toBe(1);
   });
 });
+
+describe('everyday buying experience modes', () => {
+  it('identifies everyday individual purchasing item criteria', () => {
+    expect(resolveWordQuantity('Buy one ceiling fan 1200mm')).toBe(1);
+    expect(resolveWordQuantity('Purchase two modular switches')).toBe(2);
+    expect(resolveWordQuantity('Need one bathroom tap')).toBe(1);
+  });
+});

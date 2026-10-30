@@ -84,4 +84,15 @@ describe('supplier identity-protected RFQ mapping', () => {
     const keys = Object.keys(detail);
     expect(keys.some((k) => /buyerOrg|orgId|contact|email|phone/i.test(k))).toBe(false);
   });
+  it('maps invitations with unbundled categories and OTHER mode', () => {
+    const inv = toInvitation(row({
+      category: 'Plumbing & Sanitary',
+      subcategory: 'Valves & Taps',
+      requirement_mode: 'OTHER' as any,
+    }));
+    expect(inv.category).toBe('Plumbing & Sanitary');
+    expect(inv.subcategory).toBe('Valves & Taps');
+    expect(inv.requirementMode).toBe('OTHER');
+  });
+
 });

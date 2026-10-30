@@ -30,23 +30,25 @@ export interface AdminSupplierNetworkConsoleProps {
   onRefreshTelemetry?: () => void;
 }
 
-const CANONICAL_CATEGORIES = [
+export const CANONICAL_CATEGORIES = [
+  'Construction & Civil Infrastructure',
+  'Plumbing & Sanitary',
   'Electrical & Power',
-  'Construction & Infrastructure',
-  'Agriculture & Commodities',
-  'Chemicals & Process Materials',
-  'General / Other',
-  'Industrial Supplies & Hardware',
-  'IT, Electronics & Digital',
-  'Logistics & Transportation',
+  'HVAC & Refrigeration',
   'Machinery & Engineering',
+  'Industrial Supplies & Hardware',
+  'Chemicals & Process Materials',
+  'Textile & Apparel',
+  'Agriculture & Commodities',
   'Packaging & Printing',
-  'Professional & Skilled Services',
   'Property & Facility Management',
   'Safety & Security',
-  'Textile & Apparel',
   'Water & Environmental Solutions',
-  // Subcategory/Common Profiles
+  'IT, Electronics & Digital Systems',
+  'Logistics & Transportation',
+  'Professional & Skilled Services',
+  'General / Miscellaneous / Other',
+  // Specific Subcategory Shortcuts
   'Electrical & Automation',
   'Construction & Civil Works',
   'Plumbing & Water Systems',

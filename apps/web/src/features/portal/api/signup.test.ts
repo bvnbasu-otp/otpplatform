@@ -1,3 +1,4 @@
+import { FALLBACK_SERVICE_CATEGORIES } from './signup';
 import { describe, expect, it } from 'vitest';
 import {
   humanizeSignupError,
@@ -138,3 +139,13 @@ describe('auto-approval and 1 free RFQ credit structures', () => {
 });
 
 
+
+describe('canonical category fallbacks', () => {
+  it('supplies all 17 canonical service categories including unbundled plumbing and hvac', () => {
+    expect(FALLBACK_SERVICE_CATEGORIES).toHaveLength(17);
+    const codes = FALLBACK_SERVICE_CATEGORIES.map(c => c.code);
+    expect(codes).toContain('plumbing_sanitary');
+    expect(codes).toContain('hvac_refrigeration');
+    expect(codes).toContain('general_other');
+  });
+});

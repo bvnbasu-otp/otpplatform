@@ -195,7 +195,7 @@ export function getCanonicalOpportunityDetail(rfqId: string): SupplierRfqDetail 
     quoteDeadline: new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString(),
     buyerDisplayName: PROTECTED_BUYER_LABEL,
     buyerAnonymous: true,
-    sourcingMode: 'COMMUNITY_CONSENSUS',
+    sourcingMode: 'IDENTITY_PROTECTED',
     minQuotesRequired: 3,
     category: isElectrical ? 'Electrical' : 'Building',
     subcategory: isPlumbing ? 'Plumbing & Sanitary' : isElectrical ? 'Switchgear & panels' : 'General Maintenance',
@@ -207,7 +207,7 @@ export function getCanonicalOpportunityDetail(rfqId: string): SupplierRfqDetail 
       : isElectrical
       ? 'Complete inspection of main LT breaker panel, busbar tightening, replacement of burnt MCBs, and earth-resistance testing across blocks.'
       : 'Comprehensive maintenance, inspection, and repair service adhering to commercial standards with warranty.',
-    requirementMode: 'CUSTOM',
+    requirementMode: 'OTHER',
     attributes: {
       'Material / Type': isPlumbing ? 'Commercial Grade PVC (Schedule 40)' : isElectrical ? '630A 4-Pole ACB' : 'Commercial Grade',
       'Pipe Material': isPlumbing ? 'Commercial Grade PVC (Schedule 40)' : 'Standard Specification',

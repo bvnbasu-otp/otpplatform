@@ -54,12 +54,33 @@ export interface Tier1TellOtpCardProps {
   selectedAddressId?: string | null;
   onSelectSavedAddress?: (address: BuyerAddress | null) => void;
   isIndividual?: boolean;
+  buyingMode?: 'BUY_ITEM' | 'GET_QUOTES' | 'PLAN_PROCUREMENT';
+  onBuyingModeChange?: (mode: 'BUY_ITEM' | 'GET_QUOTES' | 'PLAN_PROCUREMENT') => void;
+  preferredBrand?: string;
+  onPreferredBrandChange?: (brand: string) => void;
+  installationRequired?: boolean;
+  onInstallationRequiredChange?: (required: boolean) => void;
 }
 
 const DESCRIBE_CATEGORY_SENTINEL = '__OTP_DESCRIBE_CATEGORY__';
 const DESCRIBE_SUBCATEGORY_SENTINEL = '__OTP_DESCRIBE_SUBCATEGORY__';
 
 const SUGGESTION_CHIPS = [
+  {
+    icon: '🪭',
+    label: 'Ceiling fan',
+    text: 'Buy one 5-star BLDC ceiling fan 1200mm sweep with remote and manufacturer warranty.',
+  },
+  {
+    icon: '🚰',
+    label: 'Bathroom tap',
+    text: 'Buy one solid brass chrome-plated bathroom bib tap with ceramic disc cartridge.',
+  },
+  {
+    icon: '💧',
+    label: 'Water purifier',
+    text: 'Purchase one 10L RO UV water purifier for kitchen with installation.',
+  },
   {
     icon: '⚡',
     label: 'Borewell',
@@ -232,6 +253,12 @@ export function Tier1TellOtpCard({
   selectedAddressId = null,
   onSelectSavedAddress,
   isIndividual = false,
+  buyingMode = 'BUY_ITEM',
+  onBuyingModeChange,
+  preferredBrand = '',
+  onPreferredBrandChange,
+  installationRequired = false,
+  onInstallationRequiredChange,
 }: Tier1TellOtpCardProps) {
   const [showVoiceDictation, setShowVoiceDictation] = useState(false);
   const [isCustomTerms, setIsCustomTerms] = useState(false);
@@ -499,47 +526,119 @@ export function Tier1TellOtpCard({
         </div>
       ) : (
         <div className="space-y-4" id="stage-1-scope-body">
-        {/* 0. Primary Intent Fork: Buy Products vs Hire a Service */}
-        <div className="space-y-1.5 p-3 rounded-2xl bg-muted/30 border border-border/80">
+        {/* 0. Customer Buying Experience Selection (Prompt Section 5.2) */}
+        <div className="space-y-1.5 p-3 rounded-2xl bg-muted/30 border border-border/80" data-testid="customer-buying-experience-selector">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-foreground">What do you want to do today?</span>
-            <span className="text-[10px] text-muted-foreground">Pick one to simplify your options</span>
+            <span className="text-xs font-bold text-foreground">Choose your buying experience:</span>
+            <span className="text-[10px] text-muted-foreground">Tailored for your purchase size</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               type="button"
-              data-testid="fork-buy-products"
-              onClick={() => onModeChange(RequirementMode.PRODUCT_MATERIAL)}
-              className={`p-3 rounded-xl border text-left transition flex items-center gap-2.5 cursor-pointer min-h-[52px] ${
-                mode === RequirementMode.PRODUCT_MATERIAL || mode === RequirementMode.COMMODITY_TRADING
+              data-testid="buying-mode-buy-item"
+              onClick={() => {
+                onBuyingModeChange?.('BUY_ITEM');
+                onModeChange(RequirementMode.PRODUCT_MATERIAL);
+              }}
+              className={`p-2.5 rounded-xl border text-left transition flex items-start gap-2.5 cursor-pointer min-h-[52px] ${
+                buyingMode === 'BUY_ITEM'
                   ? 'border-primary bg-primary/10 ring-2 ring-primary/30 text-primary font-bold shadow-xs'
                   : 'border-border/80 bg-card hover:bg-muted text-foreground'
               }`}
             >
-              <span className="text-2xl shrink-0">📦</span>
+              <span className="text-xl shrink-0">🛍️</span>
               <div className="min-w-0">
-                <div className="text-xs sm:text-sm font-bold truncate">Buy Products</div>
-                <div className="text-[10px] text-muted-foreground truncate">Goods, materials, supplies</div>
+                <div className="text-xs font-bold truncate">Buy an item</div>
+                <div className="text-[10px] text-muted-foreground leading-tight">1 product / everyday purchase</div>
               </div>
             </button>
             <button
               type="button"
-              data-testid="fork-hire-service"
-              onClick={() => onModeChange(RequirementMode.SERVICE)}
-              className={`p-3 rounded-xl border text-left transition flex items-center gap-2.5 cursor-pointer min-h-[52px] ${
-                mode !== RequirementMode.PRODUCT_MATERIAL && mode !== RequirementMode.COMMODITY_TRADING && mode !== ''
+              data-testid="buying-mode-get-quotes"
+              onClick={() => onBuyingModeChange?.('GET_QUOTES')}
+              className={`p-2.5 rounded-xl border text-left transition flex items-start gap-2.5 cursor-pointer min-h-[52px] ${
+                buyingMode === 'GET_QUOTES'
                   ? 'border-primary bg-primary/10 ring-2 ring-primary/30 text-primary font-bold shadow-xs'
                   : 'border-border/80 bg-card hover:bg-muted text-foreground'
               }`}
             >
-              <span className="text-2xl shrink-0">🔧</span>
+              <span className="text-xl shrink-0">📋</span>
               <div className="min-w-0">
-                <div className="text-xs sm:text-sm font-bold truncate">Hire a Service</div>
-                <div className="text-[10px] text-muted-foreground truncate">Repair, maintenance, contractor</div>
+                <div className="text-xs font-bold truncate">Get quotes</div>
+                <div className="text-[10px] text-muted-foreground leading-tight">Compare supplier offers & pricing</div>
+              </div>
+            </button>
+            <button
+              type="button"
+              data-testid="buying-mode-plan-procurement"
+              onClick={() => onBuyingModeChange?.('PLAN_PROCUREMENT')}
+              className={`p-2.5 rounded-xl border text-left transition flex items-start gap-2.5 cursor-pointer min-h-[52px] ${
+                buyingMode === 'PLAN_PROCUREMENT'
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary/30 text-primary font-bold shadow-xs'
+                  : 'border-border/80 bg-card hover:bg-muted text-foreground'
+              }`}
+            >
+              <span className="text-xl shrink-0">🏢</span>
+              <div className="min-w-0">
+                <div className="text-xs font-bold truncate">Plan a procurement</div>
+                <div className="text-[10px] text-muted-foreground leading-tight">RWA / MSME governance & project</div>
               </div>
             </button>
           </div>
         </div>
+
+        {/* Everyday Product Sourcing Options */}
+        {buyingMode === 'BUY_ITEM' && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2.5" data-testid="everyday-item-options">
+            <div className="flex items-center justify-between text-xs font-bold text-foreground">
+              <span className="flex items-center gap-1.5">
+                <span>🏷️</span> Everyday Product Preferences (Optional)
+              </span>
+              <span className="text-[10px] text-primary font-semibold">Streamlined Direct Sourcing</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                  Brand Preference (or standard equivalent)
+                </label>
+                <input
+                  type="text"
+                  value={preferredBrand ?? ''}
+                  onChange={(e) => onPreferredBrandChange?.(e.target.value)}
+                  placeholder="e.g. Havells, Crompton, or any standard brand"
+                  className="w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                  Installation / Fitting Needed?
+                </label>
+                <div className="flex items-center gap-3 pt-1">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs">
+                    <input
+                      type="radio"
+                      name="installToggle"
+                      checked={!installationRequired}
+                      onChange={() => onInstallationRequiredChange?.(false)}
+                      className="text-primary focus:ring-primary"
+                    />
+                    <span>Supply only</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs">
+                    <input
+                      type="radio"
+                      name="installToggle"
+                      checked={!!installationRequired}
+                      onChange={() => onInstallationRequiredChange?.(true)}
+                      className="text-primary focus:ring-primary"
+                    />
+                    <span className="font-semibold text-primary">Supply + Installation</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* 1. Natural Language Prompt + Voice & Templates Controls */}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">

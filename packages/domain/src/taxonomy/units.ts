@@ -97,6 +97,8 @@ const UNIT_ALIASES: Record<string, string> = {
   rolls: 'ROLL',
   sheet: 'SHEET',
   sheets: 'SHEET',
+  pair: 'PAIR',
+  pairs: 'PAIR',
   लीटर: 'L',
   लीटरों: 'L',
   किलो: 'KG',

@@ -291,22 +291,52 @@ export async function discoverAndInvite(
 function deriveCategoryFromText(text?: string | null): string | null {
   if (!text) return null;
   const t = text.toLowerCase();
-  if (/fan|electrical|light|wiring|cable|motor|switch|panel|power/i.test(t)) {
+  if (/plumb|tap|faucet|sanitary|wash\s*basin|drainage|pvc\s*pipe|cpvc|upvc/i.test(t)) {
+    return 'Plumbing & Sanitary';
+  }
+  if (/hvac|air\s*condition|cooling|chiller|refrigerat|split\s*ac|ductable/i.test(t)) {
+    return 'HVAC & Refrigeration';
+  }
+  if (/fan|electrical|light|wiring|cable|motor|switch|panel|power|led|inverter|generator|dg\s*set/i.test(t)) {
     return 'Electrical & Power';
   }
-  if (/steel|cement|pipe|construction|concrete|building|brick/i.test(t)) {
-    return 'Construction & Infrastructure';
+  if (/steel|cement|construction|concrete|building|brick|civil|scaffold|roofing|flooring/i.test(t)) {
+    return 'Construction & Civil Infrastructure';
   }
-  if (/safety|helmet|gloves|harness|jacket|fire/i.test(t)) {
+  if (/safety|helmet|gloves|harness|jacket|fire|cctv|surveillance|door\s*lock|access\s*control/i.test(t)) {
     return 'Safety & Security';
   }
-  if (/packaging|box|corrugated|tape|pallet/i.test(t)) {
+  if (/packaging|box|corrugated|tape|pallet|carton|label|printing/i.test(t)) {
     return 'Packaging & Printing';
   }
-  if (/laptop|computer|server|software|digital|cctv/i.test(t)) {
-    return 'IT, Electronics & Digital';
+  if (/laptop|computer|server|software|digital|networking|router/i.test(t)) {
+    return 'IT, Electronics & Digital Systems';
   }
-  if (/pump|valve|bearing|tool|hardware/i.test(t)) {
+  if (/machine\s*tool|cnc|lathe|milling|press|machinery|spares/i.test(t)) {
+    return 'Machinery & Engineering';
+  }
+  if (/chemical|paint|solvent|coating|lubricant|oil|grease|primer/i.test(t)) {
+    return 'Chemicals & Process Materials';
+  }
+  if (/textile|yarn|fabric|garment|uniform|workwear|cotton/i.test(t)) {
+    return 'Textile & Apparel';
+  }
+  if (/grain|pulse|commodity|seed|fertiliser|fertilizer|produce|turmeric/i.test(t)) {
+    return 'Agriculture & Commodities';
+  }
+  if (/furniture|housekeeping|facility|cleaning|workstation|office\s*chair|desk/i.test(t)) {
+    return 'Property & Facility Management';
+  }
+  if (/freight|transport|logistics|truck|courier|warehousing/i.test(t)) {
+    return 'Logistics & Transportation';
+  }
+  if (/water\s*purifier|ro\s*plant|borewell|water\s*treatment|stp|etp/i.test(t)) {
+    return 'Water & Environmental Solutions';
+  }
+  if (/electrician|technician|consultant|audit|architect|legal|professional/i.test(t)) {
+    return 'Professional & Skilled Services';
+  }
+  if (/pump|valve|bearing|tool|hardware|fastener|screw|bolt/i.test(t)) {
     return 'Industrial Supplies & Hardware';
   }
   return null;
