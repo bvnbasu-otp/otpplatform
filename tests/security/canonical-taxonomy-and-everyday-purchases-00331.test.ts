@@ -66,5 +66,7 @@ describe('Migration 00331: Authoritative 17-Category Taxonomy & Everyday Purchas
     expect(sql).toContain("'hvac_supply'");
     expect(sql).toContain("'valves_taps'");
     expect(sql).toContain("'air_conditioners'");
+    expect(sql).toContain("'drainage_sewage'");
+    expect(sql).toContain("'furniture_repair_polishing'");
   });
 });

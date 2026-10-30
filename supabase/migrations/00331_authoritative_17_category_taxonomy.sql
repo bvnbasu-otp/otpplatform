@@ -352,6 +352,8 @@ FROM (VALUES
   ('office_furniture_workstations', 'furniture_supply', true),
   ('home_living_furniture', 'furniture_supply', true),
   ('rwa_clubhouse_furniture', 'furniture_supply', true),
+  ('furniture_repair_polishing', 'furniture_supply', true),
+  ('drainage_sewage', 'plumbing_service', true),
   ('water_purifiers', 'water_treatment_plant', true),
   ('ro_water_systems', 'water_treatment_plant', true)
 ) AS v(sub_code, cap_code, is_primary)
