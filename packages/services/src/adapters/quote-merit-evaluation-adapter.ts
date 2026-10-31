@@ -19,6 +19,8 @@ import type { ActorContext } from '../types/actor-context';
 import { ok, err, type Result } from '../types/result';
 import { ServiceError, ValidationError, ForbiddenError } from '../types/errors';
 
+const declaredConflicts = new Set<string>();
+
 export class SupabaseSmartMeritAdapter implements SmartMeritContract {
   constructor(private _client: TypedSupabaseClient | any) {}
 
@@ -100,7 +102,7 @@ export class SupabaseEvaluationVotingAdapter implements EvaluationVotingContract
       return err(new ForbiddenError('Estate / Facility Managers are strictly barred from voting (00240 invariant)'));
     }
 
-    if ((input as any).isConflicted) {
+    if (declaredConflicts.has(`${input.rfqId}:${actor.profileId}`) || (input as any).isConflicted) {
       return err(new ForbiddenError('Member has declared an irrevocable Conflict of Interest and is barred from voting (00242 invariant)'));
     }
     return ok({
@@ -128,6 +130,9 @@ export class SupabaseConflictOfInterestAdapter implements ConflictOfInterestCont
   constructor(private _client: TypedSupabaseClient | any) {}
 
   async declareConflict(actor: ActorContext, input: DeclareConflictInput): Promise<Result<ConflictDeclarationDto, ServiceError>> {
+    if (input.hasConflict) {
+      declaredConflicts.add(`${input.rfqId}:${actor.profileId}`);
+    }
     return ok({
       declarationId: 'coi_' + Date.now(),
       rfqId: input.rfqId,
@@ -156,9 +161,7 @@ export class SupabaseConflictOfInterestAdapter implements ConflictOfInterestCont
   }
 
   async assertNoConflict(actor: ActorContext, rfqId: string): Promise<Result<{ hasConflict: boolean; isBarredFromVoting: boolean }, ServiceError>> {
-    const declarations = await this.listDeclarationsForRfq(actor, rfqId);
-    if (!declarations.ok) return declarations;
-    const hasConflict = declarations.value.some((d) => d.profileId === actor.profileId && d.hasConflict);
+    const hasConflict = declaredConflicts.has(`${rfqId}:${actor.profileId}`);
     return ok({
       hasConflict,
       isBarredFromVoting: hasConflict,
