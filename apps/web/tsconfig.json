@@ -9,7 +9,7 @@
     "paths": {
       "@/*": ["src/*"],
       "@otp/domain": ["../../packages/domain/src/index.ts"],
-      "@otp/services": ["../../packages/services/src/index.ts"],
+      "@otp/services": ["../../packages/services/src/client.ts"],
       "@otp/services/*": ["../../packages/services/src/*"],
       "@otp/database": ["../../packages/database/src/index.ts"],
       "@otp/messaging": ["../../supabase/functions/_shared/messaging/index.ts"]

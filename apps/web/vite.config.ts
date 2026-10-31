@@ -64,7 +64,7 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, 'src'),
       '@otp/domain': resolve(__dirname, '../../packages/domain/src/index.ts'),
-      '@otp/services': resolve(__dirname, '../../packages/services/src/index.ts'),
+      '@otp/services': resolve(__dirname, '../../packages/services/src/client.ts'),
       '@otp/database': resolve(__dirname, '../../packages/database/src/index.ts'),
       '@otp/messaging': resolve(__dirname, '../../supabase/functions/_shared/messaging/index.ts'),
     },
