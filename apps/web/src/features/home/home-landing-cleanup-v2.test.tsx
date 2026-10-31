@@ -70,6 +70,7 @@ describe('Home & Landing Experience Cleanup V2 (User Points 1–5)', () => {
       'utf8',
     );
     expect(buyerDashboard).not.toContain('RECOMMENDED FOR YOU');
+    expect(buyerDashboard).toContain('Screen 9: Recommended items');
     expect(buyerDashboard).not.toContain('to="/opportunities"');
     expect(buyerDashboard).not.toContain('/opportunities?q=');
 

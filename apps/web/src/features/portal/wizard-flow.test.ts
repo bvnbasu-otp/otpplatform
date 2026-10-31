@@ -80,6 +80,7 @@ describe('X2O 10-Screen Mobile Registration & Dashboard Flow (Screens 1–10)', 
       expect(step1Src).toContain('verify_profile_verification_otp');
       expect(step1Src).toContain('signInWithOtp');
       expect(step1Src).toContain('verifyOtp');
+      expect(step1Src).toContain('contracts.identityAuth');
     });
   });
 

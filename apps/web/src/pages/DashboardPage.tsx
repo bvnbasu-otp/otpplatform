@@ -253,7 +253,7 @@ export function DashboardPage() {
         </Link>
       </div>
 
-      {/* Screen 9: RECOMMENDED FOR YOU (Matching Approved Concept) */}
+      {/* Screen 9: Recommended items (Matching Approved Concept) */}
       <div className="space-y-2 pt-1" data-testid="screen-9-recommended">
         <div className="flex items-center justify-between px-0.5">
           <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground">

@@ -16,6 +16,10 @@ export interface WizardStep1WelcomeProps {
 }
 
 export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
+  // Verification channels support:
+  // - WHATSAPP / EMAIL dispatch via contracts or invokeEdgeFunction ('otp-dispatch')
+  // - Supabase auth fallback via signInWithOtp and verifyOtp
+  // - Profile verification RPC: verify_profile_verification_otp
   const contracts = useContracts();
   const [channel, setChannel] = useState<VerificationChannel>('WHATSAPP');
   const [phoneRaw, setPhoneRaw] = useState('');
