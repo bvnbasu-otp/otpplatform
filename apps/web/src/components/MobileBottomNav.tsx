@@ -129,20 +129,22 @@ export function MobileBottomNav() {
               <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t(homeTab.label, homeTab.label)}</span>
             </NavLink>
 
-            {/* ITEM 2: OPPORTUNITIES (Screen 9) */}
-            <NavLink
-              to="/opportunities"
-              className={() =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
-                  pathname.startsWith('/opportunities')
-                    ? 'text-primary font-bold'
-                    : 'text-muted-foreground hover:text-foreground font-medium'
-                }`
-              }
-            >
-              <Icon name="explore" size={22} filled={pathname.startsWith('/opportunities')} />
-              <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Opportunities', 'Opportunities')}</span>
-            </NavLink>
+            {/* ITEM 2: OPPORTUNITIES (Only visible for suppliers) */}
+            {isSupplier && (
+              <NavLink
+                to="/opportunities"
+                className={() =>
+                  `flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-150 active:scale-95 mobile-touch-target min-h-[48px] ${
+                    pathname.startsWith('/opportunities')
+                      ? 'text-primary font-bold'
+                      : 'text-muted-foreground hover:text-foreground font-medium'
+                  }`
+                }
+              >
+                <Icon name="explore" size={22} filled={pathname.startsWith('/opportunities')} />
+                <span className="text-[10px] mt-0.5 tracking-tight font-semibold">{t('Opportunities', 'Opportunities')}</span>
+              </NavLink>
+            )}
 
             {/* ITEM 3: ORDERS / HISTORY */}
             <NavLink

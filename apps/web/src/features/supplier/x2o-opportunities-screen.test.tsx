@@ -16,4 +16,16 @@ describe('X2O Screen 10 Opportunities and Details', () => {
     expect(plumbing?.title).toBe('Plumbing Services');
     expect(plumbing?.category).toBe('Building');
   });
+
+  it('contains supplier radar scope canonical opportunities for default trades', () => {
+    const hvac = CANONICAL_OPPORTUNITIES.find((o) => o.id === 'opp-hvac-01');
+    expect(hvac).toBeDefined();
+    expect(hvac?.title).toContain('HVAC');
+    expect(hvac?.category).toBe('HVAC Repair & Maintenance');
+
+    const motor = CANONICAL_OPPORTUNITIES.find((o) => o.id === 'opp-motor-01');
+    expect(motor).toBeDefined();
+    expect(motor?.title).toContain('Motor');
+    expect(motor?.category).toBe('Motor Rewinding & Servicing');
+  });
 });

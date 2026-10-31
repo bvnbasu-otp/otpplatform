@@ -1,8 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useAuth } from '@/features/auth';
+import { useRoleContext } from '@/features/roles';
+import { useSupplierRadarCapabilities } from '../hooks/use-supplier-radar';
+import { SupplierCapabilityModal } from '../components/SupplierCapabilityModal';
 
 export interface OpportunityItem {
   id: string;
@@ -22,6 +25,54 @@ export interface OpportunityItem {
 }
 
 export const CANONICAL_OPPORTUNITIES: OpportunityItem[] = [
+  {
+    id: 'opp-hvac-01',
+    title: 'HVAC Chilled Water System Overhaul',
+    clientName: 'Tech Park Tower B',
+    scopeType: 'Services',
+    category: 'HVAC Repair & Maintenance',
+    daysLeft: 6,
+    isOpen: true,
+    estimatedValue: '₹3,50,000 – ₹7,00,000',
+    quantity: '2 Chillers',
+    timeline: 'Within 7 days',
+    location: 'Bengaluru',
+    suppliersCount: 4,
+    thumbnailIcon: 'ac_unit',
+    thumbnailBg: 'bg-cyan-500/10 text-cyan-600',
+  },
+  {
+    id: 'opp-electrical-plumbing-02',
+    title: 'Electrical & Plumbing',
+    clientName: 'Sunrise Community Assn.',
+    scopeType: 'Goods',
+    category: 'Electrical',
+    daysLeft: 5,
+    isOpen: true,
+    estimatedValue: '₹1,50,000 – ₹3,00,000',
+    quantity: 'Lot (Complete Spares)',
+    timeline: 'Within 5 days',
+    location: 'Bengaluru',
+    suppliersCount: 8,
+    thumbnailIcon: 'electrical_services',
+    thumbnailBg: 'bg-amber-500/10 text-amber-600',
+  },
+  {
+    id: 'opp-motor-01',
+    title: 'LT Motor Rewinding & Servicing',
+    clientName: 'Apex Manufacturing, Peenya',
+    scopeType: 'Services',
+    category: 'Motor Rewinding & Servicing',
+    daysLeft: 4,
+    isOpen: true,
+    estimatedValue: '₹1,20,000 – ₹2,50,000',
+    quantity: '15 HP Motor x 4',
+    timeline: 'Within 4 days',
+    location: 'Bengaluru',
+    suppliersCount: 5,
+    thumbnailIcon: 'sync',
+    thumbnailBg: 'bg-blue-500/10 text-blue-600',
+  },
   {
     id: 'opp-plumbing-01',
     title: 'Plumbing Services',
@@ -53,22 +104,6 @@ export const CANONICAL_OPPORTUNITIES: OpportunityItem[] = [
     suppliersCount: 10,
     thumbnailIcon: 'chair',
     thumbnailBg: 'bg-blue-500/10 text-blue-600',
-  },
-  {
-    id: 'opp-electrical-plumbing-02',
-    title: 'Electrical & Plumbing',
-    clientName: 'Sunrise Community Assn.',
-    scopeType: 'Goods',
-    category: 'Electrical',
-    daysLeft: 5,
-    isOpen: true,
-    estimatedValue: '₹1,50,000 – ₹3,00,000',
-    quantity: 'Lot (Complete Spares)',
-    timeline: 'Within 5 days',
-    location: 'Bengaluru',
-    suppliersCount: 8,
-    thumbnailIcon: 'electrical_services',
-    thumbnailBg: 'bg-amber-500/10 text-amber-600',
   },
   {
     id: 'opp-plumbing-03',
@@ -130,15 +165,39 @@ export const CANONICAL_OPPORTUNITIES: OpportunityItem[] = [
  * - Opportunity Details BottomSheet with Estimated Value, Quantity, Timeline, and Submit RFQ action
  */
 export function OpportunitiesBrowsePage() {
+  const { context } = useRoleContext();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const initialQuery = params.get('q') || '';
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [filterType, setFilterType] = useState<'All' | 'Goods' | 'Services'>('All');
   const [selectedOpportunity, setSelectedOpportunity] = useState<OpportunityItem | null>(null);
+  const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
+
+  const { profile } = useSupplierRadarCapabilities();
+
+  // Redirect buyers back to dashboard (Opportunities is only applicable for suppliers)
+  if (context.email && context.side !== 'SUPPLIER') {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const filteredOpportunities = useMemo(() => {
-    return CANONICAL_OPPORTUNITIES.filter((opp) => {
+    // 1. Radar Scope & Capabilities Filter
+    const declaredCategories = profile?.categories || [];
+    const scopeOpportunities = CANONICAL_OPPORTUNITIES.filter((opp) => {
+      if (declaredCategories.length === 0) return true;
+      const title = opp.title.toLowerCase();
+      const cat = opp.category.toLowerCase();
+      return declaredCategories.some((declaredCat) => {
+        const dLower = declaredCat.toLowerCase();
+        if (title.includes(dLower) || cat.includes(dLower)) return true;
+        const keywords = dLower.split(/[\s&,/]+/).filter((w) => w.length > 2 && !['and', 'the', 'for', 'repair', 'hardware'].includes(w));
+        return keywords.some((k) => title.includes(k) || cat.includes(k));
+      });
+    });
+
+    // 2. Search & Scope Type Filter
+    return scopeOpportunities.filter((opp) => {
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         opp.title.toLowerCase().includes(q) ||
@@ -149,7 +208,7 @@ export function OpportunitiesBrowsePage() {
         filterType === 'All' || opp.scopeType === filterType;
       return matchesSearch && matchesType;
     });
-  }, [searchQuery, filterType]);
+  }, [profile?.categories, searchQuery, filterType]);
 
   return (
     <div
@@ -175,6 +234,32 @@ export function OpportunitiesBrowsePage() {
           </p>
         </div>
       </header>
+
+      {/* 2. Active Radar Scope & Capabilities Banner */}
+      <div
+        className="rounded-2xl bg-gradient-to-r from-primary/15 via-primary/10 to-card border border-primary/25 p-3.5 flex items-center justify-between gap-3 shadow-2xs"
+        data-testid="radar-scope-banner"
+      >
+        <div className="space-y-0.5 min-w-0">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-primary">
+            <Icon name="radar" size={14} />
+            <span>Radar Scope Active</span>
+          </span>
+          <p className="text-xs font-bold text-foreground truncate">
+            {profile.categories.length} {profile.categories.length === 1 ? 'Trade Category' : 'Trade Categories'} Covered
+          </p>
+          <p className="text-[11px] text-muted-foreground truncate">
+            {profile.baseCity} · {profile.radiusKm} km Radius
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCapabilityModalOpen(true)}
+          className="min-h-[40px] px-3.5 py-1.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-foreground text-xs font-bold shadow-2xs active:scale-95 transition shrink-0 cursor-pointer"
+        >
+          Edit Scope ⚙️
+        </button>
+      </div>
 
       {/* 2. Screen 10 Search Bar */}
       <div className="relative">
@@ -344,6 +429,12 @@ export function OpportunitiesBrowsePage() {
           </div>
         </BottomSheet>
       )}
+
+      {/* Quick Capability Editor Modal */}
+      <SupplierCapabilityModal
+        open={isCapabilityModalOpen}
+        onClose={() => setIsCapabilityModalOpen(false)}
+      />
     </div>
   );
 }

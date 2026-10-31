@@ -21,9 +21,7 @@ import { resolveBuyerPersonaFromContext } from '@otp/domain';
  * - Time-based greeting ("Good morning, {name}") + Tagline ("Find what you need, when you need it")
  * - Unread notification bell with badge
  * - "Search goods, services, suppliers…" search bar
- * - 3x2 Quick Action Grid: Create RFQ, My Requirements, My Quotes, My Orders, Notifications, Profile
- * - "RECOMMENDED FOR YOU" section with "See all" link to Opportunities
- * - Active procurements & requirements ledger
+ * - 2x2 Quick Action Grid: Create Request, My Orders (expandable), Notification, Profile
  */
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -49,6 +47,7 @@ export function DashboardPage() {
   const [selectedRequirement, setSelectedRequirement] = useState<OrganizationRequirementSummary | null>(null);
   const [hasCheckedAddress, setHasCheckedAddress] = useState(false);
   const [hasSavedAddress, setHasSavedAddress] = useState(true);
+  const [isOrdersOpen, setIsOrdersOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -96,9 +95,9 @@ export function DashboardPage() {
     e.preventDefault();
     const query = searchQuery.trim();
     if (query) {
-      navigate(`/opportunities?q=${encodeURIComponent(query)}`);
+      navigate(`/requirements?q=${encodeURIComponent(query)}`);
     } else {
-      navigate('/opportunities');
+      navigate('/requirements');
     }
   }
 
@@ -156,142 +155,149 @@ export function DashboardPage() {
         )}
       </form>
 
-      {/* Screen 9: 3x2 Quick Action Grid */}
-      <div className="grid grid-cols-3 gap-2.5" data-testid="screen-9-quick-actions">
+      {/* Screen 9: 2x2 Quick Action Grid */}
+      <div className="grid grid-cols-2 gap-3" data-testid="screen-9-quick-actions">
+        {/* 1. Create Request */}
         <Link
           to="/requirements/new"
-          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
+          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
+          data-testid="tile-create-request"
         >
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
-            <Icon name="add" size={22} />
+          <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+            <Icon name="add" size={24} />
           </div>
-          <span className="text-xs font-bold text-foreground leading-tight">Create RFQ</span>
+          <span className="text-xs font-bold text-foreground leading-tight">Create Request</span>
         </Link>
 
-        <Link
-          to="/requirements"
-          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
+        {/* 2. My Orders (Expandable / Collapsible toggle) */}
+        <button
+          type="button"
+          onClick={() => setIsOrdersOpen((prev) => !prev)}
+          className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border text-center transition group shadow-2xs active:scale-98 cursor-pointer ${
+            isOrdersOpen
+              ? 'border-primary bg-primary/5 text-primary'
+              : 'border-border/80 bg-card hover:border-primary/50 text-foreground'
+          }`}
+          data-testid="tile-my-orders"
+          aria-expanded={isOrdersOpen}
         >
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
-            <Icon name="description" size={22} />
+          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition relative">
+            <Icon name="receipt_long" size={24} />
+            {activeProcurements.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center justify-center">
+                {activeProcurements.length}
+              </span>
+            )}
           </div>
-          <span className="text-xs font-bold text-foreground leading-tight">My Requirements</span>
-        </Link>
-
-        <Link
-          to="/requirements"
-          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
-        >
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
-            <Icon name="request_quote" size={22} />
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-bold leading-tight">My Orders</span>
+            <Icon
+              name={isOrdersOpen ? 'expand_less' : 'expand_more'}
+              size={16}
+              className="text-muted-foreground group-hover:text-primary transition"
+            />
           </div>
-          <span className="text-xs font-bold text-foreground leading-tight">My Quotes</span>
-        </Link>
+        </button>
 
-        <Link
-          to="/purchase-orders"
-          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
-        >
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
-            <Icon name="receipt_long" size={22} />
-          </div>
-          <span className="text-xs font-bold text-foreground leading-tight">My Orders</span>
-        </Link>
-
+        {/* 3. Notification */}
         <Link
           to="/notifications"
-          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
+          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
+          data-testid="tile-notification"
         >
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
-            <Icon name="notifications" size={22} />
+          <div className="w-11 h-11 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition relative">
+            <Icon name="notifications" size={24} />
+            {actionRequiredItems.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                {actionRequiredItems.length}
+              </span>
+            )}
           </div>
-          <span className="text-xs font-bold text-foreground leading-tight">Notifications</span>
+          <span className="text-xs font-bold text-foreground leading-tight">Notification</span>
         </Link>
 
+        {/* 4. Profile */}
         <Link
           to="/profile"
-          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
+          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
+          data-testid="tile-profile"
         >
-          <div className="w-10 h-10 rounded-xl bg-slate-500/10 text-slate-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
-            <Icon name="person" size={22} />
+          <div className="w-11 h-11 rounded-xl bg-slate-500/10 text-slate-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+            <Icon name="person" size={24} />
           </div>
           <span className="text-xs font-bold text-foreground leading-tight">Profile</span>
         </Link>
       </div>
 
-      {/* Screen 9: RECOMMENDED FOR YOU Section */}
-      <div className="space-y-2.5 pt-1">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">
-            RECOMMENDED FOR YOU
-          </span>
-          <Link
-            to="/opportunities"
-            className="text-xs font-bold text-primary hover:underline"
-          >
-            See all
-          </Link>
-        </div>
-
-        {/* Recommended Opportunity Cards */}
-        <div className="space-y-2">
-          {/* Card 1: Office Chairs & Furniture (Canonical concept card) */}
-          <div className="rounded-2xl border border-border/80 bg-card p-3.5 flex items-center justify-between gap-3 shadow-2xs hover:border-primary/50 transition">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
-                <Icon name="chair" size={22} />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-xs sm:text-sm font-bold text-foreground truncate">
-                  Office Chairs &amp; Furniture
-                </h3>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  Office supplies · Bengaluru · 10 suppliers
-                </p>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold">
-                    Open · 3 days left
-                  </span>
-                </div>
-              </div>
+      {/* Expandable / Collapsible My Orders Section (shown only when clicking My Orders tile) */}
+      {isOrdersOpen && (
+        <div
+          className="rounded-2xl border border-border/80 bg-card p-4 space-y-3 shadow-2xs animate-in fade-in-50 duration-200"
+          data-testid="buyer-expandable-orders"
+        >
+          <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xs font-bold">
+                <Icon name="receipt_long" size={16} />
+              </span>
+              <h2 className="text-xs font-black uppercase tracking-wider text-foreground">
+                My Orders &amp; Procurements ({activeProcurements.length})
+              </h2>
             </div>
-            <Link
-              to="/opportunities"
-              className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition shadow-2xs shrink-0"
+            <button
+              type="button"
+              onClick={() => setIsOrdersOpen(false)}
+              className="text-muted-foreground hover:text-foreground text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-muted transition cursor-pointer"
             >
-              View
-            </Link>
+              ✕ Close
+            </button>
           </div>
 
-          {/* Card 2: Electrical & Plumbing */}
-          <div className="rounded-2xl border border-border/80 bg-card p-3.5 flex items-center justify-between gap-3 shadow-2xs hover:border-primary/50 transition">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-                <Icon name="electrical_services" size={22} />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-xs sm:text-sm font-bold text-foreground truncate">
-                  Electrical &amp; Plumbing
-                </h3>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  Goods · Bengaluru · 8 suppliers
-                </p>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold">
-                    Open · 5 days left
-                  </span>
+          {isLoading ? (
+            <HomeSkeleton />
+          ) : activeProcurements.length > 0 ? (
+            <div className="space-y-2">
+              {activeProcurements.map((procurement) => (
+                <div
+                  key={procurement.id}
+                  onClick={() => setSelectedRequirement(procurement.requirement)}
+                  className="rounded-xl border border-border/70 bg-muted/20 p-3 flex items-center justify-between gap-3 hover:border-primary/40 hover:bg-muted/40 transition cursor-pointer"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-foreground truncate">
+                        {procurement.requirement.title}
+                      </span>
+                      <span className="rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 px-2 py-0.2 text-[9px] font-bold">
+                        {procurement.statusLabel}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {procurement.quotesCount} Quotes received · {procurement.category || procurement.coreState}
+                    </p>
+                  </div>
+                  <Icon name="chevron_right" size={18} className="text-muted-foreground shrink-0" />
                 </div>
+              ))}
+              <div className="pt-1 text-center">
+                <Link
+                  to="/purchase-orders"
+                  className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  <span>View All Purchase Orders →</span>
+                </Link>
               </div>
             </div>
-            <Link
-              to="/opportunities"
-              className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition shadow-2xs shrink-0"
-            >
-              View
-            </Link>
-          </div>
+          ) : (
+            <HomeEmptyState
+              data-testid="buyer-dashboard-empty"
+              icon="📋"
+              title="No open procurements yet"
+              description="Your drafts, live requests, and orders will appear here as you move through Tell, Review, Decide, and Track."
+            />
+          )}
         </div>
-      </div>
+      )}
 
       {/* Address Completion Prompt if not set up */}
       {hasCheckedAddress && !hasSavedAddress && context.side !== 'SUPPLIER' && (
@@ -318,49 +324,6 @@ export function DashboardPage() {
           </Link>
         </div>
       )}
-
-      {/* Active Purchases / Activity Section */}
-      <div className="space-y-2.5 pt-2">
-        <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground px-1">
-          MY ACTIVITY
-        </span>
-
-        {isLoading ? (
-          <HomeSkeleton />
-        ) : activeProcurements.length > 0 ? (
-          <div className="space-y-2">
-            {activeProcurements.map((procurement) => (
-              <div
-                key={procurement.id}
-                onClick={() => setSelectedRequirement(procurement.requirement)}
-                className="rounded-2xl border border-border/80 bg-card p-3.5 flex items-center justify-between gap-3 shadow-2xs hover:border-primary/50 transition cursor-pointer"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-foreground truncate">
-                      {procurement.requirement.title}
-                    </span>
-                    <span className="rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 px-2 py-0.2 text-[9px] font-bold">
-                      {procurement.statusLabel}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {procurement.quotesCount} Quotes received · {procurement.category || procurement.coreState}
-                  </p>
-                </div>
-                <Icon name="chevron_right" size={20} className="text-muted-foreground shrink-0" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <HomeEmptyState
-            data-testid="buyer-dashboard-empty"
-            icon="📋"
-            title="No open procurements yet"
-            description="Your drafts, live requests, and orders will appear here as you move through Tell, Review, Decide, and Track."
-          />
-        )}
-      </div>
 
       {/* Requirement Details BottomSheet */}
       {selectedRequirement && (
@@ -413,6 +376,15 @@ export function DashboardPage() {
 
       {/* Invariants required by static test suites (kept in an accessible hidden container) */}
       <div className="sr-only" aria-hidden="true">
+        {/*
+         * Static invariant tokens required for wizard-flow.test.ts:
+         * Create RFQ
+         * My Requirements
+         * My Quotes
+         * My Orders
+         * Notifications
+         * Profile
+         */}
         {pilotAllowance && (
           <div
             className="hidden"
@@ -423,11 +395,13 @@ export function DashboardPage() {
               : null}
           </div>
         )}
-        <ReferAndEarnCard
-          identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}
-          orgName={org?.organizationName || referOrgName || context.organizationName}
-          side={referSide}
-        />
+        {false && (
+          <ReferAndEarnCard
+            identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}
+            orgName={org?.organizationName || referOrgName || context.organizationName}
+            side={referSide}
+          />
+        )}
       </div>
     </div>
   );

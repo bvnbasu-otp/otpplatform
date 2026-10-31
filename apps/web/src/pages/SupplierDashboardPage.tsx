@@ -8,7 +8,6 @@ import { ReferAndEarnCard } from '@/features/referral';
 import { useWalletEntitlement } from '@/features/subscription';
 import {
   useSupplierHomeData,
-  SupplierIdentityShieldBanner,
   SupplierOpportunityCard,
   SupplierActionCard,
   SupplierQuoteCard,
@@ -132,16 +131,24 @@ export function SupplierDashboardPage() {
             What work would you like to take up today?
           </h2>
           <p className="text-xs text-muted-foreground">
-            Explore open tenders, RFQs and direct community sourcing needs matching your trade.
+            Explore open tenders and sourcing requests matching your trade scope in {profile.baseCity}.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsCapabilityModalOpen(true)}
-          className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-xs font-extrabold shadow-sm active:scale-98 transition shrink-0 mobile-touch-target cursor-pointer"
-        >
-          <span>Update Trade Scope →</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            to="/opportunities"
+            className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-xs font-extrabold shadow-sm active:scale-98 transition shrink-0 mobile-touch-target cursor-pointer"
+          >
+            <span>Opportunities ({newOpportunities.length}) →</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setIsCapabilityModalOpen(true)}
+            className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-foreground px-3.5 py-2 text-xs font-bold shadow-2xs active:scale-98 transition shrink-0 mobile-touch-target cursor-pointer"
+          >
+            <span>Update Trade Scope →</span>
+          </button>
+        </div>
       </div>
 
       {/* Screen 9 / Infographic Action Grid */}
@@ -198,17 +205,6 @@ export function SupplierDashboardPage() {
           </span>
         </Link>
       </div>
-
-      {/* Identity-Protected Sourcing Hub & Scope Overview */}
-      <SupplierIdentityShieldBanner
-        businessName={businessName}
-        profile={profile}
-        opportunitiesCount={newOpportunities.length}
-        actionCount={actionRequiredItems.length}
-        activeQuotesCount={activeQuotes.length}
-        activeOrdersCount={ordersSummary.activeCount}
-        onEditScope={() => setIsCapabilityModalOpen(true)}
-      />
 
       {/* Loading / Content */}
       {isLoading ? (
@@ -271,12 +267,14 @@ export function SupplierDashboardPage() {
         </div>
       )}
 
-      {/* Refer & Earn */}
-      <ReferAndEarnCard
-        identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}
-        orgName={businessName || referOrgName}
-        side={referSide}
-      />
+      {/* Refer & Earn (Only in Profile tab as per UX guidelines) */}
+      {false && (
+        <ReferAndEarnCard
+          identifier={entitledWalletOrgId || referIdentifier || user?.id || user?.email}
+          orgName={businessName || referOrgName}
+          side={referSide}
+        />
+      )}
 
       {/* Quick Capability Editor Modal */}
       <SupplierCapabilityModal
