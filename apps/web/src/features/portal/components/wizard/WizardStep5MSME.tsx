@@ -34,7 +34,7 @@ export function WizardStep5MSME({
   const [udyam, setUdyam] = useState('UDYAM-KR-00123');
   const [estYear, setEstYear] = useState('2015');
   const [address, setAddress] = useState('44, Industrial Area, Peenya, Bengaluru — 58');
-  const [contactName, setContactName] = useState('Ramesh Kumar');
+  const [contactName, setContactName] = useState('Baskar Loganathan');
 
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

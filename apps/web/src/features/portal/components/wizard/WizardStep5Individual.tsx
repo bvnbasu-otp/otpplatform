@@ -25,7 +25,7 @@ export function WizardStep5Individual({
   onSuccess,
   onBack,
 }: WizardStep5IndividualProps) {
-  const [fullName, setFullName] = useState('Ramesh Kumar');
+  const [fullName, setFullName] = useState('Baskar Loganathan');
   const [language, setLanguage] = useState('English');
   const [pan, setPan] = useState('');
   const [gstin, setGstin] = useState('');
@@ -41,8 +41,8 @@ export function WizardStep5Individual({
     {
       id: 'addr-1',
       tag: 'HOME · DEFAULT',
-      line1: '12, 4th Cross, Koramangala',
-      cityStatePin: 'Bengaluru, Karnataka — 560034',
+      line1: 'Durga Rainbow, Mahadevapura',
+      cityStatePin: 'Bengaluru, Karnataka — 560048',
     },
     {
       id: 'addr-2',
@@ -85,7 +85,7 @@ export function WizardStep5Individual({
         buyerType: 'INDIVIDUAL',
         taxRegistrationId: pan || gstin || undefined,
         coverageCity: 'Bengaluru',
-        coveragePincode: '560034',
+        coveragePincode: '560048',
         eulaAccepted: agreementAccepted,
         eulaVersion: agreementVersion,
         documentHash: currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : '',
@@ -132,7 +132,7 @@ export function WizardStep5Individual({
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Ramesh Kumar"
+              placeholder="e.g. Baskar Loganathan"
               className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-card text-xs font-semibold text-foreground focus:ring-2 focus:ring-primary focus:outline-none transition"
             />
           </div>

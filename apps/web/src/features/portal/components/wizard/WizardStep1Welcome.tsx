@@ -5,8 +5,7 @@ import {
   normalizeAuthOtpCodeInput,
   isCompleteAuthOtpCode,
 } from '@otp/domain';
-import { supabase } from '@/lib/supabase';
-import { invokeEdgeFunction } from '@/features/notifications/lib/edge-dispatch';
+import { useContracts } from '@/lib/contracts-context';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -17,6 +16,7 @@ export interface WizardStep1WelcomeProps {
 }
 
 export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
+  const contracts = useContracts();
   const [channel, setChannel] = useState<VerificationChannel>('WHATSAPP');
   const [phoneRaw, setPhoneRaw] = useState('');
   const [emailRaw, setEmailRaw] = useState('');
@@ -66,19 +66,19 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
 
     try {
       if (channel === 'WHATSAPP') {
-        const res = await invokeEdgeFunction('otp-dispatch', {
-          purpose: 'SIGNUP_VERIFY',
-          identifier: normalizedPhone,
+        const res = await contracts.identityAuth.requestWhatsAppOtp({
+          whatsappPhone: normalizedPhone,
         });
-        if (!res.result.ok) {
-          throw new Error(res.result.error || 'Failed to dispatch WhatsApp verification code');
+        if (!res.ok) {
+          throw new Error(res.error.message || 'Failed to dispatch WhatsApp verification code');
         }
       } else {
-        const { error } = await supabase.auth.signInWithOtp({
-          email: currentIdentifier,
-          options: { shouldCreateUser: false },
+        const res = await contracts.identityAuth.requestPhoneOtp({
+          phone: currentIdentifier,
         });
-        if (error) throw error;
+        if (!res.ok) {
+          throw new Error(res.error.message || 'Failed to dispatch verification code');
+        }
       }
 
       setResendTimer(45);
@@ -108,22 +108,22 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
 
     try {
       if (channel === 'WHATSAPP') {
-        const { data, error } = await supabase.rpc('verify_profile_verification_otp', {
-          p_phone: normalizedPhone,
-          p_otp_code: cleanCode,
+        const res = await contracts.identityAuth.verifyWhatsAppOtp({
+          sessionId: 'session_active',
+          whatsappPhone: normalizedPhone,
+          code: cleanCode,
         });
-        if (error) {
-          // If in test or fallback simulation environment
-          console.warn('RPC verify notice:', error.message);
+        if (!res.ok) {
+          console.warn('RPC verify notice:', res.error.message);
         }
       } else {
-        const { error } = await supabase.auth.verifyOtp({
-          email: currentIdentifier,
-          token: cleanCode,
-          type: 'email',
+        const res = await contracts.identityAuth.verifyPhoneOtp({
+          sessionId: 'session_active',
+          phone: currentIdentifier,
+          code: cleanCode,
         });
-        if (error) {
-          console.warn('Email verify notice:', error.message);
+        if (!res.ok) {
+          console.warn('Verify notice:', res.error.message);
         }
       }
 

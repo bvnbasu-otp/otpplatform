@@ -95,5 +95,6 @@ export * from './notifications/email-dispatcher';
 export * from './notifications/notification-queue-worker';
 export * from './services/managed-supplier-network-service';
 
-
-
+// OTP Next — 28 Modular Domain Contracts and Adapters
+export * from './contracts';
+export * from './adapters';

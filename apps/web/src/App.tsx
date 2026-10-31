@@ -20,6 +20,7 @@ import {
 import { ThemeProvider, ThemePersonaSync } from '@/features/theme';
 import { LanguageProvider } from '@/lib/i18n';
 import { LanguageAccountSync } from '@/lib/i18n/LanguageAccountSync';
+import { ContractsProvider } from '@/lib/contracts-context';
 
 // ============================================================================
 // ROUTE-LEVEL LAZY LOADING & SUSPENSE CHUNKING (R2-22 RELEASE HARDENING)
@@ -64,6 +65,7 @@ const InviteAcceptancePage = lazy(() => import('@/features/org').then((m) => ({ 
 const MaintenancePage = lazy(() => import('@/pages/MaintenancePage').then((m) => ({ default: m.MaintenancePage })));
 const MobileShowcasePage = lazy(() => import('@/pages/MobileShowcasePage').then((m) => ({ default: m.MobileShowcasePage })));
 const FounderDashboardPage = lazy(() => import('@/features/founder/pages/FounderDashboardPage').then((m) => ({ default: m.FounderDashboardPage })));
+const ProcurementFlowPage = lazy(() => import('@/features/procurement-flow').then((m) => ({ default: m.ProcurementFlowPage })));
 
 function RouteLoadingFallback() {
   return (
@@ -290,7 +292,8 @@ export function App() {
     <ThemeProvider>
       <LanguageProvider>
         <BrowserRouter>
-          <AuthProvider>
+          <ContractsProvider>
+      <AuthProvider>
 
           <RoleProvider>
             <ThemePersonaSync />
@@ -379,6 +382,7 @@ export function App() {
             <Route path="/create" element={<Navigate to="/intake" replace />} />
             <Route path="/requirements/new" element={<Navigate to="/intake" replace />} />
             <Route path="/intake" element={<RequirementIntakePage />} />
+            <Route path="/procurement-flow" element={<ProcurementFlowPage />} />
             <Route path="/requirements/:requirementId" element={<RequirementRoute />} />
             <Route
               path="/requirements/:requirementId/discover"
@@ -616,6 +620,7 @@ export function App() {
         </DemoModeProvider>
         </RoleProvider>
       </AuthProvider>
+    </ContractsProvider>
     </BrowserRouter>
     </LanguageProvider>
     </ThemeProvider>

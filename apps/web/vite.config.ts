@@ -64,15 +64,9 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, 'src'),
       '@otp/domain': resolve(__dirname, '../../packages/domain/src/index.ts'),
-      // The messaging core lives beside the edge functions, because Supabase
-      // deploys that directory on its own and an import reaching into a
-      // workspace package would break on deploy. Aliased here so the demo UI
-      // runs the same parser and the same message copy as the real webhook,
-      // rather than a second copy that drifts.
-      '@otp/messaging': resolve(
-        __dirname,
-        '../../supabase/functions/_shared/messaging/index.ts',
-      ),
+      '@otp/services': resolve(__dirname, '../../packages/services/src/index.ts'),
+      '@otp/database': resolve(__dirname, '../../packages/database/src/index.ts'),
+      '@otp/messaging': resolve(__dirname, '../../supabase/functions/_shared/messaging/index.ts'),
     },
   },
   // Sentry is loaded dynamically only when VITE_SENTRY_DSN is set, and is not a

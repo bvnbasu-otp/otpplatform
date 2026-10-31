@@ -23,14 +23,14 @@ export function WizardStep5RWA({
   onSuccess,
   onBack,
 }: WizardStep5RWAProps) {
-  const [associationName, setAssociationName] = useState('Sunrise Apartments Owners Assn.');
-  const [registrationNo, setRegistrationNo] = useState('REG/2024/0183');
+  const [associationName, setAssociationName] = useState('Durga Rainbow Assn');
+  const [registrationNo, setRegistrationNo] = useState('REG/2013/1234');
   const [assocType, setAssocType] = useState('Apartment Assn.');
-  const [totalUnits, setTotalUnits] = useState('240');
-  const [occupiedUnits, setOccupiedUnits] = useState('218');
-  const [address, setAddress] = useState('Bengaluru, Karnataka — 560095');
+  const [totalUnits, setTotalUnits] = useState('141');
+  const [occupiedUnits, setOccupiedUnits] = useState('141');
+  const [address, setAddress] = useState('Bengaluru, Karnataka — 560048');
   const [role, setRole] = useState<'Resident Owner' | 'Committee Member' | 'Estate / Facility Mgr'>('Committee Member');
-  const [contactName, setContactName] = useState('Ramesh Kumar');
+  const [contactName, setContactName] = useState('Baskar Loganathan');
 
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,7 +84,7 @@ export function WizardStep5RWA({
         roleCode: role === 'Committee Member' ? 'BUYER_COMMITTEE' : 'BUYER_ADMIN',
         taxRegistrationId: registrationNo.trim(),
         coverageCity: 'Bengaluru',
-        coveragePincode: '560095',
+        coveragePincode: '560048',
         eulaAccepted: agreementAccepted,
         eulaVersion: agreementVersion,
         documentHash: currentAgreement.phase === 'ready' ? currentAgreement.agreement.documentHash : '',

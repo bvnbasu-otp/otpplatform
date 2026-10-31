@@ -31,7 +31,7 @@ export function WizardStep5Supplier({
   onBack,
 }: WizardStep5SupplierProps) {
   const [businessName, setBusinessName] = useState('Apex Commercial Solutions');
-  const [contactName, setContactName] = useState('Ramesh Kumar');
+  const [contactName, setContactName] = useState('Baskar Loganathan');
   const [supplierTypes, setSupplierTypes] = useState<string[]>(['Manufacturer', 'Distributor']);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([
     'property_facility_management',

@@ -25,5 +25,12 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     environment: 'node',
     isolate: false,
+    fileParallelism: false,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
   },
 });

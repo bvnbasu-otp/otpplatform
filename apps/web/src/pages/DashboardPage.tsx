@@ -155,25 +155,37 @@ export function DashboardPage() {
         )}
       </form>
 
-      {/* Screen 9: 2x2 Quick Action Grid */}
-      <div className="grid grid-cols-2 gap-3" data-testid="screen-9-quick-actions">
-        {/* 1. Create Request */}
+      {/* Screen 9: 6-Tile Quick Action Grid (Matching Approved Visual Concept) */}
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-3" data-testid="screen-9-quick-actions">
+        {/* 1. My Requirements */}
         <Link
-          to="/requirements/new"
-          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
-          data-testid="tile-create-request"
+          to="/requirements"
+          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
+          data-testid="tile-my-requirements"
         >
-          <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
-            <Icon name="add" size={24} />
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
+            <Icon name="list" size={22} />
           </div>
-          <span className="text-xs font-bold text-foreground leading-tight">Create Request</span>
+          <span className="text-[11px] font-bold text-foreground leading-tight">My Requirements</span>
         </Link>
 
-        {/* 2. My Orders (Expandable / Collapsible toggle) */}
+        {/* 2. My Quotes */}
+        <Link
+          to="/procurement-flow?stage=REVIEW"
+          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
+          data-testid="tile-my-quotes"
+        >
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
+            <Icon name="description" size={22} />
+          </div>
+          <span className="text-[11px] font-bold text-foreground leading-tight">My Quotes</span>
+        </Link>
+
+        {/* 3. My Orders (Expandable / Collapsible toggle) */}
         <button
           type="button"
           onClick={() => setIsOrdersOpen((prev) => !prev)}
-          className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border text-center transition group shadow-2xs active:scale-98 cursor-pointer ${
+          className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition group shadow-2xs active:scale-98 cursor-pointer min-h-[96px] ${
             isOrdersOpen
               ? 'border-primary bg-primary/5 text-primary'
               : 'border-border/80 bg-card hover:border-primary/50 text-foreground'
@@ -181,52 +193,101 @@ export function DashboardPage() {
           data-testid="tile-my-orders"
           aria-expanded={isOrdersOpen}
         >
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition relative">
-            <Icon name="receipt_long" size={24} />
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-1 group-hover:scale-105 transition relative">
+            <Icon name="receipt_long" size={22} />
             {activeProcurements.length > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center justify-center">
                 {activeProcurements.length}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs font-bold leading-tight">My Orders</span>
+          <div className="flex items-center gap-0.5">
+            <span className="text-[11px] font-bold leading-tight">My Orders</span>
             <Icon
               name={isOrdersOpen ? 'expand_less' : 'expand_more'}
-              size={16}
+              size={14}
               className="text-muted-foreground group-hover:text-primary transition"
             />
           </div>
         </button>
 
-        {/* 3. Notification */}
+        {/* 4. Create RFQ */}
+        <Link
+          to="/procurement-flow?stage=TELL"
+          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
+          data-testid="tile-create-request"
+        >
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1 group-hover:scale-105 transition">
+            <Icon name="add" size={22} />
+          </div>
+          <span className="text-[11px] font-bold text-foreground leading-tight">Create RFQ</span>
+        </Link>
+
+        {/* 5. Notifications */}
         <Link
           to="/notifications"
-          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
+          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
           data-testid="tile-notification"
         >
-          <div className="w-11 h-11 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition relative">
-            <Icon name="notifications" size={24} />
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center mb-1 group-hover:scale-105 transition relative">
+            <Icon name="notifications" size={22} />
             {actionRequiredItems.length > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
                 {actionRequiredItems.length}
               </span>
             )}
           </div>
-          <span className="text-xs font-bold text-foreground leading-tight">Notification</span>
+          <span className="text-[11px] font-bold text-foreground leading-tight">Notifications</span>
         </Link>
 
-        {/* 4. Profile */}
+        {/* 6. Profile */}
         <Link
           to="/profile"
-          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98"
+          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
           data-testid="tile-profile"
         >
-          <div className="w-11 h-11 rounded-xl bg-slate-500/10 text-slate-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
-            <Icon name="person" size={24} />
+          <div className="w-10 h-10 rounded-xl bg-slate-500/10 text-slate-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
+            <Icon name="person" size={22} />
           </div>
-          <span className="text-xs font-bold text-foreground leading-tight">Profile</span>
+          <span className="text-[11px] font-bold text-foreground leading-tight">Profile</span>
         </Link>
+      </div>
+
+      {/* Screen 9: RECOMMENDED FOR YOU (Matching Approved Concept) */}
+      <div className="space-y-2 pt-1" data-testid="screen-9-recommended">
+        <div className="flex items-center justify-between px-0.5">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground">
+            Recommended for you
+          </span>
+          <Link
+            to="/requirements"
+            className="text-[11px] font-bold text-primary hover:underline"
+          >
+            See all
+          </Link>
+        </div>
+        <div className="rounded-2xl border border-border/80 bg-card p-3.5 flex items-center justify-between gap-3 shadow-2xs hover:border-primary/40 transition">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-primary flex items-center justify-center shrink-0">
+              <Icon name="chair" size={22} />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-xs font-bold text-foreground truncate">Office Chairs &amp; Furniture</h3>
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                Office supplies · Bengaluru
+              </p>
+              <span className="inline-block rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.2 text-[9px] font-bold mt-1">
+                Open · 3 days left
+              </span>
+            </div>
+          </div>
+          <Link
+            to="/requirements/new"
+            className="px-3 py-1.5 rounded-xl border border-border bg-muted/30 text-foreground hover:bg-muted text-xs font-bold shrink-0 transition"
+          >
+            View
+          </Link>
+        </div>
       </div>
 
       {/* Expandable / Collapsible My Orders Section (shown only when clicking My Orders tile) */}
@@ -279,12 +340,19 @@ export function DashboardPage() {
                   <Icon name="chevron_right" size={18} className="text-muted-foreground shrink-0" />
                 </div>
               ))}
-              <div className="pt-1 text-center">
+              <div className="pt-1 flex items-center justify-center gap-4">
                 <Link
-                  to="/purchase-orders"
+                  to="/procurement-flow?stage=TRACK"
                   className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
                 >
-                  <span>View All Purchase Orders →</span>
+                  <span>Track Current Order →</span>
+                </Link>
+                <span className="text-muted-foreground text-xs">·</span>
+                <Link
+                  to="/purchase-orders"
+                  className="text-xs font-semibold text-muted-foreground hover:text-foreground hover:underline inline-flex items-center gap-1"
+                >
+                  <span>Orders Ledger</span>
                 </Link>
               </div>
             </div>
