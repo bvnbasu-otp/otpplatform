@@ -374,7 +374,17 @@ BEGIN
   -- -------------------------------------------------------------------------
   DELETE FROM public.notification_preferences WHERE user_id = ANY(v_target_auth_ids);
   DELETE FROM public.notifications WHERE profile_id = ANY(v_target_profile_ids);
-  DELETE FROM public.support_tickets WHERE opened_by = ANY(v_target_profile_ids) OR assigned_to = ANY(v_target_profile_ids);
+  DELETE FROM public.support_tickets
+  WHERE lower(coalesce(user_email, '')) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com')
+    AND (
+      lower(user_email) LIKE '%@otp.test'
+      OR lower(user_email) LIKE '%@sunrise.test'
+      OR lower(user_email) LIKE '%@tanish.test'
+      OR lower(user_email) LIKE '%@kongu.test'
+      OR lower(user_email) LIKE '%@apex.test'
+      OR lower(user_email) LIKE '%@otpdemo.test'
+      OR lower(user_email) LIKE '%@greenview.test'
+    );
   DELETE FROM public.profile_verification_otps WHERE profile_id = ANY(v_target_profile_ids);
   DELETE FROM public.internal_user_assignments WHERE profile_id = ANY(v_target_profile_ids);
   DELETE FROM public.profile_roles WHERE profile_id = ANY(v_target_profile_ids);
