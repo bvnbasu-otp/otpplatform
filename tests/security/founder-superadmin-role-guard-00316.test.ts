@@ -852,7 +852,7 @@ describe('00321 founder SUPER_ADMIN role guard migration', () => {
       const otherFounders = await client.query<{ id: string }>(
         `SELECT id::text AS id
          FROM public.profiles
-         WHERE is_founder IS TRUE AND id <> $1::uuid`,
+         WHERE is_founder IS TRUE AND id <> $1::uuid AND lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com')`,
         [FOUNDER_ID],
       );
       for (const row of otherFounders.rows) {

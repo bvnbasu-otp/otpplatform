@@ -153,7 +153,7 @@ async function clearOperators(client: Client): Promise<void> {
   const existing = await client.query<{ id: string }>(
     `SELECT id::text FROM public.profiles
      WHERE (COALESCE(is_platform_admin, false) OR COALESCE(is_founder, false))
-       AND lower(email) <> 'bvnbasu@gmail.com'`,
+       AND lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com')`,
   );
   for (const row of existing.rows) {
     await client.query(
