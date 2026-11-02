@@ -140,11 +140,14 @@ END;
 $fn$;
 
 -- ---------------------------------------------------------------------------
--- 2. Add bvnbasu@yahoo.com to immutable admin whitelist
+-- 2. Clean and synchronize immutable admin whitelist
 -- ---------------------------------------------------------------------------
 INSERT INTO private_security.admin_whitelist (email, reason)
 VALUES ('bvnbasu@yahoo.com', 'Platform Founder & Super Administrator (Baskar Loganathan)')
 ON CONFLICT (email) DO NOTHING;
+
+DELETE FROM private_security.admin_whitelist
+WHERE lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com');
 
 -- ---------------------------------------------------------------------------
 -- 3. Ensure authoritative internal role catalog is complete
@@ -192,6 +195,8 @@ DECLARE
 BEGIN
   -- Authorize platform privilege write for audited founder setup & demo account purge
   PERFORM set_config('otp.platform_privilege_write', 'on', true);
+  PERFORM set_config('otp.platform_break_glass', 'on', true);
+  PERFORM set_config('otp.platform_bootstrap', 'on', true);
 
   -- A. Fetch or initialize auth user for bvnbasu@yahoo.com
   SELECT id INTO v_yahoo_auth_id FROM auth.users WHERE lower(email) = 'bvnbasu@yahoo.com';
@@ -389,7 +394,9 @@ BEGIN
   DELETE FROM public.internal_user_assignments WHERE profile_id = ANY(v_target_profile_ids);
   DELETE FROM public.profile_roles WHERE profile_id = ANY(v_target_profile_ids);
   DELETE FROM public.legal_acceptances WHERE profile_id = ANY(v_target_profile_ids);
-  DELETE FROM public.demo_accounts WHERE profile_id = ANY(v_target_profile_ids);
+  DELETE FROM public.demo_accounts
+  WHERE profile_id = ANY(v_target_profile_ids)
+     OR lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com');
   DELETE FROM private.password_history WHERE profile_id = ANY(v_target_profile_ids);
 
   -- -------------------------------------------------------------------------
@@ -414,6 +421,8 @@ BEGIN
     );
 
   PERFORM set_config('otp.platform_privilege_write', 'off', true);
+  PERFORM set_config('otp.platform_break_glass', 'off', true);
+  PERFORM set_config('otp.platform_bootstrap', 'off', true);
 
   RAISE NOTICE 'Migration 00332 completed: demo seed accounts purged. Canonical Founders & SuperAdmins: bvnbasu@gmail.com and bvnbasu@yahoo.com';
 END;
