@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { AdminLiveIntegrationProbes } from './AdminLiveIntegrationProbes';
 import {
   mapRpcPayloadToUiStatus,
   summarizeLiveBattery,
@@ -481,7 +482,7 @@ function renderLiveProbeStatus(result: TestResult | undefined) {
 }
 
 export function AdminTestSuiteRunner() {
-  const [activeView, setActiveView] = useState<'MATRIX' | 'LIVE_RPC'>('MATRIX');
+  const [activeView, setActiveView] = useState<'MATRIX' | 'LIVE_RPC' | 'PROBES'>('MATRIX');
   const [results, setResults] = useState<Map<string, TestResult>>(new Map());
   const [isRunning, setIsRunning] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -626,6 +627,17 @@ export function AdminTestSuiteRunner() {
               }`}
             >
               ⚡ Live Database ({ALL_TEST_CASES.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('PROBES')}
+              className={`inline-flex min-h-[36px] items-center rounded-lg px-3.5 py-1.5 text-xs font-bold transition active:scale-98 ${
+                activeView === 'PROBES'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              📡 Live Integration Probes (7)
             </button>
           </div>
         </div>
@@ -796,6 +808,21 @@ export function AdminTestSuiteRunner() {
       {/* VIEW 2: LIVE IN-DATABASE RPC BATTERY ({ALL_TEST_CASES.length} TESTS) */}
       {activeView === 'LIVE_RPC' && (
         <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/10 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-base">📡</span>
+              <span className="font-semibold text-foreground">
+                Need to fire live tests against WhatsApp WAHA, Gmail, Google Places GIS, Realtime or UPI Ledger?
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveView('PROBES')}
+              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition text-xs shrink-0"
+            >
+              Open Live Probes (7) →
+            </button>
+          </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -1092,6 +1119,9 @@ export function AdminTestSuiteRunner() {
           )}
         </div>
       )}
+
+      {/* VIEW 3: LIVE INTEGRATION PROBES (WAHA, GMAIL, GIS, REALTIME, UPI, SNE, ONDC) */}
+      {activeView === 'PROBES' && <AdminLiveIntegrationProbes />}
     </div>
   );
 }

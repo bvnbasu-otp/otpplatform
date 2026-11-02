@@ -194,7 +194,7 @@ export const PersonaAuditStatementModal: React.FC<PersonaAuditStatementModalProp
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs overflow-y-auto">
       <div className="bg-card text-foreground border rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header Bar */}
-        <div className="px-5 py-4 border-b bg-muted/40 flex items-center justify-between gap-3 shrink-0">
+        <div className="px-5 py-4 border-b bg-muted/40 flex items-center justify-between gap-3 shrink-0 no-print">
           <div className="flex items-center gap-2.5">
             <OtpLogo size={28} />
             <div>

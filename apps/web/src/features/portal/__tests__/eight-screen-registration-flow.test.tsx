@@ -27,6 +27,7 @@ import {
   WizardStep7Addresses,
   WizardStep8Complete,
   X2ORegistrationWizard,
+  WizardStepEulaAgreement,
 } from '@/features/portal';
 
 describe('8-Screen Native Mobile Registration & Blank-Slate Onboarding', () => {
@@ -207,6 +208,30 @@ describe('8-Screen Native Mobile Registration & Blank-Slate Onboarding', () => {
       expect(html).toContain('WhatsApp');
       expect(html).not.toContain('Baskar Loganathan');
       expect(html).not.toContain('Durga Rainbow');
+    });
+  });
+
+  describe('EULA Agreement Step: WizardStepEulaAgreement', () => {
+    it('renders persona-specific EULA terms and acceptance gate', () => {
+      const html = renderToStaticMarkup(
+        <MemoryRouter>
+          <LanguageProvider>
+            <ContractsProvider>
+              <WizardStepEulaAgreement
+                side="SUPPLIER"
+                personaId="SUPPLIER"
+                onAccept={() => {}}
+                onBack={() => {}}
+              />
+            </ContractsProvider>
+          </LanguageProvider>
+        </MemoryRouter>
+      );
+
+      expect(html).toContain('Supplier Terms of Service &amp; EULA');
+      expect(html).toContain('Quoting Charter');
+      expect(html).toContain('data-testid="eula-agree-checkbox"');
+      expect(html).toContain('data-testid="btn-eula-accept"');
     });
   });
 });

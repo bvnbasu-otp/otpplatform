@@ -87,3 +87,22 @@ export const PLATFORM_DISCLAIMER_LINES = [
 
 /** The same text as one string, for the places that set it as a single paragraph. */
 export const PLATFORM_DISCLAIMER = PLATFORM_DISCLAIMER_LINES.join(' ');
+
+/**
+ * OTP Next / X2O positioning — next-generation operating system & network.
+ */
+export const OTP_NEXT_NAME = 'OTP Next';
+export const OTP_NEXT_CODE = 'X2O';
+export const OTP_NEXT_FULL_TITLE =
+  'OTP Next (X2O) — Next-Generation Procurement Operating System & Network';
+export const OTP_NEXT_DESCRIPTION =
+  'Dual-speed procurement engine powering Express Quick Orders and Governed Multi-Quote RFQs across 17 verified SNE categories with identity-protected evaluation.';
+
+export const OTP_NEXT_FEATURES = [
+  'Dual-Speed Procurement: Express Quick Orders & Governed RFQs',
+  '17-Category Radial Supplier Network Engine (SNE)',
+  'Cryptographically Decoupled Identity-Protected Quoting',
+  'Direct Buyer-Seller Settlement with 0.50% Wallet Fee Accounting',
+  'Multi-Persona Internal & Executive Operating Consoles',
+] as const;
+

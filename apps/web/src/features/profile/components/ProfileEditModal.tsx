@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRoleContext } from '@/features/roles';
+import { useAuth } from '@/features/auth';
 import {
   updateMyProfile,
   updateOrganizationName,
@@ -27,6 +28,7 @@ interface ProfileEditModalProps {
 
 export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEditModalProps) {
   const { context, refresh } = useRoleContext();
+  const { signOut } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -826,29 +828,45 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
           </div>
 
           {/* Modal Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t">
+          <div className="flex items-center justify-between gap-3 pt-3 border-t">
             <button
               type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="rounded-md border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition"
+              onClick={() => {
+                onClose();
+                void signOut().then(() => { window.location.href = '/login'; });
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 px-3 py-1.5 text-xs font-semibold transition cursor-pointer"
+              title="Sign out of account"
+              data-testid="profile-modal-sign-out-button"
             >
-              Cancel
+              <span>🚪</span>
+              <span>Sign Out</span>
             </button>
-            <button
-              type="submit"
-              disabled={saving || loading}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50 transition"
-            >
-              {saving ? (
-                <>
-                  <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  <span>Saving Changes…</span>
-                </>
-              ) : (
-                <span>Save Profile Changes</span>
-              )}
-            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving}
+                className="rounded-md border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving || loading}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50 transition"
+              >
+                {saving ? (
+                  <>
+                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    <span>Saving Changes…</span>
+                  </>
+                ) : (
+                  <span>Save Profile Changes</span>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

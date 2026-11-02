@@ -5,6 +5,9 @@ import {
   PRODUCT_NAME,
   PRODUCT_PLATFORM_SUBTITLE,
   PRODUCT_TITLE,
+  OTP_NEXT_NAME,
+  OTP_NEXT_CODE,
+  OTP_NEXT_DESCRIPTION,
 } from '@/lib/brand';
 import { SiteLayout } from '../components/SiteLayout';
 
@@ -53,6 +56,49 @@ export function AboutPage() {
               A 0.50% supplier platform fee is defined for after the pilot and is not charged during the pilot.
               Buyer plan amounts on the pricing page are disclosures for later billing. They are not a charge today.
             </p>
+          </div>
+        </div>
+
+        {/* OTP Next / X2O Architecture */}
+        <div className="mt-8 rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-6 space-y-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+            <div>
+              <span className="rounded-full bg-primary/20 text-primary px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                {OTP_NEXT_NAME} ({OTP_NEXT_CODE})
+              </span>
+              <h2 className="mt-1 text-base sm:text-lg font-bold text-foreground">
+                Dual-Speed Procurement Operating System
+              </h2>
+            </div>
+            <span className="text-[11px] font-mono font-semibold text-muted-foreground">
+              17 SNE Categories · Radial Geo-Discovery
+            </span>
+          </div>
+
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            {OTP_NEXT_DESCRIPTION}
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2 text-xs">
+            <div className="rounded-xl border bg-background/80 p-3.5 space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-foreground">
+                <span className="text-amber-500">⚡</span>
+                <h3 className="font-bold">Express Quick Order</h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Single-tap requisition for standardized supplies and urgent service calls. Immediately routes through SNE radial matching without delayed committee cycles.
+              </p>
+            </div>
+
+            <div className="rounded-xl border bg-background/80 p-3.5 space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-foreground">
+                <span className="text-blue-500">⚖️</span>
+                <h3 className="font-bold">Governed RFQs &amp; Voting</h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Full-governance competitive comparison with decoupled identity protection, mandatory multi-quote quorum, and recorded committee voting before award reveal.
+              </p>
+            </div>
           </div>
         </div>
 

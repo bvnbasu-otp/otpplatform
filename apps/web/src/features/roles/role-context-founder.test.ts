@@ -17,4 +17,11 @@ describe('role context founder claim', () => {
     expect(source).toContain("code: 'INTERNAL_OPERATOR'");
     expect(source).toContain("code: 'FINANCE_OPERATOR'");
   });
+
+  it('enforces EULA agreement requirement before completing role onboarding', () => {
+    const onboardingSource = readFileSync(resolve(__dirname, 'pages/RoleOnboardingPage.tsx'), 'utf8');
+    expect(onboardingSource).toContain('onboarding-eula-checkbox');
+    expect(onboardingSource).toContain('eulaAgreed');
+    expect(onboardingSource).toContain('disabled={!chosen || !eulaAgreed}');
+  });
 });

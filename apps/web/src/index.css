@@ -693,24 +693,106 @@ html, body {
 
 /* Print Optimization for PDF Export & A4 Printable Documents (POL-04) */
 @media print {
-  body {
-    background: #ffffff !important;
-    color: #000000 !important;
-    font-size: 11pt;
-  }
-
-  header, nav, aside, .no-print, [title="Notifications"], [role="navigation"], [role="tablist"] {
+  /* Hide all interactive chrome, navigation, headers, footers, buttons, and popups */
+  header:not(.print-header),
+  nav,
+  aside,
+  button:not(.print-keep),
+  input,
+  select,
+  textarea,
+  .no-print,
+  [title="Notifications"],
+  [role="navigation"],
+  [role="tablist"],
+  .mascot-svg,
+  .hero-banner-decor {
     display: none !important;
   }
 
+  /* Reset all fixed overlays and backdrops to plain printable document flow */
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .fixed.inset-0,
+  [role="dialog"],
+  .modal-backdrop {
+    position: static !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    overflow: visible !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .bg-card,
+  .bg-muted,
+  .bg-slate-900 {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+  }
+
+  /* Format tables as official financial ledger reports */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 1px solid #1e293b !important;
+    margin-top: 8pt !important;
+    margin-bottom: 8pt !important;
+    page-break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  th {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    font-size: 8pt !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    border: 1px solid #94a3b8 !important;
+    padding: 5pt 6pt !important;
+    text-align: left !important;
+  }
+
+  td {
+    font-size: 8pt !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 4pt 6pt !important;
+    vertical-align: top !important;
+  }
+
   .print-report-container,
-  [data-testid="purchase-order-detail"] {
+  [data-testid="purchase-order-detail"],
+  #persona-audit-statement-content {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
+    border: none !important;
   }
 
   .zero-scroll-container {
@@ -720,6 +802,6 @@ html, body {
 
   @page {
     size: A4 portrait;
-    margin: 12mm 10mm 12mm 10mm;
+    margin: 10mm 10mm 12mm 10mm;
   }
 }

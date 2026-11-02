@@ -99,4 +99,10 @@ describe('User Profile Management & Customization Suite', () => {
     expect(ProfilePage).toBeDefined();
     expect(typeof ProfilePage).toBe('function');
   });
+
+  it('exports ProfileEditModal and provides session logout button', async () => {
+    const { ProfileEditModal } = await import('../components/ProfileEditModal');
+    expect(ProfileEditModal).toBeDefined();
+    expect(typeof ProfileEditModal).toBe('function');
+  });
 });

@@ -251,6 +251,13 @@ describe('a home page that stays a home page', () => {
 
     expect(new Set(headings).size).toBe(headings.length);
   });
+
+  it('includes OTP Next (X2O) dual-speed procurement entry in GENERAL_FAQS', () => {
+    const x2oFaq = GENERAL_FAQS.find((f) => f.question.includes('OTP Next (X2O)'));
+    expect(x2oFaq).toBeDefined();
+    expect(x2oFaq?.answer).toContain('Express Quick Order');
+    expect(x2oFaq?.answer).toContain('Governed RFQs');
+  });
 });
 
 describe('the promise about identity', () => {

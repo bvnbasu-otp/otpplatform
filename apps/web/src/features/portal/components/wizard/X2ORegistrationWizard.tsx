@@ -8,6 +8,7 @@ import { WizardStep4Persona, type PersonaType } from './WizardStep4Persona';
 import { WizardStep6PersonalInfo, type PersonalInfoData } from './WizardStep6PersonalInfo';
 import { WizardStep7Addresses, type SavedAddress } from './WizardStep7Addresses';
 import { WizardStep8Complete } from './WizardStep8Complete';
+import { WizardStepEulaAgreement } from './WizardStepEulaAgreement';
 import { WizardStep5Individual } from './WizardStep5Individual';
 import { WizardStep5RWA } from './WizardStep5RWA';
 import { WizardStep5MSME } from './WizardStep5MSME';
@@ -41,6 +42,7 @@ export function X2ORegistrationWizard({ onSuccess, onSignIn }: X2ORegistrationWi
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>();
   const [submittedResult, setSubmittedResult] = useState<SignupResult | null>(null);
+  const [showEulaStep, setShowEulaStep] = useState(false);
 
   // Screen 1 -> Screen 2: Advance to dedicated OTP verification
   function handleStep1Proceed(selectedChannel: VerificationChannel, identifier: string) {
@@ -74,10 +76,10 @@ export function X2ORegistrationWizard({ onSuccess, onSignIn }: X2ORegistrationWi
     setCurrentStep(5);
   }
 
-  // Screen 5 -> Screen 6: Persona -> Personal Info
+  // Screen 5 -> EULA -> Screen 6: Persona -> EULA -> Personal Info
   function handleStep5Persona(selectedPersona: PersonaType) {
     setPersona(selectedPersona);
-    setCurrentStep(6);
+    setShowEulaStep(true);
   }
 
   // Screen 6 -> Screen 7: Personal Info -> Addresses
@@ -200,11 +202,27 @@ export function X2ORegistrationWizard({ onSuccess, onSignIn }: X2ORegistrationWi
         )}
 
         {/* Screen 5: Persona Selection (Chosen only once) */}
-        {currentStep === 5 && (
+        {currentStep === 5 && !showEulaStep && (
           <WizardStep4Persona
             side={side}
             onNext={handleStep5Persona}
             onBack={() => setCurrentStep(4)}
+          />
+        )}
+
+        {/* Dedicated Persona-Specific EULA Agreement Screen */}
+        {showEulaStep && (
+          <WizardStepEulaAgreement
+            side={side}
+            persona={persona}
+            onAccept={() => {
+              setShowEulaStep(false);
+              setCurrentStep(6);
+            }}
+            onBack={() => {
+              setShowEulaStep(false);
+              setCurrentStep(5);
+            }}
           />
         )}
 

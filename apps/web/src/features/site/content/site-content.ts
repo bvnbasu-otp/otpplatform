@@ -378,6 +378,13 @@ export interface FaqEntry {
  */
 export const GENERAL_FAQS: FaqEntry[] = [
   {
+    question: 'What is OTP Next (X2O) and how does dual-speed procurement work?',
+    answer:
+      'OTP Next (codenamed X2O) is the next-generation operating model of Open Trade & Procurement. '
+      + 'It introduces dual-speed procurement: Express Quick Order for urgent requisitions with instant radial discovery across 17 categories, '
+      + 'alongside Governed RFQs for multi-quote competitive comparison where supplier identities stay masked and protected until award.',
+  },
+  {
     question: `What is ${PRODUCT_NAME}?`,
     answer:
       `${PRODUCT_NAME} (Open Trade & Procurement) is an identity-protected competitive sourcing platform. `

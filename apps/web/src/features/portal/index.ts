@@ -26,6 +26,7 @@ export { WizardStep5Supplier } from './components/wizard/WizardStep5Supplier';
 export { WizardStep6PersonalInfo } from './components/wizard/WizardStep6PersonalInfo';
 export { WizardStep7Addresses } from './components/wizard/WizardStep7Addresses';
 export { WizardStep8Complete } from './components/wizard/WizardStep8Complete';
+export { WizardStepEulaAgreement } from './components/wizard/WizardStepEulaAgreement';
 export {
   BUYER_COPY,
   SUPPLIER_COPY,

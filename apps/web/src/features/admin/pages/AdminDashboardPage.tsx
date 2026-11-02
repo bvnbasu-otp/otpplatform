@@ -214,7 +214,7 @@ export function AdminDashboardPage() {
   const isTilesView = resolvedTab === 'TILES';
 
   // Internal Role Resolution & Impersonation Security
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { context: roleContext } = useRoleContext();
 
   const userEmail = roleContext?.email || user?.email || null;
@@ -265,6 +265,14 @@ export function AdminDashboardPage() {
     const allowed = INTERNAL_ROLE_CONFIGS[activeRoleCode]?.allowedTabs;
     return allowed ? allowed.includes(activeTab) : false;
   }, [activeRoleCode, activeTab]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } finally {
+      window.location.href = '/login';
+    }
+  };
 
   const handleSelectRole = (nextRole: InternalConsoleRoleCode) => {
     if (!isSuperUser) return;
@@ -559,14 +567,25 @@ export function AdminDashboardPage() {
             <span className="text-sm">🔄</span>
             <span className="hidden sm:inline ml-1">Refresh</span>
           </button>
+
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-300 px-2 sm:px-2.5 py-1 text-xs font-semibold active:scale-98 transition shrink-0 shadow-2xs cursor-pointer"
+            title="Sign out of Admin Console"
+          >
+            <span className="text-sm">🚪</span>
+            <span className="hidden sm:inline ml-1">Sign Out</span>
+          </button>
         </div>
       </header>
 
       {/* Internal Role Switcher & Persona Bar */}
-      <div className="mt-2.5">
+      <div className="mt-2.5 relative z-40">
         <InternalRoleSwitcherBar
           currentRole={activeRoleCode}
           onSelectRole={handleSelectRole}
+          onSignOut={handleSignOut}
           canSwitch={isSuperUser}
           isFounder={roleContext?.isFounder || userEmail?.toLowerCase() === 'bvnbasu@gmail.com' || userEmail?.toLowerCase() === 'bvnbasu@yahoo.com'}
           userName={roleContext?.fullName || user?.email?.split('@')[0]}

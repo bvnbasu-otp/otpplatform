@@ -24,6 +24,7 @@ export function RoleOnboardingPage() {
   const [chosen, setChosen] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [eulaAgreed, setEulaAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const side = context.side ?? 'BUYER';
@@ -139,6 +140,23 @@ export function RoleOnboardingPage() {
           </p>
         )}
 
+        {chosen && (
+          <div className="mt-4 rounded-lg border border-border bg-card p-3 shadow-2xs">
+            <label className="flex items-start gap-2.5 cursor-pointer text-xs text-foreground select-none">
+              <input
+                type="checkbox"
+                checked={eulaAgreed}
+                onChange={(e) => setEulaAgreed(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                data-testid="onboarding-eula-checkbox"
+              />
+              <span>
+                I agree to the <span className="font-bold text-primary">{side === 'SUPPLIER' ? 'Supplier Terms & EULA' : 'Customer Agreement & EULA'}</span> and commit to transparent, identity-protected procurement governance.
+              </span>
+            </label>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Button
             type="button"
@@ -146,7 +164,7 @@ export function RoleOnboardingPage() {
             size="lg"
             busy={busy}
             busyLabel="Saving…"
-            disabled={!chosen}
+            disabled={!chosen || !eulaAgreed}
             onClick={() => void confirm()}
             data-testid="confirm-role"
           >

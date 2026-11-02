@@ -60,8 +60,16 @@ const ROLE_BADGE: Record<string, string> = {
 
 export function ProfilePage() {
   const { context, refresh, switchOrg, switchTo } = useRoleContext();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, resolvedTheme, colorTheme } = useTheme();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } finally {
+      window.location.href = '/login';
+    }
+  };
 
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
@@ -619,6 +627,17 @@ export function ProfilePage() {
                 ? 'Supplier Rep'
                 : 'Buyer Lead'}
             </span>
+
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex min-h-[34px] items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-300 px-3 py-1 text-xs font-bold transition active:scale-95 cursor-pointer shadow-2xs"
+              title="Sign out of your account"
+              data-testid="profile-sign-out-button"
+            >
+              <span>🚪</span>
+              <span>Sign Out</span>
+            </button>
           </div>
         </div>
 
@@ -1679,6 +1698,32 @@ export function ProfilePage() {
               </div>
             </section>
           )}
+          {/* Account Session & Sign Out Card */}
+          <section className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 shadow-xs space-y-3" data-testid="profile-session-logout-card">
+            <div className="flex items-center justify-between border-b border-red-500/20 pb-2">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                  Account Session &amp; Sign Out
+                </h2>
+                <p className="text-[11px] text-muted-foreground">
+                  Signed in as <span className="font-semibold text-foreground">{user?.email || email}</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <p className="text-[11px] text-muted-foreground">
+                End your active authenticated session on this device. You will be redirected to the sign-in screen.
+              </p>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-xs font-bold transition active:scale-95 cursor-pointer shadow-sm shrink-0"
+              >
+                <span>🚪</span>
+                <span>Log Out of Account</span>
+              </button>
+            </div>
+          </section>
         </div>
       )}
 

@@ -8,6 +8,7 @@ export interface InternalRoleSwitcherBarProps {
   currentRole: InternalConsoleRoleCode;
   onSelectRole: (role: InternalConsoleRoleCode) => void;
   onSimulatePersona?: (side: 'BUYER' | 'SUPPLIER') => void;
+  onSignOut?: () => void;
   isRootFounder?: boolean;
   canSwitch?: boolean;
   isFounder?: boolean;
@@ -19,6 +20,7 @@ export function InternalRoleSwitcherBar({
   currentRole,
   onSelectRole,
   onSimulatePersona,
+  onSignOut,
   isRootFounder = false,
   canSwitch = true,
   isFounder = false,
@@ -39,7 +41,7 @@ export function InternalRoleSwitcherBar({
   ];
 
   return (
-    <div className="relative mb-6 rounded-xl border border-border/80 bg-slate-900/90 p-3 shadow-lg backdrop-blur">
+    <div className="relative z-40 mb-6 rounded-xl border border-border/80 bg-slate-900/90 p-3 shadow-lg backdrop-blur">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 font-bold text-sm">
@@ -86,11 +88,11 @@ export function InternalRoleSwitcherBar({
                 </button>
               )}
 
-              <div className="relative">
+              <div className="relative z-50">
                 <button
                   type="button"
                   onClick={() => setIsOpen(!isOpen)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition cursor-pointer"
                   aria-haspopup="true"
                   aria-expanded={isOpen}
                 >
@@ -101,7 +103,7 @@ export function InternalRoleSwitcherBar({
                 </button>
 
                 {isOpen && (
-                  <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl z-50 animate-in fade-in zoom-in-95">
+                  <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl z-[100] animate-in fade-in zoom-in-95">
                     <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       Internal Console Roles
                     </div>
@@ -173,6 +175,23 @@ export function InternalRoleSwitcherBar({
                         </div>
                       </>
                     )}
+
+                    {onSignOut && (
+                      <>
+                        <div className="my-1.5 border-t border-slate-800" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsOpen(false);
+                            onSignOut();
+                          }}
+                          className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-red-400 hover:bg-red-500/15 hover:text-red-300 transition cursor-pointer font-medium"
+                        >
+                          <span>🚪</span>
+                          <span>Sign Out of Platform</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -182,6 +201,18 @@ export function InternalRoleSwitcherBar({
               <span>🔒</span>
               <span>Restricted to role-authorized functions</span>
             </span>
+          )}
+
+          {onSignOut && (
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-300 px-2.5 py-1.5 text-xs font-semibold transition active:scale-95 cursor-pointer ml-1"
+              title="Sign out of internal console"
+            >
+              <span>🚪</span>
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
           )}
         </div>
       </div>
