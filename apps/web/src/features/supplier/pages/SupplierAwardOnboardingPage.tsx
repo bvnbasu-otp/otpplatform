@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button, Input, Field } from '@/components/ui';
+import { SupplierWalletTopUpModal } from '../components/SupplierWalletTopUpModal';
 
 export function SupplierAwardOnboardingPage() {
   const { token: paramToken } = useParams<{ token?: string }>();
@@ -28,6 +29,11 @@ export function SupplierAwardOnboardingPage() {
   const [contactPerson, setContactPerson] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+
+  // Platform Wallet Reserve State (0.50% fee enforcement via OTP UPI QR)
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [requiredFeeAmount] = useState<number>(24);
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
 
   // Auto derive PAN from GSTIN if 15 chars typed
   useEffect(() => {
@@ -64,6 +70,12 @@ export function SupplierAwardOnboardingPage() {
     const cleanGst = gstin.trim().toUpperCase();
     if (cleanGst && cleanPan && cleanGst.substring(2, 12) !== cleanPan) {
       setError('PAN does not match the PAN characters (positions 3-12) of the provided GSTIN.');
+      return;
+    }
+
+    if (walletBalance < requiredFeeAmount) {
+      setError(`Platform fee reserve of ₹${requiredFeeAmount} required. Please top up your wallet via OTP UPI QR to accept this award.`);
+      setIsTopUpModalOpen(true);
       return;
     }
 
@@ -335,6 +347,40 @@ export function SupplierAwardOnboardingPage() {
             </div>
           </div>
 
+          {/* Platform Wallet Fee Reserve Gate */}
+          <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/80 space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <span>🛡️</span> Platform Fee Reserve Gate
+              </span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                walletBalance >= requiredFeeAmount ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
+              }`}>
+                {walletBalance >= requiredFeeAmount ? '✓ Funded' : 'Action Required'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground text-[11px]">
+              <span>Required Reserve (0.50% fee):</span>
+              <span className="font-bold text-foreground">₹{requiredFeeAmount}</span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground text-[11px]">
+              <span>Current Platform Wallet Balance:</span>
+              <span className={`font-mono font-bold ${walletBalance >= requiredFeeAmount ? 'text-emerald-600' : 'text-destructive'}`}>
+                ₹{walletBalance}
+              </span>
+            </div>
+            {walletBalance < requiredFeeAmount && (
+              <button
+                type="button"
+                onClick={() => setIsTopUpModalOpen(true)}
+                className="w-full mt-1 py-2 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+                data-testid="btn-open-wallet-qr"
+              >
+                <span>⚡ Top Up Wallet via OTP UPI QR (₹100)</span>
+              </button>
+            )}
+          </div>
+
           <div className="pt-4 border-t border-border">
             <button
               type="submit"
@@ -345,6 +391,19 @@ export function SupplierAwardOnboardingPage() {
             </button>
           </div>
         </form>
+
+        {/* Dynamic OTP UPI QR Top-Up Modal */}
+        <SupplierWalletTopUpModal
+          isOpen={isTopUpModalOpen}
+          onClose={() => setIsTopUpModalOpen(false)}
+          requiredFee={requiredFeeAmount}
+          currentBalance={walletBalance}
+          onTopUpSuccess={(newBal) => {
+            setWalletBalance(newBal);
+            setIsTopUpModalOpen(false);
+            setError(null);
+          }}
+        />
       </div>
     </div>
   );

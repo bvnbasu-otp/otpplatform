@@ -31,14 +31,15 @@ export function ProcurementDecideStage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voteDecision, setVoteDecision] = useState<'APPROVE' | 'REJECT'>('APPROVE');
   const [voteComment, setVoteComment] = useState('Recommended lowest landed cost with 12 mo warranty.');
+  const [isSingleQuoteOverride, setIsSingleQuoteOverride] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const actorRwa = {
-    profileId: 'usr_baskar',
-    fullName: 'Baskar Loganathan',
-    email: 'bvnbasu@gmail.com',
+    profileId: 'usr_committee_lead',
+    fullName: 'Procurement Committee Lead',
+    email: 'committee@example.com',
     persona: 'RWA' as const,
-    organizationId: 'org_durga_rainbow',
+    organizationId: 'org_community',
     orgRole: 'COMMITTEE_MEMBER',
   };
 
@@ -96,7 +97,9 @@ export function ProcurementDecideStage({
       const awardRes = await contracts.awardReveal.issueAwardNotice(actorRwa, {
         rfqId,
         selectedQuoteId,
-        notes: voteComment,
+        notes: isSingleQuoteOverride
+          ? `${voteComment} [Single-source buyer discretion override approved]`
+          : voteComment,
       });
 
       if (!awardRes.ok) {
@@ -136,15 +139,32 @@ export function ProcurementDecideStage({
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-foreground">Committee Quorum Status</span>
           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-            <Icon name="check_circle" size={12} /> Quorum Reached (2/3 Voted)
+            <Icon name="check_circle" size={12} /> {isSingleQuoteOverride ? 'Quorum Waived (Buyer Discretion)' : 'Quorum Reached (2/3 Voted)'}
           </span>
         </div>
         <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-          <div className="bg-primary h-1.5 rounded-full" style={{ width: '67%' }} />
+          <div className="bg-primary h-1.5 rounded-full" style={{ width: isSingleQuoteOverride ? '100%' : '67%' }} />
         </div>
         <p className="text-[10px] text-muted-foreground">
-          Durga Rainbow Assn Executive Committee: 2 out of 3 active members have cast affirmative votes.
+          {isSingleQuoteOverride
+            ? 'Single-Source Executive Exemption: Buyer has authorized contract award with single quotation, waiving multi-member quorum.'
+            : 'Durga Rainbow Assn Executive Committee: 2 out of 3 active members have cast affirmative votes.'}
         </p>
+
+        {/* Single-Quote / Quorum Override Toggle */}
+        <div className="pt-2 border-t border-border/40 mt-1">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isSingleQuoteOverride}
+              onChange={(e) => setIsSingleQuoteOverride(e.target.checked)}
+              className="mt-0.5 rounded border-border text-primary focus:ring-primary"
+            />
+            <span className="text-[11px] font-semibold text-foreground leading-snug">
+              Buyer Discretion Override: Proceed with single quote / waive minimum quorum requirement if pursuing sole supplier.
+            </span>
+          </label>
+        </div>
       </div>
 
       {/* Conflict of Interest (COI) Declaration Box */}

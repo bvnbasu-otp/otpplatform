@@ -25,16 +25,16 @@ export function WizardStep5MSME({
   onSuccess,
   onBack,
 }: WizardStep5MSMEProps) {
-  const [businessName, setBusinessName] = useState('Bright Enterprises');
-  const [legalName, setLegalName] = useState('Bright Enterprises Pvt. Ltd.');
+  const [businessName, setBusinessName] = useState('');
+  const [legalName, setLegalName] = useState('');
   const [businessType, setBusinessType] = useState('Private Limited');
   const [industry, setIndustry] = useState('Manufacturing');
-  const [pan, setPan] = useState('ABCDE1234F');
-  const [gstin, setGstin] = useState('29ABCDE1234F1Z5');
-  const [udyam, setUdyam] = useState('UDYAM-KR-00123');
-  const [estYear, setEstYear] = useState('2015');
-  const [address, setAddress] = useState('44, Industrial Area, Peenya, Bengaluru — 58');
-  const [contactName, setContactName] = useState('Baskar Loganathan');
+  const [pan, setPan] = useState('');
+  const [gstin, setGstin] = useState('');
+  const [udyam, setUdyam] = useState('');
+  const [estYear, setEstYear] = useState('');
+  const [address, setAddress] = useState('');
+  const [contactName, setContactName] = useState('');
 
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

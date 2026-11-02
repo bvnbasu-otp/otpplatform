@@ -30,13 +30,10 @@ export function WizardStep5Supplier({
   onSuccess,
   onBack,
 }: WizardStep5SupplierProps) {
-  const [businessName, setBusinessName] = useState('Apex Commercial Solutions');
-  const [contactName, setContactName] = useState('Baskar Loganathan');
-  const [supplierTypes, setSupplierTypes] = useState<string[]>(['Manufacturer', 'Distributor']);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([
-    'property_facility_management',
-    'electrical_power',
-  ]);
+  const [businessName, setBusinessName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [supplierTypes, setSupplierTypes] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<ServiceCategory[]>(FALLBACK_SERVICE_CATEGORIES);
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { WizardProgress } from './WizardProgress';
@@ -12,6 +13,7 @@ export interface WizardStep4PersonaProps {
 }
 
 export function WizardStep4Persona({ side, onNext, onBack }: WizardStep4PersonaProps) {
+  const { t } = useLanguage();
   const [selectedPersona, setSelectedPersona] = useState<PersonaType>(
     side === 'BUYER' ? 'INDIVIDUAL' : 'SUPPLIER'
   );
@@ -19,20 +21,20 @@ export function WizardStep4Persona({ side, onNext, onBack }: WizardStep4PersonaP
   const buyerPersonas = [
     {
       id: 'INDIVIDUAL' as const,
-      title: 'Individual',
-      subtitle: 'For personal or home use',
+      title: t('personas.individualTitle', 'Individual'),
+      subtitle: t('personas.individualSubtitle', 'For personal or home use'),
       icon: 'shopping_bag',
     },
     {
       id: 'RWA' as const,
-      title: 'RWA / Apartment Assn.',
-      subtitle: 'For residential communities',
+      title: t('personas.rwaTitle', 'RWA / Apartment Assn.'),
+      subtitle: t('personas.rwaSubtitle', 'For residential communities'),
       icon: 'apartment',
     },
     {
       id: 'MSME' as const,
-      title: 'MSME / Business',
-      subtitle: 'For small and medium businesses',
+      title: t('personas.msmeTitle', 'MSME / Business'),
+      subtitle: t('personas.msmeSubtitle', 'For small and medium businesses'),
       icon: 'business',
     },
   ];
@@ -40,8 +42,8 @@ export function WizardStep4Persona({ side, onNext, onBack }: WizardStep4PersonaP
   const supplierPersonas = [
     {
       id: 'SUPPLIER' as const,
-      title: 'Supplier / Service Provider',
-      subtitle: 'For businesses supplying goods or services',
+      title: t('personas.supplierPersonaTitle', 'Supplier / Service Provider'),
+      subtitle: t('personas.supplierPersonaSubtitle', 'For businesses supplying goods or services'),
       icon: 'local_shipping',
     },
   ];
@@ -51,18 +53,25 @@ export function WizardStep4Persona({ side, onNext, onBack }: WizardStep4PersonaP
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground justify-between p-4 sm:p-6 max-w-md mx-auto w-full">
       <div>
-        <WizardProgress step={4} total={5} label="Choose Persona" onBack={onBack} />
+        <WizardProgress
+          step={4}
+          total={5}
+          label={t('personas.choosePersonaTitle', 'Choose Persona')}
+          onBack={onBack}
+        />
 
         <div className="space-y-1 mb-6">
-          <h2 className="text-xl font-black text-foreground">Choose Your Persona</h2>
+          <h2 className="text-xl font-black text-foreground">
+            {t('personas.choosePersonaTitle', 'Choose Your Persona')}
+          </h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            This helps us personalise your experience.
+            {t('personas.choosePersonaSubtitle', 'This helps us personalise your experience.')}
           </p>
         </div>
 
         <div className="space-y-3">
           <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
-            {side === 'BUYER' ? 'BUYER' : 'SUPPLIER'}
+            {side === 'BUYER' ? t('personas.buyerTitle', 'BUYER') : t('personas.supplierTitle', 'SUPPLIER')}
           </label>
 
           {list.map((item) => {
@@ -114,7 +123,7 @@ export function WizardStep4Persona({ side, onNext, onBack }: WizardStep4PersonaP
           onClick={() => onNext(selectedPersona)}
           className="w-full py-3.5 text-sm font-bold shadow-sm"
         >
-          Continue
+          {t('action.continue', 'Continue')}
         </Button>
       </div>
     </div>

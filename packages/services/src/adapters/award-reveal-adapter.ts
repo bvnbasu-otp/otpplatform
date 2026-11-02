@@ -33,6 +33,13 @@ export class SupabaseAwardRevealAdapter implements AwardRevealContract {
     if (!input.confirmPlatformFeeTerm) {
       return err(new ValidationError('Supplier must confirm the 0.50% platform fee term prior to award acceptance'));
     }
+    if (input.walletBalance !== undefined && input.requiredFeeAmount !== undefined && input.walletBalance < input.requiredFeeAmount) {
+      return err(
+        new ValidationError(
+          `Insufficient supplier wallet balance (₹${input.walletBalance}). A minimum reserve of ₹${input.requiredFeeAmount} is required. Please top up your wallet via OTP UPI QR to accept this award.`
+        )
+      );
+    }
     return ok({
       awardId: input.awardId,
       rfqId: 'rfq_sample_01',

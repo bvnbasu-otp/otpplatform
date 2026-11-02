@@ -25,7 +25,7 @@ export function WizardStep5Individual({
   onSuccess,
   onBack,
 }: WizardStep5IndividualProps) {
-  const [fullName, setFullName] = useState('Baskar Loganathan');
+  const [fullName, setFullName] = useState('');
   const [language, setLanguage] = useState('English');
   const [pan, setPan] = useState('');
   const [gstin, setGstin] = useState('');
@@ -132,7 +132,7 @@ export function WizardStep5Individual({
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Baskar Loganathan"
+              placeholder="e.g. Ramesh Kumar"
               className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-card text-xs font-semibold text-foreground focus:ring-2 focus:ring-primary focus:outline-none transition"
             />
           </div>

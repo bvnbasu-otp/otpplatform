@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
+import {
+  OfficeChairsIllustration,
+  ElectricalPlumbingIllustration,
+  HousekeepingIllustration,
+} from '@/components/illustrations/VectorIllustrations';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useAuth } from '@/features/auth';
 import { useRoleContext } from '@/features/roles';
@@ -175,15 +180,11 @@ export function OpportunitiesBrowsePage() {
   const [isCapabilityModalOpen, setIsCapabilityModalOpen] = useState(false);
 
   const { profile } = useSupplierRadarCapabilities();
-
-  // Redirect buyers back to dashboard (Opportunities is only applicable for suppliers)
-  if (context.email && context.side !== 'SUPPLIER') {
-    return <Navigate to="/dashboard" replace />;
-  }
+  const isSupplier = context.side === 'SUPPLIER';
 
   const filteredOpportunities = useMemo(() => {
-    // 1. Radar Scope & Capabilities Filter
-    const declaredCategories = profile?.categories || [];
+    // 1. Radar Scope & Capabilities Filter (only for suppliers)
+    const declaredCategories = isSupplier ? profile?.categories || [] : [];
     const scopeOpportunities = CANONICAL_OPPORTUNITIES.filter((opp) => {
       if (declaredCategories.length === 0) return true;
       const title = opp.title.toLowerCase();
@@ -235,31 +236,57 @@ export function OpportunitiesBrowsePage() {
         </div>
       </header>
 
-      {/* 2. Active Radar Scope & Capabilities Banner */}
-      <div
-        className="rounded-2xl bg-gradient-to-r from-primary/15 via-primary/10 to-card border border-primary/25 p-3.5 flex items-center justify-between gap-3 shadow-2xs"
-        data-testid="radar-scope-banner"
-      >
-        <div className="space-y-0.5 min-w-0">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-primary">
-            <Icon name="radar" size={14} />
-            <span>Radar Scope Active</span>
-          </span>
-          <p className="text-xs font-bold text-foreground truncate">
-            {profile.categories.length} {profile.categories.length === 1 ? 'Trade Category' : 'Trade Categories'} Covered
-          </p>
-          <p className="text-[11px] text-muted-foreground truncate">
-            {profile.baseCity} · {profile.radiusKm} km Radius
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIsCapabilityModalOpen(true)}
-          className="min-h-[40px] px-3.5 py-1.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-foreground text-xs font-bold shadow-2xs active:scale-95 transition shrink-0 cursor-pointer"
+      {/* 2. Active Radar Scope (Supplier) or Trending Banner (Buyer) */}
+      {isSupplier ? (
+        <div
+          className="rounded-2xl bg-gradient-to-r from-primary/15 via-primary/10 to-card border border-primary/25 p-3.5 flex items-center justify-between gap-3 shadow-2xs"
+          data-testid="radar-scope-banner"
         >
-          Edit Scope ⚙️
-        </button>
-      </div>
+          <div className="space-y-0.5 min-w-0">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-primary">
+              <Icon name="radar" size={14} />
+              <span>Radar Scope Active</span>
+            </span>
+            <p className="text-xs font-bold text-foreground truncate">
+              {profile?.categories?.length || 0} {(profile?.categories?.length === 1) ? 'Trade Category' : 'Trade Categories'} Covered
+            </p>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {profile?.baseCity || 'Bengaluru'} · {profile?.radiusKm || 50} km Radius
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsCapabilityModalOpen(true)}
+            className="min-h-[40px] px-3.5 py-1.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-foreground text-xs font-bold shadow-2xs active:scale-95 transition shrink-0 cursor-pointer"
+          >
+            Edit Scope ⚙️
+          </button>
+        </div>
+      ) : (
+        <div
+          className="rounded-2xl bg-gradient-to-r from-blue-500/15 via-blue-500/10 to-card border border-blue-500/25 p-3.5 flex items-center justify-between gap-3 shadow-2xs"
+          data-testid="trending-scope-banner"
+        >
+          <div className="space-y-0.5 min-w-0">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+              <Icon name="trending_up" size={14} />
+              <span>Trending Near You &amp; PAN-India</span>
+            </span>
+            <p className="text-xs font-bold text-foreground truncate">
+              Popular items &amp; services requested across India
+            </p>
+            <p className="text-[11px] text-muted-foreground truncate">
+              Tap any item to review and start a similar competitive RFQ
+            </p>
+          </div>
+          <Link
+            to="/procurement-flow?stage=TELL"
+            className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-2xs flex items-center justify-center shrink-0"
+          >
+            Post RFQ +
+          </Link>
+        </div>
+      )}
 
       {/* 2. Screen 10 Search Bar */}
       <div className="relative">
@@ -328,10 +355,14 @@ export function OpportunitiesBrowsePage() {
               data-testid={`opportunity-card-${opp.id}`}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${opp.thumbnailBg} group-hover:scale-105 transition`}
-                >
-                  <Icon name={opp.thumbnailIcon} size={24} />
+                <div className="shrink-0 group-hover:scale-105 transition">
+                  {opp.id.includes('office') ? (
+                    <OfficeChairsIllustration className="w-12 h-12 rounded-xl shadow-2xs" />
+                  ) : opp.id.includes('plumbing') ? (
+                    <ElectricalPlumbingIllustration className="w-12 h-12 rounded-xl shadow-2xs" />
+                  ) : (
+                    <HousekeepingIllustration className="w-12 h-12 rounded-xl shadow-2xs" />
+                  )}
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-xs sm:text-sm font-bold text-foreground truncate">
@@ -374,19 +405,29 @@ export function OpportunitiesBrowsePage() {
                 Close
               </button>
               <Link
-                to={`/requirements/new?category=${encodeURIComponent(selectedOpportunity.category)}`}
+                to={
+                  isSupplier
+                    ? `/supplier/rfq/${encodeURIComponent(selectedOpportunity.id)}`
+                    : `/procurement-flow?stage=TELL`
+                }
                 onClick={() => setSelectedOpportunity(null)}
                 className="min-h-[46px] flex-1 rounded-xl bg-primary text-primary-foreground py-2 text-xs font-extrabold text-center hover:bg-primary/90 flex items-center justify-center transition shadow-2xs"
               >
-                Submit RFQ
+                {isSupplier ? 'Submit Voluntary Quote' : 'Start Similar RFQ'}
               </Link>
             </div>
           }
         >
           <div className="space-y-3.5 text-xs">
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted/40 border border-border/60">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${selectedOpportunity.thumbnailBg}`}>
-                <Icon name={selectedOpportunity.thumbnailIcon} size={24} />
+              <div className="shrink-0">
+                {selectedOpportunity.id.includes('office') ? (
+                  <OfficeChairsIllustration className="w-14 h-14 rounded-xl shadow-2xs" />
+                ) : selectedOpportunity.id.includes('plumbing') ? (
+                  <ElectricalPlumbingIllustration className="w-14 h-14 rounded-xl shadow-2xs" />
+                ) : (
+                  <HousekeepingIllustration className="w-14 h-14 rounded-xl shadow-2xs" />
+                )}
               </div>
               <div>
                 <h4 className="font-bold text-sm text-foreground">{selectedOpportunity.title}</h4>
@@ -426,6 +467,37 @@ export function OpportunitiesBrowsePage() {
                 {selectedOpportunity.timeline}
               </span>
             </div>
+
+            {/* Supplier Settlement & Platform Fee Rule */}
+            {isSupplier && (
+              <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1">
+                    <Icon name="payments" size={14} /> Supplier Payment &amp; Settlement Rule
+                  </span>
+                  <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                    Zero Upfront Fee
+                  </span>
+                </div>
+                <div className="space-y-1 text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>Payment Channel:</span>
+                    <span className="font-bold text-foreground">Dynamic UPI QR (Auto-Split) or COD</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Platform Success Fee:</span>
+                    <span className="font-bold text-foreground">0.50% (Min ₹10 floor per order)</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Escrow &amp; Bank Settlement:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">Guaranteed IMPS to Verified Bank</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground pt-1 border-t border-border/50">
+                  💡 Zero fees to quote or view leads. Fee is collected only upon successful order delivery.
+                </p>
+              </div>
+            )}
           </div>
         </BottomSheet>
       )}

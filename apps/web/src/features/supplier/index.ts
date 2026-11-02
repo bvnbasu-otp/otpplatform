@@ -9,6 +9,7 @@ export { SupplierRequirementPanel } from './components/SupplierRequirementPanel'
 export { QuoteForm } from './components/QuoteForm';
 export { SupplierQuotePanel } from './components/SupplierQuotePanel';
 export { SupplierCapabilityModal } from './components/SupplierCapabilityModal';
+export { SupplierWalletTopUpModal } from './components/SupplierWalletTopUpModal';
 export { IdentityProtectedShield } from './components/IdentityProtectedShield';
 export {
   IDENTITY_SHIELD_EXPLANATION,

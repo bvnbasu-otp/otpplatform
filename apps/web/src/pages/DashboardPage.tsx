@@ -8,6 +8,7 @@ import { usePilotAllowance } from '@/features/intake/hooks/use-pilot-allowance';
 import { formatRfqBalanceSummary } from '@/features/requirement/components/PilotAllowanceText';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Icon } from '@/components/ui/Icon';
+import { OfficeChairsIllustration } from '@/components/illustrations/VectorIllustrations';
 import { formatDateIST } from '@/lib/date-utils';
 import type { OrganizationRequirementSummary } from '@/features/requirement/api/requirements';
 import { useBuyerHomeData, HomeSkeleton, HomeEmptyState } from '@/features/home';
@@ -155,9 +156,21 @@ export function DashboardPage() {
         )}
       </form>
 
-      {/* Screen 9: 6-Tile Quick Action Grid (Matching Approved Visual Concept) */}
+      {/* Screen 9: 6-Tile Quick Action Grid (Option B: 3x2 Procurement Core + Wallet & Support) */}
       <div className="grid grid-cols-3 gap-2.5 sm:gap-3" data-testid="screen-9-quick-actions">
-        {/* 1. My Requirements */}
+        {/* 1. Create RFQ */}
+        <Link
+          to="/procurement-flow?stage=TELL"
+          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-primary/40 bg-primary/5 hover:border-primary text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
+          data-testid="tile-create-request"
+        >
+          <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center mb-1 group-hover:scale-105 transition shadow-xs">
+            <Icon name="add" size={22} />
+          </div>
+          <span className="text-[11px] font-black text-primary leading-tight">Create RFQ</span>
+        </Link>
+
+        {/* 2. My Requirements */}
         <Link
           to="/requirements"
           className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
@@ -169,7 +182,7 @@ export function DashboardPage() {
           <span className="text-[11px] font-bold text-foreground leading-tight">My Requirements</span>
         </Link>
 
-        {/* 2. My Quotes */}
+        {/* 3. My Quotes */}
         <Link
           to="/procurement-flow?stage=REVIEW"
           className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
@@ -181,7 +194,7 @@ export function DashboardPage() {
           <span className="text-[11px] font-bold text-foreground leading-tight">My Quotes</span>
         </Link>
 
-        {/* 3. My Orders (Expandable / Collapsible toggle) */}
+        {/* 4. My Orders (Expandable / Collapsible toggle) */}
         <button
           type="button"
           onClick={() => setIsOrdersOpen((prev) => !prev)}
@@ -211,46 +224,38 @@ export function DashboardPage() {
           </div>
         </button>
 
-        {/* 4. Create RFQ */}
-        <Link
-          to="/procurement-flow?stage=TELL"
-          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
-          data-testid="tile-create-request"
-        >
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1 group-hover:scale-105 transition">
-            <Icon name="add" size={22} />
-          </div>
-          <span className="text-[11px] font-bold text-foreground leading-tight">Create RFQ</span>
-        </Link>
-
-        {/* 5. Notifications */}
-        <Link
-          to="/notifications"
-          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
-          data-testid="tile-notification"
-        >
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center mb-1 group-hover:scale-105 transition relative">
-            <Icon name="notifications" size={22} />
-            {actionRequiredItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
-                {actionRequiredItems.length}
-              </span>
-            )}
-          </div>
-          <span className="text-[11px] font-bold text-foreground leading-tight">Notifications</span>
-        </Link>
-
-        {/* 6. Profile */}
+        {/* 5. My Wallets & Rewards */}
         <Link
           to="/profile"
           className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
-          data-testid="tile-profile"
+          data-testid="tile-wallets-rewards"
         >
-          <div className="w-10 h-10 rounded-xl bg-slate-500/10 text-slate-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
-            <Icon name="person" size={22} />
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center mb-1 group-hover:scale-105 transition relative">
+            <Icon name="account_balance_wallet" size={22} />
+            <span className="absolute -top-1 -right-1 px-1 rounded-full bg-purple-600 text-white text-[8px] font-extrabold">
+              ₹0
+            </span>
           </div>
-          <span className="text-[11px] font-bold text-foreground leading-tight">Profile</span>
+          <span className="text-[11px] font-bold text-foreground leading-tight">My Wallets</span>
         </Link>
+
+        {/* 6. Help & Support */}
+        <Link
+          to="/contact-us"
+          className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/50 text-center transition group shadow-2xs active:scale-98 min-h-[96px]"
+          data-testid="tile-help-support"
+        >
+          <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center mb-1 group-hover:scale-105 transition">
+            <Icon name="help" size={22} />
+          </div>
+          <span className="text-[11px] font-bold text-foreground leading-tight">Help &amp; Support</span>
+        </Link>
+      </div>
+
+      {/* Screen 9 Accessible Direct Links to Notifications & Profile */}
+      <div className="sr-only">
+        <Link to="/notifications">Notifications</Link>
+        <Link to="/profile">Profile</Link>
       </div>
 
       {/* Screen 9: Recommended items (Matching Approved Concept) */}
@@ -268,9 +273,7 @@ export function DashboardPage() {
         </div>
         <div className="rounded-2xl border border-border/80 bg-card p-3.5 flex items-center justify-between gap-3 shadow-2xs hover:border-primary/40 transition">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-primary flex items-center justify-center shrink-0">
-              <Icon name="chair" size={22} />
-            </div>
+            <OfficeChairsIllustration className="w-10 h-10 rounded-xl shrink-0" />
             <div className="min-w-0">
               <h3 className="text-xs font-bold text-foreground truncate">Office Chairs &amp; Furniture</h3>
               <p className="text-[11px] text-muted-foreground truncate mt-0.5">

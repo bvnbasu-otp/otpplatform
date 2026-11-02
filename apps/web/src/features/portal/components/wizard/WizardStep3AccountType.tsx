@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { WizardProgress } from './WizardProgress';
@@ -9,17 +10,20 @@ export interface WizardStep3AccountTypeProps {
 }
 
 export function WizardStep3AccountType({ onNext, onBack }: WizardStep3AccountTypeProps) {
+  const { t } = useLanguage();
   const [selectedSide, setSelectedSide] = useState<'BUYER' | 'SUPPLIER'>('BUYER');
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground justify-between p-4 sm:p-6 max-w-md mx-auto w-full">
       <div>
-        <WizardProgress step={3} total={5} label="Account Type" onBack={onBack} />
+        <WizardProgress step={3} total={5} label={t('personas.accountTypeTitle', 'Account Type')} onBack={onBack} />
 
         <div className="space-y-1 mb-6">
-          <h2 className="text-xl font-black text-foreground">What do you want to do?</h2>
+          <h2 className="text-xl font-black text-foreground">
+            {t('personas.accountTypeTitle', 'What do you want to do?')}
+          </h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Select your account type.
+            {t('personas.accountTypeSubtitle', 'Select your account type.')}
           </p>
         </div>
 
@@ -45,9 +49,11 @@ export function WizardStep3AccountType({ onNext, onBack }: WizardStep3AccountTyp
                 <Icon name="shopping_bag" size={24} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Buyer</h3>
+                <h3 className="text-sm font-bold text-foreground">
+                  {t('personas.buyerTitle', 'Buyer')}
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  I want to purchase goods or services.
+                  {t('personas.buyerDesc', 'I want to purchase goods or services.')}
                 </p>
               </div>
             </div>
@@ -83,9 +89,11 @@ export function WizardStep3AccountType({ onNext, onBack }: WizardStep3AccountTyp
                 <Icon name="local_shipping" size={24} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Supplier</h3>
+                <h3 className="text-sm font-bold text-foreground">
+                  {t('personas.supplierTitle', 'Supplier / Contractor')}
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  I want to sell products or provide services.
+                  {t('personas.supplierDesc', 'I want to sell products or provide services.')}
                 </p>
               </div>
             </div>
@@ -116,7 +124,7 @@ export function WizardStep3AccountType({ onNext, onBack }: WizardStep3AccountTyp
           onClick={() => onNext(selectedSide)}
           className="w-full py-3.5 text-sm font-bold shadow-sm"
         >
-          Continue
+          {t('action.continue', 'Continue')}
         </Button>
       </div>
     </div>

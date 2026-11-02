@@ -56,6 +56,8 @@ export interface IssueAwardInput {
 export interface AcceptAwardInput {
   awardId: string;
   confirmPlatformFeeTerm: boolean; // 0.50% fee check
+  walletBalance?: number; // Pre-funded supplier platform wallet balance
+  requiredFeeAmount?: number; // Platform fee (0.50% with ₹10 floor)
 }
 
 export interface AwardRevealContract {

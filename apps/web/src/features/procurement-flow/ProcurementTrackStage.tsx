@@ -24,12 +24,14 @@ import { Button } from '@/components/ui/Button';
 
 export interface ProcurementTrackStageProps {
   awardId: string;
+  sourcingMode?: 'IDENTITY_PROTECTED' | 'OPEN_TENDER';
   onFinishFlow?: () => void;
   onBackToDecide?: () => void;
 }
 
 export function ProcurementTrackStage({
   awardId,
+  sourcingMode = 'IDENTITY_PROTECTED',
   onFinishFlow,
   onBackToDecide,
 }: ProcurementTrackStageProps) {
@@ -61,9 +63,9 @@ export function ProcurementTrackStage({
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const actor = {
-    profileId: 'usr_baskar',
-    fullName: 'Baskar Loganathan',
-    email: 'bvnbasu@gmail.com',
+    profileId: 'usr_active_lead',
+    fullName: 'Procurement Officer',
+    email: 'procurement@example.com',
     persona: 'INDIVIDUAL' as const,
   };
 
@@ -256,6 +258,36 @@ export function ProcurementTrackStage({
               <p className="text-[11px] font-mono text-foreground">{awardDetails.buyer.buyerPhone}</p>
             </div>
           </div>
+
+          {/* Fellow Competing Suppliers Reveal (Open RFQ Tender) vs Sealed Protection */}
+          {sourcingMode === 'OPEN_TENDER' ? (
+            <div className="pt-2.5 border-t border-emerald-500/20 space-y-1.5">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block">
+                📢 Open Tender · Fellow Competing Suppliers Revealed
+              </span>
+              <div className="space-y-1 text-[11px]">
+                <div className="p-2 rounded-lg bg-card border border-border/60 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-foreground">Apex Engineering &amp; Machinery</span>
+                    <span className="text-[10px] text-muted-foreground block">GSTIN: 29AABCA1234F1Z5 · Bengaluru</span>
+                  </div>
+                  <span className="font-mono font-bold text-foreground">₹1,24,500</span>
+                </div>
+                <div className="p-2 rounded-lg bg-card border border-border/60 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-foreground">Bright Electricals &amp; Pumps</span>
+                    <span className="text-[10px] text-muted-foreground block">GSTIN: 29XYZPA9876Q1Z2 · Mahadevapura</span>
+                  </div>
+                  <span className="font-mono font-bold text-foreground">₹1,29,800</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-emerald-500/20 text-[10px] text-muted-foreground flex items-center gap-1.5">
+              <Icon name="shield" size={14} className="text-primary" />
+              <span>Identity-Protected Sourcing: Only winning counterparty unmasked; fellow competing quotes remain sealed.</span>
+            </div>
+          )}
         </div>
       )}
 

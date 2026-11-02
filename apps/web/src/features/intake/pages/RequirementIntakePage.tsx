@@ -11,8 +11,14 @@ import { checkPilotAllowanceBeforePublish } from '../api/pilot-allowance';
 import type { IntakeDraft } from '../types/intake-draft';
 import { useIntakeDraft } from '../hooks/use-intake-draft';
 import { useTaxonomy } from '../hooks/use-taxonomy';
+import { resolveIntakeDraftStorageScope } from '../lib/intake-draft-scope';
 import {
+  discardLegacyLocalIntakeDrafts,
   clearLocalIntakeDraft,
+  getIntakeDraftStorageKey,
+  getLegacyIntakeDraftNotice,
+  getLegacyLocalIntakeDraftStatus,
+  type LegacyIntakeDraftStatus,
   loadLocalIntakeDraft,
   saveLocalIntakeDraft,
 } from '../lib/intake-storage';
@@ -32,6 +38,11 @@ export function RequirementIntakePage() {
   const navigate = useNavigate();
   const { context } = useRoleContext();
   const { user } = useAuth();
+  const draftScope = useMemo(
+    () => resolveIntakeDraftStorageScope(user?.id, context),
+    [context, user?.id],
+  );
+  const draftScopeKey = getIntakeDraftStorageKey(draftScope);
   const [searchParams, setSearchParams] = useSearchParams();
   const requirementId = searchParams.get('draft') || searchParams.get('edit') || searchParams.get('requirementId');
   const [handoff] = useState(() =>
@@ -57,7 +68,7 @@ export function RequirementIntakePage() {
     start,
     save,
     clearDraft,
-  } = useIntakeDraft(requirementId, context.organizationId);
+  } = useIntakeDraft(requirementId, draftScope);
 
   const [suggestedWeights, setSuggestedWeights] = useState<Record<string, number>>({});
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -65,19 +76,34 @@ export function RequirementIntakePage() {
   const [subscription, setSubscription] = useState<OrganizationSubscription | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [restoredNotice, setRestoredNotice] = useState(false);
+  const [legacyDraftStatus, setLegacyDraftStatus] = useState<LegacyIntakeDraftStatus>('none');
+  const legacyDraftNotice = getLegacyIntakeDraftNotice(legacyDraftStatus);
+
+  useEffect(() => {
+    setLegacyDraftStatus(draftScopeKey ? getLegacyLocalIntakeDraftStatus() : 'none');
+  }, [draftScopeKey]);
+
+  const handleDiscardLegacyDraft = useCallback(() => {
+    const result = discardLegacyLocalIntakeDrafts((message) => window.confirm(message));
+    if (result === 'discarded') {
+      setLegacyDraftStatus('none');
+    } else if (result === 'failed') {
+      setLegacyDraftStatus('discard-failed');
+    }
+  }, []);
 
   const handleClearAll = useCallback(() => {
     clearDraft();
-    clearLocalIntakeDraft(context.organizationId);
+    clearLocalIntakeDraft(draftScope);
     setRestoredNotice(false);
     setSearchParams({}, { replace: true });
-  }, [clearDraft, context.organizationId, setSearchParams]);
+  }, [clearDraft, draftScope, setSearchParams]);
 
   useEffect(() => {
-    if (!requirementId) {
-      const local = loadLocalIntakeDraft(context.organizationId);
+    if (!requirementId && draftScope) {
+      const local = loadLocalIntakeDraft(draftScope);
       if (local?.draft?.status && local.draft.status !== 'DRAFT') {
-        clearLocalIntakeDraft(context.organizationId);
+        clearLocalIntakeDraft(draftScope);
         return;
       }
       if (local?.draft?.requirementId && !local.draft.requirementId.startsWith('local-')) {
@@ -88,13 +114,13 @@ export function RequirementIntakePage() {
         setRestoredNotice(true);
       }
     }
-  }, [requirementId, context.organizationId, setSearchParams, setDraft]);
+  }, [requirementId, draftScope, setSearchParams, setDraft]);
 
   // Sync draft state to localStorage on changes
   useEffect(() => {
     if (draft) {
       if (draft.status && draft.status !== 'DRAFT') {
-        clearLocalIntakeDraft(context.organizationId);
+        clearLocalIntakeDraft(draftScope);
         return;
       }
       saveLocalIntakeDraft(
@@ -103,10 +129,10 @@ export function RequirementIntakePage() {
           furthestIndex: 0,
           draft,
         },
-        context.organizationId,
+        draftScope,
       );
     }
-  }, [draft, context.organizationId]);
+  }, [draft, draftScope]);
 
   useEffect(() => {
     if (context.organizationId) {
@@ -148,7 +174,7 @@ export function RequirementIntakePage() {
           furthestIndex: 0,
           draft: latestDraft,
         },
-        context.organizationId,
+        draftScope,
       );
       const redirectUrl = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
       navigate(redirectUrl);
@@ -182,7 +208,7 @@ export function RequirementIntakePage() {
       return;
     }
 
-    clearLocalIntakeDraft(context.organizationId);
+    clearLocalIntakeDraft(draftScope);
     navigate(`/requirements/${result.requirementId}/discover`);
   }
 
@@ -328,6 +354,24 @@ export function RequirementIntakePage() {
         <p className="mt-2 rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 font-medium">
           {draftError}
         </p>
+      )}
+
+      {legacyDraftNotice && (
+        <div
+          role="status"
+          className="mt-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900"
+        >
+          <p>
+            {legacyDraftNotice.message}
+          </p>
+          <button
+            type="button"
+            onClick={handleDiscardLegacyDraft}
+            className="mt-2 font-semibold underline"
+          >
+            {legacyDraftNotice.actionLabel}
+          </button>
+        </div>
       )}
 
       {/* Main Unified 3-Tier Intake Experience */}

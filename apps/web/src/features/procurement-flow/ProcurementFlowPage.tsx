@@ -5,6 +5,8 @@
 
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLanguage } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { ProcurementTellStage } from './ProcurementTellStage';
 import { ProcurementReviewStage } from './ProcurementReviewStage';
 import { ProcurementDecideStage } from './ProcurementDecideStage';
@@ -15,6 +17,7 @@ export type FlowStage = 'TELL' | 'REVIEW' | 'DECIDE' | 'TRACK';
 
 export function ProcurementFlowPage() {
   const navigate = useNavigate();
+  const { t, currentMeta } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialStage = (searchParams.get('stage') as FlowStage) || 'TELL';
@@ -25,12 +28,13 @@ export function ProcurementFlowPage() {
   const [rfqId, setRfqId] = useState<string>(initialRfqId);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string>('quote_alpha');
   const [awardId, setAwardId] = useState<string>(initialAwardId);
+  const [sourcingMode, setSourcingMode] = useState<'IDENTITY_PROTECTED' | 'OPEN_TENDER'>('IDENTITY_PROTECTED');
 
   const stages: Array<{ id: FlowStage; label: string; number: number; icon: string }> = [
-    { id: 'TELL', label: 'Tell', number: 1, icon: 'edit_note' },
-    { id: 'REVIEW', label: 'Review', number: 2, icon: 'balance' },
-    { id: 'DECIDE', label: 'Decide', number: 3, icon: 'how_to_vote' },
-    { id: 'TRACK', label: 'Track', number: 4, icon: 'local_shipping' },
+    { id: 'TELL', label: t('journey.tell', 'Tell').replace(/^\d+\.\s*/, ''), number: 1, icon: 'edit_note' },
+    { id: 'REVIEW', label: t('journey.review', 'Review').replace(/^\d+\.\s*/, ''), number: 2, icon: 'balance' },
+    { id: 'DECIDE', label: t('journey.decide', 'Decide').replace(/^\d+\.\s*/, ''), number: 3, icon: 'how_to_vote' },
+    { id: 'TRACK', label: t('journey.track', 'Track').replace(/^\d+\.\s*/, ''), number: 4, icon: 'local_shipping' },
   ];
 
   function handleRfqPublished(newRfqId: string) {
@@ -57,6 +61,17 @@ export function ProcurementFlowPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-start py-4 px-3 sm:py-6 sm:px-4">
+      {/* Top Header with App Brand & Multi-Language Switcher */}
+      <div className="w-full max-w-lg mx-auto mb-3 flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-black tracking-tight text-foreground">X2O / OTP Next</span>
+          <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline">
+            {currentMeta.nativeName}
+          </span>
+        </div>
+        <LanguageSwitcher placement="header" />
+      </div>
+
       {/* 4-Stage Stepper Header */}
       <div className="w-full max-w-lg mx-auto mb-4 bg-card rounded-2xl border border-border p-2.5 shadow-2xs">
         <div className="grid grid-cols-4 gap-1">
@@ -89,7 +104,9 @@ export function ProcurementFlowPage() {
                   <Icon name={isPassed ? 'check' : st.icon} size={14} />
                   <span className="text-[10px] font-black">{st.number}</span>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider font-extrabold">{st.label}</span>
+                <span className="text-[10px] uppercase tracking-wider font-extrabold truncate max-w-full">
+                  {st.label}
+                </span>
               </button>
             );
           })}

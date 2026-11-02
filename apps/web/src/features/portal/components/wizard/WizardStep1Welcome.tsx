@@ -6,21 +6,26 @@ import {
   isCompleteAuthOtpCode,
 } from '@otp/domain';
 import { useContracts } from '@/lib/contracts-context';
+import { useLanguage } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { WelcomeHeroIllustration } from '@/components/illustrations/VectorIllustrations';
 import type { VerificationChannel } from '../../api/signup';
 
 export interface WizardStep1WelcomeProps {
-  onVerified: (channel: VerificationChannel, identifier: string) => void;
+  onVerified?: (channel: VerificationChannel, identifier: string) => void;
+  onProceedToVerify?: (channel: VerificationChannel, identifier: string) => void;
 }
 
-export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
+export function WizardStep1Welcome({ onVerified, onProceedToVerify }: WizardStep1WelcomeProps) {
   // Verification channels support:
   // - WHATSAPP / EMAIL dispatch via contracts or invokeEdgeFunction ('otp-dispatch')
   // - Supabase auth fallback via signInWithOtp and verifyOtp
   // - Profile verification RPC: verify_profile_verification_otp
   const contracts = useContracts();
+  const { currentMeta, t } = useLanguage();
   const [channel, setChannel] = useState<VerificationChannel>('WHATSAPP');
   const [phoneRaw, setPhoneRaw] = useState('');
   const [emailRaw, setEmailRaw] = useState('');
@@ -85,13 +90,22 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
         }
       }
 
+      if (onProceedToVerify) {
+        onProceedToVerify(channel, currentIdentifier);
+        return;
+      }
+
       setResendTimer(45);
       setOtpCode('');
       setIsBottomSheetOpen(true);
     } catch (err: unknown) {
-      // In development or test environments, allow continuing with bottom sheet for verification simulation
+      // In development or test environments, allow continuing with verification simulation
       const message = err instanceof Error ? err.message : 'Failed to dispatch verification code';
       console.warn('OTP send warning:', message);
+      if (onProceedToVerify) {
+        onProceedToVerify(channel, currentIdentifier);
+        return;
+      }
       setResendTimer(45);
       setOtpCode('');
       setIsBottomSheetOpen(true);
@@ -132,12 +146,12 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
       }
 
       setIsBottomSheetOpen(false);
-      onVerified(channel, currentIdentifier);
+      onVerified?.(channel, currentIdentifier);
     } catch (err: unknown) {
       console.warn('Verify error:', err);
       // Still allow continuation on valid format
       setIsBottomSheetOpen(false);
-      onVerified(channel, currentIdentifier);
+      onVerified?.(channel, currentIdentifier);
     } finally {
       setIsVerifying(false);
     }
@@ -145,24 +159,51 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground justify-between p-4 sm:p-6 max-w-md mx-auto w-full">
-      {/* Brand & Logo Area */}
-      <div className="pt-8 sm:pt-12 text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary shadow-sm mb-1">
-          <Icon name="handshake" size={36} className="text-[#2563EB]" />
+      {/* Top Header with Multi-Language Switcher */}
+      <div className="flex items-center justify-between pt-1 pb-3 border-b border-border/40">
+        <div className="flex items-center gap-1.5">
+          <span className="text-base" aria-hidden="true">{currentMeta.flag}</span>
+          <span className="text-xs font-bold text-foreground">
+            {currentMeta.nativeName}
+          </span>
         </div>
+        <LanguageSwitcher placement="header" />
+      </div>
+
+      {/* Brand & Logo Area with Flat Vector Hero Illustration */}
+      <div className="pt-2 sm:pt-4 text-center space-y-2">
+        <WelcomeHeroIllustration className="w-44 h-32 mx-auto drop-shadow-xs" />
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-foreground">X2O</h1>
-          <p className="mt-1.5 text-xs font-semibold text-muted-foreground leading-relaxed">
-            Tell, Review, Decide &amp; Track in one place
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
+            {t('portal.welcomeTitle', 'Simpler Procurement for Everyone · X2O')}
+          </h1>
+          <p className="mt-1 text-xs font-semibold text-muted-foreground leading-relaxed">
+            {t('portal.welcomeSubtitle', 'Find, compare & choose the best suppliers — Tell, Review, Decide & Track')}
           </p>
           <p className="mt-0.5 text-[11px] font-medium text-primary">
-            Buy_Items · Get_Quotes · Plan_Procurement
+            {t('portal.welcomeHighlights', 'Buy_Items · Get_Quotes · Plan_Procurement')}
           </p>
         </div>
       </div>
 
+      {/* 4-Step Customer Journey Indicator (TELL → REVIEW → DECIDE → TRACK) */}
+      <div className="bg-muted/40 border border-border/60 rounded-2xl p-3 my-2 space-y-2">
+        <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+          <span className="text-primary">{t('journey.tell', '1. Tell')}</span>
+          <span>→</span>
+          <span>{t('journey.review', '2. Review')}</span>
+          <span>→</span>
+          <span>{t('journey.decide', '3. Decide')}</span>
+          <span>→</span>
+          <span>{t('journey.track', '4. Track')}</span>
+        </div>
+        <p className="text-[11px] text-muted-foreground text-center">
+          {t('journey.subMotto', 'Simple, familiar, consumer-grade Indian commerce')}
+        </p>
+      </div>
+
       {/* Channel Selector & Input Form */}
-      <div className="py-6 space-y-5">
+      <div className="py-4 space-y-4">
         <div className="bg-muted/50 p-1 rounded-xl flex items-center gap-1 border border-border/60">
           <button
             type="button"
@@ -177,7 +218,7 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
             }`}
           >
             <Icon name="chat" size={16} className={channel === 'WHATSAPP' ? 'text-emerald-600' : ''} />
-            WhatsApp
+            {t('portal.channelWhatsapp', 'WhatsApp')}
           </button>
           <button
             type="button"
@@ -192,14 +233,14 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
             }`}
           >
             <Icon name="mail" size={16} className={channel === 'EMAIL' ? 'text-primary' : ''} />
-            Email
+            {t('portal.channelEmail', 'Email')}
           </button>
         </div>
 
         {channel === 'WHATSAPP' ? (
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-foreground block">
-              Mobile Number
+              {t('portal.mobileLabel', 'Mobile Number')}
             </label>
             <div className="relative flex items-center">
               <span className="absolute left-3.5 text-xs font-bold text-muted-foreground select-none">
@@ -209,19 +250,19 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
                 type="tel"
                 value={formattedPhoneDisplay}
                 onChange={(e) => setPhoneRaw(e.target.value)}
-                placeholder="98765 43210"
+                placeholder={t('portal.mobilePlaceholder', '98765 43210')}
                 maxLength={11}
                 className="w-full pl-16 pr-4 py-3 rounded-xl border border-border bg-card text-sm font-semibold text-foreground focus:ring-2 focus:ring-primary focus:outline-none transition"
               />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              We&apos;ll send an 8-digit OTP on WhatsApp to verify your account.
+              {t('portal.whatsappOtpNotice', "We'll send an 8-digit OTP on WhatsApp to verify your account.")}
             </p>
           </div>
         ) : (
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-foreground block">
-              Email Address
+              {t('portal.emailLabel', 'Email Address')}
             </label>
             <div className="relative flex items-center">
               <Icon name="mail" size={18} className="absolute left-3.5 text-muted-foreground" />
@@ -229,12 +270,12 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
                 type="email"
                 value={emailRaw}
                 onChange={(e) => setEmailRaw(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t('portal.emailPlaceholder', 'you@example.com')}
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-card text-sm font-semibold text-foreground focus:ring-2 focus:ring-primary focus:outline-none transition"
               />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              We&apos;ll send an 8-digit verification code to your email inbox.
+              {t('portal.emailOtpNotice', "We'll send an 8-digit verification code to your email inbox.")}
             </p>
           </div>
         )}
@@ -251,16 +292,16 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
           disabled={!isIdentifierValid || isSending}
           className="w-full py-3.5 text-sm font-bold shadow-sm"
         >
-          {isSending ? 'Sending Code…' : 'Continue'}
+          {isSending ? t('portal.sendVerificationCode', 'Sending Code…') : t('action.continue', 'Continue')}
         </Button>
       </div>
 
       {/* Footer Navigation */}
-      <div className="pb-6 text-center">
+      <div className="pb-4 text-center">
         <p className="text-xs text-muted-foreground">
-          Already have an account?{' '}
+          {t('portal.signInPrompt', 'Already have an account?')}{' '}
           <Link to="/login" className="font-bold text-primary hover:underline">
-            Sign in
+            {t('portal.signInLink', 'Sign in')}
           </Link>
         </p>
       </div>
@@ -269,13 +310,13 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
       <BottomSheet
         isOpen={isBottomSheetOpen}
         onClose={() => setIsBottomSheetOpen(false)}
-        title={channel === 'WHATSAPP' ? 'Verify Your WhatsApp' : 'Verify Your Email'}
-        subtitle={`We've sent an ${AUTH_OTP_CODE_MAX_LENGTH}-digit OTP to ${currentIdentifier}`}
+        title={channel === 'WHATSAPP' ? `${t('portal.verifyCodeTitle', 'Verify WhatsApp')}` : `${t('portal.verifyCodeTitle', 'Verify Email')}`}
+        subtitle={`${t('portal.verifyCodeSubtitle', 'Enter code sent to')} ${currentIdentifier}`}
       >
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
             <label className="text-xs font-bold text-foreground block text-center">
-              Enter {AUTH_OTP_CODE_MAX_LENGTH}-Digit Code
+              {t('portal.verifyCodeTitle', 'Enter 8-Digit Code')}
             </label>
             <div className="flex justify-center">
               <input
@@ -298,14 +339,14 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
           <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
             <span>
               {resendTimer > 0 ? (
-                `Resend OTP in 00:${resendTimer.toString().padStart(2, '0')}`
+                `${t('portal.resendIn', 'Resend in')} 00:${resendTimer.toString().padStart(2, '0')}`
               ) : (
                 <button
                   type="button"
                   onClick={handleSendOtp}
                   className="font-bold text-primary hover:underline"
                 >
-                  Resend OTP
+                  {t('portal.resendNow', 'Resend OTP')}
                 </button>
               )}
             </span>
@@ -317,7 +358,7 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
               }}
               className="font-medium text-xs text-muted-foreground hover:text-foreground"
             >
-              Use {channel === 'WHATSAPP' ? 'Email' : 'WhatsApp'} instead
+              Use {channel === 'WHATSAPP' ? t('portal.channelEmail', 'Email') : t('portal.channelWhatsapp', 'WhatsApp')} instead
             </button>
           </div>
 
@@ -334,7 +375,7 @@ export function WizardStep1Welcome({ onVerified }: WizardStep1WelcomeProps) {
               disabled={!isCompleteAuthOtpCode(otpCode) || isVerifying}
               className="w-full py-3 text-sm font-bold"
             >
-              {isVerifying ? 'Verifying…' : 'Verify & Continue'}
+              {isVerifying ? 'Verifying…' : t('portal.verifyAndContinue', 'Verify & Continue')}
             </Button>
           </div>
         </div>

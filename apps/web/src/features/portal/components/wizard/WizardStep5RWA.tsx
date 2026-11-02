@@ -23,14 +23,14 @@ export function WizardStep5RWA({
   onSuccess,
   onBack,
 }: WizardStep5RWAProps) {
-  const [associationName, setAssociationName] = useState('Durga Rainbow Assn');
-  const [registrationNo, setRegistrationNo] = useState('REG/2013/1234');
+  const [associationName, setAssociationName] = useState('');
+  const [registrationNo, setRegistrationNo] = useState('');
   const [assocType, setAssocType] = useState('Apartment Assn.');
-  const [totalUnits, setTotalUnits] = useState('141');
-  const [occupiedUnits, setOccupiedUnits] = useState('141');
-  const [address, setAddress] = useState('Bengaluru, Karnataka — 560048');
+  const [totalUnits, setTotalUnits] = useState('');
+  const [occupiedUnits, setOccupiedUnits] = useState('');
+  const [address, setAddress] = useState('');
   const [role, setRole] = useState<'Resident Owner' | 'Committee Member' | 'Estate / Facility Mgr'>('Committee Member');
-  const [contactName, setContactName] = useState('Baskar Loganathan');
+  const [contactName, setContactName] = useState('');
 
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

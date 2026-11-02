@@ -280,6 +280,45 @@ describe('OTP Next — Phase 5 Core Procurement Pipeline (TELL → REVIEW → DE
       expect(awardRes.value.status).toBe('PENDING_SUPPLIER_ACCEPTANCE');
       expect(awardRes.value.rfqId).toBe('rfq_test_tell_01');
     });
+
+    it('enforces platform anti-leakage: blocks award acceptance if fee term is unconfirmed', async () => {
+      const rejectRes = await contracts.awardReveal.acceptAward(actorIndividual, {
+        awardId: 'award_sample_01',
+        confirmPlatformFeeTerm: false,
+      });
+
+      expect(rejectRes.ok).toBe(false);
+      if (rejectRes.ok) return;
+      expect(rejectRes.error.message).toContain('Supplier must confirm the 0.50% platform fee term');
+    });
+
+    it('enforces supplier wallet top-up rule: blocks acceptance when wallet balance is below fee reserve', async () => {
+      const insufficientRes = await contracts.awardReveal.acceptAward(actorIndividual, {
+        awardId: 'award_sample_01',
+        confirmPlatformFeeTerm: true,
+        walletBalance: 0, // Zero balance
+        requiredFeeAmount: 24, // Required 0.5% fee on ₹4,720
+      });
+
+      expect(insufficientRes.ok).toBe(false);
+      if (insufficientRes.ok) return;
+      expect(insufficientRes.error.message).toContain('Insufficient supplier wallet balance (₹0)');
+      expect(insufficientRes.error.message).toContain('Please top up your wallet via OTP UPI QR');
+    });
+
+    it('executes conditional handshake: supplier accepts success fee with funded wallet and unlocks award', async () => {
+      const acceptRes = await contracts.awardReveal.acceptAward(actorIndividual, {
+        awardId: 'award_sample_01',
+        confirmPlatformFeeTerm: true,
+        walletBalance: 100, // Sufficient funded balance
+        requiredFeeAmount: 24,
+      });
+
+      expect(acceptRes.ok).toBe(true);
+      if (!acceptRes.ok) return;
+      expect(acceptRes.value.status).toBe('ACCEPTED');
+      expect(acceptRes.value.awardId).toBe('award_sample_01');
+    });
   });
 
   // =========================================================================

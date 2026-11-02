@@ -15,6 +15,7 @@ export { RoleChoiceField } from './components/RoleChoiceField';
 export { X2ORegistrationWizard } from './components/wizard/X2ORegistrationWizard';
 export { WizardProgress } from './components/wizard/WizardProgress';
 export { WizardStep1Welcome } from './components/wizard/WizardStep1Welcome';
+export { WizardStep2OtpVerify } from './components/wizard/WizardStep2OtpVerify';
 export { WizardStep2Contact } from './components/wizard/WizardStep2Contact';
 export { WizardStep3AccountType } from './components/wizard/WizardStep3AccountType';
 export { WizardStep4Persona } from './components/wizard/WizardStep4Persona';
@@ -22,6 +23,9 @@ export { WizardStep5Individual } from './components/wizard/WizardStep5Individual
 export { WizardStep5RWA } from './components/wizard/WizardStep5RWA';
 export { WizardStep5MSME } from './components/wizard/WizardStep5MSME';
 export { WizardStep5Supplier } from './components/wizard/WizardStep5Supplier';
+export { WizardStep6PersonalInfo } from './components/wizard/WizardStep6PersonalInfo';
+export { WizardStep7Addresses } from './components/wizard/WizardStep7Addresses';
+export { WizardStep8Complete } from './components/wizard/WizardStep8Complete';
 export {
   BUYER_COPY,
   SUPPLIER_COPY,
