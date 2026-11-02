@@ -39,10 +39,10 @@ describe('Migration 00332: Real-time Demo Account Purge & Production Dual-Founde
     expect(sql).toContain("'AUDITOR'");
   });
 
-  it('purges synthetic demo accounts and demo suppliers', () => {
+  it('purges synthetic demo buyer accounts while retaining the verified demo supplier network', () => {
     expect(sql).toContain('DELETE FROM public.profiles');
     expect(sql).toContain('DELETE FROM auth.users');
-    expect(sql).toContain('DELETE FROM public.suppliers');
     expect(sql).toContain('DELETE FROM public.demo_accounts');
+    expect(sql).toContain('45 verified demo suppliers');
   });
 });

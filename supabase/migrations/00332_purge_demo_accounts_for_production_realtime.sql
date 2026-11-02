@@ -74,12 +74,20 @@ BEGIN
     END IF;
     IF NOT private_security.founder_profile_protected(OLD.id)
        AND NEW.is_founder IS TRUE
-       AND lower(NEW.email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com') THEN
+       AND lower(NEW.email) IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com') THEN
       RAISE EXCEPTION 'FOUNDER_SUPERADMIN_ROLE_IMMUTABLE'
         USING ERRCODE = '42501',
               DETAIL = 'canonical founder marker cannot be retargeted';
     END IF;
     RETURN NEW;
+  END IF;
+
+  IF TG_ARGV[0] = 'status' OR (TG_OP = 'UPDATE' AND NEW.status IS DISTINCT FROM OLD.status) THEN
+    IF private_security.founder_profile_protected(OLD.id) AND NEW.status = 'BLOCKED' THEN
+      RAISE EXCEPTION 'FOUNDER_SUPERADMIN_ROLE_IMMUTABLE'
+        USING ERRCODE = '42501',
+              DETAIL = 'protected platform founder cannot be blocked';
+    END IF;
   END IF;
 
   IF NOT private_security.founder_profile_protected(NEW.id)
@@ -139,6 +147,11 @@ BEGIN
 END;
 $fn$;
 
+DROP TRIGGER IF EXISTS aa_guard_founder_profile_status ON public.profiles;
+CREATE TRIGGER aa_guard_founder_profile_status
+  BEFORE UPDATE OF status ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION private_security.guard_founder_superadmin_active_role('status');
+
 -- ---------------------------------------------------------------------------
 -- 2. Clean and synchronize immutable admin whitelist
 -- ---------------------------------------------------------------------------
@@ -147,7 +160,7 @@ VALUES ('bvnbasu@yahoo.com', 'Platform Founder & Super Administrator (Baskar Log
 ON CONFLICT (email) DO NOTHING;
 
 DELETE FROM private_security.admin_whitelist
-WHERE lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com');
+WHERE lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com', 'admin@otp.test', 'ops@otp.test');
 
 -- ---------------------------------------------------------------------------
 -- 3. Ensure authoritative internal role catalog is complete
@@ -278,7 +291,8 @@ BEGIN
   SELECT array_agg(id), array_agg(auth_user_id)
   INTO v_target_profile_ids, v_target_auth_ids
   FROM public.profiles
-  WHERE lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com')
+  WHERE lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com', 'admin@otp.test', 'ops@otp.test')
+    AND lower(email) NOT LIKE '%@otpdemo.test'
     AND (
       is_demo IS TRUE
       OR lower(email) LIKE '%@otp.test'
@@ -286,20 +300,10 @@ BEGIN
       OR lower(email) LIKE '%@tanish.test'
       OR lower(email) LIKE '%@kongu.test'
       OR lower(email) LIKE '%@apex.test'
-      OR lower(email) LIKE '%@otpdemo.test'
       OR lower(email) LIKE '%@greenview.test'
-      OR lower(email) LIKE 'admin@otp.%'
-      OR lower(email) LIKE 'ops@otp.%'
       OR lower(email) LIKE 'qa-%@%'
       OR lower(email) LIKE 'test%@%'
     );
-
-  -- Identify demo suppliers
-  SELECT array_agg(id) INTO v_demo_supplier_ids
-  FROM public.suppliers
-  WHERE is_demo IS TRUE
-     OR lower(contact_email) LIKE '%@otpdemo.test'
-     OR lower(contact_email) LIKE '%@otp.test';
 
   -- Identify demo organizations (excluding Greenview Heights RWA)
   SELECT array_agg(id) INTO v_demo_org_ids
@@ -328,8 +332,7 @@ BEGIN
   FROM public.purchase_orders
   WHERE is_demo IS TRUE
      OR rfq_id = ANY(v_demo_rfq_ids)
-     OR organization_id = ANY(v_demo_org_ids)
-     OR supplier_id = ANY(v_demo_supplier_ids);
+     OR organization_id = ANY(v_demo_org_ids);
 
   DELETE FROM public.payments WHERE is_demo IS TRUE OR purchase_order_id = ANY(v_demo_po_ids);
   DELETE FROM public.invoices WHERE is_demo IS TRUE OR purchase_order_id = ANY(v_demo_po_ids);
@@ -338,8 +341,7 @@ BEGIN
 
   DELETE FROM public.quotes
   WHERE is_demo IS TRUE
-     OR rfq_id = ANY(v_demo_rfq_ids)
-     OR supplier_id = ANY(v_demo_supplier_ids);
+     OR rfq_id = ANY(v_demo_rfq_ids);
 
   DELETE FROM public.rfq_clarification_messages WHERE author_profile_id = ANY(v_target_profile_ids) OR rfq_id = ANY(v_demo_rfq_ids);
   DELETE FROM public.rfq_approval_stages WHERE approver_profile_id = ANY(v_target_profile_ids) OR delegator_profile_id = ANY(v_target_profile_ids) OR rfq_id = ANY(v_demo_rfq_ids);
@@ -355,14 +357,10 @@ BEGIN
      OR owner_profile_id = ANY(v_target_profile_ids);
 
   -- -------------------------------------------------------------------------
-  -- 7. Delete demo supplier bindings and supplier records
+  -- 7. Retain verified demo supplier network (45 verified demo suppliers)
   -- -------------------------------------------------------------------------
-  DELETE FROM public.supplier_users
-  WHERE supplier_id = ANY(v_demo_supplier_ids)
-     OR profile_id = ANY(v_target_profile_ids);
-
-  DELETE FROM public.suppliers
-  WHERE id = ANY(v_demo_supplier_ids);
+  -- The 45 verified suppliers (contact01@otpdemo.test .. contact45@otpdemo.test)
+  -- are preserved to support SNE discovery and active category quoting.
 
   -- -------------------------------------------------------------------------
   -- 8. Delete demo organization memberships and organizations
@@ -396,7 +394,10 @@ BEGIN
   DELETE FROM public.legal_acceptances WHERE profile_id = ANY(v_target_profile_ids);
   DELETE FROM public.demo_accounts
   WHERE profile_id = ANY(v_target_profile_ids)
-     OR lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com');
+     OR (
+       lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com', 'admin@otp.test', 'ops@otp.test')
+       AND lower(email) NOT LIKE '%@otpdemo.test'
+     );
   DELETE FROM private.password_history WHERE profile_id = ANY(v_target_profile_ids);
 
   -- -------------------------------------------------------------------------
@@ -409,14 +410,14 @@ BEGIN
   DELETE FROM auth.users WHERE id = ANY(v_target_auth_ids);
 
   DELETE FROM auth.users
-  WHERE lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com')
+  WHERE lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com', 'admin@otp.test', 'ops@otp.test')
+    AND lower(email) NOT LIKE '%@otpdemo.test'
     AND (
       lower(email) LIKE '%@otp.test'
       OR lower(email) LIKE '%@sunrise.test'
       OR lower(email) LIKE '%@tanish.test'
       OR lower(email) LIKE '%@kongu.test'
       OR lower(email) LIKE '%@apex.test'
-      OR lower(email) LIKE '%@otpdemo.test'
       OR lower(email) LIKE '%@greenview.test'
     );
 
