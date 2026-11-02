@@ -30,6 +30,158 @@ export type AdminCategoryKey =
   | 'LOGS_ALERTS'
   | 'USERS_ORGS';
 
+export type InternalConsoleRoleCode =
+  | 'CEO_FOUNDER'
+  | 'SUPER_ADMIN'
+  | 'GENERAL_SUPPORT'
+  | 'OPERATIONS'
+  | 'SALES_MARKETING'
+  | 'LEGAL_PRIVACY'
+  | 'AUDITOR';
+
+export interface InternalRoleConfig {
+  code: InternalConsoleRoleCode;
+  title: string;
+  shortTitle: string;
+  badge: string;
+  description: string;
+  colorClass: string;
+  allowedTabs: AdminTab[];
+  canSwitchRoles: boolean;
+}
+
+export const INTERNAL_ROLE_CONFIGS: Record<InternalConsoleRoleCode, InternalRoleConfig> = {
+  CEO_FOUNDER: {
+    code: 'CEO_FOUNDER',
+    title: 'CEO & Founder Executive Center',
+    shortTitle: 'CEO & Founder',
+    badge: 'Executive Root',
+    description: 'Macro-economic oversight, live GMV, platform monetization, escrow float & network liquidity with global switching',
+    colorClass: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400',
+    allowedTabs: [
+      'TRANSACTIONS', 'SELLER_ORDERS', 'BUYER_DEBUG', 'SUPPLIER_DEBUG', 'HEALTH',
+      'TICKETS', 'TESTS', 'ACTIONS', 'TERMINAL', 'BACKUPS', 'LOGS', 'NOTIFICATIONS',
+      'ANNOUNCEMENTS', 'USERS', 'ORGS_SUPPLIERS', 'SUPPLIER_NETWORK', 'TAXONOMY',
+      'APPROVALS', 'INTERNAL_USERS', 'INTERNAL_RBAC', 'STAFF_REFERRALS',
+    ],
+    canSwitchRoles: true,
+  },
+  SUPER_ADMIN: {
+    code: 'SUPER_ADMIN',
+    title: 'Super Administrator Governance',
+    shortTitle: 'Super Admin',
+    badge: 'Root Governance',
+    description: 'Platform user & org governance, 48-hour employee invitations, RBAC permissions & role impersonation',
+    colorClass: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400',
+    allowedTabs: [
+      'TRANSACTIONS', 'SELLER_ORDERS', 'BUYER_DEBUG', 'SUPPLIER_DEBUG', 'HEALTH',
+      'TICKETS', 'TESTS', 'ACTIONS', 'TERMINAL', 'BACKUPS', 'LOGS', 'NOTIFICATIONS',
+      'ANNOUNCEMENTS', 'USERS', 'ORGS_SUPPLIERS', 'SUPPLIER_NETWORK', 'TAXONOMY',
+      'APPROVALS', 'INTERNAL_USERS', 'INTERNAL_RBAC', 'STAFF_REFERRALS',
+    ],
+    canSwitchRoles: true,
+  },
+  GENERAL_SUPPORT: {
+    code: 'GENERAL_SUPPORT',
+    title: 'General Support Operations Desk',
+    shortTitle: 'General Support',
+    badge: 'Customer Care',
+    description: 'Buyer and supplier issue resolution, ticket escalation, buyer/seller diagnostics and platform alert logs',
+    colorClass: 'border-blue-500/40 bg-blue-500/10 text-blue-400',
+    allowedTabs: ['TICKETS', 'BUYER_DEBUG', 'SUPPLIER_DEBUG', 'NOTIFICATIONS', 'LOGS'],
+    canSwitchRoles: false,
+  },
+  OPERATIONS: {
+    code: 'OPERATIONS',
+    title: 'Platform Operations & Security (SysOps / SecOps / DBOps)',
+    shortTitle: 'Operations',
+    badge: 'SysOps / SecOps / DBOps',
+    description: 'Infrastructure health, automated regression test engine, circuit breakers, SQL terminal, backups & broadcast announcements',
+    colorClass: 'border-amber-500/40 bg-amber-500/10 text-amber-400',
+    allowedTabs: ['HEALTH', 'TESTS', 'ACTIONS', 'TERMINAL', 'BACKUPS', 'ANNOUNCEMENTS'],
+    canSwitchRoles: false,
+  },
+  SALES_MARKETING: {
+    code: 'SALES_MARKETING',
+    title: 'Sales, Marketing & Taxonomy Engine',
+    shortTitle: 'Sales & Marketing',
+    badge: 'Growth & SNE',
+    description: 'Supplier Network Engine (SNE) pre-warm console, 17-category taxonomy hierarchy, onboarding approvals & referral bonuses',
+    colorClass: 'border-purple-500/40 bg-purple-500/10 text-purple-400',
+    allowedTabs: ['SUPPLIER_NETWORK', 'TAXONOMY', 'APPROVALS', 'STAFF_REFERRALS', 'ORGS_SUPPLIERS'],
+    canSwitchRoles: false,
+  },
+  LEGAL_PRIVACY: {
+    code: 'LEGAL_PRIVACY',
+    title: 'Legal, Privacy & Compliance Vault',
+    shortTitle: 'Legal & Privacy',
+    badge: 'Legal & Audit',
+    description: 'Escrow dispute arbitration, immutable SHA-256 audit logs, legal agreements and privacy compliance',
+    colorClass: 'border-rose-500/40 bg-rose-500/10 text-rose-400',
+    allowedTabs: ['TICKETS', 'LOGS', 'APPROVALS'],
+    canSwitchRoles: false,
+  },
+  AUDITOR: {
+    code: 'AUDITOR',
+    title: 'Independent Platform Auditor (Read-Only Mode)',
+    shortTitle: 'Auditor',
+    badge: 'Read-Only Audit',
+    description: 'Read-only oversight across all buyer, supplier, and internal records with sensitive data masked and zero mutations',
+    colorClass: 'border-teal-500/40 bg-teal-500/10 text-teal-400',
+    allowedTabs: ['TRANSACTIONS', 'SELLER_ORDERS', 'USERS', 'ORGS_SUPPLIERS', 'LOGS', 'NOTIFICATIONS'],
+    canSwitchRoles: false,
+  },
+};
+
+/**
+ * Strict role switcher access guard.
+ * Only CEO & Founder and Super Admin are granted access to switch views or impersonate other roles.
+ */
+export function canAccessRoleSwitcher(
+  context?: { isFounder?: boolean; isPlatformAdmin?: boolean; activeRole?: { code?: string } | null } | null,
+  userEmail?: string | null,
+): boolean {
+  if (userEmail) {
+    const clean = userEmail.trim().toLowerCase();
+    if (clean === 'bvnbasu@gmail.com' || clean === 'bvnbasu@yahoo.com') return true;
+  }
+  if (!context) return false;
+  if (context.isFounder) return true;
+  if (context.isPlatformAdmin && (context.activeRole?.code === 'SUPER_ADMIN' || !context.activeRole?.code)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Redaction utility for Auditor role: masks critical PII, bank accounts, and contact details.
+ */
+export function maskSensitiveData(
+  val: string | number | null | undefined,
+  type?: 'phone' | 'email' | 'bank' | 'id' | 'generic',
+): string {
+  if (val === null || val === undefined || val === '') return '—';
+  const str = String(val).trim();
+  const effectiveType = type || (str.includes('@') ? 'email' : 'generic');
+  if (effectiveType === 'phone') {
+    return str.length > 4 ? `+91 ••••• ••${str.slice(-3)}` : '••••';
+  }
+  if (effectiveType === 'email') {
+    const parts = str.split('@');
+    if (parts.length < 2) return '••••@••••';
+    const name = parts[0]!;
+    const domain = parts[1]!;
+    return `${name.slice(0, 1)}•••••@${domain}`;
+  }
+  if (effectiveType === 'bank') {
+    return `••••••••${str.slice(-4)}`;
+  }
+  if (effectiveType === 'id') {
+    return str.length > 8 ? `${str.slice(0, 4)}…${str.slice(-4)}` : '••••';
+  }
+  return str.length > 4 ? `••••••••${str.slice(-4)}` : '••••';
+}
+
 export interface AdminModuleDef {
   key: AdminTab;
   title: string;
@@ -150,10 +302,10 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
   },
   {
     key: 'TESTS_OPS',
-    title: 'Pre Prod Tests & Restart + Actions',
-    shortTitle: 'Tests & Ops',
+    title: 'Pre Prod Tests, Restart + Actions & Announcements',
+    shortTitle: 'Tests, Ops & Announcements',
     icon: '🧪',
-    description: 'Pre-prod regression test engine, maintenance switches & service restart circuit breakers',
+    description: 'Pre-prod regression test engine, maintenance switches, service restart circuit breakers & broadcast announcements',
     colorClass: 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60',
     badgeClass: 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border-amber-300 dark:border-amber-800',
     modules: [
@@ -174,6 +326,15 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
         description: 'Scheduled maintenance switch, demo mode switch, emergency reload & circuit reset',
         categoryKey: 'TESTS_OPS',
         badge: () => 'Actions',
+      },
+      {
+        key: 'ANNOUNCEMENTS',
+        title: 'Platform Broadcasts & Announcements',
+        shortTitle: 'Announcements',
+        icon: '📢',
+        description: 'Publish and manage scheduled platform announcements, release notes and broadcast banners',
+        categoryKey: 'TESTS_OPS',
+        badge: () => 'Broadcast',
       },
     ],
   },
@@ -211,7 +372,7 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
     title: 'Logs & Notifications',
     shortTitle: 'Logs & Alerts',
     icon: '📜',
-    description: 'Immutable cryptographic audit trail, platform notifications & emergency banners',
+    description: 'Immutable cryptographic audit trail, platform notifications & emergency alerts',
     colorClass: 'border-purple-500/30 bg-purple-500/5 hover:border-purple-500/60',
     badgeClass: 'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-200 border-purple-300 dark:border-purple-800',
     modules: [
@@ -232,15 +393,6 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
         description: 'Multi-channel notification engine, broadcast alerts & emergency platform banners',
         categoryKey: 'LOGS_ALERTS',
         badge: (c) => (c.notificationsCount > 0 ? `${c.notificationsCount} Alerts` : 'Alerts'),
-      },
-      {
-        key: 'ANNOUNCEMENTS',
-        title: 'Platform Broadcasts & Announcements',
-        shortTitle: 'Announcements',
-        icon: '📢',
-        description: 'Publish and manage scheduled platform announcements, release notes and broadcast banners',
-        categoryKey: 'LOGS_ALERTS',
-        badge: () => 'Broadcast',
       },
     ],
   },

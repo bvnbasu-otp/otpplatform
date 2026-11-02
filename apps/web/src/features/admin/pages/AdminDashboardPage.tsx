@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
+import { useAuth } from '@/features/auth';
+import { useRoleContext } from '@/features/roles';
 import {
   fetchSystemHealth,
   fetchLiveTransactions,
@@ -33,6 +35,15 @@ import { InternalRbacMatrixPanel } from '../components/InternalRbacMatrixPanel';
 import { StaffReferralLedgerPanel } from '../components/StaffReferralLedgerPanel';
 import { NotificationsPage } from '@/features/notifications';
 import { RECORD_PAGE_SIZE, RecordPager } from '@/components/ui/RecordPager';
+
+import { InternalRoleSwitcherBar } from '../components/InternalRoleSwitcherBar';
+import { CeoFounderCommandCenter } from '../components/CeoFounderCommandCenter';
+import { AuditorConsoleView } from '../components/AuditorConsoleView';
+import { GeneralSupportConsoleView } from '../components/GeneralSupportConsoleView';
+import { OperationsConsoleView } from '../components/OperationsConsoleView';
+import { SalesMarketingConsoleView } from '../components/SalesMarketingConsoleView';
+import { LegalPrivacyConsoleView } from '../components/LegalPrivacyConsoleView';
+
 import type {
   SystemHealthResponse,
   LiveTransactionItem,
@@ -48,8 +59,11 @@ import {
   type AdminModuleDef,
   type AdminCategoryDef,
   type AdminDynamicCounts,
+  type InternalConsoleRoleCode,
   ADMIN_CATEGORIES,
   ALL_ADMIN_MODULES,
+  INTERNAL_ROLE_CONFIGS,
+  canAccessRoleSwitcher,
 } from '../types/admin-navigation';
 
 export {
@@ -199,6 +213,67 @@ export function AdminDashboardPage() {
   const activeTab: AdminTab = resolvedTab === 'TILES' ? 'TRANSACTIONS' : resolvedTab;
   const isTilesView = resolvedTab === 'TILES';
 
+  // Internal Role Resolution & Impersonation Security
+  const { user } = useAuth();
+  const { context: roleContext } = useRoleContext();
+
+  const userEmail = roleContext?.email || user?.email || null;
+  const isSuperUser = canAccessRoleSwitcher(roleContext, userEmail);
+
+  // Read role from URL query param if super user; otherwise strictly derive from profile/role
+  const roleParam = searchParams.get('role')?.toUpperCase() as InternalConsoleRoleCode | undefined;
+
+  const activeRoleCode: InternalConsoleRoleCode = useMemo(() => {
+    if (isSuperUser && roleParam && roleParam in INTERNAL_ROLE_CONFIGS) {
+      return roleParam;
+    }
+    const cleanEmail = userEmail?.trim().toLowerCase();
+    if (roleContext?.isFounder || cleanEmail === 'bvnbasu@gmail.com' || cleanEmail === 'bvnbasu@yahoo.com') {
+      return 'CEO_FOUNDER';
+    }
+    if (roleContext?.isPlatformAdmin && roleContext.activeRole?.code === 'SUPER_ADMIN') {
+      return 'SUPER_ADMIN';
+    }
+    const code = roleContext?.activeRole?.code?.toUpperCase();
+    if (code && code in INTERNAL_ROLE_CONFIGS) {
+      return code as InternalConsoleRoleCode;
+    }
+    return isSuperUser ? 'SUPER_ADMIN' : 'GENERAL_SUPPORT';
+  }, [isSuperUser, roleParam, roleContext, userEmail]);
+
+  const activeRoleConfig = INTERNAL_ROLE_CONFIGS[activeRoleCode];
+
+  // Check if role home dashboard should be rendered instead of a technical sub-tab:
+  // - CEO_FOUNDER: Default home is CeoFounderCommandCenter
+  // - GENERAL_SUPPORT: Default home is GeneralSupportConsoleView
+  // - OPERATIONS: Default home is OperationsConsoleView
+  // - SALES_MARKETING: Default home is SalesMarketingConsoleView
+  // - LEGAL_PRIVACY: Default home is LegalPrivacyConsoleView
+  // - AUDITOR: Always renders AuditorConsoleView
+  // - SUPER_ADMIN: Default home is Tiles Directory or Transactions
+  const isRoleHomeView = useMemo(() => {
+    if (activeRoleCode === 'AUDITOR') return true;
+    if (activeRoleCode === 'SUPER_ADMIN') return false;
+    if (!rawTab || rawTab === 'OVERVIEW' || rawTab === 'HOME' || rawTab === 'COMMAND_CENTER') {
+      return true;
+    }
+    return false;
+  }, [activeRoleCode, rawTab]);
+
+  const isTabPermitted = useMemo(() => {
+    if (activeRoleCode === 'SUPER_ADMIN' || activeRoleCode === 'CEO_FOUNDER') return true;
+    const allowed = INTERNAL_ROLE_CONFIGS[activeRoleCode]?.allowedTabs;
+    return allowed ? allowed.includes(activeTab) : false;
+  }, [activeRoleCode, activeTab]);
+
+  const handleSelectRole = (nextRole: InternalConsoleRoleCode) => {
+    if (!isSuperUser) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('role', nextRole);
+    nextParams.delete('tab');
+    setSearchParams(nextParams);
+  };
+
   // Quick module switcher drawer / selector state
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [moduleSearchFilter, setModuleSearchFilter] = useState('');
@@ -231,9 +306,15 @@ export function AdminDashboardPage() {
     };
   }, [transactions.length, sellerOrders.length, alerts.length, health?.counts]);
 
-  const setTab = (tab: AdminTab | 'TILES') => {
+  const setTab = (tab: AdminTab | 'TILES' | 'HOME') => {
     setIsSelectorOpen(false);
-    setSearchParams({ tab: tab.toLowerCase() });
+    const nextParams = new URLSearchParams(searchParams);
+    if (tab === 'HOME') {
+      nextParams.delete('tab');
+    } else {
+      nextParams.set('tab', tab.toLowerCase());
+    }
+    setSearchParams(nextParams);
   };
 
   const currentModule = ALL_ADMIN_MODULES.find((m) => m.key === activeTab) || ALL_ADMIN_MODULES[0]!;
@@ -327,8 +408,19 @@ export function AdminDashboardPage() {
     return null;
   };
 
+  const permittedCategories = useMemo(() => {
+    if (activeRoleCode === 'SUPER_ADMIN' || activeRoleCode === 'CEO_FOUNDER') {
+      return ADMIN_CATEGORIES;
+    }
+    const allowedTabs = INTERNAL_ROLE_CONFIGS[activeRoleCode]?.allowedTabs || [];
+    return ADMIN_CATEGORIES.map((cat) => ({
+      ...cat,
+      modules: cat.modules.filter((mod) => allowedTabs.includes(mod.key)),
+    })).filter((cat) => cat.modules.length > 0);
+  }, [activeRoleCode]);
+
   const filteredCategoriesForSearch = useMemo(() => {
-    return ADMIN_CATEGORIES.map((cat) => {
+    return permittedCategories.map((cat) => {
       const filteredMods = cat.modules.filter((mod) => {
         if (selectedCategoryFilter !== 'ALL' && cat.key !== selectedCategoryFilter) return false;
         if (!moduleSearchFilter.trim()) return true;
@@ -345,7 +437,7 @@ export function AdminDashboardPage() {
         modules: filteredMods,
       };
     }).filter((cat) => cat.modules.length > 0);
-  }, [moduleSearchFilter, selectedCategoryFilter]);
+  }, [moduleSearchFilter, selectedCategoryFilter, permittedCategories]);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-2 sm:p-4 max-w-7xl mx-auto w-full pb-36 sm:pb-24 overflow-x-hidden">
@@ -354,12 +446,17 @@ export function AdminDashboardPage() {
         <div className="flex items-center gap-2.5 min-w-0">
           <button
             type="button"
-            onClick={() => setTab(isTilesView ? 'TRANSACTIONS' : 'TILES')}
+            onClick={() => setTab(isRoleHomeView ? (activeRoleCode === 'SUPER_ADMIN' ? 'TILES' : 'TRANSACTIONS') : 'HOME')}
             className="text-sm sm:text-base font-black tracking-tight text-foreground flex items-center gap-1.5 truncate hover:text-primary transition"
-            title="Toggle Control Tower Overview"
+            title="Return to Workspace Overview"
           >
             <span className="text-lg">🛡️</span>
             <span className="truncate">Control Tower</span>
+            {activeRoleCode !== 'SUPER_ADMIN' && (
+              <span className="text-xs text-muted-foreground font-normal truncate hidden sm:inline">
+                · {activeRoleConfig.shortTitle}
+              </span>
+            )}
           </button>
 
           {/* Operating Mode Badge */}
@@ -382,47 +479,66 @@ export function AdminDashboardPage() {
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={() => setTab('APPROVALS')}
-            className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
-              activeTab === 'APPROVALS'
-                ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
-                : 'bg-card text-foreground hover:bg-muted border-amber-500/40 text-amber-900 dark:text-amber-200'
-            }`}
-            title="Open Onboarding Approvals Queue"
-          >
-            <span className="text-sm">📋</span>
-            <span className="hidden sm:inline">Approvals</span>
-          </button>
+          {/* Quick Home Button for Non-Superadmin or CEO */}
+          {activeRoleCode !== 'SUPER_ADMIN' && !isRoleHomeView && (
+            <button
+              type="button"
+              onClick={() => setTab('HOME')}
+              className="inline-flex min-h-[38px] items-center gap-1 rounded-xl border bg-primary/10 border-primary/30 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition active:scale-98 shadow-2xs cursor-pointer"
+              title={`Return to ${activeRoleConfig.shortTitle} Workspace`}
+            >
+              <span>🏠</span>
+              <span className="hidden sm:inline">{activeRoleConfig.shortTitle} Home</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setTab('INTERNAL_RBAC')}
-            className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
-              activeTab === 'INTERNAL_RBAC'
-                ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
-                : 'bg-card text-foreground hover:bg-muted border-purple-500/40 text-purple-900 dark:text-purple-200'
-            }`}
-            title="Open Internal RBAC Permission Matrix"
-          >
-            <span className="text-sm">🔐</span>
-            <span className="hidden sm:inline">RBAC</span>
-          </button>
+          {(activeRoleCode === 'SUPER_ADMIN' || activeRoleCode === 'SALES_MARKETING' || activeRoleCode === 'LEGAL_PRIVACY') && (
+            <button
+              type="button"
+              onClick={() => setTab('APPROVALS')}
+              className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
+                activeTab === 'APPROVALS'
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                  : 'bg-card text-foreground hover:bg-muted border-amber-500/40 text-amber-900 dark:text-amber-200'
+              }`}
+              title="Open Onboarding Approvals Queue"
+            >
+              <span className="text-sm">📋</span>
+              <span className="hidden sm:inline">Approvals</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setTab('TILES')}
-            className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
-              isTilesView
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-card text-foreground hover:bg-muted'
-            }`}
-            title="All Administrative Modules (Grid Directory)"
-          >
-            <span className="text-sm">▦</span>
-            <span className="hidden sm:inline">Modules</span>
-          </button>
+          {activeRoleCode === 'SUPER_ADMIN' && (
+            <button
+              type="button"
+              onClick={() => setTab('INTERNAL_RBAC')}
+              className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
+                activeTab === 'INTERNAL_RBAC'
+                  ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                  : 'bg-card text-foreground hover:bg-muted border-purple-500/40 text-purple-900 dark:text-purple-200'
+              }`}
+              title="Open Internal RBAC Permission Matrix"
+            >
+              <span className="text-sm">🔐</span>
+              <span className="hidden sm:inline">RBAC</span>
+            </button>
+          )}
+
+          {activeRoleCode === 'SUPER_ADMIN' && (
+            <button
+              type="button"
+              onClick={() => setTab('TILES')}
+              className={`inline-flex min-h-[38px] items-center gap-1 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition active:scale-98 shadow-2xs cursor-pointer ${
+                isTilesView
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card text-foreground hover:bg-muted'
+              }`}
+              title="All Administrative Modules (Grid Directory)"
+            >
+              <span className="text-sm">▦</span>
+              <span className="hidden sm:inline">Modules</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -446,6 +562,18 @@ export function AdminDashboardPage() {
         </div>
       </header>
 
+      {/* Internal Role Switcher & Persona Bar */}
+      <div className="mt-2.5">
+        <InternalRoleSwitcherBar
+          currentRole={activeRoleCode}
+          onSelectRole={handleSelectRole}
+          canSwitch={isSuperUser}
+          isFounder={roleContext?.isFounder || userEmail?.toLowerCase() === 'bvnbasu@gmail.com' || userEmail?.toLowerCase() === 'bvnbasu@yahoo.com'}
+          userName={roleContext?.fullName || user?.email?.split('@')[0]}
+          userEmail={userEmail}
+        />
+      </div>
+
       {/* Global Status Flash Banner */}
       {statusMessage && (
         <div className="mt-2 shrink-0 flex items-center justify-between rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-2.5 sm:p-3 text-xs text-emerald-950 dark:text-emerald-200 animate-in fade-in">
@@ -462,8 +590,81 @@ export function AdminDashboardPage() {
         </div>
       )}
 
-      {/* VIEW 1: FULL CATEGORY TILES GRID VIEW (When in TILES view) */}
-      {isTilesView ? (
+      {/* VIEW SELECTION ACCORDING TO ROLE & TAB */}
+      {isRoleHomeView ? (
+        <div className="mt-3 animate-in fade-in duration-150">
+          {activeRoleCode === 'CEO_FOUNDER' && (
+            <CeoFounderCommandCenter
+              health={health}
+              transactions={transactions}
+              onNavigateTab={(tab) => setTab(tab)}
+              onRefresh={refreshAllData}
+              userEmail={userEmail}
+            />
+          )}
+
+          {activeRoleCode === 'AUDITOR' && (
+            <AuditorConsoleView
+              health={health}
+              transactions={transactions}
+              sellerOrders={sellerOrders}
+              onRefresh={refreshAllData}
+            />
+          )}
+
+          {activeRoleCode === 'GENERAL_SUPPORT' && (
+            <GeneralSupportConsoleView
+              health={health}
+              alerts={alerts}
+              transactions={transactions}
+              onNavigateTab={(tab: AdminTab) => setTab(tab)}
+              onRefresh={refreshAllData}
+            />
+          )}
+
+          {activeRoleCode === 'OPERATIONS' && (
+            <OperationsConsoleView
+              health={health}
+              alerts={alerts}
+              isLoadingHealth={isLoadingHealth}
+              onRefresh={refreshAllData}
+              onExecuteAction={handleExecuteAction}
+              onNavigateTab={(tab: AdminTab) => setTab(tab)}
+            />
+          )}
+
+          {activeRoleCode === 'SALES_MARKETING' && (
+            <SalesMarketingConsoleView
+              health={health}
+              onNavigateTab={(tab: AdminTab) => setTab(tab)}
+              onRefresh={refreshAllData}
+            />
+          )}
+
+          {activeRoleCode === 'LEGAL_PRIVACY' && (
+            <LegalPrivacyConsoleView
+              health={health}
+              onNavigateTab={(tab: AdminTab) => setTab(tab)}
+              onRefresh={refreshAllData}
+            />
+          )}
+        </div>
+      ) : !isTabPermitted ? (
+        <div className="mt-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-6 text-center space-y-3">
+          <div className="text-3xl">🔒</div>
+          <h3 className="text-base font-bold text-foreground">Access Restricted to Authorized Role Functions</h3>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Your current assigned role ({activeRoleConfig.title}) does not have permission to access the "{activeTab}" module.
+          </p>
+          <button
+            type="button"
+            onClick={() => setTab('HOME')}
+            className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90"
+          >
+            Return to {activeRoleConfig.shortTitle} Workspace
+          </button>
+        </div>
+      ) : isTilesView ? (
         <div className="mt-3 space-y-4 animate-in fade-in duration-150">
           {/* Tiles View Header */}
           <div className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -594,11 +795,11 @@ export function AdminDashboardPage() {
               <div className="flex items-center gap-1.5 min-w-0">
                 <button
                   type="button"
-                  onClick={() => setTab('TILES')}
+                  onClick={() => setTab(activeRoleCode === 'SUPER_ADMIN' ? 'TILES' : 'HOME')}
                   className="inline-flex min-h-[32px] items-center gap-1 rounded-lg border bg-muted/50 hover:bg-muted px-2 py-0.5 text-xs font-bold text-foreground transition active:scale-98 shrink-0 cursor-pointer"
-                  title="Return to Grid / All Modules Directory"
+                  title={activeRoleCode === 'SUPER_ADMIN' ? 'Return to Grid / All Modules Directory' : `Return to ${activeRoleConfig.shortTitle} Workspace`}
                 >
-                  <span>←</span> <span className="hidden sm:inline">Grid</span>
+                  <span>←</span> <span className="hidden sm:inline">{activeRoleCode === 'SUPER_ADMIN' ? 'Grid' : activeRoleConfig.shortTitle}</span>
                 </button>
 
                 <div className="flex items-center gap-1 truncate text-xs">
@@ -629,7 +830,7 @@ export function AdminDashboardPage() {
 
             {/* Bottom Row: Compact Category Icon Pills with Tooltips (wraps gracefully without horizontal scroll) */}
             <div className="flex flex-wrap items-center gap-1.5 pb-1 w-full max-w-full px-0.5">
-              {ADMIN_CATEGORIES.map((cat) => {
+              {permittedCategories.map((cat) => {
                 const isCatActive = cat.key === currentCategory.key;
                 const firstMod = cat.modules[0]!;
 
@@ -913,7 +1114,7 @@ export function AdminDashboardPage() {
                 >
                   All ({ALL_ADMIN_MODULES.length})
                 </button>
-                {ADMIN_CATEGORIES.map((cat) => (
+                {permittedCategories.map((cat) => (
                   <button
                     key={cat.key}
                     type="button"

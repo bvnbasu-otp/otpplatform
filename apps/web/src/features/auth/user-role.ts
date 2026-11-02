@@ -17,6 +17,7 @@ const ENV_FOUNDER_EMAIL = import.meta.env.VITE_FOUNDER_EMAIL;
 export const FOUNDER_EMAILS = [
   ...(ENV_FOUNDER_EMAIL ? [ENV_FOUNDER_EMAIL.trim().toLowerCase()] : []),
   'bvnbasu@gmail.com',
+  'bvnbasu@yahoo.com',
   'founder@otp.test',
 ];
 

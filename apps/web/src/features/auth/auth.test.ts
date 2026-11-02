@@ -4,6 +4,7 @@ import {
   resolvePortalRole,
   fetchCurrentProfile,
   SUPERADMIN_EMAILS,
+  FOUNDER_EMAILS,
 } from '@/features/auth/user-role';
 import { SignInForm } from '@/features/auth/components/SignInForm';
 import { supabase } from '@/lib/supabase';
@@ -48,6 +49,11 @@ describe('Auth Feature & Portal Role Resolution', () => {
     expect(isSuperAdminEmail(null)).toBe(false);
     expect(isSuperAdminEmail(undefined)).toBe(false);
     expect(isSuperAdminEmail('')).toBe(false);
+  });
+
+  it('protects both bvnbasu@gmail.com and bvnbasu@yahoo.com in FOUNDER_EMAILS', () => {
+    expect(FOUNDER_EMAILS).toContain('bvnbasu@gmail.com');
+    expect(FOUNDER_EMAILS).toContain('bvnbasu@yahoo.com');
   });
 
   it('resolves portal role as admin only when isPlatformAdmin claim is true', async () => {
