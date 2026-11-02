@@ -182,6 +182,11 @@ export function OpportunitiesBrowsePage() {
   const { profile } = useSupplierRadarCapabilities();
   const isSupplier = context.side === 'SUPPLIER';
 
+  // Redirect buyers back to dashboard (Opportunities is only applicable for suppliers)
+  if (context.email && context.side !== 'SUPPLIER') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const filteredOpportunities = useMemo(() => {
     // 1. Radar Scope & Capabilities Filter (only for suppliers)
     const declaredCategories = isSupplier ? profile?.categories || [] : [];

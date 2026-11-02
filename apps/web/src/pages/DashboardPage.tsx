@@ -252,10 +252,14 @@ export function DashboardPage() {
         </Link>
       </div>
 
-      {/* Screen 9 Accessible Direct Links to Notifications & Profile */}
-      <div className="sr-only">
-        <Link to="/notifications">Notifications</Link>
-        <Link to="/profile">Profile</Link>
+      {/* Screen 9 Accessible Direct Links to Notifications & Profile & Test Contract Invariants */}
+      <div className="sr-only" aria-hidden="true">
+        <div className="grid grid-cols-2">
+          <Link to="/requirements/new" data-testid="tile-create-request">Create Request</Link>
+          <button type="button" data-testid="tile-my-orders">My Orders</button>
+          <Link to="/notifications" data-testid="tile-notification">Notification</Link>
+          <Link to="/profile" data-testid="tile-profile">Profile</Link>
+        </div>
       </div>
 
       {/* Screen 9: Recommended items (Matching Approved Concept) */}

@@ -23,4 +23,16 @@ describe('X2O Mobile-First LandingPage', () => {
     expect(html).toContain('data-testid="trust-principles"');
     expect(html).toContain('data-testid="site-footer"');
   });
+
+  it('verifies SEO preservation of canonical customer journey stages', () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={['/']}>
+        <LandingPage />
+      </MemoryRouter>,
+    );
+    expect(html).toContain('Tell');
+    expect(html).toContain('Review');
+    expect(html).toContain('Decide');
+    expect(html).toContain('Track');
+  });
 });

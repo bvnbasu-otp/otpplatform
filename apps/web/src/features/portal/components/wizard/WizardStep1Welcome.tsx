@@ -178,7 +178,7 @@ export function WizardStep1Welcome({ onVerified, onProceedToVerify }: WizardStep
             {t('portal.welcomeTitle', 'Simpler Procurement for Everyone · X2O')}
           </h1>
           <p className="mt-1 text-xs font-semibold text-muted-foreground leading-relaxed">
-            {t('portal.welcomeSubtitle', 'Find, compare & choose the best suppliers — Tell, Review, Decide & Track')}
+            {t('portal.welcomeSubtitle', 'Tell, Review, Decide & Track in one place')}
           </p>
           <p className="mt-0.5 text-[11px] font-medium text-primary">
             {t('portal.welcomeHighlights', 'Buy_Items · Get_Quotes · Plan_Procurement')}

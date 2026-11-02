@@ -44,6 +44,7 @@ describe('8-Screen Native Mobile Registration & Blank-Slate Onboarding', () => {
 
       expect(html).toContain('data-testid="language-switcher"');
       expect(html).toContain('X2O');
+      expect(html).toContain('Tell, Review, Decide &amp; Track in one place');
       expect(html).toContain('+91');
       expect(html).toContain('WhatsApp');
       expect(html).toContain('Email');

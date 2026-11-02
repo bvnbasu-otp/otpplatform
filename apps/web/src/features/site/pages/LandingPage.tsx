@@ -51,6 +51,7 @@ export function LandingPage() {
           <p>{PRODUCT_PHILOSOPHY}</p>
           <h1>{PRODUCT_PLATFORM_TITLE}</h1>
           <span>Better Procurement for Everyone — Trusted. Transparent. Fair.</span>
+          <p>Tell, Review, Decide &amp; Track in one place</p>
           <p>{PRODUCT_PLATFORM_SUBTITLE}</p>
 
           <div data-testid="primary-cta-area">
