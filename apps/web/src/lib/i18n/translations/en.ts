@@ -104,7 +104,7 @@ export const en = {
   },
   portal: {
     welcomeTitle: 'X2O / OTP Next',
-    welcomeSubtitle: 'Tell, Review, Decide & Track in one simple place',
+    welcomeSubtitle: 'Tell, Review, Decide & Track in one place',
     welcomeHighlights: 'Buy Items · Get Verified Quotes · Transparent Deals',
     signInPrompt: 'Already have an account?',
     signInLink: 'Sign In',
