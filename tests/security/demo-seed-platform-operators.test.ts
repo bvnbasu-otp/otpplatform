@@ -161,6 +161,15 @@ async function clearOperators(client: Client): Promise<void> {
       [row.id],
     );
   }
+  const secondaryFounder = await client.query<{ id: string }>(
+    `SELECT id::text FROM public.profiles WHERE lower(email) = 'bvnbasu@yahoo.com'`,
+  );
+  if (secondaryFounder.rows[0]) {
+    await client.query(
+      `SELECT public.break_glass_platform_account($1, true, true, 'SUSPENDED', 'isolate disposable demo seed from existing recovery claims')`,
+      [secondaryFounder.rows[0].id],
+    );
+  }
 }
 
 async function insertPlainProfile(client: Client, label: string): Promise<string> {
