@@ -190,6 +190,9 @@ DECLARE
   v_demo_rfq_ids uuid[];
   v_demo_po_ids uuid[];
 BEGIN
+  -- Authorize platform privilege write for audited founder setup & demo account purge
+  PERFORM set_config('otp.platform_privilege_write', 'on', true);
+
   -- A. Fetch or initialize auth user for bvnbasu@yahoo.com
   SELECT id INTO v_yahoo_auth_id FROM auth.users WHERE lower(email) = 'bvnbasu@yahoo.com';
 
@@ -399,6 +402,8 @@ BEGIN
       OR lower(email) LIKE '%@otpdemo.test'
       OR lower(email) LIKE '%@greenview.test'
     );
+
+  PERFORM set_config('otp.platform_privilege_write', 'off', true);
 
   RAISE NOTICE 'Migration 00332 completed: demo seed accounts purged. Canonical Founders & SuperAdmins: bvnbasu@gmail.com and bvnbasu@yahoo.com';
 END;
