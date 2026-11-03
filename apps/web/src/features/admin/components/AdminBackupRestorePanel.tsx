@@ -1,3 +1,4 @@
+import { AdminGreenfieldResetCard } from './AdminGreenfieldResetCard';
 import React, { useState, useEffect } from 'react';
 import {
   fetchDbBackups,
@@ -127,6 +128,9 @@ export function AdminBackupRestorePanel() {
           <button type="button" onClick={() => setStatusMessage(null)} className="text-muted-foreground hover:text-foreground">✕</button>
         </div>
       )}
+
+      {/* Greenfield Pilot Purge & Reset Engine */}
+      <AdminGreenfieldResetCard onResetComplete={loadBackups} />
 
       {/* Create Backup Form */}
       <div className="rounded-2xl border bg-card p-4 sm:p-5 shadow-2xs space-y-4">

@@ -2077,3 +2077,33 @@ export async function bulkUnblockOrganizations(
     return { ok: false, error: err?.message || 'Failed to reactivate organizations' };
   }
 }
+
+/**
+ * Instantaneous Greenfield Pilot Reset Engine (Exclusive to Platform Founders).
+ * Resets database back to pristine greenfield state after any pilot completes,
+ * preserving codebase, schema, triggers, and founder credentials.
+ */
+export async function executeGreenfieldReset(confirmationPhrase: string): Promise<{
+  ok: boolean;
+  message: string;
+  result?: any;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabase.rpc('execute_greenfield_pilot_reset', {
+      p_confirmation_token: confirmationPhrase,
+    });
+    if (error) throw error;
+    return {
+      ok: true,
+      message: (data as any)?.message || 'Platform successfully reset to pristine greenfield state.',
+      result: data,
+    };
+  } catch (err: any) {
+    return {
+      ok: false,
+      message: '',
+      error: err?.message || 'Failed to execute greenfield reset.',
+    };
+  }
+}
