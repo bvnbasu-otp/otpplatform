@@ -102,24 +102,6 @@ INSERT INTO auth.users (
     crypt('password', gen_salt('bf')),
     now(), '{"provider":"email","providers":["email"]}', '{}',
     now(), now()
-  ),
-(
-    '00000000-0000-0000-0000-000000000000',
-    'dd2dedee-0c2a-4254-b2af-342b41d56385',
-    'authenticated', 'authenticated',
-    'bvnbasu@gmail.com',
-    crypt('Admin@OTP2026!', gen_salt('bf')),
-    now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Baskar Loganathan"}',
-    now(), now()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000000',
-    'ee3dedee-0c2a-4254-b2af-342b41d56386',
-    'authenticated', 'authenticated',
-    'bvnbasu@yahoo.com',
-    crypt('Admin@otp2026!', gen_salt('bf')),
-    now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Baskar Loganathan"}',
-    now(), now()
   )
 ON CONFLICT (id) DO UPDATE
 SET email = EXCLUDED.email,
@@ -138,9 +120,7 @@ INSERT INTO auth.identities (
   ('c0000000-0000-4000-8000-000000000006', 'c0000000-0000-4000-8000-000000000006', '{"sub":"c0000000-0000-4000-8000-000000000006","email":"supplier-b@borewell.test"}'::jsonb, 'email', now(), now(), now(), gen_random_uuid()),
   ('c0000000-0000-4000-8000-000000000007', 'c0000000-0000-4000-8000-000000000007', '{"sub":"c0000000-0000-4000-8000-000000000007","email":"supplier-c@borewell.test"}'::jsonb, 'email', now(), now(), now(), gen_random_uuid()),
   ('c0000000-0000-4000-8000-000000000008', 'c0000000-0000-4000-8000-000000000008', '{"sub":"c0000000-0000-4000-8000-000000000008","email":"supplier-d@borewell.test"}'::jsonb, 'email', now(), now(), now(), gen_random_uuid()),
-  ('c0000000-0000-4000-8000-000000000009', 'c0000000-0000-4000-8000-000000000009', '{"sub":"c0000000-0000-4000-8000-000000000009","email":"supplier-e@borewell.test"}'::jsonb, 'email', now(), now(), now(), gen_random_uuid()),
-('dd2dedee-0c2a-4254-b2af-342b41d56385', 'dd2dedee-0c2a-4254-b2af-342b41d56385', '{"sub":"dd2dedee-0c2a-4254-b2af-342b41d56385","email":"bvnbasu@gmail.com"}'::jsonb, 'email', now(), now(), now(), gen_random_uuid()),
-  ('ee3dedee-0c2a-4254-b2af-342b41d56386', 'ee3dedee-0c2a-4254-b2af-342b41d56386', '{"sub":"ee3dedee-0c2a-4254-b2af-342b41d56386","email":"bvnbasu@yahoo.com"}'::jsonb, 'email', now(), now(), now(), gen_random_uuid())
+  ('c0000000-0000-4000-8000-000000000009', 'c0000000-0000-4000-8000-000000000009', '{"sub":"c0000000-0000-4000-8000-000000000009","email":"supplier-e@borewell.test"}'::jsonb, 'email', now(), now(), now(), gen_random_uuid())
 ON CONFLICT (provider_id, provider) DO UPDATE
 SET identity_data = EXCLUDED.identity_data,
     updated_at = now();
@@ -174,9 +154,7 @@ INSERT INTO profiles (id, auth_user_id, email, full_name) VALUES
   ('b0000000-0000-4000-8000-000000000006', 'c0000000-0000-4000-8000-000000000006', 'supplier-b@borewell.test', 'Supplier B Owner'),
   ('b0000000-0000-4000-8000-000000000007', 'c0000000-0000-4000-8000-000000000007', 'supplier-c@borewell.test', 'Supplier C Owner'),
   ('b0000000-0000-4000-8000-000000000008', 'c0000000-0000-4000-8000-000000000008', 'supplier-d@borewell.test', 'Supplier D Owner'),
-  ('b0000000-0000-4000-8000-000000000009', 'c0000000-0000-4000-8000-000000000009', 'supplier-e@borewell.test', 'Supplier E Owner'),
-('dd2dedee-0c2a-4254-b2af-342b41d56386', 'dd2dedee-0c2a-4254-b2af-342b41d56385', 'bvnbasu@gmail.com', 'Baskar Loganathan'),
-  ('ee3dedee-0c2a-4254-b2af-342b41d56387', 'ee3dedee-0c2a-4254-b2af-342b41d56386', 'bvnbasu@yahoo.com', 'Baskar Loganathan')
+  ('b0000000-0000-4000-8000-000000000009', 'c0000000-0000-4000-8000-000000000009', 'supplier-e@borewell.test', 'Supplier E Owner')
 ON CONFLICT (id) DO UPDATE
 SET auth_user_id = EXCLUDED.auth_user_id,
     email = EXCLUDED.email,
@@ -669,14 +647,3 @@ INSERT INTO audit_events (event_type, actor_id, organization_id, entity_type, en
   ('payment.verified', 'b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'payment', 'e0000002-0000-4000-8000-000000000001', '{"reference":"UPI/GV9204182736"}'::jsonb, now() - interval '2 hours', 'gv-fulfill-001'),
   ('performance.recorded', NULL, 'a0000000-0000-4000-8000-000000000001', 'supplier_performance', 'e1000001-0000-4000-8000-000000000001', '{"qualityRating":4.5}'::jsonb, now() - interval '1 hour', 'gv-fulfill-001'),
   ('requirement.completed', 'b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'requirement', 'a2000001-0000-4000-8000-000000000002', '{}'::jsonb, now() - interval '1 hour', 'gv-fulfill-001');
-
-UPDATE profiles
-SET is_founder = true,
-    is_platform_admin = true,
-    active_role_code = 'SUPER_ADMIN',
-    status = 'ACTIVE'
-WHERE email IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com');
-
-INSERT INTO profile_roles (profile_id, role_code, is_demo)
-SELECT id, 'SUPER_ADMIN', false FROM profiles WHERE email IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com')
-ON CONFLICT (profile_id, role_code) DO NOTHING;
