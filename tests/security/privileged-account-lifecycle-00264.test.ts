@@ -24,7 +24,7 @@ describe('00264 privileged lifecycle and audit contracts (static security & sche
       '00273_persist_pin_coverage_in_canonical_suppliers.sql',
       '00274_location_pin_coverage_durable_recovery.sql',
     ]);
-    expect(files.at(-1)).toBe('00332_purge_demo_accounts_for_production_realtime.sql');
+    expect(files.at(-1)).toBe('00333_greenfield_purge_all_demo_and_supplier_accounts.sql');
     const idx263 = files.indexOf('00263_guard_profile_privileges_empty_role_bypass.sql');
     expect(idx263).toBeGreaterThan(0);
     expect(files[idx263 + 1]).toBe(FILE);

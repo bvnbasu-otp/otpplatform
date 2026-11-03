@@ -10,11 +10,11 @@ describe('Migration 00332: Real-time Demo Account Purge & Production Dual-Founde
   const migrations = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{5}_.+\.sql$/.test(f)).sort();
   const sql = readFileSync(resolve(MIGRATIONS_DIR, FILE_00332), 'utf8');
 
-  it('is the newest contiguous migration in the repository chain', () => {
-    expect(migrations.at(-1)).toBe(FILE_00332);
+  it('is a valid contiguous migration in the repository chain', () => {
     const index = migrations.indexOf(FILE_00332);
     expect(index).toBe(331); // 332nd file (0-indexed)
     expect(migrations[index - 1]).toBe('00331_authoritative_17_category_taxonomy.sql');
+    expect(migrations[index + 1]).toBe('00333_greenfield_purge_all_demo_and_supplier_accounts.sql');
   });
 
   it('enforces atomic transactional wrapper', () => {

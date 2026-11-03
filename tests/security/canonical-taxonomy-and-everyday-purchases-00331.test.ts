@@ -15,6 +15,7 @@ describe('Migration 00331: Authoritative 17-Category Taxonomy & Everyday Purchas
     expect(index).toBe(330); // 331st file (0-indexed)
     expect(migrations[index - 1]).toBe('00330_authoritative_pricing_and_supplier_fee_gate.sql');
     expect(migrations[index + 1]).toBe('00332_purge_demo_accounts_for_production_realtime.sql');
+    expect(migrations[index + 2]).toBe('00333_greenfield_purge_all_demo_and_supplier_accounts.sql');
   });
 
   it('enforces atomic transactional wrapper', () => {
