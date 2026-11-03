@@ -3,7 +3,7 @@
 
 BEGIN;
 
--- Ensure auth users and profiles for pilot test fixtures exist
+-- Ensure auth users, identities and profiles for pilot test fixtures exist
 INSERT INTO auth.users (
   id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
 ) VALUES
@@ -13,24 +13,33 @@ INSERT INTO auth.users (
   ('c0000000-0000-4000-8000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'buyer@greenview.test', extensions.crypt('password', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now())
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO auth.identities (
+  id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+) VALUES
+  ('c0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', '{"sub":"c0000000-0000-4000-8000-000000000001","email":"manager@greenview.test"}'::jsonb, 'email', now(), now(), now()),
+  ('c0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002', '{"sub":"c0000000-0000-4000-8000-000000000002","email":"committee1@greenview.test"}'::jsonb, 'email', now(), now(), now()),
+  ('c0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000003', '{"sub":"c0000000-0000-4000-8000-000000000003","email":"committee2@greenview.test"}'::jsonb, 'email', now(), now(), now()),
+  ('c0000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000004', '{"sub":"c0000000-0000-4000-8000-000000000004","email":"buyer@greenview.test"}'::jsonb, 'email', now(), now(), now())
+ON CONFLICT (provider, provider_id) DO NOTHING;
+
 INSERT INTO public.profiles (
   id, auth_user_id, email, full_name, is_founder, is_platform_admin, active_role_code, status, is_demo, created_at, updated_at
 ) VALUES
-  ('b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'manager@greenview.test', 'Greenview Manager', false, false, NULL, 'ACTIVE', true, now(), now()),
-  ('b0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002', 'committee1@greenview.test', 'Greenview Committee 1', false, false, NULL, 'ACTIVE', true, now(), now()),
-  ('b0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000003', 'committee2@greenview.test', 'Greenview Committee 2', false, false, NULL, 'ACTIVE', true, now(), now()),
-  ('b0000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000004', 'buyer@greenview.test', 'Greenview Buyer', false, false, NULL, 'ACTIVE', true, now(), now())
+  ('b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'manager@greenview.test', 'Greenview Manager', false, false, NULL, 'ACTIVE', false, now(), now()),
+  ('b0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002', 'committee1@greenview.test', 'Greenview Committee 1', false, false, NULL, 'ACTIVE', false, now(), now()),
+  ('b0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000003', 'committee2@greenview.test', 'Greenview Committee 2', false, false, NULL, 'ACTIVE', false, now(), now()),
+  ('b0000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000004', 'buyer@greenview.test', 'Greenview Buyer', false, false, NULL, 'ACTIVE', false, now(), now())
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.profile_roles (profile_id, role_code, is_demo) VALUES
-  ('b0000000-0000-4000-8000-000000000001', 'FACILITY_MANAGER', true),
-  ('b0000000-0000-4000-8000-000000000002', 'COMMITTEE_MEMBER', true),
-  ('b0000000-0000-4000-8000-000000000003', 'COMMITTEE_MEMBER', true),
-  ('b0000000-0000-4000-8000-000000000004', 'PROCUREMENT_LEAD', true)
+  ('b0000000-0000-4000-8000-000000000001', 'FACILITY_MANAGER', false),
+  ('b0000000-0000-4000-8000-000000000002', 'COMMITTEE_MEMBER', false),
+  ('b0000000-0000-4000-8000-000000000003', 'COMMITTEE_MEMBER', false),
+  ('b0000000-0000-4000-8000-000000000004', 'PROCUREMENT_LEAD', false)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.organizations (id, name, org_type, is_demo)
-VALUES ('a0000000-0000-4000-8000-000000000001', 'Greenview Heights RWA', 'COMMUNITY', true)
+VALUES ('a0000000-0000-4000-8000-000000000001', 'Greenview Heights RWA', 'COMMUNITY', false)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.organization_members (id, organization_id, profile_id, role) VALUES
@@ -98,6 +107,22 @@ INSERT INTO quote_evaluations (id, quote_id, rfq_id, version_evaluated, evaluati
   (gen_random_uuid(), 'a5000000-0000-4000-8000-000000000002', 'f1000000-0000-4000-8000-000000000001', 1, 88.0, '{"price":30,"delivery":30,"warranty":28}'::jsonb, 'COMPUTED', now() - interval '12 hours'),
   (gen_random_uuid(), 'a5000000-0000-4000-8000-000000000003', 'f1000000-0000-4000-8000-000000000001', 1, 94.0, '{"price":40,"delivery":26,"warranty":28}'::jsonb, 'COMPUTED', now() - interval '12 hours')
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO procurement_performance_records (
+  id, supplier_id, rfq_id, organization_id, quoted_total, actual_total, quoted_delivery_days, actual_delivery_days, quality_rating, variance, recorded_at
+) VALUES (
+  'e1000001-0000-4000-8000-000000000001',
+  'd1000010-0000-4000-8000-000000000001',
+  'f1000000-0000-4000-8000-000000000001',
+  'a0000000-0000-4000-8000-000000000001',
+  9204.00,
+  9204.00,
+  4,
+  4,
+  4.5,
+  0,
+  now() - interval '1 day'
+) ON CONFLICT (id) DO NOTHING;
 
 -- =============================================================================
 -- PILOT 2 — MSME · Coimbatore · CNC spindle maintenance
