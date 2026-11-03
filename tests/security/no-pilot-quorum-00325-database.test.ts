@@ -105,6 +105,19 @@ describe('00325 minimum quote behavior (REAL DATABASE)', () => {
     const { data: invitation, error: firstInviteError } = await service
       .from('rfq_invitations').select('id,supplier_id').eq('rfq_id', rfq!.id).limit(1).single();
     expect(firstInviteError).toBeNull();
+
+    await service.from('suppliers').update({
+      address: {
+        kind: 'BUSINESS_OFFICE',
+        line1: '100 Pilot Fixture Road',
+        city: 'Pilot Fixture City',
+        state: 'Karnataka',
+        country: 'IN',
+        pincode: '599999',
+        postalCode: '599999',
+      },
+    }).eq('id', invitation!.supplier_id);
+
     const { data: quote, error: quoteError } = await service.from('quotes').insert({
       rfq_id: rfq!.id,
       supplier_id: invitation!.supplier_id,
