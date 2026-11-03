@@ -298,7 +298,18 @@ DECLARE
     'approval_policies',
     'payments',
     'issued_document_status_audits',
-    'otp_document_issuance_snapshots'
+    'otp_document_issuance_snapshots',
+    'issued_document_snapshots',
+    'pilot_purchase_attempts',
+    'org_governance_action_audits',
+    'internal_referral_payouts',
+    'internal_referral_achievements',
+    'internal_referral_plans',
+    'legal_agreement_approvals',
+    'legal_review_grants',
+    'personal_buyer_accounts',
+    'personal_subscriptions',
+    'personal_subscription_payment_logs'
   ];
 BEGIN
   FOREACH v_table IN ARRAY v_trans_tables LOOP
@@ -346,19 +357,23 @@ BEGIN
   SET active_organization_id = NULL
   WHERE active_organization_id IS NOT NULL;
 
-  -- Ensure audit_events foreign key to organizations sets NULL on delete so organization wipe succeeds
+  -- Drop foreign keys from immutable audit and governance logs to organizations/profiles
+  -- so deleting organizations and profiles never cascades to or mutates append-only logs
+  -- (which would trigger prevent_audit_mutation or trg_prevent_mutation_org_governance_audits)
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'audit_events_organization_id_fkey') THEN
     ALTER TABLE public.audit_events DROP CONSTRAINT audit_events_organization_id_fkey;
-    ALTER TABLE public.audit_events
-      ADD CONSTRAINT audit_events_organization_id_fkey
-      FOREIGN KEY (organization_id) REFERENCES public.organizations (id) ON DELETE SET NULL;
   END IF;
 
-  -- Delete all organization governance, invitations, memberships, and organizations
-  -- Note: We use DELETE rather than TRUNCATE CASCADE to prevent PostgreSQL from
-  -- transitively cascading TRUNCATE to profiles and profile_roles.
-  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'org_governance_action_audits') THEN
-    DELETE FROM public.org_governance_action_audits;
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'org_governance_action_audits_organization_id_fkey') THEN
+    ALTER TABLE public.org_governance_action_audits DROP CONSTRAINT org_governance_action_audits_organization_id_fkey;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'org_governance_action_audits_actor_person_id_fkey') THEN
+    ALTER TABLE public.org_governance_action_audits DROP CONSTRAINT org_governance_action_audits_actor_person_id_fkey;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'org_governance_action_audits_role_assignment_id_fkey') THEN
+    ALTER TABLE public.org_governance_action_audits DROP CONSTRAINT org_governance_action_audits_role_assignment_id_fkey;
   END IF;
 
   IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'organization_invitations') THEN
@@ -413,10 +428,6 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profile_roles') THEN
       DELETE FROM public.profile_roles WHERE profile_id = ANY(v_target_profile_ids);
-    END IF;
-
-    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'legal_acceptances') THEN
-      DELETE FROM public.legal_acceptances WHERE profile_id = ANY(v_target_profile_ids);
     END IF;
 
     IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'private' AND tablename = 'password_history') THEN
