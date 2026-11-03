@@ -95,6 +95,7 @@ WHERE p.is_demo
   AND EXISTS (SELECT 1 FROM supplier_users su WHERE su.profile_id = p.id);
 
 -- Platform Admin role and whitelist for CI & Local Dev testing
+BEGIN;
 SET LOCAL "otp.platform_privilege_write" = 'on';
 
 UPDATE public.profiles
@@ -105,4 +106,5 @@ WHERE lower(email) = 'admin@otp.test';
 INSERT INTO private_security.admin_whitelist (email, reason)
 VALUES ('admin@otp.test', 'CI & Local Dev Platform Administrator')
 ON CONFLICT (email) DO UPDATE SET reason = EXCLUDED.reason;
+COMMIT;
 
