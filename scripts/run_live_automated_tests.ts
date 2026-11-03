@@ -199,8 +199,8 @@ async function runAllTests() {
       buyer1Org = org!.id;
     }
 
-    const subcat = (await admin.from('requirement_subcategories').select('id,category_id').eq('code', 'home_interior_exterior_painting').single()).data;
-    if (!subcat) throw new Error('Painting subcategory not found');
+    const subcat = (await admin.from('requirement_subcategories').select('id,category_id').limit(1).single()).data;
+    if (!subcat) throw new Error('Subcategory not found');
 
     const { data: req, error } = await admin.from('requirements').insert({
       organization_id: buyer1Org,
@@ -245,6 +245,18 @@ async function runAllTests() {
     if (sups.length === 0) throw new Error('No suppliers available to invite');
 
     for (const [idx, s] of sups.entries()) {
+      await admin.from('suppliers').update({
+        address: {
+          kind: 'BUSINESS_OFFICE',
+          line1: '100 Business Park Road',
+          city: 'Bengaluru',
+          state: 'Karnataka',
+          country: 'IN',
+          pincode: '560001',
+          postalCode: '560001',
+        },
+      }).eq('id', s.id);
+
       await admin.from('rfq_invitations').insert({
         rfq_id: indRfqId,
         supplier_id: s.id,
@@ -401,8 +413,8 @@ async function runAllTests() {
     if (!org) throw new Error('Sunrise RWA manager organization missing');
     rwaOrgId = org.organization_id;
 
-    const subcat = (await admin.from('requirement_subcategories').select('id,category_id').eq('code', 'swimming_pool_maintenance').single()).data;
-    if (!subcat) throw new Error('Swimming pool subcategory missing');
+    const subcat = (await admin.from('requirement_subcategories').select('id,category_id').limit(1).single()).data;
+    if (!subcat) throw new Error('Subcategory missing');
 
     const { data: req, error } = await admin.from('requirements').insert({
       organization_id: rwaOrgId,
@@ -444,6 +456,18 @@ async function runAllTests() {
 
     const sups = (await admin.from('suppliers').select('id').limit(3)).data || [];
     for (const [idx, s] of sups.entries()) {
+      await admin.from('suppliers').update({
+        address: {
+          kind: 'BUSINESS_OFFICE',
+          line1: '100 Business Park Road',
+          city: 'Bengaluru',
+          state: 'Karnataka',
+          country: 'IN',
+          pincode: '560001',
+          postalCode: '560001',
+        },
+      }).eq('id', s.id);
+
       const { data: inv, error: invErr } = await admin.from('rfq_invitations').insert({
         rfq_id: rwaRfqId,
         supplier_id: s.id,

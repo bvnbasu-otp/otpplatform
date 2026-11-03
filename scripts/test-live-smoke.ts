@@ -159,9 +159,9 @@ export async function runLiveSmokeTests(): Promise<{ passed: number; failed: num
     });
 
     // 5. Demo Supplier Persona Authentication
-    await recordCheck('Demo Supplier Login (solar01@otpdemo.test)', 'POST /auth/v1/token', async () => {
+    await recordCheck('Demo Supplier Login (supplier01@otpdemo.test)', 'POST /auth/v1/token', async () => {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'solar01@otpdemo.test',
+        email: 'supplier01@otpdemo.test',
         password: 'password',
       });
       if (error || !data.session) throw new Error(error?.message || 'No session returned');
