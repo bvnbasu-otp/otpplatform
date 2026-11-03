@@ -391,6 +391,39 @@ SET business_name = EXCLUDED.business_name,
     is_demo = true,
     updated_at = now();
 
+INSERT INTO suppliers (
+  id, business_name, source, status, verification_status, lifecycle_state,
+  legacy_verification_status, rating_avg, completed_jobs, on_time_percent,
+  dispute_rate, city, pincode, contact_phone, contact_email, address,
+  categories, capabilities, service_area, is_demo
+) VALUES (
+  '0d500000-0000-4000-8000-000000000084',
+  'Apex Society Painters',
+  'DIRECT',
+  'ACTIVE',
+  'VERIFIED',
+  'VERIFIED',
+  'DOCUMENT_VERIFIED',
+  4.5,
+  12,
+  95.0,
+  0.0,
+  'Bengaluru',
+  '560037',
+  '+919845000084',
+  'contracts@apex-society-painters.test',
+  '{"city":"Bengaluru","line1":"84 Outer Ring Road","state":"Karnataka","country":"IN","postalCode":"560037"}'::jsonb,
+  ARRAY['Painting','Maintenance'],
+  '{"services":["painting"]}'::jsonb,
+  '{"radiusKm":30,"centerLat":12.9716,"centerLng":77.5946}'::jsonb,
+  true
+) ON CONFLICT (id) DO UPDATE
+SET business_name = EXCLUDED.business_name,
+    source = EXCLUDED.source,
+    status = EXCLUDED.status,
+    contact_email = EXCLUDED.contact_email,
+    is_demo = true;
+
 INSERT INTO supplier_users (id, supplier_id, profile_id, role)
 SELECT
   ('0d600000-0000-4000-8000-' || lpad(d.n::text, 12, '0'))::uuid,
