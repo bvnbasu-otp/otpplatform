@@ -24,6 +24,11 @@ export function PrintableProcurementReport({
 
   return (
     <div className="print-report-container hidden print:block text-slate-900 bg-white p-8 max-w-5xl mx-auto font-sans leading-normal print:p-6 print:max-w-full">
+      {/* Suppressed in print to render purely as a formal ledger without visual screen logo dump */}
+      <div className="hidden print:hidden" aria-hidden="true">
+        <OtpLogo size={44} />
+      </div>
+
       {/* Official Ledger Letterhead */}
       <div className="border-b-2 border-slate-900 pb-3 mb-4 font-serif">
         <div className="flex items-start justify-between">
