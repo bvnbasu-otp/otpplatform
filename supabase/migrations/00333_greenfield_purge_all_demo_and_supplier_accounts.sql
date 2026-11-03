@@ -568,4 +568,38 @@ $$;
 
 REVOKE ALL ON FUNCTION private.guard_rfq_status_transition() FROM PUBLIC, anon, authenticated;
 
+-- ---------------------------------------------------------------------------
+-- 9. PostgREST & Authenticated Safe PO Status Direct Write Guard
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION private.guard_po_status_direct_write()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, private, pg_temp
+AS $
+BEGIN
+  IF COALESCE(auth.role(), '') IN ('service_role', '') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.status IS DISTINCT FROM OLD.status THEN
+    IF current_setting('otp.po_cancel_internal', true) = '1'
+       OR current_setting('otp.po_transition_internal', true) = '1' THEN
+      RETURN NEW;
+    END IF;
+    IF current_user NOT IN ('anon', 'authenticated', 'authenticator') AND COALESCE(auth.role(), '') NOT IN ('anon', 'authenticated') THEN
+      RETURN NEW;
+    END IF;
+    RAISE EXCEPTION 'Purchase order status must change via transition_purchase_order or cancel_purchase_order_atomic (PO-TRANSITION-DIRECT-WRITE)';
+  END IF;
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS trg_guard_po_status_direct_write ON public.purchase_orders;
+CREATE TRIGGER trg_guard_po_status_direct_write
+  BEFORE UPDATE OF status ON public.purchase_orders
+  FOR EACH ROW EXECUTE FUNCTION private.guard_po_status_direct_write();
+
+REVOKE ALL ON FUNCTION private.guard_po_status_direct_write() FROM PUBLIC, anon, authenticated;
+
 COMMIT;

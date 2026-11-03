@@ -180,56 +180,56 @@ INSERT INTO suppliers (
     'd0000000-0000-4000-8000-000000000001',
     'AquaFlow Borewell Services',
     'DIRECT', 'ACTIVE',
-    ARRAY['Borewell', 'Motor Winding'],
+    ARRAY['water_environmental', 'machinery_engineering', 'Borewell', 'Motor Winding'],
     '{"maxHp": 15, "services": ["motor_winding", "borewell_repair"]}'::jsonb,
     4.50,
     '{"centerLat": 12.9716, "centerLng": 77.5946, "radiusKm": 25, "pinCodes": ["560001", "560034"]}'::jsonb,
     '+919800000001', 'contact@aquaflow.test',
-    '{"line1": "12 Industrial Area", "city": "Bengaluru", "state": "Karnataka", "postalCode": "560001", "country": "IN"}'::jsonb
+    '{"kind": "BUSINESS_OFFICE", "line1": "12 Industrial Area", "city": "Bengaluru", "state": "Karnataka", "pincode": "560001", "postalCode": "560001", "country": "IN"}'::jsonb
   ),
   (
     'd0000000-0000-4000-8000-000000000002',
     'DeepWell Motor Experts',
     'LOCAL_REGISTRY', 'ACTIVE',
-    ARRAY['Borewell', 'Motor Winding'],
+    ARRAY['water_environmental', 'machinery_engineering', 'Borewell', 'Motor Winding'],
     '{"maxHp": 12, "services": ["motor_winding"]}'::jsonb,
     4.20,
     '{"centerLat": 12.9352, "centerLng": 77.6245, "radiusKm": 20}'::jsonb,
     '+919800000002', 'info@deepwell.test',
-    '{"line1": "45 MG Road", "city": "Bengaluru", "state": "Karnataka", "postalCode": "560002", "country": "IN"}'::jsonb
+    '{"kind": "BUSINESS_OFFICE", "line1": "45 MG Road", "city": "Bengaluru", "state": "Karnataka", "pincode": "560002", "postalCode": "560002", "country": "IN"}'::jsonb
   ),
   (
     'd0000000-0000-4000-8000-000000000003',
     'HydroTech Winding Co',
     'REFERRAL', 'ACTIVE',
-    ARRAY['Borewell', 'Motor Winding'],
+    ARRAY['water_environmental', 'machinery_engineering', 'Borewell', 'Motor Winding'],
     '{"maxHp": 20, "services": ["motor_winding", "pump_service"]}'::jsonb,
     4.70,
     '{"centerLat": 12.9698, "centerLng": 77.7500, "radiusKm": 30}'::jsonb,
     '+919800000003', 'hello@hydrotech.test',
-    '{"line1": "88 Whitefield Main", "city": "Bengaluru", "state": "Karnataka", "postalCode": "560066", "country": "IN"}'::jsonb
+    '{"kind": "BUSINESS_OFFICE", "line1": "88 Whitefield Main", "city": "Bengaluru", "state": "Karnataka", "pincode": "560066", "postalCode": "560066", "country": "IN"}'::jsonb
   ),
   (
     'd0000000-0000-4000-8000-000000000004',
     'Bengaluru Pump & Motor',
     'ASSOCIATION', 'ACTIVE',
-    ARRAY['Borewell', 'Motor Winding'],
+    ARRAY['water_environmental', 'machinery_engineering', 'Borewell', 'Motor Winding'],
     '{"maxHp": 10, "services": ["motor_winding"]}'::jsonb,
     3.90,
     '{"centerLat": 12.9141, "centerLng": 77.6101, "radiusKm": 15}'::jsonb,
     '+919800000004', 'sales@bpm.test',
-    '{"line1": "3 Koramangala", "city": "Bengaluru", "state": "Karnataka", "postalCode": "560034", "country": "IN"}'::jsonb
+    '{"kind": "BUSINESS_OFFICE", "line1": "3 Koramangala", "city": "Bengaluru", "state": "Karnataka", "pincode": "560034", "postalCode": "560034", "country": "IN"}'::jsonb
   ),
   (
     'd0000000-0000-4000-8000-000000000005',
     'SouthCity Borewell Works',
     'DIRECT', 'ACTIVE',
-    ARRAY['Borewell', 'Motor Winding'],
+    ARRAY['water_environmental', 'machinery_engineering', 'Borewell', 'Motor Winding'],
     '{"maxHp": 10, "services": ["borewell_repair", "motor_winding"]}'::jsonb,
     4.10,
     '{"centerLat": 12.8996, "centerLng": 77.5849, "radiusKm": 18}'::jsonb,
     '+919800000005', 'ops@southcity.test',
-    '{"line1": "22 BTM Layout", "city": "Bengaluru", "state": "Karnataka", "postalCode": "560076", "country": "IN"}'::jsonb
+    '{"kind": "BUSINESS_OFFICE", "line1": "22 BTM Layout", "city": "Bengaluru", "state": "Karnataka", "pincode": "560076", "postalCode": "560076", "country": "IN"}'::jsonb
   )
 ON CONFLICT (id) DO UPDATE
 SET business_name = EXCLUDED.business_name,

@@ -93,3 +93,16 @@ UPDATE profiles p SET active_role_code = 'SUPPLIER_FOUNDER'
 WHERE p.is_demo
   AND p.active_role_code IS NULL
   AND EXISTS (SELECT 1 FROM supplier_users su WHERE su.profile_id = p.id);
+
+-- Platform Admin role and whitelist for CI & Local Dev testing
+SET LOCAL "otp.platform_privilege_write" = 'on';
+
+UPDATE public.profiles
+SET is_platform_admin = true,
+    active_role_code = 'SUPER_ADMIN'
+WHERE lower(email) = 'admin@otp.test';
+
+INSERT INTO private_security.admin_whitelist (email, reason)
+VALUES ('admin@otp.test', 'CI & Local Dev Platform Administrator')
+ON CONFLICT (email) DO UPDATE SET reason = EXCLUDED.reason;
+

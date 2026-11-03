@@ -395,34 +395,102 @@ INSERT INTO suppliers (
   id, business_name, source, status, verification_status, lifecycle_state,
   legacy_verification_status, rating_avg, completed_jobs, on_time_percent,
   dispute_rate, city, pincode, contact_phone, contact_email, address,
-  categories, capabilities, service_area, is_demo
+  categories, capabilities, service_area, gst_verified, is_demo
 ) VALUES (
   '0d500000-0000-4000-8000-000000000084',
-  'Apex Society Painters',
+  'Apex High-Rise Painters & Society Waterproofing',
   'DIRECT',
   'ACTIVE',
   'VERIFIED',
   'VERIFIED',
-  'DOCUMENT_VERIFIED',
-  4.5,
-  12,
-  95.0,
+  'PLATFORM_VERIFIED',
+  4.9,
+  210,
+  99.0,
   0.0,
   'Bengaluru',
-  '560037',
-  '+919845000084',
+  '560103',
+  '+919845044556',
   'contracts@apex-society-painters.test',
-  '{"city":"Bengaluru","line1":"84 Outer Ring Road","state":"Karnataka","country":"IN","postalCode":"560037"}'::jsonb,
-  ARRAY['Painting','Maintenance'],
-  '{"services":["painting"]}'::jsonb,
+  '{"kind":"BUSINESS_OFFICE","city":"Bengaluru","line1":"78, Outer Ring Road, Bellandur","state":"Karnataka","country":"IN","pincode":"560103","postalCode":"560103"}'::jsonb,
+  ARRAY['property_facility_management','construction_infrastructure','Painting','Maintenance'],
+  '{"services":["painting","waterproofing"]}'::jsonb,
   '{"radiusKm":30,"centerLat":12.9716,"centerLng":77.5946}'::jsonb,
+  true,
+  true
+),
+(
+  '0d500000-0000-4000-8000-000000000082',
+  'Royal Teak & Home Furnishing Solutions Private Limited',
+  'DIRECT',
+  'ACTIVE',
+  'VERIFIED',
+  'VERIFIED',
+  'PLATFORM_VERIFIED',
+  4.75,
+  98,
+  96.0,
+  0.0,
+  'Bengaluru',
+  '560038',
+  '+919845022334',
+  'info@royalteak-furniture.test',
+  '{"kind":"BUSINESS_OFFICE","city":"Bengaluru","line1":"128, 100ft Road, Indiranagar","state":"Karnataka","country":"IN","pincode":"560038","postalCode":"560038"}'::jsonb,
+  ARRAY['furniture_fixtures','property_facility_management'],
+  '{"services":["furniture"]}'::jsonb,
+  '{"radiusKm":30,"centerLat":12.9716,"centerLng":77.5946}'::jsonb,
+  true,
   true
 ) ON CONFLICT (id) DO UPDATE
 SET business_name = EXCLUDED.business_name,
     source = EXCLUDED.source,
     status = EXCLUDED.status,
+    verification_status = EXCLUDED.verification_status,
+    lifecycle_state = EXCLUDED.lifecycle_state,
+    legacy_verification_status = EXCLUDED.legacy_verification_status,
     contact_email = EXCLUDED.contact_email,
+    address = EXCLUDED.address,
+    categories = EXCLUDED.categories,
+    gst_verified = EXCLUDED.gst_verified,
     is_demo = true;
+
+-- Royal Teak auth user, profile, and supplier_users link for login assertion
+INSERT INTO auth.users (
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) VALUES (
+  '00000000-0000-4000-8000-000000000000',
+  '0dc00000-0000-4000-8000-000000000082',
+  'authenticated', 'authenticated', 'info@royalteak-furniture.test',
+  crypt('password', gen_salt('bf')), now(),
+  '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Venkatesh Rao (Director)"}'::jsonb,
+  now(), now()
+) ON CONFLICT (id) DO UPDATE
+SET email = EXCLUDED.email, encrypted_password = EXCLUDED.encrypted_password, updated_at = now();
+
+INSERT INTO auth.identities (
+  provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at, id
+) VALUES (
+  '0dc00000-0000-4000-8000-000000000082', '0dc00000-0000-4000-8000-000000000082',
+  '{"sub":"0dc00000-0000-4000-8000-000000000082","email":"info@royalteak-furniture.test"}'::jsonb,
+  'email', now(), now(), now(), gen_random_uuid()
+) ON CONFLICT (provider_id, provider) DO NOTHING;
+
+INSERT INTO profiles (id, auth_user_id, email, full_name, is_demo) VALUES (
+  '0db00000-0000-4000-8000-000000000082',
+  '0dc00000-0000-4000-8000-000000000082',
+  'info@royalteak-furniture.test',
+  'Venkatesh Rao (Director)',
+  true
+) ON CONFLICT (id) DO UPDATE
+SET auth_user_id = EXCLUDED.auth_user_id, email = EXCLUDED.email, full_name = EXCLUDED.full_name;
+
+INSERT INTO supplier_users (id, supplier_id, profile_id, role) VALUES (
+  '0d600000-0000-4000-8000-000000000082',
+  '0d500000-0000-4000-8000-000000000082',
+  '0db00000-0000-4000-8000-000000000082',
+  'OWNER'
+) ON CONFLICT (supplier_id, profile_id) DO UPDATE SET role = EXCLUDED.role;
 
 INSERT INTO supplier_users (id, supplier_id, profile_id, role)
 SELECT
