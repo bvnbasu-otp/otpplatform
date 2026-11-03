@@ -317,20 +317,30 @@ $$;
 -- 6. Wipe all Organizations and Memberships
 -- ---------------------------------------------------------------------------
 DO $$
-DECLARE
-  v_table text;
-  v_org_tables text[] := ARRAY[
-    'org_governance_action_audits',
-    'organization_invitations',
-    'organization_members',
-    'organizations'
-  ];
 BEGIN
-  FOREACH v_table IN ARRAY v_org_tables LOOP
-    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = v_table) THEN
-      EXECUTE 'TRUNCATE TABLE public.' || quote_ident(v_table) || ' CASCADE';
-    END IF;
-  END LOOP;
+  -- Detach active organization pointers from profiles so no FK constraint is tripped
+  UPDATE public.profiles
+  SET active_organization_id = NULL
+  WHERE active_organization_id IS NOT NULL;
+
+  -- Delete all organization governance, invitations, memberships, and organizations
+  -- Note: We use DELETE rather than TRUNCATE CASCADE to prevent PostgreSQL from
+  -- transitively cascading TRUNCATE to profiles and profile_roles.
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'org_governance_action_audits') THEN
+    DELETE FROM public.org_governance_action_audits;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'organization_invitations') THEN
+    DELETE FROM public.organization_invitations;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'organization_members') THEN
+    DELETE FROM public.organization_members;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'organizations') THEN
+    DELETE FROM public.organizations;
+  END IF;
 END;
 $$;
 
@@ -349,14 +359,80 @@ BEGIN
   WHERE lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com');
 
   IF v_target_profile_ids IS NOT NULL AND array_length(v_target_profile_ids, 1) > 0 THEN
-    DELETE FROM public.notification_preferences WHERE user_id = ANY(v_target_auth_ids);
-    DELETE FROM public.notifications WHERE profile_id = ANY(v_target_profile_ids);
-    DELETE FROM public.support_tickets WHERE profile_id = ANY(v_target_profile_ids);
-    DELETE FROM public.profile_verification_otps WHERE profile_id = ANY(v_target_profile_ids);
-    DELETE FROM public.internal_user_assignments WHERE profile_id = ANY(v_target_profile_ids);
-    DELETE FROM public.profile_roles WHERE profile_id = ANY(v_target_profile_ids);
-    DELETE FROM public.legal_acceptances WHERE profile_id = ANY(v_target_profile_ids);
-    DELETE FROM private.password_history WHERE profile_id = ANY(v_target_profile_ids);
+    -- Clear self-referencing blocked_by references
+    UPDATE public.profiles
+    SET blocked_by = NULL
+    WHERE blocked_by = ANY(v_target_profile_ids);
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'notification_preferences') THEN
+      DELETE FROM public.notification_preferences WHERE user_id = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'notifications') THEN
+      DELETE FROM public.notifications WHERE profile_id = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profile_verification_otps') THEN
+      DELETE FROM public.profile_verification_otps WHERE profile_id = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'internal_user_assignments') THEN
+      DELETE FROM public.internal_user_assignments WHERE profile_id = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profile_roles') THEN
+      DELETE FROM public.profile_roles WHERE profile_id = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'legal_acceptances') THEN
+      DELETE FROM public.legal_acceptances WHERE profile_id = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'private' AND tablename = 'password_history') THEN
+      DELETE FROM private.password_history WHERE profile_id = ANY(v_target_profile_ids);
+    END IF;
+
+    -- Clear RESTRICT foreign keys on internal tables if present
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'internal_invitations') THEN
+      DELETE FROM public.internal_invitations
+      WHERE invited_by = ANY(v_target_profile_ids)
+         OR accepted_profile_id = ANY(v_target_profile_ids)
+         OR revoked_by = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'internal_role_audit_log') THEN
+      DELETE FROM public.internal_role_audit_log
+      WHERE profile_id = ANY(v_target_profile_ids)
+         OR assigned_by = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'internal_staff_referrals') THEN
+      DELETE FROM public.internal_staff_referrals
+      WHERE employee_profile_id = ANY(v_target_profile_ids)
+         OR authorized_by = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'internal_referral_payout_events') THEN
+      DELETE FROM public.internal_referral_payout_events
+      WHERE employee_profile_id = ANY(v_target_profile_ids)
+         OR processed_by = ANY(v_target_profile_ids)
+         OR cancelled_by = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'legal_approval_evidence') THEN
+      DELETE FROM public.legal_approval_evidence
+      WHERE profile_id = ANY(v_target_profile_ids)
+         OR approver_profile_id = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'admin_recovery_requests') THEN
+      DELETE FROM public.admin_recovery_requests
+      WHERE subject_profile_id = ANY(v_target_profile_ids)
+         OR initiated_by = ANY(v_target_profile_ids)
+         OR decided_by = ANY(v_target_profile_ids);
+    END IF;
+
+    -- Delete non-founder profiles
     DELETE FROM public.profiles WHERE id = ANY(v_target_profile_ids);
   END IF;
 
