@@ -94,59 +94,91 @@ UPDATE auth.users SET
   email_change = COALESCE(email_change, '');
 
 -- ---------------------------------------------------------------------------
--- 3. Canonical Founder Profiles
+-- 3. Canonical Founder Profiles & Role Assignments
 -- ---------------------------------------------------------------------------
-
-INSERT INTO public.profiles (
-  id, auth_user_id, email, full_name, is_founder, is_platform_admin,
-  active_role_code, status, is_demo, created_at, updated_at
-) VALUES
-  (
-    'dd2dedee-0c2a-4254-b2af-342b41d56386',
-    'dd2dedee-0c2a-4254-b2af-342b41d56385',
-    'bvnbasu@gmail.com',
-    'Baskar Loganathan',
-    true, true, 'SUPER_ADMIN', 'ACTIVE', false, now(), now()
-  ),
-  (
-    'ee3dedee-0c2a-4254-b2af-342b41d56387',
-    'ee3dedee-0c2a-4254-b2af-342b41d56386',
-    'bvnbasu@yahoo.com',
-    'Baskar Loganathan',
-    true, true, 'SUPER_ADMIN', 'ACTIVE', false, now(), now()
-  )
-ON CONFLICT (id) DO UPDATE
-SET auth_user_id = EXCLUDED.auth_user_id,
-    email = EXCLUDED.email,
-    full_name = EXCLUDED.full_name,
-    is_founder = true,
-    is_platform_admin = true,
-    active_role_code = 'SUPER_ADMIN',
-    status = 'ACTIVE',
-    is_demo = false,
-    deleted_at = NULL,
-    updated_at = now();
-
--- ---------------------------------------------------------------------------
--- 4. Role Assignments (SUPER_ADMIN)
--- ---------------------------------------------------------------------------
-
-INSERT INTO public.profile_roles (profile_id, role_code, is_demo)
-VALUES
-  ('dd2dedee-0c2a-4254-b2af-342b41d56386', 'SUPER_ADMIN', false),
-  ('ee3dedee-0c2a-4254-b2af-342b41d56387', 'SUPER_ADMIN', false)
-ON CONFLICT (profile_id, role_code) DO NOTHING;
 
 DO $$
 DECLARE
+  v_gmail_auth_id uuid := 'dd2dedee-0c2a-4254-b2af-342b41d56385'::uuid;
+  v_gmail_profile_id uuid;
+  v_yahoo_auth_id uuid := 'ee3dedee-0c2a-4254-b2af-342b41d56386'::uuid;
+  v_yahoo_profile_id uuid;
   v_role_id uuid;
 BEGIN
+  -- A. Gmail profile
+  SELECT id INTO v_gmail_profile_id
+  FROM public.profiles
+  WHERE lower(email) = 'bvnbasu@gmail.com' OR auth_user_id = v_gmail_auth_id
+  LIMIT 1;
+
+  IF v_gmail_profile_id IS NULL THEN
+    v_gmail_profile_id := v_gmail_auth_id;
+    INSERT INTO public.profiles (
+      id, auth_user_id, email, full_name, is_founder, is_platform_admin,
+      active_role_code, status, is_demo, created_at, updated_at
+    ) VALUES (
+      v_gmail_profile_id, v_gmail_auth_id, 'bvnbasu@gmail.com', 'Baskar Loganathan',
+      true, true, 'SUPER_ADMIN', 'ACTIVE', false, now(), now()
+    );
+  ELSE
+    UPDATE public.profiles
+    SET auth_user_id = v_gmail_auth_id,
+        email = 'bvnbasu@gmail.com',
+        full_name = 'Baskar Loganathan',
+        is_founder = true,
+        is_platform_admin = true,
+        active_role_code = 'SUPER_ADMIN',
+        status = 'ACTIVE',
+        is_demo = false,
+        deleted_at = NULL,
+        updated_at = now()
+    WHERE id = v_gmail_profile_id;
+  END IF;
+
+  -- B. Yahoo profile
+  SELECT id INTO v_yahoo_profile_id
+  FROM public.profiles
+  WHERE lower(email) = 'bvnbasu@yahoo.com' OR auth_user_id = v_yahoo_auth_id
+  LIMIT 1;
+
+  IF v_yahoo_profile_id IS NULL THEN
+    v_yahoo_profile_id := 'ee3dedee-0c2a-4254-b2af-342b41d56387'::uuid;
+    INSERT INTO public.profiles (
+      id, auth_user_id, email, full_name, is_founder, is_platform_admin,
+      active_role_code, status, is_demo, created_at, updated_at
+    ) VALUES (
+      v_yahoo_profile_id, v_yahoo_auth_id, 'bvnbasu@yahoo.com', 'Baskar Loganathan',
+      true, true, 'SUPER_ADMIN', 'ACTIVE', false, now(), now()
+    );
+  ELSE
+    UPDATE public.profiles
+    SET auth_user_id = v_yahoo_auth_id,
+        email = 'bvnbasu@yahoo.com',
+        full_name = 'Baskar Loganathan',
+        is_founder = true,
+        is_platform_admin = true,
+        active_role_code = 'SUPER_ADMIN',
+        status = 'ACTIVE',
+        is_demo = false,
+        deleted_at = NULL,
+        updated_at = now()
+    WHERE id = v_yahoo_profile_id;
+  END IF;
+
+  -- C. Profile roles
+  INSERT INTO public.profile_roles (profile_id, role_code, is_demo)
+  VALUES
+    (v_gmail_profile_id, 'SUPER_ADMIN', false),
+    (v_yahoo_profile_id, 'SUPER_ADMIN', false)
+  ON CONFLICT (profile_id, role_code) DO NOTHING;
+
+  -- D. Internal user assignments
   SELECT id INTO v_role_id FROM public.internal_roles WHERE code = 'SUPER_ADMIN';
   IF v_role_id IS NOT NULL THEN
     INSERT INTO public.internal_user_assignments (profile_id, role_id, assigned_at)
     VALUES
-      ('dd2dedee-0c2a-4254-b2af-342b41d56386', v_role_id, now()),
-      ('ee3dedee-0c2a-4254-b2af-342b41d56387', v_role_id, now())
+      (v_gmail_profile_id, v_role_id, now()),
+      (v_yahoo_profile_id, v_role_id, now())
     ON CONFLICT (profile_id, role_id) DO NOTHING;
   END IF;
 END;
