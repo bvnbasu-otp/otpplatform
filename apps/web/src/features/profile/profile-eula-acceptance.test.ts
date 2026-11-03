@@ -25,4 +25,10 @@ describe('ProfilePage EULA Acceptance Attribution', () => {
     expect(profileCode).toContain('to="/legal/terms"');
     expect(profileCode).toContain('to="/legal/privacy"');
   });
+
+  it('renders universal sign out button across all profile tabs', () => {
+    const profileCode = readFile('pages/ProfilePage.tsx');
+    expect(profileCode).toContain('Account Session &amp; Sign Out');
+    expect(profileCode).toContain('Log Out of Account');
+  });
 });

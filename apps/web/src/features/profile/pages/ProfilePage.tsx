@@ -719,6 +719,9 @@ export function ProfilePage() {
         </div>
       )}
 
+
+
+
       {successMsg && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-300 flex items-center gap-2">
           <span>✓</span> {successMsg}
@@ -1698,6 +1701,11 @@ export function ProfilePage() {
               </div>
             </section>
           )}
+
+        </div>
+      )}
+
+      {/* Universal Account Session & Sign Out Card across all tabs & personas */}
           {/* Account Session & Sign Out Card */}
           <section className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 shadow-xs space-y-3" data-testid="profile-session-logout-card">
             <div className="flex items-center justify-between border-b border-red-500/20 pb-2">
@@ -1724,8 +1732,6 @@ export function ProfilePage() {
               </button>
             </div>
           </section>
-        </div>
-      )}
 
       {/* Password Modal */}
       <ChangePasswordModal

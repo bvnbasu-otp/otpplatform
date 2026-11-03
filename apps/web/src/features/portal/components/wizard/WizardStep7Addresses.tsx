@@ -28,6 +28,7 @@ export function WizardStep7Addresses({
   const [addresses, setAddresses] = useState<SavedAddress[]>(initialAddresses);
   const [selectedId, setSelectedId] = useState<string>(initialAddresses[0]?.id || '');
   const [isAdding, setIsAdding] = useState(initialAddresses.length === 0);
+  const [eulaConfirmed, setEulaConfirmed] = useState(true);
 
   // New address form state
   const [label, setLabel] = useState<'Home' | 'Work' | 'Other'>('Home');
@@ -243,15 +244,39 @@ export function WizardStep7Addresses({
         </div>
       </div>
 
-      <div className="pt-6 pb-4">
+      {/* Statutory EULA & Operating Charter Confirmation before final submission */}
+      <div className="mt-4 p-3 rounded-2xl border border-border/80 bg-muted/20 text-xs">
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={eulaConfirmed}
+            onChange={(e) => setEulaConfirmed(e.target.checked)}
+            className="mt-0.5 rounded border-border text-primary focus:ring-primary h-4 w-4 shrink-0"
+            data-testid="eula-final-confirmation-checkbox"
+          />
+          <div className="text-[11px] text-muted-foreground leading-snug">
+            I confirm that I have reviewed and agree to the{' '}
+            <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="font-bold text-primary underline">
+              End User License Agreement (EULA)
+            </a>
+            ,{' '}
+            <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="font-bold text-primary underline">
+              Privacy Policy
+            </a>
+            , and the platform operating charter.
+          </div>
+        </label>
+      </div>
+
+      <div className="pt-5 pb-4">
         <Button
           type="button"
           onClick={handleContinue}
-          disabled={addresses.length === 0}
+          disabled={addresses.length === 0 || !eulaConfirmed}
           className="w-full py-3.5 text-sm font-bold shadow-sm"
           data-testid="btn-next-addresses"
         >
-          Next
+          Complete Registration
         </Button>
       </div>
     </div>

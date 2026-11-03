@@ -24,26 +24,24 @@ export function PrintableProcurementReport({
 
   return (
     <div className="print-report-container hidden print:block text-slate-900 bg-white p-8 max-w-5xl mx-auto font-sans leading-normal print:p-6 print:max-w-full">
-      {/* Official Header */}
-      <div className="border-b-2 border-slate-900 pb-4 mb-6">
+      {/* Official Ledger Letterhead */}
+      <div className="border-b-2 border-slate-900 pb-3 mb-4 font-serif">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <OtpLogo size={44} className="shrink-0" />
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">
-                Procurement Decision &amp; Fulfillment Statement
-              </h1>
-              <p className="text-sm font-semibold text-slate-700 mt-0.5">
-                Platform Governance Engine: {PRODUCT_NAME} ({PRODUCT_FULL_NAME})
-              </p>
-              <p className="text-xs text-slate-600 mt-1">
-                <strong>Reporting Entity:</strong> {organizationName}
-              </p>
+          <div>
+            <div className="text-lg font-black tracking-wider uppercase text-slate-950">
+              {PRODUCT_NAME} DIGITAL PROCUREMENT PLATFORM
             </div>
+            <h1 className="text-xs font-bold tracking-tight text-slate-800 uppercase mt-0.5">
+              OFFICIAL FULFILLMENT &amp; FINANCIAL LEDGER STATEMENT
+            </h1>
+            <p className="text-[11px] font-sans text-slate-600 mt-1">
+              <strong>Reporting Entity:</strong> {organizationName} &bull; <strong>Platform Authority:</strong> {PRODUCT_FULL_NAME}
+            </p>
           </div>
-          <div className="text-right text-xs text-slate-600">
-            <p className="font-bold text-slate-900">REPORT REF: {reportRef}</p>
-            <p>Generated: {generationTime}</p>
+          <div className="text-right text-xs text-slate-700 font-mono">
+            <p className="font-bold text-slate-950">LEDGER REF: {reportRef}</p>
+            <p>Generated (IST): {generationTime}</p>
+            <p className="text-[10px] text-slate-500 uppercase">Tamper-Evident Audit Record</p>
           </div>
         </div>
       </div>

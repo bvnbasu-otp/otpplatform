@@ -304,9 +304,6 @@ DECLARE
     'org_governance_action_audits',
     'internal_referral_payouts',
     'internal_referral_achievements',
-    'internal_referral_plans',
-    'legal_agreement_approvals',
-    'legal_review_grants',
     'personal_buyer_accounts',
     'personal_subscriptions',
     'personal_subscription_payment_logs'

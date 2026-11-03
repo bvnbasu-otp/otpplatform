@@ -706,7 +706,11 @@ html, body {
   [role="navigation"],
   [role="tablist"],
   .mascot-svg,
-  .hero-banner-decor {
+  .hero-banner-decor,
+  .otp-logo,
+  [data-testid="brand-logo"],
+  [data-testid="otp-logo"],
+  svg.otp-brand-logo {
     display: none !important;
   }
 

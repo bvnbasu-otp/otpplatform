@@ -69,4 +69,13 @@ describe('EULA acceptance - client contract (server is authoritative)', () => {
     expect(gate).toContain('fetchLegalAcceptanceStatus');
     expect(gate).toContain('acceptLegalAgreement');
   });
+
+  it('requires statutory EULA confirmation before completing address registration', () => {
+    const addressStep = readFile('features/portal/components/wizard/WizardStep7Addresses.tsx');
+    expect(addressStep).toContain('Statutory EULA & Operating Charter Confirmation');
+    expect(addressStep).toContain('End User License Agreement (EULA)');
+    expect(addressStep).toContain('/legal/terms');
+    expect(addressStep).toContain('/legal/privacy');
+    expect(addressStep).toContain('disabled={addresses.length === 0 || !eulaConfirmed}');
+  });
 });

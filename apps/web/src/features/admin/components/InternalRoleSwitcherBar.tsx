@@ -41,7 +41,7 @@ export function InternalRoleSwitcherBar({
   ];
 
   return (
-    <div className="relative z-40 mb-6 rounded-xl border border-border/80 bg-slate-900/90 p-3 shadow-lg backdrop-blur">
+    <div className="relative z-50 mb-6 rounded-xl border border-border/80 bg-slate-900/90 p-3 shadow-lg backdrop-blur">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 font-bold text-sm">
@@ -103,7 +103,13 @@ export function InternalRoleSwitcherBar({
                 </button>
 
                 {isOpen && (
-                  <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl z-[100] animate-in fade-in zoom-in-95">
+                  <>
+                    <div
+                      className="fixed inset-0 z-[95] bg-transparent cursor-default"
+                      onClick={() => setIsOpen(false)}
+                      aria-hidden="true"
+                    />
+                    <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl z-[100] animate-in fade-in zoom-in-95">
                     <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       Internal Console Roles
                     </div>
@@ -193,6 +199,7 @@ export function InternalRoleSwitcherBar({
                       </>
                     )}
                   </div>
+                  </>
                 )}
               </div>
             </>

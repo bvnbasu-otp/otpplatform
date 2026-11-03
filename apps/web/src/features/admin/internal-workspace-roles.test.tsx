@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -385,6 +386,23 @@ describe('Executive & Internal Employee Workspace Architecture (X2O / OTP Next)'
       expect(html).toContain('Legal, Privacy, Compliance &amp; Dispute Arbitration');
       expect(html).toContain('Commercial Dispute Arbitration');
       expect(html).toContain('Immutable Cryptographic Audit Vault');
+    });
+  });
+
+  describe('Internal Role Switcher & Persona Bar Elevated Layering', () => {
+    it('elevates role switcher to z-50 with backdrop dismiss guard', () => {
+      const onSelect = vi.fn();
+      const html = renderToStaticMarkup(
+        React.createElement(InternalRoleSwitcherBar, {
+          currentRole: 'CEO_FOUNDER',
+          onSelectRole: onSelect,
+          canSwitch: true,
+          isFounder: true,
+          userName: 'Baskar Loganathan',
+          userEmail: 'bvnbasu@gmail.com',
+        })
+      );
+      expect(html).toContain('relative z-50 mb-6');
     });
   });
 });

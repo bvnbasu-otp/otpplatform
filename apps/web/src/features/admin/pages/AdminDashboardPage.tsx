@@ -581,7 +581,7 @@ export function AdminDashboardPage() {
       </header>
 
       {/* Internal Role Switcher & Persona Bar */}
-      <div className="mt-2.5 relative z-40">
+      <div className="mt-2.5 relative z-50">
         <InternalRoleSwitcherBar
           currentRole={activeRoleCode}
           onSelectRole={handleSelectRole}

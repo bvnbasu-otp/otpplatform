@@ -33,21 +33,18 @@ export function PrintableProcurementDocument({ model, className = 'hidden print:
           className={`flex flex-col min-h-[270mm] ${page.isLast ? '' : 'break-after-page'}`}
           data-page={page.pageNumber}
         >
-          <header className="flex items-start justify-between border-b-2 border-slate-900 pb-3 mb-4" data-section="header">
-            <div className="flex items-center gap-3">
-              <OtpLogo size={40} />
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                  {model.brand.name} · {model.brand.fullName}
-                </p>
-                <h1 className="text-xl font-black uppercase">{model.documentType}</h1>
-                <p className="text-xs font-semibold text-slate-700">{model.title}</p>
-              </div>
+          <header className="flex items-start justify-between border-b-2 border-slate-900 pb-3 mb-4 font-serif" data-section="header">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 font-sans">
+                {model.brand.name} &bull; {model.brand.fullName}
+              </p>
+              <h1 className="text-lg font-black uppercase text-slate-950">{model.documentType}</h1>
+              <p className="text-xs font-semibold text-slate-700 font-sans">{model.title}</p>
             </div>
-            <div className="text-right text-[11px]">
-              <p className="font-mono font-bold">Ref: {model.referenceNumber}</p>
+            <div className="text-right text-[11px] font-mono">
+              <p className="font-bold text-slate-950">Ref: {model.referenceNumber}</p>
               <p>Issued: {model.issuedAtLabel}</p>
-              {model.identityProtected && <p className="font-bold">Identity protected</p>}
+              {model.identityProtected && <p className="font-bold uppercase text-[9px] text-slate-600">Identity protected</p>}
             </div>
           </header>
 
