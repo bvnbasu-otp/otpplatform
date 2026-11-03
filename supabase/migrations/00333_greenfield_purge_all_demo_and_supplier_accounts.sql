@@ -576,7 +576,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, private, pg_temp
-AS $
+AS $$
 BEGIN
   IF COALESCE(auth.role(), '') IN ('service_role', '') THEN
     RETURN NEW;
@@ -593,7 +593,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 
 DROP TRIGGER IF EXISTS trg_guard_po_status_direct_write ON public.purchase_orders;
 CREATE TRIGGER trg_guard_po_status_direct_write
