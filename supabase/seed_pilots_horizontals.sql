@@ -120,7 +120,7 @@ INSERT INTO procurement_performance_records (
   4,
   4,
   4.5,
-  0,
+  '{}'::jsonb,
   now() - interval '1 day'
 ) ON CONFLICT (id) DO NOTHING;
 
