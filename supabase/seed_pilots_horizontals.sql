@@ -16,14 +16,28 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.profiles (
   id, auth_user_id, email, full_name, is_founder, is_platform_admin, active_role_code, status, is_demo, created_at, updated_at
 ) VALUES
-  ('b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'manager@greenview.test', 'Greenview Manager', false, false, 'BUYER_MANAGEMENT_COMMITTEE', 'ACTIVE', true, now(), now()),
-  ('b0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002', 'committee1@greenview.test', 'Greenview Committee 1', false, false, 'BUYER_MANAGEMENT_COMMITTEE', 'ACTIVE', true, now(), now()),
-  ('b0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000003', 'committee2@greenview.test', 'Greenview Committee 2', false, false, 'BUYER_MANAGEMENT_COMMITTEE', 'ACTIVE', true, now(), now()),
-  ('b0000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000004', 'buyer@greenview.test', 'Greenview Buyer', false, false, 'BUYER_PROCUREMENT_OFFICER', 'ACTIVE', true, now(), now())
+  ('b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'manager@greenview.test', 'Greenview Manager', false, false, NULL, 'ACTIVE', true, now(), now()),
+  ('b0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002', 'committee1@greenview.test', 'Greenview Committee 1', false, false, NULL, 'ACTIVE', true, now(), now()),
+  ('b0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000003', 'committee2@greenview.test', 'Greenview Committee 2', false, false, NULL, 'ACTIVE', true, now(), now()),
+  ('b0000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000004', 'buyer@greenview.test', 'Greenview Buyer', false, false, NULL, 'ACTIVE', true, now(), now())
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.profile_roles (profile_id, role_code, is_demo) VALUES
+  ('b0000000-0000-4000-8000-000000000001', 'FACILITY_MANAGER', true),
+  ('b0000000-0000-4000-8000-000000000002', 'COMMITTEE_MEMBER', true),
+  ('b0000000-0000-4000-8000-000000000003', 'COMMITTEE_MEMBER', true),
+  ('b0000000-0000-4000-8000-000000000004', 'PROCUREMENT_LEAD', true)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO public.organizations (id, name, org_type, is_demo)
 VALUES ('a0000000-0000-4000-8000-000000000001', 'Greenview Heights RWA', 'COMMUNITY', true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.organization_members (id, organization_id, profile_id, role) VALUES
+  ('e1000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'MANAGER'),
+  ('e1000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000002', 'COMMITTEE_MEMBER'),
+  ('e1000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000003', 'COMMITTEE_MEMBER'),
+  ('e1000000-0000-4000-8000-000000000004', 'a0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000004', 'BUYER')
 ON CONFLICT (id) DO NOTHING;
 
 -- PILOT 1 — Community Borewell (Greenview Heights RWA)
