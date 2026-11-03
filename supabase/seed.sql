@@ -195,8 +195,8 @@ SET demo_mode_enabled = false,
     updated_at = now()
 WHERE id = true;
 
-PERFORM set_config('otp.platform_privilege_write', 'off', true);
-PERFORM set_config('otp.platform_break_glass', 'off', true);
-PERFORM set_config('otp.platform_bootstrap', 'off', true);
+SELECT set_config('otp.platform_privilege_write', 'off', true);
+SELECT set_config('otp.platform_break_glass', 'off', true);
+SELECT set_config('otp.platform_bootstrap', 'off', true);
 
 COMMIT;
