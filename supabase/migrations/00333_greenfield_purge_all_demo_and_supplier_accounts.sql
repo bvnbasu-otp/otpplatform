@@ -618,7 +618,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, private_security, auth, extensions, pg_temp
-AS $
+AS $$
 DECLARE
   v_caller_email text;
   v_is_founder boolean;
@@ -797,7 +797,7 @@ BEGIN
     'production_ready', true
   );
 END;
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.execute_greenfield_pilot_reset(text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.execute_greenfield_pilot_reset(text) TO authenticated, service_role;
