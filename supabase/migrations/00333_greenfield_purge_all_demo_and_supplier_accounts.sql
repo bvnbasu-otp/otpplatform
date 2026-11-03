@@ -176,6 +176,27 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------------
+-- 1B. Synchronize private_security.admin_whitelist exclusively to canonical founders
+-- ---------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'private_security' AND table_name = 'admin_whitelist'
+  ) THEN
+    DELETE FROM private_security.admin_whitelist
+    WHERE lower(email) NOT IN ('bvnbasu@gmail.com', 'bvnbasu@yahoo.com');
+
+    INSERT INTO private_security.admin_whitelist (email, reason)
+    VALUES
+      ('bvnbasu@gmail.com', 'Platform Founder & Super Administrator (Baskar Loganathan)'),
+      ('bvnbasu@yahoo.com', 'Platform Founder & Super Administrator (Baskar Loganathan)')
+    ON CONFLICT (email) DO NOTHING;
+  END IF;
+END;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- 2. Clean SNE & Google Places Discovery Authority & Cache
 -- ---------------------------------------------------------------------------
 DO $$
@@ -273,6 +294,8 @@ DECLARE
     'invoices',
     'purchase_order_line_items',
     'purchase_orders',
+    'approval_instances',
+    'approval_policies',
     'payments',
     'issued_document_status_audits',
     'otp_document_issuance_snapshots'
@@ -322,6 +345,14 @@ BEGIN
   UPDATE public.profiles
   SET active_organization_id = NULL
   WHERE active_organization_id IS NOT NULL;
+
+  -- Ensure audit_events foreign key to organizations sets NULL on delete so organization wipe succeeds
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'audit_events_organization_id_fkey') THEN
+    ALTER TABLE public.audit_events DROP CONSTRAINT audit_events_organization_id_fkey;
+    ALTER TABLE public.audit_events
+      ADD CONSTRAINT audit_events_organization_id_fkey
+      FOREIGN KEY (organization_id) REFERENCES public.organizations (id) ON DELETE SET NULL;
+  END IF;
 
   -- Delete all organization governance, invitations, memberships, and organizations
   -- Note: We use DELETE rather than TRUNCATE CASCADE to prevent PostgreSQL from
@@ -427,6 +458,13 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'admin_recovery_requests') THEN
       DELETE FROM public.admin_recovery_requests
+      WHERE subject_profile_id = ANY(v_target_profile_ids)
+         OR initiated_by = ANY(v_target_profile_ids)
+         OR decided_by = ANY(v_target_profile_ids);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'platform_privilege_requests') THEN
+      DELETE FROM public.platform_privilege_requests
       WHERE subject_profile_id = ANY(v_target_profile_ids)
          OR initiated_by = ANY(v_target_profile_ids)
          OR decided_by = ANY(v_target_profile_ids);
