@@ -147,7 +147,7 @@ export function renderRfqNotification(
 
   if (ctx.channel === 'SMS') {
     const lines = [
-      `${prefix}OTP enquiry ${payload.publicRef}: ${what}`,
+      `${prefix}X2O enquiry ${payload.publicRef}: ${what}`,
       quantity ? `Qty ${quantity}` : null,
       payload.location ? `at ${payload.location}` : null,
       deadline ? `by ${deadline}` : null,
@@ -157,7 +157,7 @@ export function renderRfqNotification(
   }
 
   const lines = [
-    `${prefix}*New enquiry on OTP - ${payload.publicRef}*`,
+    `${prefix}*New enquiry on X2O - ${payload.publicRef}*`,
     '',
     `*What:* ${what}`,
     quantity ? `*Quantity:* ${quantity}` : null,
@@ -282,14 +282,14 @@ export function renderOutcomeReply(
     case 'UNKNOWN_SENDER':
       return {
         templateId: 'unknown_sender',
-        body: 'This number is not registered with OTP. To submit quotes on enquiries, register at '
+        body: 'This number is not registered with X2O. To submit quotes on enquiries, register at '
           + `${ctx.appUrl.replace(/\/$/, '')}/seller`,
       };
 
     case 'SUPPLIER_SUSPENDED':
       return {
         templateId: 'supplier_suspended',
-        body: 'Your OTP account cannot submit quotes at the moment. Please contact support.',
+        body: 'Your X2O account cannot submit quotes at the moment. Please contact support.',
       };
 
     case 'UNPARSEABLE':
@@ -336,7 +336,7 @@ export function renderHelp(ctx: TemplateContext): RenderedMessage {
   return {
     templateId: 'help',
     body: [
-      'OTP - how to quote by message:',
+      'X2O - how to quote by message:',
       'QUOTE RFQ-XXXXXX 8500 - send your price',
       'Reply again with a new price to change it',
       'NO RFQ-XXXXXX - pass on an enquiry',
@@ -349,7 +349,7 @@ export function renderHelp(ctx: TemplateContext): RenderedMessage {
 export function renderOptOutConfirmation(): RenderedMessage {
   return {
     templateId: 'opt_out',
-    body: 'You will not receive further OTP enquiries on this number. '
+    body: 'You will not receive further X2O enquiries on this number. '
       + 'Reply START to turn them back on.',
   };
 }
@@ -357,7 +357,7 @@ export function renderOptOutConfirmation(): RenderedMessage {
 export function renderOptInConfirmation(): RenderedMessage {
   return {
     templateId: 'opt_in',
-    body: 'You will receive OTP enquiries on this number again.',
+    body: 'You will receive X2O enquiries on this number again.',
   };
 }
 
@@ -380,7 +380,7 @@ export function renderSignupVerificationOtp(input: OtpMessageInput): RenderedMes
   return {
     templateId: 'signup_verification_otp',
     body:
-      `[OTP Platform] Verification Code\n\n` +
+      `[X2O] Verification Code\n\n` +
       `Your 8-digit verification code is: ${input.code}\n\n` +
       `Valid for ${input.minutesValid} minutes. Enter this code on the registration page to proceed.`,
   };
@@ -394,7 +394,7 @@ export function renderPasswordResetOtp(input: PasswordResetOtpInput): RenderedMe
   return {
     templateId: 'password_reset_otp',
     body:
-      `[OTP Platform] Password Reset Verification\n\n` +
+      `[X2O] Password Reset Verification\n\n` +
       `Hello ${input.fullName},\n` +
       `Your 8-digit password reset verification code is: ${input.code}\n\n` +
       `Valid for ${input.minutesValid} minutes. Enter this code on the password reset screen to set your new password.\n\n` +
@@ -406,7 +406,7 @@ export function renderProfileCredentialOtp(input: PasswordResetOtpInput): Render
   return {
     templateId: 'profile_credential_otp',
     body:
-      `OTP Platform profile verification\n\n` +
+      `X2O profile verification\n\n` +
       `Hello ${input.fullName},\n` +
       `Your 8-digit code to link this credential to your profile is: ${input.code}\n\n` +
       `Valid for ${input.minutesValid} minutes. Enter it in your Profile settings.`,
@@ -425,7 +425,7 @@ export function renderRegistrationReceivedNotice(input: RegistrationReceivedInpu
   return {
     templateId: 'registration_received',
     body:
-      `[OTP Platform] Registration Received\n\n` +
+      `[X2O] Registration Received\n\n` +
       `Hello ${input.fullName},\n` +
       `Your registration for "${input.businessName}" has been received.\n\n` +
       `Reference: ${input.reference}\n` +
@@ -448,7 +448,7 @@ export function renderApprovalActivationNotice(input: ApprovalActivationInput): 
   return {
     templateId: 'approval_activation_otp',
     body:
-      `[OTP Platform] Account Approved — Set Your Password\n\n` +
+      `[X2O] Account Approved — Set Your Password\n\n` +
       `Hello ${input.fullName},\n` +
       `Your registration for "${input.businessName}" has been approved.\n\n` +
       `Your one-time 8-digit activation code is: ${input.code}\n\n` +

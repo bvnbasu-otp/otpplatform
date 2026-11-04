@@ -125,7 +125,7 @@ export function WizardStepEulaAgreement({
         </ul>
 
         <div className="border-t border-border/60 pt-2 text-[10px] text-muted-foreground leading-normal">
-          By accepting this agreement, you consent to OTP Platform operating policies, data privacy protocols, and authoritative commercial terms. All dispute resolutions are handled under the OTP Arbitration Guidelines.
+          By accepting this agreement, you consent to X2O Platform operating policies, data privacy protocols, and authoritative commercial terms. All dispute resolutions are handled under the X2O Arbitration Guidelines.
         </div>
       </div>
 

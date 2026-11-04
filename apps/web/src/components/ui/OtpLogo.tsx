@@ -1,7 +1,7 @@
 import React from 'react';
 import { PRODUCT_FULL_NAME, PRODUCT_NAME, PRODUCT_TITLE } from '@/lib/brand';
 
-export const OTP_LOGO_SRC = '/brand/otp-logo.jpg';
+export const OTP_LOGO_SRC = '/x2o/x2o-logo.png';
 
 interface OtpLogoProps {
   className?: string;

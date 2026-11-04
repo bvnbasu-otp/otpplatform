@@ -100,7 +100,7 @@ export function BuyerRegisterForm({
     setPincode(pin);
     if (pin.length === 6) {
       setCoverageNotice(
-        `Delivery PIN ${pin} recorded for ${city}. Supplier coverage depends on your category and RFQ — OTP does not guarantee suppliers in every PIN.`,
+        `Delivery PIN ${pin} recorded for ${city}. Supplier coverage depends on your category and RFQ — X2O does not guarantee suppliers in every PIN.`,
       );
     } else {
       setCoverageNotice(null);
@@ -511,7 +511,7 @@ export function BuyerRegisterForm({
                 id={id}
                 value={referral}
                 onChange={(e) => setReferral(e.target.value.toUpperCase())}
-                placeholder="e.g. OTP-XXXXXX or BNI-BLR-014"
+                placeholder="e.g. X2O-XXXXXX or BNI-BLR-014"
                 className={control(invalid)}
               />
               {referral && (

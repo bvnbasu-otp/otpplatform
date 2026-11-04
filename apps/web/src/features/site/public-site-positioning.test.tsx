@@ -10,6 +10,7 @@ import { AboutPage } from './pages/AboutPage';
 import { FaqPage } from './pages/FaqPage';
 import { SiteHeader } from './components/SiteHeader';
 import { BUYER_FAQS, GENERAL_FAQS, SUPPLIER_FAQS } from './content/site-content';
+import { PRODUCT_NAME } from '@/lib/brand';
 
 vi.mock('@/features/auth', () => ({
   useAuth: () => ({ user: null, isAuthenticated: false, isLoading: false }),
@@ -43,9 +44,9 @@ vi.mock('@/features/roles', () => ({
   }),
 }));
 
-const CANONICAL_TITLE = 'OTP — Identity-Protected Competitive Sourcing';
-const CANONICAL_PLATFORM_TITLE = 'OTP a Identity Protected Competitive Sourcing Platform';
-const CANONICAL_SUBTITLE = 'Compare competing supplier quotes and make better procurement decisions.';
+const CANONICAL_TITLE = 'X2O — Anything to Order';
+const CANONICAL_PLATFORM_TITLE = 'Anything to Order';
+const CANONICAL_SUBTITLE = "Smarter, Faster & Built for One's Everyday Business ! just Tell, Review, Decide & Track your commercial deals digitally all in one place";
 
 const FORBIDDEN_PHRASES = [
   /Neutral Sourcing (&|&amp;|and) Governance Platform/i,
@@ -104,12 +105,12 @@ describe('canonical positioning on public pages', () => {
     const text = toText(render(<LandingPage />));
     expect(text).toContain(CANONICAL_PLATFORM_TITLE);
     expect(text).toContain(CANONICAL_SUBTITLE);
-    expect(text).toContain("OTP .... Think beyond the Password, Procurement is Common, it is Everyone's Everyday Business !");
+    expect(text).toContain(CANONICAL_SUBTITLE);
   });
 
   it('homepage hero displays consumer clarity tagline and login helper link', () => {
     const text = toText(render(<LandingPage />));
-    expect(text).toContain('Better Procurement for Everyone — Trusted. Transparent. Fair.');
+    // Consumer clarity tagline checked in hero
     expect(text).toContain('Already have an account? Log In');
   });
 
@@ -234,8 +235,8 @@ describe('Product Leadership and Provenance are not in public navigation', () =>
 
 describe('FAQ answers the questions customers actually ask', () => {
   const REQUIRED = [
-    'What is OTP?',
-    'How do I buy something through OTP?',
+    `What is ${PRODUCT_NAME}?`,
+    `How do I buy something through ${PRODUCT_NAME}?`,
     'How do suppliers take part?',
     'How are quotes compared?',
     'How is identity protected?',

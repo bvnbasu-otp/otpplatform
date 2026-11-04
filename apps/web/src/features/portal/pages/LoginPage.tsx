@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth';
 import { SignInForm } from '@/features/auth/components/SignInForm';
 import { useMaintenance } from '@/features/maintenance';
 import { Icon } from '@/components/ui/Icon';
+import { SignInPersonaIllustration } from '@/components/illustrations/VectorIllustrations';
 import { PRODUCT_PLATFORM_SUBTITLE, PRODUCT_TITLE } from '@/lib/brand';
 
 /**
@@ -23,6 +24,14 @@ export function LoginPage() {
 
   const searchParams = new URLSearchParams(location.search);
   const isAdminEmergency = searchParams.get('admin') === 'true';
+
+  const initialSide =
+    (searchParams.get('side') || searchParams.get('role'))?.toLowerCase() === 'supplier'
+      ? 'supplier'
+      : typeof window !== 'undefined' && localStorage.getItem('otp-persona') === 'supplier'
+        ? 'supplier'
+        : 'buyer';
+  const [activePersona, setActivePersona] = useState<'buyer' | 'supplier'>(initialSide);
 
   // If maintenance is active and this is NOT an admin emergency sign-in, redirect to maintenance directly
   if (isMaintenanceMode && !isAdminEmergency) {
@@ -78,16 +87,62 @@ export function LoginPage() {
       </div>
 
       {/* Brand Header */}
-      <div className="pt-8 sm:pt-12 text-center space-y-3">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary shadow-sm mb-1">
-          <Icon name="handshake" size={36} className="text-[#2563EB]" />
+      <div className="pt-4 sm:pt-6 text-center space-y-2">
+        {/* Official X2O Logo Mark */}
+        <div className="flex items-center justify-center">
+          <img
+            src="/x2o/x2o-logo.png"
+            alt="X2O — Anything to Order"
+            className="h-14 sm:h-16 w-auto object-contain drop-shadow-xs"
+          />
         </div>
+
+        {/* Minimalist Persona Character Illustration (Buyer / Supplier) */}
+        <div className="pt-1">
+          <SignInPersonaIllustration
+            persona={activePersona}
+            className="w-44 h-28 sm:w-48 sm:h-32 mx-auto drop-shadow-xs"
+          />
+        </div>
+
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-foreground">X2O</h1>
-          <p className="mt-1 text-xs font-semibold text-muted-foreground">
+          <h1 className="text-lg sm:text-xl font-black tracking-tight text-foreground">
             {isAdminEmergency && isMaintenanceMode ? 'Admin Sign In' : 'Sign in to your account'}
+          </h1>
+          <p className="mt-1 text-xs font-semibold text-muted-foreground leading-relaxed max-w-xs mx-auto">
+            {activePersona === 'supplier'
+              ? 'Quote fast, track orders & grow your commerce'
+              : "Smarter, Faster & Built for One's Everyday Business !"}
           </p>
         </div>
+
+        {/* Persona quick-selector pill */}
+        {!isAdminEmergency && (
+          <div className="inline-flex items-center p-1 rounded-xl bg-muted/60 border border-border/60 text-xs font-bold gap-1 mt-1">
+            <button
+              type="button"
+              onClick={() => setActivePersona('buyer')}
+              className={`px-3 py-1 rounded-lg transition cursor-pointer ${
+                activePersona === 'buyer'
+                  ? 'bg-card text-foreground shadow-2xs border border-border/50 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Buyer
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePersona('supplier')}
+              className={`px-3 py-1 rounded-lg transition cursor-pointer ${
+                activePersona === 'supplier'
+                  ? 'bg-card text-foreground shadow-2xs border border-border/50 text-emerald-600 dark:text-emerald-400'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Supplier
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Sign In Form Container */}

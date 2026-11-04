@@ -69,7 +69,7 @@ export function PricingPage() {
       <div className="mx-auto max-w-5xl px-4 py-10 sm:py-14 overflow-x-hidden">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2">
-          <p className="text-[11px] font-semibold text-muted-foreground">Identity-Protected Competitive Sourcing</p>
+          <p className="text-[11px] font-semibold text-muted-foreground">Anything To Order</p>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
             Simple, Transparent Pricing
           </h1>
@@ -358,7 +358,7 @@ export function PricingPage() {
               </span>
               <div>
                 <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                  <span>Buyer OTP Wallet</span>
+                  <span>Buyer X2O Wallet</span>
                   <span className="rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-extrabold px-2 py-0.5">
                     Non-cash credits
                   </span>
@@ -383,13 +383,13 @@ export function PricingPage() {
               </span>
               <div>
                 <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                  <span>Refer someone to OTP</span>
+                  <span>Refer someone to X2O</span>
                   <span className="rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold px-2 py-0.5">
                     Profile sets reward
                   </span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Referral amounts are defined by the profile they join as: Individual ₹10 · RWA ₹25 · MSME ₹50 · Supplier ₹100. This pilot does not pay referral cash or the one-time ₹100 success reward. OTP sets the amount from their profile — you cannot pick the reward. The referred person is not paid. Wallet credits are not cash withdrawal.
+                  Referral amounts are defined by the profile they join as: Individual ₹10 · RWA ₹25 · MSME ₹50 · Supplier ₹100. This pilot does not pay referral cash or the one-time ₹100 success reward. X2O sets the amount from their profile — you cannot pick the reward. The referred person is not paid. Wallet credits are not cash withdrawal.
                 </p>
               </div>
             </div>
@@ -402,7 +402,7 @@ export function PricingPage() {
           </div>
         </div>
 
-        {/* OTP supplier registry */}
+        {/* X2O supplier registry */}
         <div className="mt-6 rounded-2xl border-2 border-emerald-500/40 bg-card p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xl font-bold">
@@ -410,7 +410,7 @@ export function PricingPage() {
             </span>
             <div>
               <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                <span>OTP supplier registry</span>
+                <span>X2O supplier registry</span>
                 <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold px-2 py-0.5">
                   ₹0 Free Registration
                 </span>

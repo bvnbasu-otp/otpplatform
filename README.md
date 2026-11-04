@@ -1,12 +1,17 @@
-# OTP — Open Trade & Procurement
+# X2O — Anything To Order
+
+Welcome to X2O. Tell, Review, Decide & Track your commercial deals digitally all in one place — smarter, faster, and built for one's everyday business!
 
 Identity-protected competitive sourcing.
 
-A buyer describes a need. Invited suppliers quote under an alias. The buyer, or a committee when the buyer model requires one, decides. The supplier’s legal name is shown after that decision. The buyer pays the supplier directly, and OTP records the payment reference.
+A buyer describes a need. Invited suppliers quote under an alias. The buyer, or a committee when the buyer model requires one, decides. The supplier’s legal name is shown after that decision. The buyer pays the supplier directly, and X2O records the payment reference.
 
 **TELL → REVIEW → DECIDE → TRACK**
 
-OTP does the procurement work. The customer makes the decision.
+X2O does the procurement work. The customer makes the decision.
+
+> **Note on Pilot Phase Rebranding**:
+> The public-facing web presence, landing pages, authentication views, customer documents, and printable PDFs have been completely updated to **X2O** ("Anything To Order"). Internal database schemas, RLS policies, and edge functions retain legacy table names throughout the active pilot and will transition post-pilot before going live.
 
 This README is an entry point. It is not a certification. The canonical pilot-freeze documentation is [docs/README.md](docs/README.md). Files under `OTP Golden Reconstruction/` and the older `docs/00`–`docs/15` suite are historical evidence. They do not override `docs/13-truth/CAPABILITY_STATUS.md`.
 

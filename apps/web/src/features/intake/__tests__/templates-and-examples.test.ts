@@ -80,6 +80,12 @@ describe('TemplatesAndExamplesModal & Buyer Confirmation Authority Suite', () =>
       }
     });
 
+    it('verifies custom other template refers to X2O routing', () => {
+      const otherTmpl = CANONICAL_TEMPLATES.find((t) => t.id === 'tmpl-describe-requirement');
+      expect(otherTmpl).toBeDefined();
+      expect(otherTmpl?.description).toContain('X2O');
+    });
+
     it('verifies V3 persona-tailored intake examples include Individual, RWA, and MSME case studies (Requirement 4)', () => {
       const individualExamples = CANONICAL_EXAMPLES.filter((ex) => ex.organizationType === 'INDIVIDUAL');
       const rwaExamples = CANONICAL_EXAMPLES.filter((ex) => ex.organizationType === 'COMMUNITY');

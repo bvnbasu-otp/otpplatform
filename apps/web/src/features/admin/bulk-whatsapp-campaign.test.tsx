@@ -30,9 +30,11 @@ describe('BulkWhatsAppCampaignPanel & Admin Role Suite', () => {
 
     const buyerTpl = CAMPAIGN_TEMPLATES.find((t) => t.id === 'TPL-BUYER-WELCOME');
     expect(buyerTpl?.audience).toBe('BUYER');
+    expect(buyerTpl?.subject).toContain('X2O');
 
     const supplierTpl = CAMPAIGN_TEMPLATES.find((t) => t.id === 'TPL-SUPPLIER-ONBOARD');
     expect(supplierTpl?.audience).toBe('SUPPLIER');
+    expect(supplierTpl?.subject).toContain('X2O');
   });
 
   it('renders BulkWhatsAppCampaignPanel with audience targeting and preview', () => {

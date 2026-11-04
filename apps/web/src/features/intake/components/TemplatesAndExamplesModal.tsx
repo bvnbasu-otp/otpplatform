@@ -301,7 +301,7 @@ export const CANONICAL_TEMPLATES: ProcurementTemplate[] = [
     canonicalRequirementMode: 'OTHER',
     defaultUnit: 'lot',
     suggestedQuantity: 1,
-    description: 'Use free text to explain what you need. OTP will route to verified suppliers without forcing a wrong category.',
+    description: 'Use free text to explain what you need. X2O will route to verified suppliers without forcing a wrong category.',
     specifications: {
       Detail: 'Include quantity, location, timeline and any brand or quality preferences',
       Photos: 'Attach photos or drawings if available',
@@ -629,7 +629,7 @@ export function TemplatesAndExamplesModal({
               💡 Real-World Illustrative Benchmarks:
             </span>
             <p className="text-muted-foreground leading-relaxed">
-              These case studies show how actual buyers used OTP's sealed evaluation, fair price discovery, and milestone settlements.
+              These case studies show how actual buyers used X2O's sealed evaluation, fair price discovery, and milestone settlements.
             </p>
           </div>
 
@@ -692,7 +692,7 @@ export function TemplatesAndExamplesModal({
               <span>⚖️</span> Rule 1: Buyer Confirmation Authority Boundary
             </h4>
             <p className="text-muted-foreground min-w-0 break-words">
-              OTP artificial intelligence, voice speech-to-text, document parsers, and template engines generate <strong>draft suggestions only</strong>. An enquiry is never broadcast to suppliers and an RFQ is never legally published until the authorized buyer explicitly confirms and submits the requirement.
+              X2O artificial intelligence, voice speech-to-text, document parsers, and template engines generate <strong>draft suggestions only</strong>. An enquiry is never broadcast to suppliers and an RFQ is never legally published until the authorized buyer explicitly confirms and submits the requirement.
             </p>
           </div>
 

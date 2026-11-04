@@ -113,7 +113,7 @@ describe('the payments disclaimer', () => {
     // The break is structural rather than a wrap the browser picks, so the one
     // sentence a supplier must not skim always starts a line.
     expect(PLATFORM_DISCLAIMER_LINES).toHaveLength(2);
-    expect(PLATFORM_DISCLAIMER_LINES[1]).toMatch(/^OTP does not collect/);
+    expect(PLATFORM_DISCLAIMER_LINES[1]).toMatch(/^(X2O|OTP) does not collect/);
   });
 
   it('keeps each line short enough not to wrap in a narrow window', () => {

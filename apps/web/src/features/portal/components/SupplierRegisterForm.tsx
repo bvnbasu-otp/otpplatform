@@ -477,7 +477,7 @@ export function SupplierRegisterForm({
                 id={id}
                 value={referral}
                 onChange={(e) => setReferral(e.target.value.toUpperCase())}
-                placeholder="e.g. OTP-XXXXXX or BNI-BLR-014"
+                placeholder="e.g. X2O-XXXXXX or BNI-BLR-014"
                 className={control(invalid)}
               />
               {referral && (

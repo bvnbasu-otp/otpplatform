@@ -70,7 +70,7 @@ export function MsmeRegistrationAgreementModal({
 <html>
 <head>
   <meta charset="utf-8">
-  <title>OTP MSME Agreement - ${agreementData.businessName}</title>
+  <title>X2O MSME Agreement - ${agreementData.businessName}</title>
   <style>
     @page { size: A4 portrait; margin: 15mm; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; line-height: 1.5; font-size: 11pt; padding: 20px; }
@@ -87,7 +87,7 @@ export function MsmeRegistrationAgreementModal({
 <body>
   <div class="header">
     <div>
-      <div style="font-weight: 900; font-size: 12pt; color: #0284c7; letter-spacing: 1px;">OPEN TRADE &amp; PROCUREMENT PLATFORM (OTP)</div>
+      <div style="font-weight: 900; font-size: 12pt; color: #0284c7; letter-spacing: 1px;">X2O PLATFORM (ANYTHING TO ORDER)</div>
       <h1 class="brand-title">MSME Procurement Registration Agreement</h1>
       <div class="brand-sub">Statutory Platform Governance &amp; Direct Settlement Agreement</div>
     </div>
@@ -110,10 +110,10 @@ export function MsmeRegistrationAgreementModal({
 
   <div class="content">
     <div class="clause-title">1. Purpose and Scope of Agreement</div>
-    <div class="clause-text">This binding legal instrument governs commercial procurement, competitive quotation sourcing, quotation evaluation, milestone tracking, and direct settlement executed by the Registered MSME Enterprise on the Open Trade &amp; Procurement Platform (OTP).</div>
+    <div class="clause-text">This binding legal instrument governs commercial procurement, competitive quotation sourcing, quotation evaluation, milestone tracking, and direct settlement executed by the Registered MSME Enterprise on the X2O (Anything to Order).</div>
 
     <div class="clause-title">2. Direct Settlement &amp; Zero Commission Model</div>
-    <div class="clause-text">All financial settlements, advances, and final payments occur directly between the Buyer and the Awarded Supplier via standard banking channels (NEFT/RTGS/UPI/IMPS). OTP does not hold funds in escrow, does not operate as a payment intermediary, and charges 0% transaction commission on order values.</div>
+    <div class="clause-text">All financial settlements, advances, and final payments occur directly between the Buyer and the Awarded Supplier via standard banking channels (NEFT/RTGS/UPI/IMPS). X2O does not hold funds in escrow, does not operate as a payment intermediary, and charges 0% transaction commission on order values.</div>
 
     <div class="clause-title">3. Identity Protection &amp; Sealed Quote Integrity</div>
     <div class="clause-text">All quotation submissions remain strictly sealed and encrypted until the RFQ quotation deadline. Neither competing suppliers nor platform operators may inspect quotation pricing prior to public unsealing, guaranteeing complete freedom from price collusion.</div>
@@ -126,7 +126,7 @@ export function MsmeRegistrationAgreementModal({
   </div>
 
   <div class="footer">
-    Open Trade &amp; Procurement Platform (OTP) · Statutory Legal Record · Verifiable at https://otpplatform.com
+    X2O (Anything to Order) · Statutory Legal Record · Verifiable at https://otpplatform.com
   </div>
   <script>
     window.onload = function() { window.print(); };
@@ -238,7 +238,7 @@ export function MsmeRegistrationAgreementModal({
                   <span>💼</span> Supplier platform fee, not charged in this pilot
                 </span>
                 <p className="text-muted-foreground">
-                  The defined commercial fee is 0.50% of the purchase-order gross, plus 18% GST on that fee. The purchase-order gross is not rewritten. During this pilot OTP does not charge that fee and does not deduct it from supplier disbursement. Supplier cashback is not a product.
+                  The defined commercial fee is 0.50% of the purchase-order gross, plus 18% GST on that fee. The purchase-order gross is not rewritten. During this pilot X2O does not charge that fee and does not deduct it from supplier disbursement. Supplier cashback is not a product.
                 </p>
               </div>
             </div>

@@ -38,6 +38,6 @@ describe('X2O Mobile-First LoginPage', () => {
     );
 
     expect(html).toContain('data-testid="login-brand-title"');
-    expect(html).toContain('OTP — Identity-Protected Competitive Sourcing');
+    expect(html).toContain('X2O — Anything to Order');
   });
 });

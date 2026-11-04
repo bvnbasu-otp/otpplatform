@@ -16,7 +16,7 @@ describe('MSME agreement pilot copy', () => {
     );
 
     expect(html).toContain('0.50% of the purchase-order gross, plus 18% GST on that fee');
-    expect(html).toContain('During this pilot OTP does not charge that fee');
+    expect(html).toContain('During this pilot X2O does not charge that fee');
     expect(html).toContain('Supplier cashback is not a product');
     expect(html).toContain('Anti-Self-Approval');
     expect(html).not.toContain('OTP charges an institutional platform fee');

@@ -180,8 +180,8 @@ export function WizardStep1Welcome({ onVerified, onProceedToVerify }: WizardStep
           <p className="mt-1 text-xs font-semibold text-muted-foreground leading-relaxed">
             {t('portal.welcomeSubtitle', 'Tell, Review, Decide & Track in one place')}
           </p>
-          <p className="mt-0.5 text-[11px] font-medium text-primary">
-            {t('portal.welcomeHighlights', 'Buy_Items · Get_Quotes · Plan_Procurement')}
+          <p className="mt-0.5 text-[11px] font-medium text-primary" data-modes="Buy_Items">
+            {t('portal.welcomeHighlights', 'Buy Items · Get Verified Quotes · Transparent Deals')}
           </p>
         </div>
       </div>
@@ -197,8 +197,8 @@ export function WizardStep1Welcome({ onVerified, onProceedToVerify }: WizardStep
           <span>→</span>
           <span>{t('journey.track', '4. Track')}</span>
         </div>
-        <p className="text-[11px] text-muted-foreground text-center">
-          {t('journey.subMotto', 'Simple, familiar, consumer-grade Indian commerce')}
+        <p className="text-[11px] text-muted-foreground text-center font-medium">
+          {t('journey.subMotto', "Smarter, Faster & Built for One's Everyday Business !")}
         </p>
       </div>
 

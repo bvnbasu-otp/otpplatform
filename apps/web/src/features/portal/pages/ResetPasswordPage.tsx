@@ -266,7 +266,7 @@ export function ResetPasswordPage() {
         <h1 className="text-2xl font-semibold text-foreground">Set New Password</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {user
-            ? 'Your recovery session is verified. Choose a new secure password for your OTP Platform account.'
+            ? 'Your recovery session is verified. Choose a new secure password for your X2O account.'
             : 'Reset your password securely via email or WhatsApp verification code.'}
         </p>
 
@@ -453,7 +453,7 @@ export function ResetPasswordPage() {
                         <Field
                           label="Registered Work Email"
                           required
-                          help="The email address associated with your OTP Platform account"
+                          help="The email address associated with your X2O account"
                         >
                           {({ id, describedBy, invalid }) => (
                             <input

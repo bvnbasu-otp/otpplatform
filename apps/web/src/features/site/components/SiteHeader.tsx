@@ -79,7 +79,7 @@ export function SiteHeader() {
               setIsAccountPopoverOpen(false);
             }}
           >
-            <OtpLogo size={24} />
+            <OtpLogo size={30} />
           </Link>
 
           {/* Desktop Navigation Links (Strictly Home, Pricing, +, About Us, FAQs) */}

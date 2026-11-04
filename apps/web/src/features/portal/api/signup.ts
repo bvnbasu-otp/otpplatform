@@ -339,10 +339,10 @@ export function humanizeSignupError(message: string): string {
     return 'An account or registration with this email address already exists. Please sign in or use password recovery.';
   }
   if (/signup_requests_phone_key|idx_signup_requests_open_phone|duplicate key.*phone/i.test(message)) {
-    return 'This phone number is already associated with an existing OTP account. Please sign in to continue.';
+    return 'This phone number is already associated with an existing X2O account. Please sign in to continue.';
   }
   if (/tax_registration_id|suppliers_gstin_key|duplicate key.*(gstin|tax_reg)/i.test(message)) {
-    return 'This GSTIN is already registered on OTP. Please sign in to your primary account to add a branch or contact support.';
+    return 'This GSTIN is already registered on X2O. Please sign in to your primary account to add a branch or contact support.';
   }
   if (/duplicate key.*business_name/i.test(message)) {
     return 'A profile with this business name is already registered.';

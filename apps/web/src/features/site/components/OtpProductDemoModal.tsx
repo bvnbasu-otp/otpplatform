@@ -52,7 +52,7 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
       decideHighlights: [
         'Mathematical scoring based on price, delivery time & warranty',
         'Direct selection without supplier sales calls or spam',
-        'During the pilot the supplier fee is not charged. The buyer pays the supplier. OTP does not hold the payment.',
+        'During the pilot the supplier fee is not charged. The buyer pays the supplier. X2O does not hold the payment.',
       ],
       trackSummary: 'Digital Work Order issued with frozen specifications and milestone check-in.',
       trackMilestones: [
@@ -76,7 +76,7 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
       tellHighlights: [
         'Single registered organizational society address',
         'Custom committee specifications with SLA requirements',
-        'Ready for multi-member approval. OTP does not perform a statutory audit.',
+        'Ready for multi-member approval. X2O does not perform a statutory audit.',
       ],
       reviewQuotes: [
         { alias: 'Supplier #01', price: '₹1,15,000/yr', delivery: '2 hr SLA', warranty: '12 months', score: 96, gstVerified: true },
@@ -111,7 +111,7 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
       tellHighlights: [
         'Engineering drawing / BoQ attachment & technical attributes',
         'Primary account holder with authorized delegate management',
-        'The quote can record GST. OTP does not decide the tax treatment or file input tax credit.',
+        'The quote can record GST. X2O does not decide the tax treatment or file input tax credit.',
       ],
       reviewQuotes: [
         { alias: 'Supplier #01', price: '₹3,25,000', delivery: '12 days', warranty: 'MTC included', score: 95, gstVerified: true },
@@ -120,11 +120,11 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
       ],
       decideSummary: 'Technical & commercial matrix comparison with delegate procurement authority.',
       decideHighlights: [
-        'The order records the GST on the quote. OTP does not file input tax credit.',
+        'The order records the GST on the quote. X2O does not file input tax credit.',
         'Spend-cap enforcement without complex RWA voting rules',
-        'The award stays on the order record. OTP does not certify tax compliance.',
+        'The award stays on the order record. X2O does not certify tax compliance.',
       ],
-      trackSummary: 'Production progress stays on the order. The buyer pays the supplier. OTP does not move the funds.',
+      trackSummary: 'Production progress stays on the order. The buyer pays the supplier. X2O does not move the funds.',
       trackMilestones: [
         { title: 'Technical Drawing Sign-off & PO Issued', status: 'completed' },
         { title: 'Lot 1 Sample Approval & Machining', status: 'in_progress' },
@@ -142,9 +142,9 @@ const PERSONA_SCENARIOS: Record<DemoPersona, { label: string; icon: string; role
       location: 'Pan-India / Regional Hubs',
       budget: 'Requests that match category and service area',
       tellText:
-        'An OTP-registered supplier can be invited when the request category and service area match. An invitation is not a delivered message, and it is not a promise of award.',
+        'An X2O-registered supplier can be invited when the request category and service area match. An invitation is not a delivered message, and it is not a promise of award.',
       tellHighlights: [
-        'During the pilot the supplier fee is not charged. A 0.50% platform fee is defined for later. The buyer pays you. OTP does not hold the payment.',
+        'During the pilot the supplier fee is not charged. A 0.50% platform fee is defined for later. The buyer pays you. X2O does not hold the payment.',
         'Level playing field: fair evaluation without bribery or middlemen',
         'A website alert is not proof that WhatsApp or SMS was delivered',
       ],
@@ -253,7 +253,7 @@ export function OtpProductDemoModal({
                 </span>
               </div>
               <h2 id="product-demo-title" className="text-sm sm:text-base font-extrabold text-foreground">
-                How OTP Works for You
+                How X2O Works for You
               </h2>
             </div>
           </div>

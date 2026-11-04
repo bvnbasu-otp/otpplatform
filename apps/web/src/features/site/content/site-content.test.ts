@@ -18,7 +18,7 @@ import {
   type FaqEntry,
   SUPPLIER_FAQS,
 } from './site-content';
-import { PRODUCT_TAGLINE, PRODUCT_JOURNEY_STATEMENT } from '@/lib/brand';
+import { PRODUCT_TAGLINE, PRODUCT_JOURNEY_STATEMENT, PRODUCT_TITLE, PRODUCT_PLATFORM_SUBTITLE } from '@/lib/brand';
 
 /**
  * The public copy, checked against the product it describes.
@@ -91,8 +91,8 @@ describe('what the home page says the product is', () => {
     expect(HERO.tagline.toLowerCase()).toMatch(/identity[- ]protected/);
     expect(HERO.tagline.toLowerCase()).toMatch(/competitive|sourcing/);
     expect(HERO.tagline).toBe('Identity-Protected Competitive Sourcing');
-    expect(HERO.title).toBe('OTP — Identity-Protected Competitive Sourcing');
-    expect(HERO.body).toBe('Compare competing supplier quotes and make better procurement decisions.');
+    expect(HERO.title).toBe(PRODUCT_TITLE);
+    expect(HERO.body).toBe(PRODUCT_PLATFORM_SUBTITLE);
   });
 
   it('verifies distinct primary tagline and the single four-step public journey statement', () => {
@@ -252,8 +252,8 @@ describe('a home page that stays a home page', () => {
     expect(new Set(headings).size).toBe(headings.length);
   });
 
-  it('includes OTP Next (X2O) dual-speed procurement entry in GENERAL_FAQS', () => {
-    const x2oFaq = GENERAL_FAQS.find((f) => f.question.includes('OTP Next (X2O)'));
+  it('includes X2O dual-speed procurement entry in GENERAL_FAQS', () => {
+    const x2oFaq = GENERAL_FAQS.find((f) => f.question.includes('X2O') && f.question.includes('dual-speed'));
     expect(x2oFaq).toBeDefined();
     expect(x2oFaq?.answer).toContain('Express Quick Order');
     expect(x2oFaq?.answer).toContain('Governed RFQs');

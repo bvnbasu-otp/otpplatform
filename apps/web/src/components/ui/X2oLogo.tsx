@@ -6,6 +6,7 @@ export const X2O_ASSETS = {
   logo3DSvg: '/x2o/x2o-logo-3d.svg',
   logoDark: '/x2o/x2o-logo-dark.svg',
   logoLight: '/x2o/x2o-logo-light.svg',
+  logoPng: '/x2o/x2o-logo.png',
   iconMaster: '/x2o/x2o-icon.svg',
   iconDark: '/x2o/x2o-icon-dark.svg',
   iconLight: '/x2o/x2o-icon-light.svg',

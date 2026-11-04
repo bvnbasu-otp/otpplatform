@@ -59,7 +59,7 @@ export function AboutPage() {
           </div>
         </div>
 
-        {/* OTP Next / X2O Architecture */}
+        {/* X2O Architecture */}
         <div className="mt-8 rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-6 space-y-4 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
             <div>
@@ -156,7 +156,7 @@ export function AboutPage() {
         >
           <h2 className="text-xs font-bold uppercase tracking-wider text-action">With gratitude</h2>
           <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground">
-            OTP exists because of the encouragement and support of our families and friends throughout its
+            X2O exists because of the encouragement and support of our families and friends throughout its
             development. They are not authors, approvers, certifiers, funders, or legal or security endorsers of the
             platform — only people who stood with us while we built it.
           </p>

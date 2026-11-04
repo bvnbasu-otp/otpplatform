@@ -34,13 +34,13 @@ function expectAssetExists(url: string, referencedFrom: string) {
 describe('index.html carries the canonical title and share metadata', () => {
   it('uses the canonical browser title', () => {
     expect(decode(INDEX_HTML.match(/<title>([^<]*)<\/title>/)?.[1] ?? '')).toBe(PRODUCT_TITLE);
-    expect(PRODUCT_TITLE).toBe('OTP — Identity-Protected Competitive Sourcing');
+    expect(PRODUCT_TITLE).toBe('X2O — Anything to Order');
   });
 
   it('uses the canonical subtitle as the meta description', () => {
     expect(meta('name', 'description')).toBe(PRODUCT_PLATFORM_SUBTITLE);
     expect(PRODUCT_PLATFORM_SUBTITLE).toBe(
-      'Compare competing supplier quotes and make better procurement decisions.',
+      "Smarter, Faster & Built for One's Everyday Business ! just Tell, Review, Decide & Track your commercial deals digitally all in one place",
     );
   });
 

@@ -34,8 +34,8 @@ vi.mock('@/features/roles', () => ({
   }),
 }));
 
-const CANONICAL_TITLE = 'OTP — Identity-Protected Competitive Sourcing';
-const CANONICAL_SUBTITLE = 'Compare competing supplier quotes and make better procurement decisions.';
+const CANONICAL_TITLE = 'X2O — Anything to Order';
+const CANONICAL_SUBTITLE = "Smarter, Faster & Built for One's Everyday Business ! just Tell, Review, Decide & Track your commercial deals digitally all in one place";
 const JARGON =
   /\bRLS\b|row[- ]level|\bdatabase\b|cryptograph|\bSHA\b|\bhash|\bsalt|architecture|\bWAHA\b|append-only|postgres|supabase|edge function/i;
 
@@ -82,7 +82,7 @@ describe('referral landing copy', () => {
   it('welcomes a referred visitor without claiming the invitation was verified', () => {
     const text = toText(render(<SignupPage />, '/signup?side=buyer&ref=ABC123'));
     expect(text).toContain('Referred by ABC123');
-    expect(text).toContain('Someone who already uses OTP invited you.');
+    expect(text).toContain('Someone who already uses X2O invited you.');
     expect(text).not.toMatch(/verified peer invitation/i);
     expect(text).toContain(CANONICAL_TITLE);
   });

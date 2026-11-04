@@ -14,6 +14,7 @@
  */
 
 import {
+  PRODUCT_FULL_NAME,
   PRODUCT_NAME,
   PRODUCT_PLATFORM_SUBTITLE,
   PRODUCT_TAGLINE,
@@ -30,7 +31,7 @@ import {
  * from the comparison until the decision is fixed.
  */
 export const HERO = {
-  eyebrow: 'OTP — Open Trade & Procurement',
+  eyebrow: 'X2O — Anything to Order',
   title: PRODUCT_TITLE,
   tagline: PRODUCT_TAGLINE,
   body: PRODUCT_PLATFORM_SUBTITLE,
@@ -44,9 +45,9 @@ export interface JourneyStep {
 }
 
 const JOURNEY_STEP_BODY: Record<(typeof PUBLIC_JOURNEY_STEPS)[number], string> = {
-  Tell: 'Tell OTP what you need, in your own words. OTP prepares the request.',
-  Review: 'OTP gathers competing quotes. You review price, delivery, and warranty.',
-  Decide: 'You decide. OTP does not choose the supplier.',
+  Tell: 'Tell X2O what you need, in your own words. X2O prepares the request.',
+  Review: 'X2O gathers competing quotes. You review price, delivery, and warranty.',
+  Decide: 'You decide. X2O does not choose the supplier.',
   Track: 'Follow the work until it is delivered and signed off. You pay the supplier directly.',
 };
 
@@ -243,7 +244,7 @@ export const SUPPLIER_CHANNELS: SupplierChannel[] = [
   {
     name: `${PRODUCT_NAME} supplier registry`,
     status: 'LIVE',
-    description: 'Suppliers who have registered on OTP and told us what they do and where they work.',
+    description: 'Suppliers who have registered on X2O and told us what they do and where they work.',
     badgeIcon: '✓',
   },
   {
@@ -255,13 +256,13 @@ export const SUPPLIER_CHANNELS: SupplierChannel[] = [
   {
     name: 'WhatsApp and SMS',
     status: 'PLANNED',
-    description: 'Not yet live. OTP does not currently send requests to suppliers by WhatsApp or SMS.',
+    description: 'Not yet live. X2O does not currently send requests to suppliers by WhatsApp or SMS.',
     badgeIcon: '💬',
   },
   {
     name: 'ONDC',
     status: 'PLANNED',
-    description: 'Not connected. OTP does not discover or invite suppliers through ONDC.',
+    description: 'Not connected. X2O does not discover or invite suppliers through ONDC.',
     badgeIcon: '🌐',
   },
   {
@@ -296,7 +297,7 @@ export const CONTRASTS = {
   otp: [
     'Supplier names stay hidden until you award',
     'Buyer identity stays hidden while quotes are compared',
-    'The order records the quote GST. OTP does not file ITC.',
+    'The order records the quote GST. X2O does not file ITC.',
     'One consistent scoring formula for every quote',
     'Votes carry a recorded reason and end-to-end audit trail',
   ],
@@ -378,16 +379,16 @@ export interface FaqEntry {
  */
 export const GENERAL_FAQS: FaqEntry[] = [
   {
-    question: 'What is OTP Next (X2O) and how does dual-speed procurement work?',
+    question: 'What is X2O and how does dual-speed procurement work?',
     answer:
-      'OTP Next (codenamed X2O) is the next-generation operating model of Open Trade & Procurement. '
+      'X2O (Anything To Order) is the next-generation digital procurement and commerce platform. '
       + 'It introduces dual-speed procurement: Express Quick Order for urgent requisitions with instant radial discovery across 17 categories, '
       + 'alongside Governed RFQs for multi-quote competitive comparison where supplier identities stay masked and protected until award.',
   },
   {
     question: `What is ${PRODUCT_NAME}?`,
     answer:
-      `${PRODUCT_NAME} (Open Trade & Procurement) is an identity-protected competitive sourcing platform. `
+      `${PRODUCT_NAME} (${PRODUCT_FULL_NAME}) is an identity-protected competitive sourcing platform. `
       + 'You describe what you need, suppliers send competing quotes, and you compare them side by side '
       + 'to make a better buying decision. Neither side sees who the other is until you award the work.',
   },
@@ -414,8 +415,8 @@ export const GENERAL_FAQS: FaqEntry[] = [
   {
     question: 'How are suppliers discovered for my request?',
     answer:
-      'From your request. OTP looks at the category, subcategory and where the work needs to be done. '
-      + 'A discovered business was found for that search. An OTP-registered supplier has an OTP account. '
+      'From your request. X2O looks at the category, subcategory and where the work needs to be done. '
+      + 'A discovered business was found for that search. An X2O-registered supplier has an X2O account. '
       + 'A GST-verified supplier is one whose GST check is already recorded. Discovery is not registration, '
       + 'verification, availability, or a promise to quote. Creating an invitation is not the same as sending '
       + 'WhatsApp, SMS or email, which are not yet live, and it is not a delivery receipt. You can also invite a supplier you already know. '
@@ -480,21 +481,21 @@ export const GENERAL_FAQS: FaqEntry[] = [
     question: 'Where does a request apply, and who can be invited?',
     answer:
       'To the kind of work and the place on the request. A supplier is eligible when the category matches and their '
-      + 'service area covers that PIN. Sharing a PIN is not enough. A business found in that area is not an OTP-registered '
-      + 'or GST-verified supplier unless those facts are already on their OTP account.',
+      + 'service area covers that PIN. Sharing a PIN is not enough. A business found in that area is not an X2O-registered '
+      + 'or GST-verified supplier unless those facts are already on their X2O account.',
   },
   {
     question: 'How much does it cost, and how long can suppliers quote?',
     answer:
       'During the pilot, buyer plans are ₹0 and the supplier fee is waived. After the pilot, buyers pay the subscription '
       + 'on the pricing page, and a supplier fee applies only to an order they win. Quoting stays open until the deadline '
-      + 'on that request. OTP does not hold the payment.',
+      + 'on that request. X2O does not hold the payment.',
   },
   {
     question: 'What if nobody quotes, and what comes next?',
     answer:
       'You can invite a supplier you already know, or close the request. A quote after the deadline is refused. '
-      + 'WhatsApp, SMS and email reminders are not yet live, and OTP does not invent a supplier when nobody quotes. '
+      + 'WhatsApp, SMS and email reminders are not yet live, and X2O does not invent a supplier when nobody quotes. '
       + 'If you award the work, you and that supplier are introduced and the order is tracked from there.',
   },
   {
@@ -503,22 +504,22 @@ export const GENERAL_FAQS: FaqEntry[] = [
       'An Individual account can be used for a household purchase or a business purchase. The account type alone does not decide consumer status. '
       + 'An individual can raise a request without an organisation. A housing society or RWA keeps its organisation and, '
       + 'where a committee is set up, votes before the award. An MSME keeps its organisation and the spend approvals it has configured. '
-      + 'OTP does not turn an organisation account into an individual account.',
+      + 'X2O does not turn an organisation account into an individual account.',
   },
   {
-    question: 'What does OTP do with personal information?',
+    question: 'What does X2O do with personal information?',
     answer:
-      'OTP uses account and procurement details to run the request, the comparison and the order record. '
+      'X2O uses account and procurement details to run the request, the comparison and the order record. '
       + 'You can ask for access or a correction through the privacy contact on the legal page. '
-      + 'OTP does not certify that you comply with the DPDP Act, and it does not promise that every record can be deleted while a legal retention period still applies.',
+      + 'X2O does not certify that you comply with the DPDP Act, and it does not promise that every record can be deleted while a legal retention period still applies.',
   },
 ];
 
 export const BUYER_FAQS: FaqEntry[] = [
   {
-    question: 'How is OTP similar to GeM?',
+    question: 'How is X2O similar to GeM?',
     answer:
-      "GeM is India's Government e-Marketplace for digital procurement by government organizations. OTP is an independent platform designed for housing societies, RWAs, MSMEs and other organizations. The similarity is in the procurement experience: structured requirements, competitive proposals, transparent comparison, governed decisions and an end-to-end purchase record. OTP is not affiliated with, endorsed by, or operated by GeM or the Government of India.",
+      "GeM is India's Government e-Marketplace for digital procurement by government organizations. X2O is an independent platform designed for housing societies, RWAs, MSMEs and other organizations. The similarity is in the procurement experience: structured requirements, competitive proposals, transparent comparison, governed decisions and an end-to-end purchase record. X2O is not affiliated with, endorsed by, or operated by GeM or the Government of India.",
   },
   {
     question: 'Can I invite suppliers I already work with?',
@@ -614,7 +615,7 @@ export const SUPPLIER_FAQS: FaqEntry[] = [
     question: 'What do we get if we win, and if we lose?',
     answer:
       "If you win, the buyer's contact and company details are shared with you when the award is confirmed, and "
-      + 'the order, work and invoice are then handled through OTP. If you lose, you are told the request has '
+      + 'the order, work and invoice are then handled through X2O. If you lose, you are told the request has '
       + "closed, and your identity stays masked permanently — losing a quote does not put you on anybody's list.",
   },
   {
@@ -628,7 +629,7 @@ export const SUPPLIER_FAQS: FaqEntry[] = [
     question: 'Can suppliers from ONDC or BNI take part?',
     answer:
       'Not yet. Connections to ONDC, BNI and local business associations are planned but not live, so no '
-      + 'supplier can be reached through them today. Right now suppliers take part through the OTP supplier '
+      + 'supplier can be reached through them today. Right now suppliers take part through the X2O supplier '
       + 'registry and direct invitations from buyers. WhatsApp and SMS are also planned but not yet live.',
   },
 ];

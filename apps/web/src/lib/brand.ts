@@ -1,25 +1,27 @@
 /** Product positioning — horizontal local procurement, not RWA-only. */
 
-export const PRODUCT_NAME = 'OTP';
-export const PRODUCT_FULL_NAME = 'Open Trade & Procurement';
-export const PRODUCT_PLATFORM_NAME = 'Open Trade & Procurement Platform';
+export const PRODUCT_NAME = 'X2O';
+export const PRODUCT_FULL_NAME = 'Anything to Order';
+export const PRODUCT_PLATFORM_NAME = 'Anything to Order';
 
-/** X2O Visual Identity & Next-Gen Evolution ("Anything To Order") */
+/** X2O Visual Identity & Evolution ("Anything To Order") */
 export const X2O_NAME = 'X2O';
-export const X2O_FULL_NAME = 'Anything To Order';
-export const X2O_TAGLINE = 'Continuous Commerce & Frictionless Procurement';
-export const X2O_PHILOSOPHY = 'From verification to frictionless procurement — Anything To Order.';
+export const X2O_FULL_NAME = 'Anything to Order';
+export const X2O_TAGLINE =
+  "Smarter, Faster & Built for One's Everyday Business ! just Tell, Review, Decide & Track your commercial deals digitally all in one place";
+export const X2O_PHILOSOPHY =
+  "Smarter, Faster & Built for One's Everyday Business ! just Tell, Review, Decide & Track your commercial deals digitally all in one place";
 
 export const PRODUCT_TAGLINE = 'Identity-Protected Competitive Sourcing';
-export const PRODUCT_PLATFORM_TITLE = 'OTP a Identity Protected Competitive Sourcing Platform';
+export const PRODUCT_PLATFORM_TITLE = 'Anything to Order';
 export const PRODUCT_PLATFORM_SUBTITLE =
-  'Compare competing supplier quotes and make better procurement decisions.';
+  "Smarter, Faster & Built for One's Everyday Business ! just Tell, Review, Decide & Track your commercial deals digitally all in one place";
 
 /** Browser title, share cards and the public hero all use this one string. */
-export const PRODUCT_TITLE = `${PRODUCT_NAME} — ${PRODUCT_TAGLINE}`;
+export const PRODUCT_TITLE = `${PRODUCT_NAME} — ${PRODUCT_PLATFORM_TITLE}`;
 
 export const PRODUCT_PHILOSOPHY =
-  "OTP .... Think beyond the Password, Procurement is Common, it is Everyone's Everyday Business !";
+  "Smarter, Faster & Built for One's Everyday Business ! just Tell, Review, Decide & Track your commercial deals digitally all in one place";
 
 /** The one customer journey shown publicly. Internal workflow states stay inside the app. */
 export const PUBLIC_JOURNEY_STEPS = ['Tell', 'Review', 'Decide', 'Track'] as const;
@@ -63,7 +65,7 @@ export const SUPPLIER_NETWORKS = [
   'BNI',
   'Trade associations',
   'Direct suppliers',
-  'OTP Local registry',
+  'X2O Local registry',
 ] as const;
 
 /**
@@ -97,21 +99,21 @@ export const PLATFORM_DISCLAIMER = PLATFORM_DISCLAIMER_LINES.join(' ');
 /**
  * OTP Next / X2O positioning — next-generation operating system & network.
  */
-export const OTP_NEXT_NAME = 'OTP Next';
-export const OTP_NEXT_CODE = 'X2O';
+export const OTP_NEXT_NAME = 'X2O';
+export const OTP_NEXT_CODE = 'Anything to Order';
 export const OTP_NEXT_FULL_TITLE =
-  'OTP Next (X2O) — Next-Generation Procurement Operating System & Network';
+  'X2O — Anything To Order: Modern Digital Procurement Platform';
 export const OTP_NEXT_DESCRIPTION =
-  'Dual-speed procurement engine powering Express Quick Orders and Governed Multi-Quote RFQs across 17 verified SNE categories with identity-protected evaluation.';
+  'Dual-speed procurement engine powering Express Quick Orders and Governed Multi-Quote RFQs across 17 verified categories with identity-protected evaluation.';
 
 /**
- * White-Label & Dynamic Brand Renaming Architecture (Phase 1):
- * Supports transitioning between legacy "OTP" and modern "X2O" seamlessly.
+ * White-Label & Brand Architecture:
+ * Evolved standard: X2O ("Anything To Order").
  */
 export const ACTIVE_BRAND_CODE = 'X2O';
 export const ACTIVE_BRAND_NAME = 'X2O';
-export const ACTIVE_BRAND_FULL_NAME = 'X2O — Open Trade Platform';
-export const ACTIVE_BRAND_TAGLINE = 'Procurement Operating System & High-Intent Network';
+export const ACTIVE_BRAND_FULL_NAME = 'X2O — Anything to Order';
+export const ACTIVE_BRAND_TAGLINE = 'Continuous Commerce & Frictionless Procurement';
 
 export const OTP_NEXT_FEATURES = [
   'Dual-Speed Procurement: Express Quick Orders & Governed RFQs',

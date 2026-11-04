@@ -1,7 +1,7 @@
 {
-  "name": "OTP — Identity-Protected Competitive Sourcing",
-  "short_name": "OTP",
-  "description": "Compare competing supplier quotes and make better procurement decisions.",
+  "name": "X2O — Anything to Order",
+  "short_name": "X2O",
+  "description": "Smarter, Faster & Built for One's Everyday Business ! just Tell, Review, Decide & Track your commercial deals digitally all in one place",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

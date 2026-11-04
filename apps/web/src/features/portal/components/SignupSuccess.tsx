@@ -62,7 +62,7 @@ export function SignupSuccess({
           Next Step: Set your password
         </p>
         <p className="text-[12px] leading-relaxed text-blue-900/90 dark:text-blue-300">
-          Your account has been created. We&apos;ve sent you an email with instructions to set or reset your password. Follow the instructions, then log in to OTP.
+          Your account has been created. We&apos;ve sent you an email with instructions to set or reset your password. Follow the instructions, then log in to X2O.
         </p>
       </div>
 
