@@ -815,7 +815,7 @@ CREATE OR REPLACE FUNCTION public.close_clarification_for_evaluation(p_rfq_id uu
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public', 'private', 'auth', 'extensions'
-AS $
+AS $$
 DECLARE
   v_rfq rfqs%ROWTYPE;
   v_final_count int;
@@ -873,7 +873,7 @@ BEGIN
     ON CONFLICT (rfq_id, profile_id) DO NOTHING;
   END IF;
 END;
-$;
+$$;
 
 GRANT EXECUTE ON FUNCTION public.close_clarification_for_evaluation(uuid) TO authenticated, service_role;
 
