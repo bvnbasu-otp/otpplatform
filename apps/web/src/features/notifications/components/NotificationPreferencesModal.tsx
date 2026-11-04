@@ -197,9 +197,17 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
 
             {/* Delivery Channels */}
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Delivery Channels
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Delivery Channels
+                </h3>
+                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                  Pilot: WhatsApp &amp; Email Active
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Notifications arrive via WhatsApp and Email. SMS is inactive for the pilot phase.
+              </p>
               <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {(['WHATSAPP', 'SMS', 'EMAIL', 'IN_APP'] as NotificationChannel[]).map((ch) => (
                   <button
@@ -207,7 +215,9 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
                     type="button"
                     onClick={() => handleChannelToggle(ch)}
                     className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-colors ${
-                      channels[ch]
+                      ch === 'SMS'
+                        ? 'border-border bg-muted/20 text-muted-foreground opacity-60'
+                        : channels[ch]
                         ? 'border-primary bg-primary/10 text-primary font-bold'
                         : 'border-border bg-muted/30 text-muted-foreground'
                     }`}
@@ -219,7 +229,9 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
                       {ch === 'IN_APP' && '🔔'}
                     </span>
                     <span className="text-xs font-semibold">{ch.replace('_', ' ')}</span>
-                    <span className="text-[10px] mt-0.5">{channels[ch] ? 'Enabled' : 'Disabled'}</span>
+                    <span className="text-[10px] mt-0.5">
+                      {ch === 'SMS' ? 'Inactive in Pilot' : channels[ch] ? 'Enabled' : 'Disabled'}
+                    </span>
                   </button>
                 ))}
               </div>

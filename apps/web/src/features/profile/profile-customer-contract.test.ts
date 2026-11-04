@@ -63,4 +63,17 @@ describe('ProfilePage customer contract', () => {
     expect(profilePage).toContain('const isInternalUser =');
     expect(profilePage).toContain('!isInternalUser && (');
   });
+
+  it('renders universal account session and sign out card on profile page', () => {
+    expect(profilePage).toContain('data-testid="profile-session-logout-card"');
+    expect(profilePage).toContain('Log Out of Account');
+  });
+
+  it('ensures profile edit modal does not contain duplicate sign out button', () => {
+    const editModal = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'components', 'ProfileEditModal.tsx'),
+      'utf8',
+    );
+    expect(editModal).not.toContain('data-testid="profile-modal-sign-out-button"');
+  });
 });

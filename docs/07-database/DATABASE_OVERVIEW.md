@@ -1,6 +1,6 @@
 # Database overview
 
-Engine: Postgres via Supabase. Schema files: `supabase/migrations`. Source ceiling on disk: `00001`–`00250`. Local applied ceiling is `00245`. Hosted applied ceiling is NOT YET VERIFIED. `00246` through `00250` are pending migration, not applied, not deployed, not production.
+Engine: Postgres via Supabase. Schema files: `supabase/migrations`. Active canonical ceiling on disk is `00001`–`00333` (`MAX_MIGRATIONS = 333`). Hosted Supabase database (`qsuvtcezffomtwzwyrso`) was verified contiguous and fully applied through migration `00333` via `supabase migration list --linked`. Local disposable replay validation (`tests/unit/disposable-migration-validation.test.ts`) verifies the entire migration chain.
 
 `supabase/config.toml` exists. It was not treated as proof of a running local or hosted database.
 

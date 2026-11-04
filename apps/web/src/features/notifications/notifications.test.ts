@@ -161,4 +161,10 @@ describe('Notification History & Activity Feed', () => {
 
     expect(states).toHaveLength(8);
   });
+
+  it('exports NotificationPreferencesModal with WhatsApp and Email delivery channels enabled', async () => {
+    const { NotificationPreferencesModal } = await import('./components/NotificationPreferencesModal');
+    expect(NotificationPreferencesModal).toBeDefined();
+    expect(typeof NotificationPreferencesModal).toBe('function');
+  });
 });

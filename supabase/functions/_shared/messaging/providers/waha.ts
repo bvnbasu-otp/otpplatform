@@ -132,6 +132,7 @@ export class WahaMessagingProvider implements MessagingProvider {
   async verify(request: WebhookRequest): Promise<boolean> {
     if (!this.#apiKey) return false;
     const headerKey = request.headers['x-api-key']
+      ?? request.headers['waha-api-key']
       ?? request.headers['authorization']
       ?? request.headers['X-Api-Key'];
     if (!headerKey) return false;

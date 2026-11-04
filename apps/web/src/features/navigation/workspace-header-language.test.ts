@@ -35,4 +35,9 @@ it('hides dense role badge, language switcher, and journey strip across viewport
     expect(headerCode).toContain('className="hidden"');
     expect(headerCode).toContain('<LanguageSwitcher placement="header" />');
   });
+
+  it('hides header in print media', () => {
+    const headerCode = readFile('components/WorkspaceHeader.tsx');
+    expect(headerCode).toContain('print:hidden');
+  });
 });

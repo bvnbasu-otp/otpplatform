@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRoleContext } from '@/features/roles';
 import { useAuth } from '@/features/auth';
@@ -828,20 +828,8 @@ export function ProfileEditModal({ open, onClose, onProfileUpdated }: ProfileEdi
           </div>
 
           {/* Modal Actions */}
-          <div className="flex items-center justify-between gap-3 pt-3 border-t">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                void signOut().then(() => { window.location.href = '/login'; });
-              }}
-              className="inline-flex items-center gap-1.5 rounded-md border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 px-3 py-1.5 text-xs font-semibold transition cursor-pointer"
-              title="Sign out of account"
-              data-testid="profile-modal-sign-out-button"
-            >
-              <span>🚪</span>
-              <span>Sign Out</span>
-            </button>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t">
+
 
             <div className="flex items-center gap-2">
               <button

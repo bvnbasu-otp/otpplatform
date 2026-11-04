@@ -137,6 +137,7 @@ describe('Executive & Internal Employee Workspace Architecture (X2O / OTP Next)'
         'APPROVALS',
         'STAFF_REFERRALS',
         'ORGS_SUPPLIERS',
+        'WHATSAPP_CAMPAIGNS',
       ]);
 
       expect(INTERNAL_ROLE_CONFIGS.LEGAL_PRIVACY.allowedTabs).toEqual([

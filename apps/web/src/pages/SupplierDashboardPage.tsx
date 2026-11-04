@@ -78,18 +78,19 @@ export function SupplierDashboardPage() {
             Find what you need, when you need it
           </p>
         </div>
-        <Link
-          to="/notifications"
-          className="relative w-10 h-10 rounded-full bg-card border border-border/80 flex items-center justify-center text-foreground hover:bg-muted transition shadow-2xs"
-          aria-label="Notifications"
-        >
-          <Icon name="notifications" size={20} />
-          {actionRequiredItems.length > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center shadow-xs">
-              {actionRequiredItems.length}
-            </span>
-          )}
-        </Link>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Verified Supplier
+          </span>
+          <Link
+            to="/notifications"
+            className="sr-only"
+            aria-label="Notifications"
+          >
+            <Icon name="notifications" size={20} />
+          </Link>
+        </div>
       </div>
 
       {/* Screen 9 Search Bar */}

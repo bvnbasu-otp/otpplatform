@@ -10,6 +10,7 @@ import {
   PERSONA_EXTRA_RFQ_PRICES,
   STANDARD_MONTHLY_RFQ_ALLOWANCE,
   SUBSCRIPTION_TIERS,
+  TOP_UP_ADDON_TIERS,
   SUPPLIER_FEE_POLICY,
   calculateGst,
   calculateSupplierPlatformFeeWithGst,
@@ -595,6 +596,24 @@ describe('OTP Platform Pricing & Entitlement Domain Engine', () => {
       expect(result.totalFeeWithGst).toBe(1475);
       expect(result.netSupplierDisbursement).toBe(248525);
       expect(result.isPilotWaived).toBe(false);
+    });
+
+    it('defines standard top-up add-on packs (149, 499, 999) and unlimited pilot RFQs', () => {
+      // Top-up add-ons verification
+      const prices = TOP_UP_ADDON_TIERS.map((t) => t.price);
+      expect(prices).toEqual([149, 499, 999]);
+
+      // Pilot exception: 100% unlimited RFQs even when monthly allowance is exhausted
+      const res = evaluateRfqEntitlement({
+        tierId: 'INDIVIDUAL',
+        plan: 'MONTHLY',
+        subscriptionStatus: 'ACTIVE',
+        rfqsUsedInCurrentMonth: 10, // Far above 3 RFQ allowance
+        billingMode: 'PILOT_FREE',
+        now: '2026-09-22T08:00:00Z',
+      });
+      expect(res.canCreateRfq).toBe(true);
+      expect(res.rejectionReason).toBeUndefined();
     });
   });
 });

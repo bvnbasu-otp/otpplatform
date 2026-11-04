@@ -710,18 +710,41 @@ html, body {
   .otp-logo,
   [data-testid="brand-logo"],
   [data-testid="otp-logo"],
+  [data-testid="mobile-bottom-nav"],
+  [data-testid="header-menu-trigger"],
   svg.otp-brand-logo {
     display: none !important;
   }
 
-  /* Reset all fixed overlays and backdrops to plain printable document flow */
+  /* Reset shell scroller, root container and viewport clipping to fluid document flow */
+  html,
   body {
     background: #ffffff !important;
     color: #000000 !important;
     font-size: 10pt !important;
     line-height: 1.4 !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  #root,
+  .mobile-simulator-frame,
+  [data-testid="authenticated-workspace-shell"],
+  main[data-scroll-container],
+  .zero-scroll-container {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    contain: none !important;
+    transform: none !important;
+    display: block !important;
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   .fixed.inset-0,

@@ -44,6 +44,18 @@ export interface SubscriptionPlanDefinition {
 export const ADDITIONAL_RFQ_TOPUP_BASE_PRICE = 149; // Default fallback for Individual tier
 
 /**
+ * Canonical Top-Up Add-on Tiers (Pre-GST in INR):
+ * - ₹149 (Single RFQ Booster)
+ * - ₹499 (Standard RFQ Pack)
+ * - ₹999 (High-Volume RFQ Pack)
+ */
+export const TOP_UP_ADDON_TIERS = [
+  { id: 'TOPUP_149', price: 149, rfqs: 1, label: 'Single RFQ Booster (₹149)' },
+  { id: 'TOPUP_499', price: 499, rfqs: 5, label: 'Standard RFQ Pack (₹499)' },
+  { id: 'TOPUP_999', price: 999, rfqs: 12, label: 'High-Volume RFQ Pack (₹999)' },
+] as const;
+
+/**
  * Authoritative persona-specific Extra RFQ Top-Up Pricing Matrix (Base in INR, pre-GST)
  * - INDIVIDUAL: ₹149 + GST
  * - RWA: ₹999 + GST
@@ -599,12 +611,18 @@ export function evaluateRfqEntitlement(
     totalAvailableRfqs = monthlyRemaining + quarterlyBonusRemaining + additionalCredits;
     canCreateRfq = totalAvailableRfqs > 0;
     if (!canCreateRfq) {
-      const topUpPrice = tier.additionalRfqPrice;
-      rejectionReason = `Entitlement limit reached (${usedThisMonth}/${monthlyAllowance} monthly RFQs used in ${calendarMonth.label}${
-        quarterlyBonusAllowance > 0
-          ? `, quarterly bonus ${quarterlyUsed}/${quarterlyBonusAllowance} used in ${calendarQuarter.label}`
-          : ''
-      }). Recharge an additional RFQ top-up (₹${topUpPrice.toLocaleString('en-IN')} + GST) or wait for reset.`;
+      if (mode === 'PILOT_FREE') {
+        // Pilot Exception: During pilot phase, buyers enjoy unlimited RFQs
+        canCreateRfq = true;
+        rejectionReason = undefined;
+      } else {
+        const topUpPrice = tier.additionalRfqPrice;
+        rejectionReason = `Entitlement limit reached (${usedThisMonth}/${monthlyAllowance} monthly RFQs used in ${calendarMonth.label}${
+          quarterlyBonusAllowance > 0
+            ? `, quarterly bonus ${quarterlyUsed}/${quarterlyBonusAllowance} used in ${calendarQuarter.label}`
+            : ''
+        }). Recharge an additional RFQ top-up (₹${topUpPrice.toLocaleString('en-IN')} + GST) or wait for reset.`;
+      }
     }
   } else {
     // If subscription is expired, can only use purchased additional credits

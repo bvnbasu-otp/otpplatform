@@ -108,7 +108,7 @@ export function MobileBottomNav() {
       <nav
         aria-label="Mobile Bottom Navigation"
         data-testid="mobile-bottom-nav"
-        className={`relative z-40 shrink-0 w-full bg-card/95 backdrop-blur-md border-t border-border/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] select-none${showPublicCompactNav ? ' md:hidden' : ''}`}
+        className={`relative z-40 shrink-0 w-full bg-card/95 backdrop-blur-md border-t border-border/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] select-none print:hidden${showPublicCompactNav ? ' md:hidden' : ''}`}
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {isAuthenticated && !isPublicRoute ? (

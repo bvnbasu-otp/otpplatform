@@ -19,7 +19,8 @@ export type AdminTab =
   | 'APPROVALS'
   | 'INTERNAL_USERS'
   | 'INTERNAL_RBAC'
-  | 'STAFF_REFERRALS';
+  | 'STAFF_REFERRALS'
+  | 'WHATSAPP_CAMPAIGNS';
 
 export type AdminCategoryKey =
   | 'ORDERS_RADAR'
@@ -62,7 +63,7 @@ export const INTERNAL_ROLE_CONFIGS: Record<InternalConsoleRoleCode, InternalRole
       'TRANSACTIONS', 'SELLER_ORDERS', 'BUYER_DEBUG', 'SUPPLIER_DEBUG', 'HEALTH',
       'TICKETS', 'TESTS', 'ACTIONS', 'TERMINAL', 'BACKUPS', 'LOGS', 'NOTIFICATIONS',
       'ANNOUNCEMENTS', 'USERS', 'ORGS_SUPPLIERS', 'SUPPLIER_NETWORK', 'TAXONOMY',
-      'APPROVALS', 'INTERNAL_USERS', 'INTERNAL_RBAC', 'STAFF_REFERRALS',
+      'APPROVALS', 'INTERNAL_USERS', 'INTERNAL_RBAC', 'STAFF_REFERRALS', 'WHATSAPP_CAMPAIGNS',
     ],
     canSwitchRoles: true,
   },
@@ -77,7 +78,7 @@ export const INTERNAL_ROLE_CONFIGS: Record<InternalConsoleRoleCode, InternalRole
       'TRANSACTIONS', 'SELLER_ORDERS', 'BUYER_DEBUG', 'SUPPLIER_DEBUG', 'HEALTH',
       'TICKETS', 'TESTS', 'ACTIONS', 'TERMINAL', 'BACKUPS', 'LOGS', 'NOTIFICATIONS',
       'ANNOUNCEMENTS', 'USERS', 'ORGS_SUPPLIERS', 'SUPPLIER_NETWORK', 'TAXONOMY',
-      'APPROVALS', 'INTERNAL_USERS', 'INTERNAL_RBAC', 'STAFF_REFERRALS',
+      'APPROVALS', 'INTERNAL_USERS', 'INTERNAL_RBAC', 'STAFF_REFERRALS', 'WHATSAPP_CAMPAIGNS',
     ],
     canSwitchRoles: true,
   },
@@ -108,7 +109,7 @@ export const INTERNAL_ROLE_CONFIGS: Record<InternalConsoleRoleCode, InternalRole
     badge: 'Growth & SNE',
     description: 'Supplier Network Engine (SNE) pre-warm console, 17-category taxonomy hierarchy, onboarding approvals & referral bonuses',
     colorClass: 'border-purple-500/40 bg-purple-500/10 text-purple-400',
-    allowedTabs: ['SUPPLIER_NETWORK', 'TAXONOMY', 'APPROVALS', 'STAFF_REFERRALS', 'ORGS_SUPPLIERS'],
+    allowedTabs: ['SUPPLIER_NETWORK', 'TAXONOMY', 'APPROVALS', 'STAFF_REFERRALS', 'ORGS_SUPPLIERS', 'WHATSAPP_CAMPAIGNS'],
     canSwitchRoles: false,
   },
   LEGAL_PRIVACY: {
@@ -476,6 +477,15 @@ export const ADMIN_CATEGORIES: AdminCategoryDef[] = [
         description: 'Fixed referral bonus ledger with anti-self-approval and UTR settlement evidence',
         categoryKey: 'USERS_ORGS',
         badge: () => 'UTR Payout',
+      },
+      {
+        key: 'WHATSAPP_CAMPAIGNS',
+        title: 'Bulk WhatsApp Outreach & Marketing Campaigns',
+        shortTitle: 'WhatsApp Outreach',
+        icon: '📲',
+        description: 'Broadcast transactional invites & promotional pilot onboarding campaigns to prospective buyers and suppliers via WAHA',
+        categoryKey: 'USERS_ORGS',
+        badge: () => 'Campaigns',
       },
     ],
   },

@@ -40,7 +40,7 @@ export function CeoFounderCommandCenter({
   return (
     <div className="space-y-6">
       {/* Executive Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 p-6 shadow-xl">
+      <div className="relative z-10 overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 p-6 shadow-xl">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
@@ -178,7 +178,7 @@ export function CeoFounderCommandCenter({
       </div>
 
       {/* Quick Executive Shortcuts */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <button
           type="button"
           onClick={() => onNavigateTab('TRANSACTIONS')}
@@ -190,6 +190,20 @@ export function CeoFounderCommandCenter({
           </div>
           <div className="text-xs text-muted-foreground mt-1">
             Review live requirements, evaluation quorums & award contracts
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigateTab('WHATSAPP_CAMPAIGNS')}
+          className="rounded-xl border border-border bg-card p-4 text-left hover:border-emerald-500/40 hover:bg-emerald-500/5 transition group"
+        >
+          <div className="text-lg">📲</div>
+          <div className="font-semibold text-foreground text-sm mt-2 group-hover:text-emerald-400">
+            Bulk WhatsApp Outreach
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Broadcast promotional & pilot onboarding campaigns via WAHA
           </div>
         </button>
 

@@ -626,18 +626,7 @@ export function ProfilePage() {
                 : context.side === 'SUPPLIER'
                 ? 'Supplier Rep'
                 : 'Buyer Lead'}
-            </span>
-
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="inline-flex min-h-[34px] items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-300 px-3 py-1 text-xs font-bold transition active:scale-95 cursor-pointer shadow-2xs"
-              title="Sign out of your account"
-              data-testid="profile-sign-out-button"
-            >
-              <span>🚪</span>
-              <span>Sign Out</span>
-            </button>
+            </span>
           </div>
         </div>
 

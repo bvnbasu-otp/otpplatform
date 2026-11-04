@@ -32,7 +32,7 @@ export function WorkspaceHeader({ onOpenSupplierCapabilities }: WorkspaceHeaderP
   return (
     <>
       <header
-        className="shrink-0 z-40 border-b border-border bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/90 w-full max-w-full select-none shadow-[0_1px_0_0_hsl(var(--border)/0.6)]"
+        className="shrink-0 z-40 border-b border-border bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/90 w-full max-w-full select-none shadow-[0_1px_0_0_hsl(var(--border)/0.6)] print:hidden"
         data-testid="workspace-header-shell"
         style={{ ['--workspace-chrome-height' as string]: chromeTop }}
       >

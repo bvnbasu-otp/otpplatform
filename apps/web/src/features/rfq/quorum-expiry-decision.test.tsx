@@ -25,5 +25,7 @@ describe('QuorumExpiryDecisionCard Invariants & Logic', () => {
     expect(cardSrc).toContain('10–50 km');
     expect(cardSrc).toContain('Extended Network Hub');
     expect(cardSrc).toContain('State &amp; Pan-India');
+    expect(cardSrc).toContain('Zero Fee · No Penalty');
+    expect(cardSrc).toContain('Zero fee &middot; Full buyer choice');
   });
 });

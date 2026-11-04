@@ -802,4 +802,79 @@ $$;
 REVOKE ALL ON FUNCTION public.execute_greenfield_pilot_reset(text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.execute_greenfield_pilot_reset(text) TO authenticated, service_role;
 
+-- ---------------------------------------------------------------------------
+-- 13. Graceful Handling of Unmet Quote Quorums (00333 Enhancement)
+-- ---------------------------------------------------------------------------
+-- Prevents workflow failures when the initial quote-receiving period ends
+-- without meeting the required quorum:
+--   - If 1 quote is received, it automatically wins based on buyer choice.
+--   - If multiple quotes are received, the buyer's manually selected choice wins.
+--   - If at least 1 final quote exists, the shortfall is automatically waived.
+CREATE OR REPLACE FUNCTION public.close_clarification_for_evaluation(p_rfq_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'private', 'auth', 'extensions'
+AS $
+DECLARE
+  v_rfq rfqs%ROWTYPE;
+  v_final_count int;
+BEGIN
+  SELECT * INTO v_rfq FROM rfqs WHERE id = p_rfq_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'RFQ not found'; END IF;
+
+  IF NOT private.is_buyer_scope_manager(v_rfq.organization_id, v_rfq.owner_profile_id)
+     AND NOT private.is_platform_admin() THEN
+    RAISE EXCEPTION 'Only managers or owners can close negotiation';
+  END IF;
+
+  IF v_rfq.status NOT IN ('CLARIFICATION', 'OPEN', 'CLOSED') THEN
+    RAISE EXCEPTION 'RFQ must be in CLARIFICATION or OPEN to proceed to evaluation (current: %)', v_rfq.status;
+  END IF;
+
+  UPDATE quotes
+  SET status = 'FINAL', updated_at = now()
+  WHERE rfq_id = p_rfq_id AND status IN ('SUBMITTED', 'REVISED');
+
+  SELECT count(*)::int INTO v_final_count
+  FROM quotes
+  WHERE rfq_id = p_rfq_id AND status = 'FINAL';
+
+  -- Graceful Handling of Unmet Quote Quorums:
+  -- If at least 1 final quote exists and is below min_quotes_required,
+  -- automatically record the quorum waiver so buyer evaluation and award can proceed
+  IF v_final_count >= 1 AND v_final_count < v_rfq.min_quotes_required THEN
+    UPDATE rfqs
+    SET min_quotes_waived = true,
+        min_quotes_waiver_reason = CASE
+          WHEN v_final_count = 1 THEN 'SOLO_QUOTE_AUTOMATIC_WINNER_BY_BUYER_CHOICE'
+          ELSE 'BUYER_CHOICE_UNMET_QUORUM_PROCEED'
+        END,
+        updated_at = now()
+    WHERE id = p_rfq_id;
+  END IF;
+
+  IF v_final_count = 0 THEN
+    RAISE EXCEPTION 'Cannot proceed to evaluation: zero quotes received';
+  END IF;
+
+  UPDATE rfqs SET status = 'EVALUATING', updated_at = now() WHERE id = p_rfq_id;
+
+  UPDATE requirements
+  SET status = 'EVALUATION', updated_at = now()
+  WHERE id = v_rfq.requirement_id;
+
+  IF v_rfq.organization_id IS NOT NULL THEN
+    INSERT INTO committee_assignments (rfq_id, profile_id)
+    SELECT p_rfq_id, om.profile_id
+    FROM organization_members om
+    WHERE om.organization_id = v_rfq.organization_id
+      AND om.role IN ('COMMITTEE_MEMBER', 'MANAGER', 'OWNER', 'BUYER')
+    ON CONFLICT (rfq_id, profile_id) DO NOTHING;
+  END IF;
+END;
+$;
+
+GRANT EXECUTE ON FUNCTION public.close_clarification_for_evaluation(uuid) TO authenticated, service_role;
+
 COMMIT;

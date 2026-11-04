@@ -43,12 +43,15 @@ export function QuorumExpiryDecisionCard({
               <span className="rounded-full bg-amber-200/70 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-2 py-0.5 text-[10px] font-black">
                 {quotesCount} of {minQuotesRequired} Quotes Received
               </span>
+              <span className="rounded-full bg-emerald-100/90 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">
+                ✓ Zero Fee · No Penalty
+              </span>
             </div>
             <h3 className="text-sm sm:text-base font-black text-foreground mt-0.5">
               Ready to decide or give suppliers more time?
             </h3>
             <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-              Standard {deadlineDays}-day window reached with {quotesCount} verified quote. As the buyer, you are in full control. You can proceed with the current quotation, extend the timeline by 3 days with wider discovery, or cancel without penalty.
+              Standard {deadlineDays}-day window reached with {quotesCount} verified {quotesCount === 1 ? 'quote' : 'quotes'}. If only 1 quote is received, it automatically wins based on your choice with zero fee or penalty. As the buyer, you are in full control: proceed directly, extend by 3 days with wider discovery, or cancel without penalty.
             </p>
           </div>
         </div>
@@ -74,6 +77,9 @@ export function QuorumExpiryDecisionCard({
           <p className="text-[11px] text-muted-foreground leading-snug">
             Unlock evaluation now and award directly to this verified quotation.
           </p>
+          <div className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 dark:text-emerald-300">
+            ✓ Zero fee &middot; Full buyer choice
+          </div>
         </button>
 
         {/* Option 2: Extend 3 Days (+3D) */}

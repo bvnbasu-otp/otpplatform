@@ -4,6 +4,7 @@ import { AdminSupplierNetworkConsole } from './AdminSupplierNetworkConsole';
 import { AdminTaxonomyManager } from './AdminTaxonomyManager';
 import { StaffReferralLedgerPanel } from './StaffReferralLedgerPanel';
 import { AdminUsersActivityPanel } from './AdminUsersActivityPanel';
+import { BulkWhatsAppCampaignPanel } from './BulkWhatsAppCampaignPanel';
 
 import type { SystemHealthResponse } from '../types/admin';
 
@@ -14,7 +15,7 @@ export interface SalesMarketingConsoleViewProps {
 }
 
 export function SalesMarketingConsoleView({ onRefresh }: SalesMarketingConsoleViewProps) {
-  const [activeTab, setActiveTab] = useState<'SUPPLIER_NETWORK' | 'TAXONOMY' | 'APPROVALS' | 'STAFF_REFERRALS' | 'ORGS_SUPPLIERS'>('SUPPLIER_NETWORK');
+  const [activeTab, setActiveTab] = useState<'SUPPLIER_NETWORK' | 'TAXONOMY' | 'APPROVALS' | 'STAFF_REFERRALS' | 'ORGS_SUPPLIERS' | 'WHATSAPP_CAMPAIGNS'>('SUPPLIER_NETWORK');
 
   return (
     <div className="space-y-6">
@@ -61,6 +62,7 @@ export function SalesMarketingConsoleView({ onRefresh }: SalesMarketingConsoleVi
       <div className="flex flex-wrap gap-2 border-b border-border pb-3">
         {[
           { key: 'SUPPLIER_NETWORK', label: 'SNE Discovery & Pre-Warm Console', icon: '🌐' },
+          { key: 'WHATSAPP_CAMPAIGNS', label: 'Bulk WhatsApp Outreach & Campaigns', icon: '📲' },
           { key: 'TAXONOMY', label: '17-Category Taxonomy & Clusters', icon: '🏷️' },
           { key: 'APPROVALS', label: 'Onboarding Registrations Queue', icon: '⏳' },
           { key: 'STAFF_REFERRALS', label: 'Staff Referral Ledger', icon: '💼' },
@@ -88,6 +90,7 @@ export function SalesMarketingConsoleView({ onRefresh }: SalesMarketingConsoleVi
       {/* Active Sales & Marketing Content */}
       <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm">
         {activeTab === 'SUPPLIER_NETWORK' && <AdminSupplierNetworkConsole />}
+        {activeTab === 'WHATSAPP_CAMPAIGNS' && <BulkWhatsAppCampaignPanel />}
         {activeTab === 'TAXONOMY' && <AdminTaxonomyManager />}
         {activeTab === 'APPROVALS' && <AdminUsersActivityPanel initialSubTab="REGISTRATIONS" />}
         {activeTab === 'STAFF_REFERRALS' && <StaffReferralLedgerPanel />}

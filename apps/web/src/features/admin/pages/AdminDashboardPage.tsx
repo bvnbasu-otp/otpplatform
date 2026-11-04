@@ -33,6 +33,7 @@ import { AdminAnnouncementsPanel } from '../components/AdminAnnouncementsPanel';
 import { InternalUsersPanel } from '../components/InternalUsersPanel';
 import { InternalRbacMatrixPanel } from '../components/InternalRbacMatrixPanel';
 import { StaffReferralLedgerPanel } from '../components/StaffReferralLedgerPanel';
+import { BulkWhatsAppCampaignPanel } from '../components/BulkWhatsAppCampaignPanel';
 import { NotificationsPage } from '@/features/notifications';
 import { RECORD_PAGE_SIZE, RecordPager } from '@/components/ui/RecordPager';
 
@@ -205,6 +206,17 @@ export function AdminDashboardPage() {
     }
     if (rawTab === 'STAFF_REFERRALS' || rawTab === 'STAFF-REFERRALS' || rawTab === 'REFERRALS' || rawTab === 'STAFF_INCENTIVES') {
       return 'STAFF_REFERRALS';
+    }
+    if (
+      rawTab === 'WHATSAPP_CAMPAIGNS' ||
+      rawTab === 'WHATSAPP-CAMPAIGNS' ||
+      rawTab === 'CAMPAIGNS' ||
+      rawTab === 'CAMPAIGN' ||
+      rawTab === 'OUTREACH' ||
+      rawTab === 'WHATSAPP' ||
+      rawTab === 'MARKETING'
+    ) {
+      return 'WHATSAPP_CAMPAIGNS';
     }
 
     return (rawTab as AdminTab) || 'TRANSACTIONS';
@@ -595,7 +607,7 @@ export function AdminDashboardPage() {
 
       {/* Global Status Flash Banner */}
       {statusMessage && (
-        <div className="mt-2 shrink-0 flex items-center justify-between rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-2.5 sm:p-3 text-xs text-emerald-950 dark:text-emerald-200 animate-in fade-in">
+        <div className="mt-2 relative z-10 shrink-0 flex items-center justify-between rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-2.5 sm:p-3 text-xs text-emerald-950 dark:text-emerald-200 animate-in fade-in">
           <div className="flex items-center gap-1.5 font-semibold">
             <span>✓</span> {statusMessage}
           </div>
@@ -1080,6 +1092,7 @@ export function AdminDashboardPage() {
             {activeTab === 'INTERNAL_USERS' && <InternalUsersPanel />}
             {activeTab === 'INTERNAL_RBAC' && <InternalRbacMatrixPanel />}
             {activeTab === 'STAFF_REFERRALS' && <StaffReferralLedgerPanel />}
+            {activeTab === 'WHATSAPP_CAMPAIGNS' && <BulkWhatsAppCampaignPanel />}
           </main>
         </div>
       )}

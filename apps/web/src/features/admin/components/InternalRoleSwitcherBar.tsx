@@ -209,18 +209,6 @@ export function InternalRoleSwitcherBar({
               <span>Restricted to role-authorized functions</span>
             </span>
           )}
-
-          {onSignOut && (
-            <button
-              type="button"
-              onClick={onSignOut}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-300 px-2.5 py-1.5 text-xs font-semibold transition active:scale-95 cursor-pointer ml-1"
-              title="Sign out of internal console"
-            >
-              <span>🚪</span>
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
-          )}
         </div>
       </div>
     </div>

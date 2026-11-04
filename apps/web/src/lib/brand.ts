@@ -4,6 +4,12 @@ export const PRODUCT_NAME = 'OTP';
 export const PRODUCT_FULL_NAME = 'Open Trade & Procurement';
 export const PRODUCT_PLATFORM_NAME = 'Open Trade & Procurement Platform';
 
+/** X2O Visual Identity & Next-Gen Evolution ("Anything To Order") */
+export const X2O_NAME = 'X2O';
+export const X2O_FULL_NAME = 'Anything To Order';
+export const X2O_TAGLINE = 'Continuous Commerce & Frictionless Procurement';
+export const X2O_PHILOSOPHY = 'From verification to frictionless procurement — Anything To Order.';
+
 export const PRODUCT_TAGLINE = 'Identity-Protected Competitive Sourcing';
 export const PRODUCT_PLATFORM_TITLE = 'OTP a Identity Protected Competitive Sourcing Platform';
 export const PRODUCT_PLATFORM_SUBTITLE =
@@ -97,6 +103,15 @@ export const OTP_NEXT_FULL_TITLE =
   'OTP Next (X2O) — Next-Generation Procurement Operating System & Network';
 export const OTP_NEXT_DESCRIPTION =
   'Dual-speed procurement engine powering Express Quick Orders and Governed Multi-Quote RFQs across 17 verified SNE categories with identity-protected evaluation.';
+
+/**
+ * White-Label & Dynamic Brand Renaming Architecture (Phase 1):
+ * Supports transitioning between legacy "OTP" and modern "X2O" seamlessly.
+ */
+export const ACTIVE_BRAND_CODE = 'X2O';
+export const ACTIVE_BRAND_NAME = 'X2O';
+export const ACTIVE_BRAND_FULL_NAME = 'X2O — Open Trade Platform';
+export const ACTIVE_BRAND_TAGLINE = 'Procurement Operating System & High-Intent Network';
 
 export const OTP_NEXT_FEATURES = [
   'Dual-Speed Procurement: Express Quick Orders & Governed RFQs',

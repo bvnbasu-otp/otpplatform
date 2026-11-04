@@ -1,0 +1,31 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="icon-blue-light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="icon-orange-light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF7A1A" />
+      <stop offset="100%" stop-color="#FF5500" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="#FFFFFF" />
+  <g transform="translate(14, 56) scale(0.80)">
+    <line x1="90" y1="70" x2="210" y2="190" stroke="url(#icon-blue-light)" stroke-width="26" stroke-linecap="round" />
+    <line x1="90" y1="190" x2="210" y2="70" stroke="url(#icon-blue-light)" stroke-width="26" stroke-linecap="round" />
+    <path d="M 200 70 C 212 42, 246 36, 276 40 C 312 46, 328 72, 316 104 C 302 136, 250 162, 215 175 L 302 175" 
+          stroke="url(#icon-orange-light)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M 295 153 L 331 175 L 295 197 Z" fill="url(#icon-orange-light)" />
+    <circle cx="370" cy="130" r="47" stroke="url(#icon-blue-light)" stroke-width="26" />
+    <text x="253" y="272" 
+          font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+          font-size="30" 
+          font-weight="600" 
+          fill="#1E40AF" 
+          text-anchor="middle" 
+          letter-spacing="0.04em">
+      Anything to Order
+    </text>
+  </g>
+</svg>
