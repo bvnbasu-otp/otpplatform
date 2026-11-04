@@ -139,8 +139,13 @@ services:
     environment:
       WHATSAPP_START_SESSION: "default"
       WHATSAPP_RESTART_ALL_SESSIONS: "true"
+    volumes:
+      - waha_sessions:/app/.sessions
 
 volumes:
   db-data:
     driver: local
+  waha_sessions:
+    driver: local
+
 

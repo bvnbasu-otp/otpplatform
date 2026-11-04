@@ -158,6 +158,11 @@ export default defineConfig({
         target: 'http://127.0.0.1:54321',
         changeOrigin: true,
       },
+      '/waha': {
+        target: 'http://127.0.0.1:3008',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/waha/, ''),
+      },
     },
   },
   preview: {
@@ -186,6 +191,11 @@ export default defineConfig({
       '/functions': {
         target: 'http://127.0.0.1:54321',
         changeOrigin: true,
+      },
+      '/waha': {
+        target: 'http://127.0.0.1:3008',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/waha/, ''),
       },
     },
   },
