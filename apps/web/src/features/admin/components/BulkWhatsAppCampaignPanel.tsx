@@ -278,13 +278,49 @@ export async function fetchWahaGatewayStatus(): Promise<WahaGatewayStatus> {
   }
 }
 
+export async function resolveWahaChatId(phoneDigits: string): Promise<string> {
+  const tryCheck = async (url: string, headers: Record<string, string> = {}) => {
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(3500) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const ct = res.headers?.get?.('content-type') || '';
+    if (ct && !ct.includes('application/json')) {
+      throw new Error(`Expected JSON response, got ${ct}`);
+    }
+    return res.json();
+  };
+  const headers = { 'ngrok-skip-browser-warning': 'true' };
+  try {
+    const data = await tryCheck(
+      `${WAHA_TUNNEL_BASE}/api/contacts/check-exists?phone=${phoneDigits}&session=default`,
+      headers
+    ).catch(() =>
+      tryCheck(
+        `${WAHA_LOCAL_BASE}/api/contacts/check-exists?phone=${phoneDigits}&session=default`,
+        headers
+      ).catch(() =>
+        tryCheck(`http://127.0.0.1:3008/api/contacts/check-exists?phone=${phoneDigits}&session=default`).catch(() =>
+          tryCheck(`http://localhost:3008/api/contacts/check-exists?phone=${phoneDigits}&session=default`)
+        )
+      )
+    );
+    if (data?.numberExists && data?.chatId) {
+      return data.chatId;
+    }
+  } catch {
+    // fallback to @c.us if probe fails or is offline
+  }
+  return `${phoneDigits}@c.us`;
+}
+
 export async function sendWahaTextMessage(toPhone: string, text: string): Promise<{ ok: boolean; error?: string }> {
   const cleanDigits = toPhone.replace(/\D/g, '');
   const digits = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
   if (!digits || digits.length < 10) {
     return { ok: false, error: 'Invalid phone number format' };
   }
-  const chatId = `${digits}@c.us`;
+
+  // Resolve true WhatsApp ID: automatically maps to @lid for privacy/multi-device contacts or @c.us for standard numbers
+  const chatId = await resolveWahaChatId(digits);
 
   const body = JSON.stringify({
     session: 'default',

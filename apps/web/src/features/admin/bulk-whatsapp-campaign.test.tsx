@@ -9,6 +9,7 @@ import {
   CAMPAIGN_LANGUAGES,
   fetchWahaGatewayStatus,
   sendWahaTextMessage,
+  resolveWahaChatId,
 } from './components/BulkWhatsAppCampaignPanel';
 import {
   ALL_ADMIN_MODULES,
@@ -112,6 +113,15 @@ describe('BulkWhatsAppCampaignPanel & Admin Role Suite', () => {
           }),
         };
       }
+      if (url.includes('/api/contacts/check-exists')) {
+        return {
+          ok: true,
+          json: async () => ({
+            numberExists: true,
+            chatId: '275398168453169@lid',
+          }),
+        };
+      }
       if (url.includes('/api/sendText')) {
         return {
           ok: true,
@@ -129,6 +139,9 @@ describe('BulkWhatsAppCampaignPanel & Admin Role Suite', () => {
 
     const sendRes = await sendWahaTextMessage('+91 99729 67530', 'Test notification');
     expect(sendRes.ok).toBe(true);
+
+    const resolvedChatId = await resolveWahaChatId('919845096753');
+    expect(resolvedChatId).toBe('275398168453169@lid');
   });
 
   it('verifies UI deduplication: no duplicate visible notification bell or misplaced sign-out buttons', () => {
