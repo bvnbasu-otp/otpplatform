@@ -10,6 +10,9 @@ import {
   getUnlockedOrganicPincodes,
   parseAndIngestLeadRecords,
   registerOrganicPincode,
+  unlockOrganicPincodeManually,
+  inferIndianCity,
+  inferIndianState,
 } from '../api/outreach-sourcing-engine';
 
 export type CampaignLanguage = 'en' | 'hi' | 'ta' | 'te' | 'kn' | 'ml';
@@ -350,7 +353,9 @@ export function BulkWhatsAppCampaignPanel() {
   const [selectedLanguage, setSelectedLanguage] = useState<CampaignLanguage>('en');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('TPL-X2O-LAUNCH');
   const [targetAudience, setTargetAudience] = useState<'BUYERS' | 'SUPPLIERS' | 'SOURCING_DIRECTORY' | 'CUSTOM'>('BUYERS');
-  const [selectedCategory, setSelectedCategory] = useState<string>(SNE_17_CATEGORIES[0] ?? 'Borewells & Submersible Pumps');
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    SNE_17_CATEGORIES[0] ?? 'Construction & Civil Infrastructure'
+  );
   const [targetCity, setTargetCity] = useState<string>('Bengaluru');
   const [targetPincode, setTargetPincode] = useState<string>('560001');
   const [customPhoneNumbers, setCustomPhoneNumbers] = useState<string>('+91 99729 67530\n+91 98450 11223\n+91 98450 22334');
@@ -367,6 +372,25 @@ export function BulkWhatsAppCampaignPanel() {
   const [showIngestionModal, setShowIngestionModal] = useState<boolean>(false);
   const [ingestionText, setIngestionText] = useState<string>('');
   const [ingestionFeedback, setIngestionFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [quickPincode, setQuickPincode] = useState<string>('');
+  const [quickPincodeError, setQuickPincodeError] = useState<string | null>(null);
+
+  const handleQuickUnlockPincode = () => {
+    const pin = quickPincode.trim();
+    if (!/^[1-9][0-9]{5}$/.test(pin)) {
+      setQuickPincodeError('Please enter a valid 6-digit Indian PIN code (e.g. 638301, 641001).');
+      return;
+    }
+    const city = inferIndianCity(pin) || 'Regional Hub';
+    const state = inferIndianState(pin, city) || 'India';
+    unlockOrganicPincodeManually(pin, { city, state });
+    setUnlockedPincodes(getUnlockedOrganicPincodes());
+    setTargetPincode(pin);
+    setTargetCity(city);
+    setSelectedPincodeFilter(pin);
+    setQuickPincode('');
+    setQuickPincodeError(null);
+  };
 
   // Live Gateway state
   const [gatewayStatus, setGatewayStatus] = useState<WahaGatewayStatus>({ status: 'CHECKING' });
@@ -1158,46 +1182,79 @@ export function BulkWhatsAppCampaignPanel() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {unlockedPincodes.map((pin) => (
-            <button
-              key={pin.pincode}
-              type="button"
-              onClick={() => {
-                setTargetPincode(pin.pincode);
-                setTargetCity(pin.city);
-                setSelectedPincodeFilter(pin.pincode);
-                setTargetAudience('SOURCING_DIRECTORY');
-              }}
-              className="text-left p-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/70 hover:border-emerald-500/60 transition cursor-pointer space-y-1.5"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-sm font-extrabold text-foreground">{pin.pincode}</span>
-                <span
-                  className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ${
-                    pin.densityStatus === 'HIGH_DENSITY'
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                      : pin.densityStatus === 'GROWING'
-                      ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
-                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                  }`}
-                >
-                  {pin.densityStatus.replace('_', ' ')}
-                </span>
-              </div>
-              <div className="text-xs font-semibold text-muted-foreground">
-                {pin.city}, {pin.state}
-              </div>
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-1 border-t border-border/60">
-                <span>🏢 {pin.density.rwaCount} RWA</span>
-                <span>•</span>
-                <span>🏭 {pin.density.msmeCount} MSME</span>
-                <span>•</span>
-                <span className="font-bold text-foreground">{pin.density.totalEntities} Total</span>
-              </div>
-            </button>
-          ))}
+        {/* Quick PIN Code On-Demand Unlock Toolbar */}
+        <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl border border-border bg-muted/20">
+          <span className="text-xs font-bold text-foreground">Quick Unlock PIN Code:</span>
+          <input
+            type="text"
+            maxLength={6}
+            value={quickPincode}
+            onChange={(e) => {
+              setQuickPincode(e.target.value.replace(/\D/g, ''));
+              setQuickPincodeError(null);
+            }}
+            placeholder="e.g. 638301 (Bhavani) or 641001"
+            className="w-56 rounded-lg border border-border bg-card p-1.5 text-xs font-mono font-semibold text-foreground focus:ring-2 focus:ring-emerald-500"
+          />
+          <button
+            type="button"
+            onClick={handleQuickUnlockPincode}
+            className="rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 transition cursor-pointer"
+          >
+            + Unlock PIN Code
+          </button>
+          {quickPincodeError && (
+            <span className="text-xs text-red-400 font-semibold">{quickPincodeError}</span>
+          )}
         </div>
+
+        {unlockedPincodes.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground space-y-1">
+            <p className="font-semibold text-foreground">Zero Synthetic Leads (Clean Production Slate)</p>
+            <p>Pincodes unlock dynamically the moment a Buyer, Supplier, RWA, or MSME registers or imports leads. You can also unlock one immediately above.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {unlockedPincodes.map((pin) => (
+              <button
+                key={pin.pincode}
+                type="button"
+                onClick={() => {
+                  setTargetPincode(pin.pincode);
+                  setTargetCity(pin.city);
+                  setSelectedPincodeFilter(pin.pincode);
+                  setTargetAudience('SOURCING_DIRECTORY');
+                }}
+                className="text-left p-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/70 hover:border-emerald-500/60 transition cursor-pointer space-y-1.5"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-sm font-extrabold text-foreground">{pin.pincode}</span>
+                  <span
+                    className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ${
+                      pin.densityStatus === 'HIGH_DENSITY'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        : pin.densityStatus === 'GROWING'
+                        ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    }`}
+                  >
+                    {pin.densityStatus.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="text-xs font-semibold text-muted-foreground">
+                  {pin.city}, {pin.state}
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-1 border-t border-border/60">
+                  <span>🏢 {pin.density.rwaCount} RWA</span>
+                  <span>•</span>
+                  <span>🏭 {pin.density.msmeCount} MSME</span>
+                  <span>•</span>
+                  <span className="font-bold text-foreground">{pin.density.totalEntities} Total</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Campaign Dispatch History Ledger */}

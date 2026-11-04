@@ -1,5 +1,7 @@
 /**
  * Self-contained Indian postal code geography inference (Zero external dependencies).
+ * Enriched with South & North Indian hubs and canonical regional MSME/RWA clusters:
+ * Erode, Bhavani, Tiruppur, Coimbatore, Hosur, Salem, Bengaluru, Chennai, Kochi, Hyderabad, etc.
  */
 export function inferIndianCity(pincode?: string | null, _state?: string | null): string | null {
   if (!pincode || !/^[1-9][0-9]{5}$/.test(pincode.trim())) return null;
@@ -7,23 +9,82 @@ export function inferIndianCity(pincode?: string | null, _state?: string | null)
   const p3 = pin.slice(0, 3);
   const p2 = pin.slice(0, 2);
 
+  // Karnataka circles
   if (['560', '561', '562'].includes(p3)) return 'Bengaluru';
   if (p3 === '570') return 'Mysuru';
   if (p3 === '575') return 'Mangaluru';
+  if (p3 === '580') return 'Hubballi';
+  if (p3 === '590') return 'Belagavi';
+  if (p3 === '583') return 'Ballari';
+  if (p3 === '577') return 'Davanagere';
+  if (p3 === '572') return 'Tumakuru';
+  if (p3 === '573') return 'Hassan';
+
+  // Tamil Nadu circles & Authoritative Regional Clusters
   if (p3 === '600') return 'Chennai';
-  if (p3 === '641') return 'Coimbatore';
+  if (p3 === '641') {
+    if (pin.startsWith('6416')) {
+      if (pin === '641654') return 'Avinashi';
+      if (pin === '641664') return 'Palladam';
+      return 'Tiruppur';
+    }
+    return 'Coimbatore';
+  }
+  if (p3 === '638') {
+    if (pin === '638301') return 'Bhavani';
+    if (pin === '638183') return 'Komarapalayam';
+    if (pin === '638501') return 'Anthiyur';
+    if (pin === '638052') return 'Perundurai';
+    if (pin === '638452') return 'Gobichettipalayam';
+    if (['638401', '638402'].includes(pin)) return 'Sathyamangalam';
+    return 'Erode';
+  }
+  if (p3 === '635') return 'Hosur';
+  if (p3 === '636') return 'Salem';
   if (p3 === '625') return 'Madurai';
-  if (p3 === '500') return 'Hyderabad';
-  if (p3 === '520') return 'Vijayawada';
-  if (p3 === '530') return 'Visakhapatnam';
+  if (p3 === '620') return 'Tiruchirappalli';
+  if (p3 === '639') return 'Karur';
+  if (p3 === '637') return 'Namakkal';
+  if (p3 === '642') return 'Pollachi';
+  if (p3 === '632') return 'Vellore';
+  if (p3 === '627') return 'Tirunelveli';
+  if (p3 === '624') return 'Dindigul';
+  if (p3 === '613') return 'Thanjavur';
+
+  // Kerala circles
   if (p3 === '682') return 'Kochi';
   if (p3 === '695') return 'Thiruvananthapuram';
   if (p3 === '673') return 'Kozhikode';
+  if (p3 === '680') return 'Thrissur';
+
+  // Telangana & AP circles
+  if (p3 === '500') return 'Hyderabad';
+  if (p3 === '506') return 'Warangal';
+  if (p3 === '520') return 'Vijayawada';
+  if (p3 === '530') return 'Visakhapatnam';
+  if (p3 === '522') return 'Guntur';
+  if (p3 === '517') return 'Tirupati';
+
+  // Maharashtra circles
   if (p3 === '400') return 'Mumbai';
+  if (['401', '402'].includes(p3)) return 'Thane';
   if (p3 === '411') return 'Pune';
+  if (p3 === '440') return 'Nagpur';
+  if (p3 === '422') return 'Nashik';
+  if (p3 === '416') return 'Kolhapur';
+
+  // Delhi NCR circles
   if (p2 === '11') return 'Delhi NCR';
-  if (p2 === '12' && p3 === '122') return 'Gurugram';
-  if (p2 === '20' && p3 === '201') return 'Noida';
+  if (p3 === '122') return 'Gurugram';
+  if (p3 === '201') return 'Noida';
+  if (p3 === '121') return 'Faridabad';
+
+  // Gujarat & Rajasthan
+  if (p3 === '380') return 'Ahmedabad';
+  if (p3 === '395') return 'Surat';
+  if (p3 === '390') return 'Vadodara';
+  if (p3 === '302') return 'Jaipur';
+
   return null;
 }
 
@@ -40,27 +101,33 @@ export function inferIndianState(pincode?: string | null, _city?: string | null)
   if (p2 === '11') return 'Delhi';
   if (['12', '13'].includes(p2)) return 'Haryana';
   if (['20', '21', '22'].includes(p2)) return 'Uttar Pradesh';
+  if (['38', '39'].includes(p2)) return 'Gujarat';
+  if (['30', '31', '32', '33', '34'].includes(p2)) return 'Rajasthan';
   return 'India';
 }
 
+/**
+ * Authoritative 17 Canonical Categories matching Migration 00331_authoritative_17_category_taxonomy.sql
+ * and AdminSupplierNetworkConsole.tsx.
+ */
 export const SNE_17_CATEGORIES: string[] = [
-  'Borewells & Submersible Pumps',
-  'Motor Rewinding & Overhaul',
-  'Elevators & Lift Maintenance',
-  'CNC Machining & Precision Lathe',
-  'Textile Spinning & Yarn Processing',
-  'Agri Commodities & Mandi Produce',
-  'Commercial Solar PV Systems',
-  'Commercial CCTV & Surveillance',
-  'Modular Office Furniture & Fitouts',
-  'Diesel Generators (DG Sets)',
-  'Commercial HVAC & Chillers',
-  'Industrial Valves & Piping',
-  'Fire Safety & Hydrant Systems',
-  'Industrial Packaging & Corrugated',
-  'Commercial Waste & Recycling',
-  'Scaffolding & Formwork Rental',
-  'Fleet Logistics & Heavy Transport',
+  'Construction & Civil Infrastructure',
+  'Plumbing & Sanitary',
+  'Electrical & Power',
+  'HVAC & Refrigeration',
+  'Machinery & Engineering',
+  'Industrial Supplies & Hardware',
+  'Chemicals & Process Materials',
+  'Textile & Apparel',
+  'Agriculture & Commodities',
+  'Packaging & Printing',
+  'Property & Facility Management',
+  'Safety & Security',
+  'Water & Environmental Solutions',
+  'IT, Electronics & Digital Systems',
+  'Logistics & Transportation',
+  'Professional & Skilled Services',
+  'General / Miscellaneous / Other',
 ];
 
 export type OutreachEntityType = 'RWA' | 'MSME' | 'SUPPLIER_PROSPECT' | 'BUYER_PROSPECT';
@@ -336,6 +403,8 @@ export const INITIAL_OUTREACH_LEADS: OutreachDirectoryLead[] = [
 
 /**
  * Retrieve leads directory with local persistence.
+ * Production Invariant: In live production (VITE_DEMO_MODE !== 'true'), defaults to a 100% clean blank slate ([]).
+ * Benchmark seed leads are loaded exclusively in demo mode (VITE_DEMO_MODE=true) or test harnesses.
  */
 export function getOutreachDirectoryLeads(filter?: {
   entityType?: OutreachEntityType | 'ALL';
@@ -343,7 +412,12 @@ export function getOutreachDirectoryLeads(filter?: {
   pincode?: string;
   status?: string;
 }): OutreachDirectoryLead[] {
-  let allLeads: OutreachDirectoryLead[] = inMemoryLeadsStore || INITIAL_OUTREACH_LEADS;
+  const isDemoOrTest =
+    (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') ||
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_DEMO_MODE === 'true');
+
+  const defaultSeedLeads: OutreachDirectoryLead[] = isDemoOrTest ? INITIAL_OUTREACH_LEADS : [];
+  let allLeads: OutreachDirectoryLead[] = inMemoryLeadsStore ?? defaultSeedLeads;
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       const saved = window.localStorage.getItem(STORAGE_KEY_LEADS);
@@ -394,6 +468,29 @@ export function getUnlockedOrganicPincodes(): OrganicPincodeEntry[] {
   const leads = getOutreachDirectoryLeads();
   const pincodeMap = new Map<string, OrganicPincodeEntry>();
 
+  // 1. Load any standalone registered / unlocked PIN codes from memory or persistence
+  if (inMemoryPincodesStore) {
+    for (const [pin, entry] of inMemoryPincodesStore.entries()) {
+      pincodeMap.set(pin, { ...entry });
+    }
+  }
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const savedPincodes = window.localStorage.getItem(STORAGE_KEY_PINCODES);
+      if (savedPincodes) {
+        const parsed = JSON.parse(savedPincodes) as OrganicPincodeEntry[];
+        for (const entry of parsed) {
+          if (entry.pincode) {
+            pincodeMap.set(entry.pincode, entry);
+          }
+        }
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  // 2. Aggregate density from all active leads
   for (const lead of leads) {
     const pin = lead.pincode.trim();
     if (!pin) continue;
@@ -465,6 +562,14 @@ export function registerOrganicPincode(
     if (entityType === 'MSME') existing.density.msmeCount++;
     if (entityType === 'BUYER_PROSPECT') existing.density.buyersCount++;
     if (entityType === 'SUPPLIER_PROSPECT') existing.density.suppliersCount++;
+
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(STORAGE_KEY_PINCODES, JSON.stringify(currentUnlocked));
+      }
+    } catch {
+      // storage unavailable
+    }
     return existing;
   }
 
@@ -484,7 +589,33 @@ export function registerOrganicPincode(
     densityStatus: 'SEED_ACTIVE',
   };
 
+  if (!inMemoryPincodesStore) {
+    inMemoryPincodesStore = new Map<string, OrganicPincodeEntry>();
+  }
+  inMemoryPincodesStore.set(pin, newEntry);
+
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(
+        STORAGE_KEY_PINCODES,
+        JSON.stringify([...currentUnlocked, newEntry])
+      );
+    }
+  } catch {
+    // storage unavailable
+  }
+
   return newEntry;
+}
+
+/**
+ * Unlocks any organic PIN code manually (e.g. from the Admin SNE console).
+ */
+export function unlockOrganicPincodeManually(
+  pincode: string,
+  details?: { city?: string; state?: string }
+): OrganicPincodeEntry | null {
+  return registerOrganicPincode(pincode, 'MSME', details);
 }
 
 /**

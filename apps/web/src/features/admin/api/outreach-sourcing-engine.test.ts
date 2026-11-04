@@ -5,7 +5,11 @@ import {
   getOutreachDirectoryLeads,
   getUnlockedOrganicPincodes,
   registerOrganicPincode,
+  unlockOrganicPincodeManually,
   parseAndIngestLeadRecords,
+  inferIndianCity,
+  inferIndianState,
+  SNE_17_CATEGORIES,
   INITIAL_OUTREACH_LEADS,
 } from './outreach-sourcing-engine';
 
@@ -101,5 +105,52 @@ describe('Outreach Sourcing Engine & Organic Pincode Registry', () => {
     const result = parseAndIngestLeadRecords(malformedData);
     expect(result.added).toBe(0);
     expect(result.errors.length).toBe(3);
+  });
+
+  it('accurately resolves regional cluster cities and states dynamically without tweaking', () => {
+    // Erode & Bhavani
+    expect(inferIndianCity('638301')).toBe('Bhavani');
+    expect(inferIndianCity('638001')).toBe('Erode');
+    expect(inferIndianCity('638052')).toBe('Perundurai');
+    expect(inferIndianState('638301')).toBe('Tamil Nadu');
+
+    // Tiruppur & Coimbatore
+    expect(inferIndianCity('641601')).toBe('Tiruppur');
+    expect(inferIndianCity('641654')).toBe('Avinashi');
+    expect(inferIndianCity('641001')).toBe('Coimbatore');
+    expect(inferIndianCity('641018')).toBe('Coimbatore');
+
+    // Hosur & Salem
+    expect(inferIndianCity('635109')).toBe('Hosur');
+    expect(inferIndianCity('636001')).toBe('Salem');
+
+    // Karnataka & Kerala
+    expect(inferIndianCity('560001')).toBe('Bengaluru');
+    expect(inferIndianCity('570001')).toBe('Mysuru');
+    expect(inferIndianCity('682001')).toBe('Kochi');
+  });
+
+  it('matches SNE_17_CATEGORIES with the Authoritative 17 Canonical Categories', () => {
+    expect(SNE_17_CATEGORIES).toHaveLength(17);
+    expect(SNE_17_CATEGORIES).toContain('Construction & Civil Infrastructure');
+    expect(SNE_17_CATEGORIES).toContain('Plumbing & Sanitary');
+    expect(SNE_17_CATEGORIES).toContain('Electrical & Power');
+    expect(SNE_17_CATEGORIES).toContain('HVAC & Refrigeration');
+    expect(SNE_17_CATEGORIES).toContain('Machinery & Engineering');
+    expect(SNE_17_CATEGORIES).toContain('Textile & Apparel');
+    expect(SNE_17_CATEGORIES).toContain('Agriculture & Commodities');
+    expect(SNE_17_CATEGORIES).toContain('Property & Facility Management');
+  });
+
+  it('supports on-demand PIN code unlock for any unlisted PIN code via unlockOrganicPincodeManually', () => {
+    const pin = unlockOrganicPincodeManually('638301');
+    expect(pin).toBeDefined();
+    expect(pin?.pincode).toBe('638301');
+    expect(pin?.city).toBe('Bhavani');
+    expect(pin?.state).toBe('Tamil Nadu');
+    expect(pin?.isUnlocked).toBe(true);
+
+    const allUnlocked = getUnlockedOrganicPincodes();
+    expect(allUnlocked.some((p) => p.pincode === '638301')).toBe(true);
   });
 });
