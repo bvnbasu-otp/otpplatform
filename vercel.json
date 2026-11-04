@@ -34,12 +34,16 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.sentry.io https://checkout.razorpay.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://api.razorpay.com https://api.stripe.com https://*.ondc.org http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:* https://*.vercel.app; frame-src 'self' https://checkout.razorpay.com https://js.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.sentry.io https://checkout.razorpay.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://api.razorpay.com https://api.stripe.com https://*.ondc.org http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:* https://*.vercel.app https://*.ngrok-free.dev https://*.ngrok.app; frame-src 'self' https://checkout.razorpay.com https://js.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self';"
         }
       ]
     }
   ],
   "rewrites": [
+    {
+      "source": "/waha/:path*",
+      "destination": "https://enjoyable-shrill-pencil.ngrok-free.dev/:path*"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

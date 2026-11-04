@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import {
   BulkWhatsAppCampaignPanel,
   CAMPAIGN_TEMPLATES,
+  CAMPAIGN_LANGUAGES,
   fetchWahaGatewayStatus,
   sendWahaTextMessage,
 } from './components/BulkWhatsAppCampaignPanel';
@@ -41,6 +42,35 @@ describe('BulkWhatsAppCampaignPanel & Admin Role Suite', () => {
     expect(html).toContain('WhatsApp Business Preview');
     expect(html).toContain('Launch Campaign');
     expect(html).toContain('Campaign Dispatch Audit History');
+    expect(html).toContain('Multilingual Dispatch Selector');
+    expect(html).toContain('മലയാളം'); // Malayalam
+    expect(html).toContain('தமிழ்'); // Tamil
+    expect(html).toContain('తెలుగు'); // Telugu
+    expect(html).toContain('ಕನ್ನಡ'); // Kannada
+    expect(html).toContain('हिन्दी'); // Hindi
+  });
+
+  it('supports full multilingual template coverage for South Indian languages, Hindi, and English', () => {
+    expect(CAMPAIGN_LANGUAGES.map((l) => l.code)).toEqual(['en', 'hi', 'ta', 'te', 'kn', 'ml']);
+
+    // Check North and South regional tagging
+    const malayalam = CAMPAIGN_LANGUAGES.find((l) => l.code === 'ml');
+    expect(malayalam?.nativeLabel).toBe('മലയാളം');
+    expect(malayalam?.region).toBe('South India');
+
+    const hindi = CAMPAIGN_LANGUAGES.find((l) => l.code === 'hi');
+    expect(hindi?.region).toBe('North India');
+
+    // Verify all templates have complete translations for all 6 languages
+    for (const tpl of CAMPAIGN_TEMPLATES) {
+      for (const lang of ['en', 'hi', 'ta', 'te', 'kn', 'ml'] as const) {
+        const variant = tpl.translations[lang];
+        expect(variant).toBeDefined();
+        expect(variant.subject.length).toBeGreaterThan(0);
+        expect(variant.body.length).toBeGreaterThan(0);
+        expect(variant.callToAction).toContain('https://x2o.app');
+      }
+    }
   });
 
   it('registers WHATSAPP_CAMPAIGNS in ALL_ADMIN_MODULES and allows access for Sales & Marketing, CEO, and Super Admin', () => {
