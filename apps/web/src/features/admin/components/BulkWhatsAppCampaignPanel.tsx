@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '@/components/ui/Icon';
-import { SNE_17_CATEGORIES } from './AdminLiveIntegrationProbes';
 import { OTP_NEXT_CODE, PRODUCT_NAME } from '@/lib/brand';
+import {
+  SNE_17_CATEGORIES,
+  type OutreachEntityType,
+  type OutreachDirectoryLead,
+  type OrganicPincodeEntry,
+  getOutreachDirectoryLeads,
+  getUnlockedOrganicPincodes,
+  parseAndIngestLeadRecords,
+  registerOrganicPincode,
+} from '../api/outreach-sourcing-engine';
 
 export type CampaignLanguage = 'en' | 'hi' | 'ta' | 'te' | 'kn' | 'ml';
 
@@ -239,7 +248,6 @@ export async function fetchWahaGatewayStatus(): Promise<WahaGatewayStatus> {
   const headers = { 'ngrok-skip-browser-warning': 'true' };
 
   try {
-    // Probe through tunnel first for remote production, followed by local proxy and direct loopback
     const data = await tryFetch(`${WAHA_TUNNEL_BASE}/api/sessions/default`, headers).catch(() =>
       tryFetch(`${WAHA_LOCAL_BASE}/api/sessions/default`, headers).catch(() =>
         tryFetch(`http://127.0.0.1:3008/api/sessions/default`).catch(() =>
@@ -341,14 +349,24 @@ const INITIAL_HISTORY: CampaignDispatchLog[] = [
 export function BulkWhatsAppCampaignPanel() {
   const [selectedLanguage, setSelectedLanguage] = useState<CampaignLanguage>('en');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('TPL-X2O-LAUNCH');
-  const [targetAudience, setTargetAudience] = useState<'BUYERS' | 'SUPPLIERS' | 'CUSTOM'>('BUYERS');
-  const [selectedCategory, setSelectedCategory] = useState<string>(SNE_17_CATEGORIES[0]);
+  const [targetAudience, setTargetAudience] = useState<'BUYERS' | 'SUPPLIERS' | 'SOURCING_DIRECTORY' | 'CUSTOM'>('BUYERS');
+  const [selectedCategory, setSelectedCategory] = useState<string>(SNE_17_CATEGORIES[0] ?? 'Borewells & Submersible Pumps');
   const [targetCity, setTargetCity] = useState<string>('Bengaluru');
   const [targetPincode, setTargetPincode] = useState<string>('560001');
   const [customPhoneNumbers, setCustomPhoneNumbers] = useState<string>('+91 99729 67530\n+91 98450 11223\n+91 98450 22334');
   const [batchSize, setBatchSize] = useState<number>(25);
   const [isDispatching, setIsDispatching] = useState<boolean>(false);
   const [dispatchProgress, setDispatchProgress] = useState<{ sent: number; total: number; delivered: number; failed: number } | null>(null);
+
+  // Outreach Directory & SNE states (Phase 2 & 3)
+  const [directoryEntityType, setDirectoryEntityType] = useState<OutreachEntityType | 'ALL'>('ALL');
+  const [selectedPincodeFilter, setSelectedPincodeFilter] = useState<string>('ALL');
+  const [allDirectoryLeads, setAllDirectoryLeads] = useState<OutreachDirectoryLead[]>(() => getOutreachDirectoryLeads());
+  const [unlockedPincodes, setUnlockedPincodes] = useState<OrganicPincodeEntry[]>(() => getUnlockedOrganicPincodes());
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [showIngestionModal, setShowIngestionModal] = useState<boolean>(false);
+  const [ingestionText, setIngestionText] = useState<string>('');
+  const [ingestionFeedback, setIngestionFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Live Gateway state
   const [gatewayStatus, setGatewayStatus] = useState<WahaGatewayStatus>({ status: 'CHECKING' });
@@ -393,7 +411,39 @@ export function BulkWhatsAppCampaignPanel() {
     }
   };
 
-  const activeTemplate = CAMPAIGN_TEMPLATES.find((t) => t.id === selectedTemplateId) || CAMPAIGN_TEMPLATES[0];
+  const refreshDirectory = () => {
+    setAllDirectoryLeads(getOutreachDirectoryLeads());
+    setUnlockedPincodes(getUnlockedOrganicPincodes());
+  };
+
+  const handleIngestLeads = () => {
+    if (!ingestionText.trim()) return;
+    const res = parseAndIngestLeadRecords(ingestionText, 'MSME', selectedCategory);
+    if (res.added > 0) {
+      setIngestionFeedback({
+        message: `Successfully ingested ${res.added} verified lead(s) and organically unlocked ${res.unlockedPincodesCount} PIN code(s)!`,
+        type: 'success',
+      });
+      setIngestionText('');
+      refreshDirectory();
+    } else {
+      setIngestionFeedback({
+        message: res.errors[0] || 'No valid lead records could be parsed.',
+        type: 'error',
+      });
+    }
+  };
+
+  // Filter directory leads based on active criteria
+  const filteredDirectoryLeads = allDirectoryLeads.filter((lead) => {
+    if (directoryEntityType !== 'ALL' && lead.entityType !== directoryEntityType) return false;
+    if (targetCity !== 'ALL' && lead.city !== targetCity) return false;
+    if (selectedPincodeFilter !== 'ALL' && lead.pincode !== selectedPincodeFilter) return false;
+    return true;
+  });
+
+  const fallbackTemplate = CAMPAIGN_TEMPLATES[0]!;
+  const activeTemplate = CAMPAIGN_TEMPLATES.find((t) => t.id === selectedTemplateId) || fallbackTemplate;
   const activeVariant = activeTemplate.translations[selectedLanguage] || activeTemplate.translations.en;
 
   // Editable body state (pre-filled from active variant, customizable by operator)
@@ -415,7 +465,7 @@ export function BulkWhatsAppCampaignPanel() {
 
   const handleTemplateChange = (tplId: string) => {
     setSelectedTemplateId(tplId);
-    const tpl = CAMPAIGN_TEMPLATES.find((t) => t.id === tplId) || CAMPAIGN_TEMPLATES[0];
+    const tpl = CAMPAIGN_TEMPLATES.find((t) => t.id === tplId) || fallbackTemplate;
     const variant = tpl.translations[selectedLanguage] || tpl.translations.en;
     setCustomBodyText(variant.body);
     setIsCustomEditing(false);
@@ -433,24 +483,66 @@ export function BulkWhatsAppCampaignPanel() {
     .replace(/\{\{platform\}\}/g, PRODUCT_NAME)
     .replace(/\{\{platform_code\}\}/g, OTP_NEXT_CODE)
     .replace(/\{\{category\}\}/g, selectedCategory)
-    .replace(/\{\{city\}\}/g, targetCity)
+    .replace(/\{\{city\}\}/g, targetCity === 'ALL' ? 'Bengaluru' : targetCity)
     .replace(/\{\{pincode\}\}/g, targetPincode) + '\n\n' + activeVariant.callToAction;
 
   const handleStartCampaign = async () => {
     setIsDispatching(true);
-    const recipientList = targetAudience === 'CUSTOM'
-      ? customPhoneNumbers.split('\n').map((p) => p.trim()).filter(Boolean)
-      : Array.from({ length: Math.min(batchSize, 25) }, (_, i) => `+91 98400 ${String(10000 + i).slice(1)}`);
 
-    const total = recipientList.length;
+    type RecipientItem = { phone: string; name: string; city: string; pincode: string; category: string };
+    let dispatchQueue: RecipientItem[] = [];
+
+    if (targetAudience === 'SOURCING_DIRECTORY') {
+      const activeLeads = filteredDirectoryLeads.filter(
+        (l) => selectedLeadIds.size === 0 || selectedLeadIds.has(l.id)
+      );
+      dispatchQueue = activeLeads.map((l) => ({
+        phone: l.phone,
+        name: l.organizationName,
+        city: l.city,
+        pincode: l.pincode,
+        category: l.category || selectedCategory,
+      }));
+    } else if (targetAudience === 'CUSTOM') {
+      const rawList = customPhoneNumbers.split('\n').map((p) => p.trim()).filter(Boolean);
+      dispatchQueue = rawList.map((p) => ({
+        phone: p,
+        name: 'Valued Partner',
+        city: targetCity === 'ALL' ? 'Bengaluru' : targetCity,
+        pincode: targetPincode,
+        category: selectedCategory,
+      }));
+    } else {
+      const count = Math.min(batchSize, 25);
+      dispatchQueue = Array.from({ length: count }, (_, i) => ({
+        phone: `+91 98400 ${String(10000 + i).slice(1)}`,
+        name: targetAudience === 'BUYERS' ? `Verified Society ${i + 1}` : `Trade Enterprise ${i + 1}`,
+        city: targetCity === 'ALL' ? 'Bengaluru' : targetCity,
+        pincode: targetPincode,
+        category: selectedCategory,
+      }));
+    }
+
+    const total = dispatchQueue.length;
     setDispatchProgress({ sent: 0, total, delivered: 0, failed: 0 });
 
     let deliveredCount = 0;
     let failedCount = 0;
 
     for (let i = 0; i < total; i++) {
-      const recipientPhone = recipientList[i];
-      const sendResult = await sendWahaTextMessage(recipientPhone, previewText);
+      const item = dispatchQueue[i];
+      if (!item) continue;
+      // Tailor dynamic placeholders for each lead individually
+      const personalizedMessage = customBodyText
+        .replace(/\{\{name\}\}/g, item.name)
+        .replace(/\{\{business_name\}\}/g, item.name)
+        .replace(/\{\{platform\}\}/g, PRODUCT_NAME)
+        .replace(/\{\{platform_code\}\}/g, OTP_NEXT_CODE)
+        .replace(/\{\{category\}\}/g, item.category)
+        .replace(/\{\{city\}\}/g, item.city)
+        .replace(/\{\{pincode\}\}/g, item.pincode) + '\n\n' + activeVariant.callToAction;
+
+      const sendResult = await sendWahaTextMessage(item.phone, personalizedMessage);
 
       if (sendResult.ok) {
         deliveredCount++;
@@ -465,18 +557,25 @@ export function BulkWhatsAppCampaignPanel() {
         failed: failedCount,
       });
 
-      // Respectful throttle between messages to avoid anti-spam blocks
+      // Adaptive throttle between messages to avoid anti-spam blocks
       if (i < total - 1) {
         await new Promise((res) => setTimeout(res, 400));
       }
     }
+
+    const audienceLabel =
+      targetAudience === 'SOURCING_DIRECTORY'
+        ? `Targeted Directory (${directoryEntityType} - ${filteredDirectoryLeads.length} leads)`
+        : targetAudience === 'CUSTOM'
+        ? `Custom Phone List (${total})`
+        : `${targetAudience} (${targetCity})`;
 
     const newLog: CampaignDispatchLog = {
       id: `CMP-${Date.now().toString().slice(-6)}`,
       timestamp: new Date().toLocaleTimeString('en-IN', { hour12: false }) + ' IST',
       campaignName: activeTemplate.name,
       language: selectedLanguage,
-      targetAudience: targetAudience === 'CUSTOM' ? `Custom Phone List (${total})` : `${targetAudience} (${targetCity})`,
+      targetAudience: audienceLabel,
       recipientsCount: total,
       sentCount: total,
       deliveredCount,
@@ -502,7 +601,7 @@ export function BulkWhatsAppCampaignPanel() {
                 Bulk WhatsApp Marketing &amp; Outreach Engine
               </h2>
               <p className="text-xs text-slate-300">
-                Broadcast multilingual transactional invites and promotional pilot onboarding campaigns to prospective buyers and suppliers via the persistent WAHA Gateway.
+                Broadcast multilingual transactional invites, RWA society onboarding, and MSME category broadcasts via the persistent WAHA Gateway.
               </p>
             </div>
           </div>
@@ -633,10 +732,11 @@ export function BulkWhatsAppCampaignPanel() {
           <div className="space-y-3">
             <div>
               <label className="text-xs font-bold text-foreground block mb-1">Target Segment</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { key: 'BUYERS', label: 'Prospective Buyers (RWA/MSME)', icon: '🏛️' },
-                  { key: 'SUPPLIERS', label: 'Prospective Suppliers (17 SNE)', icon: '🏪' },
+                  { key: 'BUYERS', label: 'Prospective Buyers', icon: '🏛️' },
+                  { key: 'SUPPLIERS', label: 'Prospective Suppliers', icon: '🏪' },
+                  { key: 'SOURCING_DIRECTORY', label: 'RWA & MSME Leads', icon: '🎯' },
                   { key: 'CUSTOM', label: 'Custom Phone List', icon: '📋' },
                 ].map((seg) => (
                   <button
@@ -645,7 +745,7 @@ export function BulkWhatsAppCampaignPanel() {
                     onClick={() => setTargetAudience(seg.key as any)}
                     className={`rounded-xl border p-2.5 text-xs font-bold transition flex flex-col items-center gap-1 cursor-pointer ${
                       targetAudience === seg.key
-                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/30'
                         : 'border-border bg-muted/40 text-muted-foreground hover:bg-muted'
                     }`}
                   >
@@ -656,7 +756,143 @@ export function BulkWhatsAppCampaignPanel() {
               </div>
             </div>
 
-            {targetAudience !== 'CUSTOM' ? (
+            {/* SOURCING_DIRECTORY Section (Phase 2 & 3 Integration) */}
+            {targetAudience === 'SOURCING_DIRECTORY' && (
+              <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-3.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                    <span>🏢</span>
+                    RWA &amp; MSME Verified Sourcing Directory
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowIngestionModal(!showIngestionModal)}
+                    className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30 transition cursor-pointer"
+                  >
+                    {showIngestionModal ? '✕ Close Import' : '+ Ingest Leads / CSV'}
+                  </button>
+                </div>
+
+                {/* CSV Ingestion drawer */}
+                {showIngestionModal && (
+                  <div className="rounded-xl border border-border bg-card p-3 space-y-2 text-xs">
+                    <label className="font-bold text-foreground block">
+                      Bulk Lead Ingestion (CSV / Tab Delimited)
+                    </label>
+                    <p className="text-[10px] text-muted-foreground">
+                      Format: Organization, Contact Person, Mobile (+91/10-digit), 6-digit Pincode, EntityType (RWA/MSME), Category
+                    </p>
+                    <textarea
+                      rows={3}
+                      value={ingestionText}
+                      onChange={(e) => setIngestionText(e.target.value)}
+                      placeholder="Prestige Ferns RWA, Ramesh Nair, 9845012345, 560103, RWA, Plumbing & Sanitary"
+                      className="w-full rounded-xl border border-border bg-muted/40 p-2 font-mono text-xs text-foreground focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={handleIngestLeads}
+                        className="rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-3 py-1.5 transition cursor-pointer"
+                      >
+                        Ingest &amp; Organically Unlock Pincode
+                      </button>
+                      {ingestionFeedback && (
+                        <span className={`text-[11px] font-semibold ${
+                          ingestionFeedback.type === 'success' ? 'text-emerald-500' : 'text-red-400'
+                        }`}>
+                          {ingestionFeedback.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Persona Filter Chips */}
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  <span className="text-[11px] text-muted-foreground font-semibold">Entity Type:</span>
+                  {(['ALL', 'RWA', 'MSME', 'SUPPLIER_PROSPECT', 'BUYER_PROSPECT'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setDirectoryEntityType(t)}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                        directoryEntityType === t
+                          ? 'bg-emerald-500 text-slate-950 font-black'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'
+                      }`}
+                    >
+                      {t === 'ALL' ? 'All Leads' : t}
+                    </button>
+                  ))}
+                </div>
+
+                {/* City and Pincode Filter */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">Filter by Hub</label>
+                    <select
+                      value={targetCity}
+                      onChange={(e) => setTargetCity(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-card p-1.5 text-xs font-semibold text-foreground"
+                    >
+                      <option value="ALL">All Hubs (Pan-India)</option>
+                      <option value="Bengaluru">Bengaluru</option>
+                      <option value="Chennai">Chennai</option>
+                      <option value="Hyderabad">Hyderabad</option>
+                      <option value="Kochi">Kochi</option>
+                      <option value="Mumbai">Mumbai</option>
+                      <option value="Delhi NCR">Delhi NCR</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">Filter by Pincode</label>
+                    <select
+                      value={selectedPincodeFilter}
+                      onChange={(e) => setSelectedPincodeFilter(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-card p-1.5 text-xs font-semibold text-foreground font-mono"
+                    >
+                      <option value="ALL">All Unlocked PIN Codes</option>
+                      {unlockedPincodes.map((pin) => (
+                        <option key={pin.pincode} value={pin.pincode}>
+                          {pin.pincode} ({pin.city}) - {pin.density.totalEntities} entities
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Sourcing Metrics and Preview */}
+                <div className="rounded-lg bg-card/60 border border-border p-2.5 text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-foreground">
+                      Matched Leads: <span className="text-emerald-500 font-mono font-black">{filteredDirectoryLeads.length}</span>
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {filteredDirectoryLeads.filter((l) => l.entityType === 'RWA').length} RWAs | {filteredDirectoryLeads.filter((l) => l.entityType === 'MSME').length} MSMEs
+                    </span>
+                  </div>
+
+                  <div className="max-h-28 overflow-y-auto space-y-1 pr-1 font-mono text-[11px]">
+                    {filteredDirectoryLeads.map((lead) => (
+                      <div key={lead.id} className="flex items-center justify-between p-1 rounded bg-muted/40 hover:bg-muted transition text-[11px]">
+                        <span className="font-semibold text-foreground truncate max-w-[180px]">
+                          {lead.organizationName}
+                        </span>
+                        <span className="text-muted-foreground text-[10px]">
+                          {lead.city} ({lead.pincode})
+                        </span>
+                        <span className="text-emerald-500 text-[10px] font-bold">{lead.phone}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Standard Target Configuration (for BUYERS / SUPPLIERS) */}
+            {targetAudience !== 'CUSTOM' && targetAudience !== 'SOURCING_DIRECTORY' && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-foreground block mb-1">Target City / Hub</label>
@@ -701,7 +937,9 @@ export function BulkWhatsAppCampaignPanel() {
                   </select>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {targetAudience === 'CUSTOM' && (
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1">
                   Recipient Phone Numbers (One per line with country code)
@@ -903,12 +1141,71 @@ export function BulkWhatsAppCampaignPanel() {
         </div>
       </div>
 
+      {/* Phase 3: Organic Pincode Discovery Engine & SNE Network Density Console */}
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <Icon name="location_on" size={16} />
+              3. Organic SNE Pincode Discovery Engine (On-Demand Activation)
+            </h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Pincodes are unlocked dynamically as real Buyers, Suppliers, RWAs, and MSMEs register — zero noisy bulk API dumps.
+            </p>
+          </div>
+          <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold self-start sm:self-auto">
+            {unlockedPincodes.length} Organically Unlocked PIN Codes
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {unlockedPincodes.map((pin) => (
+            <button
+              key={pin.pincode}
+              type="button"
+              onClick={() => {
+                setTargetPincode(pin.pincode);
+                setTargetCity(pin.city);
+                setSelectedPincodeFilter(pin.pincode);
+                setTargetAudience('SOURCING_DIRECTORY');
+              }}
+              className="text-left p-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/70 hover:border-emerald-500/60 transition cursor-pointer space-y-1.5"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-sm font-extrabold text-foreground">{pin.pincode}</span>
+                <span
+                  className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ${
+                    pin.densityStatus === 'HIGH_DENSITY'
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      : pin.densityStatus === 'GROWING'
+                      ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                  }`}
+                >
+                  {pin.densityStatus.replace('_', ' ')}
+                </span>
+              </div>
+              <div className="text-xs font-semibold text-muted-foreground">
+                {pin.city}, {pin.state}
+              </div>
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-1 border-t border-border/60">
+                <span>🏢 {pin.density.rwaCount} RWA</span>
+                <span>•</span>
+                <span>🏭 {pin.density.msmeCount} MSME</span>
+                <span>•</span>
+                <span className="font-bold text-foreground">{pin.density.totalEntities} Total</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Campaign Dispatch History Ledger */}
       <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             <Icon name="history" size={16} />
-            3. Campaign Dispatch Audit History (Local Ledger)
+            4. Campaign Dispatch Audit History (Local Ledger)
           </h3>
           <span className="text-xs font-bold text-muted-foreground">
             Total Logged: {campaignHistory.length}

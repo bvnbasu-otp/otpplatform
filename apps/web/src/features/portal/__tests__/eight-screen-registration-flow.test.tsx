@@ -219,7 +219,7 @@ describe('8-Screen Native Mobile Registration & Blank-Slate Onboarding', () => {
             <ContractsProvider>
               <WizardStepEulaAgreement
                 side="SUPPLIER"
-                personaId="SUPPLIER"
+                persona="SUPPLIER"
                 onAccept={() => {}}
                 onBack={() => {}}
               />

@@ -73,6 +73,17 @@ describe('BulkWhatsAppCampaignPanel & Admin Role Suite', () => {
     }
   });
 
+  it('renders Phase 2 & 3: RWA & MSME directory targeting and Organic Pincode Discovery Engine', () => {
+    const html = renderToStaticMarkup(<BulkWhatsAppCampaignPanel />);
+    expect(html).toContain('RWA &amp; MSME Leads');
+    expect(html).toContain('Organic SNE Pincode Discovery Engine (On-Demand Activation)');
+    expect(html).toContain('Organically Unlocked PIN Codes');
+    expect(html).toContain('560001');
+    expect(html).toContain('Bengaluru');
+    expect(html).toContain('RWA');
+    expect(html).toContain('MSME');
+  });
+
   it('registers WHATSAPP_CAMPAIGNS in ALL_ADMIN_MODULES and allows access for Sales & Marketing, CEO, and Super Admin', () => {
     const campaignModule = ALL_ADMIN_MODULES.find((m) => m.key === 'WHATSAPP_CAMPAIGNS');
     expect(campaignModule).toBeDefined();
