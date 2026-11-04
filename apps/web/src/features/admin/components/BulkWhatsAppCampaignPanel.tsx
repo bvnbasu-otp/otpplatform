@@ -396,8 +396,15 @@ export function BulkWhatsAppCampaignPanel() {
   const [targetPincode, setTargetPincode] = useState<string>('560001');
   const [customPhoneNumbers, setCustomPhoneNumbers] = useState<string>('+91 99729 67530\n+91 98450 11223\n+91 98450 22334');
   const [batchSize, setBatchSize] = useState<number>(25);
+  const [pacingMode, setPacingMode] = useState<'SAFE' | 'NORMAL' | 'TURBO'>('SAFE');
   const [isDispatching, setIsDispatching] = useState<boolean>(false);
-  const [dispatchProgress, setDispatchProgress] = useState<{ sent: number; total: number; delivered: number; failed: number } | null>(null);
+  const [dispatchProgress, setDispatchProgress] = useState<{
+    sent: number;
+    total: number;
+    delivered: number;
+    failed: number;
+    waitingSec?: number;
+  } | null>(null);
 
   // Outreach Directory & SNE states (Phase 2 & 3)
   const [directoryEntityType, setDirectoryEntityType] = useState<OutreachEntityType | 'ALL'>('ALL');
@@ -617,9 +624,33 @@ export function BulkWhatsAppCampaignPanel() {
         failed: failedCount,
       });
 
-      // Adaptive throttle between messages to avoid anti-spam blocks
+      // Adaptive throttle between messages to avoid WhatsApp anti-spam bans
       if (i < total - 1) {
-        await new Promise((res) => setTimeout(res, 400));
+        if (pacingMode === 'TURBO') {
+          await new Promise((res) => setTimeout(res, 400));
+        } else {
+          // Safe mode uses 6-10s random jitter; Normal mode uses 2.5s
+          const delayMs = pacingMode === 'SAFE'
+            ? Math.floor(Math.random() * 4000) + 6000
+            : 2500;
+          const delaySec = Math.round(delayMs / 1000);
+          for (let s = delaySec; s > 0; s--) {
+            setDispatchProgress({
+              sent: i + 1,
+              total,
+              delivered: deliveredCount,
+              failed: failedCount,
+              waitingSec: s,
+            });
+            await new Promise((res) => setTimeout(res, 1000));
+          }
+          setDispatchProgress({
+            sent: i + 1,
+            total,
+            delivered: deliveredCount,
+            failed: failedCount,
+          });
+        }
       }
     }
 
@@ -1084,20 +1115,40 @@ export function BulkWhatsAppCampaignPanel() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border">
               <div>
-                <label className="text-xs font-bold text-foreground block">Batch Throttle Sizing</label>
-                <p className="text-[10px] text-muted-foreground">400ms throttle per send prevents WhatsApp anti-spam flagging</p>
+                <label className="text-xs font-bold text-foreground block mb-0.5">Anti-Spam Pacing Mode</label>
+                <select
+                  value={pacingMode}
+                  onChange={(e) => setPacingMode(e.target.value as any)}
+                  className="w-full rounded-xl border border-border bg-card p-1.5 text-xs font-bold text-foreground focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="SAFE">🛡️ Safe (6-10s Jitter - Unknown / Cold Leads)</option>
+                  <option value="NORMAL">⚡ Moderate (2.5s - Known Contacts)</option>
+                  <option value="TURBO">🚀 Turbo (400ms - Testing Only)</option>
+                </select>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {pacingMode === 'SAFE' && 'Randomized 6–10s delay prevents WhatsApp spam flagging for cold numbers.'}
+                  {pacingMode === 'NORMAL' && 'Fixed 2.5s delay for known contacts with prior chat history.'}
+                  {pacingMode === 'TURBO' && '⚠️ Immediate delivery; only recommended for internal test phones.'}
+                </p>
               </div>
-              <select
-                value={batchSize}
-                onChange={(e) => setBatchSize(Number(e.target.value))}
-                className="rounded-xl border border-border bg-card p-1.5 text-xs font-bold text-foreground"
-              >
-                <option value={10}>10 / batch</option>
-                <option value={25}>25 / batch</option>
-                <option value={50}>50 / batch</option>
-              </select>
+
+              <div>
+                <label className="text-xs font-bold text-foreground block mb-0.5">Batch Throttle Sizing</label>
+                <select
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(Number(e.target.value))}
+                  className="w-full rounded-xl border border-border bg-card p-1.5 text-xs font-bold text-foreground focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value={10}>10 recipients / run (Safest)</option>
+                  <option value={25}>25 recipients / run (Standard)</option>
+                  <option value={50}>50 recipients / run (Max)</option>
+                </select>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Keep batches small when contacting newly discovered entities.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1156,10 +1207,15 @@ export function BulkWhatsAppCampaignPanel() {
                     style={{ width: `${(dispatchProgress.sent / (dispatchProgress.total || 1)) * 100}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[11px] text-muted-foreground">
+                <div className="flex justify-between items-center text-[11px] text-muted-foreground">
                   <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                     ✓ {dispatchProgress.delivered} Delivered
                   </span>
+                  {typeof dispatchProgress.waitingSec === 'number' && (
+                    <span className="text-amber-500 font-mono font-bold animate-pulse text-[10px]">
+                      ⏱️ Anti-spam pacing: next in {dispatchProgress.waitingSec}s…
+                    </span>
+                  )}
                   {dispatchProgress.failed > 0 && (
                     <span className="text-red-500 font-semibold">✕ {dispatchProgress.failed} Failed</span>
                   )}

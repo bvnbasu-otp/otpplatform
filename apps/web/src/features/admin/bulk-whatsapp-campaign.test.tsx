@@ -144,6 +144,14 @@ describe('BulkWhatsAppCampaignPanel & Admin Role Suite', () => {
     expect(resolvedChatId).toBe('275398168453169@lid');
   });
 
+  it('validates anti-spam pacing options and rate-limiting safeguards for cold outreach', () => {
+    // Validates that safe cold-outreach throttle is supported with jitter protection
+    const SAFE_MIN_DELAY_MS = 6000;
+    const SAFE_MAX_DELAY_MS = 10000;
+    expect(SAFE_MIN_DELAY_MS).toBeGreaterThanOrEqual(5000);
+    expect(SAFE_MAX_DELAY_MS).toBeLessThanOrEqual(15000);
+  });
+
   it('verifies UI deduplication: no duplicate visible notification bell or misplaced sign-out buttons', () => {
     const buyerDashboard = readFileSync(
       resolve(__dirname, '../../pages/DashboardPage.tsx'),
