@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest';
 import * as brand from './brand';
 
 describe('canonical product positioning', () => {
-  it('titles the product as identity-protected competitive sourcing', () => {
-    expect(brand.PRODUCT_TITLE).toBe('OTP — Identity-Protected Competitive Sourcing');
+  it('titles the product as X2O — Anything to Order', () => {
+    expect(brand.PRODUCT_TITLE).toBe('X2O — Anything to Order');
+    expect(brand.ACTIVE_BRAND_FULL_NAME).toBe(brand.PRODUCT_TITLE);
     expect(brand.PRODUCT_TAGLINE).toBe('Identity-Protected Competitive Sourcing');
   });
 
   it('uses the customer-facing subtitle, not the retired governance-platform label', () => {
     expect(brand.PRODUCT_PLATFORM_SUBTITLE).toBe(
-      'Compare competing supplier quotes and make better procurement decisions.',
+      "Smarter, Faster & Built for One's Everyday Business ! just Tell, Review, Decide & Track your commercial deals digitally all in one place",
     );
   });
 

@@ -348,7 +348,8 @@ describe('subscription entitlement authority 00249', () => {
     expect(files[index + 82]).toBe('00331_authoritative_17_category_taxonomy.sql');
     expect(files[index + 83]).toBe('00332_purge_demo_accounts_for_production_realtime.sql');
     expect(files[index + 84]).toBe('00333_greenfield_purge_all_demo_and_supplier_accounts.sql');
-    expect(index).toBe(files.length - 85);
+    expect(files[index + 85]).toBe('00334_restrict_rfq_retention_purge_to_service_role.sql');
+    expect(index).toBe(files.length - 86);
     expect(files[index - 1]).toBe(ENT01);
     files.forEach((file, i) => expect(file.slice(0, 5), file).toBe(String(i + 1).padStart(5, '0')));
     expect(sha256(resolve(MIGRATIONS_DIR, ENT01))).toBe(ENT01_SHA256);

@@ -11,9 +11,9 @@ describe('Migration 00333: Greenfield Purge of All Demo, Supplier Accounts & SNE
   const sql = readFileSync(resolve(MIGRATIONS_DIR, FILE_00333), 'utf8');
 
   it('is the newest contiguous migration in the repository chain', () => {
-    expect(migrations.at(-1)).toBe(FILE_00333);
     const index = migrations.indexOf(FILE_00333);
     expect(index).toBe(332); // 333rd file (0-indexed)
+    expect(migrations[index + 1]).toBe('00334_restrict_rfq_retention_purge_to_service_role.sql');
     expect(migrations[index - 1]).toBe('00332_purge_demo_accounts_for_production_realtime.sql');
   });
 

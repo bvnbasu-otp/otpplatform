@@ -52,7 +52,7 @@ describe('buildProcurementDocumentModel — A4 professional document', () => {
     expect(m.format).toBe('a4');
     expect(m.orientation).toBe('portrait');
     expect(m.sections).toEqual(['header', 'parties', 'line-items', 'totals', 'verification', 'footer']);
-    expect(m.brand).toEqual({ name: 'OTP', fullName: 'Open Trade & Procurement' });
+    expect(m.brand).toEqual({ name: 'X2O', fullName: 'Anything to Order' });
     expect(m.documentType).toBe('Purchase Order');
     expect(m.referenceNumber).toBe('PO-2026-0042');
   });

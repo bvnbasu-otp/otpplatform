@@ -108,7 +108,8 @@ describe('issued snapshot print model', () => {
     const html = renderToStaticMarkup(React.createElement(PrintableProcurementDocument, { model: model! }));
     expect(html).toContain('Ref: REC-');
     expect(html).toContain('Document Integrity Reference');
-    expect(html).toContain('Open Trade &amp; Procurement');
+    expect(html).toContain('Anything to Order');
+    expect(html).not.toContain('Open Trade');
     expect(html).toContain('Supplier #01');
     expect(html).not.toContain('Apex Works Pvt Ltd');
     expect(html).toMatch(/data-section="verification"/);

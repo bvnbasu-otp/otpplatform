@@ -14,6 +14,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { Image } from 'https://deno.land/x/imagescript@1.3.0/mod.ts';
+import { timingSafeEqual } from '../_shared/messaging/crypto.ts';
+
+const ATTACHMENTS_BUCKET = 'otp-attachments';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,9 +24,14 @@ const corsHeaders = {
 };
 
 interface ProcessAttachmentRequest {
-  storagePath: string;
-  contentType: string;
   attachmentId: string;
+}
+
+function jsonResponse(body: Record<string, unknown>, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status,
+  });
 }
 
 serve(async (req) => {
@@ -35,15 +43,39 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Only the attachment trigger (service role) may rewrite stored files.
+    const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+    if (!supabaseKey || !bearer || !timingSafeEqual(bearer, supabaseKey)) {
+      return jsonResponse({ success: false, error: 'Forbidden' }, 403);
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { storagePath, contentType, attachmentId }: ProcessAttachmentRequest = await req.json();
+    const { attachmentId }: ProcessAttachmentRequest = await req.json();
+    if (!attachmentId) {
+      return jsonResponse({ success: false, error: 'attachmentId is required' }, 400);
+    }
 
-    console.log(`Processing attachment: ${attachmentId}, type: ${contentType}, path: ${storagePath}`);
+    // Path and type come from the stored row, never from the caller.
+    const { data: attachment, error: lookupError } = await supabase
+      .from('attachments')
+      .select('storage_path, content_type')
+      .eq('id', attachmentId)
+      .maybeSingle();
+
+    if (lookupError || !attachment) {
+      return jsonResponse({ success: false, error: 'Attachment not found' }, 404);
+    }
+
+    const storagePath: string = attachment.storage_path;
+    const contentType: string = attachment.content_type;
+
+    console.log(`Processing attachment: ${attachmentId}, type: ${contentType}`);
 
     // Download original file from storage
     const { data: fileData, error: downloadError } = await supabase.storage
-      .from('attachments')
+      .from(ATTACHMENTS_BUCKET)
       .download(storagePath);
 
     if (downloadError || !fileData) {
@@ -87,7 +119,7 @@ serve(async (req) => {
 
     // Upload processed file back to storage (overwrite original)
     const { error: uploadError } = await supabase.storage
-      .from('attachments')
+      .from(ATTACHMENTS_BUCKET)
       .upload(storagePath, new Blob([processedBuffer], { type: contentType }), {
         upsert: true,
         contentType,

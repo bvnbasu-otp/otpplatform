@@ -97,12 +97,13 @@ describe('Contact Us page', () => {
   const html = renderPage();
   const screen = screenPart(html);
 
-  it('renders the heading, exact intro and the OTP logo from the approved asset', () => {
+  it('renders the heading, exact intro and the X2O logo from the approved asset', () => {
     expect(screen).toContain('>Contact Us</h1>');
     expect(decode(screen)).toContain(INTRO);
     expect(screen).toContain(`src="${OTP_LOGO_SRC}"`);
-    expect(OTP_LOGO_SRC).toBe('/brand/otp-logo.jpg');
-    expect(decode(screen)).toContain('Open Trade & Procurement Platform (OTP)');
+    expect(OTP_LOGO_SRC).toBe('/x2o/x2o-logo.png');
+    expect(decode(screen)).toContain('Anything to Order (X2O)');
+    expect(decode(screen)).not.toContain('Open Trade');
   });
 
   it('shows the exact support email and WhatsApp details', () => {
@@ -379,7 +380,8 @@ describe('A4 print / PDF sheet', () => {
 
   it('carries the logo, platform name, title, contact details and all five categories', () => {
     expect(sheet).toContain(`src="${OTP_LOGO_SRC}"`);
-    expect(text).toContain('Open Trade & Procurement Platform (OTP)');
+    expect(text).toContain('Anything to Order (X2O)');
+    expect(text).not.toContain('Open Trade');
     expect(sheet).toContain('>Contact Us</h1>');
     expect(text).toContain('bvnbasu+otp.demo.otp.support@gmail.com');
     expect(text).toContain('+91 9972967530');
